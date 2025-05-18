@@ -39,9 +39,7 @@ export class FilesRouter {
     router.get('/files/:appId/metadata/:filename', this.metadataHandler);
 
     router.post('/files', function (req, res, next) {
-      next(
-        new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Filename not provided.')
-      );
+      next(new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Filename not provided.'));
     });
 
     router.post(
@@ -71,10 +69,7 @@ export class FilesRouter {
     const config = Config.get(req.params.appId);
     if (!config) {
       res.status(403);
-      const err = new Parse.Error(
-        Parse.Error.OPERATION_FORBIDDEN,
-        'Invalid application ID.'
-      );
+      const err = new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid application ID.');
       res.json({ code: err.code, error: err.message });
       return;
     }
@@ -97,31 +92,23 @@ export class FilesRouter {
       }
 
       if (isFileStreamable(req, filesController)) {
-        filesController
-          .handleFileStream(config, filename, req, res, contentType)
-          .catch(() => {
-            res.status(404);
-            res.set('Content-Type', 'text/plain');
-            res.end('File not found.');
-          });
-        return;
-      }
-
-      let data = await filesController
-        .getFileData(config, filename)
-        .catch(() => {
+        filesController.handleFileStream(config, filename, req, res, contentType).catch(() => {
           res.status(404);
           res.set('Content-Type', 'text/plain');
           res.end('File not found.');
         });
+        return;
+      }
+
+      let data = await filesController.getFileData(config, filename).catch(() => {
+        res.status(404);
+        res.set('Content-Type', 'text/plain');
+        res.end('File not found.');
+      });
       if (!data) {
         return;
       }
-      file = new Parse.File(
-        filename,
-        { base64: data.toString('base64') },
-        contentType
-      );
+      file = new Parse.File(filename, { base64: data.toString('base64') }, contentType);
       const afterFind = await triggers.maybeRunFileTrigger(
         triggers.Types.afterFind,
         { file, forceDownload: false },
@@ -138,10 +125,7 @@ export class FilesRouter {
       res.set('Content-Type', contentType);
       res.set('Content-Length', data.length);
       if (afterFind.forceDownload) {
-        res.set(
-          'Content-Disposition',
-          `attachment;filename=${afterFind.file._name}`
-        );
+        res.set('Content-Disposition', `attachment;filename=${afterFind.file._name}`);
       }
       res.end(data);
     } catch (e) {
@@ -161,19 +145,11 @@ export class FilesRouter {
     const isLinked = user && Parse.AnonymousUtils.isLinked(user);
     if (!isMaster && !config.fileUpload.enableForAnonymousUser && isLinked) {
       next(
-        new Parse.Error(
-          Parse.Error.FILE_SAVE_ERROR,
-          'File upload by anonymous user is disabled.'
-        )
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by anonymous user is disabled.')
       );
       return;
     }
-    if (
-      !isMaster &&
-      !config.fileUpload.enableForAuthenticatedUser &&
-      !isLinked &&
-      user
-    ) {
+    if (!isMaster && !config.fileUpload.enableForAuthenticatedUser && !isLinked && user) {
       next(
         new Parse.Error(
           Parse.Error.FILE_SAVE_ERROR,
@@ -183,12 +159,7 @@ export class FilesRouter {
       return;
     }
     if (!isMaster && !config.fileUpload.enableForPublic && !user) {
-      next(
-        new Parse.Error(
-          Parse.Error.FILE_SAVE_ERROR,
-          'File upload by public is disabled.'
-        )
-      );
+      next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by public is disabled.'));
       return;
     }
     const filesController = config.filesController;
@@ -196,9 +167,7 @@ export class FilesRouter {
     const contentType = req.get('Content-type');
 
     if (!req.body || !req.body.length) {
-      next(
-        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Invalid file upload.')
-      );
+      next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Invalid file upload.'));
       return;
     }
 
@@ -290,9 +259,7 @@ export class FilesRouter {
         // some s3-compatible providers (DigitalOcean, Linode) do not accept tags
         // so we do not include the tags option if it is empty.
         const fileTags =
-          Object.keys(fileObject.file._tags).length > 0
-            ? { tags: fileObject.file._tags }
-            : {};
+          Object.keys(fileObject.file._tags).length > 0 ? { tags: fileObject.file._tags } : {};
         Object.assign(fileOptions, fileTags);
         // save file
         const createFileResult = await filesController.createFile(
@@ -313,12 +280,7 @@ export class FilesRouter {
         };
       }
       // run afterSaveFile trigger
-      await triggers.maybeRunFileTrigger(
-        triggers.Types.afterSave,
-        fileObject,
-        config,
-        req.auth
-      );
+      await triggers.maybeRunFileTrigger(triggers.Types.afterSave, fileObject, config, req.auth);
       res.status(201);
       res.set('Location', saveResult.url);
       res.json(saveResult);
@@ -338,10 +300,7 @@ export class FilesRouter {
       const { filename } = req.params;
       // run beforeDeleteFile trigger
       const file = new Parse.File(filename);
-      file._url = await filesController.adapter.getFileLocation(
-        req.config,
-        filename
-      );
+      file._url = await filesController.adapter.getFileLocation(req.config, filename);
       const fileObject = { file, fileSize: null };
       await triggers.maybeRunFileTrigger(
         triggers.Types.beforeDelete,
@@ -391,7 +350,6 @@ function isFileStreamable(req, filesController) {
   const start = Number(range[0]);
   const end = Number(range[1]);
   return (
-    (!isNaN(start) || !isNaN(end)) &&
-    typeof filesController.adapter.handleFileStream === 'function'
+    (!isNaN(start) || !isNaN(end)) && typeof filesController.adapter.handleFileStream === 'function'
   );
 }

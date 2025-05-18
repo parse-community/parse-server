@@ -31,9 +31,7 @@ describe_only_db('mongo')('Read preference option', () => {
           Collection.prototype.find.calls.all().forEach(call => {
             if (call.object.s.namespace.collection.indexOf('MyObject') >= 0) {
               myObjectReadPreference = true;
-              expect(call.object.s.readPreference.mode).toBe(
-                ReadPreference.PRIMARY
-              );
+              expect(call.object.s.readPreference.mode).toBe(ReadPreference.PRIMARY);
             }
           });
 
@@ -46,9 +44,7 @@ describe_only_db('mongo')('Read preference option', () => {
   });
 
   xit('should preserve the read preference set (#4831)', async () => {
-    const {
-      MongoStorageAdapter,
-    } = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter');
+    const { MongoStorageAdapter } = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter');
     const adapterOptions = {
       uri: 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
       mongoOptions: {
@@ -421,10 +417,7 @@ describe_only_db('mongo')('Read preference option', () => {
 
     const response = await request({
       method: 'GET',
-      url:
-        'http://localhost:8378/1/classes/MyObject/' +
-        obj0.id +
-        '?readPreference=SECONDARY',
+      url: 'http://localhost:8378/1/classes/MyObject/' + obj0.id + '?readPreference=SECONDARY',
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
@@ -459,10 +452,7 @@ describe_only_db('mongo')('Read preference option', () => {
 
     const response = await request({
       method: 'GET',
-      url:
-        'http://localhost:8378/1/classes/MyObject/' +
-        obj0.id +
-        '?readPreference=SECONDARY',
+      url: 'http://localhost:8378/1/classes/MyObject/' + obj0.id + '?readPreference=SECONDARY',
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
@@ -728,9 +718,7 @@ describe_only_db('mongo')('Read preference option', () => {
     const firstResult = results[0];
     expect(firstResult.get('boolKey')).toBe(false);
     expect(firstResult.get('myObject1').get('boolKey')).toBe(true);
-    expect(firstResult.get('myObject1').get('myObject0').get('boolKey')).toBe(
-      false
-    );
+    expect(firstResult.get('myObject1').get('myObject0').get('boolKey')).toBe(false);
 
     let myObjectReadPreference0 = null;
     let myObjectReadPreference1 = null;
@@ -781,9 +769,7 @@ describe_only_db('mongo')('Read preference option', () => {
     const firstResult = results[0];
     expect(firstResult.get('boolKey')).toBe(false);
     expect(firstResult.get('myObject1').get('boolKey')).toBe(true);
-    expect(firstResult.get('myObject1').get('myObject0').get('boolKey')).toBe(
-      false
-    );
+    expect(firstResult.get('myObject1').get('myObject0').get('boolKey')).toBe(false);
 
     let myObjectReadPreference0 = null;
     let myObjectReadPreference1 = null;

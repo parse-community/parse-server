@@ -45,13 +45,7 @@ export interface IndexesInterface {
   [key: string]: IndexInterface;
 }
 
-export type CLPOperation =
-  | 'find'
-  | 'count'
-  | 'get'
-  | 'update'
-  | 'create'
-  | 'delete';
+export type CLPOperation = 'find' | 'count' | 'get' | 'update' | 'create' | 'delete';
 // @Typescript 4.1+ // type CLPPermission = 'requiresAuthentication' | '*' |  `user:${string}` | `role:${string}`
 
 type CLPValue = { [key: string]: boolean };
@@ -90,10 +84,7 @@ export class CLP {
   }
 }
 
-export function makeSchema(
-  className: ClassNameType,
-  schema: JSONSchema
-): JSONSchema {
+export function makeSchema(className: ClassNameType, schema: JSONSchema): JSONSchema {
   // This function solve two things:
   // 1. It provides auto-completion to the users who are implementing schemas
   // 2. It allows forward-compatible point in order to allow future changes to the internal structure of JSONSchema without affecting all the users

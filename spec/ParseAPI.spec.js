@@ -29,12 +29,7 @@ describe('miscellaneous', () => {
     obj.set('foo', 'bar');
     await obj.save();
     const config = Config.get(defaultConfiguration.appId);
-    const results = await config.database.adapter.find(
-      'TestObject',
-      { fields: {} },
-      {},
-      {}
-    );
+    const results = await config.database.adapter.find('TestObject', { fields: {} }, {}, {});
     expect(results.length).toEqual(1);
     expect(results[0]['foo']).toEqual('bar');
   });
@@ -270,11 +265,7 @@ describe('miscellaneous', () => {
     const config = Config.get('test');
     config.database.adapter
       .addFieldIfNotExists('_User', 'randomField', { type: 'String' })
-      .then(() =>
-        config.database.adapter.ensureUniqueness('_User', userSchema, [
-          'randomField',
-        ])
-      )
+      .then(() => config.database.adapter.ensureUniqueness('_User', userSchema, ['randomField']))
       .then(() => {
         const user = new Parse.User();
         user.setPassword('asdf');
@@ -341,28 +332,25 @@ describe('miscellaneous', () => {
     }
   );
 
-  it_id('bef99522-bcfd-4f79-ba9e-3c3845550401')(it)(
-    'save various data types',
-    function (done) {
-      const obj = new TestObject();
-      obj.set('date', new Date());
-      obj.set('array', [1, 2, 3]);
-      obj.set('object', { one: 1, two: 2 });
-      obj
-        .save()
-        .then(() => {
-          const obj2 = new TestObject({ objectId: obj.id });
-          return obj2.fetch();
-        })
-        .then(obj2 => {
-          expect(obj2.get('date') instanceof Date).toBe(true);
-          expect(obj2.get('array') instanceof Array).toBe(true);
-          expect(obj2.get('object') instanceof Array).toBe(false);
-          expect(obj2.get('object') instanceof Object).toBe(true);
-          done();
-        });
-    }
-  );
+  it_id('bef99522-bcfd-4f79-ba9e-3c3845550401')(it)('save various data types', function (done) {
+    const obj = new TestObject();
+    obj.set('date', new Date());
+    obj.set('array', [1, 2, 3]);
+    obj.set('object', { one: 1, two: 2 });
+    obj
+      .save()
+      .then(() => {
+        const obj2 = new TestObject({ objectId: obj.id });
+        return obj2.fetch();
+      })
+      .then(obj2 => {
+        expect(obj2.get('date') instanceof Date).toBe(true);
+        expect(obj2.get('array') instanceof Array).toBe(true);
+        expect(obj2.get('object') instanceof Array).toBe(false);
+        expect(obj2.get('object') instanceof Object).toBe(true);
+        done();
+      });
+  });
 
   it('query with limit', function (done) {
     const baz = new TestObject({ foo: 'baz' });
@@ -673,30 +661,27 @@ describe('miscellaneous', () => {
       });
   });
 
-  it_only_db('mongo')(
-    'pointer reassign on nested fields is working properly (#7391)',
-    async () => {
-      const obj = new Parse.Object('GameScore'); // This object will include nested pointers
-      const ptr1 = new Parse.Object('GameScore');
-      await ptr1.save(); // Obtain a unique id
-      const ptr2 = new Parse.Object('GameScore');
-      await ptr2.save(); // Obtain a unique id
-      obj.set('data', { ptr: ptr1 });
-      await obj.save();
+  it_only_db('mongo')('pointer reassign on nested fields is working properly (#7391)', async () => {
+    const obj = new Parse.Object('GameScore'); // This object will include nested pointers
+    const ptr1 = new Parse.Object('GameScore');
+    await ptr1.save(); // Obtain a unique id
+    const ptr2 = new Parse.Object('GameScore');
+    await ptr2.save(); // Obtain a unique id
+    obj.set('data', { ptr: ptr1 });
+    await obj.save();
 
-      obj.set('data.ptr', ptr2);
-      await obj.save();
+    obj.set('data.ptr', ptr2);
+    await obj.save();
 
-      const obj2 = await new Parse.Query('GameScore').get(obj.id);
-      expect(obj2.get('data').ptr.id).toBe(ptr2.id);
+    const obj2 = await new Parse.Query('GameScore').get(obj.id);
+    expect(obj2.get('data').ptr.id).toBe(ptr2.id);
 
-      const query = new Parse.Query('GameScore');
-      query.equalTo('data.ptr', ptr2);
-      const res = await query.find();
-      expect(res.length).toBe(1);
-      expect(res[0].get('data').ptr.id).toBe(ptr2.id);
-    }
-  );
+    const query = new Parse.Query('GameScore');
+    query.equalTo('data.ptr', ptr2);
+    const res = await query.find();
+    expect(res.length).toBe(1);
+    expect(res[0].get('data').ptr.id).toBe(ptr2.id);
+  });
 
   it('test afterSave get full object on create and update', function (done) {
     let triggerTime = 0;
@@ -1020,10 +1005,7 @@ describe('miscellaneous', () => {
           ...obj.toJSON(),
         }),
       });
-      expect(Object.keys(saveResponse.data).sort()).toEqual([
-        'createdAt',
-        'objectId',
-      ]);
+      expect(Object.keys(saveResponse.data).sort()).toEqual(['createdAt', 'objectId']);
       obj.id = saveResponse.data.objectId;
       const response = await request({
         method: 'PUT',
@@ -1043,13 +1025,7 @@ describe('miscellaneous', () => {
         }),
       });
       const body = response.data;
-      expect(Object.keys(body).sort()).toEqual([
-        'c',
-        'd',
-        'e',
-        'f',
-        'updatedAt',
-      ]);
+      expect(Object.keys(body).sort()).toEqual(['c', 'd', 'e', 'f', 'updatedAt']);
       expect(body.a).toBeUndefined();
       expect(body.c).toEqual(3); // 2+1
       expect(body.d.length).toBe(2);
@@ -1110,10 +1086,7 @@ describe('miscellaneous', () => {
           ...obj.toJSON(),
         }),
       });
-      expect(Object.keys(saveResponse.data).sort()).toEqual([
-        'createdAt',
-        'objectId',
-      ]);
+      expect(Object.keys(saveResponse.data).sort()).toEqual(['createdAt', 'objectId']);
       obj.id = saveResponse.data.objectId;
       const response = await request({
         method: 'PUT',
@@ -1133,13 +1106,7 @@ describe('miscellaneous', () => {
         }),
       });
       const body = response.data;
-      expect(Object.keys(body).sort()).toEqual([
-        'c',
-        'd',
-        'e',
-        'f',
-        'updatedAt',
-      ]);
+      expect(Object.keys(body).sort()).toEqual(['c', 'd', 'e', 'f', 'updatedAt']);
       expect(body.a).toBeUndefined();
       expect(body.c).toEqual(3); // 2+1
       expect(body.d.length).toBe(2);
@@ -1267,8 +1234,7 @@ describe('miscellaneous', () => {
       request({
         method: 'DELETE',
         headers: headers,
-        url:
-          'http://localhost:8378/1/classes/GameScore/' + response.data.objectId,
+        url: 'http://localhost:8378/1/classes/GameScore/' + response.data.objectId,
       }).then(() => {
         expect(triggerTime).toEqual(2);
         done();
@@ -1450,9 +1416,7 @@ describe('miscellaneous', () => {
       },
       e => {
         expect(e.code).toEqual(Parse.Error.SCRIPT_FAILED);
-        expect(e.message).toEqual(
-          'Invalid function: "somethingThatDoesDefinitelyNotExist"'
-        );
+        expect(e.message).toEqual('Invalid function: "somethingThatDoesDefinitelyNotExist"');
         done();
       }
     );
@@ -1740,39 +1704,36 @@ describe('miscellaneous', () => {
       });
   });
 
-  it_id('8f99ee20-3da7-45ec-b867-ea0eb87524a9')(it)(
-    'purge all objects in class',
-    done => {
-      const object = new Parse.Object('TestObject');
-      object.set('foo', 'bar');
-      const object2 = new Parse.Object('TestObject');
-      object2.set('alice', 'wonderland');
-      Parse.Object.saveAll([object, object2])
-        .then(() => {
+  it_id('8f99ee20-3da7-45ec-b867-ea0eb87524a9')(it)('purge all objects in class', done => {
+    const object = new Parse.Object('TestObject');
+    object.set('foo', 'bar');
+    const object2 = new Parse.Object('TestObject');
+    object2.set('alice', 'wonderland');
+    Parse.Object.saveAll([object, object2])
+      .then(() => {
+        const query = new Parse.Query(TestObject);
+        return query.count();
+      })
+      .then(count => {
+        expect(count).toBe(2);
+        const headers = {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+        };
+        request({
+          method: 'DELETE',
+          headers: headers,
+          url: 'http://localhost:8378/1/purge/TestObject',
+        }).then(() => {
           const query = new Parse.Query(TestObject);
-          return query.count();
-        })
-        .then(count => {
-          expect(count).toBe(2);
-          const headers = {
-            'Content-Type': 'application/json',
-            'X-Parse-Application-Id': 'test',
-            'X-Parse-Master-Key': 'test',
-          };
-          request({
-            method: 'DELETE',
-            headers: headers,
-            url: 'http://localhost:8378/1/purge/TestObject',
-          }).then(() => {
-            const query = new Parse.Query(TestObject);
-            return query.count().then(count => {
-              expect(count).toBe(0);
-              done();
-            });
+          return query.count().then(count => {
+            expect(count).toBe(0);
+            done();
           });
         });
-    }
-  );
+      });
+  });
 
   it('fail on purge all objects in class without master key', done => {
     const headers = {
@@ -1789,9 +1750,7 @@ describe('miscellaneous', () => {
         fail('Should not succeed');
       })
       .catch(response => {
-        expect(response.data.error).toEqual(
-          'unauthorized: master key is required'
-        );
+        expect(response.data.error).toEqual('unauthorized: master key is required');
         done();
       });
   });
@@ -1934,9 +1893,7 @@ describe_only_db('mongo')('legacy _acl', () => {
       .then(() => {
         const config = Config.get('test');
         const adapter = config.database.adapter;
-        return adapter
-          ._adaptiveCollection('Report')
-          .then(collection => collection.find({}));
+        return adapter._adaptiveCollection('Report').then(collection => collection.find({}));
       })
       .then(results => {
         expect(results.length).toBe(1);

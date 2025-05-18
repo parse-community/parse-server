@@ -1,13 +1,7 @@
 const Config = require('../lib/Config');
 const Parse = require('parse/node');
 const request = require('../lib/request');
-const {
-  className,
-  createRole,
-  createUser,
-  logIn,
-  updateCLP,
-} = require('./support/dev');
+const { className, createRole, createUser, logIn, updateCLP } = require('./support/dev');
 
 describe('ProtectedFields', function () {
   it('should handle and empty protectedFields', async function () {
@@ -90,15 +84,9 @@ describe('ProtectedFields', function () {
       };
       await reconfigureServer({ protectedFields });
 
-      const objA = await new Parse.Object('ClassA')
-        .set('foo', 'zzz')
-        .set('bar', 'yyy')
-        .save();
+      const objA = await new Parse.Object('ClassA').set('foo', 'zzz').set('bar', 'yyy').save();
 
-      const objB = await new Parse.Object('ClassB')
-        .set('foo', 'zzz')
-        .set('bar', 'yyy')
-        .save();
+      const objB = await new Parse.Object('ClassB').set('foo', 'zzz').set('bar', 'yyy').save();
 
       const [fetchedA, fetchedB] = await Promise.all([
         new Parse.Query('ClassA').get(objA.id),
@@ -134,15 +122,9 @@ describe('ProtectedFields', function () {
       user.setACL(acl);
       await user.save();
 
-      const objA = await new Parse.Object('ClassA')
-        .set('foo', 'zzz')
-        .set('bar', 'yyy')
-        .save();
+      const objA = await new Parse.Object('ClassA').set('foo', 'zzz').set('bar', 'yyy').save();
 
-      const objB = await new Parse.Object('ClassB')
-        .set('foo', 'zzz')
-        .set('bar', 'yyy')
-        .save();
+      const objB = await new Parse.Object('ClassB').set('foo', 'zzz').set('bar', 'yyy').save();
 
       const [fetchedUser, fetchedA, fetchedB] = await Promise.all([
         new Parse.Query(Parse.User).get(user.id),
@@ -835,10 +817,7 @@ describe('ProtectedFields', function () {
             },
           })
         ).toBeRejectedWith(
-          new Parse.Error(
-            Parse.Error.INVALID_JSON,
-            `Default field '${field}' can not be protected`
-          )
+          new Parse.Error(Parse.Error.INVALID_JSON, `Default field '${field}' can not be protected`)
         );
       }
     });
@@ -961,10 +940,7 @@ describe('ProtectedFields', function () {
 
       await Parse.User.logOut();
 
-      [user1, user2] = await Promise.all([
-        createUser('user1'),
-        createUser('user2'),
-      ]);
+      [user1, user2] = await Promise.all([createUser('user1'), createUser('user2')]);
 
       obj1 = new Parse.Object(className);
       obj2 = new Parse.Object(className);
@@ -1163,10 +1139,7 @@ describe('ProtectedFields', function () {
     async function initialize() {
       await Config.get(Parse.applicationId).schemaCache.clear();
 
-      [user1, user2] = await Promise.all([
-        createUser('user1'),
-        createUser('user2'),
-      ]);
+      [user1, user2] = await Promise.all([createUser('user1'), createUser('user2')]);
 
       obj1 = new Parse.Object(className);
       obj2 = new Parse.Object(className);
@@ -1256,10 +1229,7 @@ describe('ProtectedFields', function () {
 
       const object = await obj1.fetch();
 
-      expect(object.get('test')).toBe(
-        undefined,
-        'Field should not be visible - protected by role'
-      );
+      expect(object.get('test')).toBe(undefined, 'Field should not be visible - protected by role');
       expect(object.get('owner')).toBe(
         undefined,
         'Field should not be visible - protected by role'
@@ -1464,9 +1434,7 @@ describe('ProtectedFields', function () {
       expect(object.get('test')).toBeDefined(
         "Being both auhenticated and having a role leads to clearing protection on 'test' (by role rules)"
       );
-      expect(object.get('owner')).toBeDefined(
-        'All authenticated users allowed to see "owner"'
-      );
+      expect(object.get('owner')).toBeDefined('All authenticated users allowed to see "owner"');
       expect(object.get('testers')).toBeDefined();
 
       done();
@@ -1600,10 +1568,7 @@ describe('ProtectedFields', function () {
         undefined,
         'Should NOT be in response - protected by "userField:owner"'
       );
-      expect(object.owner).toBe(
-        undefined,
-        'Should not be in response - not included in "keys"'
-      );
+      expect(object.owner).toBe(undefined, 'Should not be in response - not included in "keys"');
       done();
     });
 
@@ -1646,10 +1611,7 @@ describe('ProtectedFields', function () {
         undefined,
         'Should not be in response - protected by "userField:owner"'
       );
-      expect(object.owner).toBe(
-        undefined,
-        'Should not be in response - not included in "keys"'
-      );
+      expect(object.owner).toBe(undefined, 'Should not be in response - not included in "keys"');
       done();
     });
 
@@ -1679,10 +1641,7 @@ describe('ProtectedFields', function () {
         undefined,
         'Should not be in response - protected by "userField:owner"'
       );
-      expect(object['owner']).toBe(
-        undefined,
-        'Should not be in response - not included in "keys"'
-      );
+      expect(object['owner']).toBe(undefined, 'Should not be in response - not included in "keys"');
       done();
     });
 
@@ -1715,10 +1674,7 @@ describe('ProtectedFields', function () {
         undefined,
         'Should not be in response - protected by "userField:owner"'
       );
-      expect(object.owner).toBe(
-        undefined,
-        'Should not be in response - not included in "keys"'
-      );
+      expect(object.owner).toBe(undefined, 'Should not be in response - not included in "keys"');
       done();
     });
 

@@ -23,9 +23,7 @@ describe('batch', () => {
   });
 
   it('should return the proper url', () => {
-    const internalURL = batch.makeBatchRoutingPathFunction(originalURL)(
-      '/parse/classes/Object'
-    );
+    const internalURL = batch.makeBatchRoutingPathFunction(originalURL)('/parse/classes/Object');
     expect(internalURL).toEqual('/classes/Object');
   });
 
@@ -167,10 +165,7 @@ describe('batch', () => {
     expect(createSpy.calls.count()).toBe(2);
     expect(createSpy.calls.argsFor(0)[3]).toEqual(null);
     expect(createSpy.calls.argsFor(1)[3]).toEqual(null);
-    expect(results.map(result => result.get('key')).sort()).toEqual([
-      'value1',
-      'value2',
-    ]);
+    expect(results.map(result => result.get('key')).sort()).toEqual(['value1', 'value2']);
   });
 
   it('should handle a batch request with transaction = false', async () => {
@@ -205,10 +200,7 @@ describe('batch', () => {
     expect(createSpy.calls.count()).toBe(2);
     expect(createSpy.calls.argsFor(0)[3]).toEqual(null);
     expect(createSpy.calls.argsFor(1)[3]).toEqual(null);
-    expect(results.map(result => result.get('key')).sort()).toEqual([
-      'value1',
-      'value2',
-    ]);
+    expect(results.map(result => result.get('key')).sort()).toEqual(['value1', 'value2']);
   });
 
   if (
@@ -250,14 +242,9 @@ describe('batch', () => {
         const results = await query.find();
         expect(createSpy.calls.count()).toBe(2);
         for (let i = 0; i + 1 < createSpy.calls.length; i = i + 2) {
-          expect(createSpy.calls.argsFor(i)[3]).toBe(
-            createSpy.calls.argsFor(i + 1)[3]
-          );
+          expect(createSpy.calls.argsFor(i)[3]).toBe(createSpy.calls.argsFor(i + 1)[3]);
         }
-        expect(results.map(result => result.get('key')).sort()).toEqual([
-          'value1',
-          'value2',
-        ]);
+        expect(results.map(result => result.get('key')).sort()).toEqual(['value1', 'value2']);
       });
 
       it('should not save anything when one operation fails in a transaction', async () => {
@@ -548,10 +535,7 @@ describe('batch', () => {
 
         const query = new Parse.Query('MyObject');
         const results = await query.find();
-        expect(results.map(result => result.get('key')).sort()).toEqual([
-          'value1',
-          'value2',
-        ]);
+        expect(results.map(result => result.get('key')).sort()).toEqual(['value1', 'value2']);
 
         const query2 = new Parse.Query('MyObject2');
         const results2 = await query2.find();
@@ -559,10 +543,7 @@ describe('batch', () => {
 
         const query3 = new Parse.Query('MyObject3');
         const results3 = await query3.find();
-        expect(results3.map(result => result.get('key')).sort()).toEqual([
-          'value1',
-          'value2',
-        ]);
+        expect(results3.map(result => result.get('key')).sort()).toEqual(['value1', 'value2']);
 
         expect(createSpy.calls.count() >= 13).toEqual(true);
         let transactionalSession;

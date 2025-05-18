@@ -146,9 +146,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
       },
     };
     await adapter.createClass('MyClass', schema);
-    await expectAsync(adapter.getClass('UnknownClass')).toBeRejectedWith(
-      undefined
-    );
+    await expectAsync(adapter.getClass('UnknownClass')).toBeRejectedWith(undefined);
   });
 
   it('$relativeTime should error on $eq', async () => {
@@ -166,10 +164,13 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     };
     const client = adapter._client;
     await adapter.createTable(tableName, schema);
-    await client.none(
-      'INSERT INTO $1:name ($2:name, $3:name) VALUES ($4, $5)',
-      [tableName, 'objectId', 'username', 'Bugs', 'Bunny']
-    );
+    await client.none('INSERT INTO $1:name ($2:name, $3:name) VALUES ($4, $5)', [
+      tableName,
+      'objectId',
+      'username',
+      'Bugs',
+      'Bunny',
+    ]);
     const database = Config.get(Parse.applicationId).database;
     await database.loadSchema({ clearCache: true });
     try {
@@ -206,10 +207,13 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     };
     const client = adapter._client;
     await adapter.createTable(tableName, schema);
-    await client.none(
-      'INSERT INTO $1:name ($2:name, $3:name) VALUES ($4, $5)',
-      [tableName, 'objectId', 'username', 'Bugs', 'Bunny']
-    );
+    await client.none('INSERT INTO $1:name ($2:name, $3:name) VALUES ($4, $5)', [
+      tableName,
+      'objectId',
+      'username',
+      'Bugs',
+      'Bunny',
+    ]);
     const database = Config.get(Parse.applicationId).database;
     await database.loadSchema({ clearCache: true });
     try {
@@ -246,10 +250,13 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     };
     const client = adapter._client;
     await adapter.createTable(tableName, schema);
-    await client.none(
-      'INSERT INTO $1:name ($2:name, $3:name) VALUES ($4, $5)',
-      [tableName, 'objectId', 'username', 'Bugs', 'Bunny']
-    );
+    await client.none('INSERT INTO $1:name ($2:name, $3:name) VALUES ($4, $5)', [
+      tableName,
+      'objectId',
+      'username',
+      'Bugs',
+      'Bunny',
+    ]);
     const database = Config.get(Parse.applicationId).database;
     await database.loadSchema({ clearCache: true });
     try {
@@ -286,22 +293,21 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     };
     const client = adapter._client;
     await adapter.createTable(tableName, schema);
-    await client.none(
-      'INSERT INTO $1:name ($2:name, $3:name) VALUES ($4, $5)',
-      [tableName, 'objectId', 'username', 'Bugs', 'Bunny']
-    );
+    await client.none('INSERT INTO $1:name ($2:name, $3:name) VALUES ($4, $5)', [
+      tableName,
+      'objectId',
+      'username',
+      'Bugs',
+      'Bunny',
+    ]);
     //Postgres won't take advantage of the index until it has a lot of records because sequential is faster for small db's
     await client.none(
       'INSERT INTO $1:name ($2:name, $3:name) SELECT gen_random_uuid(), gen_random_uuid() FROM generate_series(1,5000)',
       [tableName, 'objectId', 'username']
     );
     const caseInsensitiveData = 'bugs';
-    const originalQuery =
-      'SELECT * FROM $1:name WHERE lower($2:name)=lower($3)';
-    const analyzedExplainQuery = adapter.createExplainableQuery(
-      originalQuery,
-      true
-    );
+    const originalQuery = 'SELECT * FROM $1:name WHERE lower($2:name)=lower($3)';
+    const analyzedExplainQuery = adapter.createExplainableQuery(originalQuery, true);
     const preIndexPlan = await client.one(analyzedExplainQuery, [
       tableName,
       'objectId',
@@ -397,13 +403,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
 
     const indexName = 'test_case_insensitive_column';
     const schema = await new Parse.Schema('_User').get();
-    await adapter.ensureIndex(
-      tableName,
-      schema,
-      [fieldToSearch],
-      indexName,
-      true
-    );
+    await adapter.ensureIndex(tableName, schema, [fieldToSearch], indexName, true);
 
     //Check using find method for Parse
     const postIndexPlan = await database.find(
@@ -481,12 +481,8 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     const database = Config.get(Parse.applicationId).database;
 
     //Create index before data is inserted
-    await adapter.ensureUniqueness(firstTableName, firstTableSchema, [
-      uniqueField,
-    ]);
-    await adapter.ensureUniqueness(secondTableName, secondTableSchema, [
-      uniqueField,
-    ]);
+    await adapter.ensureUniqueness(firstTableName, firstTableSchema, [uniqueField]);
+    await adapter.ensureUniqueness(secondTableName, secondTableSchema, [uniqueField]);
 
     //Postgres won't take advantage of the index until it has a lot of records because sequential is faster for small db's
     const client = adapter._client;
@@ -570,9 +566,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     const qs =
       "SELECT format('%I.%I(%s)', ns.nspname, p.proname, oidvectortypes(p.proargtypes)) FROM pg_proc p INNER JOIN pg_namespace ns ON (p.pronamespace = ns.oid) WHERE p.proname = 'idempotency_delete_expired_records'";
     const foundFunction = await client.one(qs);
-    expect(foundFunction.format).toBe(
-      'public.idempotency_delete_expired_records()'
-    );
+    expect(foundFunction.format).toBe('public.idempotency_delete_expired_records()');
     await adapter.deleteIdempotencyFunction();
     await client.none(qs);
   });

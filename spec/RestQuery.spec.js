@@ -138,13 +138,7 @@ describe('rest query', () => {
       })
       .then(() => {
         queryWhere.photo.objectId = photo.objectId;
-        return rest.find(
-          config,
-          nobody,
-          'TestActivity',
-          queryWhere,
-          queryOptions
-        );
+        return rest.find(config, nobody, 'TestActivity', queryWhere, queryOptions);
       })
       .then(response => {
         const results = response.results;
@@ -164,22 +158,19 @@ describe('rest query', () => {
     const customConfig = Object.assign({}, config, {
       allowClientClassCreation: false,
     });
-    rest
-      .find(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {})
-      .then(
-        () => {
-          fail('Should throw an error');
-          done();
-        },
-        err => {
-          expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
-          expect(err.message).toEqual(
-            'This user is not allowed to access ' +
-              'non-existent class: ClientClassCreation'
-          );
-          done();
-        }
-      );
+    rest.find(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {}).then(
+      () => {
+        fail('Should throw an error');
+        done();
+      },
+      err => {
+        expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+        expect(err.message).toEqual(
+          'This user is not allowed to access ' + 'non-existent class: ClientClassCreation'
+        );
+        done();
+      }
+    );
   });
 
   it('query existent class when disabled client class creation', async () => {
@@ -187,10 +178,7 @@ describe('rest query', () => {
       allowClientClassCreation: false,
     });
     const schema = await config.database.loadSchema();
-    const actualSchema = await schema.addClassIfNotExists(
-      'ClientClassCreation',
-      {}
-    );
+    const actualSchema = await schema.addClassIfNotExists('ClientClassCreation', {});
     expect(actualSchema.className).toEqual('ClientClassCreation');
 
     await schema.reloadData({ clearCache: true });
@@ -217,13 +205,8 @@ describe('rest query', () => {
     ];
     await Promise.all([
       ...internalFields.map(field =>
-        expectAsync(
-          new Parse.Query(Parse.User).exists(field).find()
-        ).toBeRejectedWith(
-          new Parse.Error(
-            Parse.Error.INVALID_KEY_NAME,
-            `Invalid key name: ${field}`
-          )
+        expectAsync(new Parse.Query(Parse.User).exists(field).find()).toBeRejectedWith(
+          new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${field}`)
         )
       ),
       ...internalFields.map(field =>
@@ -257,9 +240,7 @@ describe('rest query', () => {
     );
     await Promise.all([
       new Parse.Query('Test').exists('test').find(),
-      expectAsync(
-        new Parse.Query('Test').exists('zip').find()
-      ).toBeRejectedWith(
+      expectAsync(new Parse.Query('Test').exists('zip').find()).toBeRejectedWith(
         new Parse.Error(
           Parse.Error.OPERATION_FORBIDDEN,
           'This user is not allowed to query zip on class Test'
@@ -280,10 +261,7 @@ describe('rest query', () => {
     await expectAsync(
       new Parse.Query('TestObject').matchesQuery('user', subQuery).find()
     ).toBeRejectedWith(
-      new Parse.Error(
-        Parse.Error.INVALID_KEY_NAME,
-        'Invalid key name: _perishable_token'
-      )
+      new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: _perishable_token')
     );
   });
 
@@ -361,13 +339,7 @@ describe('rest query', () => {
         return rest.create(config, nobody, 'TestObject', { foo: 'qux' });
       })
       .then(() => {
-        return rest.find(
-          config,
-          nobody,
-          'TestObject',
-          {},
-          { limit: 0, count: 1 }
-        );
+        return rest.find(config, nobody, 'TestObject', {}, { limit: 0, count: 1 });
       })
       .then(response => {
         expect(response.results.length).toEqual(0);
@@ -420,38 +392,32 @@ describe('RestQuery.each', () => {
   beforeEach(() => {
     config = Config.get('test');
   });
-  it_id('3416c90b-ee2e-4bb5-9231-46cd181cd0a2')(it)(
-    'should run each',
-    async () => {
-      const objects = [];
-      while (objects.length != 10) {
-        objects.push(new Parse.Object('Object', { value: objects.length }));
-      }
-      const config = Config.get('test');
-      await Parse.Object.saveAll(objects);
-      const query = await RestQuery({
-        method: RestQuery.Method.find,
-        config,
-        auth: auth.master(config),
-        className: 'Object',
-        restWhere: { value: { $gt: 2 } },
-        restOptions: { limit: 2 },
-      });
-      const spy = spyOn(query, 'execute').and.callThrough();
-      const classSpy = spyOn(
-        RestQuery._UnsafeRestQuery.prototype,
-        'execute'
-      ).and.callThrough();
-      const results = [];
-      await query.each(result => {
-        expect(result.value).toBeGreaterThan(2);
-        results.push(result);
-      });
-      expect(spy.calls.count()).toBe(0);
-      expect(classSpy.calls.count()).toBe(4);
-      expect(results.length).toBe(7);
+  it_id('3416c90b-ee2e-4bb5-9231-46cd181cd0a2')(it)('should run each', async () => {
+    const objects = [];
+    while (objects.length != 10) {
+      objects.push(new Parse.Object('Object', { value: objects.length }));
     }
-  );
+    const config = Config.get('test');
+    await Parse.Object.saveAll(objects);
+    const query = await RestQuery({
+      method: RestQuery.Method.find,
+      config,
+      auth: auth.master(config),
+      className: 'Object',
+      restWhere: { value: { $gt: 2 } },
+      restOptions: { limit: 2 },
+    });
+    const spy = spyOn(query, 'execute').and.callThrough();
+    const classSpy = spyOn(RestQuery._UnsafeRestQuery.prototype, 'execute').and.callThrough();
+    const results = [];
+    await query.each(result => {
+      expect(result.value).toBeGreaterThan(2);
+      results.push(result);
+    });
+    expect(spy.calls.count()).toBe(0);
+    expect(classSpy.calls.count()).toBe(4);
+    expect(results.length).toBe(7);
+  });
 
   it_id('0fe22501-4b18-461e-b87d-82ceac4a496e')(it)(
     'should work with query on relations',
@@ -505,10 +471,7 @@ describe('RestQuery.each', () => {
         restOptions: { limit: 1 },
       });
 
-      const classSpy = spyOn(
-        RestQuery._UnsafeRestQuery.prototype,
-        'execute'
-      ).and.callThrough();
+      const classSpy = spyOn(RestQuery._UnsafeRestQuery.prototype, 'execute').and.callThrough();
       const resultsOne = [];
       const resultsTwo = [];
       await queryOne.each(result => {
@@ -538,16 +501,14 @@ describe('RestQuery.each', () => {
       return jsonObject;
     });
 
-    rest
-      .create(config, nobody, 'TestObject2', { todelete: true, tokeep: true })
-      .then(response => {
-        expect(response.response.toadd).toBeTruthy();
-        expect(response.response.tokeep).toBeTruthy();
-        expect(response.response.tobeaddbefore).toBeTruthy();
-        expect(response.response.tobeaddbeforeandremoveafter).toBeUndefined();
-        expect(response.response.todelete).toBeUndefined();
-        done();
-      });
+    rest.create(config, nobody, 'TestObject2', { todelete: true, tokeep: true }).then(response => {
+      expect(response.response.toadd).toBeTruthy();
+      expect(response.response.tokeep).toBeTruthy();
+      expect(response.response.tobeaddbefore).toBeTruthy();
+      expect(response.response.tobeaddbeforeandremoveafter).toBeUndefined();
+      expect(response.response.todelete).toBeUndefined();
+      done();
+    });
   });
 
   it('test afterSave should not affect save response', async () => {

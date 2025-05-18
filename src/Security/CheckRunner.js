@@ -18,11 +18,7 @@ class CheckRunner {
    */
   constructor(config = {}) {
     this._validateParams(config);
-    const {
-      enableCheck = false,
-      enableCheckLog = false,
-      checkGroups = CheckGroups,
-    } = config;
+    const { enableCheck = false, enableCheckLog = false, checkGroups = CheckGroups } = config;
     this.enableCheck = enableCheck;
     this.enableCheckLog = enableCheckLog;
     this.checkGroups = checkGroups;
@@ -131,9 +127,7 @@ class CheckRunner {
   _logReport(report) {
     // Determine log level depending on whether any check failed
     const log =
-      report.report.state == CheckState.success
-        ? s => logger.info(s)
-        : s => logger.warn(s);
+      report.report.state == CheckState.success ? s => logger.info(s) : s => logger.warn(s);
 
     // Declare output
     const indent = '   ';

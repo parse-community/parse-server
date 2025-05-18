@@ -105,9 +105,7 @@ describe('Security Check', () => {
         { enableCheckLog: [] },
       ];
       for (const option of options) {
-        await expectAsync(
-          reconfigureServerWithSecurityConfig(option)
-        ).toBeRejected();
+        await expectAsync(reconfigureServerWithSecurityConfig(option)).toBeRejected();
       }
     });
   });
@@ -235,17 +233,13 @@ describe('Security Check', () => {
 
     it('throws if subclassed incorrectly', async () => {
       class InvalidGroup1 extends CheckGroup {}
-      expect((() => new InvalidGroup1()).bind()).toThrow(
-        'Check group has no name.'
-      );
+      expect((() => new InvalidGroup1()).bind()).toThrow('Check group has no name.');
       class InvalidGroup2 extends CheckGroup {
         setName() {
           return groupName;
         }
       }
-      expect((() => new InvalidGroup2()).bind()).toThrow(
-        'Check group has no checks.'
-      );
+      expect((() => new InvalidGroup2()).bind()).toThrow('Check group has no checks.');
     });
 
     it('runs checks', async () => {
@@ -339,9 +333,7 @@ describe('Security Check', () => {
       const checkGroups = [Group];
       const runner = new CheckRunner({ checkGroups, enableCheckLog: true });
       const report = await runner.run();
-      const titles = report.report.groups.flatMap(group =>
-        group.checks.map(check => check.title)
-      );
+      const titles = report.report.groups.flatMap(group => group.checks.map(check => check.title));
       expect(titles.length).toBe(2);
 
       for (const title of titles) {

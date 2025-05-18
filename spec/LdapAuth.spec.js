@@ -26,40 +26,24 @@ describe('Ldap Auth', () => {
       url: `ldap://localhost:${port}`,
       dn: 'uid={{id}}, o=example',
     };
-    await ldap.validateAuthData(
-      { id: 'testuser', password: 'secret' },
-      options
-    );
+    await ldap.validateAuthData({ id: 'testuser', password: 'secret' }, options);
     server.close(done);
   });
 
   it('Should succeed with right credentials when LDAPS is used and certifcate is not checked', async done => {
-    const server = await mockLdapServer(
-      sslport,
-      'uid=testuser, o=example',
-      false,
-      true
-    );
+    const server = await mockLdapServer(sslport, 'uid=testuser, o=example', false, true);
     const options = {
       suffix: 'o=example',
       url: `ldaps://localhost:${sslport}`,
       dn: 'uid={{id}}, o=example',
       tlsOptions: { rejectUnauthorized: false },
     };
-    await ldap.validateAuthData(
-      { id: 'testuser', password: 'secret' },
-      options
-    );
+    await ldap.validateAuthData({ id: 'testuser', password: 'secret' }, options);
     server.close(done);
   });
 
   it('Should succeed when LDAPS is used and the presented certificate is the expected certificate', async done => {
-    const server = await mockLdapServer(
-      sslport,
-      'uid=testuser, o=example',
-      false,
-      true
-    );
+    const server = await mockLdapServer(sslport, 'uid=testuser, o=example', false, true);
     const options = {
       suffix: 'o=example',
       url: `ldaps://localhost:${sslport}`,
@@ -69,20 +53,12 @@ describe('Ldap Auth', () => {
         rejectUnauthorized: true,
       },
     };
-    await ldap.validateAuthData(
-      { id: 'testuser', password: 'secret' },
-      options
-    );
+    await ldap.validateAuthData({ id: 'testuser', password: 'secret' }, options);
     server.close(done);
   });
 
   it('Should fail when LDAPS is used and the presented certificate is not the expected certificate', async done => {
-    const server = await mockLdapServer(
-      sslport,
-      'uid=testuser, o=example',
-      false,
-      true
-    );
+    const server = await mockLdapServer(sslport, 'uid=testuser, o=example', false, true);
     const options = {
       suffix: 'o=example',
       url: `ldaps://localhost:${sslport}`,
@@ -93,10 +69,7 @@ describe('Ldap Auth', () => {
       },
     };
     try {
-      await ldap.validateAuthData(
-        { id: 'testuser', password: 'secret' },
-        options
-      );
+      await ldap.validateAuthData({ id: 'testuser', password: 'secret' }, options);
       fail();
     } catch (err) {
       expect(err.message).toBe('LDAPS: Certificate mismatch');
@@ -105,12 +78,7 @@ describe('Ldap Auth', () => {
   });
 
   it('Should fail when LDAPS is used certifcate matches but credentials are wrong', async done => {
-    const server = await mockLdapServer(
-      sslport,
-      'uid=testuser, o=example',
-      false,
-      true
-    );
+    const server = await mockLdapServer(sslport, 'uid=testuser, o=example', false, true);
     const options = {
       suffix: 'o=example',
       url: `ldaps://localhost:${sslport}`,
@@ -121,10 +89,7 @@ describe('Ldap Auth', () => {
       },
     };
     try {
-      await ldap.validateAuthData(
-        { id: 'testuser', password: 'wrong!' },
-        options
-      );
+      await ldap.validateAuthData({ id: 'testuser', password: 'wrong!' }, options);
       fail();
     } catch (err) {
       expect(err.message).toBe('LDAP: Wrong username or password');
@@ -140,10 +105,7 @@ describe('Ldap Auth', () => {
       dn: 'uid={{id}}, o=example',
     };
     try {
-      await ldap.validateAuthData(
-        { id: 'testuser', password: 'wrong!' },
-        options
-      );
+      await ldap.validateAuthData({ id: 'testuser', password: 'wrong!' }, options);
       fail();
     } catch (err) {
       expect(err.message).toBe('LDAP: Wrong username or password');
@@ -158,13 +120,9 @@ describe('Ldap Auth', () => {
       url: `ldap://localhost:${port}`,
       dn: 'uid={{id}}, o=example',
       groupCn: 'powerusers',
-      groupFilter:
-        '(&(uniqueMember=uid={{id}}, o=example)(objectClass=groupOfUniqueNames))',
+      groupFilter: '(&(uniqueMember=uid={{id}}, o=example)(objectClass=groupOfUniqueNames))',
     };
-    await ldap.validateAuthData(
-      { id: 'testuser', password: 'secret' },
-      options
-    );
+    await ldap.validateAuthData({ id: 'testuser', password: 'secret' }, options);
     server.close(done);
   });
 
@@ -175,14 +133,10 @@ describe('Ldap Auth', () => {
       url: `ldap://localhost:${port}`,
       dn: 'uid={{id}}, o=example',
       groupCn: 'groupTheUserIsNotIn',
-      groupFilter:
-        '(&(uniqueMember=uid={{id}}, o=example)(objectClass=groupOfUniqueNames))',
+      groupFilter: '(&(uniqueMember=uid={{id}}, o=example)(objectClass=groupOfUniqueNames))',
     };
     try {
-      await ldap.validateAuthData(
-        { id: 'testuser', password: 'secret' },
-        options
-      );
+      await ldap.validateAuthData({ id: 'testuser', password: 'secret' }, options);
       fail();
     } catch (err) {
       expect(err.message).toBe('LDAP: User not in group');
@@ -197,14 +151,10 @@ describe('Ldap Auth', () => {
       url: `ldap://localhost:${port}`,
       dn: 'uid={{id}}, o=example',
       groupCn: 'powerusers',
-      groupFilter:
-        '(&(uniqueMember=uid={{id}}, o=example)(objectClass=groupOfUniqueNames))',
+      groupFilter: '(&(uniqueMember=uid={{id}}, o=example)(objectClass=groupOfUniqueNames))',
     };
     try {
-      await ldap.validateAuthData(
-        { id: 'testuser', password: 'secret' },
-        options
-      );
+      await ldap.validateAuthData({ id: 'testuser', password: 'secret' }, options);
       fail();
     } catch (err) {
       expect(err.message).toBe('LDAP group search failed');
@@ -219,14 +169,10 @@ describe('Ldap Auth', () => {
       url: `ldap://localhost:${port}`,
       dn: 'uid={{id}}, o=example',
       groupCn: 'powerusers',
-      groupFilter:
-        '(&(uniqueMember=uid={{id}}, o=example)(objectClass=groupOfUniqueNames))',
+      groupFilter: '(&(uniqueMember=uid={{id}}, o=example)(objectClass=groupOfUniqueNames))',
     };
     try {
-      await ldap.validateAuthData(
-        { id: 'testuser', password: 'secret' },
-        options
-      );
+      await ldap.validateAuthData({ id: 'testuser', password: 'secret' }, options);
       fail();
     } catch (err) {
       expect(err.message).toBe('LDAP group search failed');
@@ -258,9 +204,7 @@ describe('Ldap Auth', () => {
     const authData = { authData: { id: 'testuser', password: 'secret' } };
     const returnedUser = await Parse.User.logInWith('ldap', authData);
     const query = new Parse.Query('User');
-    const user = await query
-      .equalTo('objectId', returnedUser.id)
-      .first({ useMasterKey: true });
+    const user = await query.equalTo('objectId', returnedUser.id).first({ useMasterKey: true });
     expect(user.get('authData')).toEqual({ ldap: { id: 'testuser' } });
     expect(user.get('authData').ldap.password).toBeUndefined();
     server.close(done);

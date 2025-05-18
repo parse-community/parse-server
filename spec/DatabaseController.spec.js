@@ -77,9 +77,7 @@ describe('DatabaseController', function () {
       schemaController.testPermissionsForClassName
         .withArgs(CLASS_NAME, ACL_GROUP, OPERATION)
         .and.returnValue(true);
-      schemaController.getClassLevelPermissions
-        .withArgs(CLASS_NAME)
-        .and.returnValue(clp);
+      schemaController.getClassLevelPermissions.withArgs(CLASS_NAME).and.returnValue(clp);
 
       const output = databaseController.addPointerPermissions(
         schemaController,
@@ -101,9 +99,7 @@ describe('DatabaseController', function () {
       schemaController.testPermissionsForClassName
         .withArgs(CLASS_NAME, ACL_GROUP, OPERATION)
         .and.returnValue(false);
-      schemaController.getClassLevelPermissions
-        .withArgs(CLASS_NAME)
-        .and.returnValue(clp);
+      schemaController.getClassLevelPermissions.withArgs(CLASS_NAME).and.returnValue(clp);
       schemaController.getExpectedType
         .withArgs(CLASS_NAME, 'user')
         .and.returnValue({ type: 'Pointer' });
@@ -128,9 +124,7 @@ describe('DatabaseController', function () {
       schemaController.testPermissionsForClassName
         .withArgs(CLASS_NAME, ACL_GROUP, OPERATION)
         .and.returnValue(false);
-      schemaController.getClassLevelPermissions
-        .withArgs(CLASS_NAME)
-        .and.returnValue(clp);
+      schemaController.getClassLevelPermissions.withArgs(CLASS_NAME).and.returnValue(clp);
       schemaController.getExpectedType
         .withArgs(CLASS_NAME, 'users')
         .and.returnValue({ type: 'Array' });
@@ -158,9 +152,7 @@ describe('DatabaseController', function () {
       schemaController.testPermissionsForClassName
         .withArgs(CLASS_NAME, ACL_GROUP, OPERATION)
         .and.returnValue(false);
-      schemaController.getClassLevelPermissions
-        .withArgs(CLASS_NAME)
-        .and.returnValue(clp);
+      schemaController.getClassLevelPermissions.withArgs(CLASS_NAME).and.returnValue(clp);
       schemaController.getExpectedType
         .withArgs(CLASS_NAME, 'user')
         .and.returnValue({ type: 'Object' });
@@ -188,9 +180,7 @@ describe('DatabaseController', function () {
       schemaController.testPermissionsForClassName
         .withArgs(CLASS_NAME, ACL_GROUP, OPERATION)
         .and.returnValue(false);
-      schemaController.getClassLevelPermissions
-        .withArgs(CLASS_NAME)
-        .and.returnValue(clp);
+      schemaController.getClassLevelPermissions.withArgs(CLASS_NAME).and.returnValue(clp);
       schemaController.getExpectedType
         .withArgs(CLASS_NAME, 'user')
         .and.returnValue({ type: 'Pointer' });
@@ -217,9 +207,7 @@ describe('DatabaseController', function () {
       schemaController.testPermissionsForClassName
         .withArgs(CLASS_NAME, ACL_GROUP, OPERATION)
         .and.returnValue(false);
-      schemaController.getClassLevelPermissions
-        .withArgs(CLASS_NAME)
-        .and.returnValue(clp);
+      schemaController.getClassLevelPermissions.withArgs(CLASS_NAME).and.returnValue(clp);
       schemaController.getExpectedType
         .withArgs(CLASS_NAME, 'user')
         .and.returnValue({ type: 'Pointer' });
@@ -255,9 +243,7 @@ describe('DatabaseController', function () {
       schemaController.testPermissionsForClassName
         .withArgs(CLASS_NAME, ACL_GROUP, OPERATION)
         .and.returnValue(false);
-      schemaController.getClassLevelPermissions
-        .withArgs(CLASS_NAME)
-        .and.returnValue(clp);
+      schemaController.getClassLevelPermissions.withArgs(CLASS_NAME).and.returnValue(clp);
       schemaController.getExpectedType
         .withArgs(CLASS_NAME, 'user')
         .and.returnValue({ type: 'Pointer' });
@@ -281,9 +267,7 @@ describe('DatabaseController', function () {
       schemaController.testPermissionsForClassName
         .withArgs(CLASS_NAME, ACL_GROUP, OPERATION)
         .and.returnValue(false);
-      schemaController.getClassLevelPermissions
-        .withArgs(CLASS_NAME)
-        .and.returnValue(clp);
+      schemaController.getClassLevelPermissions.withArgs(CLASS_NAME).and.returnValue(clp);
       schemaController.getExpectedType
         .withArgs(CLASS_NAME, 'user')
         .and.returnValue({ type: 'Pointer' });
@@ -311,9 +295,7 @@ describe('DatabaseController', function () {
       schemaController.testPermissionsForClassName
         .withArgs(CLASS_NAME, ACL_GROUP, OPERATION)
         .and.returnValue(false);
-      schemaController.getClassLevelPermissions
-        .withArgs(CLASS_NAME)
-        .and.returnValue(clp);
+      schemaController.getClassLevelPermissions.withArgs(CLASS_NAME).and.returnValue(clp);
       schemaController.getExpectedType
         .withArgs(CLASS_NAME, 'user')
         .and.returnValue({ type: 'Number' });
@@ -351,19 +333,13 @@ describe('DatabaseController', function () {
 
     it('reduceOrOperation', done => {
       expect(databaseController.reduceOrOperation({ a: 1 })).toEqual({ a: 1 });
-      expect(
-        databaseController.reduceOrOperation({ $or: [{ a: 1 }, { b: 2 }] })
-      ).toEqual({
+      expect(databaseController.reduceOrOperation({ $or: [{ a: 1 }, { b: 2 }] })).toEqual({
         $or: [{ a: 1 }, { b: 2 }],
       });
-      expect(
-        databaseController.reduceOrOperation({ $or: [{ a: 1 }, { a: 2 }] })
-      ).toEqual({
+      expect(databaseController.reduceOrOperation({ $or: [{ a: 1 }, { a: 2 }] })).toEqual({
         $or: [{ a: 1 }, { a: 2 }],
       });
-      expect(
-        databaseController.reduceOrOperation({ $or: [{ a: 1 }, { a: 1 }] })
-      ).toEqual({ a: 1 });
+      expect(databaseController.reduceOrOperation({ $or: [{ a: 1 }, { a: 1 }] })).toEqual({ a: 1 });
       expect(
         databaseController.reduceOrOperation({
           $or: [{ a: 1, b: 2, c: 3 }, { a: 1 }],
@@ -379,19 +355,13 @@ describe('DatabaseController', function () {
 
     it('reduceAndOperation', done => {
       expect(databaseController.reduceAndOperation({ a: 1 })).toEqual({ a: 1 });
-      expect(
-        databaseController.reduceAndOperation({ $and: [{ a: 1 }, { b: 2 }] })
-      ).toEqual({
+      expect(databaseController.reduceAndOperation({ $and: [{ a: 1 }, { b: 2 }] })).toEqual({
         $and: [{ a: 1 }, { b: 2 }],
       });
-      expect(
-        databaseController.reduceAndOperation({ $and: [{ a: 1 }, { a: 2 }] })
-      ).toEqual({
+      expect(databaseController.reduceAndOperation({ $and: [{ a: 1 }, { a: 2 }] })).toEqual({
         $and: [{ a: 1 }, { a: 2 }],
       });
-      expect(
-        databaseController.reduceAndOperation({ $and: [{ a: 1 }, { a: 1 }] })
-      ).toEqual({
+      expect(databaseController.reduceAndOperation({ $and: [{ a: 1 }, { a: 1 }] })).toEqual({
         a: 1,
       });
       expect(
@@ -425,10 +395,7 @@ describe('DatabaseController', function () {
     });
 
     it('should support caseInsensitive without enableCollationCaseComparison option', async () => {
-      const databaseController = new DatabaseController(
-        dummyStorageAdapter,
-        {}
-      );
+      const databaseController = new DatabaseController(dummyStorageAdapter, {});
       const spy = spyOn(dummyStorageAdapter, 'find');
       spy.and.callThrough();
       await databaseController.find('_User', {}, { caseInsensitive: true });
@@ -439,8 +406,7 @@ describe('DatabaseController', function () {
       'should create insensitive indexes without enableCollationCaseComparison',
       async () => {
         await reconfigureServer({
-          databaseURI:
-            'mongodb://localhost:27017/enableCollationCaseComparisonFalse',
+          databaseURI: 'mongodb://localhost:27017/enableCollationCaseComparisonFalse',
           databaseAdapter: undefined,
         });
         const user = new Parse.User();
@@ -450,9 +416,7 @@ describe('DatabaseController', function () {
           email: 'example@example.com',
         });
         const schemas = await Parse.Schema.all();
-        const UserSchema = schemas.find(
-          ({ className }) => className === '_User'
-        );
+        const UserSchema = schemas.find(({ className }) => className === '_User');
         expect(UserSchema.indexes).toEqual({
           _id_: { _id: 1 },
           username_1: { username: 1 },
@@ -468,8 +432,7 @@ describe('DatabaseController', function () {
       async () => {
         await reconfigureServer({
           enableCollationCaseComparison: true,
-          databaseURI:
-            'mongodb://localhost:27017/enableCollationCaseComparisonTrue',
+          databaseURI: 'mongodb://localhost:27017/enableCollationCaseComparisonTrue',
           databaseAdapter: undefined,
         });
         const user = new Parse.User();
@@ -479,9 +442,7 @@ describe('DatabaseController', function () {
           email: 'example@example.com',
         });
         const schemas = await Parse.Schema.all();
-        const UserSchema = schemas.find(
-          ({ className }) => className === '_User'
-        );
+        const UserSchema = schemas.find(({ className }) => className === '_User');
         expect(UserSchema.indexes).toEqual({
           _id_: { _id: 1 },
           username_1: { username: 1 },
@@ -512,10 +473,7 @@ describe('DatabaseController', function () {
     };
 
     it('should not transform email to lower case without convertEmailToLowercase option on create', async () => {
-      const databaseController = new DatabaseController(
-        dummyStorageAdapter,
-        {}
-      );
+      const databaseController = new DatabaseController(dummyStorageAdapter, {});
       const spy = spyOn(dummyStorageAdapter, 'createObject');
       spy.and.callThrough();
       await databaseController.create('_User', {
@@ -543,17 +501,10 @@ describe('DatabaseController', function () {
     });
 
     it('should not transform email to lower case without convertEmailToLowercase option on update', async () => {
-      const databaseController = new DatabaseController(
-        dummyStorageAdapter,
-        {}
-      );
+      const databaseController = new DatabaseController(dummyStorageAdapter, {});
       const spy = spyOn(dummyStorageAdapter, 'findOneAndUpdate');
       spy.and.callThrough();
-      await databaseController.update(
-        '_User',
-        { id: 'example' },
-        { email: 'EXAMPLE@EXAMPLE.COM' }
-      );
+      await databaseController.update('_User', { id: 'example' }, { email: 'EXAMPLE@EXAMPLE.COM' });
       expect(spy.calls.all()[0].args[3]).toEqual({
         email: 'EXAMPLE@EXAMPLE.COM',
       });
@@ -565,11 +516,7 @@ describe('DatabaseController', function () {
       });
       const spy = spyOn(dummyStorageAdapter, 'findOneAndUpdate');
       spy.and.callThrough();
-      await databaseController.update(
-        '_User',
-        { id: 'example' },
-        { email: 'EXAMPLE@EXAMPLE.COM' }
-      );
+      await databaseController.update('_User', { id: 'example' }, { email: 'EXAMPLE@EXAMPLE.COM' });
       expect(spy.calls.all()[0].args[3]).toEqual({
         email: 'example@example.com',
       });
@@ -617,10 +564,7 @@ describe('DatabaseController', function () {
     };
 
     it('should not transform username to lower case without convertUsernameToLowercase option on create', async () => {
-      const databaseController = new DatabaseController(
-        dummyStorageAdapter,
-        {}
-      );
+      const databaseController = new DatabaseController(dummyStorageAdapter, {});
       const spy = spyOn(dummyStorageAdapter, 'createObject');
       spy.and.callThrough();
       await databaseController.create('_User', {
@@ -648,17 +592,10 @@ describe('DatabaseController', function () {
     });
 
     it('should not transform username to lower case without convertUsernameToLowercase option on update', async () => {
-      const databaseController = new DatabaseController(
-        dummyStorageAdapter,
-        {}
-      );
+      const databaseController = new DatabaseController(dummyStorageAdapter, {});
       const spy = spyOn(dummyStorageAdapter, 'findOneAndUpdate');
       spy.and.callThrough();
-      await databaseController.update(
-        '_User',
-        { id: 'example' },
-        { username: 'EXAMPLE' }
-      );
+      await databaseController.update('_User', { id: 'example' }, { username: 'EXAMPLE' });
       expect(spy.calls.all()[0].args[3]).toEqual({
         username: 'EXAMPLE',
       });
@@ -670,11 +607,7 @@ describe('DatabaseController', function () {
       });
       const spy = spyOn(dummyStorageAdapter, 'findOneAndUpdate');
       spy.and.callThrough();
-      await databaseController.update(
-        '_User',
-        { id: 'example' },
-        { username: 'EXAMPLE' }
-      );
+      await databaseController.update('_User', { id: 'example' }, { username: 'EXAMPLE' });
       expect(spy.calls.all()[0].args[3]).toEqual({
         username: 'example',
       });
@@ -699,15 +632,7 @@ describe('DatabaseController', function () {
 });
 
 function buildCLP(pointerNames) {
-  const OPERATIONS = [
-    'count',
-    'find',
-    'get',
-    'create',
-    'update',
-    'delete',
-    'addField',
-  ];
+  const OPERATIONS = ['count', 'find', 'get', 'create', 'update', 'delete', 'addField'];
 
   const clp = OPERATIONS.reduce((acc, op) => {
     acc[op] = {};

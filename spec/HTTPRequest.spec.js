@@ -119,9 +119,7 @@ describe('httpRequest', () => {
     const result = httpRequest.encodeBody(options);
 
     expect(result.body).toEqual('foo=bar');
-    expect(result.headers['Content-Type']).toEqual(
-      'application/x-www-form-urlencoded'
-    );
+    expect(result.headers['Content-Type']).toEqual('application/x-www-form-urlencoded');
   });
 
   it('should encode a JSON body', () => {

@@ -6,8 +6,7 @@ const ParseServer = require('../lib/index');
 const Config = require('../lib/Config');
 const express = require('express');
 
-const MongoStorageAdapter =
-  require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
+const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
 
 describe('server', () => {
   it('requires a master key and app id', done => {
@@ -39,8 +38,7 @@ describe('server', () => {
       request({
         url: 'http://localhost:8378/1/classes/TestObject',
         headers: {
-          Authorization:
-            'Basic ' + Buffer.from('test:' + 'test').toString('base64'),
+          Authorization: 'Basic ' + Buffer.from('test:' + 'test').toString('base64'),
         },
       }).then(response => {
         expect(response.status).toEqual(200);
@@ -54,9 +52,7 @@ describe('server', () => {
       request({
         url: 'http://localhost:8378/1/classes/TestObject',
         headers: {
-          Authorization:
-            'Basic ' +
-            Buffer.from('test:javascript-key=' + 'test').toString('base64'),
+          Authorization: 'Basic ' + Buffer.from('test:javascript-key=' + 'test').toString('base64'),
         },
       }).then(response => {
         expect(response.status).toEqual(200);
@@ -150,9 +146,7 @@ describe('server', () => {
         },
         publicServerURL: 'http://localhost:8378/1',
       };
-      await expectAsync(reconfigureServer(options)).toBeRejected(
-        'MockMailAdapterConstructor'
-      );
+      await expectAsync(reconfigureServer(options)).toBeRejected('MockMailAdapterConstructor');
     });
   });
 
@@ -332,13 +326,9 @@ describe('server', () => {
 
   it('has createLiveQueryServer', done => {
     // original implementation through the factory
-    expect(typeof ParseServer.ParseServer.createLiveQueryServer).toEqual(
-      'function'
-    );
+    expect(typeof ParseServer.ParseServer.createLiveQueryServer).toEqual('function');
     // For import calls
-    expect(typeof ParseServer.default.createLiveQueryServer).toEqual(
-      'function'
-    );
+    expect(typeof ParseServer.default.createLiveQueryServer).toEqual('function');
     done();
   });
 
@@ -356,13 +346,11 @@ describe('server', () => {
   });
 
   it('properly gives publicServerURL when set', done => {
-    reconfigureServer({ publicServerURL: 'https://myserver.com/1' }).then(
-      () => {
-        const config = Config.get('test', 'http://localhost:8378/1');
-        expect(config.mount).toEqual('https://myserver.com/1');
-        done();
-      }
-    );
+    reconfigureServer({ publicServerURL: 'https://myserver.com/1' }).then(() => {
+      const config = Config.get('test', 'http://localhost:8378/1');
+      expect(config.mount).toEqual('https://myserver.com/1');
+      done();
+    });
   });
 
   it('properly removes trailing slash in mount', done => {
@@ -375,9 +363,7 @@ describe('server', () => {
 
   it('should throw when getting invalid mount', done => {
     reconfigureServer({ publicServerURL: 'blabla:/some' }).catch(error => {
-      expect(error).toEqual(
-        'publicServerURL should be a valid HTTPS URL starting with https://'
-      );
+      expect(error).toEqual('publicServerURL should be a valid HTTPS URL starting with https://');
       done();
     });
   });
@@ -442,9 +428,9 @@ describe('server', () => {
 
   it('fails if default limit is wrong type', async () => {
     for (const value of ['invalid', {}, [], true]) {
-      await expectAsync(
-        reconfigureServer({ defaultLimit: value })
-      ).toBeRejectedWith('Default limit must be a number.');
+      await expectAsync(reconfigureServer({ defaultLimit: value })).toBeRejectedWith(
+        'Default limit must be a number.'
+      );
     }
   });
 
@@ -466,14 +452,12 @@ describe('server', () => {
   });
 
   it('fails if you provides invalid ip in masterKeyIps', done => {
-    reconfigureServer({ masterKeyIps: ['invalidIp', '1.2.3.4'] }).catch(
-      error => {
-        expect(error).toEqual(
-          'The Parse Server option "masterKeyIps" contains an invalid IP address "invalidIp".'
-        );
-        done();
-      }
-    );
+    reconfigureServer({ masterKeyIps: ['invalidIp', '1.2.3.4'] }).catch(error => {
+      expect(error).toEqual(
+        'The Parse Server option "masterKeyIps" contains an invalid IP address "invalidIp".'
+      );
+      done();
+    });
   });
 
   it('should succeed if you provide valid ip in masterKeyIps', done => {
@@ -484,10 +468,7 @@ describe('server', () => {
 
   it('should set default masterKeyIps for IPv4 and IPv6 localhost', () => {
     const definitions = require('../lib/Options/Definitions.js');
-    expect(definitions.ParseServerOptions.masterKeyIps.default).toEqual([
-      '127.0.0.1',
-      '::1',
-    ]);
+    expect(definitions.ParseServerOptions.masterKeyIps.default).toEqual(['127.0.0.1', '::1']);
   });
 
   it('should load a middleware', done => {
@@ -577,10 +558,7 @@ describe('server', () => {
       url: 'http://localhost:12701/parse/classes/TestObject',
     }).catch(e => new Parse.Error(e.data.code, e.data.error));
     expect(response).toEqual(
-      new Parse.Error(
-        Parse.Error.INTERNAL_SERVER_ERROR,
-        'Invalid server state: initialized'
-      )
+      new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid server state: initialized')
     );
     const health = await request({
       url: 'http://localhost:12701/parse/health',
@@ -634,15 +612,11 @@ describe('server', () => {
 
     const config = Config.get(Parse.applicationId);
     expect(config.masterKeyCache.masterKey).toEqual('testMasterKey');
-    expect(config.masterKeyCache.expiresAt.getTime()).toBeGreaterThan(
-      Date.now()
-    );
+    expect(config.masterKeyCache.expiresAt.getTime()).toBeGreaterThan(Date.now());
   });
 
   it('should not reload if ttl is not set', async () => {
-    const masterKeySpy = jasmine
-      .createSpy()
-      .and.returnValue(Promise.resolve('initialMasterKey'));
+    const masterKeySpy = jasmine.createSpy().and.returnValue(Promise.resolve('initialMasterKey'));
 
     await reconfigureServer({
       masterKey: masterKeySpy,
@@ -667,10 +641,7 @@ describe('server', () => {
   it('should reload masterKey if ttl is set and expired', async () => {
     const masterKeySpy = jasmine
       .createSpy()
-      .and.returnValues(
-        Promise.resolve('firstMasterKey'),
-        Promise.resolve('secondMasterKey')
-      );
+      .and.returnValues(Promise.resolve('firstMasterKey'), Promise.resolve('secondMasterKey'));
 
     await reconfigureServer({
       masterKey: masterKeySpy,
@@ -703,9 +674,7 @@ describe('server', () => {
           sub: 'the_user_id',
         };
         const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-        spyOn(authUtils, 'getHeaderFromToken').and.callFake(
-          () => fakeDecodedToken
-        );
+        spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
         spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
         const user = new Parse.User();
         user

@@ -116,10 +116,7 @@ function _UnsafeRestQuery(
   if (!this.auth.isMaster) {
     if (this.className == '_Session') {
       if (!this.auth.user) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_SESSION_TOKEN,
-          'Invalid session token'
-        );
+        throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
       }
       this.restWhere = {
         $and: [
@@ -266,10 +263,7 @@ function _UnsafeRestQuery(
       case 'subqueryReadPreference':
         break;
       default:
-        throw new Parse.Error(
-          Parse.Error.INVALID_JSON,
-          'bad option: ' + option
-        );
+        throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad option: ' + option);
     }
   }
 }
@@ -387,9 +381,7 @@ _UnsafeRestQuery.prototype.getUserAndRoleACL = function () {
 
   if (this.auth.user) {
     return this.auth.getUserRoles().then(roles => {
-      this.findOptions.acl = this.findOptions.acl.concat(roles, [
-        this.auth.user.id,
-      ]);
+      this.findOptions.acl = this.findOptions.acl.concat(roles, [this.auth.user.id]);
       return;
     });
   } else {
@@ -427,9 +419,7 @@ _UnsafeRestQuery.prototype.validateClientClassCreation = function () {
         if (hasClass !== true) {
           throw new Parse.Error(
             Parse.Error.OPERATION_FORBIDDEN,
-            'This user is not allowed to access ' +
-              'non-existent class: ' +
-              this.className
+            'This user is not allowed to access ' + 'non-existent class: ' + this.className
           );
         }
       });
@@ -468,10 +458,7 @@ _UnsafeRestQuery.prototype.replaceInQuery = async function () {
   // The inQuery value must have precisely two keys - where and className
   var inQueryValue = inQueryObject['$inQuery'];
   if (!inQueryValue.where || !inQueryValue.className) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_QUERY,
-      'improper usage of $inQuery'
-    );
+    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'improper usage of $inQuery');
   }
 
   const additionalOptions = {
@@ -480,8 +467,7 @@ _UnsafeRestQuery.prototype.replaceInQuery = async function () {
 
   if (this.restOptions.subqueryReadPreference) {
     additionalOptions.readPreference = this.restOptions.subqueryReadPreference;
-    additionalOptions.subqueryReadPreference =
-      this.restOptions.subqueryReadPreference;
+    additionalOptions.subqueryReadPreference = this.restOptions.subqueryReadPreference;
   } else if (this.restOptions.readPreference) {
     additionalOptions.readPreference = this.restOptions.readPreference;
   }
@@ -532,10 +518,7 @@ _UnsafeRestQuery.prototype.replaceNotInQuery = async function () {
   // The notInQuery value must have precisely two keys - where and className
   var notInQueryValue = notInQueryObject['$notInQuery'];
   if (!notInQueryValue.where || !notInQueryValue.className) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_QUERY,
-      'improper usage of $notInQuery'
-    );
+    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'improper usage of $notInQuery');
   }
 
   const additionalOptions = {
@@ -544,8 +527,7 @@ _UnsafeRestQuery.prototype.replaceNotInQuery = async function () {
 
   if (this.restOptions.subqueryReadPreference) {
     additionalOptions.readPreference = this.restOptions.subqueryReadPreference;
-    additionalOptions.subqueryReadPreference =
-      this.restOptions.subqueryReadPreference;
+    additionalOptions.subqueryReadPreference = this.restOptions.subqueryReadPreference;
   } else if (this.restOptions.readPreference) {
     additionalOptions.readPreference = this.restOptions.readPreference;
   }
@@ -609,10 +591,7 @@ _UnsafeRestQuery.prototype.replaceSelect = async function () {
     !selectValue.query.className ||
     Object.keys(selectValue).length !== 2
   ) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_QUERY,
-      'improper usage of $select'
-    );
+    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'improper usage of $select');
   }
 
   const additionalOptions = {
@@ -621,8 +600,7 @@ _UnsafeRestQuery.prototype.replaceSelect = async function () {
 
   if (this.restOptions.subqueryReadPreference) {
     additionalOptions.readPreference = this.restOptions.subqueryReadPreference;
-    additionalOptions.subqueryReadPreference =
-      this.restOptions.subqueryReadPreference;
+    additionalOptions.subqueryReadPreference = this.restOptions.subqueryReadPreference;
   } else if (this.restOptions.readPreference) {
     additionalOptions.readPreference = this.restOptions.readPreference;
   }
@@ -677,10 +655,7 @@ _UnsafeRestQuery.prototype.replaceDontSelect = async function () {
     !dontSelectValue.query.className ||
     Object.keys(dontSelectValue).length !== 2
   ) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_QUERY,
-      'improper usage of $dontSelect'
-    );
+    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'improper usage of $dontSelect');
   }
   const additionalOptions = {
     redirectClassNameForKey: dontSelectValue.query.redirectClassNameForKey,
@@ -688,8 +663,7 @@ _UnsafeRestQuery.prototype.replaceDontSelect = async function () {
 
   if (this.restOptions.subqueryReadPreference) {
     additionalOptions.readPreference = this.restOptions.subqueryReadPreference;
-    additionalOptions.subqueryReadPreference =
-      this.restOptions.subqueryReadPreference;
+    additionalOptions.subqueryReadPreference = this.restOptions.subqueryReadPreference;
   } else if (this.restOptions.readPreference) {
     additionalOptions.readPreference = this.restOptions.readPreference;
   }
@@ -705,11 +679,7 @@ _UnsafeRestQuery.prototype.replaceDontSelect = async function () {
   });
 
   return subquery.execute().then(response => {
-    transformDontSelect(
-      dontSelectObject,
-      dontSelectValue.key,
-      response.results
-    );
+    transformDontSelect(dontSelectObject, dontSelectValue.key, response.results);
     // Keep replacing $dontSelect clauses
     return this.replaceDontSelect();
   });
@@ -810,11 +780,9 @@ _UnsafeRestQuery.prototype.runCount = function () {
   this.findOptions.count = true;
   delete this.findOptions.skip;
   delete this.findOptions.limit;
-  return this.config.database
-    .find(this.className, this.restWhere, this.findOptions)
-    .then(c => {
-      this.response.count = c;
-    });
+  return this.config.database.find(this.className, this.restWhere, this.findOptions).then(c => {
+    this.response.count = c;
+  });
 };
 
 _UnsafeRestQuery.prototype.denyProtectedFields = async function () {
@@ -854,8 +822,7 @@ _UnsafeRestQuery.prototype.handleIncludeAll = function () {
       const keyFields = [];
       for (const field in schema.fields) {
         if (
-          (schema.fields[field].type &&
-            schema.fields[field].type === 'Pointer') ||
+          (schema.fields[field].type && schema.fields[field].type === 'Pointer') ||
           (schema.fields[field].type && schema.fields[field].type === 'Array')
         ) {
           includeFields.push([field]);
@@ -1047,8 +1014,7 @@ function includePath(config, auth, response, path, context, restOptions = {}) {
 
   if (restOptions.includeReadPreference) {
     includeRestOptions.readPreference = restOptions.includeReadPreference;
-    includeRestOptions.includeReadPreference =
-      restOptions.includeReadPreference;
+    includeRestOptions.includeReadPreference = restOptions.includeReadPreference;
   } else if (restOptions.readPreference) {
     includeRestOptions.readPreference = restOptions.readPreference;
   }
@@ -1062,8 +1028,7 @@ function includePath(config, auth, response, path, context, restOptions = {}) {
       where = { objectId: { $in: objectIds } };
     }
     const query = await RestQuery({
-      method:
-        objectIds.length === 1 ? RestQuery.Method.get : RestQuery.Method.find,
+      method: objectIds.length === 1 ? RestQuery.Method.get : RestQuery.Method.find,
       config,
       auth,
       className,

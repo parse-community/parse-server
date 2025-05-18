@@ -18,11 +18,7 @@ export class AnalyticsController extends AdaptableController {
   trackEvent(req) {
     return Promise.resolve()
       .then(() => {
-        return this.adapter.trackEvent(
-          req.params.eventName,
-          req.body || {},
-          req
-        );
+        return this.adapter.trackEvent(req.params.eventName, req.body || {}, req);
       })
       .then(response => {
         return { response: response || {} };

@@ -39,12 +39,7 @@ describe_only_db('mongo')('revocable sessions', () => {
             return schemaController.getOneSchema('_User', true);
           })
           .then(schema => {
-            return config.database.adapter.find(
-              '_User',
-              schema,
-              { objectId: '1234567890' },
-              {}
-            );
+            return config.database.adapter.find('_User', schema, { objectId: '1234567890' }, {});
           })
           .then(results => {
             expect(results.length).toBe(1);

@@ -6,10 +6,7 @@ import UsersRouter from './UsersRouter';
 
 export class AggregateRouter extends ClassesRouter {
   async handleFind(req) {
-    const body = Object.assign(
-      req.body || {},
-      ClassesRouter.JSONFromQuery(req.query)
-    );
+    const body = Object.assign(req.body || {}, ClassesRouter.JSONFromQuery(req.query));
     const options = {};
     if (body.distinct) {
       options.distinct = String(body.distinct);
@@ -108,10 +105,7 @@ export class AggregateRouter extends ClassesRouter {
       return;
     }
     if (stageName[0] !== '$') {
-      throw new Parse.Error(
-        Parse.Error.INVALID_QUERY,
-        `Invalid aggregate stage '${stageName}'.`
-      );
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid aggregate stage '${stageName}'.`);
     }
     if (stageName === '$group') {
       if (Object.prototype.hasOwnProperty.call(stage[stageName], 'objectId')) {
@@ -131,14 +125,9 @@ export class AggregateRouter extends ClassesRouter {
   }
 
   mountRoutes() {
-    this.route(
-      'GET',
-      '/aggregate/:className',
-      middleware.promiseEnforceMasterKeyAccess,
-      req => {
-        return this.handleFind(req);
-      }
-    );
+    this.route('GET', '/aggregate/:className', middleware.promiseEnforceMasterKeyAccess, req => {
+      return this.handleFind(req);
+    });
   }
 }
 

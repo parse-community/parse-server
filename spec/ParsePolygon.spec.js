@@ -62,49 +62,46 @@ describe('Parse.Polygon testing', () => {
       }, done.fail);
   });
 
-  it_id('3019353b-d5b3-4e53-bcb1-716418328bdd')(it)(
-    'polygon equalTo (open/closed) path',
-    done => {
-      const openPoints = [
-        [0, 0],
-        [0, 1],
-        [1, 1],
-        [1, 0],
-      ];
-      const closedPoints = [
-        [0, 0],
-        [0, 1],
-        [1, 1],
-        [1, 0],
-        [0, 0],
-      ];
-      const openPolygon = new Parse.Polygon(openPoints);
-      const closedPolygon = new Parse.Polygon(closedPoints);
-      const obj = new TestObject();
-      obj.set('polygon', openPolygon);
-      return obj
-        .save()
-        .then(() => {
-          const query = new Parse.Query(TestObject);
-          query.equalTo('polygon', openPolygon);
-          return query.find();
-        })
-        .then(results => {
-          const polygon = results[0].get('polygon');
-          equal(polygon instanceof Parse.Polygon, true);
-          equal(polygon.coordinates, closedPoints);
-          const query = new Parse.Query(TestObject);
-          query.equalTo('polygon', closedPolygon);
-          return query.find();
-        })
-        .then(results => {
-          const polygon = results[0].get('polygon');
-          equal(polygon instanceof Parse.Polygon, true);
-          equal(polygon.coordinates, closedPoints);
-          done();
-        }, done.fail);
-    }
-  );
+  it_id('3019353b-d5b3-4e53-bcb1-716418328bdd')(it)('polygon equalTo (open/closed) path', done => {
+    const openPoints = [
+      [0, 0],
+      [0, 1],
+      [1, 1],
+      [1, 0],
+    ];
+    const closedPoints = [
+      [0, 0],
+      [0, 1],
+      [1, 1],
+      [1, 0],
+      [0, 0],
+    ];
+    const openPolygon = new Parse.Polygon(openPoints);
+    const closedPolygon = new Parse.Polygon(closedPoints);
+    const obj = new TestObject();
+    obj.set('polygon', openPolygon);
+    return obj
+      .save()
+      .then(() => {
+        const query = new Parse.Query(TestObject);
+        query.equalTo('polygon', openPolygon);
+        return query.find();
+      })
+      .then(results => {
+        const polygon = results[0].get('polygon');
+        equal(polygon instanceof Parse.Polygon, true);
+        equal(polygon.coordinates, closedPoints);
+        const query = new Parse.Query(TestObject);
+        query.equalTo('polygon', closedPolygon);
+        return query.find();
+      })
+      .then(results => {
+        const polygon = results[0].get('polygon');
+        equal(polygon instanceof Parse.Polygon, true);
+        equal(polygon.coordinates, closedPoints);
+        done();
+      }, done.fail);
+  });
 
   it('polygon update', done => {
     const oldCoords = [

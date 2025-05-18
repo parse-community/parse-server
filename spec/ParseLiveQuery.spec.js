@@ -1,16 +1,11 @@
 'use strict';
 const http = require('http');
 const Auth = require('../lib/Auth');
-const UserController =
-  require('../lib/Controllers/UserController').UserController;
+const UserController = require('../lib/Controllers/UserController').UserController;
 const Config = require('../lib/Config');
 const ParseServer = require('../lib/index').ParseServer;
 const triggers = require('../lib/triggers');
-const {
-  resolvingPromise,
-  sleep,
-  getConnectionsCount,
-} = require('../lib/TestUtils');
+const { resolvingPromise, sleep, getConnectionsCount } = require('../lib/TestUtils');
 const request = require('../lib/request');
 const validatorFail = () => {
   throw 'you are not authorized';
@@ -21,8 +16,7 @@ describe('ParseLiveQuery', function () {
     Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
   });
   afterEach(async () => {
-    const client =
-      await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
     await client.close();
   });
   it('access user on onLiveQueryEvent disconnect', async done => {
@@ -41,8 +35,7 @@ describe('ParseLiveQuery', function () {
     await requestedUser.signUp();
     const query = new Parse.Query(TestObject);
     await query.subscribe();
-    const client =
-      await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
     await client.close();
   });
 
@@ -582,9 +575,7 @@ describe('ParseLiveQuery', function () {
     });
     const query = new Parse.Query(TestObject);
     query.equalTo('objectId', object.id);
-    await expectAsync(query.subscribe()).toBeRejectedWith(
-      new Error('You shall not pass!')
-    );
+    await expectAsync(query.subscribe()).toBeRejectedWith(new Error('You shall not pass!'));
   });
 
   it('can log on beforeConnect throw', async () => {
@@ -627,9 +618,7 @@ describe('ParseLiveQuery', function () {
     });
     const query = new Parse.Query(TestObject);
     query.equalTo('objectId', object.id);
-    await expectAsync(query.subscribe()).toBeRejectedWith(
-      new Error('You shall not subscribe!')
-    );
+    await expectAsync(query.subscribe()).toBeRejectedWith(new Error('You shall not subscribe!'));
   });
 
   it('can log on beforeSubscribe error', async () => {
@@ -650,9 +639,7 @@ describe('ParseLiveQuery', function () {
     });
 
     const query = new Parse.Query(TestObject);
-    await expectAsync(query.subscribe()).toBeRejectedWith(
-      new Error('foo is not defined')
-    );
+    await expectAsync(query.subscribe()).toBeRejectedWith(new Error('foo is not defined'));
 
     expect(logger.error).toHaveBeenCalledWith(
       `Failed running beforeSubscribe on TestObject for session undefined with:\n Error: {"message":"foo is not defined","code":141}`
@@ -895,9 +882,7 @@ describe('ParseLiveQuery', function () {
       startLiveQueryServer: true,
     });
     const query = new Parse.Query(Parse.Session);
-    await expectAsync(query.subscribe()).toBeRejectedWith(
-      new Error('Invalid session token')
-    );
+    await expectAsync(query.subscribe()).toBeRejectedWith(new Error('Invalid session token'));
   });
 
   it_id('4ccc9508-ae6a-46ec-932a-9f5e49ab3b9e')(it)(
@@ -925,8 +910,7 @@ describe('ParseLiveQuery', function () {
       // 0x89 = 10001001 = ping
       // 0xfe = 11111110 = first bit is masking the remaining 7 are 1111110 or 126 the payload length
       // https://tools.ietf.org/html/rfc6455#section-5.2
-      const client =
-        await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+      const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
       client.socket._socket.write(Buffer.from([0x89, 0xfe]));
 
       subscription.on('update', async object => {
@@ -1177,53 +1161,45 @@ describe('ParseLiveQuery', function () {
     await object.save();
   });
 
-  it_id('2f95d8a9-7675-45ba-a4a6-e45cb7efb1fb')(it)(
-    'does shutdown liveQuery server',
-    async () => {
-      await reconfigureServer({ appId: 'test_app_id' });
-      const config = {
-        appId: 'hello_test',
-        masterKey: 'world',
-        port: 1345,
-        mountPath: '/1',
-        serverURL: 'http://localhost:1345/1',
-        liveQuery: {
-          classNames: ['Yolo'],
-        },
-        startLiveQueryServer: true,
-        verbose: false,
-        silent: true,
-      };
-      if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
-        config.databaseAdapter = new databaseAdapter.constructor({
-          uri: databaseURI,
-          collectionPrefix: 'test_',
-        });
-        config.filesAdapter = defaultConfiguration.filesAdapter;
-      }
-      const server = await ParseServer.startApp(config);
-      const client =
-        await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
-      client.serverURL = 'ws://localhost:1345/1';
-      const query = await new Parse.Query('Yolo').subscribe();
-      let liveQueryConnectionCount = await getConnectionsCount(
-        server.liveQueryServer.server
-      );
-      expect(liveQueryConnectionCount > 0).toBe(true);
-      await Promise.all([
-        server.handleShutdown(),
-        new Promise(resolve => query.on('close', resolve)),
-      ]);
-      await sleep(100);
-      expect(server.liveQueryServer.server.address()).toBeNull();
-      expect(server.liveQueryServer.subscriber.isOpen).toBeFalse();
-
-      liveQueryConnectionCount = await getConnectionsCount(
-        server.liveQueryServer.server
-      );
-      expect(liveQueryConnectionCount).toBe(0);
+  it_id('2f95d8a9-7675-45ba-a4a6-e45cb7efb1fb')(it)('does shutdown liveQuery server', async () => {
+    await reconfigureServer({ appId: 'test_app_id' });
+    const config = {
+      appId: 'hello_test',
+      masterKey: 'world',
+      port: 1345,
+      mountPath: '/1',
+      serverURL: 'http://localhost:1345/1',
+      liveQuery: {
+        classNames: ['Yolo'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    };
+    if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
+      config.databaseAdapter = new databaseAdapter.constructor({
+        uri: databaseURI,
+        collectionPrefix: 'test_',
+      });
+      config.filesAdapter = defaultConfiguration.filesAdapter;
     }
-  );
+    const server = await ParseServer.startApp(config);
+    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+    client.serverURL = 'ws://localhost:1345/1';
+    const query = await new Parse.Query('Yolo').subscribe();
+    let liveQueryConnectionCount = await getConnectionsCount(server.liveQueryServer.server);
+    expect(liveQueryConnectionCount > 0).toBe(true);
+    await Promise.all([
+      server.handleShutdown(),
+      new Promise(resolve => query.on('close', resolve)),
+    ]);
+    await sleep(100);
+    expect(server.liveQueryServer.server.address()).toBeNull();
+    expect(server.liveQueryServer.subscriber.isOpen).toBeFalse();
+
+    liveQueryConnectionCount = await getConnectionsCount(server.liveQueryServer.server);
+    expect(liveQueryConnectionCount).toBe(0);
+  });
 
   it_id('45655b74-716f-4fa1-a058-67eb21f3c3db')(it)(
     'does shutdown separate liveQuery server',
@@ -1261,8 +1237,7 @@ describe('ParseLiveQuery', function () {
       expect(parseServer.liveQueryServer.server).not.toBe(parseServer.server);
 
       // Open a connection to the liveQuery server
-      const client =
-        await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+      const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
       client.serverURL = 'ws://localhost:1346/1';
       const query = await new Parse.Query('Yolo').subscribe();
 
@@ -1281,9 +1256,7 @@ describe('ParseLiveQuery', function () {
       expect(health.status).toBe('ok');
 
       let parseConnectionCount = await getConnectionsCount(parseServer.server);
-      let liveQueryConnectionCount = await getConnectionsCount(
-        parseServer.liveQueryServer.server
-      );
+      let liveQueryConnectionCount = await getConnectionsCount(parseServer.liveQueryServer.server);
 
       expect(parseConnectionCount > 0).toBe(true);
       expect(liveQueryConnectionCount > 0).toBe(true);
@@ -1297,9 +1270,7 @@ describe('ParseLiveQuery', function () {
       expect(parseServer.liveQueryServer.subscriber.isOpen).toBeFalse();
 
       parseConnectionCount = await getConnectionsCount(parseServer.server);
-      liveQueryConnectionCount = await getConnectionsCount(
-        parseServer.liveQueryServer.server
-      );
+      liveQueryConnectionCount = await getConnectionsCount(parseServer.liveQueryServer.server);
       expect(parseConnectionCount).toBe(0);
       expect(liveQueryConnectionCount).toBe(0);
     }

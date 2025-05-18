@@ -146,9 +146,7 @@ describe('test validate_receipt endpoint', () => {
       fail('Body is not an object');
     } else {
       expect(body.status).toBe(21002);
-      expect(body.error).toBe(
-        'The data in the receipt-data property was malformed or missing.'
-      );
+      expect(body.error).toBe('The data in the receipt-data property was malformed or missing.');
     }
   });
 
@@ -178,9 +176,7 @@ describe('test validate_receipt endpoint', () => {
         return product.save();
       })
       .then(function (productAgain) {
-        expect(productAgain.get('downloadName')).toEqual(
-          productAgain.get('download').name()
-        );
+        expect(productAgain.get('downloadName')).toEqual(productAgain.get('download').name());
         expect(productAgain.get('title')).toEqual('a new title');
         done();
       })

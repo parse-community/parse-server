@@ -23,10 +23,7 @@ describe('DefinedSchemas', () => {
     it('should keep default fields if not provided', async () => {
       const server = await reconfigureServer();
       // Will perform create
-      await new DefinedSchemas(
-        { definitions: [{ className: 'Test' }] },
-        server.config
-      ).execute();
+      await new DefinedSchemas({ definitions: [{ className: 'Test' }] }, server.config).execute();
       let schema = await new Parse.Schema('Test').get();
       const expectedFields = {
         objectId: { type: 'String' },
@@ -38,10 +35,7 @@ describe('DefinedSchemas', () => {
 
       await server.config.schemaCache.clear();
       // Will perform update
-      await new DefinedSchemas(
-        { definitions: [{ className: 'Test' }] },
-        server.config
-      ).execute();
+      await new DefinedSchemas({ definitions: [{ className: 'Test' }] }, server.config).execute();
       schema = await new Parse.Schema('Test').get();
       expect(schema.fields).toEqual(expectedFields);
     });
@@ -209,9 +203,7 @@ describe('DefinedSchemas', () => {
 
       await new DefinedSchemas(
         {
-          definitions: [
-            { className: 'Test', fields: { aField: { type: 'String' } } },
-          ],
+          definitions: [{ className: 'Test', fields: { aField: { type: 'String' } } }],
         },
         server.config
       ).execute();
@@ -219,10 +211,7 @@ describe('DefinedSchemas', () => {
       let schema = await new Parse.Schema('Test').get();
       expect(schema.fields.aField).toBeDefined();
 
-      await new DefinedSchemas(
-        { definitions: [{ className: 'Test' }] },
-        server.config
-      ).execute();
+      await new DefinedSchemas({ definitions: [{ className: 'Test' }] }, server.config).execute();
 
       schema = await new Parse.Schema('Test').get();
       expect(schema.fields).toEqual({
@@ -238,9 +227,7 @@ describe('DefinedSchemas', () => {
 
       await new DefinedSchemas(
         {
-          definitions: [
-            { className: 'Test', fields: { aField: { type: 'String' } } },
-          ],
+          definitions: [{ className: 'Test', fields: { aField: { type: 'String' } } }],
         },
         server.config
       ).execute();
@@ -266,9 +253,7 @@ describe('DefinedSchemas', () => {
 
       await new DefinedSchemas(
         {
-          definitions: [
-            { className: 'Test', fields: { aField: { type: 'String' } } },
-          ],
+          definitions: [{ className: 'Test', fields: { aField: { type: 'String' } } }],
         },
         server.config
       ).execute();
@@ -282,9 +267,7 @@ describe('DefinedSchemas', () => {
       await new DefinedSchemas(
         {
           recreateModifiedFields: true,
-          definitions: [
-            { className: 'Test', fields: { aField: { type: 'Number' } } },
-          ],
+          definitions: [{ className: 'Test', fields: { aField: { type: 'Number' } } }],
         },
         server.config
       ).execute();
@@ -300,9 +283,7 @@ describe('DefinedSchemas', () => {
 
       await new DefinedSchemas(
         {
-          definitions: [
-            { className: 'Test', fields: { aField: { type: 'String' } } },
-          ],
+          definitions: [{ className: 'Test', fields: { aField: { type: 'String' } } }],
         },
         server.config
       ).execute();
@@ -315,9 +296,7 @@ describe('DefinedSchemas', () => {
 
       await new DefinedSchemas(
         {
-          definitions: [
-            { className: 'Test', fields: { aField: { type: 'Number' } } },
-          ],
+          definitions: [{ className: 'Test', fields: { aField: { type: 'Number' } } }],
         },
         server.config
       ).execute();
@@ -333,9 +312,7 @@ describe('DefinedSchemas', () => {
 
       await new DefinedSchemas(
         {
-          definitions: [
-            { className: 'Test', fields: { aField: { type: 'String' } } },
-          ],
+          definitions: [{ className: 'Test', fields: { aField: { type: 'String' } } }],
         },
         server.config
       ).execute();
@@ -481,12 +458,7 @@ describe('DefinedSchemas', () => {
 
     it('should detect protected indexes for _User class', () => {
       const definedSchema = new DefinedSchemas({}, {});
-      const protectedUserIndexes = [
-        '_id_',
-        'case_insensitive_email',
-        'username_1',
-        'email_1',
-      ];
+      const protectedUserIndexes = ['_id_', 'case_insensitive_email', 'username_1', 'email_1'];
       protectedUserIndexes.forEach(field => {
         expect(definedSchema.isProtectedIndex('_User', field)).toEqual(true);
       });
@@ -501,12 +473,8 @@ describe('DefinedSchemas', () => {
 
     it('should detect protected indexes for _Idempotency class', () => {
       const definedSchema = new DefinedSchemas({}, {});
-      expect(definedSchema.isProtectedIndex('_Idempotency', 'reqId_1')).toEqual(
-        true
-      );
-      expect(definedSchema.isProtectedIndex('_Idempotency', 'test')).toEqual(
-        false
-      );
+      expect(definedSchema.isProtectedIndex('_Idempotency', 'reqId_1')).toEqual(true);
+      expect(definedSchema.isProtectedIndex('_Idempotency', 'test')).toEqual(false);
     });
 
     it('should not detect protected indexes on user defined class', () => {
@@ -519,13 +487,9 @@ describe('DefinedSchemas', () => {
         'name_1',
       ];
       protectedIndexes.forEach(field => {
-        expect(definedSchema.isProtectedIndex('ExampleClass', field)).toEqual(
-          false
-        );
+        expect(definedSchema.isProtectedIndex('ExampleClass', field)).toEqual(false);
       });
-      expect(definedSchema.isProtectedIndex('ExampleClass', '_id_')).toEqual(
-        true
-      );
+      expect(definedSchema.isProtectedIndex('ExampleClass', '_id_')).toEqual(true);
     });
   });
 
@@ -648,13 +612,9 @@ describe('DefinedSchemas', () => {
     const schemas = await Parse.Schema.all();
     // Role could be flaky since all system classes are not ensured
     // at start up by the DefinedSchema system
-    expect(
-      schemas.filter(({ className }) => className !== '_Role').length
-    ).toEqual(3);
+    expect(schemas.filter(({ className }) => className !== '_Role').length).toEqual(3);
 
-    await expectAsync(
-      new Parse.Schema('TheNewTest').save()
-    ).toBeRejectedWithError(
+    await expectAsync(new Parse.Schema('TheNewTest').save()).toBeRejectedWithError(
       'Cannot perform this operation when schemas options is used.'
     );
 
@@ -714,16 +674,12 @@ describe('DefinedSchemas', () => {
 
     await new DefinedSchemas(
       {
-        definitions: [
-          { className: 'Test', fields: { aField: { type: 'String' } } },
-        ],
+        definitions: [{ className: 'Test', fields: { aField: { type: 'String' } } }],
       },
       server.config
     ).execute();
 
-    expect(logger.error).toHaveBeenCalledWith(
-      `Failed to run migrations: ${error.toString()}`
-    );
+    expect(logger.error).toHaveBeenCalledWith(`Failed to run migrations: ${error.toString()}`);
   });
 
   it_id('a18bf4f2-25c8-4de3-b986-19cb1ab163b8')(it)(
@@ -755,8 +711,7 @@ describe('DefinedSchemas', () => {
       ]);
 
       const testSchema = (await Parse.Schema.all()).find(
-        ({ className }) =>
-          className === migrationOptions.definitions[0].className
+        ({ className }) => className === migrationOptions.definitions[0].className
       );
 
       expect(testSchema.indexes.aField).toEqual({ aField: 1 });

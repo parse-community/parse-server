@@ -5,8 +5,7 @@ const dd = require('deep-diff');
 const Config = require('../lib/Config');
 const request = require('../lib/request');
 const TestUtils = require('../lib/TestUtils');
-const SchemaController =
-  require('../lib/Controllers/SchemaController').SchemaController;
+const SchemaController = require('../lib/Controllers/SchemaController').SchemaController;
 
 let config;
 
@@ -19,10 +18,7 @@ const hasAllPODobject = () => {
   obj.set('aObject', { k1: 'value', k2: true, k3: 5 });
   obj.set('aArray', ['contents', true, 5]);
   obj.set('aGeoPoint', new Parse.GeoPoint({ latitude: 0, longitude: 0 }));
-  obj.set(
-    'aFile',
-    new Parse.File('f.txt', { base64: 'V29ya2luZyBhdCBQYXJzZSBpcyBncmVhdCE=' })
-  );
+  obj.set('aFile', new Parse.File('f.txt', { base64: 'V29ya2luZyBhdCBQYXJzZSBpcyBncmVhdCE=' }));
   const objACL = new Parse.ACL();
   objACL.setPublicWriteAccess(false);
   obj.setACL(objACL);
@@ -177,9 +173,7 @@ describe('schemas', () => {
       headers: restKeyHeaders,
     }).then(fail, response => {
       expect(response.status).toEqual(403);
-      expect(response.data.error).toEqual(
-        'unauthorized: master key is required'
-      );
+      expect(response.data.error).toEqual('unauthorized: master key is required');
       done();
     });
   });
@@ -191,9 +185,7 @@ describe('schemas', () => {
       headers: restKeyHeaders,
     }).then(fail, response => {
       expect(response.status).toEqual(403);
-      expect(response.data.error).toEqual(
-        'unauthorized: master key is required'
-      );
+      expect(response.data.error).toEqual('unauthorized: master key is required');
       done();
     });
   });
@@ -215,11 +207,7 @@ describe('schemas', () => {
             delete withoutIndexes.indexes;
             return withoutIndexes;
           })
-      ).toEqual(
-        expected.results.sort((s1, s2) =>
-          s1.className.localeCompare(s2.className)
-        )
-      );
+      ).toEqual(expected.results.sort((s1, s2) => s1.className.localeCompare(s2.className)));
       done();
     });
   });
@@ -242,12 +230,7 @@ describe('schemas', () => {
           headers: masterKeyHeaders,
         }).then(response => {
           const expected = {
-            results: [
-              userSchema,
-              roleSchema,
-              plainOldDataSchema,
-              pointersAndRelationsSchema,
-            ],
+            results: [userSchema, roleSchema, plainOldDataSchema, pointersAndRelationsSchema],
           };
           expect(
             response.data.results
@@ -257,20 +240,14 @@ describe('schemas', () => {
                 delete withoutIndexes.indexes;
                 return withoutIndexes;
               })
-          ).toEqual(
-            expected.results.sort((s1, s2) =>
-              s1.className.localeCompare(s2.className)
-            )
-          );
+          ).toEqual(expected.results.sort((s1, s2) => s1.className.localeCompare(s2.className)));
           done();
         });
       });
   });
 
   it('ensure refresh cache after creating a class', async done => {
-    spyOn(SchemaController.prototype, 'reloadData').and.callFake(() =>
-      Promise.resolve()
-    );
+    spyOn(SchemaController.prototype, 'reloadData').and.callFake(() => Promise.resolve());
     await request({
       url: 'http://localhost:8378/1/schemas',
       method: 'POST',
@@ -311,11 +288,7 @@ describe('schemas', () => {
           delete withoutIndexes.indexes;
           return withoutIndexes;
         })
-    ).toEqual(
-      expected.results.sort((s1, s2) =>
-        s1.className.localeCompare(s2.className)
-      )
-    );
+    ).toEqual(expected.results.sort((s1, s2) => s1.className.localeCompare(s2.className)));
     done();
   });
 
@@ -715,11 +688,7 @@ describe('schemas', () => {
     config.database
       .loadSchema()
       .then(schemaController =>
-        schemaController.addClassIfNotExists(
-          '_Installation',
-          {},
-          defaultClassLevelPermissions
-        )
+        schemaController.addClassIfNotExists('_Installation', {}, defaultClassLevelPermissions)
       )
       .then(() => {
         request({
@@ -859,9 +828,7 @@ describe('schemas', () => {
       }).then(fail, response => {
         expect(response.status).toEqual(400);
         expect(response.data.code).toEqual(255);
-        expect(response.data.error).toEqual(
-          'Field aString exists, cannot update.'
-        );
+        expect(response.data.error).toEqual('Field aString exists, cannot update.');
         done();
       });
     });
@@ -883,9 +850,7 @@ describe('schemas', () => {
       }).then(fail, response => {
         expect(response.status).toEqual(400);
         expect(response.data.code).toEqual(255);
-        expect(response.data.error).toEqual(
-          'Field nonExistentKey does not exist, cannot delete.'
-        );
+        expect(response.data.error).toEqual('Field nonExistentKey does not exist, cannot delete.');
         done();
       });
     });
@@ -1165,13 +1130,9 @@ describe('schemas', () => {
         obj.set('newRequiredField', 'some value');
         await obj.save();
         expect(obj.get('newRequiredField')).toEqual('some value');
-        expect(obj.get('newRequiredFieldWithDefaultValue')).toEqual(
-          'some value'
-        );
+        expect(obj.get('newRequiredFieldWithDefaultValue')).toEqual('some value');
         expect(obj.get('newNotRequiredField')).toEqual(undefined);
-        expect(obj.get('newNotRequiredFieldWithDefaultValue')).toEqual(
-          'some value'
-        );
+        expect(obj.get('newNotRequiredFieldWithDefaultValue')).toEqual('some value');
         expect(obj.get('newRegularField')).toEqual(undefined);
         obj.set('newRequiredField', null);
         try {
@@ -1192,13 +1153,9 @@ describe('schemas', () => {
         obj.set('newRequiredField', 'some value2');
         await obj.save();
         expect(obj.get('newRequiredField')).toEqual('some value2');
-        expect(obj.get('newRequiredFieldWithDefaultValue')).toEqual(
-          'some value'
-        );
+        expect(obj.get('newRequiredFieldWithDefaultValue')).toEqual('some value');
         expect(obj.get('newNotRequiredField')).toEqual(undefined);
-        expect(obj.get('newNotRequiredFieldWithDefaultValue')).toEqual(
-          'some value'
-        );
+        expect(obj.get('newNotRequiredFieldWithDefaultValue')).toEqual('some value');
         expect(obj.get('newRegularField')).toEqual(undefined);
         obj.unset('newRequiredFieldWithDefaultValue');
         try {
@@ -1206,9 +1163,7 @@ describe('schemas', () => {
           fail('Should fail');
         } catch (e) {
           expect(e.code).toEqual(142);
-          expect(e.message).toEqual(
-            'newRequiredFieldWithDefaultValue is required'
-          );
+          expect(e.message).toEqual('newRequiredFieldWithDefaultValue is required');
         }
         obj.set('newRequiredFieldWithDefaultValue', '');
         try {
@@ -1216,9 +1171,7 @@ describe('schemas', () => {
           fail('Should fail');
         } catch (e) {
           expect(e.code).toEqual(142);
-          expect(e.message).toEqual(
-            'newRequiredFieldWithDefaultValue is required'
-          );
+          expect(e.message).toEqual('newRequiredFieldWithDefaultValue is required');
         }
         obj.set('newRequiredFieldWithDefaultValue', 'some value2');
         obj.set('newNotRequiredField', '');
@@ -1226,9 +1179,7 @@ describe('schemas', () => {
         obj.unset('newRegularField');
         await obj.save();
         expect(obj.get('newRequiredField')).toEqual('some value2');
-        expect(obj.get('newRequiredFieldWithDefaultValue')).toEqual(
-          'some value2'
-        );
+        expect(obj.get('newRequiredFieldWithDefaultValue')).toEqual('some value2');
         expect(obj.get('newNotRequiredField')).toEqual('');
         expect(obj.get('newNotRequiredFieldWithDefaultValue')).toEqual(null);
         expect(obj.get('newRegularField')).toEqual(undefined);
@@ -1240,13 +1191,9 @@ describe('schemas', () => {
         obj.set('newRegularField', 'some value3');
         await obj.save();
         expect(obj.get('newRequiredField')).toEqual('some value3');
-        expect(obj.get('newRequiredFieldWithDefaultValue')).toEqual(
-          'some value3'
-        );
+        expect(obj.get('newRequiredFieldWithDefaultValue')).toEqual('some value3');
         expect(obj.get('newNotRequiredField')).toEqual('some value3');
-        expect(obj.get('newNotRequiredFieldWithDefaultValue')).toEqual(
-          'some value3'
-        );
+        expect(obj.get('newNotRequiredFieldWithDefaultValue')).toEqual('some value3');
         expect(obj.get('newRegularField')).toEqual('some value3');
         done();
       });
@@ -1616,9 +1563,7 @@ describe('schemas', () => {
   it('ensure refresh cache after deleting a class', async done => {
     config = Config.get('test');
     spyOn(config.schemaCache, 'del').and.callFake(() => {});
-    spyOn(SchemaController.prototype, 'reloadData').and.callFake(() =>
-      Promise.resolve()
-    );
+    spyOn(SchemaController.prototype, 'reloadData').and.callFake(() => Promise.resolve());
     await request({
       url: 'http://localhost:8378/1/schemas',
       method: 'POST',
@@ -1651,11 +1596,7 @@ describe('schemas', () => {
           delete withoutIndexes.indexes;
           return withoutIndexes;
         })
-    ).toEqual(
-      expected.results.sort((s1, s2) =>
-        s1.className.localeCompare(s2.className)
-      )
-    );
+    ).toEqual(expected.results.sort((s1, s2) => s1.className.localeCompare(s2.className)));
     done();
   });
 
@@ -1703,12 +1644,8 @@ describe('schemas', () => {
               }).then(fail, response => {
                 //Expect _SCHEMA entry to be gone.
                 expect(response.status).toEqual(400);
-                expect(response.data.code).toEqual(
-                  Parse.Error.INVALID_CLASS_NAME
-                );
-                expect(response.data.error).toEqual(
-                  'Class MyOtherClass does not exist.'
-                );
+                expect(response.data.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
+                expect(response.data.error).toEqual('Class MyOtherClass does not exist.');
                 done();
               });
             });
@@ -1772,9 +1709,7 @@ describe('schemas', () => {
         expect(typeof response.data.objectId).toEqual('string');
         request({
           method: 'DELETE',
-          url:
-            'http://localhost:8378/1/classes/NewClassForDelete/' +
-            response.data.objectId,
+          url: 'http://localhost:8378/1/classes/NewClassForDelete/' + response.data.objectId,
           headers: restKeyHeaders,
           json: true,
         }).then(() => {
@@ -1899,9 +1834,7 @@ describe('schemas', () => {
           done();
         },
         err => {
-          expect(err.message).toEqual(
-            'Permission denied for action addField on class AClass.'
-          );
+          expect(err.message).toEqual('Permission denied for action addField on class AClass.');
           done();
         }
       );
@@ -2092,9 +2025,7 @@ describe('schemas', () => {
         },
       },
     }).then(fail, response => {
-      expect(response.data.error).toEqual(
-        "' *' is not a valid key for class level permissions"
-      );
+      expect(response.data.error).toEqual("' *' is not a valid key for class level permissions");
       done();
     });
   });
@@ -2113,9 +2044,7 @@ describe('schemas', () => {
         },
       },
     }).then(fail, response => {
-      expect(response.data.error).toEqual(
-        "'* ' is not a valid key for class level permissions"
-      );
+      expect(response.data.error).toEqual("'* ' is not a valid key for class level permissions");
       done();
     });
   });
@@ -2156,9 +2085,7 @@ describe('schemas', () => {
       },
     }).catch(error => error.data);
 
-    expect(response.error).toEqual(
-      `'true' is not a valid value for class level permissions acl`
-    );
+    expect(response.error).toEqual(`'true' is not a valid value for class level permissions acl`);
   });
 
   it('should validate defaultAcl with class level permissions when request is an object and invalid key', async () => {
@@ -2178,9 +2105,7 @@ describe('schemas', () => {
       },
     }).catch(error => error.data);
 
-    expect(response.error).toEqual(
-      `'foo' is not a valid key for class level permissions acl`
-    );
+    expect(response.error).toEqual(`'foo' is not a valid key for class level permissions acl`);
   });
 
   it('should validate defaultAcl with class level permissions when request is an object and invalid value', async () => {
@@ -2200,9 +2125,7 @@ describe('schemas', () => {
       },
     }).catch(error => error.data);
 
-    expect(response.error).toEqual(
-      `'1' is not a valid value for class level permissions acl`
-    );
+    expect(response.error).toEqual(`'1' is not a valid value for class level permissions acl`);
   });
 
   it('should throw if permission is empty string', done => {
@@ -2281,9 +2204,7 @@ describe('schemas', () => {
             fail('Use should hot be able to find!');
           },
           err => {
-            expect(err.message).toEqual(
-              'Permission denied for action find on class AClass.'
-            );
+            expect(err.message).toEqual('Permission denied for action find on class AClass.');
             return Promise.resolve();
           }
         );
@@ -2343,9 +2264,7 @@ describe('schemas', () => {
             fail('User should not be able to find!');
           },
           err => {
-            expect(err.message).toEqual(
-              'Permission denied for action find on class AClass.'
-            );
+            expect(err.message).toEqual('Permission denied for action find on class AClass.');
             return Promise.resolve();
           }
         );
@@ -2430,9 +2349,7 @@ describe('schemas', () => {
             fail('User should not be able to find!');
           },
           err => {
-            expect(err.message).toEqual(
-              'Permission denied for action find on class AClass.'
-            );
+            expect(err.message).toEqual('Permission denied for action find on class AClass.');
             return Promise.resolve();
           }
         );
@@ -2508,9 +2425,7 @@ describe('schemas', () => {
             fail('User should not be able to find!');
           },
           err => {
-            expect(err.message).toEqual(
-              'Permission denied for action find on class AClass.'
-            );
+            expect(err.message).toEqual('Permission denied for action find on class AClass.');
             return Promise.resolve();
           }
         );
@@ -2541,9 +2456,7 @@ describe('schemas', () => {
             fail('User should not be able to find!');
           },
           err => {
-            expect(err.message).toEqual(
-              'Permission denied for action find on class AClass.'
-            );
+            expect(err.message).toEqual('Permission denied for action find on class AClass.');
             return Promise.resolve();
           }
         );
@@ -2627,9 +2540,7 @@ describe('schemas', () => {
           return Promise.resolve();
         },
         err => {
-          expect(err.message).toEqual(
-            'Permission denied for action create on class AClass.'
-          );
+          expect(err.message).toEqual('Permission denied for action create on class AClass.');
           return Promise.resolve();
         }
       )
@@ -2646,9 +2557,7 @@ describe('schemas', () => {
           return Promise.resolve();
         },
         err => {
-          expect(err.message).toEqual(
-            'Permission denied for action find on class AClass.'
-          );
+          expect(err.message).toEqual('Permission denied for action find on class AClass.');
           return Promise.resolve();
         }
       )
@@ -2972,10 +2881,7 @@ describe('schemas', () => {
       });
 
     await expectAsync(schemaCreation()).toBeRejectedWith(
-      new Parse.Error(
-        Parse.Error.INVALID_KEY_NAME,
-        `invalid field name: ${fieldName}`
-      )
+      new Parse.Error(Parse.Error.INVALID_KEY_NAME, `invalid field name: ${fieldName}`)
     );
     done();
   });
@@ -2987,12 +2893,7 @@ describe('schemas', () => {
       object.save({
         '!12field': 'field',
       })
-    ).toBeRejectedWith(
-      new Parse.Error(
-        Parse.Error.INVALID_KEY_NAME,
-        'Invalid key name: !12field'
-      )
-    );
+    ).toBeRejectedWith(new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: !12field'));
     done();
   });
 
@@ -3131,9 +3032,7 @@ describe('schemas', () => {
           },
         }).then(fail, response => {
           expect(response.data.code).toBe(Parse.Error.INVALID_QUERY);
-          expect(response.data.error).toBe(
-            'Field aString does not exist, cannot add index.'
-          );
+          expect(response.data.error).toBe('Field aString does not exist, cannot add index.');
           done();
         });
       });
@@ -3187,9 +3086,7 @@ describe('schemas', () => {
           },
         }).then(fail, response => {
           expect(response.data.code).toBe(Parse.Error.INVALID_QUERY);
-          expect(response.data.error).toBe(
-            'Field bString does not exist, cannot add index.'
-          );
+          expect(response.data.error).toBe('Field bString does not exist, cannot add index.');
           done();
         });
       });
@@ -3329,76 +3226,73 @@ describe('schemas', () => {
       });
     });
 
-    it_only_db('mongo')(
-      'lets you add index with with pointer like structure',
-      done => {
+    it_only_db('mongo')('lets you add index with with pointer like structure', done => {
+      request({
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        method: 'POST',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {},
+      }).then(() => {
         request({
           url: 'http://localhost:8378/1/schemas/NewClass',
-          method: 'POST',
+          method: 'PUT',
           headers: masterKeyHeaders,
           json: true,
-          body: {},
-        }).then(() => {
-          request({
-            url: 'http://localhost:8378/1/schemas/NewClass',
-            method: 'PUT',
-            headers: masterKeyHeaders,
-            json: true,
-            body: {
+          body: {
+            fields: {
+              aPointer: { type: 'Pointer', targetClass: 'NewClass' },
+            },
+            indexes: {
+              pointer: { _p_aPointer: 1 },
+            },
+          },
+        }).then(response => {
+          expect(
+            dd(response.data, {
+              className: 'NewClass',
               fields: {
+                ACL: { type: 'ACL' },
+                createdAt: { type: 'Date' },
+                updatedAt: { type: 'Date' },
+                objectId: { type: 'String' },
                 aPointer: { type: 'Pointer', targetClass: 'NewClass' },
               },
+              classLevelPermissions: defaultClassLevelPermissions,
               indexes: {
+                _id_: { _id: 1 },
                 pointer: { _p_aPointer: 1 },
               },
-            },
+            })
+          ).toEqual(undefined);
+          request({
+            url: 'http://localhost:8378/1/schemas/NewClass',
+            headers: masterKeyHeaders,
+            json: true,
           }).then(response => {
-            expect(
-              dd(response.data, {
-                className: 'NewClass',
-                fields: {
-                  ACL: { type: 'ACL' },
-                  createdAt: { type: 'Date' },
-                  updatedAt: { type: 'Date' },
-                  objectId: { type: 'String' },
-                  aPointer: { type: 'Pointer', targetClass: 'NewClass' },
-                },
-                classLevelPermissions: defaultClassLevelPermissions,
-                indexes: {
-                  _id_: { _id: 1 },
-                  pointer: { _p_aPointer: 1 },
-                },
-              })
-            ).toEqual(undefined);
-            request({
-              url: 'http://localhost:8378/1/schemas/NewClass',
-              headers: masterKeyHeaders,
-              json: true,
-            }).then(response => {
-              expect(response.data).toEqual({
-                className: 'NewClass',
-                fields: {
-                  ACL: { type: 'ACL' },
-                  createdAt: { type: 'Date' },
-                  updatedAt: { type: 'Date' },
-                  objectId: { type: 'String' },
-                  aPointer: { type: 'Pointer', targetClass: 'NewClass' },
-                },
-                classLevelPermissions: defaultClassLevelPermissions,
-                indexes: {
-                  _id_: { _id: 1 },
-                  pointer: { _p_aPointer: 1 },
-                },
-              });
-              config.database.adapter.getIndexes('NewClass').then(indexes => {
-                expect(indexes.length).toEqual(2);
-                done();
-              });
+            expect(response.data).toEqual({
+              className: 'NewClass',
+              fields: {
+                ACL: { type: 'ACL' },
+                createdAt: { type: 'Date' },
+                updatedAt: { type: 'Date' },
+                objectId: { type: 'String' },
+                aPointer: { type: 'Pointer', targetClass: 'NewClass' },
+              },
+              classLevelPermissions: defaultClassLevelPermissions,
+              indexes: {
+                _id_: { _id: 1 },
+                pointer: { _p_aPointer: 1 },
+              },
+            });
+            config.database.adapter.getIndexes('NewClass').then(indexes => {
+              expect(indexes.length).toEqual(2);
+              done();
             });
           });
         });
-      }
-    );
+      });
+    });
 
     it('lets you add multiple indexes', done => {
       request({
@@ -3787,9 +3681,7 @@ describe('schemas', () => {
           },
         }).then(fail, response => {
           expect(response.data.code).toBe(Parse.Error.INVALID_QUERY);
-          expect(response.data.error).toBe(
-            'Index unknownIndex does not exist, cannot delete.'
-          );
+          expect(response.data.error).toBe('Index unknownIndex does not exist, cannot delete.');
           done();
         });
       });
@@ -3829,9 +3721,7 @@ describe('schemas', () => {
             },
           }).then(fail, response => {
             expect(response.data.code).toBe(Parse.Error.INVALID_QUERY);
-            expect(response.data.error).toBe(
-              'Index name1 exists, cannot update.'
-            );
+            expect(response.data.error).toBe('Index name1 exists, cannot update.');
             done();
           });
         });
@@ -3893,15 +3783,9 @@ describe('schemas', () => {
             }).then(response => {
               expect(response.data.indexes._id_).toBeDefined();
               expect(response.data.indexes._id_._id).toEqual(1);
-              expect(
-                response.data.indexes.subject_text_comment_text
-              ).toBeDefined();
-              expect(
-                response.data.indexes.subject_text_comment_text.subject
-              ).toEqual('text');
-              expect(
-                response.data.indexes.subject_text_comment_text.comment
-              ).toEqual('text');
+              expect(response.data.indexes.subject_text_comment_text).toBeDefined();
+              expect(response.data.indexes.subject_text_comment_text.subject).toEqual('text');
+              expect(response.data.indexes.subject_text_comment_text.comment).toEqual('text');
               done();
             });
           });

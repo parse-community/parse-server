@@ -13,8 +13,7 @@ if (dns.setDefaultResultOrder) {
 }
 
 // Sets up a Parse API server for testing.
-jasmine.DEFAULT_TIMEOUT_INTERVAL =
-  process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
+jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
 jasmine.getEnv().addReporter(new CurrentSpecReporter());
 jasmine.getEnv().addReporter(new SpecReporter());
 global.retryFlakyTests();
@@ -47,19 +46,13 @@ const GridFSBucketAdapter =
 const FSAdapter = require('@parse/fs-files-adapter');
 const PostgresStorageAdapter =
   require('../lib/Adapters/Storage/Postgres/PostgresStorageAdapter').default;
-const MongoStorageAdapter =
-  require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
-const RedisCacheAdapter =
-  require('../lib/Adapters/Cache/RedisCacheAdapter').default;
+const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
+const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter').default;
 const RESTController = require('parse/lib/node/RESTController').default;
-const {
-  VolatileClassesSchemas,
-} = require('../lib/Controllers/SchemaController');
+const { VolatileClassesSchemas } = require('../lib/Controllers/SchemaController');
 
-const mongoURI =
-  'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
-const postgresURI =
-  'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
+const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
+const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
 let databaseAdapter;
 let databaseURI;
 
@@ -195,15 +188,10 @@ const reconfigureServer = async (changedConfiguration = {}) => {
   if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
     defaultConfiguration.cacheAdapter = new RedisCacheAdapter();
   }
-  const newConfiguration = Object.assign(
-    {},
-    defaultConfiguration,
-    changedConfiguration,
-    {
-      mountPath: '/1',
-      port,
-    }
-  );
+  const newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
+    mountPath: '/1',
+    port,
+  });
   cache.clear();
   parseServer = await ParseServer.startApp(newConfiguration);
   Parse.CoreManager.setRESTController(RESTController);
@@ -405,23 +393,21 @@ function mockShortLivedAuth() {
 }
 
 function mockFetch(mockResponses) {
-  global.fetch = jasmine
-    .createSpy('fetch')
-    .and.callFake((url, options = {}) => {
-      options.method ||= 'GET';
-      const mockResponse = mockResponses.find(
-        mock => mock.url === url && mock.method === options.method
-      );
+  global.fetch = jasmine.createSpy('fetch').and.callFake((url, options = {}) => {
+    options.method ||= 'GET';
+    const mockResponse = mockResponses.find(
+      mock => mock.url === url && mock.method === options.method
+    );
 
-      if (mockResponse) {
-        return Promise.resolve(mockResponse.response);
-      }
+    if (mockResponse) {
+      return Promise.resolve(mockResponse.response);
+    }
 
-      return Promise.resolve({
-        ok: false,
-        statusText: 'Unknown URL or method',
-      });
+    return Promise.resolve({
+      ok: false,
+      statusText: 'Unknown URL or method',
     });
+  });
 }
 
 // This is polluting, but, it makes it way easier to directly port old tests.
@@ -462,9 +448,7 @@ let testExclusionList = [];
 try {
   // Fetch test exclusion list
   testExclusionList = require('./testExclusionList.json');
-  console.log(
-    `Using test exclusion list with ${testExclusionList.length} entries`
-  );
+  console.log(`Using test exclusion list with ${testExclusionList.length} entries`);
 } catch (error) {
   if (error.code !== 'MODULE_NOT_FOUND') {
     throw error;

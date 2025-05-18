@@ -177,30 +177,18 @@ const getAuthForSessionToken = async function ({
   }
 
   if (results.length !== 1 || !results[0]['user']) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_SESSION_TOKEN,
-      'Invalid session token'
-    );
+    throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
   }
   const session = results[0];
   const now = new Date(),
     expiresAt = session.expiresAt ? new Date(session.expiresAt.iso) : undefined;
   if (expiresAt < now) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_SESSION_TOKEN,
-      'Session token is expired.'
-    );
+    throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token is expired.');
   }
   const obj = session.user;
 
-  if (
-    typeof obj['objectId'] === 'string' &&
-    obj['objectId'].startsWith('role:')
-  ) {
-    throw new Parse.Error(
-      Parse.Error.INTERNAL_SERVER_ERROR,
-      'Invalid object ID.'
-    );
+  if (typeof obj['objectId'] === 'string' && obj['objectId'].startsWith('role:')) {
+    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid object ID.');
   }
 
   delete obj.password;
@@ -220,11 +208,7 @@ const getAuthForSessionToken = async function ({
   });
 };
 
-var getAuthForLegacySessionToken = async function ({
-  config,
-  sessionToken,
-  installationId,
-}) {
+var getAuthForLegacySessionToken = async function ({ config, sessionToken, installationId }) {
   var restOptions = {
     limit: 1,
   };
@@ -241,10 +225,7 @@ var getAuthForLegacySessionToken = async function ({
   return query.execute().then(response => {
     var results = response.results;
     if (results.length !== 1) {
-      throw new Parse.Error(
-        Parse.Error.INVALID_SESSION_TOKEN,
-        'invalid legacy session token'
-      );
+      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid legacy session token');
     }
     const obj = results[0];
     obj.className = '_User';
@@ -334,10 +315,7 @@ Auth.prototype._loadRoles = async function () {
   );
 
   // run the recursive finding
-  const roleNames = await this._getAllRolesNamesForRoleIds(
-    rolesMap.ids,
-    rolesMap.names
-  );
+  const roleNames = await this._getAllRolesNamesForRoleIds(rolesMap.ids, rolesMap.names);
   this.userRoles = roleNames.map(r => {
     return 'role:' + r;
   });
@@ -402,11 +380,7 @@ Auth.prototype.getRolesByIds = async function (ins) {
 };
 
 // Given a list of roleIds, find all the parent roles, returns a promise with all names
-Auth.prototype._getAllRolesNamesForRoleIds = function (
-  roleIDs,
-  names = [],
-  queriedRoles = {}
-) {
+Auth.prototype._getAllRolesNamesForRoleIds = function (roleIDs, names = [], queriedRoles = {}) {
   const ins = roleIDs.filter(roleID => {
     const wasQueried = queriedRoles[roleID] !== true;
     queriedRoles[roleID] = true;
@@ -436,11 +410,7 @@ Auth.prototype._getAllRolesNamesForRoleIds = function (
       // store the new found names
       names = names.concat(resultMap.names);
       // find the next ones, circular roles will be cut
-      return this._getAllRolesNamesForRoleIds(
-        resultMap.ids,
-        names,
-        queriedRoles
-      );
+      return this._getAllRolesNamesForRoleIds(resultMap.ids, names, queriedRoles);
     })
     .then(names => {
       return Promise.resolve([...new Set(names)]);
@@ -454,8 +424,7 @@ const findUsersWithAuthData = async (config, authData, beforeFind) => {
     providers.map(async provider => {
       const providerAuthData = authData[provider];
 
-      const adapter =
-        config.authDataManager.getValidatorForProvider(provider)?.adapter;
+      const adapter = config.authDataManager.getValidatorForProvider(provider)?.adapter;
       if (beforeFind && typeof adapter?.beforeFind === 'function') {
         await adapter.beforeFind(providerAuthData);
       }
@@ -512,10 +481,7 @@ const checkIfUserHasProvidedConfiguredProvidersForLogin = (
 
   const hasProvidedASoloProvider = savedUserProviders.some(
     provider =>
-      provider &&
-      provider.adapter &&
-      provider.adapter.policy === 'solo' &&
-      authData[provider.name]
+      provider && provider.adapter && provider.adapter.policy === 'solo' && authData[provider.name]
   );
 
   // Solo providers can be considered as safe, so we do not have to check if the user needs
@@ -526,35 +492,26 @@ const checkIfUserHasProvidedConfiguredProvidersForLogin = (
   }
 
   const additionProvidersNotFound = [];
-  const hasProvidedAtLeastOneAdditionalProvider = savedUserProviders.some(
-    provider => {
-      let policy = provider.adapter.policy;
-      if (typeof policy === 'function') {
-        const requestObject = {
-          ip: req.config.ip,
-          user: req.auth.user,
-          master: req.auth.isMaster,
-        };
-        policy = policy.call(
-          provider.adapter,
-          requestObject,
-          userAuthData[provider.name]
-        );
-      }
-      if (policy === 'additional') {
-        if (authData[provider.name]) {
-          return true;
-        } else {
-          // Push missing provider for error message
-          additionProvidersNotFound.push(provider.name);
-        }
+  const hasProvidedAtLeastOneAdditionalProvider = savedUserProviders.some(provider => {
+    let policy = provider.adapter.policy;
+    if (typeof policy === 'function') {
+      const requestObject = {
+        ip: req.config.ip,
+        user: req.auth.user,
+        master: req.auth.isMaster,
+      };
+      policy = policy.call(provider.adapter, requestObject, userAuthData[provider.name]);
+    }
+    if (policy === 'additional') {
+      if (authData[provider.name]) {
+        return true;
+      } else {
+        // Push missing provider for error message
+        additionProvidersNotFound.push(provider.name);
       }
     }
-  );
-  if (
-    hasProvidedAtLeastOneAdditionalProvider ||
-    !additionProvidersNotFound.length
-  ) {
+  });
+  if (hasProvidedAtLeastOneAdditionalProvider || !additionProvidersNotFound.length) {
     return;
   }
 
@@ -575,10 +532,7 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
       req.auth.user &&
       typeof req.getUserId === 'function' &&
       req.getUserId() === req.auth.user.id) ||
-    (req.auth &&
-      req.auth.isMaster &&
-      typeof req.getUserId === 'function' &&
-      req.getUserId())
+    (req.auth && req.auth.isMaster && typeof req.getUserId === 'function' && req.getUserId())
   ) {
     user = new Parse.User();
     user.id = req.auth.isMaster ? req.getUserId() : req.auth.user.id;
@@ -586,13 +540,7 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
   }
 
   const { updatedObject } = req.buildParseObjects();
-  const requestObject = getRequestObject(
-    undefined,
-    req.auth,
-    updatedObject,
-    user,
-    req.config
-  );
+  const requestObject = getRequestObject(undefined, req.auth, updatedObject, user, req.config);
   // Perform validation as step-by-step pipeline for better error consistency
   // and also to avoid to trigger a provider (like OTP SMS) if another one fails
   const acc = { authData: {}, authDataResponse: {} };
@@ -604,8 +552,7 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
         acc.authData[provider] = null;
         continue;
       }
-      const { validator } =
-        req.config.authDataManager.getValidatorForProvider(provider) || {};
+      const { validator } = req.config.authDataManager.getValidatorForProvider(provider) || {};
       const authProvider = (req.config.auth || {})[provider] || {};
       if (!validator || authProvider.enabled === false) {
         throw new Parse.Error(
@@ -613,12 +560,7 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
           'This authentication method is unsupported.'
         );
       }
-      let validationResult = await validator(
-        authData[provider],
-        req,
-        user,
-        requestObject
-      );
+      let validationResult = await validator(authData[provider], req, user, requestObject);
       method = validationResult && validationResult.method;
       requestObject.triggerName = method;
       if (validationResult && validationResult.validator) {
@@ -646,9 +588,7 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
         message: 'Auth failed. Unknown error.',
       });
       const userString =
-        req.auth && req.auth.user
-          ? req.auth.user.id
-          : req.data.objectId || undefined;
+        req.auth && req.auth.user ? req.auth.user.id : req.data.objectId || undefined;
       logger.error(
         `Failed running auth step ${method} for ${provider} for user ${userString} with Error: ` +
           JSON.stringify(e),

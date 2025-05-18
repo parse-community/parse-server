@@ -39,9 +39,7 @@ function statusHandler(className, database) {
   }
 
   function update(where, object) {
-    return jobPromiseQueue.enqueue(where.objectId, () =>
-      database.update(className, where, object)
-    );
+    return jobPromiseQueue.enqueue(where.objectId, () => database.update(className, where, object));
   }
 
   return Object.freeze({
@@ -143,9 +141,7 @@ export function pushStatusHandler(config, existingObjectId) {
         pushTime = body.push_time;
         status = 'scheduled';
       } else {
-        logger.warn(
-          'Trying to schedule a push while server is not configured.'
-        );
+        logger.warn('Trying to schedule a push while server is not configured.');
         logger.warn('Push will be sent immediately');
       }
     }
@@ -203,8 +199,7 @@ export function pushStatusHandler(config, existingObjectId) {
   const trackSent = function (
     results,
     UTCOffset,
-    cleanupInstallations = process.env
-      .PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS
+    cleanupInstallations = process.env.PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS
   ) {
     const update = {
       numSent: 0,
@@ -253,8 +248,7 @@ export function pushStatusHandler(config, existingObjectId) {
               error?.code === 'messaging/registration-token-not-registered' ||
               error?.code === 'messaging/invalid-registration-token' ||
               (error?.code === 'messaging/invalid-argument' &&
-                error?.message ===
-                  'The registration token is not a valid FCM registration token')
+                error?.message === 'The registration token is not a valid FCM registration token')
             ) {
               devicesToRemove.push(token);
             }
@@ -290,9 +284,7 @@ export function pushStatusHandler(config, existingObjectId) {
     });
 
     if (devicesToRemove.length > 0 && cleanupInstallations) {
-      logger.info(
-        `Removing device tokens on ${devicesToRemove.length} _Installations`
-      );
+      logger.info(`Removing device tokens on ${devicesToRemove.length} _Installations`);
       database.update(
         '_Installation',
         { deviceToken: { $in: devicesToRemove } },

@@ -39,12 +39,7 @@ describe('OAuth', function () {
 
     const consumer_secret = 'world';
     const auth_token_secret = 'secret';
-    request = OAuth.signRequest(
-      request,
-      oauth_params,
-      consumer_secret,
-      auth_token_secret
-    );
+    request = OAuth.signRequest(request, oauth_params, consumer_secret, auth_token_secret);
     jequal(
       request.headers['Authorization'],
       'OAuth oauth_consumer_key="hello", oauth_nonce="AAAAAAAAAAAAAAAAA", oauth_signature="8K95bpQcDi9Nd2GkhumTVcw4%2BXw%3D", oauth_signature_method="HMAC-SHA1", oauth_timestamp="123450000", oauth_token="token", oauth_version="1.0"'

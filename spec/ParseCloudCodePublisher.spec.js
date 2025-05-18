@@ -15,11 +15,7 @@ describe('ParseCloudCodePublisher', function () {
         on: jasmine.createSpy('on'),
       }),
     };
-    jasmine.mockLibrary(
-      '../lib/LiveQuery/ParsePubSub',
-      'ParsePubSub',
-      mockParsePubSub
-    );
+    jasmine.mockLibrary('../lib/LiveQuery/ParsePubSub', 'ParsePubSub', mockParsePubSub);
     done();
   });
 

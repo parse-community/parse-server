@@ -73,14 +73,11 @@ describe('ParseServerRESTController', () => {
     spyOn(router, 'tryRouteRequest').and.callThrough();
     RESTController = ParseServerRESTController(Parse.applicationId, router);
     const resp = await RESTController.request('POST', '/classes/MyObject');
-    const { status, response, location } =
-      await router.tryRouteRequest.calls.all()[0].returnValue;
+    const { status, response, location } = await router.tryRouteRequest.calls.all()[0].returnValue;
 
     expect(status).toBe(201);
     expect(response).toEqual(resp);
-    expect(location).toBe(
-      `http://localhost:8378/1/classes/MyObject/${resp.objectId}`
-    );
+    expect(location).toBe(`http://localhost:8378/1/classes/MyObject/${resp.objectId}`);
   });
 
   it('should handle response status in batch', async () => {
@@ -166,14 +163,9 @@ describe('ParseServerRESTController', () => {
         const results = await query.find();
         expect(createSpy.calls.count()).toBe(2);
         for (let i = 0; i + 1 < createSpy.calls.length; i = i + 2) {
-          expect(createSpy.calls.argsFor(i)[3]).toBe(
-            createSpy.calls.argsFor(i + 1)[3]
-          );
+          expect(createSpy.calls.argsFor(i)[3]).toBe(createSpy.calls.argsFor(i + 1)[3]);
         }
-        expect(results.map(result => result.get('key')).sort()).toEqual([
-          'value1',
-          'value2',
-        ]);
+        expect(results.map(result => result.get('key')).sort()).toEqual(['value1', 'value2']);
       });
 
       it('should not save anything when one operation fails in a transaction', async () => {
@@ -445,10 +437,7 @@ describe('ParseServerRESTController', () => {
 
         const query = new Parse.Query('MyObject');
         const results = await query.find();
-        expect(results.map(result => result.get('key')).sort()).toEqual([
-          'value1',
-          'value2',
-        ]);
+        expect(results.map(result => result.get('key')).sort()).toEqual(['value1', 'value2']);
 
         const query2 = new Parse.Query('MyObject2');
         const results2 = await query2.find();
@@ -456,10 +445,7 @@ describe('ParseServerRESTController', () => {
 
         const query3 = new Parse.Query('MyObject3');
         const results3 = await query3.find();
-        expect(results3.map(result => result.get('key')).sort()).toEqual([
-          'value1',
-          'value2',
-        ]);
+        expect(results3.map(result => result.get('key')).sort()).toEqual(['value1', 'value2']);
 
         expect(createSpy.calls.count() >= 13).toEqual(true);
         let transactionalSession;
@@ -545,14 +531,9 @@ describe('ParseServerRESTController', () => {
     const user = await Parse.User.signUp('user', 'pass');
     const userId = user.id;
     await Parse.User.logOut();
-    const res = await RESTController.request(
-      'GET',
-      '/classes/_User',
-      undefined,
-      {
-        useMasterKey: true,
-      }
-    );
+    const res = await RESTController.request('GET', '/classes/_User', undefined, {
+      useMasterKey: true,
+    });
     expect(res.results.length).toBe(1);
     expect(res.results[0].objectId).toEqual(userId);
   });
@@ -563,9 +544,7 @@ describe('ParseServerRESTController', () => {
         username: '',
         password: 'world',
       });
-      fail(
-        'Success callback should not be called when passing an empty username.'
-      );
+      fail('Success callback should not be called when passing an empty username.');
     } catch (err) {
       expect(err.code).toBe(Parse.Error.USERNAME_MISSING);
       expect(err.message).toBe('bad or missing username');
@@ -578,9 +557,7 @@ describe('ParseServerRESTController', () => {
         username: 'hello',
         password: '',
       });
-      fail(
-        'Success callback should not be called when passing an empty password.'
-      );
+      fail('Success callback should not be called when passing an empty password.');
     } catch (err) {
       expect(err.code).toBe(Parse.Error.PASSWORD_MISSING);
       expect(err.message).toBe('password is required');

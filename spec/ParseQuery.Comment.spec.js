@@ -58,9 +58,7 @@ describe_only_db('mongo')('Parse.Query with comment testing', () => {
       },
     });
     await request(options);
-    const result = await database
-      .collection('system.profile')
-      .findOne({}, { sort: { ts: -1 } });
+    const result = await database.collection('system.profile').findOne({}, { sort: { ts: -1 } });
     expect(result.command.explain.comment).toBe(comment);
   });
 
@@ -69,12 +67,9 @@ describe_only_db('mongo')('Parse.Query with comment testing', () => {
     const object = new TestObject();
     object.set('name', 'object');
     await object.save();
-    const collection =
-      await config.database.adapter._adaptiveCollection('TestObject');
+    const collection = await config.database.adapter._adaptiveCollection('TestObject');
     await collection._rawFind({ name: 'object' }, { comment: comment });
-    const result = await database
-      .collection('system.profile')
-      .findOne({}, { sort: { ts: -1 } });
+    const result = await database.collection('system.profile').findOne({}, { sort: { ts: -1 } });
     expect(result.command.comment).toBe(comment);
   });
 
@@ -88,16 +83,10 @@ describe_only_db('mongo')('Parse.Query with comment testing', () => {
     object2.set('name', 'object');
     await object2.save();
 
-    const collection =
-      await config.database.adapter._adaptiveCollection('TestObject');
-    const countResult = await collection.count(
-      { name: 'object' },
-      { comment: comment }
-    );
+    const collection = await config.database.adapter._adaptiveCollection('TestObject');
+    const countResult = await collection.count({ name: 'object' }, { comment: comment });
     expect(countResult).toEqual(2);
-    const result = await database
-      .collection('system.profile')
-      .findOne({}, { sort: { ts: -1 } });
+    const result = await database.collection('system.profile').findOne({}, { sort: { ts: -1 } });
     expect(result.command.comment).toBe(comment);
   });
 
@@ -106,15 +95,12 @@ describe_only_db('mongo')('Parse.Query with comment testing', () => {
     const object = new TestObject();
     object.set('name', 'object');
     await object.save();
-    const collection =
-      await config.database.adapter._adaptiveCollection('TestObject');
+    const collection = await config.database.adapter._adaptiveCollection('TestObject');
     await collection.aggregate([{ $group: { _id: '$name' } }], {
       explain: true,
       comment: comment,
     });
-    const result = await database
-      .collection('system.profile')
-      .findOne({}, { sort: { ts: -1 } });
+    const result = await database.collection('system.profile').findOne({}, { sort: { ts: -1 } });
     expect(result.command.explain.comment).toBe(comment);
   });
 });

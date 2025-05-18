@@ -1,7 +1,6 @@
 const request = require('../lib/request');
 const Config = require('../lib/Config');
-const defaultColumns =
-  require('../lib/Controllers/SchemaController').defaultColumns;
+const defaultColumns = require('../lib/Controllers/SchemaController').defaultColumns;
 const authenticationLoader = require('../lib/Adapters/Auth');
 const path = require('path');
 
@@ -218,10 +217,7 @@ describe('AuthenticationProviders', function () {
     ok(model.extended(), 'Should have used the subclass.');
     strictEqual(provider.authData.id, provider.synchronizedUserId);
     strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
-    strictEqual(
-      provider.authData.expiration_date,
-      provider.synchronizedExpiration
-    );
+    strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
     ok(model._isLinked('myoauth'), 'User should be linked to myoauth');
 
     await model._unlinkFrom('myoauth');
@@ -234,11 +230,7 @@ describe('AuthenticationProviders', function () {
     const res = await config.database.adapter.find(
       '_User',
       {
-        fields: Object.assign(
-          {},
-          defaultColumns._Default,
-          defaultColumns._Installation
-        ),
+        fields: Object.assign({}, defaultColumns._Default, defaultColumns._Installation),
       },
       { objectId: model.id },
       {}
@@ -261,12 +253,8 @@ describe('AuthenticationProviders', function () {
 
   function validateAuthenticationHandler(authenticationHandler) {
     expect(authenticationHandler).not.toBeUndefined();
-    expect(typeof authenticationHandler.getValidatorForProvider).toBe(
-      'function'
-    );
-    expect(typeof authenticationHandler.getValidatorForProvider).toBe(
-      'function'
-    );
+    expect(typeof authenticationHandler.getValidatorForProvider).toBe('function');
+    expect(typeof authenticationHandler.getValidatorForProvider).toBe('function');
   }
 
   function validateAuthenticationAdapter(authAdapter) {
@@ -288,10 +276,7 @@ describe('AuthenticationProviders', function () {
         return Promise.resolve();
       },
       validateAuthData: function (authData) {
-        if (
-          authData.id == validAuthData.id &&
-          authData.token == validAuthData.token
-        ) {
+        if (authData.id == validAuthData.id && authData.token == validAuthData.token) {
           return Promise.resolve();
         }
         return Promise.reject();
@@ -306,9 +291,7 @@ describe('AuthenticationProviders', function () {
     });
 
     validateAuthenticationHandler(authenticationHandler);
-    const { validator } = authenticationHandler.getValidatorForProvider(
-      'customAuthentication'
-    );
+    const { validator } = authenticationHandler.getValidatorForProvider('customAuthentication');
     validateValidator(validator);
 
     validator(validAuthData, {}, {}).then(
@@ -331,9 +314,7 @@ describe('AuthenticationProviders', function () {
     });
 
     validateAuthenticationHandler(authenticationHandler);
-    const { validator } = authenticationHandler.getValidatorForProvider(
-      'customAuthentication'
-    );
+    const { validator } = authenticationHandler.getValidatorForProvider('customAuthentication');
     validateValidator(validator);
     validator(
       {
@@ -361,9 +342,7 @@ describe('AuthenticationProviders', function () {
     });
 
     validateAuthenticationHandler(authenticationHandler);
-    const { validator } = authenticationHandler.getValidatorForProvider(
-      'customAuthentication'
-    );
+    const { validator } = authenticationHandler.getValidatorForProvider('customAuthentication');
     validateValidator(validator);
 
     validator(
@@ -390,8 +369,10 @@ describe('AuthenticationProviders', function () {
         appSecret: 'secret',
       },
     };
-    const { adapter, appIds, providerOptions } =
-      authenticationLoader.loadAuthAdapter('facebook', options);
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'facebook',
+      options
+    );
     validateAuthenticationAdapter(adapter);
     expect(appIds).toEqual(['a', 'b']);
     expect(providerOptions).toEqual(options.facebook);
@@ -411,12 +392,12 @@ describe('AuthenticationProviders', function () {
     const authData = {
       access_token: 'badtoken',
     };
-    const { adapter, appIds, providerOptions } =
-      authenticationLoader.loadAuthAdapter('facebook', options);
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'facebook',
+      options
+    );
     await adapter.validateAppId(appIds, authData, providerOptions);
-    expect(
-      httpsRequest.get.calls.first().args[0].includes('appsecret_proof')
-    ).toBe(true);
+    expect(httpsRequest.get.calls.first().args[0].includes('appsecret_proof')).toBe(true);
   });
 
   it('should throw error when Facebook request appId is wrong data type', async () => {
@@ -433,11 +414,11 @@ describe('AuthenticationProviders', function () {
     const authData = {
       access_token: 'badtoken',
     };
-    const { adapter, appIds, providerOptions } =
-      authenticationLoader.loadAuthAdapter('facebook', options);
-    await expectAsync(
-      adapter.validateAppId(appIds, authData, providerOptions)
-    ).toBeRejectedWith(
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'facebook',
+      options
+    );
+    await expectAsync(adapter.validateAppId(appIds, authData, providerOptions)).toBeRejectedWith(
       new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'appIds must be an array.')
     );
   });
@@ -457,14 +438,9 @@ describe('AuthenticationProviders', function () {
       id: 'test',
       access_token: 'test',
     };
-    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
-      'facebook',
-      options
-    );
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('facebook', options);
     await adapter.validateAuthData(authData, providerOptions);
-    expect(
-      httpsRequest.get.calls.first().args[0].includes('appsecret_proof')
-    ).toBe(true);
+    expect(httpsRequest.get.calls.first().args[0].includes('appsecret_proof')).toBe(true);
   });
 
   it('properly loads a custom adapter with options', () => {
@@ -475,8 +451,10 @@ describe('AuthenticationProviders', function () {
         appIds: ['a', 'b'],
       },
     };
-    const { adapter, appIds, providerOptions } =
-      authenticationLoader.loadAuthAdapter('custom', options);
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'custom',
+      options
+    );
     validateAuthenticationAdapter(adapter);
     expect(appIds).toEqual(['a', 'b']);
     expect(providerOptions).toEqual(options.custom);
@@ -494,10 +472,7 @@ describe('AuthenticationProviders', function () {
     const provider = getMockMyOauthProvider();
     Parse.User._registerAuthenticationProvider(provider);
     await expectAsync(Parse.User._logInWith('myoauth')).toBeRejectedWith(
-      new Parse.Error(
-        Parse.Error.UNSUPPORTED_SERVICE,
-        'This authentication method is unsupported.'
-      )
+      new Parse.Error(Parse.Error.UNSUPPORTED_SERVICE, 'This authentication method is unsupported.')
     );
   });
 });
@@ -518,10 +493,7 @@ describe('google auth adapter', () => {
 
   it('should not decode invalid id_token', async () => {
     try {
-      await google.validateAuthData(
-        { id: 'the_user_id', id_token: 'the_token' },
-        {}
-      );
+      await google.validateAuthData({ id: 'the_user_id', id_token: 'the_token' }, {});
       fail();
     } catch (e) {
       expect(e.message).toBe('provided token does not decode as JWT');
@@ -665,10 +637,7 @@ describe('keycloak auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
-    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
-      'keycloak',
-      options
-    );
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     try {
       await adapter.validateAuthData(authData, providerOptions);
       fail();
@@ -695,10 +664,7 @@ describe('keycloak auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
-    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
-      'keycloak',
-      options
-    );
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     try {
       await adapter.validateAuthData(authData, providerOptions);
       fail();
@@ -725,10 +691,7 @@ describe('keycloak auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
-    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
-      'keycloak',
-      options
-    );
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     try {
       await adapter.validateAuthData(authData, providerOptions);
       fail();
@@ -753,10 +716,7 @@ describe('keycloak auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
-    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
-      'keycloak',
-      options
-    );
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     try {
       await adapter.validateAuthData(authData, providerOptions);
       fail();
@@ -789,10 +749,7 @@ describe('keycloak auth adapter', () => {
       roles: ['role1'],
       groups: ['group1'],
     };
-    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
-      'keycloak',
-      options
-    );
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     try {
       await adapter.validateAuthData(authData, providerOptions);
       fail();
@@ -825,10 +782,7 @@ describe('keycloak auth adapter', () => {
       roles: ['role1'],
       groups: ['group1'],
     };
-    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
-      'keycloak',
-      options
-    );
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     try {
       await adapter.validateAuthData(authData, providerOptions);
       fail();
@@ -861,10 +815,7 @@ describe('keycloak auth adapter', () => {
       roles: ['role1'],
       groups: ['group1'],
     };
-    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
-      'keycloak',
-      options
-    );
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     await adapter.validateAuthData(authData, providerOptions);
     expect(httpsRequest.get).toHaveBeenCalledWith({
       host: 'http://example.com',
@@ -914,9 +865,7 @@ describe('apple signin auth adapter', () => {
   it('should throw error if public key used to encode token is not available', async () => {
     const fakeDecodedToken = { header: { kid: '789', alg: 'RS256' } };
     try {
-      spyOn(authUtils, 'getHeaderFromToken').and.callFake(
-        () => fakeDecodedToken.header
-      );
+      spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
 
       await apple.validateAuthData(
         { id: 'the_user_id', token: 'the_token' },
@@ -939,9 +888,7 @@ describe('apple signin auth adapter', () => {
     };
     const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
     const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
-    spyOn(authUtils, 'getHeaderFromToken').and.callFake(
-      () => fakeDecodedToken.header
-    );
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
     spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
@@ -950,9 +897,7 @@ describe('apple signin auth adapter', () => {
       { clientId: 'secret' }
     );
     expect(result).toEqual(fakeClaim);
-    expect(jwt.verify.calls.first().args[2].algorithms).toEqual(
-      fakeDecodedToken.header.alg
-    );
+    expect(jwt.verify.calls.first().args[2].algorithms).toEqual(fakeDecodedToken.header.alg);
   });
 
   it('should not verify invalid id_token', async () => {
@@ -1207,9 +1152,7 @@ describe('phant auth adapter', () => {
     };
     const { adapter } = authenticationLoader.loadAuthAdapter('phantauth', {});
 
-    spyOn(httpsRequest, 'get').and.callFake(() =>
-      Promise.resolve({ sub: 'invalidID' })
-    );
+    spyOn(httpsRequest, 'get').and.callFake(() => Promise.resolve({ sub: 'invalidID' }));
     try {
       await adapter.validateAuthData(authData);
       fail();
@@ -1261,9 +1204,7 @@ describe('facebook limited auth adapter', () => {
       header: { kid: '789', alg: 'RS256' },
     };
     try {
-      spyOn(authUtils, 'getHeaderFromToken').and.callFake(
-        () => fakeDecodedToken.header
-      );
+      spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
 
       await facebook.validateAuthData(
         { id: 'the_user_id', token: 'the_token' },
@@ -1288,9 +1229,7 @@ describe('facebook limited auth adapter', () => {
       };
       const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
       const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
-      spyOn(authUtils, 'getHeaderFromToken').and.callFake(
-        () => fakeDecodedToken.header
-      );
+      spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
       spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
       spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
@@ -1299,9 +1238,7 @@ describe('facebook limited auth adapter', () => {
         { clientId: 'secret' }
       );
       expect(result).toEqual(fakeClaim);
-      expect(jwt.verify.calls.first().args[2].algorithms).toEqual(
-        fakeDecodedToken.header.alg
-      );
+      expect(jwt.verify.calls.first().args[2].algorithms).toEqual(fakeDecodedToken.header.alg);
     }
   );
 
@@ -1345,9 +1282,7 @@ describe('facebook limited auth adapter', () => {
       };
       const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
       const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
-      spyOn(authUtils, 'getHeaderFromToken').and.callFake(
-        () => fakeDecodedToken
-      );
+      spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
       spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
       spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
@@ -1370,9 +1305,7 @@ describe('facebook limited auth adapter', () => {
       };
       const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
       const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
-      spyOn(authUtils, 'getHeaderFromToken').and.callFake(
-        () => fakeDecodedToken
-      );
+      spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
       spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
       spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
@@ -1395,9 +1328,7 @@ describe('facebook limited auth adapter', () => {
       };
       const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
       const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
-      spyOn(authUtils, 'getHeaderFromToken').and.callFake(
-        () => fakeDecodedToken
-      );
+      spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
       spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
       spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
@@ -1418,9 +1349,7 @@ describe('facebook limited auth adapter', () => {
       };
       const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
       const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
-      spyOn(authUtils, 'getHeaderFromToken').and.callFake(
-        () => fakeDecodedToken
-      );
+      spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
       spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
       spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
@@ -1555,9 +1484,7 @@ describe('facebook limited auth adapter', () => {
       };
       const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
       const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
-      spyOn(authUtils, 'getHeaderFromToken').and.callFake(
-        () => fakeDecodedToken
-      );
+      spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
       spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
       spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
@@ -1736,9 +1663,7 @@ describe('OTP TOTP auth adatper', () => {
         },
         { sessionToken: user.getSessionToken() }
       )
-    ).toBeRejectedWith(
-      new Parse.Error(Parse.Error.OTHER_CAUSE, 'Invalid MFA token')
-    );
+    ).toBeRejectedWith(new Parse.Error(Parse.Error.OTHER_CAUSE, 'Invalid MFA token'));
     await user.fetch({ useMasterKey: true });
     expect(user.get('authData').mfa.secret).toEqual(secret.base32);
   });
@@ -1758,13 +1683,8 @@ describe('OTP TOTP auth adatper', () => {
       { authData: { mfa: { secret: secret.base32, token } } },
       { sessionToken: user.getSessionToken() }
     );
-    await expectAsync(
-      Parse.User.logIn('username', 'password')
-    ).toBeRejectedWith(
-      new Parse.Error(
-        Parse.Error.OTHER_CAUSE,
-        'Missing additional authData mfa'
-      )
+    await expectAsync(Parse.User.logIn('username', 'password')).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OTHER_CAUSE, 'Missing additional authData mfa')
     );
   });
 
@@ -1842,10 +1762,7 @@ describe('OTP SMS auth adatper', () => {
     const user = await Parse.User.signUp('username', 'password');
     const sessionToken = user.getSessionToken();
     const spy = spyOn(mfa, 'sendSMS').and.callThrough();
-    await user.save(
-      { authData: { mfa: { mobile: '+11111111111' } } },
-      { sessionToken }
-    );
+    await user.save({ authData: { mfa: { mobile: '+11111111111' } } }, { sessionToken });
     await user.fetch({ sessionToken });
     expect(user.get('authData')).toEqual({ mfa: { status: 'disabled' } });
     expect(spy).toHaveBeenCalledWith(code, '+11111111111');
@@ -1855,10 +1772,7 @@ describe('OTP SMS auth adatper', () => {
     expect(authData['+11111111111']).toBeDefined();
     expect(Object.keys(authData['+11111111111'])).toEqual(['token', 'expiry']);
 
-    await user.save(
-      { authData: { mfa: { mobile, token: code } } },
-      { sessionToken }
-    );
+    await user.save({ authData: { mfa: { mobile, token: code } } }, { sessionToken });
     await user.fetch({ sessionToken });
     expect(user.get('authData')).toEqual({ mfa: { status: 'enabled' } });
   });
@@ -1878,13 +1792,8 @@ describe('OTP SMS auth adatper', () => {
 
     spy.calls.reset();
 
-    await expectAsync(
-      Parse.User.logIn('username', 'password')
-    ).toBeRejectedWith(
-      new Parse.Error(
-        Parse.Error.OTHER_CAUSE,
-        'Missing additional authData mfa'
-      )
+    await expectAsync(Parse.User.logIn('username', 'password')).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OTHER_CAUSE, 'Missing additional authData mfa')
     );
     const res = await request({
       headers,

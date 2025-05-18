@@ -26,10 +26,7 @@ function enforceRoleSecurity(method, className, auth) {
   }
 
   // readOnly masterKey is not allowed
-  if (
-    auth.isReadOnly &&
-    (method === 'delete' || method === 'create' || method === 'update')
-  ) {
+  if (auth.isReadOnly && (method === 'delete' || method === 'create' || method === 'update')) {
     const error = `read-only masterKey isn't allowed to perform the ${method} operation.`;
     throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
   }

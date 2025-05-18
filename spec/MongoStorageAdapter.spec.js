@@ -1,10 +1,8 @@
 'use strict';
 
-const MongoStorageAdapter =
-  require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
+const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
 const { MongoClient, Collection } = require('mongodb');
-const databaseURI =
-  'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
+const databaseURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 const request = require('../lib/request');
 const Config = require('../lib/Config');
 const TestUtils = require('../lib/TestUtils');
@@ -78,9 +76,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     });
     adapter
       .createObject('Foo', { fields: {} }, { objectId: 'abcde' })
-      .then(() =>
-        adapter._rawFind('Foo', { $where: `sleep(${maxTimeMS / 2})` })
-      )
+      .then(() => adapter._rawFind('Foo', { $where: `sleep(${maxTimeMS / 2})` }))
       .then(
         () => done(),
         err => {
@@ -97,9 +93,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     });
     adapter
       .createObject('Foo', { fields: {} }, { objectId: 'abcde' })
-      .then(() =>
-        adapter._rawFind('Foo', { $where: `sleep(${maxTimeMS * 2})` })
-      )
+      .then(() => adapter._rawFind('Foo', { $where: `sleep(${maxTimeMS * 2})` }))
       .then(
         () => {
           done.fail('Find succeeded despite taking too long!');
@@ -374,9 +368,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       await adapter.database.admin().serverStatus();
       expect(false).toBe(true);
     } catch (e) {
-      expect(e.message).toEqual(
-        'Client must be connected before running operations'
-      );
+      expect(e.message).toEqual('Client must be connected before running operations');
     }
   });
 
@@ -398,49 +390,42 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
 
   it('getClass if not exists', async () => {
     const adapter = new MongoStorageAdapter({ uri: databaseURI });
-    await expectAsync(adapter.getClass('UnknownClass')).toBeRejectedWith(
-      undefined
-    );
+    await expectAsync(adapter.getClass('UnknownClass')).toBeRejectedWith(undefined);
   });
 
-  it_only_mongodb_version('<5.1 || >=6')(
-    'should use index for caseInsensitive query',
-    async () => {
-      const user = new Parse.User();
-      user.set('username', 'Bugs');
-      user.set('password', 'Bunny');
-      await user.signUp();
+  it_only_mongodb_version('<5.1 || >=6')('should use index for caseInsensitive query', async () => {
+    const user = new Parse.User();
+    user.set('username', 'Bugs');
+    user.set('password', 'Bunny');
+    await user.signUp();
 
-      const database = Config.get(Parse.applicationId).database;
-      await database.adapter.dropAllIndexes('_User');
+    const database = Config.get(Parse.applicationId).database;
+    await database.adapter.dropAllIndexes('_User');
 
-      const preIndexPlan = await database.find(
-        '_User',
-        { username: 'bugs' },
-        { caseInsensitive: true, explain: true }
-      );
+    const preIndexPlan = await database.find(
+      '_User',
+      { username: 'bugs' },
+      { caseInsensitive: true, explain: true }
+    );
 
-      const schema = await new Parse.Schema('_User').get();
+    const schema = await new Parse.Schema('_User').get();
 
-      await database.adapter.ensureIndex(
-        '_User',
-        schema,
-        ['username'],
-        'case_insensitive_username',
-        true
-      );
+    await database.adapter.ensureIndex(
+      '_User',
+      schema,
+      ['username'],
+      'case_insensitive_username',
+      true
+    );
 
-      const postIndexPlan = await database.find(
-        '_User',
-        { username: 'bugs' },
-        { caseInsensitive: true, explain: true }
-      );
-      expect(preIndexPlan.executionStats.executionStages.stage).toBe(
-        'COLLSCAN'
-      );
-      expect(postIndexPlan.executionStats.executionStages.stage).toBe('FETCH');
-    }
-  );
+    const postIndexPlan = await database.find(
+      '_User',
+      { username: 'bugs' },
+      { caseInsensitive: true, explain: true }
+    );
+    expect(preIndexPlan.executionStats.executionStages.stage).toBe('COLLSCAN');
+    expect(postIndexPlan.executionStats.executionStages.stage).toBe('FETCH');
+  });
 
   it('should delete field without index', async () => {
     const database = Config.get(Parse.applicationId).database;
@@ -448,9 +433,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     obj.set('test', 1);
     await obj.save();
     const schemaBeforeDeletion = await new Parse.Schema('MyObject').get();
-    await database.adapter.deleteFields('MyObject', schemaBeforeDeletion, [
-      'test',
-    ]);
+    await database.adapter.deleteFields('MyObject', schemaBeforeDeletion, ['test']);
     const schemaAfterDeletion = await new Parse.Schema('MyObject').get();
     expect(schemaBeforeDeletion.fields.test).toBeDefined();
     expect(schemaAfterDeletion.fields.test).toBeUndefined();
@@ -462,12 +445,8 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     obj.set('test', 1);
     await obj.save();
     const schemaBeforeDeletion = await new Parse.Schema('MyObject').get();
-    await database.adapter.ensureIndex('MyObject', schemaBeforeDeletion, [
-      'test',
-    ]);
-    await database.adapter.deleteFields('MyObject', schemaBeforeDeletion, [
-      'test',
-    ]);
+    await database.adapter.ensureIndex('MyObject', schemaBeforeDeletion, ['test']);
+    await database.adapter.deleteFields('MyObject', schemaBeforeDeletion, ['test']);
     const schemaAfterDeletion = await new Parse.Schema('MyObject').get();
     expect(schemaBeforeDeletion.fields.test).toBeDefined();
     expect(schemaAfterDeletion.fields.test).toBeUndefined();
@@ -515,9 +494,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         let found = false;
         Collection.prototype.findOneAndUpdate.calls.all().forEach(call => {
           found = true;
-          expect(call.args[2].session.transaction.state).toBe(
-            'TRANSACTION_COMMITTED'
-          );
+          expect(call.args[2].session.transaction.state).toBe('TRANSACTION_COMMITTED');
         });
         expect(found).toBe(true);
       });

@@ -6,9 +6,7 @@ describe('Deprecator', () => {
   let deprecations = [];
 
   beforeEach(async () => {
-    deprecations = [
-      { optionKey: 'exampleKey', changeNewDefault: 'exampleNewDefault' },
-    ];
+    deprecations = [{ optionKey: 'exampleKey', changeNewDefault: 'exampleNewDefault' }];
   });
 
   it('deprecations are an array', async () => {
@@ -16,9 +14,7 @@ describe('Deprecator', () => {
   });
 
   it('logs deprecation for new default', async () => {
-    deprecations = [
-      { optionKey: 'exampleKey', changeNewDefault: 'exampleNewDefault' },
-    ];
+    deprecations = [{ optionKey: 'exampleKey', changeNewDefault: 'exampleNewDefault' }];
 
     spyOn(Deprecator, '_getDeprecations').and.callFake(() => deprecations);
     const logger = require('../lib/logger').logger;
@@ -31,9 +27,7 @@ describe('Deprecator', () => {
   });
 
   it('does not log deprecation for new default if option is set manually', async () => {
-    deprecations = [
-      { optionKey: 'exampleKey', changeNewDefault: 'exampleNewDefault' },
-    ];
+    deprecations = [{ optionKey: 'exampleKey', changeNewDefault: 'exampleNewDefault' }];
 
     spyOn(Deprecator, '_getDeprecations').and.callFake(() => deprecations);
     const logSpy = spyOn(Deprecator, '_logOption').and.callFake(() => {});

@@ -56,28 +56,24 @@ export class CloudCodeRouter extends PromiseRouter {
   }
 
   static getJobs(req) {
-    return rest
-      .find(req.config, req.auth, '_JobSchedule', {}, {})
-      .then(scheduledJobs => {
-        return {
-          response: scheduledJobs.results,
-        };
-      });
+    return rest.find(req.config, req.auth, '_JobSchedule', {}, {}).then(scheduledJobs => {
+      return {
+        response: scheduledJobs.results,
+      };
+    });
   }
 
   static getJobsData(req) {
     const config = req.config;
     const jobs = triggers.getJobs(config.applicationId) || {};
-    return rest
-      .find(req.config, req.auth, '_JobSchedule', {}, {})
-      .then(scheduledJobs => {
-        return {
-          response: {
-            in_use: scheduledJobs.results.map(job => job.jobName),
-            jobs: Object.keys(jobs),
-          },
-        };
-      });
+    return rest.find(req.config, req.auth, '_JobSchedule', {}, {}).then(scheduledJobs => {
+      return {
+        response: {
+          in_use: scheduledJobs.results.map(job => job.jobName),
+          jobs: Object.keys(jobs),
+        },
+      };
+    });
   }
 
   static createJob(req) {

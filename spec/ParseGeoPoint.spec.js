@@ -76,25 +76,22 @@ describe('Parse.GeoPoint testing', () => {
   });
 
   // TODO: This should also have support in postgres, or higher level database agnostic support.
-  it_exclude_dbs(['postgres'])(
-    'updating geo point exception two fields',
-    async done => {
-      const point = new Parse.GeoPoint(20, 20);
-      const obj = new TestObject();
-      obj.set('locationOne', point);
-      await obj.save();
-      obj.set('locationTwo', point);
-      obj.save().then(
-        () => {
-          fail('expected error');
-        },
-        err => {
-          equal(err.code, Parse.Error.INCORRECT_TYPE);
-          done();
-        }
-      );
-    }
-  );
+  it_exclude_dbs(['postgres'])('updating geo point exception two fields', async done => {
+    const point = new Parse.GeoPoint(20, 20);
+    const obj = new TestObject();
+    obj.set('locationOne', point);
+    await obj.save();
+    obj.set('locationTwo', point);
+    obj.save().then(
+      () => {
+        fail('expected error');
+      },
+      err => {
+        equal(err.code, Parse.Error.INCORRECT_TYPE);
+        done();
+      }
+    );
+  });
 
   it_id('bbd9e2f6-7f61-458f-98f2-4a563586cd8d')(it)('geo line', async done => {
     const line = [];
@@ -146,27 +143,24 @@ describe('Parse.GeoPoint testing', () => {
       );
   });
 
-  it_id('e1e86b38-b8a4-4109-8330-a324fe628e0c')(it)(
-    'geo max distance medium',
-    async () => {
-      const objects = [];
-      [0, 1, 2].map(function (i) {
-        const obj = new TestObject();
-        const point = new Parse.GeoPoint(0.0, i * 45.0);
-        obj.set('location', point);
-        obj.set('index', i);
-        objects.push(obj);
-      });
-      await Parse.Object.saveAll(objects);
-      const query = new Parse.Query(TestObject);
-      const point = new Parse.GeoPoint(1.0, -1.0);
-      query.withinRadians('location', point, 3.14 * 0.5);
-      const results = await query.find();
-      equal(results.length, 2);
-      equal(results[0].get('index'), 0);
-      equal(results[1].get('index'), 1);
-    }
-  );
+  it_id('e1e86b38-b8a4-4109-8330-a324fe628e0c')(it)('geo max distance medium', async () => {
+    const objects = [];
+    [0, 1, 2].map(function (i) {
+      const obj = new TestObject();
+      const point = new Parse.GeoPoint(0.0, i * 45.0);
+      obj.set('location', point);
+      obj.set('index', i);
+      objects.push(obj);
+    });
+    await Parse.Object.saveAll(objects);
+    const query = new Parse.Query(TestObject);
+    const point = new Parse.GeoPoint(1.0, -1.0);
+    query.withinRadians('location', point, 3.14 * 0.5);
+    const results = await query.find();
+    equal(results.length, 2);
+    equal(results[0].get('index'), 0);
+    equal(results[1].get('index'), 1);
+  });
 
   it('geo max distance small', async () => {
     const objects = [];
@@ -288,42 +282,36 @@ describe('Parse.GeoPoint testing', () => {
     equal(results.length, 0);
   });
 
-  it_id('9e35a89e-bc2c-4ec5-b25a-8d1890a55233')(it)(
-    'returns nearest location',
-    async () => {
-      await makeSomeGeoPoints();
-      const sfo = new Parse.GeoPoint(37.6189722, -122.3748889);
-      const query = new Parse.Query(TestObject);
-      query.near('location', sfo);
-      const results = await query.find();
-      equal(results[0].get('name'), 'San Francisco');
-      equal(results[1].get('name'), 'Sacramento');
-    }
-  );
+  it_id('9e35a89e-bc2c-4ec5-b25a-8d1890a55233')(it)('returns nearest location', async () => {
+    await makeSomeGeoPoints();
+    const sfo = new Parse.GeoPoint(37.6189722, -122.3748889);
+    const query = new Parse.Query(TestObject);
+    query.near('location', sfo);
+    const results = await query.find();
+    equal(results[0].get('name'), 'San Francisco');
+    equal(results[1].get('name'), 'Sacramento');
+  });
 
-  it_id('6df434b0-142d-4302-bbc6-a6ec5a9d9c68')(it)(
-    'works with geobox queries',
-    done => {
-      const inbound = new Parse.GeoPoint(1.5, 1.5);
-      const onbound = new Parse.GeoPoint(10, 10);
-      const outbound = new Parse.GeoPoint(20, 20);
-      const obj1 = new Parse.Object('TestObject', { location: inbound });
-      const obj2 = new Parse.Object('TestObject', { location: onbound });
-      const obj3 = new Parse.Object('TestObject', { location: outbound });
-      Parse.Object.saveAll([obj1, obj2, obj3])
-        .then(() => {
-          const sw = new Parse.GeoPoint(0, 0);
-          const ne = new Parse.GeoPoint(10, 10);
-          const query = new Parse.Query(TestObject);
-          query.withinGeoBox('location', sw, ne);
-          return query.find();
-        })
-        .then(results => {
-          equal(results.length, 2);
-          done();
-        });
-    }
-  );
+  it_id('6df434b0-142d-4302-bbc6-a6ec5a9d9c68')(it)('works with geobox queries', done => {
+    const inbound = new Parse.GeoPoint(1.5, 1.5);
+    const onbound = new Parse.GeoPoint(10, 10);
+    const outbound = new Parse.GeoPoint(20, 20);
+    const obj1 = new Parse.Object('TestObject', { location: inbound });
+    const obj2 = new Parse.Object('TestObject', { location: onbound });
+    const obj3 = new Parse.Object('TestObject', { location: outbound });
+    Parse.Object.saveAll([obj1, obj2, obj3])
+      .then(() => {
+        const sw = new Parse.GeoPoint(0, 0);
+        const ne = new Parse.GeoPoint(10, 10);
+        const query = new Parse.Query(TestObject);
+        query.withinGeoBox('location', sw, ne);
+        return query.find();
+      })
+      .then(results => {
+        equal(results.length, 2);
+        done();
+      });
+  });
 
   it('supports a sub-object with a geo point', async () => {
     const point = new Parse.GeoPoint(44.0, -11.0);
@@ -374,88 +362,82 @@ describe('Parse.GeoPoint testing', () => {
       });
   });
 
-  it_id('d9fbc5c6-f767-47d6-bb44-3858eb9df15a')(it)(
-    'supports withinPolygon open path',
-    done => {
-      const inbound = new Parse.GeoPoint(1.5, 1.5);
-      const onbound = new Parse.GeoPoint(10, 10);
-      const outbound = new Parse.GeoPoint(20, 20);
-      const obj1 = new Parse.Object('Polygon', { location: inbound });
-      const obj2 = new Parse.Object('Polygon', { location: onbound });
-      const obj3 = new Parse.Object('Polygon', { location: outbound });
-      Parse.Object.saveAll([obj1, obj2, obj3])
-        .then(() => {
-          const where = {
-            location: {
-              $geoWithin: {
-                $polygon: [
-                  { __type: 'GeoPoint', latitude: 0, longitude: 0 },
-                  { __type: 'GeoPoint', latitude: 0, longitude: 10 },
-                  { __type: 'GeoPoint', latitude: 10, longitude: 10 },
-                  { __type: 'GeoPoint', latitude: 10, longitude: 0 },
-                ],
-              },
+  it_id('d9fbc5c6-f767-47d6-bb44-3858eb9df15a')(it)('supports withinPolygon open path', done => {
+    const inbound = new Parse.GeoPoint(1.5, 1.5);
+    const onbound = new Parse.GeoPoint(10, 10);
+    const outbound = new Parse.GeoPoint(20, 20);
+    const obj1 = new Parse.Object('Polygon', { location: inbound });
+    const obj2 = new Parse.Object('Polygon', { location: onbound });
+    const obj3 = new Parse.Object('Polygon', { location: outbound });
+    Parse.Object.saveAll([obj1, obj2, obj3])
+      .then(() => {
+        const where = {
+          location: {
+            $geoWithin: {
+              $polygon: [
+                { __type: 'GeoPoint', latitude: 0, longitude: 0 },
+                { __type: 'GeoPoint', latitude: 0, longitude: 10 },
+                { __type: 'GeoPoint', latitude: 10, longitude: 10 },
+                { __type: 'GeoPoint', latitude: 10, longitude: 0 },
+              ],
             },
-          };
-          return request({
-            method: 'POST',
-            url: Parse.serverURL + '/classes/Polygon',
-            body: { where, _method: 'GET' },
-            headers: {
-              'X-Parse-Application-Id': Parse.applicationId,
-              'X-Parse-Javascript-Key': Parse.javaScriptKey,
-              'Content-Type': 'application/json',
-            },
-          });
-        })
-        .then(resp => {
-          expect(resp.data.results.length).toBe(2);
-          done();
-        }, done.fail);
-    }
-  );
+          },
+        };
+        return request({
+          method: 'POST',
+          url: Parse.serverURL + '/classes/Polygon',
+          body: { where, _method: 'GET' },
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-Javascript-Key': Parse.javaScriptKey,
+            'Content-Type': 'application/json',
+          },
+        });
+      })
+      .then(resp => {
+        expect(resp.data.results.length).toBe(2);
+        done();
+      }, done.fail);
+  });
 
-  it_id('3ec537bd-839a-4c93-a48b-b4a249820074')(it)(
-    'supports withinPolygon closed path',
-    done => {
-      const inbound = new Parse.GeoPoint(1.5, 1.5);
-      const onbound = new Parse.GeoPoint(10, 10);
-      const outbound = new Parse.GeoPoint(20, 20);
-      const obj1 = new Parse.Object('Polygon', { location: inbound });
-      const obj2 = new Parse.Object('Polygon', { location: onbound });
-      const obj3 = new Parse.Object('Polygon', { location: outbound });
-      Parse.Object.saveAll([obj1, obj2, obj3])
-        .then(() => {
-          const where = {
-            location: {
-              $geoWithin: {
-                $polygon: [
-                  { __type: 'GeoPoint', latitude: 0, longitude: 0 },
-                  { __type: 'GeoPoint', latitude: 0, longitude: 10 },
-                  { __type: 'GeoPoint', latitude: 10, longitude: 10 },
-                  { __type: 'GeoPoint', latitude: 10, longitude: 0 },
-                  { __type: 'GeoPoint', latitude: 0, longitude: 0 },
-                ],
-              },
+  it_id('3ec537bd-839a-4c93-a48b-b4a249820074')(it)('supports withinPolygon closed path', done => {
+    const inbound = new Parse.GeoPoint(1.5, 1.5);
+    const onbound = new Parse.GeoPoint(10, 10);
+    const outbound = new Parse.GeoPoint(20, 20);
+    const obj1 = new Parse.Object('Polygon', { location: inbound });
+    const obj2 = new Parse.Object('Polygon', { location: onbound });
+    const obj3 = new Parse.Object('Polygon', { location: outbound });
+    Parse.Object.saveAll([obj1, obj2, obj3])
+      .then(() => {
+        const where = {
+          location: {
+            $geoWithin: {
+              $polygon: [
+                { __type: 'GeoPoint', latitude: 0, longitude: 0 },
+                { __type: 'GeoPoint', latitude: 0, longitude: 10 },
+                { __type: 'GeoPoint', latitude: 10, longitude: 10 },
+                { __type: 'GeoPoint', latitude: 10, longitude: 0 },
+                { __type: 'GeoPoint', latitude: 0, longitude: 0 },
+              ],
             },
-          };
-          return request({
-            method: 'POST',
-            url: Parse.serverURL + '/classes/Polygon',
-            body: { where, _method: 'GET' },
-            headers: {
-              'X-Parse-Application-Id': Parse.applicationId,
-              'X-Parse-Javascript-Key': Parse.javaScriptKey,
-              'Content-Type': 'application/json',
-            },
-          });
-        })
-        .then(resp => {
-          expect(resp.data.results.length).toBe(2);
-          done();
-        }, done.fail);
-    }
-  );
+          },
+        };
+        return request({
+          method: 'POST',
+          url: Parse.serverURL + '/classes/Polygon',
+          body: { where, _method: 'GET' },
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-Javascript-Key': Parse.javaScriptKey,
+            'Content-Type': 'application/json',
+          },
+        });
+      })
+      .then(resp => {
+        expect(resp.data.results.length).toBe(2);
+        done();
+      }, done.fail);
+  });
 
   it_id('0a248e11-3598-480a-9ab5-8a0b259258e4')(it)(
     'supports withinPolygon Polygon object',
@@ -773,11 +755,7 @@ describe('Parse.GeoPoint testing', () => {
 
     await Parse.Object.saveAll([obj1, obj2]);
 
-    const q = new Parse.Query(TestObject).withinKilometers(
-      'location',
-      inside,
-      5
-    );
+    const q = new Parse.Query(TestObject).withinKilometers('location', inside, 5);
     const count = await q.count();
 
     equal(count, 1);
@@ -795,16 +773,8 @@ describe('Parse.GeoPoint testing', () => {
 
       await Parse.Object.saveAll([obj1, obj2, obj3]);
 
-      const q1 = new Parse.Query(TestObject).withinKilometers(
-        'location',
-        inside,
-        5
-      );
-      const q2 = new Parse.Query(TestObject).withinKilometers(
-        'location',
-        middle,
-        5
-      );
+      const q1 = new Parse.Query(TestObject).withinKilometers('location', inside, 5);
+      const q2 = new Parse.Query(TestObject).withinKilometers('location', middle, 5);
       const query = Parse.Query.or(q1, q2);
       const count = await query.count();
 
@@ -826,10 +796,7 @@ describe('Parse.GeoPoint testing', () => {
       });
       await Parse.Object.saveAll([tmp, tmp2]);
       const query = new Parse.Query(TestObject);
-      query.notEqualTo(
-        'location',
-        new Parse.GeoPoint({ latitude: 0, longitude: 0 })
-      );
+      query.notEqualTo('location', new Parse.GeoPoint({ latitude: 0, longitude: 0 }));
       const results = await query.find();
       expect(results.length).toEqual(1);
     }

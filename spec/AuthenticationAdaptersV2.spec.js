@@ -13,8 +13,7 @@ describe('Auth Adapter features', () => {
     validateAuthData: () => Promise.resolve(),
   };
   const baseAdapter2 = {
-    validateAppId: appIds =>
-      appIds[0] === 'test' ? Promise.resolve() : Promise.reject(),
+    validateAppId: appIds => (appIds[0] === 'test' ? Promise.resolve() : Promise.reject()),
     validateAuthData: () => Promise.resolve(),
     appIds: ['test'],
     options: { anOption: true },
@@ -367,15 +366,11 @@ describe('Auth Adapter features', () => {
         break;
       }
     }
-    expect(afterSpy).toHaveBeenCalledWith(
-      { id: 'modernAdapter3Data' },
-      undefined,
-      {
-        ip: '127.0.0.1',
-        user,
-        master: false,
-      }
-    );
+    expect(afterSpy).toHaveBeenCalledWith({ id: 'modernAdapter3Data' }, undefined, {
+      ip: '127.0.0.1',
+      user,
+      master: false,
+    });
     expect(spy).toHaveBeenCalled();
   });
 
@@ -854,10 +849,7 @@ describe('Auth Adapter features', () => {
     expect(firstCall[2].user.id).toEqual(user.id);
     expect(firstCall.length).toEqual(3);
 
-    await user.save(
-      { authData: { baseAdapter2: payload } },
-      { useMasterKey: true }
-    );
+    await user.save({ authData: { baseAdapter2: payload } }, { useMasterKey: true });
 
     const secondCall = baseAdapter2.validateAuthData.calls.argsFor(1);
     expect(secondCall[0]).toEqual(payload);
@@ -883,8 +875,7 @@ describe('Auth Adapter features', () => {
     };
     const throwInSetup = {
       validateAppId: () => Promise.resolve(),
-      validateSetUp: () =>
-        Promise.reject('You cannot signup with that setup data.'),
+      validateSetUp: () => Promise.reject('You cannot signup with that setup data.'),
       validateUpdate: () => Promise.resolve(),
       validateLogin: () => Promise.resolve(),
     };
@@ -892,8 +883,7 @@ describe('Auth Adapter features', () => {
     const throwInUpdate = {
       validateAppId: () => Promise.resolve(),
       validateSetUp: () => Promise.resolve(),
-      validateUpdate: () =>
-        Promise.reject('You cannot update with that update data.'),
+      validateUpdate: () => Promise.reject('You cannot update with that update data.'),
       validateLogin: () => Promise.resolve(),
     };
 
@@ -901,8 +891,7 @@ describe('Auth Adapter features', () => {
       validateAppId: () => Promise.resolve(),
       validateSetUp: () => Promise.resolve(),
       validateUpdate: () => Promise.resolve(),
-      validateLogin: () =>
-        Promise.reject('You cannot login with that login data.'),
+      validateLogin: () => Promise.reject('You cannot login with that login data.'),
     };
     await reconfigureServer({
       auth: { challengeAdapter: throwInChallengeAdapter },
@@ -925,10 +914,7 @@ describe('Auth Adapter features', () => {
       `Failed running auth step challenge for challengeAdapter for user undefined with Error: {"message":"Invalid challenge data: yolo","code":${Parse.Error.SCRIPT_FAILED}}`,
       {
         authenticationStep: 'challenge',
-        error: new Parse.Error(
-          Parse.Error.SCRIPT_FAILED,
-          'Invalid challenge data: yolo'
-        ),
+        error: new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Invalid challenge data: yolo'),
         user: undefined,
         provider: 'challengeAdapter',
       }
@@ -941,10 +927,7 @@ describe('Auth Adapter features', () => {
     await expectAsync(
       user.save({ authData: { modernAdapter: { id: 'modernAdapter' } } })
     ).toBeRejectedWith(
-      new Parse.Error(
-        Parse.Error.SCRIPT_FAILED,
-        'You cannot signup with that setup data.'
-      )
+      new Parse.Error(Parse.Error.SCRIPT_FAILED, 'You cannot signup with that setup data.')
     );
     expect(logger.error).toHaveBeenCalledWith(
       `Failed running auth step validateSetUp for modernAdapter for user undefined with Error: {"message":"You cannot signup with that setup data.","code":${Parse.Error.SCRIPT_FAILED}}`,
@@ -970,10 +953,7 @@ describe('Auth Adapter features', () => {
         { sessionToken: user.getSessionToken() }
       )
     ).toBeRejectedWith(
-      new Parse.Error(
-        Parse.Error.SCRIPT_FAILED,
-        'You cannot update with that update data.'
-      )
+      new Parse.Error(Parse.Error.SCRIPT_FAILED, 'You cannot update with that update data.')
     );
 
     expect(logger.error).toHaveBeenCalledWith(
@@ -1001,19 +981,13 @@ describe('Auth Adapter features', () => {
     await expectAsync(
       user2.save({ authData: { modernAdapter: { id: 'modernAdapter' } } })
     ).toBeRejectedWith(
-      new Parse.Error(
-        Parse.Error.SCRIPT_FAILED,
-        'You cannot login with that login data.'
-      )
+      new Parse.Error(Parse.Error.SCRIPT_FAILED, 'You cannot login with that login data.')
     );
     expect(logger.error).toHaveBeenCalledWith(
       `Failed running auth step validateLogin for modernAdapter for user ${user.id} with Error: {"message":"You cannot login with that login data.","code":${Parse.Error.SCRIPT_FAILED}}`,
       {
         authenticationStep: 'validateLogin',
-        error: new Parse.Error(
-          Parse.Error.SCRIPT_FAILED,
-          'You cannot login with that login data.'
-        ),
+        error: new Parse.Error(Parse.Error.SCRIPT_FAILED, 'You cannot login with that login data.'),
         user: user.id,
         provider: 'modernAdapter',
       }
@@ -1128,9 +1102,7 @@ describe('Auth Adapter features', () => {
           },
         }),
       })
-    ).toBeRejectedWithError(
-      'You provided username or email, you need to also provide password.'
-    );
+    ).toBeRejectedWithError('You provided username or email, you need to also provide password.');
 
     await expectAsync(
       requestWithExpectedError({
@@ -1233,9 +1205,7 @@ describe('Auth Adapter features', () => {
           },
         }),
       })
-    ).toBeRejectedWithError(
-      'You cannot provide more than one authData provider with an id.'
-    );
+    ).toBeRejectedWithError('You cannot provide more than one authData provider with an id.');
 
     const res = await request({
       headers: headers,

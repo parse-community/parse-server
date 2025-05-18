@@ -2,8 +2,7 @@
 
 const request = require('../lib/request');
 const LogsRouter = require('../lib/Routers/LogsRouter').LogsRouter;
-const LoggerController =
-  require('../lib/Controllers/LoggerController').LoggerController;
+const LoggerController = require('../lib/Controllers/LoggerController').LoggerController;
 const WinstonLoggerAdapter =
   require('../lib/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
 
@@ -95,9 +94,7 @@ describe_only(() => {
               const body = response.data;
               expect(response.status).toEqual(200);
               // 4th entry is our actual GET request
-              expect(body[2].url).toEqual(
-                '/1/login?username=test&password=********'
-              );
+              expect(body[2].url).toEqual('/1/login?username=test&password=********');
               expect(body[2].message).toEqual(
                 'REQUEST for [GET] /1/login?username=test&password=********: {}'
               );
@@ -132,9 +129,7 @@ describe_only(() => {
                 const body = response.data;
                 expect(response.status).toEqual(200);
                 // 4th entry is our actual GET request
-                expect(body[2].url).toEqual(
-                  '/1/login?username=test&password=********'
-                );
+                expect(body[2].url).toEqual('/1/login?username=test&password=********');
                 expect(body[2].message).toEqual(
                   'REQUEST for [GET] /1/login?username=test&password=********: {}'
                 );

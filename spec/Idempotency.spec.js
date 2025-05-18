@@ -24,12 +24,7 @@ describe('Idempotency', () => {
       { reqId: reqId },
       { limit: 1 }
     );
-    await rest.del(
-      config,
-      auth.master(config),
-      '_Idempotency',
-      res.results[0].objectId
-    );
+    await rest.del(config, auth.master(config), '_Idempotency', res.results[0].objectId);
   }
   async function setup(options) {
     await reconfigureServer({
@@ -45,20 +40,13 @@ describe('Idempotency', () => {
       jasmine.DEFAULT_TIMEOUT_INTERVAL = 200000;
     }
     await setup({
-      paths: [
-        'functions/.*',
-        'jobs/.*',
-        'classes/.*',
-        'users',
-        'installations',
-      ],
+      paths: ['functions/.*', 'jobs/.*', 'classes/.*', 'users', 'installations'],
       ttl: ttl,
     });
   });
 
   afterEach(() => {
-    jasmine.DEFAULT_TIMEOUT_INTERVAL =
-      process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
   });
 
   // Tests
@@ -276,9 +264,7 @@ describe('Idempotency', () => {
   it_id('0ecd2cd2-dafb-4a2b-bb2b-9ad4c9aca777')(it)(
     'should re-throw any other error unchanged when writing request entry fails for any other reason',
     async () => {
-      spyOn(rest, 'create').and.rejectWith(
-        new Parse.Error(0, 'some other error')
-      );
+      spyOn(rest, 'create').and.rejectWith(new Parse.Error(0, 'some other error'));
       Parse.Cloud.define('myFunction', () => {});
       const params = {
         method: 'POST',

@@ -1,5 +1,4 @@
-const RedisCacheAdapter =
-  require('../lib/Adapters/Cache/RedisCacheAdapter').default;
+const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter').default;
 
 function wait(sleep) {
   return new Promise(function (resolve) {

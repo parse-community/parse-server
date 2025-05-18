@@ -6,51 +6,48 @@ const { resolvingPromise } = require('../lib/TestUtils');
 describe('UserController', () => {
   describe('sendVerificationEmail', () => {
     describe('parseFrameURL not provided', () => {
-      it_id('61338330-eca7-4c33-8816-7ff05966f43b')(it)(
-        'uses publicServerURL',
-        async () => {
-          await reconfigureServer({
-            publicServerURL: 'http://www.example.com',
-            customPages: {
-              parseFrameURL: undefined,
-            },
-            verifyUserEmails: true,
-            emailAdapter,
-            appName: 'test',
-          });
+      it_id('61338330-eca7-4c33-8816-7ff05966f43b')(it)('uses publicServerURL', async () => {
+        await reconfigureServer({
+          publicServerURL: 'http://www.example.com',
+          customPages: {
+            parseFrameURL: undefined,
+          },
+          verifyUserEmails: true,
+          emailAdapter,
+          appName: 'test',
+        });
 
-          let emailOptions;
-          const sendPromise = resolvingPromise();
-          emailAdapter.sendVerificationEmail = options => {
-            emailOptions = options;
-            sendPromise.resolve();
-          };
+        let emailOptions;
+        const sendPromise = resolvingPromise();
+        emailAdapter.sendVerificationEmail = options => {
+          emailOptions = options;
+          sendPromise.resolve();
+        };
 
-          const username = 'verificationUser';
-          const user = new Parse.User();
-          user.setUsername(username);
-          user.setPassword('pass');
-          user.setEmail('verification@example.com');
-          await user.signUp();
-          await sendPromise;
+        const username = 'verificationUser';
+        const user = new Parse.User();
+        user.setUsername(username);
+        user.setPassword('pass');
+        user.setEmail('verification@example.com');
+        await user.signUp();
+        await sendPromise;
 
-          const config = Config.get('test');
-          const rawUser = await config.database.find(
-            '_User',
-            { username },
-            {},
-            Auth.maintenance(config)
-          );
-          const rawUsername = rawUser[0].username;
-          const rawToken = rawUser[0]._email_verify_token;
-          expect(rawToken).toBeDefined();
-          expect(rawUsername).toBe(username);
+        const config = Config.get('test');
+        const rawUser = await config.database.find(
+          '_User',
+          { username },
+          {},
+          Auth.maintenance(config)
+        );
+        const rawUsername = rawUser[0].username;
+        const rawToken = rawUser[0]._email_verify_token;
+        expect(rawToken).toBeDefined();
+        expect(rawUsername).toBe(username);
 
-          expect(emailOptions.link).toEqual(
-            `http://www.example.com/apps/test/verify_email?token=${rawToken}`
-          );
-        }
-      );
+        expect(emailOptions.link).toEqual(
+          `http://www.example.com/apps/test/verify_email?token=${rawToken}`
+        );
+      });
     });
 
     describe('parseFrameURL provided', () => {

@@ -23,9 +23,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       expect(config.verifyEmailSuccessURL).toEqual('myVerifyEmailSuccess');
       expect(config.choosePasswordURL).toEqual('myChoosePassword');
       expect(config.passwordResetSuccessURL).toEqual('myPasswordResetSuccess');
-      expect(config.parseFrameURL).toEqual(
-        'http://example.com/handle-parse-iframe'
-      );
+      expect(config.parseFrameURL).toEqual('http://example.com/handle-parse-iframe');
       expect(config.verifyEmailURL).toEqual(
         'https://my.public.server.com/1/apps/test/verify_email'
       );
@@ -164,59 +162,52 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     }, 200);
   });
 
-  it_id('33d31119-c724-4f5d-83ec-f56815d23df3')(it)(
-    'does send with a simple adapter',
-    done => {
-      let calls = 0;
-      const emailAdapter = {
-        sendMail: function (options) {
-          expect(options.to).toBe('testSendSimpleAdapter@parse.com');
-          if (calls == 0) {
-            expect(options.subject).toEqual(
-              'Please verify your e-mail for My Cool App'
-            );
-            expect(options.text.match(/verify_email/)).not.toBe(null);
-          } else if (calls == 1) {
-            expect(options.subject).toEqual('Password Reset for My Cool App');
-            expect(options.text.match(/request_password_reset/)).not.toBe(null);
-          }
-          calls++;
-          return Promise.resolve();
-        },
-      };
-      reconfigureServer({
-        appName: 'My Cool App',
-        verifyUserEmails: true,
-        emailAdapter: emailAdapter,
-        publicServerURL: 'http://localhost:8378/1',
-      }).then(async () => {
-        const user = new Parse.User();
-        user.setPassword('asdf');
-        user.setUsername('zxcv');
-        user.set('email', 'testSendSimpleAdapter@parse.com');
-        await user.signUp();
-        await jasmine.timeout();
-        expect(calls).toBe(1);
-        user
-          .fetch()
-          .then(user => {
-            return user.save();
-          })
-          .then(() => {
-            return Parse.User.requestPasswordReset(
-              'testSendSimpleAdapter@parse.com'
-            ).catch(() => {
-              fail('Should not fail requesting a password');
-              done();
-            });
-          })
-          .then(() => {
-            expect(calls).toBe(2);
+  it_id('33d31119-c724-4f5d-83ec-f56815d23df3')(it)('does send with a simple adapter', done => {
+    let calls = 0;
+    const emailAdapter = {
+      sendMail: function (options) {
+        expect(options.to).toBe('testSendSimpleAdapter@parse.com');
+        if (calls == 0) {
+          expect(options.subject).toEqual('Please verify your e-mail for My Cool App');
+          expect(options.text.match(/verify_email/)).not.toBe(null);
+        } else if (calls == 1) {
+          expect(options.subject).toEqual('Password Reset for My Cool App');
+          expect(options.text.match(/request_password_reset/)).not.toBe(null);
+        }
+        calls++;
+        return Promise.resolve();
+      },
+    };
+    reconfigureServer({
+      appName: 'My Cool App',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      publicServerURL: 'http://localhost:8378/1',
+    }).then(async () => {
+      const user = new Parse.User();
+      user.setPassword('asdf');
+      user.setUsername('zxcv');
+      user.set('email', 'testSendSimpleAdapter@parse.com');
+      await user.signUp();
+      await jasmine.timeout();
+      expect(calls).toBe(1);
+      user
+        .fetch()
+        .then(user => {
+          return user.save();
+        })
+        .then(() => {
+          return Parse.User.requestPasswordReset('testSendSimpleAdapter@parse.com').catch(() => {
+            fail('Should not fail requesting a password');
             done();
           });
-      });
-    }
-  );
+        })
+        .then(() => {
+          expect(calls).toBe(2);
+          done();
+        });
+    });
+  });
 
   it('prevents user from login if email is not verified but preventLoginWithUnverifiedEmail is set to true', done => {
     reconfigureServer({
@@ -299,10 +290,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         return true;
       },
     };
-    const verifyUserEmailsSpy = spyOn(
-      verifyUserEmails,
-      'method'
-    ).and.callThrough();
+    const verifyUserEmailsSpy = spyOn(verifyUserEmails, 'method').and.callThrough();
     await reconfigureServer({
       appName: 'test',
       publicServerURL: 'http://localhost:1337/1',
@@ -424,10 +412,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       newUser.setUsername('zxcv');
       newUser.set('email', 'test@example.com');
       await expectAsync(newUser.signUp()).toBeRejectedWith(
-        new Parse.Error(
-          Parse.Error.EMAIL_NOT_FOUND,
-          'User email is not verified.'
-        )
+        new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.')
       );
       const user = await new Parse.Query(Parse.User).first({
         useMasterKey: true,
@@ -454,9 +439,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         user.set('email', 'testInvalidConfig@parse.com');
         user
           .signUp(null)
-          .then(() =>
-            Parse.User.requestPasswordReset('testInvalidConfig@parse.com')
-          )
+          .then(() => Parse.User.requestPasswordReset('testInvalidConfig@parse.com'))
           .then(
             () => {
               fail('sending password reset email should not have succeeded');
@@ -492,9 +475,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         user.set('email', 'testInvalidConfig@parse.com');
         user
           .signUp(null)
-          .then(() =>
-            Parse.User.requestPasswordReset('testInvalidConfig@parse.com')
-          )
+          .then(() => Parse.User.requestPasswordReset('testInvalidConfig@parse.com'))
           .then(
             () => {
               fail('sending password reset email should not have succeeded');
@@ -527,9 +508,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         user.set('email', 'testInvalidConfig@parse.com');
         user
           .signUp(null)
-          .then(() =>
-            Parse.User.requestPasswordReset('testInvalidConfig@parse.com')
-          )
+          .then(() => Parse.User.requestPasswordReset('testInvalidConfig@parse.com'))
           .then(
             () => {
               fail('sending password reset email should not have succeeded');
@@ -566,9 +545,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         user.set('email', 'testInvalidConfig@parse.com');
         user
           .signUp(null)
-          .then(() =>
-            Parse.User.requestPasswordReset('testInvalidConfig@parse.com')
-          )
+          .then(() => Parse.User.requestPasswordReset('testInvalidConfig@parse.com'))
           .then(
             () => {
               done();
@@ -610,9 +587,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         user.setUsername('testValidConfig@parse.com');
         user
           .signUp(null)
-          .then(() =>
-            Parse.User.requestPasswordReset('testValidConfig@parse.com')
-          )
+          .then(() => Parse.User.requestPasswordReset('testValidConfig@parse.com'))
           .then(
             () => {
               expect(adapter.sendMail).toHaveBeenCalled();
@@ -958,12 +933,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
               function () {
                 const config = Config.get('test');
                 config.database.adapter
-                  .find(
-                    '_User',
-                    { fields: {} },
-                    { username: 'zxcv' },
-                    { limit: 1 }
-                  )
+                  .find('_User', { fields: {} }, { username: 'zxcv' }, { limit: 1 })
                   .then(results => {
                     // _perishable_token should be unset after reset password
                     expect(results.length).toEqual(1);
@@ -1289,13 +1259,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       },
     });
 
-    await expectAsync(
-      Parse.User.requestPasswordReset('test@example.com')
-    ).toBeRejectedWith(
-      new Parse.Error(
-        Parse.Error.OBJECT_NOT_FOUND,
-        'A user with that email does not exist.'
-      )
+    await expectAsync(Parse.User.requestPasswordReset('test@example.com')).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'A user with that email does not exist.')
     );
   });
 
@@ -1315,9 +1280,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
             resetPasswordSuccessOnInvalidEmail: value,
           },
         })
-      ).toBeRejectedWith(
-        'resetPasswordSuccessOnInvalidEmail must be a boolean value'
-      );
+      ).toBeRejectedWith('resetPasswordSuccessOnInvalidEmail must be a boolean value');
     }
   });
 });

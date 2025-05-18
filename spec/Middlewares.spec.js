@@ -32,22 +32,19 @@ describe('middlewares', () => {
     AppCache.del(fakeReq.body._ApplicationId);
   });
 
-  it_id('4cc18d90-1763-4725-97fa-f63fb4692fc4')(it)(
-    'should use _ContentType if provided',
-    done => {
-      AppCachePut(fakeReq.body._ApplicationId, {
-        masterKeyIps: ['127.0.0.1'],
-      });
-      expect(fakeReq.headers['content-type']).toEqual(undefined);
-      const contentType = 'image/jpeg';
-      fakeReq.body._ContentType = contentType;
-      middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
-        expect(fakeReq.headers['content-type']).toEqual(contentType);
-        expect(fakeReq.body._ContentType).toEqual(undefined);
-        done();
-      });
-    }
-  );
+  it_id('4cc18d90-1763-4725-97fa-f63fb4692fc4')(it)('should use _ContentType if provided', done => {
+    AppCachePut(fakeReq.body._ApplicationId, {
+      masterKeyIps: ['127.0.0.1'],
+    });
+    expect(fakeReq.headers['content-type']).toEqual(undefined);
+    const contentType = 'image/jpeg';
+    fakeReq.body._ContentType = contentType;
+    middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
+      expect(fakeReq.headers['content-type']).toEqual(contentType);
+      expect(fakeReq.body._ContentType).toEqual(undefined);
+      done();
+    });
+  });
 
   it('should give invalid response when keys are configured but no key supplied', async () => {
     AppCachePut(fakeReq.body._ApplicationId, {
@@ -165,9 +162,7 @@ describe('middlewares', () => {
       fakeReq.ip = '127.0.0.1';
       fakeReq.headers['x-parse-master-key'] = 'masterKey';
 
-      const error = await middlewares
-        .handleParseHeaders(fakeReq, fakeRes, () => {})
-        .catch(e => e);
+      const error = await middlewares.handleParseHeaders(fakeReq, fakeRes, () => {}).catch(e => e);
 
       expect(error).toBeDefined();
       expect(error.message).toEqual(`unauthorized`);
@@ -187,9 +182,7 @@ describe('middlewares', () => {
     fakeReq.ip = '10.0.0.2';
     fakeReq.headers['x-parse-maintenance-key'] = 'masterKey';
 
-    const error = await middlewares
-      .handleParseHeaders(fakeReq, fakeRes, () => {})
-      .catch(e => e);
+    const error = await middlewares.handleParseHeaders(fakeReq, fakeRes, () => {}).catch(e => e);
 
     expect(error).toBeDefined();
     expect(error.message).toEqual(`unauthorized`);
@@ -207,9 +200,7 @@ describe('middlewares', () => {
       });
       fakeReq.ip = '10.0.0.1';
       fakeReq.headers['x-parse-master-key'] = 'masterKey';
-      await new Promise(resolve =>
-        middlewares.handleParseHeaders(fakeReq, fakeRes, resolve)
-      );
+      await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
       expect(fakeReq.auth.isMaster).toBe(true);
     }
   );
@@ -223,9 +214,7 @@ describe('middlewares', () => {
       });
       fakeReq.ip = '10.0.0.1';
       fakeReq.headers['x-parse-master-key'] = 'masterKey';
-      await new Promise(resolve =>
-        middlewares.handleParseHeaders(fakeReq, fakeRes, resolve)
-      );
+      await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
       expect(fakeReq.auth.isMaster).toBe(true);
     }
   );
@@ -242,9 +231,7 @@ describe('middlewares', () => {
         headers[key] = value;
       },
     };
-    const allowCrossDomain = middlewares.allowCrossDomain(
-      fakeReq.body._ApplicationId
-    );
+    const allowCrossDomain = middlewares.allowCrossDomain(fakeReq.body._ApplicationId);
     allowCrossDomain(fakeReq, res, () => {});
     expect(Object.keys(headers).length).toBe(4);
     expect(headers['Access-Control-Expose-Headers']).toBe(
@@ -262,21 +249,15 @@ describe('middlewares', () => {
         headers[key] = value;
       },
     };
-    const allowCrossDomain = middlewares.allowCrossDomain(
-      fakeReq.body._ApplicationId
-    );
+    const allowCrossDomain = middlewares.allowCrossDomain(fakeReq.body._ApplicationId);
     allowCrossDomain(fakeReq, res, () => {});
-    expect(headers['Access-Control-Allow-Headers']).toContain(
-      middlewares.DEFAULT_ALLOWED_HEADERS
-    );
+    expect(headers['Access-Control-Allow-Headers']).toContain(middlewares.DEFAULT_ALLOWED_HEADERS);
 
     AppCachePut(fakeReq.body._ApplicationId, {
       allowHeaders: [],
     });
     allowCrossDomain(fakeReq, res, () => {});
-    expect(headers['Access-Control-Allow-Headers']).toContain(
-      middlewares.DEFAULT_ALLOWED_HEADERS
-    );
+    expect(headers['Access-Control-Allow-Headers']).toContain(middlewares.DEFAULT_ALLOWED_HEADERS);
   });
 
   it('should append custom headers to Access-Control-Allow-Headers if allowHeaders provided', () => {
@@ -289,16 +270,10 @@ describe('middlewares', () => {
         headers[key] = value;
       },
     };
-    const allowCrossDomain = middlewares.allowCrossDomain(
-      fakeReq.body._ApplicationId
-    );
+    const allowCrossDomain = middlewares.allowCrossDomain(fakeReq.body._ApplicationId);
     allowCrossDomain(fakeReq, res, () => {});
-    expect(headers['Access-Control-Allow-Headers']).toContain(
-      'Header-1, Header-2'
-    );
-    expect(headers['Access-Control-Allow-Headers']).toContain(
-      middlewares.DEFAULT_ALLOWED_HEADERS
-    );
+    expect(headers['Access-Control-Allow-Headers']).toContain('Header-1, Header-2');
+    expect(headers['Access-Control-Allow-Headers']).toContain(middlewares.DEFAULT_ALLOWED_HEADERS);
   });
 
   it('should set default Access-Control-Allow-Origin if allowOrigin is empty', () => {
@@ -311,9 +286,7 @@ describe('middlewares', () => {
         headers[key] = value;
       },
     };
-    const allowCrossDomain = middlewares.allowCrossDomain(
-      fakeReq.body._ApplicationId
-    );
+    const allowCrossDomain = middlewares.allowCrossDomain(fakeReq.body._ApplicationId);
     allowCrossDomain(fakeReq, res, () => {});
     expect(headers['Access-Control-Allow-Origin']).toEqual('*');
   });
@@ -328,13 +301,9 @@ describe('middlewares', () => {
         headers[key] = value;
       },
     };
-    const allowCrossDomain = middlewares.allowCrossDomain(
-      fakeReq.body._ApplicationId
-    );
+    const allowCrossDomain = middlewares.allowCrossDomain(fakeReq.body._ApplicationId);
     allowCrossDomain(fakeReq, res, () => {});
-    expect(headers['Access-Control-Allow-Origin']).toEqual(
-      'https://parseplatform.org/'
-    );
+    expect(headers['Access-Control-Allow-Origin']).toEqual('https://parseplatform.org/');
   });
 
   it('should support multiple origins if several are defined in allowOrigin as an array', () => {
@@ -347,9 +316,7 @@ describe('middlewares', () => {
         headers[key] = value;
       },
     };
-    const allowCrossDomain = middlewares.allowCrossDomain(
-      fakeReq.body._ApplicationId
-    );
+    const allowCrossDomain = middlewares.allowCrossDomain(fakeReq.body._ApplicationId);
     // Test with the first domain
     fakeReq.headers.origin = 'https://a.com';
     allowCrossDomain(fakeReq, res, () => {});
@@ -402,24 +369,18 @@ describe('middlewares', () => {
       expect(middlewares.checkIp(ip, ['::'], new Map())).toBe(true);
       expect(middlewares.checkIp(ip, ['0.0.0.0'], new Map())).toBe(false);
       expect(middlewares.checkIp(ip, ['0.0.0.0/0'], new Map())).toBe(false);
-      expect(middlewares.checkIp(ip, ['123.123.123.123'], new Map())).toBe(
-        false
-      );
+      expect(middlewares.checkIp(ip, ['123.123.123.123'], new Map())).toBe(false);
     });
 
     expect(middlewares.checkIp(ipv6, [anotherIpv6], new Map())).toBe(false);
     expect(middlewares.checkIp(ipv6, [ipv6], new Map())).toBe(true);
-    expect(
-      middlewares.checkIp(ipv6, ['2001:db8:85a3:0:0:8a2e:0:0/100'], new Map())
-    ).toBe(true);
+    expect(middlewares.checkIp(ipv6, ['2001:db8:85a3:0:0:8a2e:0:0/100'], new Map())).toBe(true);
 
     expect(middlewares.checkIp(ipv4, ['::'], new Map())).toBe(false);
     expect(middlewares.checkIp(ipv4, ['::/0'], new Map())).toBe(false);
     expect(middlewares.checkIp(ipv4, ['0.0.0.0'], new Map())).toBe(true);
     expect(middlewares.checkIp(ipv4, ['0.0.0.0/0'], new Map())).toBe(true);
-    expect(middlewares.checkIp(ipv4, ['123.123.123.123'], new Map())).toBe(
-      false
-    );
+    expect(middlewares.checkIp(ipv4, ['123.123.123.123'], new Map())).toBe(false);
     expect(middlewares.checkIp(ipv4, [ipv4], new Map())).toBe(true);
     expect(middlewares.checkIp(ipv4, ['192.168.0.0/24'], new Map())).toBe(true);
 
@@ -428,22 +389,15 @@ describe('middlewares', () => {
     // ::ffff:127.0.0.1 is a padded ipv4 address but not ::1
     expect(middlewares.checkIp(localhostV62, ['::1'], new Map())).toBe(false);
     // ::ffff:127.0.0.1 is a padded ipv4 address and is a match for  127.0.0.1
-    expect(middlewares.checkIp(localhostV62, ['127.0.0.1'], new Map())).toBe(
-      true
-    );
+    expect(middlewares.checkIp(localhostV62, ['127.0.0.1'], new Map())).toBe(true);
   });
 
   it('should match address with cache', () => {
     const ipv6 = '2001:0db8:85a3:0000:0000:8a2e:0370:7334';
     const cache1 = new Map();
-    const spyBlockListCheck = spyOn(
-      BlockList.prototype,
-      'check'
-    ).and.callThrough();
+    const spyBlockListCheck = spyOn(BlockList.prototype, 'check').and.callThrough();
     expect(middlewares.checkIp(ipv6, ['::'], cache1)).toBe(true);
-    expect(cache1.get('2001:0db8:85a3:0000:0000:8a2e:0370:7334')).toBe(
-      undefined
-    );
+    expect(cache1.get('2001:0db8:85a3:0000:0000:8a2e:0370:7334')).toBe(undefined);
     expect(cache1.get('allowAllIpv6')).toBe(true);
     expect(spyBlockListCheck).toHaveBeenCalledTimes(0);
 

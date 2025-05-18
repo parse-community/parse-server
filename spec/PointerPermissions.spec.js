@@ -30,11 +30,7 @@ describe('Pointer Permissions', () => {
         })
         .then(() => {
           return config.database.loadSchema().then(schema => {
-            return schema.updateClass(
-              'AnObject',
-              {},
-              { readUserFields: ['owner'] }
-            );
+            return schema.updateClass('AnObject', {}, { readUserFields: ['owner'] });
           });
         })
         .then(() => {
@@ -521,11 +517,7 @@ describe('Pointer Permissions', () => {
         .then(() => {
           return config.database.loadSchema().then(schema => {
             // Lock the update, and let only owner write
-            return schema.updateClass(
-              'AnObject',
-              {},
-              { update: {}, writeUserFields: ['owner'] }
-            );
+            return schema.updateClass('AnObject', {}, { update: {}, writeUserFields: ['owner'] });
           });
         })
         .then(() => {
@@ -578,11 +570,7 @@ describe('Pointer Permissions', () => {
         .then(() => {
           return config.database.loadSchema().then(schema => {
             // Lock the update, and let only owner write
-            return schema.updateClass(
-              'AnObject',
-              {},
-              { update: {}, writeUserFields: ['owner'] }
-            );
+            return schema.updateClass('AnObject', {}, { update: {}, writeUserFields: ['owner'] });
           });
         })
         .then(() => {
@@ -635,11 +623,7 @@ describe('Pointer Permissions', () => {
         .then(() => {
           return config.database.loadSchema().then(schema => {
             // Lock the update, and let only owner write
-            return schema.updateClass(
-              'AnObject',
-              {},
-              { update: {}, writeUserFields: ['owner'] }
-            );
+            return schema.updateClass('AnObject', {}, { update: {}, writeUserFields: ['owner'] });
           });
         })
         .then(() => {
@@ -1089,78 +1073,75 @@ describe('Pointer Permissions', () => {
       }
     });
 
-    it_id('1bbb9ed6-5558-4ce5-a238-b1a2015d273f')(it)(
-      'should work with write',
-      async done => {
-        const config = Config.get(Parse.applicationId);
-        const user = new Parse.User();
-        const user2 = new Parse.User();
-        user.set({
-          username: 'user1',
-          password: 'password',
-        });
-        user2.set({
-          username: 'user2',
-          password: 'password',
-        });
-        const obj = new Parse.Object('AnObject');
-        const obj2 = new Parse.Object('AnObject');
+    it_id('1bbb9ed6-5558-4ce5-a238-b1a2015d273f')(it)('should work with write', async done => {
+      const config = Config.get(Parse.applicationId);
+      const user = new Parse.User();
+      const user2 = new Parse.User();
+      user.set({
+        username: 'user1',
+        password: 'password',
+      });
+      user2.set({
+        username: 'user2',
+        password: 'password',
+      });
+      const obj = new Parse.Object('AnObject');
+      const obj2 = new Parse.Object('AnObject');
 
-        await Parse.Object.saveAll([user, user2]);
+      await Parse.Object.saveAll([user, user2]);
 
-        obj.set('owner', user);
-        obj.set('readers', [user2]);
-        obj2.set('owner', user2);
-        obj2.set('readers', [user]);
-        await Parse.Object.saveAll([obj, obj2]);
+      obj.set('owner', user);
+      obj.set('readers', [user2]);
+      obj2.set('owner', user2);
+      obj2.set('readers', [user]);
+      await Parse.Object.saveAll([obj, obj2]);
 
-        const schema = await config.database.loadSchema();
-        await schema.updateClass(
-          'AnObject',
-          {},
-          {
-            writeUserFields: ['owner'],
-            readUserFields: ['readers', 'owner'],
-          }
-        );
-
-        await Parse.User.logIn('user1', 'password');
-
-        obj2.set('hello', 'world');
-        try {
-          await obj2.save();
-          done.fail('User should not be able to update obj2');
-        } catch (err) {
-          // User 1 should not be able to update obj2
-          expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      const schema = await config.database.loadSchema();
+      await schema.updateClass(
+        'AnObject',
+        {},
+        {
+          writeUserFields: ['owner'],
+          readUserFields: ['readers', 'owner'],
         }
+      );
 
-        obj.set('hello', 'world');
-        try {
-          await obj.save();
-        } catch (err) {
-          done.fail('User should be able to update');
-        }
+      await Parse.User.logIn('user1', 'password');
 
-        await Parse.User.logIn('user2', 'password');
-
-        try {
-          const q = new Parse.Query('AnObject');
-          const res = await q.find();
-          expect(res.length).toBe(2);
-          res.forEach(result => {
-            if (result.id == obj.id) {
-              expect(result.get('hello')).toBe('world');
-            } else {
-              expect(result.id).toBe(obj2.id);
-            }
-          });
-          done();
-        } catch (err) {
-          done.fail('failed');
-        }
+      obj2.set('hello', 'world');
+      try {
+        await obj2.save();
+        done.fail('User should not be able to update obj2');
+      } catch (err) {
+        // User 1 should not be able to update obj2
+        expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
       }
-    );
+
+      obj.set('hello', 'world');
+      try {
+        await obj.save();
+      } catch (err) {
+        done.fail('User should be able to update');
+      }
+
+      await Parse.User.logIn('user2', 'password');
+
+      try {
+        const q = new Parse.Query('AnObject');
+        const res = await q.find();
+        expect(res.length).toBe(2);
+        res.forEach(result => {
+          if (result.id == obj.id) {
+            expect(result.get('hello')).toBe('world');
+          } else {
+            expect(result.id).toBe(obj2.id);
+          }
+        });
+        done();
+      } catch (err) {
+        done.fail('failed');
+      }
+    });
 
     it('should let a proper user find', async done => {
       const config = Config.get(Parse.applicationId);
@@ -1191,11 +1172,7 @@ describe('Pointer Permissions', () => {
       await Parse.Object.saveAll([obj, obj2]);
 
       const schema = await config.database.loadSchema();
-      await schema.updateClass(
-        'AnObject',
-        {},
-        { find: {}, get: {}, readUserFields: ['owners'] }
-      );
+      await schema.updateClass('AnObject', {}, { find: {}, get: {}, readUserFields: ['owners'] });
 
       let q = new Parse.Query('AnObject');
       let result = await q.find();
@@ -1260,11 +1237,7 @@ describe('Pointer Permissions', () => {
         await Parse.Object.saveAll([obj, obj2]);
 
         const schema = await config.database.loadSchema();
-        await schema.updateClass(
-          'AnObject',
-          {},
-          { find: {}, get: {}, readUserFields: ['owners'] }
-        );
+        await schema.updateClass('AnObject', {}, { find: {}, get: {}, readUserFields: ['owners'] });
 
         for (const owner of ['user1', 'user2']) {
           await Parse.User.logIn(owner, 'password');
@@ -1310,11 +1283,7 @@ describe('Pointer Permissions', () => {
       await Parse.Object.saveAll([obj, obj2]);
 
       const schema = await config.database.loadSchema();
-      await schema.updateClass(
-        'AnObject',
-        {},
-        { find: {}, get: {}, readUserFields: ['owners'] }
-      );
+      await schema.updateClass('AnObject', {}, { find: {}, get: {}, readUserFields: ['owners'] });
 
       for (const owner of ['user1', 'user2']) {
         try {
@@ -1570,11 +1539,7 @@ describe('Pointer Permissions', () => {
 
       const schema = await config.database.loadSchema();
       // Lock the update, and let only owners write
-      await schema.updateClass(
-        'AnObject',
-        {},
-        { update: {}, writeUserFields: ['owners'] }
-      );
+      await schema.updateClass('AnObject', {}, { update: {}, writeUserFields: ['owners'] });
 
       await Parse.User.logIn('user1', 'password');
       try {
@@ -1623,11 +1588,7 @@ describe('Pointer Permissions', () => {
 
       const schema = await config.database.loadSchema();
       // Lock the update, and let only owners write
-      await schema.updateClass(
-        'AnObject',
-        {},
-        { update: {}, writeUserFields: ['owners'] }
-      );
+      await schema.updateClass('AnObject', {}, { update: {}, writeUserFields: ['owners'] });
 
       for (const owner of ['user2', 'user3']) {
         await Parse.User.logIn(owner, 'password');
@@ -1677,11 +1638,7 @@ describe('Pointer Permissions', () => {
 
       const schema = await config.database.loadSchema();
       // Lock the update, and let only owners write
-      await schema.updateClass(
-        'AnObject',
-        {},
-        { update: {}, writeUserFields: ['owners'] }
-      );
+      await schema.updateClass('AnObject', {}, { update: {}, writeUserFields: ['owners'] });
 
       for (const owner of ['user2', 'user3']) {
         await Parse.User.logIn(owner, 'password');
@@ -1733,11 +1690,7 @@ describe('Pointer Permissions', () => {
 
       const schema = await config.database.loadSchema();
       // Lock reading, and let only owners read
-      await schema.updateClass(
-        'AnObject',
-        {},
-        { find: {}, get: {}, readUserFields: ['owners'] }
-      );
+      await schema.updateClass('AnObject', {}, { find: {}, get: {}, readUserFields: ['owners'] });
 
       await Parse.User.logIn('user1', 'password');
       try {
@@ -1951,10 +1904,7 @@ describe('Pointer Permissions', () => {
       }
 
       try {
-        const objectAgain = await object.save(
-          { hello: 'baz' },
-          { useMasterKey: true }
-        );
+        const objectAgain = await object.save({ hello: 'baz' }, { useMasterKey: true });
         expect(objectAgain.get('hello')).toBe('baz');
         done();
       } catch (err) {
@@ -2035,13 +1985,9 @@ describe('Pointer Permissions', () => {
     const actionDelete = obj => obj.destroy();
     const actionAddFieldOnCreate = () =>
       new Parse.Object(className, { ['extra' + Date.now()]: 'field' }).save();
-    const actionAddFieldOnUpdate = obj =>
-      obj.save({ ['another' + Date.now()]: 'field' });
+    const actionAddFieldOnUpdate = obj => obj.save({ ['another' + Date.now()]: 'field' });
 
-    const OBJECT_NOT_FOUND = new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
-      'Object not found.'
-    );
+    const OBJECT_NOT_FOUND = new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
     const PERMISSION_DENIED = jasmine.stringMatching('Permission denied');
 
     async function createUser(username, password = 'password') {
@@ -2082,10 +2028,7 @@ describe('Pointer Permissions', () => {
       async function initialize() {
         await Config.get(Parse.applicationId).schemaCache.clear();
 
-        [user1, user2] = await Promise.all([
-          createUser('user1'),
-          createUser('user2'),
-        ]);
+        [user1, user2] = await Promise.all([createUser('user1'), createUser('user2')]);
 
         obj1 = new Parse.Object(className, {
           owner: user1,
@@ -2132,9 +2075,7 @@ describe('Pointer Permissions', () => {
 
             await logIn(user2);
 
-            await expectAsync(actionGet(obj1.id)).toBeRejectedWith(
-              OBJECT_NOT_FOUND
-            );
+            await expectAsync(actionGet(obj1.id)).toBeRejectedWith(OBJECT_NOT_FOUND);
             done();
           }
         );
@@ -2297,9 +2238,7 @@ describe('Pointer Permissions', () => {
 
             await logIn(user2);
 
-            await expectAsync(actionUpdate(obj1)).toBeRejectedWith(
-              OBJECT_NOT_FOUND
-            );
+            await expectAsync(actionUpdate(obj1)).toBeRejectedWith(OBJECT_NOT_FOUND);
             done();
           }
         );
@@ -2354,9 +2293,7 @@ describe('Pointer Permissions', () => {
 
             await logIn(user2);
 
-            await expectAsync(actionDelete(obj1)).toBeRejectedWith(
-              OBJECT_NOT_FOUND
-            );
+            await expectAsync(actionDelete(obj1)).toBeRejectedWith(OBJECT_NOT_FOUND);
             done();
           }
         );
@@ -2436,9 +2373,7 @@ describe('Pointer Permissions', () => {
             owner: user1,
             extra: 'field',
           });
-          await expectAsync(newObject.save()).toBeRejectedWith(
-            PERMISSION_DENIED
-          );
+          await expectAsync(newObject.save()).toBeRejectedWith(PERMISSION_DENIED);
           done();
         });
 
@@ -2471,9 +2406,7 @@ describe('Pointer Permissions', () => {
 
           await logIn(user2);
 
-          await expectAsync(actionAddFieldOnUpdate(obj1)).toBeRejectedWith(
-            OBJECT_NOT_FOUND
-          );
+          await expectAsync(actionAddFieldOnUpdate(obj1)).toBeRejectedWith(OBJECT_NOT_FOUND);
 
           done();
         });
@@ -2610,9 +2543,7 @@ describe('Pointer Permissions', () => {
 
             await logIn(user1);
 
-            await expectAsync(actionGet(obj3.id)).toBeRejectedWith(
-              OBJECT_NOT_FOUND
-            );
+            await expectAsync(actionGet(obj3.id)).toBeRejectedWith(OBJECT_NOT_FOUND);
             done();
           }
         );
@@ -2799,9 +2730,7 @@ describe('Pointer Permissions', () => {
 
             await logIn(user2);
 
-            await expectAsync(actionUpdate(obj3)).toBeRejectedWith(
-              OBJECT_NOT_FOUND
-            );
+            await expectAsync(actionUpdate(obj3)).toBeRejectedWith(OBJECT_NOT_FOUND);
             done();
           }
         );
@@ -2870,9 +2799,7 @@ describe('Pointer Permissions', () => {
 
             await logIn(user1);
 
-            await expectAsync(actionDelete(obj3)).toBeRejectedWith(
-              OBJECT_NOT_FOUND
-            );
+            await expectAsync(actionDelete(obj3)).toBeRejectedWith(OBJECT_NOT_FOUND);
             done();
           }
         );
@@ -2953,9 +2880,7 @@ describe('Pointer Permissions', () => {
             moderators: user1,
             extra: 'field',
           });
-          await expectAsync(newObject.save()).toBeRejectedWith(
-            PERMISSION_DENIED
-          );
+          await expectAsync(newObject.save()).toBeRejectedWith(PERMISSION_DENIED);
           done();
         });
 
@@ -2990,9 +2915,7 @@ describe('Pointer Permissions', () => {
 
             await logIn(user1);
 
-            await expectAsync(actionAddFieldOnUpdate(obj2)).toBeRejectedWith(
-              OBJECT_NOT_FOUND
-            );
+            await expectAsync(actionAddFieldOnUpdate(obj2)).toBeRejectedWith(OBJECT_NOT_FOUND);
 
             done();
           }
@@ -3028,10 +2951,7 @@ describe('Pointer Permissions', () => {
       async function initialize() {
         await Config.get(Parse.applicationId).schemaCache.clear();
 
-        [user1, user2] = await Promise.all([
-          createUser('user1'),
-          createUser('user2'),
-        ]);
+        [user1, user2] = await Promise.all([createUser('user1'), createUser('user2')]);
 
         // User1 owns object1
         // User2 owns object2
@@ -3130,9 +3050,7 @@ describe('Pointer Permissions', () => {
 
         await logIn(user1);
 
-        await expectAsync(actionDelete(obj2)).toBeRejectedWith(
-          OBJECT_NOT_FOUND
-        );
+        await expectAsync(actionDelete(obj2)).toBeRejectedWith(OBJECT_NOT_FOUND);
 
         done();
       });

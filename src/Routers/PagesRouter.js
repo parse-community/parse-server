@@ -61,8 +61,7 @@ const pageParamHeaderPrefix = 'x-parse-page-param-';
 // The errors being thrown
 const errors = Object.freeze({
   jsonFailedFileLoading: 'failed to load JSON file',
-  fileOutsideAllowedScope:
-    'not allowed to read file outside of pages directory',
+  fileOutsideAllowedScope: 'not allowed to read file outside of pages directory',
 });
 
 export class PagesRouter extends PromiseRouter {
@@ -88,8 +87,7 @@ export class PagesRouter extends PromiseRouter {
   verifyEmail(req) {
     const config = req.config;
     const { token: rawToken } = req.query;
-    const token =
-      rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
+    const token = rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
 
     if (!config) {
       this.invalidRequest();
@@ -155,8 +153,7 @@ export class PagesRouter extends PromiseRouter {
     }
 
     const { token: rawToken } = req.query;
-    const token =
-      rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
+    const token = rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
 
     if (!token) {
       return this.goToPage(req, pages.passwordResetLinkInvalid);
@@ -185,8 +182,7 @@ export class PagesRouter extends PromiseRouter {
     }
 
     const { new_password, token: rawToken } = req.body || {};
-    const token =
-      rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
+    const token = rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
 
     if ((!token || !new_password) && req.xhr === false) {
       return this.goToPage(req, pages.passwordResetLinkInvalid);
@@ -241,9 +237,7 @@ export class PagesRouter extends PromiseRouter {
           delete query[pageParams.token];
           query[pageParams.token] = token;
         }
-        const page = result.success
-          ? pages.passwordResetSuccess
-          : pages.passwordReset;
+        const page = result.success ? pages.passwordResetSuccess : pages.passwordReset;
 
         return this.goToPage(req, page, query, false);
       });
@@ -306,18 +300,13 @@ export class PagesRouter extends PromiseRouter {
 
     // Send response
     if (config.pages.enableLocalization && locale) {
-      return Utils.getLocalizedPath(defaultPath, locale).then(
-        ({ path, subdir }) =>
-          redirect
-            ? this.redirectResponse(
-                this.composePageUrl(
-                  defaultFile,
-                  config.publicServerURL,
-                  subdir
-                ),
-                params
-              )
-            : this.pageResponse(path, params, placeholders)
+      return Utils.getLocalizedPath(defaultPath, locale).then(({ path, subdir }) =>
+        redirect
+          ? this.redirectResponse(
+              this.composePageUrl(defaultFile, config.publicServerURL, subdir),
+              params
+            )
+          : this.pageResponse(path, params, placeholders)
       );
     } else {
       return redirect
@@ -416,10 +405,7 @@ export class PagesRouter extends PromiseRouter {
    */
   getJsonPlaceholders(locale, params = {}) {
     // If localization is disabled or there is no JSON resource
-    if (
-      !this.pagesConfig.enableLocalization ||
-      !this.pagesConfig.localizationJsonPath
-    ) {
+    if (!this.pagesConfig.enableLocalization || !this.pagesConfig.localizationJsonPath) {
       return {};
     }
 
@@ -457,8 +443,7 @@ export class PagesRouter extends PromiseRouter {
     let configPlaceholders =
       typeof this.pagesConfig.placeholders === 'function'
         ? this.pagesConfig.placeholders(params)
-        : Object.prototype.toString.call(this.pagesConfig.placeholders) ===
-            '[object Object]'
+        : Object.prototype.toString.call(this.pagesConfig.placeholders) === '[object Object]'
           ? this.pagesConfig.placeholders
           : {};
     if (configPlaceholders instanceof Promise) {
@@ -533,9 +518,7 @@ export class PagesRouter extends PromiseRouter {
       return;
     }
     try {
-      const json = require(
-        path.resolve('./', this.pagesConfig.localizationJsonPath)
-      );
+      const json = require(path.resolve('./', this.pagesConfig.localizationJsonPath));
       this.jsonParameters = json;
     } catch (e) {
       throw errors.jsonFailedFileLoading;

@@ -13,9 +13,7 @@ function getSessionToken(options) {
 function getAuth(options = {}, config) {
   const installationId = options.installationId || 'cloud';
   if (options.useMasterKey) {
-    return Promise.resolve(
-      new Auth.Auth({ config, isMaster: true, installationId })
-    );
+    return Promise.resolve(new Auth.Auth({ config, isMaster: true, installationId }));
   }
   return getSessionToken(options).then(sessionToken => {
     if (sessionToken) {
@@ -56,13 +54,7 @@ function ParseServerRESTController(applicationId, router) {
         }
         return initialPromise.then(() => {
           const promises = data.requests.map(request => {
-            return handleRequest(
-              request.method,
-              request.path,
-              request.body,
-              options,
-              config
-            ).then(
+            return handleRequest(request.method, request.path, request.body, options, config).then(
               response => {
                 if (options.returnStatus) {
                   const status = response._status;
@@ -87,22 +79,14 @@ function ParseServerRESTController(applicationId, router) {
           return Promise.all(promises)
             .then(result => {
               if (data.transaction === true) {
-                if (
-                  result.find(
-                    resultItem => typeof resultItem.error === 'object'
-                  )
-                ) {
-                  return config.database
-                    .abortTransactionalSession()
-                    .then(() => {
-                      return Promise.reject(result);
-                    });
+                if (result.find(resultItem => typeof resultItem.error === 'object')) {
+                  return config.database.abortTransactionalSession().then(() => {
+                    return Promise.reject(result);
+                  });
                 } else {
-                  return config.database
-                    .commitTransactionalSession()
-                    .then(() => {
-                      return result;
-                    });
+                  return config.database.commitTransactionalSession().then(() => {
+                    return result;
+                  });
                 }
               } else {
                 return result;
@@ -112,9 +96,7 @@ function ParseServerRESTController(applicationId, router) {
               if (
                 error &&
                 error.find(
-                  errorItem =>
-                    typeof errorItem.error === 'object' &&
-                    errorItem.error.code === 251
+                  errorItem => typeof errorItem.error === 'object' && errorItem.error.code === 251
                 ) &&
                 transactionRetries > 0
               ) {

@@ -213,9 +213,7 @@ describe('Parse.Object testing', () => {
     const object = new TestObject({ foo: 'bar' });
     object.save().then(function () {
       const endTime = new Date();
-      const startDiff = Math.abs(
-        startTime.getTime() - object.createdAt.getTime()
-      );
+      const startDiff = Math.abs(startTime.getTime() - object.createdAt.getTime());
       ok(startDiff < 5000);
 
       const endDiff = Math.abs(endTime.getTime() - object.createdAt.getTime());
@@ -312,15 +310,7 @@ describe('Parse.Object testing', () => {
 
   it('invalid __type', function (done) {
     const item = new Parse.Object('Item');
-    const types = [
-      'Pointer',
-      'File',
-      'Date',
-      'GeoPoint',
-      'Bytes',
-      'Polygon',
-      'Relation',
-    ];
+    const types = ['Pointer', 'File', 'Date', 'GeoPoint', 'Bytes', 'Polygon', 'Relation'];
     const tests = types.map(type => {
       const test = new Parse.Object('Item');
       test.set('foo', {
@@ -445,10 +435,7 @@ describe('Parse.Object testing', () => {
               const query = new Parse.Query('SimpleObject');
               query.get(simple.id).then(
                 function (simpleAgain) {
-                  ok(
-                    !simpleAgain.has('child'),
-                    'child should have been removed.'
-                  );
+                  ok(!simpleAgain.has('child'), 'child should have been removed.');
                   done();
                 },
                 function (simpleAgain, error) {
@@ -576,9 +563,7 @@ describe('Parse.Object testing', () => {
             jfail(error);
           });
           on_db('postgres', () => {
-            expect(error.message).toEqual(
-              'Postgres does not support AddUnique operator.'
-            );
+            expect(error.message).toEqual('Postgres does not support AddUnique operator.');
           });
           done();
         }
@@ -608,55 +593,49 @@ describe('Parse.Object testing', () => {
     expect(result.get('items')).toEqual(obj.get('items'));
   });
 
-  it_only_db('mongo')(
-    'can increment array nested fields missing index',
-    async () => {
+  it_only_db('mongo')('can increment array nested fields missing index', async () => {
+    const obj = new TestObject();
+    obj.set('items', []);
+    await obj.save();
+    obj.increment('items.1.count', 15);
+    await obj.save();
+    expect(obj.toJSON().items[0]).toBe(null);
+    expect(obj.toJSON().items[1].count).toBe(15);
+    const query = new Parse.Query(TestObject);
+    const result = await query.get(obj.id);
+    expect(result.get('items')[0]).toBe(null);
+    expect(result.get('items')[1].count).toBe(15);
+    expect(result.get('items')).toEqual(obj.get('items'));
+  });
+
+  it_id('44097c6f-d0ca-4dc5-aa8a-3dd2d9ac645a')(it)('can query array nested fields', async () => {
+    const objects = [];
+    for (let i = 0; i < 10; i++) {
       const obj = new TestObject();
-      obj.set('items', []);
-      await obj.save();
-      obj.increment('items.1.count', 15);
-      await obj.save();
-      expect(obj.toJSON().items[0]).toBe(null);
-      expect(obj.toJSON().items[1].count).toBe(15);
-      const query = new Parse.Query(TestObject);
-      const result = await query.get(obj.id);
-      expect(result.get('items')[0]).toBe(null);
-      expect(result.get('items')[1].count).toBe(15);
-      expect(result.get('items')).toEqual(obj.get('items'));
+      obj.set('items', [i, { value: i }]);
+      objects.push(obj);
     }
-  );
+    await Parse.Object.saveAll(objects);
+    let query = new Parse.Query(TestObject);
+    query.greaterThan('items.1.value', 5);
+    let result = await query.find();
+    expect(result.length).toBe(4);
 
-  it_id('44097c6f-d0ca-4dc5-aa8a-3dd2d9ac645a')(it)(
-    'can query array nested fields',
-    async () => {
-      const objects = [];
-      for (let i = 0; i < 10; i++) {
-        const obj = new TestObject();
-        obj.set('items', [i, { value: i }]);
-        objects.push(obj);
-      }
-      await Parse.Object.saveAll(objects);
-      let query = new Parse.Query(TestObject);
-      query.greaterThan('items.1.value', 5);
-      let result = await query.find();
-      expect(result.length).toBe(4);
+    query = new Parse.Query(TestObject);
+    query.lessThan('items.0', 3);
+    result = await query.find();
+    expect(result.length).toBe(3);
 
-      query = new Parse.Query(TestObject);
-      query.lessThan('items.0', 3);
-      result = await query.find();
-      expect(result.length).toBe(3);
+    query = new Parse.Query(TestObject);
+    query.equalTo('items.0', 5);
+    result = await query.find();
+    expect(result.length).toBe(1);
 
-      query = new Parse.Query(TestObject);
-      query.equalTo('items.0', 5);
-      result = await query.find();
-      expect(result.length).toBe(1);
-
-      query = new Parse.Query(TestObject);
-      query.notEqualTo('items.0', 5);
-      result = await query.find();
-      expect(result.length).toBe(9);
-    }
-  );
+    query = new Parse.Query(TestObject);
+    query.notEqualTo('items.0', 5);
+    result = await query.find();
+    expect(result.length).toBe(9);
+  });
 
   it('addUnique with object', function (done) {
     const x1 = new Parse.Object('X');
@@ -677,12 +656,7 @@ describe('Parse.Object testing', () => {
       .then(
         x3 => {
           const stuff = x3.get('stuff');
-          const target = [
-            1,
-            { hello: 'world' },
-            { foo: 'bar' },
-            { bar: 'baz' },
-          ];
+          const target = [1, { hello: 'world' }, { foo: 'bar' }, { bar: 'baz' }];
           expect(stuff.length).toEqual(target.length);
           let found = 0;
           for (const thing in target) {
@@ -1401,11 +1375,7 @@ describe('Parse.Object testing', () => {
         return Parse.Object.fetchAll(items);
       })
       .then(function (fetchedItemsAgain) {
-        equal(
-          fetchedItemsAgain.length,
-          numItems,
-          'Number of items fetched should not change'
-        );
+        equal(fetchedItemsAgain.length, numItems, 'Number of items fetched should not change');
         fetchedItemsAgain.forEach(function (item, i) {
           equal(item.get('x'), i * 2);
         });
@@ -1482,11 +1452,7 @@ describe('Parse.Object testing', () => {
       .then(function () {
         return Parse.Object.fetchAll(items).then(
           function (fetchedItemsAgain) {
-            equal(
-              fetchedItemsAgain.length,
-              numItems,
-              'Number of items fetched should not change'
-            );
+            equal(fetchedItemsAgain.length, numItems, 'Number of items fetched should not change');
             fetchedItemsAgain.forEach(function (item, i) {
               equal(item.get('x'), i * 2);
             });
@@ -1629,11 +1595,7 @@ describe('Parse.Object testing', () => {
         return Parse.Object.fetchAllIfNeeded(items);
       })
       .then(function (fetchedItems) {
-        equal(
-          fetchedItems.length,
-          numItems,
-          'Number of items should not change'
-        );
+        equal(fetchedItems.length, numItems, 'Number of items should not change');
         fetchedItems.forEach(function (item, i) {
           equal(item.get('x'), i);
         });
@@ -1675,11 +1637,7 @@ describe('Parse.Object testing', () => {
         const items = container.get('items');
         return Parse.Object.fetchAllIfNeeded(items).then(
           function (fetchedItems) {
-            equal(
-              fetchedItems.length,
-              numItems,
-              'Number of items should not change'
-            );
+            equal(fetchedItems.length, numItems, 'Number of items should not change');
             fetchedItems.forEach(function (item, j) {
               equal(item.get('x'), j);
             });
@@ -1745,19 +1703,11 @@ describe('Parse.Object testing', () => {
       className: 'User',
     });
 
-    equal(
-      User2.className,
-      'User',
-      'className is not rewritten when allowCustomUserClass(true)'
-    );
+    equal(User2.className, 'User', 'className is not rewritten when allowCustomUserClass(true)');
 
     // Set back to default so as not to break other tests.
     Parse.User.allowCustomUserClass(false);
-    equal(
-      Parse.CoreManager.get('PERFORM_USER_REWRITE'),
-      true,
-      'PERFORM_USER_REWRITE is reset'
-    );
+    equal(Parse.CoreManager.get('PERFORM_USER_REWRITE'), true, 'PERFORM_USER_REWRITE is reset');
 
     const user = new User2();
     user.set('name', 'Me');
@@ -1783,22 +1733,14 @@ describe('Parse.Object testing', () => {
         return t2.fetch();
       })
       .then(function (t2) {
-        equal(
-          t2.get('test'),
-          'test',
-          'Fetch should have grabbed ' + "'test' property."
-        );
+        equal(t2.get('test'), 'test', 'Fetch should have grabbed ' + "'test' property.");
         const t3 = TestObject.createWithoutData(t2.id);
         t3.set('test', 'not test');
         return t3.fetch();
       })
       .then(
         function (t3) {
-          equal(
-            t3.get('test'),
-            'test',
-            "Fetch should have grabbed server 'test' property."
-          );
+          equal(t3.get('test'), 'test', "Fetch should have grabbed server 'test' property.");
           done();
         },
         function (error) {

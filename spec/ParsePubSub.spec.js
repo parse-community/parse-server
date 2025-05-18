@@ -7,11 +7,7 @@ describe('ParsePubSub', function () {
       createPublisher: jasmine.createSpy('createPublisherRedis'),
       createSubscriber: jasmine.createSpy('createSubscriberRedis'),
     };
-    jasmine.mockLibrary(
-      '../lib/Adapters/PubSub/RedisPubSub',
-      'RedisPubSub',
-      mockRedisPubSub
-    );
+    jasmine.mockLibrary('../lib/Adapters/PubSub/RedisPubSub', 'RedisPubSub', mockRedisPubSub);
     // Mock EventEmitterPubSub
     const mockEventEmitterPubSub = {
       createPublisher: jasmine.createSpy('createPublisherEventEmitter'),
@@ -31,8 +27,7 @@ describe('ParsePubSub', function () {
       redisOptions: { socket_keepalive: true },
     });
 
-    const RedisPubSub =
-      require('../lib/Adapters/PubSub/RedisPubSub').RedisPubSub;
+    const RedisPubSub = require('../lib/Adapters/PubSub/RedisPubSub').RedisPubSub;
     const EventEmitterPubSub =
       require('../lib/Adapters/PubSub/EventEmitterPubSub').EventEmitterPubSub;
     expect(RedisPubSub.createPublisher).toHaveBeenCalledWith({
@@ -45,8 +40,7 @@ describe('ParsePubSub', function () {
   it('can create event emitter publisher', function () {
     ParsePubSub.createPublisher({});
 
-    const RedisPubSub =
-      require('../lib/Adapters/PubSub/RedisPubSub').RedisPubSub;
+    const RedisPubSub = require('../lib/Adapters/PubSub/RedisPubSub').RedisPubSub;
     const EventEmitterPubSub =
       require('../lib/Adapters/PubSub/EventEmitterPubSub').EventEmitterPubSub;
     expect(RedisPubSub.createPublisher).not.toHaveBeenCalled();
@@ -59,8 +53,7 @@ describe('ParsePubSub', function () {
       redisOptions: { socket_keepalive: true },
     });
 
-    const RedisPubSub =
-      require('../lib/Adapters/PubSub/RedisPubSub').RedisPubSub;
+    const RedisPubSub = require('../lib/Adapters/PubSub/RedisPubSub').RedisPubSub;
     const EventEmitterPubSub =
       require('../lib/Adapters/PubSub/EventEmitterPubSub').EventEmitterPubSub;
     expect(RedisPubSub.createSubscriber).toHaveBeenCalledWith({
@@ -73,8 +66,7 @@ describe('ParsePubSub', function () {
   it('can create event emitter subscriber', function () {
     ParsePubSub.createSubscriber({});
 
-    const RedisPubSub =
-      require('../lib/Adapters/PubSub/RedisPubSub').RedisPubSub;
+    const RedisPubSub = require('../lib/Adapters/PubSub/RedisPubSub').RedisPubSub;
     const EventEmitterPubSub =
       require('../lib/Adapters/PubSub/EventEmitterPubSub').EventEmitterPubSub;
     expect(RedisPubSub.createSubscriber).not.toHaveBeenCalled();
@@ -96,8 +88,7 @@ describe('ParsePubSub', function () {
     });
     expect(adapter.createSubscriber).toHaveBeenCalled();
 
-    const RedisPubSub =
-      require('../lib/Adapters/PubSub/RedisPubSub').RedisPubSub;
+    const RedisPubSub = require('../lib/Adapters/PubSub/RedisPubSub').RedisPubSub;
     const EventEmitterPubSub =
       require('../lib/Adapters/PubSub/EventEmitterPubSub').EventEmitterPubSub;
     expect(RedisPubSub.createSubscriber).not.toHaveBeenCalled();
@@ -125,8 +116,7 @@ describe('ParsePubSub', function () {
     });
     expect(adapter.createSubscriber).toHaveBeenCalled();
 
-    const RedisPubSub =
-      require('../lib/Adapters/PubSub/RedisPubSub').RedisPubSub;
+    const RedisPubSub = require('../lib/Adapters/PubSub/RedisPubSub').RedisPubSub;
     const EventEmitterPubSub =
       require('../lib/Adapters/PubSub/EventEmitterPubSub').EventEmitterPubSub;
     expect(RedisPubSub.createSubscriber).not.toHaveBeenCalled();
@@ -137,9 +127,6 @@ describe('ParsePubSub', function () {
 
   afterEach(function () {
     jasmine.restoreLibrary('../lib/Adapters/PubSub/RedisPubSub', 'RedisPubSub');
-    jasmine.restoreLibrary(
-      '../lib/Adapters/PubSub/EventEmitterPubSub',
-      'EventEmitterPubSub'
-    );
+    jasmine.restoreLibrary('../lib/Adapters/PubSub/EventEmitterPubSub', 'EventEmitterPubSub');
   });
 });

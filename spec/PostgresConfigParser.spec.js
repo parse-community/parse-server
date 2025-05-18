@@ -60,9 +60,7 @@ dbOptionsTest[
 dbOptionsTest[`${baseURI}?rejectUnauthorized=true`] = {
   ssl: { rejectUnauthorized: true },
 };
-dbOptionsTest[
-  `${baseURI}?max=5&query_timeout=100&idleTimeoutMillis=1000&keepAlive=true`
-] = {
+dbOptionsTest[`${baseURI}?max=5&query_timeout=100&idleTimeoutMillis=1000&keepAlive=true`] = {
   max: 5,
   query_timeout: 100,
   idleTimeoutMillis: 1000,
@@ -96,9 +94,7 @@ describe('PostgresConfigParser.getDatabaseOptionsFromURI', () => {
   });
 
   it('max should take precedence over poolSize', () => {
-    const result = parser.getDatabaseOptionsFromURI(
-      `${baseURI}?poolSize=20&max=12`
-    );
+    const result = parser.getDatabaseOptionsFromURI(`${baseURI}?poolSize=20&max=12`);
 
     expect(result.poolSize).toBeUndefined();
     expect(result.max).toEqual(12);

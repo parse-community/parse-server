@@ -73,28 +73,16 @@ export class FilesController extends AdaptableController {
         // all filenames starting with a "-" seperated UUID should be from files.parse.com
         // all other filenames have been migrated or created from Parse Server
         if (config.fileKey === undefined) {
-          fileObject['url'] = await this.adapter.getFileLocation(
-            config,
-            filename
-          );
+          fileObject['url'] = await this.adapter.getFileLocation(config, filename);
         } else {
           if (filename.indexOf('tfss-') === 0) {
             fileObject['url'] =
-              'http://files.parsetfss.com/' +
-              config.fileKey +
-              '/' +
-              encodeURIComponent(filename);
+              'http://files.parsetfss.com/' + config.fileKey + '/' + encodeURIComponent(filename);
           } else if (legacyFilesRegex.test(filename)) {
             fileObject['url'] =
-              'http://files.parse.com/' +
-              config.fileKey +
-              '/' +
-              encodeURIComponent(filename);
+              'http://files.parse.com/' + config.fileKey + '/' + encodeURIComponent(filename);
           } else {
-            fileObject['url'] = await this.adapter.getFileLocation(
-              config,
-              filename
-            );
+            fileObject['url'] = await this.adapter.getFileLocation(config, filename);
           }
         }
       }

@@ -1,6 +1,5 @@
 const Client = require('../lib/LiveQuery/Client').Client;
-const ParseWebSocket =
-  require('../lib/LiveQuery/ParseWebSocketServer').ParseWebSocket;
+const ParseWebSocket = require('../lib/LiveQuery/ParseWebSocketServer').ParseWebSocket;
 
 describe('Client', function () {
   it('can be initialized', function () {
@@ -88,9 +87,7 @@ describe('Client', function () {
     };
     const client = new Client(1, {});
 
-    expect(client._toJSONWithFields(parseObjectJSON, null)).toBe(
-      parseObjectJSON
-    );
+    expect(client._toJSONWithFields(parseObjectJSON, null)).toBe(parseObjectJSON);
   });
 
   it('can generate ParseObject JSON with undefined selected field', function () {
@@ -104,9 +101,7 @@ describe('Client', function () {
     };
     const client = new Client(1, {});
 
-    expect(client._toJSONWithFields(parseObjectJSON, undefined)).toBe(
-      parseObjectJSON
-    );
+    expect(client._toJSONWithFields(parseObjectJSON, undefined)).toBe(parseObjectJSON);
   });
 
   it('can generate ParseObject JSON with selected fields', function () {
@@ -142,9 +137,7 @@ describe('Client', function () {
       test: 'test',
     };
     const client = new Client(1, {});
-    const limitedParseObject = client._toJSONWithFields(parseObjectJSON, [
-      'name',
-    ]);
+    const limitedParseObject = client._toJSONWithFields(parseObjectJSON, ['name']);
 
     expect(limitedParseObject).toEqual({
       className: 'test',

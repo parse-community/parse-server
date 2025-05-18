@@ -30,9 +30,7 @@ describe('AdapterLoader', () => {
   });
 
   it('should instantiate an adapter from string that is module', done => {
-    const adapterPath = require('path').resolve(
-      './lib/Adapters/Files/FilesAdapter'
-    );
+    const adapterPath = require('path').resolve('./lib/Adapters/Files/FilesAdapter');
     const adapter = loadAdapter({
       adapter: adapterPath,
     });
@@ -120,9 +118,7 @@ describe('AdapterLoader', () => {
   });
 
   it('should load custom push adapter from string (#3544)', done => {
-    const adapterPath = require('path').resolve(
-      './spec/support/MockPushAdapter'
-    );
+    const adapterPath = require('path').resolve('./spec/support/MockPushAdapter');
     const options = {
       ios: {
         bundleId: 'bundle.id',
@@ -146,9 +142,7 @@ describe('AdapterLoader', () => {
   });
 
   it('should load custom database adapter from config', done => {
-    const adapterPath = require('path').resolve(
-      './spec/support/MockDatabaseAdapter'
-    );
+    const adapterPath = require('path').resolve('./spec/support/MockDatabaseAdapter');
     const options = {
       databaseURI: 'oracledb://user:password@localhost:1521/freepdb1',
       collectionPrefix: '',

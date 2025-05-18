@@ -1,6 +1,4 @@
-const {
-  ParseWebSocketServer,
-} = require('../lib/LiveQuery/ParseWebSocketServer');
+const { ParseWebSocketServer } = require('../lib/LiveQuery/ParseWebSocketServer');
 const EventEmitter = require('events');
 
 describe('ParseWebSocketServer', function () {
@@ -18,13 +16,9 @@ describe('ParseWebSocketServer', function () {
     const onConnectCallback = jasmine.createSpy('onConnectCallback');
     const http = require('http');
     const server = http.createServer();
-    const parseWebSocketServer = new ParseWebSocketServer(
-      server,
-      onConnectCallback,
-      {
-        websocketTimeout: 5,
-      }
-    ).server;
+    const parseWebSocketServer = new ParseWebSocketServer(server, onConnectCallback, {
+      websocketTimeout: 5,
+    }).server;
     const ws = new EventEmitter();
     ws.readyState = 0;
     ws.OPEN = 0;
@@ -86,13 +80,9 @@ describe('ParseWebSocketServer', function () {
     const onConnectCallback = jasmine.createSpy('onConnectCallback');
     const http = require('http');
     const server = http.createServer();
-    const parseWebSocketServer = new ParseWebSocketServer(
-      server,
-      onConnectCallback,
-      {
-        websocketTimeout: 10,
-      }
-    ).server;
+    const parseWebSocketServer = new ParseWebSocketServer(server, onConnectCallback, {
+      websocketTimeout: 10,
+    }).server;
 
     const ws = new EventEmitter();
     ws.readyState = 0;
@@ -119,13 +109,9 @@ describe('ParseWebSocketServer', function () {
     const onConnectCallback = jasmine.createSpy('onConnectCallback');
     const http = require('http');
     const server = http.createServer();
-    const parseWebSocketServer = new ParseWebSocketServer(
-      server,
-      onConnectCallback,
-      {
-        websocketTimeout: 5,
-      }
-    ).server;
+    const parseWebSocketServer = new ParseWebSocketServer(server, onConnectCallback, {
+      websocketTimeout: 5,
+    }).server;
     const ws = new EventEmitter();
     ws.readyState = 0;
     ws.OPEN = 0;

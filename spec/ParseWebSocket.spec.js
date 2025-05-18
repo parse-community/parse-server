@@ -1,5 +1,4 @@
-const ParseWebSocket =
-  require('../lib/LiveQuery/ParseWebSocketServer').ParseWebSocket;
+const ParseWebSocket = require('../lib/LiveQuery/ParseWebSocketServer').ParseWebSocket;
 
 describe('ParseWebSocket', function () {
   it('can be initialized', function () {

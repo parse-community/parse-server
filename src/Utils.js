@@ -152,12 +152,7 @@ class Utils {
    * @param {Object} [current={}] The current result entry being composed.
    * @param {Array} [results=[]] The resulting array of permutations.
    */
-  static getObjectKeyPermutations(
-    object,
-    index = 0,
-    current = {},
-    results = []
-  ) {
+  static getObjectKeyPermutations(object, index = 0, current = {}, results = []) {
     const keys = Object.keys(object);
     const key = keys[index];
     const values = object[key];
@@ -346,8 +341,7 @@ class Utils {
    * @returns {Boolean} True if a match was found, false otherwise.
    */
   static objectContainsKeyValue(obj, key, value) {
-    const isMatch = (a, b) =>
-      (typeof a === 'string' && new RegExp(b).test(a)) || a === b;
+    const isMatch = (a, b) => (typeof a === 'string' && new RegExp(b).test(a)) || a === b;
     const isKeyMatch = k => isMatch(k, key);
     const isValueMatch = v => isMatch(v, value);
     for (const [k, v] of Object.entries(obj)) {
@@ -355,19 +349,10 @@ class Utils {
         return true;
       } else if (key === undefined && value !== undefined && isValueMatch(v)) {
         return true;
-      } else if (
-        key !== undefined &&
-        value !== undefined &&
-        isKeyMatch(k) &&
-        isValueMatch(v)
-      ) {
+      } else if (key !== undefined && value !== undefined && isKeyMatch(k) && isValueMatch(v)) {
         return true;
       }
-      if (
-        ['[object Object]', '[object Array]'].includes(
-          Object.prototype.toString.call(v)
-        )
-      ) {
+      if (['[object Object]', '[object Array]'].includes(Object.prototype.toString.call(v))) {
         return Utils.objectContainsKeyValue(v, key, value);
       }
     }
@@ -378,11 +363,7 @@ class Utils {
     if (config?.requestKeywordDenylist) {
       // Scan request data for denied keywords
       for (const keyword of config.requestKeywordDenylist) {
-        const match = Utils.objectContainsKeyValue(
-          data,
-          keyword.key,
-          keyword.value
-        );
+        const match = Utils.objectContainsKeyValue(data, keyword.key, keyword.value);
         if (match) {
           throw `Prohibited keyword in request data: ${JSON.stringify(keyword)}.`;
         }

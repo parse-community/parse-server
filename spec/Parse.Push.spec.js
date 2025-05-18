@@ -94,10 +94,7 @@ const setup = function () {
       const installations = [];
       while (installations.length != 10) {
         const installation = new Parse.Object('_Installation');
-        installation.set(
-          'installationId',
-          'installation_' + installations.length
-        );
+        installation.set('installationId', 'installation_' + installations.length);
         installation.set('deviceToken', 'device_token_' + installations.length);
         installation.set('badge', installations.length);
         installation.set('originalBadge', installations.length);
@@ -114,23 +111,20 @@ const setup = function () {
 };
 
 describe('Parse.Push', () => {
-  it_id('d1e591c4-2b21-466b-9ee2-5be467b6b771')(it)(
-    'should properly send push',
-    async () => {
-      const { sendToInstallationSpy } = await setup();
-      const pushStatusId = await Parse.Push.send({
-        where: {
-          deviceType: 'ios',
-        },
-        data: {
-          badge: 'Increment',
-          alert: 'Hello world!',
-        },
-      });
-      await pushCompleted(pushStatusId);
-      expect(sendToInstallationSpy.calls.count()).toEqual(10);
-    }
-  );
+  it_id('d1e591c4-2b21-466b-9ee2-5be467b6b771')(it)('should properly send push', async () => {
+    const { sendToInstallationSpy } = await setup();
+    const pushStatusId = await Parse.Push.send({
+      where: {
+        deviceType: 'ios',
+      },
+      data: {
+        badge: 'Increment',
+        alert: 'Hello world!',
+      },
+    });
+    await pushCompleted(pushStatusId);
+    expect(sendToInstallationSpy.calls.count()).toEqual(10);
+  });
 
   it_id('2a58e3c7-b6f3-4261-a384-6c893b2ac3f3')(it)(
     'should properly send push with lowercaseIncrement',
@@ -203,9 +197,7 @@ describe('Parse.Push', () => {
       const body = response.data;
       expect(body.results.length).toEqual(1);
       expect(body.results[0].query).toEqual('{"deviceType":"ios"}');
-      expect(body.results[0].payload).toEqual(
-        '{"badge":"increment","alert":"Hello world!"}'
-      );
+      expect(body.results[0].payload).toEqual('{"badge":"increment","alert":"Hello world!"}');
     }
   );
 
@@ -258,10 +250,7 @@ describe('Parse.Push', () => {
 
     // add 1 iOS installation which we will omit & add later on
     const iOSInstallation = new Parse.Object('_Installation');
-    iOSInstallation.set(
-      'installationId',
-      'installation_' + installations.length
-    );
+    iOSInstallation.set('installationId', 'installation_' + installations.length);
     iOSInstallation.set('deviceToken', 'device_token_' + installations.length);
     iOSInstallation.set('deviceType', 'ios');
     installations.push(iOSInstallation);
@@ -331,14 +320,8 @@ describe('Parse.Push', () => {
     const iOSInstallations = [];
     while (iOSInstallations.length !== devices / 100) {
       const iOSInstallation = new Parse.Object('_Installation');
-      iOSInstallation.set(
-        'installationId',
-        'installation_' + installations.length
-      );
-      iOSInstallation.set(
-        'deviceToken',
-        'device_token_' + installations.length
-      );
+      iOSInstallation.set('installationId', 'installation_' + installations.length);
+      iOSInstallation.set('deviceToken', 'device_token_' + installations.length);
       iOSInstallation.set('deviceType', 'ios');
       installations.push(iOSInstallation);
       iOSInstallations.push(iOSInstallation);

@@ -1,8 +1,7 @@
 'use strict';
 let commander;
 const definitions = require('../lib/cli/definitions/parse-server').default;
-const liveQueryDefinitions =
-  require('../lib/cli/definitions/parse-live-query-server').default;
+const liveQueryDefinitions = require('../lib/cli/definitions/parse-live-query-server').default;
 const path = require('path');
 const { spawn } = require('child_process');
 
@@ -83,15 +82,12 @@ describe('commander additions', () => {
 
   it('should load properly use args over env', () => {
     commander.loadDefinitions(testDefinitions);
-    commander.parse(
-      ['node', './CLI.spec.js', '--arg0', 'arg0Value', '--arg4', ''],
-      {
-        PROGRAM_ARG_0: 'arg0ENVValue',
-        PROGRAM_ARG_1: 'arg1ENVValue',
-        PROGRAM_ARG_2: '4',
-        PROGRAM_ARG_4: 'arg4ENVValue',
-      }
-    );
+    commander.parse(['node', './CLI.spec.js', '--arg0', 'arg0Value', '--arg4', ''], {
+      PROGRAM_ARG_0: 'arg0ENVValue',
+      PROGRAM_ARG_1: 'arg1ENVValue',
+      PROGRAM_ARG_2: '4',
+      PROGRAM_ARG_4: 'arg4ENVValue',
+    });
     expect(commander.arg0).toEqual('arg0Value');
     expect(commander.arg1).toEqual('arg1ENVValue');
     expect(commander.arg2).toEqual(4);
@@ -114,13 +110,7 @@ describe('commander additions', () => {
     spyOn(console, 'log').and.callFake(() => {});
     commander.loadDefinitions(testDefinitions);
     commander.parse(
-      [
-        'node',
-        './CLI.spec.js',
-        '--arg0',
-        'arg0Value',
-        './spec/configs/CLIConfig.json',
-      ],
+      ['node', './CLI.spec.js', '--arg0', 'arg0Value', './spec/configs/CLIConfig.json'],
       {
         PROGRAM_ARG_0: 'arg0ENVValue',
         PROGRAM_ARG_1: 'arg1ENVValue',
@@ -137,13 +127,7 @@ describe('commander additions', () => {
     commander.loadDefinitions(testDefinitions);
     expect(() => {
       commander.parse(
-        [
-          'node',
-          './CLI.spec.js',
-          '--arg0',
-          'arg0Value',
-          './spec/configs/CLIConfigFail.json',
-        ],
+        ['node', './CLI.spec.js', '--arg0', 'arg0Value', './spec/configs/CLIConfigFail.json'],
         {
           PROGRAM_ARG_0: 'arg0ENVValue',
           PROGRAM_ARG_1: 'arg1ENVValue',
@@ -156,11 +140,7 @@ describe('commander additions', () => {
   it('should fail when too many apps are set', done => {
     commander.loadDefinitions(testDefinitions);
     expect(() => {
-      commander.parse([
-        'node',
-        './CLI.spec.js',
-        './spec/configs/CLIConfigFailTooManyApps.json',
-      ]);
+      commander.parse(['node', './CLI.spec.js', './spec/configs/CLIConfigFailTooManyApps.json']);
     }).toThrow('Multiple apps are not supported');
     done();
   });
@@ -168,11 +148,7 @@ describe('commander additions', () => {
   it('should load config from apps', done => {
     spyOn(console, 'log').and.callFake(() => {});
     commander.loadDefinitions(testDefinitions);
-    commander.parse([
-      'node',
-      './CLI.spec.js',
-      './spec/configs/CLIConfigApps.json',
-    ]);
+    commander.parse(['node', './CLI.spec.js', './spec/configs/CLIConfigApps.json']);
     const options = commander.getOptions();
     expect(options.arg1).toBe('my_app');
     expect(options.arg2).toBe(8888);
@@ -184,11 +160,7 @@ describe('commander additions', () => {
   it('should fail when passing an invalid arguement', done => {
     commander.loadDefinitions(testDefinitions);
     expect(() => {
-      commander.parse([
-        'node',
-        './CLI.spec.js',
-        './spec/configs/CLIConfigUnknownArg.json',
-      ]);
+      commander.parse(['node', './CLI.spec.js', './spec/configs/CLIConfigUnknownArg.json']);
     }).toThrow('error: unknown option myArg');
     done();
   });
@@ -227,10 +199,7 @@ describe('LiveQuery definitions', () => {
       if (typeof definition.env !== 'undefined') {
         expect(typeof definition.env).toBe('string');
       }
-      expect(typeof definition.help).toBe(
-        'string',
-        `help for ${key} should be a string`
-      );
+      expect(typeof definition.help).toBe('string', `help for ${key} should be a string`);
       if (typeof definition.required !== 'undefined') {
         expect(typeof definition.required).toBe('boolean');
       }
@@ -289,32 +258,18 @@ describe('execution', () => {
     }
   });
 
-  it_id('a0ab74b4-f805-4e03-b31d-b5cd59e64495')(it)(
-    'should start Parse Server',
-    done => {
-      const env = { ...process.env };
-      env.NODE_OPTIONS = '--dns-result-order=ipv4first --trace-deprecation';
-      childProcess = spawn(
-        binPath,
-        [
-          '--appId',
-          'test',
-          '--masterKey',
-          'test',
-          '--databaseURI',
-          databaseURI,
-          '--port',
-          '1339',
-        ],
-        { env }
-      );
-      handleStdout(childProcess, done, aggregatedData, [
-        'parse-server running on',
-      ]);
-      handleStderr(childProcess, done);
-      handleError(childProcess, done);
-    }
-  );
+  it_id('a0ab74b4-f805-4e03-b31d-b5cd59e64495')(it)('should start Parse Server', done => {
+    const env = { ...process.env };
+    env.NODE_OPTIONS = '--dns-result-order=ipv4first --trace-deprecation';
+    childProcess = spawn(
+      binPath,
+      ['--appId', 'test', '--masterKey', 'test', '--databaseURI', databaseURI, '--port', '1339'],
+      { env }
+    );
+    handleStdout(childProcess, done, aggregatedData, ['parse-server running on']);
+    handleStderr(childProcess, done);
+    handleError(childProcess, done);
+  });
 
   it_id('d7165081-b133-4cba-901b-19128ce41301')(it)(
     'should start Parse Server with GraphQL',
@@ -386,9 +341,7 @@ describe('execution', () => {
         ['--databaseURI', databaseURI, './spec/configs/CLIConfigAuth.json'],
         { env }
       );
-      handleStdout(childProcess, done, aggregatedData, [
-        'parse-server running on',
-      ]);
+      handleStdout(childProcess, done, aggregatedData, ['parse-server running on']);
       handleStderr(childProcess, done);
       handleError(childProcess, done);
     }

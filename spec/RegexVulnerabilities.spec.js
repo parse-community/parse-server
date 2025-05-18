@@ -102,30 +102,27 @@ describe('Regex Vulnerabilities', () => {
       expect(user.get('emailVerified')).toEqual(false);
     });
 
-    it_id('92bbb86d-bcda-49fa-8d79-aa0501078044')(it)(
-      'should work with plain token',
-      async () => {
-        expect(user.get('emailVerified')).toEqual(false);
-        const current = await request({
-          method: 'GET',
-          url: `http://localhost:8378/1/classes/_User/${user.id}`,
-          json: true,
-          headers: {
-            'X-Parse-Application-Id': 'test',
-            'X-Parse-Rest-API-Key': 'test',
-            'X-Parse-Maintenance-Key': 'test2',
-            'Content-Type': 'application/json',
-          },
-        }).then(res => res.data);
-        // It should work
-        await request({
-          url: `${serverURL}/apps/test/verify_email?token=${current._email_verify_token}`,
-          method: 'GET',
-        });
-        await user.fetch({ useMasterKey: true });
-        expect(user.get('emailVerified')).toEqual(true);
-      }
-    );
+    it_id('92bbb86d-bcda-49fa-8d79-aa0501078044')(it)('should work with plain token', async () => {
+      expect(user.get('emailVerified')).toEqual(false);
+      const current = await request({
+        method: 'GET',
+        url: `http://localhost:8378/1/classes/_User/${user.id}`,
+        json: true,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Rest-API-Key': 'test',
+          'X-Parse-Maintenance-Key': 'test2',
+          'Content-Type': 'application/json',
+        },
+      }).then(res => res.data);
+      // It should work
+      await request({
+        url: `${serverURL}/apps/test/verify_email?token=${current._email_verify_token}`,
+        method: 'GET',
+      });
+      await user.fetch({ useMasterKey: true });
+      expect(user.get('emailVerified')).toEqual(true);
+    });
   });
 
   describe('on password reset', () => {
@@ -151,9 +148,7 @@ describe('Regex Vulnerabilities', () => {
         method: 'GET',
       });
       expect(passwordResetResponse.status).toEqual(302);
-      expect(passwordResetResponse.headers.location).toMatch(
-        `\\/invalid\\_link\\.html`
-      );
+      expect(passwordResetResponse.headers.location).toMatch(`\\/invalid\\_link\\.html`);
       await request({
         url: `${serverURL}/apps/test/request_password_reset`,
         method: 'POST',
@@ -213,10 +208,7 @@ describe('Regex Vulnerabilities', () => {
           new_password: 'newpassword',
         },
       });
-      const userAgain = await Parse.User.logIn(
-        'someemail@somedomain.com',
-        'newpassword'
-      );
+      const userAgain = await Parse.User.logIn('someemail@somedomain.com', 'newpassword');
       expect(userAgain.id).toEqual(objectId);
     });
   });

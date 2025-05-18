@@ -209,49 +209,41 @@ describe('Schema Performance', function () {
     expect(getAllSpy.calls.count()).toBe(2);
   });
 
-  it_id('9dd70965-b683-4cb8-b43a-44c1f4def9f4')(it)(
-    'does reload with schemaCacheTtl',
-    async () => {
-      const databaseURI =
-        process.env.PARSE_SERVER_TEST_DB === 'postgres'
-          ? process.env.PARSE_SERVER_TEST_DATABASE_URI
-          : 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
-      await reconfigureServer({
-        databaseAdapter: undefined,
-        databaseURI,
-        silent: false,
-        databaseOptions: { schemaCacheTtl: 1000 },
-      });
-      const SchemaController =
-        require('../lib/Controllers/SchemaController').SchemaController;
-      const spy = spyOn(
-        SchemaController.prototype,
-        'reloadData'
-      ).and.callThrough();
-      Object.defineProperty(spy, 'reloadCalls', {
-        get: () =>
-          spy.calls.all().filter(call => call.args[0].clearCache).length,
-      });
+  it_id('9dd70965-b683-4cb8-b43a-44c1f4def9f4')(it)('does reload with schemaCacheTtl', async () => {
+    const databaseURI =
+      process.env.PARSE_SERVER_TEST_DB === 'postgres'
+        ? process.env.PARSE_SERVER_TEST_DATABASE_URI
+        : 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
+    await reconfigureServer({
+      databaseAdapter: undefined,
+      databaseURI,
+      silent: false,
+      databaseOptions: { schemaCacheTtl: 1000 },
+    });
+    const SchemaController = require('../lib/Controllers/SchemaController').SchemaController;
+    const spy = spyOn(SchemaController.prototype, 'reloadData').and.callThrough();
+    Object.defineProperty(spy, 'reloadCalls', {
+      get: () => spy.calls.all().filter(call => call.args[0].clearCache).length,
+    });
 
-      const object = new TestObject();
-      object.set('foo', 'bar');
-      await object.save();
+    const object = new TestObject();
+    object.set('foo', 'bar');
+    await object.save();
 
-      spy.calls.reset();
+    spy.calls.reset();
 
-      object.set('foo', 'bar');
-      await object.save();
+    object.set('foo', 'bar');
+    await object.save();
 
-      expect(spy.reloadCalls).toBe(0);
+    expect(spy.reloadCalls).toBe(0);
 
-      await new Promise(resolve => setTimeout(resolve, 1100));
+    await new Promise(resolve => setTimeout(resolve, 1100));
 
-      object.set('foo', 'bar');
-      await object.save();
+    object.set('foo', 'bar');
+    await object.save();
 
-      expect(spy.reloadCalls).toBe(1);
-    }
-  );
+    expect(spy.reloadCalls).toBe(1);
+  });
 
   it_id('b0ae21f2-c947-48ed-a0db-e8900d45a4c8')(it)(
     'cannot set invalid databaseOptions',

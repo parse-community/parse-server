@@ -16,31 +16,16 @@ const { enforceRoleSecurity } = require('./SharedRest');
 
 function checkTriggers(className, config, types) {
   return types.some(triggerType => {
-    return triggers.getTrigger(
-      className,
-      triggers.Types[triggerType],
-      config.applicationId
-    );
+    return triggers.getTrigger(className, triggers.Types[triggerType], config.applicationId);
   });
 }
 
 function checkLiveQuery(className, config) {
-  return (
-    config.liveQueryController &&
-    config.liveQueryController.hasLiveQuery(className)
-  );
+  return config.liveQueryController && config.liveQueryController.hasLiveQuery(className);
 }
 
 // Returns a promise for an object with optional keys 'results' and 'count'.
-const find = async (
-  config,
-  auth,
-  className,
-  restWhere,
-  restOptions,
-  clientSDK,
-  context
-) => {
+const find = async (config, auth, className, restWhere, restOptions, clientSDK, context) => {
   const query = await RestQuery({
     method: RestQuery.Method.find,
     config,
@@ -55,15 +40,7 @@ const find = async (
 };
 
 // get is just like find but only queries an objectId.
-const get = async (
-  config,
-  auth,
-  className,
-  objectId,
-  restOptions,
-  clientSDK,
-  context
-) => {
+const get = async (config, auth, className, objectId, restOptions, clientSDK, context) => {
   var restWhere = { objectId };
   const query = await RestQuery({
     method: RestQuery.Method.get,
@@ -85,10 +62,7 @@ function del(config, auth, className, objectId, context) {
   }
 
   if (className === '_User' && auth.isUnauthenticated()) {
-    throw new Parse.Error(
-      Parse.Error.SESSION_MISSING,
-      'Insufficient auth to delete user'
-    );
+    throw new Parse.Error(Parse.Error.SESSION_MISSING, 'Insufficient auth to delete user');
   }
 
   enforceRoleSecurity('delete', className, auth);
@@ -98,10 +72,7 @@ function del(config, auth, className, objectId, context) {
 
   return Promise.resolve()
     .then(async () => {
-      const hasTriggers = checkTriggers(className, config, [
-        'beforeDelete',
-        'afterDelete',
-      ]);
+      const hasTriggers = checkTriggers(className, config, ['beforeDelete', 'afterDelete']);
       const hasLiveQuery = checkLiveQuery(className, config);
       if (hasTriggers || hasLiveQuery || className == '_Session') {
         const query = await RestQuery({
@@ -115,16 +86,9 @@ function del(config, auth, className, objectId, context) {
           if (response && response.results && response.results.length) {
             const firstResult = response.results[0];
             firstResult.className = className;
-            if (
-              className === '_Session' &&
-              !auth.isMaster &&
-              !auth.isMaintenance
-            ) {
+            if (className === '_Session' && !auth.isMaster && !auth.isMaintenance) {
               if (!auth.user || firstResult.user.objectId !== auth.user.id) {
-                throw new Parse.Error(
-                  Parse.Error.INVALID_SESSION_TOKEN,
-                  'Invalid session token'
-                );
+                throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
               }
             }
             var cacheAdapter = config.cacheController;
@@ -139,10 +103,7 @@ function del(config, auth, className, objectId, context) {
               context
             );
           }
-          throw new Parse.Error(
-            Parse.Error.OBJECT_NOT_FOUND,
-            'Object not found for delete.'
-          );
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found for delete.');
         });
       }
       return Promise.resolve({});
@@ -178,12 +139,7 @@ function del(config, auth, className, objectId, context) {
     .then(() => {
       // Notify LiveQuery server if possible
       const perms = schemaController.getClassLevelPermissions(className);
-      config.liveQueryController.onAfterDelete(
-        className,
-        inflatedObject,
-        null,
-        perms
-      );
+      config.liveQueryController.onAfterDelete(className, inflatedObject, null, perms);
       return triggers.maybeRunTrigger(
         triggers.Types.afterDelete,
         auth,
@@ -201,39 +157,19 @@ function del(config, auth, className, objectId, context) {
 // Returns a promise for a {response, status, location} object.
 function create(config, auth, className, restObject, clientSDK, context) {
   enforceRoleSecurity('create', className, auth);
-  var write = new RestWrite(
-    config,
-    auth,
-    className,
-    null,
-    restObject,
-    null,
-    clientSDK,
-    context
-  );
+  var write = new RestWrite(config, auth, className, null, restObject, null, clientSDK, context);
   return write.execute();
 }
 
 // Returns a promise that contains the fields of the update that the
 // REST API is supposed to return.
 // Usually, this is just updatedAt.
-function update(
-  config,
-  auth,
-  className,
-  restWhere,
-  restObject,
-  clientSDK,
-  context
-) {
+function update(config, auth, className, restWhere, restObject, clientSDK, context) {
   enforceRoleSecurity('update', className, auth);
 
   return Promise.resolve()
     .then(async () => {
-      const hasTriggers = checkTriggers(className, config, [
-        'beforeSave',
-        'afterSave',
-      ]);
+      const hasTriggers = checkTriggers(className, config, ['beforeSave', 'afterSave']);
       const hasLiveQuery = checkLiveQuery(className, config);
       if (hasTriggers || hasLiveQuery) {
         // Do not use find, as it runs the before finds

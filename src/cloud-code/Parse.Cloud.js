@@ -4,10 +4,7 @@ import { addRateLimit } from '../middlewares';
 const Config = require('../Config');
 
 function isParseObjectConstructor(object) {
-  return (
-    typeof object === 'function' &&
-    Object.prototype.hasOwnProperty.call(object, 'className')
-  );
+  return typeof object === 'function' && Object.prototype.hasOwnProperty.call(object, 'className');
 }
 
 function validateValidator(validator) {
@@ -55,9 +52,7 @@ function validateValidator(validator) {
     const types = parameter.map(type => getType(type));
     const type = getType(validatorParam);
     if (!types.includes(type) && !types.includes('Any')) {
-      throw `Invalid type for Cloud Function validation key ${key}. Expected ${types.join(
-        '|'
-      )}, actual ${type}`;
+      throw `Invalid type for Cloud Function validation key ${key}. Expected ${types.join('|')}, actual ${type}`;
     }
   };
   for (const key in validator) {
@@ -130,12 +125,7 @@ var ParseCloud = {};
  */
 ParseCloud.define = function (functionName, handler, validationHandler) {
   validateValidator(validationHandler);
-  triggers.addFunction(
-    functionName,
-    handler,
-    validationHandler,
-    Parse.applicationId
-  );
+  triggers.addFunction(functionName, handler, validationHandler, Parse.applicationId);
   if (validationHandler && validationHandler.rateLimit) {
     addRateLimit(
       {
@@ -291,12 +281,7 @@ ParseCloud.beforeLogin = function (handler, validationHandler) {
     handler = arguments[1];
     validationHandler = arguments.length >= 2 ? arguments[2] : null;
   }
-  triggers.addTrigger(
-    triggers.Types.beforeLogin,
-    className,
-    handler,
-    Parse.applicationId
-  );
+  triggers.addTrigger(triggers.Types.beforeLogin, className, handler, Parse.applicationId);
   if (validationHandler && validationHandler.rateLimit) {
     addRateLimit(
       {
@@ -337,12 +322,7 @@ ParseCloud.afterLogin = function (handler) {
     className = triggers.getClassName(handler);
     handler = arguments[1];
   }
-  triggers.addTrigger(
-    triggers.Types.afterLogin,
-    className,
-    handler,
-    Parse.applicationId
-  );
+  triggers.addTrigger(triggers.Types.afterLogin, className, handler, Parse.applicationId);
 };
 
 /**
@@ -371,12 +351,7 @@ ParseCloud.afterLogout = function (handler) {
     className = triggers.getClassName(handler);
     handler = arguments[1];
   }
-  triggers.addTrigger(
-    triggers.Types.afterLogout,
-    className,
-    handler,
-    Parse.applicationId
-  );
+  triggers.addTrigger(triggers.Types.afterLogout, className, handler, Parse.applicationId);
 };
 
 /**
@@ -661,11 +636,7 @@ ParseCloud.onLiveQueryEvent = function (handler) {
  * @param {Function} func The function to run after a live query event. This function can be async and should take one parameter, a {@link Parse.Cloud.LiveQueryEventTrigger}.
  * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.LiveQueryEventTrigger}, or a {@link Parse.Cloud.ValidatorObject}.
  */
-ParseCloud.afterLiveQueryEvent = function (
-  parseClass,
-  handler,
-  validationHandler
-) {
+ParseCloud.afterLiveQueryEvent = function (parseClass, handler, validationHandler) {
   const className = triggers.getClassName(parseClass);
   validateValidator(validationHandler);
   triggers.addTrigger(

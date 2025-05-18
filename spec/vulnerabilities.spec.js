@@ -15,9 +15,7 @@ describe('Vulnerabilities', () => {
     it('denies user creation with poisoned object ID', async () => {
       await expectAsync(
         new Parse.User({ id: 'role:a', username: 'a', password: '123' }).save()
-      ).toBeRejectedWith(
-        new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid object ID.')
-      );
+      ).toBeRejectedWith(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid object ID.'));
     });
 
     describe('existing sessions for users with poisoned object ID', () => {
@@ -45,10 +43,7 @@ describe('Vulnerabilities', () => {
             sessionToken: poisonedUser.getSessionToken(),
           })
         ).toBeRejectedWith(
-          new Parse.Error(
-            Parse.Error.INTERNAL_SERVER_ERROR,
-            'Invalid object ID.'
-          )
+          new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid object ID.')
         );
         await new Parse.Query(Parse.User).find({
           sessionToken: innocentUser.getSessionToken(),
@@ -81,9 +76,7 @@ describe('Vulnerabilities', () => {
       expect(response.status).toBe(400);
       const text = JSON.parse(response.text);
       expect(text.code).toBe(Parse.Error.INVALID_KEY_NAME);
-      expect(text.error).toBe(
-        'Prohibited keyword in request data: {"key":"constructor"}.'
-      );
+      expect(text.error).toBe('Prohibited keyword in request data: {"key":"constructor"}.');
       expect(Object.prototype.dummy).toBeUndefined();
     });
 
@@ -116,9 +109,7 @@ describe('Vulnerabilities', () => {
       expect(pollResponse.status).toBe(400);
       const text = JSON.parse(pollResponse.text);
       expect(text.code).toBe(Parse.Error.INVALID_KEY_NAME);
-      expect(text.error).toBe(
-        'Prohibited keyword in request data: {"key":"constructor"}.'
-      );
+      expect(text.error).toBe('Prohibited keyword in request data: {"key":"constructor"}.');
       expect(Object.prototype.dummy).toBeUndefined();
     });
 
@@ -137,9 +128,7 @@ describe('Vulnerabilities', () => {
       expect(response.status).toBe(400);
       const text = JSON.parse(response.text);
       expect(text.code).toBe(Parse.Error.INVALID_KEY_NAME);
-      expect(text.error).toBe(
-        'Prohibited keyword in request data: {"key":"__proto__"}.'
-      );
+      expect(text.error).toBe('Prohibited keyword in request data: {"key":"__proto__"}.');
       expect(Object.prototype.dummy).toBeUndefined();
     });
   });
@@ -178,10 +167,7 @@ describe('Vulnerabilities', () => {
       });
       obj.addUnique('a.foo', 'abc');
       await expectAsync(obj.save()).toBeRejectedWith(
-        new Parse.Error(
-          Parse.Error.INVALID_KEY_NAME,
-          `Prohibited keyword in request data: "foo".`
-        )
+        new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Prohibited keyword in request data: "foo".`)
       );
     });
 
@@ -291,14 +277,8 @@ describe('Vulnerabilities', () => {
           });
           res.json({ success: object });
         });
-        await Parse.Hooks.createTrigger(
-          'TestObject',
-          'beforeSave',
-          hookServerURL + '/BeforeSave'
-        );
-        await expectAsync(
-          new Parse.Object('TestObject').save()
-        ).toBeRejectedWith(
+        await Parse.Hooks.createTrigger('TestObject', 'beforeSave', hookServerURL + '/BeforeSave');
+        await expectAsync(new Parse.Object('TestObject').save()).toBeRejectedWith(
           new Parse.Error(
             Parse.Error.INVALID_KEY_NAME,
             'Prohibited keyword in request data: {"key":"constructor"}.'
@@ -423,9 +403,7 @@ describe('Vulnerabilities', () => {
       expect(response.status).toBe(400);
       const text = JSON.parse(response.text);
       expect(text.code).toBe(Parse.Error.INVALID_KEY_NAME);
-      expect(text.error).toBe(
-        'Prohibited keyword in request data: {"key":"a[K]ey"}.'
-      );
+      expect(text.error).toBe('Prohibited keyword in request data: {"key":"a[K]ey"}.');
     });
 
     it('denies write request with custom denylist of value', async () => {
@@ -452,9 +430,7 @@ describe('Vulnerabilities', () => {
       expect(response.status).toBe(400);
       const text = JSON.parse(response.text);
       expect(text.code).toBe(Parse.Error.INVALID_KEY_NAME);
-      expect(text.error).toBe(
-        'Prohibited keyword in request data: {"value":"aValue[123]*"}.'
-      );
+      expect(text.error).toBe('Prohibited keyword in request data: {"value":"aValue[123]*"}.');
     });
 
     it('denies BSON type code data in file metadata', async () => {

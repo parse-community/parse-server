@@ -4,9 +4,7 @@ const request = require('../lib/request');
 const MockEmailAdapterWithOptions = require('./support/MockEmailAdapterWithOptions');
 
 const verifyPassword = function (login, password, isEmail = false) {
-  const body = !isEmail
-    ? { username: login, password }
-    : { email: login, password };
+  const body = !isEmail ? { username: login, password } : { email: login, password };
   return request({
     url: Parse.serverURL + '/verifyPassword',
     headers: {
@@ -19,12 +17,7 @@ const verifyPassword = function (login, password, isEmail = false) {
     .catch(err => err);
 };
 
-const isAccountLockoutError = function (
-  username,
-  password,
-  duration,
-  waitTime
-) {
+const isAccountLockoutError = function (username, password, duration, waitTime) {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       Parse.User.logIn(username, password)
@@ -119,9 +112,7 @@ describe('Verify User Password', () => {
       })
       .catch(err => {
         expect(err.status).toBe(400);
-        expect(err.text).toMatch(
-          '{"code":200,"error":"username/email is required."}'
-        );
+        expect(err.text).toMatch('{"code":200,"error":"username/email is required."}');
         done();
       });
   });
@@ -152,9 +143,7 @@ describe('Verify User Password', () => {
       })
       .catch(err => {
         expect(err.status).toBe(400);
-        expect(err.text).toMatch(
-          '{"code":200,"error":"username/email is required."}'
-        );
+        expect(err.text).toMatch('{"code":200,"error":"username/email is required."}');
         done();
       });
   });
@@ -171,9 +160,7 @@ describe('Verify User Password', () => {
       })
       .then(res => {
         expect(res.status).toBe(400);
-        expect(res.text).toMatch(
-          '{"code":200,"error":"username/email is required."}'
-        );
+        expect(res.text).toMatch('{"code":200,"error":"username/email is required."}');
         done();
       })
       .catch(err => {
@@ -194,9 +181,7 @@ describe('Verify User Password', () => {
       })
       .then(res => {
         expect(res.status).toBe(400);
-        expect(res.text).toMatch(
-          '{"code":200,"error":"username/email is required."}'
-        );
+        expect(res.text).toMatch('{"code":200,"error":"username/email is required."}');
         done();
       })
       .catch(err => {
@@ -217,9 +202,7 @@ describe('Verify User Password', () => {
       })
       .then(res => {
         expect(res.status).toBe(400);
-        expect(res.text).toMatch(
-          '{"code":201,"error":"password is required."}'
-        );
+        expect(res.text).toMatch('{"code":201,"error":"password is required."}');
         done();
       })
       .catch(err => {
@@ -389,11 +372,7 @@ describe('Verify User Password', () => {
       password: 'mypass',
       email: 'unverified-email@example.com',
     });
-    const res = await verifyPassword(
-      'unverified-email@example.com',
-      'mypass',
-      true
-    );
+    const res = await verifyPassword('unverified-email@example.com', 'mypass', true);
     expect(res.status).toBe(400);
     expect(res.data).toEqual({
       code: Parse.Error.EMAIL_NOT_FOUND,
@@ -434,10 +413,7 @@ describe('Verify User Password', () => {
         done();
       })
       .catch(err => {
-        fail(
-          'lock account after failed login attempts test failed: ' +
-            JSON.stringify(err)
-        );
+        fail('lock account after failed login attempts test failed: ' + JSON.stringify(err));
         done();
       });
   });
@@ -470,12 +446,8 @@ describe('Verify User Password', () => {
         const res = response.data;
         expect(typeof res).toBe('object');
         expect(typeof res['objectId']).toEqual('string');
-        expect(
-          Object.prototype.hasOwnProperty.call(res, 'sessionToken')
-        ).toEqual(false);
-        expect(Object.prototype.hasOwnProperty.call(res, 'password')).toEqual(
-          false
-        );
+        expect(Object.prototype.hasOwnProperty.call(res, 'sessionToken')).toEqual(false);
+        expect(Object.prototype.hasOwnProperty.call(res, 'password')).toEqual(false);
         done();
       })
       .catch(err => {
@@ -498,12 +470,8 @@ describe('Verify User Password', () => {
         const res = response.data;
         expect(typeof res).toBe('object');
         expect(typeof res['objectId']).toEqual('string');
-        expect(
-          Object.prototype.hasOwnProperty.call(res, 'sessionToken')
-        ).toEqual(false);
-        expect(Object.prototype.hasOwnProperty.call(res, 'password')).toEqual(
-          false
-        );
+        expect(Object.prototype.hasOwnProperty.call(res, 'sessionToken')).toEqual(false);
+        expect(Object.prototype.hasOwnProperty.call(res, 'password')).toEqual(false);
         done();
       });
   });
@@ -522,12 +490,8 @@ describe('Verify User Password', () => {
         const res = response.data;
         expect(typeof res).toBe('object');
         expect(typeof res['objectId']).toEqual('string');
-        expect(
-          Object.prototype.hasOwnProperty.call(res, 'sessionToken')
-        ).toEqual(false);
-        expect(Object.prototype.hasOwnProperty.call(res, 'password')).toEqual(
-          false
-        );
+        expect(Object.prototype.hasOwnProperty.call(res, 'sessionToken')).toEqual(false);
+        expect(Object.prototype.hasOwnProperty.call(res, 'password')).toEqual(false);
         done();
       });
   });
@@ -557,12 +521,8 @@ describe('Verify User Password', () => {
         expect(typeof res).toBe('string');
         const body = JSON.parse(res);
         expect(typeof body['objectId']).toEqual('string');
-        expect(
-          Object.prototype.hasOwnProperty.call(body, 'sessionToken')
-        ).toEqual(false);
-        expect(Object.prototype.hasOwnProperty.call(body, 'password')).toEqual(
-          false
-        );
+        expect(Object.prototype.hasOwnProperty.call(body, 'sessionToken')).toEqual(false);
+        expect(Object.prototype.hasOwnProperty.call(body, 'password')).toEqual(false);
         done();
       });
   });
@@ -592,12 +552,8 @@ describe('Verify User Password', () => {
         expect(typeof res).toBe('string');
         const body = JSON.parse(res);
         expect(typeof body['objectId']).toEqual('string');
-        expect(
-          Object.prototype.hasOwnProperty.call(body, 'sessionToken')
-        ).toEqual(false);
-        expect(Object.prototype.hasOwnProperty.call(body, 'password')).toEqual(
-          false
-        );
+        expect(Object.prototype.hasOwnProperty.call(body, 'sessionToken')).toEqual(false);
+        expect(Object.prototype.hasOwnProperty.call(body, 'password')).toEqual(false);
         done();
       });
   });
@@ -624,12 +580,8 @@ describe('Verify User Password', () => {
         const res = response.data;
         expect(typeof res).toBe('object');
         expect(typeof res['objectId']).toEqual('string');
-        expect(
-          Object.prototype.hasOwnProperty.call(res, 'sessionToken')
-        ).toEqual(false);
-        expect(Object.prototype.hasOwnProperty.call(res, 'password')).toEqual(
-          false
-        );
+        expect(Object.prototype.hasOwnProperty.call(res, 'sessionToken')).toEqual(false);
+        expect(Object.prototype.hasOwnProperty.call(res, 'password')).toEqual(false);
         done();
       });
   });
@@ -670,12 +622,8 @@ describe('Verify User Password', () => {
       json: true,
     });
     expect(res.objectId).toBe(user.id);
-    expect(Object.prototype.hasOwnProperty.call(res, 'sessionToken')).toEqual(
-      false
-    );
-    expect(Object.prototype.hasOwnProperty.call(res, 'password')).toEqual(
-      false
-    );
+    expect(Object.prototype.hasOwnProperty.call(res, 'sessionToken')).toEqual(false);
+    expect(Object.prototype.hasOwnProperty.call(res, 'password')).toEqual(false);
   });
 
   it('fails to verify password of user with unverified email with master key and ignoreEmailVerification=false', async () => {

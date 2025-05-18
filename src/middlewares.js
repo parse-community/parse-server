@@ -148,8 +148,7 @@ export async function handleParseHeaders(req, res, next) {
       req.body &&
       req.body._ApplicationId &&
       AppCache.get(req.body._ApplicationId) &&
-      (!info.masterKey ||
-        AppCache.get(req.body._ApplicationId).masterKey === info.masterKey)
+      (!info.masterKey || AppCache.get(req.body._ApplicationId).masterKey === info.masterKey)
     ) {
       info.appId = req.body._ApplicationId;
       info.javascriptKey = req.body._JavaScriptKey || '';
@@ -179,9 +178,7 @@ export async function handleParseHeaders(req, res, next) {
         } else {
           try {
             info.context = JSON.parse(req.body._context);
-            if (
-              Object.prototype.toString.call(info.context) !== '[object Object]'
-            ) {
+            if (Object.prototype.toString.call(info.context) !== '[object Object]') {
               throw 'Context is not an object';
             }
           } catch (e) {
@@ -232,16 +229,9 @@ export async function handleParseHeaders(req, res, next) {
   req.info = info;
 
   const isMaintenance =
-    req.config.maintenanceKey &&
-    info.maintenanceKey === req.config.maintenanceKey;
+    req.config.maintenanceKey && info.maintenanceKey === req.config.maintenanceKey;
   if (isMaintenance) {
-    if (
-      checkIp(
-        clientIp,
-        req.config.maintenanceKeyIps || [],
-        req.config.maintenanceKeyIpsStore
-      )
-    ) {
+    if (checkIp(clientIp, req.config.maintenanceKeyIps || [], req.config.maintenanceKeyIpsStore)) {
       req.auth = new auth.Auth({
         config: req.config,
         installationId: info.installationId,
@@ -259,14 +249,7 @@ export async function handleParseHeaders(req, res, next) {
   const masterKey = await req.config.loadMasterKey();
   let isMaster = info.masterKey === masterKey;
 
-  if (
-    isMaster &&
-    !checkIp(
-      clientIp,
-      req.config.masterKeyIps || [],
-      req.config.masterKeyIpsStore
-    )
-  ) {
+  if (isMaster && !checkIp(clientIp, req.config.masterKeyIps || [], req.config.masterKeyIpsStore)) {
     const log = req.config?.loggerController || defaultLogger;
     log.error(
       `Request using master key rejected as the request IP address '${clientIp}' is not set in Parse Server option 'masterKeyIps'.`
@@ -402,10 +385,7 @@ export const handleParseSession = async (req, res, next) => {
       return;
     }
     // TODO: Determine the correct error scenario.
-    req.config.loggerController.error(
-      'error getting auth for sessionToken',
-      error
-    );
+    req.config.loggerController.error('error getting auth for sessionToken', error);
     throw new Parse.Error(Parse.Error.UNKNOWN_ERROR, error);
   }
 };
@@ -467,16 +447,11 @@ export function allowCrossDomain(appId) {
         : (config?.allowOrigin ?? ['*']);
     const requestOrigin = req.headers.origin;
     const allowOrigins =
-      requestOrigin && baseOrigins.includes(requestOrigin)
-        ? requestOrigin
-        : baseOrigins[0];
+      requestOrigin && baseOrigins.includes(requestOrigin) ? requestOrigin : baseOrigins[0];
     res.header('Access-Control-Allow-Origin', allowOrigins);
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
     res.header('Access-Control-Allow-Headers', allowHeaders);
-    res.header(
-      'Access-Control-Expose-Headers',
-      'X-Parse-Job-Status-Id, X-Parse-Push-Status-Id'
-    );
+    res.header('Access-Control-Expose-Headers', 'X-Parse-Job-Status-Id, X-Parse-Push-Status-Id');
     // intercept OPTIONS method
     if ('OPTIONS' == req.method) {
       res.sendStatus(200);
@@ -608,9 +583,7 @@ export const addRateLimit = (route, config, cloud) => {
     handler: rateLimit({
       windowMs: route.requestTimeWindow,
       max: route.requestCount,
-      message:
-        route.errorResponseMessage ||
-        RateLimitOptions.errorResponseMessage.default,
+      message: route.errorResponseMessage || RateLimitOptions.errorResponseMessage.default,
       handler: (request, response, next, options) => {
         throw {
           code: Parse.Error.CONNECTION_FAILED,
@@ -648,9 +621,7 @@ export const addRateLimit = (route, config, cloud) => {
         }
         if (route.zone === Parse.Server.RateLimitZone.user && token) {
           if (!request.auth) {
-            await new Promise(resolve =>
-              handleParseSession(request, null, resolve)
-            );
+            await new Promise(resolve => handleParseSession(request, null, resolve));
           }
           if (request.auth?.user?.id && request.zone === 'user') {
             return request.auth.user.id;
@@ -705,9 +676,7 @@ export function promiseEnsureIdempotency(req) {
     return Promise.resolve();
   }
   // Try to store request
-  const expiryDate = new Date(
-    new Date().setSeconds(new Date().getSeconds() + ttl)
-  );
+  const expiryDate = new Date(new Date().setSeconds(new Date().getSeconds() + ttl));
   return rest
     .create(config, auth.master(config), '_Idempotency', {
       reqId: requestId,
@@ -715,10 +684,7 @@ export function promiseEnsureIdempotency(req) {
     })
     .catch(e => {
       if (e.code == Parse.Error.DUPLICATE_VALUE) {
-        throw new Parse.Error(
-          Parse.Error.DUPLICATE_REQUEST,
-          'Duplicate request'
-        );
+        throw new Parse.Error(Parse.Error.DUPLICATE_REQUEST, 'Duplicate request');
       }
       throw e;
     });

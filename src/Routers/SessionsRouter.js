@@ -12,10 +12,7 @@ export class SessionsRouter extends ClassesRouter {
   handleMe(req) {
     // TODO: Verify correct behavior
     if (!req.info || !req.info.sessionToken) {
-      throw new Parse.Error(
-        Parse.Error.INVALID_SESSION_TOKEN,
-        'Session token required.'
-      );
+      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token required.');
     }
     return rest
       .find(
@@ -29,10 +26,7 @@ export class SessionsRouter extends ClassesRouter {
       )
       .then(response => {
         if (!response.results || response.results.length == 0) {
-          throw new Parse.Error(
-            Parse.Error.INVALID_SESSION_TOKEN,
-            'Session token not found.'
-          );
+          throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token not found.');
         }
         return {
           response: response.results[0],

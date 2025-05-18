@@ -3,10 +3,7 @@ import { GraphQLError } from 'graphql';
 
 export function enforceMasterKeyAccess(auth) {
   if (!auth.isMaster) {
-    throw new Parse.Error(
-      Parse.Error.OPERATION_FORBIDDEN,
-      'unauthorized: master key is required'
-    );
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'unauthorized: master key is required');
   }
 }
 
@@ -23,9 +20,7 @@ export function toGraphQLError(error) {
 }
 
 export const extractKeysAndInclude = selectedFields => {
-  selectedFields = selectedFields.filter(
-    field => !field.includes('__typename')
-  );
+  selectedFields = selectedFields.filter(field => !field.includes('__typename'));
   // Handles "id" field for both current and included objects
   selectedFields = selectedFields.map(field => {
     if (field === 'id') {

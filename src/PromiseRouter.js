@@ -121,10 +121,7 @@ export default class PromiseRouter {
   tryRouteRequest(method, path, request) {
     var match = this.match(method, path);
     if (!match) {
-      throw new Parse.Error(
-        Parse.Error.INVALID_JSON,
-        'cannot route ' + method + ' ' + path
-      );
+      throw new Parse.Error(Parse.Error.INVALID_JSON, 'cannot route ' + method + ' ' + path);
     }
     request.params = match.params;
     return new Promise((resolve, reject) => {
@@ -154,9 +151,7 @@ function makeExpressHandler(appId, promiseHandler) {
         .then(
           result => {
             if (!result.response && !result.location && !result.text) {
-              log.error(
-                'the handler did not include a "response" or a "location" field'
-              );
+              log.error('the handler did not include a "response" or a "location" field');
               throw 'control should not get here';
             }
 

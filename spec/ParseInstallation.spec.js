@@ -10,19 +10,14 @@ const request = require('../lib/request');
 
 let config;
 let database;
-const defaultColumns =
-  require('../lib/Controllers/SchemaController').defaultColumns;
+const defaultColumns = require('../lib/Controllers/SchemaController').defaultColumns;
 
 const delay = function delay(delay) {
   return new Promise(resolve => setTimeout(resolve, delay));
 };
 
 const installationSchema = {
-  fields: Object.assign(
-    {},
-    defaultColumns._Default,
-    defaultColumns._Installation
-  ),
+  fields: Object.assign({}, defaultColumns._Default, defaultColumns._Installation),
 };
 
 describe('Installations', () => {
@@ -40,9 +35,7 @@ describe('Installations', () => {
     };
     rest
       .create(config, auth.nobody(config), '_Installation', input)
-      .then(() =>
-        database.adapter.find('_Installation', installationSchema, {}, {})
-      )
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
         const obj = results[0];
@@ -58,8 +51,7 @@ describe('Installations', () => {
   });
 
   it('creates an ios installation with ids', done => {
-    const t =
-      '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
+    const t = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
     const device = 'ios';
     const input = {
       deviceToken: t,
@@ -67,9 +59,7 @@ describe('Installations', () => {
     };
     rest
       .create(config, auth.nobody(config), '_Installation', input)
-      .then(() =>
-        database.adapter.find('_Installation', installationSchema, {}, {})
-      )
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
         const obj = results[0];
@@ -93,9 +83,7 @@ describe('Installations', () => {
     };
     rest
       .create(config, auth.nobody(config), '_Installation', input)
-      .then(() =>
-        database.adapter.find('_Installation', installationSchema, {}, {})
-      )
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
         const obj = results[0];
@@ -120,9 +108,7 @@ describe('Installations', () => {
     };
     rest
       .create(config, auth.nobody(config), '_Installation', input)
-      .then(() =>
-        database.adapter.find('_Installation', installationSchema, {}, {})
-      )
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
         const obj = results[0];
@@ -142,8 +128,7 @@ describe('Installations', () => {
   });
 
   it('creates an ios installation with all fields', done => {
-    const t =
-      '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
+    const t = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
     const device = 'ios';
     const input = {
       deviceToken: t,
@@ -152,9 +137,7 @@ describe('Installations', () => {
     };
     rest
       .create(config, auth.nobody(config), '_Installation', input)
-      .then(() =>
-        database.adapter.find('_Installation', installationSchema, {}, {})
-      )
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
         const obj = results[0];
@@ -261,8 +244,7 @@ describe('Installations', () => {
   });
 
   it('creates an object with custom fields', done => {
-    const t =
-      '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
+    const t = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
     const input = {
       deviceToken: t,
       deviceType: 'ios',
@@ -271,9 +253,7 @@ describe('Installations', () => {
     };
     rest
       .create(config, auth.nobody(config), '_Installation', input)
-      .then(() =>
-        database.adapter.find('_Installation', installationSchema, {}, {})
-      )
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
         const obj = results[0];
@@ -289,8 +269,7 @@ describe('Installations', () => {
 
   it('merging when installationId already exists', done => {
     const installId1 = '12345678-abcd-abcd-abcd-123456789abc';
-    const t =
-      '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
+    const t = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
     const input = {
       deviceToken: t,
       deviceType: 'ios',
@@ -301,9 +280,7 @@ describe('Installations', () => {
     let secondObject;
     rest
       .create(config, auth.nobody(config), '_Installation', input)
-      .then(() =>
-        database.adapter.find('_Installation', installationSchema, {}, {})
-      )
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
         firstObject = results[0];
@@ -312,9 +289,7 @@ describe('Installations', () => {
         input['foo'] = 'bar';
         return rest.create(config, auth.nobody(config), '_Installation', input);
       })
-      .then(() =>
-        database.adapter.find('_Installation', installationSchema, {}, {})
-      )
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
         secondObject = results[0];
@@ -330,8 +305,7 @@ describe('Installations', () => {
 
   it('merging when two objects both only have one id', done => {
     const installId = '12345678-abcd-abcd-abcd-123456789abc';
-    const t =
-      '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    const t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
     const input1 = {
       installationId: installId,
       deviceType: 'ios',
@@ -349,22 +323,13 @@ describe('Installations', () => {
     let secondObject;
     rest
       .create(config, auth.nobody(config), '_Installation', input1)
-      .then(() =>
-        database.adapter.find('_Installation', installationSchema, {}, {})
-      )
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
         firstObject = results[0];
-        return rest.create(
-          config,
-          auth.nobody(config),
-          '_Installation',
-          input2
-        );
+        return rest.create(config, auth.nobody(config), '_Installation', input2);
       })
-      .then(() =>
-        database.adapter.find('_Installation', installationSchema, {}, {})
-      )
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(2);
         if (results[0]['_id'] == firstObject._id) {
@@ -372,16 +337,9 @@ describe('Installations', () => {
         } else {
           secondObject = results[0];
         }
-        return rest.create(
-          config,
-          auth.nobody(config),
-          '_Installation',
-          input3
-        );
+        return rest.create(config, auth.nobody(config), '_Installation', input3);
       })
-      .then(() =>
-        database.adapter.find('_Installation', installationSchema, {}, {})
-      )
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
         expect(results[0]['_id']).toEqual(secondObject._id);
@@ -397,8 +355,7 @@ describe('Installations', () => {
     const installId1 = '11111111-abcd-abcd-abcd-123456789abc';
     const installId2 = '22222222-abcd-abcd-abcd-123456789abc';
     const installId3 = '33333333-abcd-abcd-abcd-123456789abc';
-    const t =
-      '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    const t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
     const input = {
       installationId: installId1,
       deviceType: 'ios',
@@ -449,48 +406,35 @@ describe('Installations', () => {
       });
   });
 
-  it_id('95955e90-04bc-4437-920e-b84bc30dba01')(it)(
-    'updating with new channels',
-    done => {
-      const input = {
-        installationId: '12345678-abcd-abcd-abcd-123456789abc',
-        deviceType: 'android',
-        channels: ['foo', 'bar'],
-      };
-      rest
-        .create(config, auth.nobody(config), '_Installation', input)
-        .then(() =>
-          database.adapter.find('_Installation', installationSchema, {}, {})
-        )
-        .then(results => {
-          expect(results.length).toEqual(1);
-          const objectId = results[0].objectId;
-          const update = {
-            channels: ['baz'],
-          };
-          return rest.update(
-            config,
-            auth.nobody(config),
-            '_Installation',
-            { objectId },
-            update
-          );
-        })
-        .then(() =>
-          database.adapter.find('_Installation', installationSchema, {}, {})
-        )
-        .then(results => {
-          expect(results.length).toEqual(1);
-          expect(results[0].channels.length).toEqual(1);
-          expect(results[0].channels[0]).toEqual('baz');
-          done();
-        })
-        .catch(error => {
-          jfail(error);
-          done();
-        });
-    }
-  );
+  it_id('95955e90-04bc-4437-920e-b84bc30dba01')(it)('updating with new channels', done => {
+    const input = {
+      installationId: '12345678-abcd-abcd-abcd-123456789abc',
+      deviceType: 'android',
+      channels: ['foo', 'bar'],
+    };
+    rest
+      .create(config, auth.nobody(config), '_Installation', input)
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
+      .then(results => {
+        expect(results.length).toEqual(1);
+        const objectId = results[0].objectId;
+        const update = {
+          channels: ['baz'],
+        };
+        return rest.update(config, auth.nobody(config), '_Installation', { objectId }, update);
+      })
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
+      .then(results => {
+        expect(results.length).toEqual(1);
+        expect(results[0].channels.length).toEqual(1);
+        expect(results[0].channels[0]).toEqual('baz');
+        done();
+      })
+      .catch(error => {
+        jfail(error);
+        done();
+      });
+  });
 
   it('update android fails with new installation id', done => {
     const installId1 = '12345678-abcd-abcd-abcd-123456789abc';
@@ -502,9 +446,7 @@ describe('Installations', () => {
     };
     rest
       .create(config, auth.nobody(config), '_Installation', input)
-      .then(() =>
-        database.adapter.find('_Installation', installationSchema, {}, {})
-      )
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
         input = { installationId: installId2 };
@@ -527,10 +469,8 @@ describe('Installations', () => {
   });
 
   it('update ios fails with new deviceToken and no installationId', done => {
-    const a =
-      '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
-    const b =
-      '91433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
+    const a = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
+    const b = '91433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
     let input = {
       deviceToken: a,
       deviceType: 'ios',
@@ -538,9 +478,7 @@ describe('Installations', () => {
     };
     rest
       .create(config, auth.nobody(config), '_Installation', input)
-      .then(() =>
-        database.adapter.find('_Installation', installationSchema, {}, {})
-      )
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
         input = { deviceToken: b };
@@ -563,10 +501,8 @@ describe('Installations', () => {
 
   it('update ios updates device token', done => {
     const installId = '12345678-abcd-abcd-abcd-123456789abc';
-    const t =
-      '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
-    const u =
-      '91433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
+    const t = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
+    const u = '91433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
     let input = {
       installationId: installId,
       deviceType: 'ios',
@@ -575,9 +511,7 @@ describe('Installations', () => {
     };
     rest
       .create(config, auth.nobody(config), '_Installation', input)
-      .then(() =>
-        database.adapter.find('_Installation', installationSchema, {}, {})
-      )
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
         input = {
@@ -593,9 +527,7 @@ describe('Installations', () => {
           input
         );
       })
-      .then(() =>
-        database.adapter.find('_Installation', installationSchema, {}, {})
-      )
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
         expect(results[0].deviceToken).toEqual(u);
@@ -616,9 +548,7 @@ describe('Installations', () => {
     };
     rest
       .create(config, auth.nobody(config), '_Installation', input)
-      .then(() =>
-        database.adapter.find('_Installation', installationSchema, {}, {})
-      )
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
         input = {
@@ -651,9 +581,7 @@ describe('Installations', () => {
     };
     rest
       .create(config, auth.nobody(config), '_Installation', input)
-      .then(() =>
-        database.adapter.find('_Installation', installationSchema, {}, {})
-      )
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
         input = {
@@ -667,9 +595,7 @@ describe('Installations', () => {
           input
         );
       })
-      .then(() =>
-        database.adapter.find('_Installation', installationSchema, {}, {})
-      )
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
         expect(results[0]['custom']).toEqual('allowed');
@@ -680,8 +606,7 @@ describe('Installations', () => {
   it('update android device token with duplicate device token', async () => {
     const installId1 = '11111111-abcd-abcd-abcd-123456789abc';
     const installId2 = '22222222-abcd-abcd-abcd-123456789abc';
-    const t =
-      '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    const t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
     let input = {
       installationId: installId1,
@@ -740,8 +665,7 @@ describe('Installations', () => {
   it('update ios device token with duplicate device token', done => {
     const installId1 = '11111111-abcd-abcd-abcd-123456789abc';
     const installId2 = '22222222-abcd-abcd-abcd-123456789abc';
-    const t =
-      '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    const t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
     let input = {
       installationId: installId1,
       deviceToken: t,
@@ -819,8 +743,7 @@ describe('Installations', () => {
   xit('update ios device token with duplicate token different app', done => {
     const installId1 = '11111111-abcd-abcd-abcd-123456789abc';
     const installId2 = '22222222-abcd-abcd-abcd-123456789abc';
-    const t =
-      '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    const t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
     const input = {
       installationId: installId1,
       deviceToken: t,
@@ -834,9 +757,7 @@ describe('Installations', () => {
         input.appIdentifier = 'bar';
         return rest.create(config, auth.nobody(config), '_Installation', input);
       })
-      .then(() =>
-        database.adapter.find('_Installation', installationSchema, {}, {})
-      )
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         // The first object should have been deleted during merge
         expect(results.length).toEqual(1);
@@ -851,17 +772,14 @@ describe('Installations', () => {
 
   it('update ios token and channels', done => {
     const installId = '12345678-abcd-abcd-abcd-123456789abc';
-    const t =
-      '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    const t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
     let input = {
       installationId: installId,
       deviceType: 'ios',
     };
     rest
       .create(config, auth.nobody(config), '_Installation', input)
-      .then(() =>
-        database.adapter.find('_Installation', installationSchema, {}, {})
-      )
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
         input = {
@@ -876,9 +794,7 @@ describe('Installations', () => {
           input
         );
       })
-      .then(() =>
-        database.adapter.find('_Installation', installationSchema, {}, {})
-      )
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
         expect(results[0].installationId).toEqual(installId);
@@ -894,8 +810,7 @@ describe('Installations', () => {
 
   it('update ios linking two existing objects', done => {
     const installId = '12345678-abcd-abcd-abcd-123456789abc';
-    const t =
-      '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    const t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
     let input = {
       installationId: installId,
       deviceType: 'ios',
@@ -910,12 +825,7 @@ describe('Installations', () => {
         return rest.create(config, auth.nobody(config), '_Installation', input);
       })
       .then(() =>
-        database.adapter.find(
-          '_Installation',
-          installationSchema,
-          { deviceToken: t },
-          {}
-        )
+        database.adapter.find('_Installation', installationSchema, { deviceToken: t }, {})
       )
       .then(results => {
         expect(results.length).toEqual(1);
@@ -932,9 +842,7 @@ describe('Installations', () => {
           input
         );
       })
-      .then(() =>
-        database.adapter.find('_Installation', installationSchema, {}, {})
-      )
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
         expect(results[0].installationId).toEqual(installId);
@@ -952,8 +860,7 @@ describe('Installations', () => {
     'update is linking two existing objects w/ increment',
     done => {
       const installId = '12345678-abcd-abcd-abcd-123456789abc';
-      const t =
-        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+      const t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
       let input = {
         installationId: installId,
         deviceType: 'ios',
@@ -965,20 +872,10 @@ describe('Installations', () => {
             deviceToken: t,
             deviceType: 'ios',
           };
-          return rest.create(
-            config,
-            auth.nobody(config),
-            '_Installation',
-            input
-          );
+          return rest.create(config, auth.nobody(config), '_Installation', input);
         })
         .then(() =>
-          database.adapter.find(
-            '_Installation',
-            installationSchema,
-            { deviceToken: t },
-            {}
-          )
+          database.adapter.find('_Installation', installationSchema, { deviceToken: t }, {})
         )
         .then(results => {
           expect(results.length).toEqual(1);
@@ -999,9 +896,7 @@ describe('Installations', () => {
             input
           );
         })
-        .then(() =>
-          database.adapter.find('_Installation', installationSchema, {}, {})
-        )
+        .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
         .then(results => {
           expect(results.length).toEqual(1);
           expect(results[0].installationId).toEqual(installId);
@@ -1019,8 +914,7 @@ describe('Installations', () => {
 
   it('update is linking two existing with installation id', done => {
     const installId = '12345678-abcd-abcd-abcd-123456789abc';
-    const t =
-      '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    const t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
     let input = {
       installationId: installId,
       deviceType: 'ios',
@@ -1029,9 +923,7 @@ describe('Installations', () => {
     let tokenObj;
     rest
       .create(config, auth.nobody(config), '_Installation', input)
-      .then(() =>
-        database.adapter.find('_Installation', installationSchema, {}, {})
-      )
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
         installObj = results[0];
@@ -1042,12 +934,7 @@ describe('Installations', () => {
         return rest.create(config, auth.nobody(config), '_Installation', input);
       })
       .then(() =>
-        database.adapter.find(
-          '_Installation',
-          installationSchema,
-          { deviceToken: t },
-          {}
-        )
+        database.adapter.find('_Installation', installationSchema, { deviceToken: t }, {})
       )
       .then(results => {
         expect(results.length).toEqual(1);
@@ -1089,8 +976,7 @@ describe('Installations', () => {
     'update is linking two existing with installation id w/ op',
     done => {
       const installId = '12345678-abcd-abcd-abcd-123456789abc';
-      const t =
-        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+      const t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
       let input = {
         installationId: installId,
         deviceType: 'ios',
@@ -1099,9 +985,7 @@ describe('Installations', () => {
       let tokenObj;
       rest
         .create(config, auth.nobody(config), '_Installation', input)
-        .then(() =>
-          database.adapter.find('_Installation', installationSchema, {}, {})
-        )
+        .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
         .then(results => {
           expect(results.length).toEqual(1);
           installObj = results[0];
@@ -1109,20 +993,10 @@ describe('Installations', () => {
             deviceToken: t,
             deviceType: 'ios',
           };
-          return rest.create(
-            config,
-            auth.nobody(config),
-            '_Installation',
-            input
-          );
+          return rest.create(config, auth.nobody(config), '_Installation', input);
         })
         .then(() =>
-          database.adapter.find(
-            '_Installation',
-            installationSchema,
-            { deviceToken: t },
-            {}
-          )
+          database.adapter.find('_Installation', installationSchema, { deviceToken: t }, {})
         )
         .then(results => {
           expect(results.length).toEqual(1);
@@ -1177,8 +1051,7 @@ describe('Installations', () => {
     // imported installation, then we should reuse the existing installation
     // object in case the developer already added additional fields via Data
     // Browser or REST API (e.g. channel targeting info).
-    const t =
-      '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    const t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
     const installId = '12345678-abcd-abcd-abcd-123456789abc';
     let input = {
       deviceToken: t,
@@ -1186,9 +1059,7 @@ describe('Installations', () => {
     };
     rest
       .create(config, auth.nobody(config), '_Installation', input)
-      .then(() =>
-        database.adapter.find('_Installation', installationSchema, {}, {})
-      )
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
         input = {
@@ -1198,9 +1069,7 @@ describe('Installations', () => {
         };
         return rest.create(config, auth.nobody(config), '_Installation', input);
       })
-      .then(() =>
-        database.adapter.find('_Installation', installationSchema, {}, {})
-      )
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
         expect(results[0].deviceToken).toEqual(t);
@@ -1230,9 +1099,7 @@ describe('Installations', () => {
         };
         return request({
           headers: headers,
-          url:
-            'http://localhost:8378/1/installations/' +
-            createResult.response.objectId,
+          url: 'http://localhost:8378/1/installations/' + createResult.response.objectId,
         }).then(response => {
           const body = response.data;
           expect(body.objectId).toEqual(createResult.response.objectId);
@@ -1318,31 +1185,29 @@ describe('Installations', () => {
       installationId: installId,
       deviceType: device,
     };
-    rest
-      .create(config, auth.nobody(config), '_Installation', input)
-      .then(() => {
-        const query = new Parse.Query(Parse.Installation);
-        query.equalTo('installationId', installId);
-        query
-          .first({ useMasterKey: true })
-          .then(installation => {
-            return installation.save(
-              {
-                key: 'value',
-              },
-              { useMasterKey: true }
-            );
-          })
-          .then(
-            () => {
-              done();
+    rest.create(config, auth.nobody(config), '_Installation', input).then(() => {
+      const query = new Parse.Query(Parse.Installation);
+      query.equalTo('installationId', installId);
+      query
+        .first({ useMasterKey: true })
+        .then(installation => {
+          return installation.save(
+            {
+              key: 'value',
             },
-            err => {
-              jfail(err);
-              done();
-            }
+            { useMasterKey: true }
           );
-      });
+        })
+        .then(
+          () => {
+            done();
+          },
+          err => {
+            jfail(err);
+            done();
+          }
+        );
+    });
   });
 
   it('should properly reject updating installationId', done => {
@@ -1352,93 +1217,85 @@ describe('Installations', () => {
       installationId: installId,
       deviceType: device,
     };
-    rest
-      .create(config, auth.nobody(config), '_Installation', input)
-      .then(() => {
-        const query = new Parse.Query(Parse.Installation);
-        query.equalTo('installationId', installId);
-        query
-          .first({ useMasterKey: true })
-          .then(installation => {
-            return installation.save(
-              {
-                key: 'value',
-                installationId: '22222222-abcd-abcd-abcd-123456789abc',
-              },
-              { useMasterKey: true }
-            );
-          })
-          .then(
-            () => {
-              fail('should not succeed');
-              done();
+    rest.create(config, auth.nobody(config), '_Installation', input).then(() => {
+      const query = new Parse.Query(Parse.Installation);
+      query.equalTo('installationId', installId);
+      query
+        .first({ useMasterKey: true })
+        .then(installation => {
+          return installation.save(
+            {
+              key: 'value',
+              installationId: '22222222-abcd-abcd-abcd-123456789abc',
             },
-            err => {
-              expect(err.code).toBe(136);
-              expect(err.message).toBe(
-                'installationId may not be changed in this operation'
-              );
-              done();
-            }
+            { useMasterKey: true }
           );
-      });
+        })
+        .then(
+          () => {
+            fail('should not succeed');
+            done();
+          },
+          err => {
+            expect(err.code).toBe(136);
+            expect(err.message).toBe('installationId may not be changed in this operation');
+            done();
+          }
+        );
+    });
   });
 
-  it_id('e581faea-c1b4-4c64-af8c-52287ce6cd06')(it)(
-    'can use push with beforeSave',
-    async () => {
-      const input = {
-        deviceToken:
-          '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306',
+  it_id('e581faea-c1b4-4c64-af8c-52287ce6cd06')(it)('can use push with beforeSave', async () => {
+    const input = {
+      deviceToken: '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306',
+      deviceType: 'ios',
+    };
+    await rest.create(config, auth.nobody(config), '_Installation', input);
+    const functions = {
+      beforeSave() {},
+      afterSave() {},
+    };
+    spyOn(functions, 'beforeSave').and.callThrough();
+    spyOn(functions, 'afterSave').and.callThrough();
+    Parse.Cloud.beforeSave(Parse.Installation, functions.beforeSave);
+    Parse.Cloud.afterSave(Parse.Installation, functions.afterSave);
+    await Parse.Push.send({
+      where: {
         deviceType: 'ios',
-      };
-      await rest.create(config, auth.nobody(config), '_Installation', input);
-      const functions = {
-        beforeSave() {},
-        afterSave() {},
-      };
-      spyOn(functions, 'beforeSave').and.callThrough();
-      spyOn(functions, 'afterSave').and.callThrough();
-      Parse.Cloud.beforeSave(Parse.Installation, functions.beforeSave);
-      Parse.Cloud.afterSave(Parse.Installation, functions.afterSave);
-      await Parse.Push.send({
-        where: {
-          deviceType: 'ios',
-        },
-        data: {
-          badge: 'increment',
-          alert: 'Hello world!',
-        },
-      });
+      },
+      data: {
+        badge: 'increment',
+        alert: 'Hello world!',
+      },
+    });
 
-      await Parse.Push.send({
-        where: {
-          deviceType: 'ios',
-        },
-        data: {
-          badge: 'increment',
-          alert: 'Hello world!',
-        },
-      });
+    await Parse.Push.send({
+      where: {
+        deviceType: 'ios',
+      },
+      data: {
+        badge: 'increment',
+        alert: 'Hello world!',
+      },
+    });
 
-      await Parse.Push.send({
-        where: {
-          deviceType: 'ios',
-        },
-        data: {
-          badge: 'increment',
-          alert: 'Hello world!',
-        },
-      });
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const installation = await new Parse.Query(Parse.Installation).first({
-        useMasterKey: true,
-      });
-      expect(installation.get('badge')).toEqual(3);
-      expect(functions.beforeSave).not.toHaveBeenCalled();
-      expect(functions.afterSave).not.toHaveBeenCalled();
-    }
-  );
+    await Parse.Push.send({
+      where: {
+        deviceType: 'ios',
+      },
+      data: {
+        badge: 'increment',
+        alert: 'Hello world!',
+      },
+    });
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    const installation = await new Parse.Query(Parse.Installation).first({
+      useMasterKey: true,
+    });
+    expect(installation.get('badge')).toEqual(3);
+    expect(functions.beforeSave).not.toHaveBeenCalled();
+    expect(functions.afterSave).not.toHaveBeenCalled();
+  });
 
   // TODO: Look at additional tests from installation_collection_test.go:882
   // TODO: Do we need to support _tombstone disabling of installations?

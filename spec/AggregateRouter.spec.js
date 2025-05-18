@@ -1,5 +1,4 @@
-const AggregateRouter =
-  require('../lib/Routers/AggregateRouter').AggregateRouter;
+const AggregateRouter = require('../lib/Routers/AggregateRouter').AggregateRouter;
 
 describe('AggregateRouter', () => {
   it('get pipeline from Array', () => {
@@ -160,17 +159,12 @@ describe('AggregateRouter', () => {
 
   it('should throw with invalid stage', () => {
     expect(() => AggregateRouter.getPipeline([{ foo: 'bar' }])).toThrow(
-      new Parse.Error(
-        Parse.Error.INVALID_QUERY,
-        `Invalid aggregate stage 'foo'.`
-      )
+      new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid aggregate stage 'foo'.`)
     );
   });
 
   it('should throw with invalid group', () => {
-    expect(() =>
-      AggregateRouter.getPipeline([{ $group: { objectId: 'bar' } }])
-    ).toThrow(
+    expect(() => AggregateRouter.getPipeline([{ $group: { objectId: 'bar' } }])).toThrow(
       new Parse.Error(
         Parse.Error.INVALID_QUERY,
         `Cannot use 'objectId' in aggregation stage $group.`

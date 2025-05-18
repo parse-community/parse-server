@@ -39,8 +39,7 @@ class CurrentSpecReporter {
       delete timerMap[result.fullName];
       return;
     }
-    timerMap[result.fullName] =
-      (performance.now() - timerMap[result.fullName]) / 1000;
+    timerMap[result.fullName] = (performance.now() - timerMap[result.fullName]) / 1000;
     global.currentSpec = null;
   }
 }
@@ -102,14 +101,12 @@ global.retryFlakyTests = function () {
           exceptionCaught = exception;
         }
         const failed =
-          !spec.markedPending &&
-          (exceptionCaught || spec.result.failedExpectations.length != 0);
+          !spec.markedPending && (exceptionCaught || spec.result.failedExpectations.length != 0);
         if (!failed) {
           break;
         }
         if (isFlaky) {
-          retryMap[spec.result.fullName] =
-            (retryMap[spec.result.fullName] || 0) + 1;
+          retryMap[spec.result.fullName] = (retryMap[spec.result.fullName] || 0) + 1;
           await global.afterEachFn();
         }
       }

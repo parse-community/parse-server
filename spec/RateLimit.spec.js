@@ -1,5 +1,4 @@
-const RedisCacheAdapter =
-  require('../lib/Adapters/Cache/RedisCacheAdapter').default;
+const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter').default;
 describe('rate limit', () => {
   it('can limit cloud functions', async () => {
     Parse.Cloud.define('test', () => 'Abc');
@@ -238,9 +237,7 @@ describe('rate limit', () => {
     await expectAsync(new Parse.Query('TestObject').first()).toBeRejectedWith(
       new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
     );
-    await expectAsync(
-      new Parse.Query('TestObject').get('abc')
-    ).toBeRejectedWith(
+    await expectAsync(new Parse.Query('TestObject').get('abc')).toBeRejectedWith(
       new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
     );
   });
@@ -372,15 +369,8 @@ describe('rate limit', () => {
         },
       };
       fakeReq.ip = '127.0.0.1';
-      let fakeRes = jasmine.createSpyObj('fakeRes', [
-        'end',
-        'status',
-        'setHeader',
-        'json',
-      ]);
-      await new Promise(resolve =>
-        middlewares.handleParseHeaders(fakeReq, fakeRes, resolve)
-      );
+      let fakeRes = jasmine.createSpyObj('fakeRes', ['end', 'status', 'setHeader', 'json']);
+      await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
       fakeReq.ip = '127.0.0.2';
       fakeRes = jasmine.createSpyObj('fakeRes', ['end', 'status', 'setHeader']);
       let resolvingPromise;
@@ -446,8 +436,7 @@ describe('rate limit', () => {
 
   it('can validate rateLimit', async () => {
     const Config = require('../lib/Config');
-    const validateRateLimit = ({ rateLimit }) =>
-      Config.validateRateLimit(rateLimit);
+    const validateRateLimit = ({ rateLimit }) => Config.validateRateLimit(rateLimit);
     expect(() =>
       validateRateLimit({
         rateLimit: 'a',
@@ -458,9 +447,9 @@ describe('rate limit', () => {
     expect(() => validateRateLimit({ rateLimit: ['a'] })).toThrow(
       'rateLimit must be an array of objects'
     );
-    expect(() =>
-      validateRateLimit({ rateLimit: [{ requestPath: [] }] })
-    ).toThrow('rateLimit.requestPath must be a string');
+    expect(() => validateRateLimit({ rateLimit: [{ requestPath: [] }] })).toThrow(
+      'rateLimit.requestPath must be a string'
+    );
     expect(() =>
       validateRateLimit({
         rateLimit: [{ requestTimeWindow: [], requestPath: 'a' }],
@@ -492,9 +481,7 @@ describe('rate limit', () => {
     ).toThrow('rateLimit.includeInternalRequests must be a boolean');
     expect(() =>
       validateRateLimit({
-        rateLimit: [
-          { requestCount: [], requestTimeWindow: 1000, requestPath: 'a' },
-        ],
+        rateLimit: [{ requestCount: [], requestTimeWindow: 1000, requestPath: 'a' }],
       })
     ).toThrow('rateLimit.requestCount must be a number');
     expect(() =>

@@ -16,15 +16,7 @@ export const LogOrder = {
   ASCENDING: 'asc',
 };
 
-export const logLevels = [
-  'error',
-  'warn',
-  'info',
-  'debug',
-  'verbose',
-  'silly',
-  'silent',
-];
+export const logLevels = ['error', 'warn', 'info', 'debug', 'verbose', 'silly', 'silent'];
 
 export class LoggerController extends AdaptableController {
   constructor(adapter, appId, options = { logLevel: 'info' }) {
@@ -197,8 +189,7 @@ export class LoggerController extends AdaptableController {
 
   truncateLogMessage(string) {
     if (string && string.length > LOG_STRING_TRUNCATE_LENGTH) {
-      const truncated =
-        string.substring(0, LOG_STRING_TRUNCATE_LENGTH) + truncationMarker;
+      const truncated = string.substring(0, LOG_STRING_TRUNCATE_LENGTH) + truncationMarker;
       return truncated;
     }
 
@@ -232,10 +223,7 @@ export class LoggerController extends AdaptableController {
   // size (optional) Number of rows returned by search. Defaults to 10
   getLogs(options = {}) {
     if (!this.adapter) {
-      throw new Parse.Error(
-        Parse.Error.PUSH_MISCONFIGURED,
-        'Logger adapter is not available'
-      );
+      throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED, 'Logger adapter is not available');
     }
     if (typeof this.adapter.query !== 'function') {
       throw new Parse.Error(

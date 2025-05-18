@@ -28,22 +28,12 @@ export class GraphQLRouter extends PromiseRouter {
   }
 
   mountRoutes() {
-    this.route(
-      'GET',
-      GraphQLConfigPath,
-      middleware.promiseEnforceMasterKeyAccess,
-      req => {
-        return this.getGraphQLConfig(req);
-      }
-    );
-    this.route(
-      'PUT',
-      GraphQLConfigPath,
-      middleware.promiseEnforceMasterKeyAccess,
-      req => {
-        return this.updateGraphQLConfig(req);
-      }
-    );
+    this.route('GET', GraphQLConfigPath, middleware.promiseEnforceMasterKeyAccess, req => {
+      return this.getGraphQLConfig(req);
+    });
+    this.route('PUT', GraphQLConfigPath, middleware.promiseEnforceMasterKeyAccess, req => {
+      return this.updateGraphQLConfig(req);
+    });
   }
 }
 

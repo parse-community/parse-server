@@ -220,9 +220,7 @@ describe('Password Policy: ', () => {
       });
       fail('should have thrown.');
     } catch (e) {
-      expect(e).toBe(
-        'You cannot use resetTokenReuseIfValid without resetTokenValidityDuration'
-      );
+      expect(e).toBe('You cannot use resetTokenReuseIfValid without resetTokenValidityDuration');
     }
     done();
   });
@@ -236,15 +234,11 @@ describe('Password Policy: ', () => {
       publicServerURL: 'http://localhost:8378/1',
     })
       .then(() => {
-        fail(
-          'passwordPolicy.resetTokenValidityDuration "not a number" test failed'
-        );
+        fail('passwordPolicy.resetTokenValidityDuration "not a number" test failed');
         done();
       })
       .catch(err => {
-        expect(err).toEqual(
-          'passwordPolicy.resetTokenValidityDuration must be a positive number'
-        );
+        expect(err).toEqual('passwordPolicy.resetTokenValidityDuration must be a positive number');
         done();
       });
   });
@@ -262,9 +256,7 @@ describe('Password Policy: ', () => {
         done();
       })
       .catch(err => {
-        expect(err).toEqual(
-          'passwordPolicy.resetTokenValidityDuration must be a positive number'
-        );
+        expect(err).toEqual('passwordPolicy.resetTokenValidityDuration must be a positive number');
         done();
       });
   });
@@ -302,9 +294,7 @@ describe('Password Policy: ', () => {
         done();
       })
       .catch(err => {
-        expect(err).toEqual(
-          'passwordPolicy.validatorCallback must be a function.'
-        );
+        expect(err).toEqual('passwordPolicy.validatorCallback must be a function.');
         done();
       });
   });
@@ -324,9 +314,7 @@ describe('Password Policy: ', () => {
       user
         .signUp()
         .then(() => {
-          fail(
-            'Should have failed as password does not conform to the policy.'
-          );
+          fail('Should have failed as password does not conform to the policy.');
           done();
         })
         .catch(error => {
@@ -351,9 +339,7 @@ describe('Password Policy: ', () => {
       user
         .signUp()
         .then(() => {
-          fail(
-            'Should have failed as password does not conform to the policy.'
-          );
+          fail('Should have failed as password does not conform to the policy.');
           done();
         })
         .catch(error => {
@@ -378,15 +364,11 @@ describe('Password Policy: ', () => {
       user
         .signUp()
         .then(() => {
-          fail(
-            'Should have failed as password does not conform to the policy.'
-          );
+          fail('Should have failed as password does not conform to the policy.');
           done();
         })
         .catch(error => {
-          expect(error.message).toEqual(
-            'Cannot sign up user with an empty password.'
-          );
+          expect(error.message).toEqual('Cannot sign up user with an empty password.');
           done();
         });
     });
@@ -427,9 +409,7 @@ describe('Password Policy: ', () => {
         })
         .catch(error => {
           jfail(error);
-          fail(
-            'Signup should have succeeded as password conforms to the policy.'
-          );
+          fail('Signup should have succeeded as password conforms to the policy.');
           done();
         });
     });
@@ -470,9 +450,7 @@ describe('Password Policy: ', () => {
         })
         .catch(error => {
           jfail(error);
-          fail(
-            'Signup should have succeeded as password conforms to the policy.'
-          );
+          fail('Signup should have succeeded as password conforms to the policy.');
           done();
         });
     });
@@ -493,9 +471,7 @@ describe('Password Policy: ', () => {
       user
         .signUp()
         .then(() => {
-          fail(
-            'Should have failed as password does not conform to the policy.'
-          );
+          fail('Should have failed as password does not conform to the policy.');
           done();
         })
         .catch(error => {
@@ -562,9 +538,7 @@ describe('Password Policy: ', () => {
       user
         .signUp()
         .then(() => {
-          fail(
-            'Should have failed as password does not conform to the policy.'
-          );
+          fail('Should have failed as password does not conform to the policy.');
           done();
         })
         .catch(error => {
@@ -590,9 +564,7 @@ describe('Password Policy: ', () => {
       user
         .signUp()
         .then(() => {
-          fail(
-            'Should have failed as password does not conform to the policy.'
-          );
+          fail('Should have failed as password does not conform to the policy.');
           done();
         })
         .catch(error => {
@@ -844,9 +816,7 @@ describe('Password Policy: ', () => {
         done();
       })
       .catch(err => {
-        expect(err).toEqual(
-          'passwordPolicy.doNotAllowUsername must be a boolean value.'
-        );
+        expect(err).toEqual('passwordPolicy.doNotAllowUsername must be a boolean value.');
         done();
       });
   });
@@ -872,9 +842,7 @@ describe('Password Policy: ', () => {
         })
         .catch(error => {
           expect(error.code).toEqual(142);
-          expect(error.message).toEqual(
-            'Password cannot contain your username.'
-          );
+          expect(error.message).toEqual('Password cannot contain your username.');
           done();
         });
     });
@@ -1185,9 +1153,7 @@ describe('Password Policy: ', () => {
         done();
       })
       .catch(err => {
-        expect(err).toEqual(
-          'passwordPolicy.maxPasswordAge must be a positive number'
-        );
+        expect(err).toEqual('passwordPolicy.maxPasswordAge must be a positive number');
         done();
       });
   });
@@ -1205,9 +1171,7 @@ describe('Password Policy: ', () => {
         done();
       })
       .catch(err => {
-        expect(err).toEqual(
-          'passwordPolicy.maxPasswordAge must be a positive number'
-        );
+        expect(err).toEqual('passwordPolicy.maxPasswordAge must be a positive number');
         done();
       });
   });
@@ -1325,9 +1289,7 @@ describe('Password Policy: ', () => {
                                 done();
                               })
                               .catch(error => {
-                                expect(error.code).toEqual(
-                                  Parse.Error.OBJECT_NOT_FOUND
-                                );
+                                expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
                                 expect(error.message).toEqual(
                                   'Your password has expired. Please reset your password.'
                                 );
@@ -1453,13 +1415,11 @@ describe('Password Policy: ', () => {
                   expect(error.message).toEqual(
                     'Your password has expired. Please reset your password.'
                   );
-                  Parse.User.requestPasswordReset('user1@parse.com').catch(
-                    err => {
-                      jfail(err);
-                      fail('Reset password request should not fail');
-                      done();
-                    }
-                  );
+                  Parse.User.requestPasswordReset('user1@parse.com').catch(err => {
+                    jfail(err);
+                    fail('Reset password request should not fail');
+                    done();
+                  });
                 });
             }, 1000);
           })
@@ -1485,9 +1445,7 @@ describe('Password Policy: ', () => {
         done();
       })
       .catch(err => {
-        expect(err).toEqual(
-          'passwordPolicy.maxPasswordHistory must be an integer ranging 0 - 20'
-        );
+        expect(err).toEqual('passwordPolicy.maxPasswordHistory must be an integer ranging 0 - 20');
         done();
       });
   });
@@ -1505,9 +1463,7 @@ describe('Password Policy: ', () => {
         done();
       })
       .catch(err => {
-        expect(err).toEqual(
-          'passwordPolicy.maxPasswordHistory must be an integer ranging 0 - 20'
-        );
+        expect(err).toEqual('passwordPolicy.maxPasswordHistory must be an integer ranging 0 - 20');
         done();
       });
   });
@@ -1525,9 +1481,7 @@ describe('Password Policy: ', () => {
         done();
       })
       .catch(err => {
-        expect(err).toEqual(
-          'passwordPolicy.maxPasswordHistory must be an integer ranging 0 - 20'
-        );
+        expect(err).toEqual('passwordPolicy.maxPasswordHistory must be an integer ranging 0 - 20');
         done();
       });
   });
@@ -1635,15 +1589,11 @@ describe('Password Policy: ', () => {
           return user.save();
         })
         .then(() => {
-          fail(
-            'should have failed because the new password is same as the old'
-          );
+          fail('should have failed because the new password is same as the old');
           done();
         })
         .catch(error => {
-          expect(error.message).toEqual(
-            'New password should not be the same as last 5 passwords.'
-          );
+          expect(error.message).toEqual('New password should not be the same as last 5 passwords.');
           expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
           done();
         });
@@ -1689,15 +1639,11 @@ describe('Password Policy: ', () => {
           return user.save();
         })
         .then(() => {
-          fail(
-            'should have failed because the new password is same as the old'
-          );
+          fail('should have failed because the new password is same as the old');
           done();
         })
         .catch(error => {
-          expect(error.message).toEqual(
-            'New password should not be the same as last 5 passwords.'
-          );
+          expect(error.message).toEqual('New password should not be the same as last 5 passwords.');
           expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
           done();
         });
@@ -1750,9 +1696,7 @@ describe('Password Policy: ', () => {
           done();
         })
         .catch(() => {
-          fail(
-            'should have succeeded because the new password is not in history'
-          );
+          fail('should have succeeded because the new password is not in history');
           done();
         });
     });

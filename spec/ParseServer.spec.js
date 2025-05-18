@@ -43,9 +43,7 @@ describe('Server Url Checks', () => {
   });
 
   it('does not have unhandled promise rejection in the case of load error', done => {
-    const parseServerProcess = spawn(
-      path.resolve(__dirname, './support/FailingServer.js')
-    );
+    const parseServerProcess = spawn(path.resolve(__dirname, './support/FailingServer.js'));
     let stdout;
     let stderr;
     parseServerProcess.stdout.on('data', data => {

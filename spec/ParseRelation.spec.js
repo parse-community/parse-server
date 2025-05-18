@@ -193,11 +193,7 @@ describe('Parse.Relation testing', () => {
     const list = await query.find();
     equal(list.length, 1, 'There should only be one element');
     ok(list[0] instanceof ChildObject, 'Should be of type ChildObject');
-    equal(
-      list[0].id,
-      childObjects[2].id,
-      'We should have gotten back the right result'
-    );
+    equal(list[0].id, childObjects[2].id, 'We should have gotten back the right result');
   });
 
   it('queries on relation fields', async () => {
@@ -267,9 +263,7 @@ describe('Parse.Relation testing', () => {
       .then(() => {
         const objectsWithChild0InBothChildren = new Parse.Query(ParentObject);
         objectsWithChild0InBothChildren.containedIn('child', [childObjects[0]]);
-        objectsWithChild0InBothChildren.containedIn('otherChild', [
-          childObjects[0],
-        ]);
+        objectsWithChild0InBothChildren.containedIn('otherChild', [childObjects[0]]);
         return objectsWithChild0InBothChildren.find();
       })
       .then(objectsWithChild0InBothChildren => {
@@ -279,9 +273,7 @@ describe('Parse.Relation testing', () => {
       .then(() => {
         const objectsWithChild4andOtherChild1 = new Parse.Query(ParentObject);
         objectsWithChild4andOtherChild1.containedIn('child', [childObjects[4]]);
-        objectsWithChild4andOtherChild1.containedIn('otherChild', [
-          childObjects[1],
-        ]);
+        objectsWithChild4andOtherChild1.containedIn('otherChild', [childObjects[1]]);
         return objectsWithChild4andOtherChild1.find();
       })
       .then(objects => {

@@ -239,16 +239,10 @@ describe('extendSessionOnUse', () => {
     const { shouldUpdateSessionExpiry } = require('../lib/Auth');
     let update = new Date(Date.now() - 86410 * 1000);
 
-    const res = shouldUpdateSessionExpiry(
-      { sessionLength: 86460 },
-      { updatedAt: update }
-    );
+    const res = shouldUpdateSessionExpiry({ sessionLength: 86460 }, { updatedAt: update });
 
     update = new Date(Date.now() - 43210 * 1000);
-    const res2 = shouldUpdateSessionExpiry(
-      { sessionLength: 86460 },
-      { updatedAt: update }
-    );
+    const res2 = shouldUpdateSessionExpiry({ sessionLength: 86460 }, { updatedAt: update });
 
     expect(res).toBe(true);
     expect(res2).toBe(false);

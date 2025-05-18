@@ -10,14 +10,8 @@ export class InstallationsRouter extends ClassesRouter {
   }
 
   handleFind(req) {
-    const body = Object.assign(
-      req.body || {},
-      ClassesRouter.JSONFromQuery(req.query)
-    );
-    const options = ClassesRouter.optionsFromBody(
-      body,
-      req.config.defaultLimit
-    );
+    const body = Object.assign(req.body || {}, ClassesRouter.JSONFromQuery(req.query));
+    const options = ClassesRouter.optionsFromBody(body, req.config.defaultLimit);
     return rest
       .find(
         req.config,
@@ -43,14 +37,9 @@ export class InstallationsRouter extends ClassesRouter {
     this.route('POST', '/installations', promiseEnsureIdempotency, req => {
       return this.handleCreate(req);
     });
-    this.route(
-      'PUT',
-      '/installations/:objectId',
-      promiseEnsureIdempotency,
-      req => {
-        return this.handleUpdate(req);
-      }
-    );
+    this.route('PUT', '/installations/:objectId', promiseEnsureIdempotency, req => {
+      return this.handleUpdate(req);
+    });
     this.route('DELETE', '/installations/:objectId', req => {
       return this.handleDelete(req);
     });

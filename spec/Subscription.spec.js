@@ -7,11 +7,7 @@ describe('Subscription', function () {
   });
 
   it('can be initialized', function () {
-    const subscription = new Subscription(
-      'className',
-      { key: 'value' },
-      'hash'
-    );
+    const subscription = new Subscription('className', { key: 'value' }, 'hash');
 
     expect(subscription.className).toBe('className');
     expect(subscription.query).toEqual({ key: 'value' });
@@ -20,32 +16,20 @@ describe('Subscription', function () {
   });
 
   it('can check it has subscribing clients', function () {
-    const subscription = new Subscription(
-      'className',
-      { key: 'value' },
-      'hash'
-    );
+    const subscription = new Subscription('className', { key: 'value' }, 'hash');
 
     expect(subscription.hasSubscribingClient()).toBe(false);
   });
 
   it('can check it does not have subscribing clients', function () {
-    const subscription = new Subscription(
-      'className',
-      { key: 'value' },
-      'hash'
-    );
+    const subscription = new Subscription('className', { key: 'value' }, 'hash');
     subscription.addClientSubscription(1, 1);
 
     expect(subscription.hasSubscribingClient()).toBe(true);
   });
 
   it('can add one request for one client', function () {
-    const subscription = new Subscription(
-      'className',
-      { key: 'value' },
-      'hash'
-    );
+    const subscription = new Subscription('className', { key: 'value' }, 'hash');
     subscription.addClientSubscription(1, 1);
 
     expect(subscription.clientRequestIds.size).toBe(1);
@@ -53,11 +37,7 @@ describe('Subscription', function () {
   });
 
   it('can add requests for one client', function () {
-    const subscription = new Subscription(
-      'className',
-      { key: 'value' },
-      'hash'
-    );
+    const subscription = new Subscription('className', { key: 'value' }, 'hash');
     subscription.addClientSubscription(1, 1);
     subscription.addClientSubscription(1, 2);
 
@@ -66,11 +46,7 @@ describe('Subscription', function () {
   });
 
   it('can add requests for clients', function () {
-    const subscription = new Subscription(
-      'className',
-      { key: 'value' },
-      'hash'
-    );
+    const subscription = new Subscription('className', { key: 'value' }, 'hash');
     subscription.addClientSubscription(1, 1);
     subscription.addClientSubscription(1, 2);
     subscription.addClientSubscription(2, 2);
@@ -82,22 +58,14 @@ describe('Subscription', function () {
   });
 
   it('can delete requests for nonexistent client', function () {
-    const subscription = new Subscription(
-      'className',
-      { key: 'value' },
-      'hash'
-    );
+    const subscription = new Subscription('className', { key: 'value' }, 'hash');
     subscription.deleteClientSubscription(1, 1);
 
     expect(logger.error).toHaveBeenCalled();
   });
 
   it('can delete nonexistent request for one client', function () {
-    const subscription = new Subscription(
-      'className',
-      { key: 'value' },
-      'hash'
-    );
+    const subscription = new Subscription('className', { key: 'value' }, 'hash');
     subscription.addClientSubscription(1, 1);
     subscription.deleteClientSubscription(1, 2);
 
@@ -107,11 +75,7 @@ describe('Subscription', function () {
   });
 
   it('can delete some requests for one client', function () {
-    const subscription = new Subscription(
-      'className',
-      { key: 'value' },
-      'hash'
-    );
+    const subscription = new Subscription('className', { key: 'value' }, 'hash');
     subscription.addClientSubscription(1, 1);
     subscription.addClientSubscription(1, 2);
     subscription.deleteClientSubscription(1, 2);
@@ -122,11 +86,7 @@ describe('Subscription', function () {
   });
 
   it('can delete all requests for one client', function () {
-    const subscription = new Subscription(
-      'className',
-      { key: 'value' },
-      'hash'
-    );
+    const subscription = new Subscription('className', { key: 'value' }, 'hash');
     subscription.addClientSubscription(1, 1);
     subscription.addClientSubscription(1, 2);
     subscription.deleteClientSubscription(1, 1);
@@ -137,11 +97,7 @@ describe('Subscription', function () {
   });
 
   it('can delete requests for multiple clients', function () {
-    const subscription = new Subscription(
-      'className',
-      { key: 'value' },
-      'hash'
-    );
+    const subscription = new Subscription('className', { key: 'value' }, 'hash');
     subscription.addClientSubscription(1, 1);
     subscription.addClientSubscription(1, 2);
     subscription.addClientSubscription(2, 1);

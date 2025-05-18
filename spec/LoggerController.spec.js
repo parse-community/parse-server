@@ -1,5 +1,4 @@
-const LoggerController =
-  require('../lib/Controllers/LoggerController').LoggerController;
+const LoggerController = require('../lib/Controllers/LoggerController').LoggerController;
 const WinstonLoggerAdapter =
   require('../lib/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
 
@@ -28,9 +27,7 @@ describe('LoggerController', () => {
     expect(LoggerController.validDateTime()).toBe(null);
     expect(LoggerController.validDateTime('String')).toBe(null);
     expect(LoggerController.validDateTime(123456).getTime()).toBe(123456);
-    expect(
-      LoggerController.validDateTime('2016-01-01Z00:00:00').getTime()
-    ).toBe(1451606400000);
+    expect(LoggerController.validDateTime('2016-01-01Z00:00:00').getTime()).toBe(1451606400000);
     done();
   });
 

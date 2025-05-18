@@ -186,46 +186,43 @@ describe('a GlobalConfig', () => {
     });
   });
 
-  it_id('5ebbd0cf-d1a5-49d9-aac7-5216abc5cb62')(it)(
-    'properly handles delete op',
-    done => {
+  it_id('5ebbd0cf-d1a5-49d9-aac7-5216abc5cb62')(it)('properly handles delete op', done => {
+    request({
+      method: 'PUT',
+      url: 'http://localhost:8378/1/config',
+      json: true,
+      body: {
+        params: {
+          companies: { __op: 'Delete' },
+          counter: { __op: 'Delete' },
+          internalParam: { __op: 'Delete' },
+          foo: 'bar',
+        },
+      },
+      headers,
+    }).then(response => {
+      const body = response.data;
+      expect(response.status).toEqual(200);
+      expect(body.result).toEqual(true);
       request({
-        method: 'PUT',
         url: 'http://localhost:8378/1/config',
         json: true,
-        body: {
-          params: {
-            companies: { __op: 'Delete' },
-            counter: { __op: 'Delete' },
-            internalParam: { __op: 'Delete' },
-            foo: 'bar',
-          },
-        },
         headers,
       }).then(response => {
         const body = response.data;
-        expect(response.status).toEqual(200);
-        expect(body.result).toEqual(true);
-        request({
-          url: 'http://localhost:8378/1/config',
-          json: true,
-          headers,
-        }).then(response => {
-          const body = response.data;
-          try {
-            expect(response.status).toEqual(200);
-            expect(body.params.companies).toBeUndefined();
-            expect(body.params.counter).toBeUndefined();
-            expect(body.params.foo).toBe('bar');
-            expect(Object.keys(body.params).length).toBe(1);
-          } catch (e) {
-            jfail(e);
-          }
-          done();
-        });
+        try {
+          expect(response.status).toEqual(200);
+          expect(body.params.companies).toBeUndefined();
+          expect(body.params.counter).toBeUndefined();
+          expect(body.params.foo).toBe('bar');
+          expect(Object.keys(body.params).length).toBe(1);
+        } catch (e) {
+          jfail(e);
+        }
+        done();
       });
-    }
-  );
+    });
+  });
 
   it('fail to update if master key is missing', done => {
     request({
