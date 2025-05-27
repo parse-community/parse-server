@@ -201,6 +201,60 @@ describe('Cloud Code', () => {
       done();
     }
   });
+  it('beforeFind can return object without DB operation', async () => {
+    Parse.Cloud.beforeFind('beforeFind', () => {
+      return new Parse.Object('TestObject', { foo: 'bar' });
+    });
+    Parse.Cloud.afterFind('beforeFind', req => {
+      expect(req.objects).toBeDefined();
+      expect(req.objects[0].get('foo')).toBe('bar');
+    });
+    const newObj = await new Parse.Query('beforeFind').first();
+    expect(newObj.className).toBe('TestObject');
+    expect(newObj.toJSON()).toEqual({ foo: 'bar' });
+    await newObj.save();
+  });
+
+  it('beforeFind can return array of objects without DB operation', async () => {
+    Parse.Cloud.beforeFind('beforeFind', () => {
+      return [new Parse.Object('TestObject', { foo: 'bar' })];
+    });
+    Parse.Cloud.afterFind('beforeFind', req => {
+      expect(req.objects).toBeDefined();
+      expect(req.objects[0].get('foo')).toBe('bar');
+    });
+    const newObj = await new Parse.Query('beforeFind').first();
+    expect(newObj.className).toBe('TestObject');
+    expect(newObj.toJSON()).toEqual({ foo: 'bar' });
+    await newObj.save();
+  });
+
+  it('beforeFind can return object for get query without DB operation', async () => {
+    Parse.Cloud.beforeFind('beforeFind', () => {
+      return [new Parse.Object('TestObject', { foo: 'bar' })];
+    });
+    Parse.Cloud.afterFind('beforeFind', req => {
+      expect(req.objects).toBeDefined();
+      expect(req.objects[0].get('foo')).toBe('bar');
+    });
+    const newObj = await new Parse.Query('beforeFind').get('objId');
+    expect(newObj.className).toBe('TestObject');
+    expect(newObj.toJSON()).toEqual({ foo: 'bar' });
+    await newObj.save();
+  });
+
+  it('beforeFind can return empty array without DB operation', async () => {
+    Parse.Cloud.beforeFind('beforeFind', () => {
+      return [];
+    });
+    Parse.Cloud.afterFind('beforeFind', req => {
+      expect(req.objects.length).toBe(0);
+    });
+    const obj = new Parse.Object('beforeFind');
+    await obj.save();
+    const newObj = await new Parse.Query('beforeFind').first();
+    expect(newObj).toBeUndefined();
+  });
 
   it('beforeFind can return object without DB operation', async () => {
     Parse.Cloud.beforeFind('beforeFind', () => {

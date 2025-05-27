@@ -50,6 +50,7 @@ async function runFindTriggers(
   if (result?.objects) {
     const objects = result.objects;
 
+    // Déclencher le trigger afterFind si des objets sont retournés
     await triggers.maybeRunAfterFindTrigger(
       triggers.Types.afterFind,
       auth,
@@ -65,6 +66,7 @@ async function runFindTriggers(
     };
   }
 
+  // Conserver la distinction entre get et find
   const query = await RestQuery({
     method: isGet ? RestQuery.Method.get : RestQuery.Method.find,
     config,
@@ -79,6 +81,7 @@ async function runFindTriggers(
   return query.execute();
 }
 
+// Returns a promise for an object with optional keys 'results' and 'count'.
 const find = async (config, auth, className, restWhere, restOptions, clientSDK, context) => {
   enforceRoleSecurity('find', className, auth);
   return runFindTriggers(
@@ -93,6 +96,7 @@ const find = async (config, auth, className, restWhere, restOptions, clientSDK, 
   );
 };
 
+// get is just like find but only queries an objectId.
 const get = async (config, auth, className, objectId, restOptions, clientSDK, context) => {
   enforceRoleSecurity('get', className, auth);
   return runFindTriggers(
@@ -107,6 +111,7 @@ const get = async (config, auth, className, objectId, restOptions, clientSDK, co
   );
 };
 
+// Returns a promise that doesn't resolve to any useful value.
 function del(config, auth, className, objectId, context) {
   if (typeof objectId !== 'string') {
     throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad objectId');
