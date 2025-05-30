@@ -237,7 +237,9 @@ describe('Cloud Code', () => {
       expect(req.objects).toBeDefined();
       expect(req.objects[0].get('foo')).toBe('bar');
     });
-    const newObj = await new Parse.Query('beforeFind').get('objId');
+    const testObj = new Parse.Object('beforeFind');
+    await testObj.save();
+    const newObj = await new Parse.Query('beforeFind').get(testObj.id);
     expect(newObj.className).toBe('TestObject');
     expect(newObj.toJSON()).toEqual({ foo: 'bar' });
     await newObj.save();
