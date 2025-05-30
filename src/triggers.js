@@ -615,7 +615,7 @@ export function maybeRunQueryTrigger(
           objects = [result];
         } else if (
           Array.isArray(result) &&
-          (!result.length || result.some(obj => obj instanceof Parse.Object))
+          (!result.length || result.every(obj => obj instanceof Parse.Object))
         ) {
           objects = result;
         }
@@ -872,7 +872,9 @@ export function maybeRunTrigger(
   }
   return new Promise(function (resolve, reject) {
     var trigger = getTrigger(parseObject.className, triggerType, config.applicationId);
-    if (!trigger) { return resolve(); }
+    if (!trigger) {
+      return resolve();
+    }
     var request = getRequestObject(
       triggerType,
       auth,
@@ -1044,12 +1046,26 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
   return fileObject;
 }
 
-export async function maybeRunGlobalConfigTrigger(triggerType, auth, configObject, originalConfigObject, config, context) {
+export async function maybeRunGlobalConfigTrigger(
+  triggerType,
+  auth,
+  configObject,
+  originalConfigObject,
+  config,
+  context
+) {
   const GlobalConfigClassName = getClassName(Parse.Config);
   const configTrigger = getTrigger(GlobalConfigClassName, triggerType, config.applicationId);
   if (typeof configTrigger === 'function') {
     try {
-      const request = getRequestObject(triggerType, auth, configObject, originalConfigObject, config, context);
+      const request = getRequestObject(
+        triggerType,
+        auth,
+        configObject,
+        originalConfigObject,
+        config,
+        context
+      );
       await maybeRunValidator(request, `${triggerType}.${GlobalConfigClassName}`, auth);
       if (request.skipWithMasterKey) {
         return configObject;
