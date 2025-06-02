@@ -258,6 +258,11 @@ describe('Cloud Code', () => {
     expect(newObj).toBeUndefined();
   });
 
+  it('beforeSave rejection with custom error code', function (done) {
+    Parse.Cloud.beforeSave('BeforeSaveFailWithErrorCode', function () {
+      throw new Parse.Error(999, 'Nope');
+    });
+
     const obj = new Parse.Object('BeforeSaveFailWithErrorCode');
     obj.set('foo', 'bar');
     obj.save().then(
@@ -1547,9 +1552,9 @@ describe('Cloud Code', () => {
   });
 
   /*
-    TODO: fix for Postgres
-    trying to delete a field that doesn't exists doesn't play nice
-   */
+      TODO: fix for Postgres
+      trying to delete a field that doesn't exists doesn't play nice
+     */
   it_exclude_dbs(['postgres'])(
     'should fully delete objects when using `unset` and `set` with beforeSave (regression test for #1840)',
     done => {
@@ -2055,7 +2060,6 @@ describe('Cloud Code', () => {
     }
   });
 });
-
 describe('cloud functions', () => {
   it('Should have request ip', done => {
     Parse.Cloud.define('myFunction', req => {
