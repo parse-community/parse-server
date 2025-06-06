@@ -98,7 +98,7 @@
     "jasmine-spec-reporter": "7.0.0",
     "jsdoc": "4.0.4",
     "jsdoc-babel": "0.5.0",
-    "lint-staged": "15.5.1",
+    "lint-staged": "16.1.0",
     "m": "1.9.1",
     "madge": "8.0.0",
     "mock-files-adapter": "file:spec/dependencies/mock-files-adapter",
@@ -110,7 +110,7 @@
     "prettier": "2.0.5",
     "semantic-release": "24.2.5",
     "typescript": "5.8.3",
-    "typescript-eslint": "8.33.0",
+    "typescript-eslint": "8.33.1",
     "yaml": "2.8.0"
   },
   "scripts": {
