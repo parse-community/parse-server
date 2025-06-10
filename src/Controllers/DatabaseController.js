@@ -1686,9 +1686,14 @@ class DatabaseController {
     return protectedKeys;
   }
 
+  setTransactionalSession(transactionalSession) {
+    this._transactionalSession = transactionalSession;
+  }
+
   createTransactionalSession() {
     return this.adapter.createTransactionalSession().then(transactionalSession => {
       this._transactionalSession = transactionalSession;
+      return this._transactionalSession;
     });
   }
 

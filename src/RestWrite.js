@@ -95,6 +95,10 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
 // Returns a promise for a {response, status, location} object.
 // status and location are optional.
 RestWrite.prototype.execute = function () {
+  if (this.context.transaction) {
+    this.config.database.setTransactionalSession(this.context.transaction)
+  }
+
   return Promise.resolve()
     .then(() => {
       return this.getUserAndRoleACL();
