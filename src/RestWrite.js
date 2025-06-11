@@ -169,7 +169,12 @@ RestWrite.prototype.execute = function () {
         throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
       }
       return this.response;
-    });
+    }).finally(() => {
+      if (this.context.transaction) {
+        // Ensure isolation even on uncaught errors
+        this.config.database.setTransactionalSession(null);
+      }
+    });;
 };
 
 // Uses the Auth object to get the list of roles, adds the user id
