@@ -182,8 +182,11 @@ export function toJSONwithObjects(object, className) {
     }
     toJSON[key] = val._toFullJSON();
   }
+  // Preserve original object's className if no override className is provided
   if (className) {
     toJSON.className = className;
+  } else if (object.className && !toJSON.className) {
+    toJSON.className = object.className;
   }
   return toJSON;
 }
@@ -437,72 +440,91 @@ function logTriggerErrorBeforeHook(triggerType, className, input, auth, error, l
 export function maybeRunAfterFindTrigger(
   triggerType,
   auth,
-  className,
-  objects,
+  classNameQuery,
+  objectsInput,
   config,
   query,
   context
 ) {
   return new Promise((resolve, reject) => {
-    const trigger = getTrigger(className, triggerType, config.applicationId);
+    const trigger = getTrigger(classNameQuery, triggerType, config.applicationId);
+
     if (!trigger) {
-      return resolve();
+      if (objectsInput && objectsInput.length > 0 && objectsInput[0] instanceof Parse.Object) {
+        return resolve(objectsInput.map(obj => toJSONwithObjects(obj)));
+      }
+      return resolve(objectsInput || []);
     }
+
     const request = getRequestObject(triggerType, auth, null, null, config, context);
-    if (query) {
+    if (query instanceof Parse.Query) {
       request.query = query;
+    } else if (typeof query === 'object' && query !== null) {
+      const parseQueryInstance = new Parse.Query(classNameQuery);
+      if (query.where) {
+        parseQueryInstance.withJSON(query);
+      } else {
+        parseQueryInstance.withJSON({ where: query });
+      }
+      request.query = parseQueryInstance;
+    } else {
+      request.query = new Parse.Query(classNameQuery);
     }
+
     const { success, error } = getResponseObject(
       request,
-      object => {
-        resolve(object);
+      processedObjectsJSON => {
+        resolve(processedObjectsJSON);
       },
-      error => {
-        reject(error);
+      errorData => {
+        reject(errorData);
       }
     );
     logTriggerSuccessBeforeHook(
       triggerType,
-      className,
-      'AfterFind',
-      JSON.stringify(objects),
+      classNameQuery,
+      'AfterFind Input (Pre-Transform)',
+      JSON.stringify(
+        objectsInput.map(o => (o instanceof Parse.Object ? o.id + ':' + o.className : o))
+      ),
       auth,
       config.logLevels.triggerBeforeSuccess
     );
-    request.objects = objects.map(object => {
-      //setting the class name to transform into parse object
-      object.className = className;
-      if (object instanceof Parse.Object) {
-        return object;
+    request.objects = objectsInput.map(currentObject => {
+      if (currentObject instanceof Parse.Object) {
+        return currentObject;
       }
-      return Parse.Object.fromJSON(object);
+      // Preserve the original className if it exists, otherwise use the query className
+      const originalClassName = currentObject.className || classNameQuery;
+      const tempObjectWithClassName = { ...currentObject, className: originalClassName };
+      return Parse.Object.fromJSON(tempObjectWithClassName);
     });
     return Promise.resolve()
       .then(() => {
-        return maybeRunValidator(request, `${triggerType}.${className}`, auth);
+        return maybeRunValidator(request, `${triggerType}.${classNameQuery}`, auth);
       })
       .then(() => {
         if (request.skipWithMasterKey) {
           return request.objects;
         }
-        const response = trigger(request);
-        if (response && typeof response.then === 'function') {
-          return response.then(results => {
+        const responseFromTrigger = trigger(request);
+        if (responseFromTrigger && typeof responseFromTrigger.then === 'function') {
+          return responseFromTrigger.then(results => {
             return results;
           });
         }
-        return response;
+        return responseFromTrigger;
       })
       .then(success, error);
-  }).then(results => {
+  }).then(resultsAsJSON => {
     logTriggerAfterHook(
       triggerType,
-      className,
-      JSON.stringify(results),
+      classNameQuery,
+      JSON.stringify(resultsAsJSON),
       auth,
       config.logLevels.triggerAfter
     );
-    return results;
+    return resultsAsJSON;
   });
 }
 

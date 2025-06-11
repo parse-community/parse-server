@@ -48,25 +48,23 @@ async function runFindTriggers(
   restOptions = result.restOptions || restOptions;
 
   if (result?.objects) {
-    const objects = result.objects;
+    const objectsFromBeforeFind = result.objects;
 
-    // Déclencher le trigger afterFind si des objets sont retournés
-    await triggers.maybeRunAfterFindTrigger(
+    const afterFindProcessedObjects = await triggers.maybeRunAfterFindTrigger(
       triggers.Types.afterFind,
       auth,
       className,
-      objects,
+      objectsFromBeforeFind,
       config,
-      restWhere,
+      new Parse.Query(className).withJSON({ where: restWhere, ...restOptions }),
       context
     );
 
     return {
-      results: objects.map(row => row._toFullJSON()),
+      results: afterFindProcessedObjects,
     };
   }
 
-  // Conserver la distinction entre get et find
   const query = await RestQuery({
     method: isGet ? RestQuery.Method.get : RestQuery.Method.find,
     config,
@@ -76,6 +74,7 @@ async function runFindTriggers(
     restOptions,
     clientSDK,
     context,
+    runBeforeFind: false,
   });
 
   return query.execute();
