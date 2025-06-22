@@ -68,7 +68,7 @@ export class Config {
       })
     );
 
-    Config.put(this);
+    AppCache.put(this.appId, this);
   }
 
   static transformConfiguration(serverConfiguration) {
