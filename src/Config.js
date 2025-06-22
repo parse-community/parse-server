@@ -32,6 +32,7 @@ function removeTrailingSlash(str) {
   return str;
 }
 
+const asyncKeys = ['publicServerURL'];
 export class Config {
   static get(applicationId: string, mount: string) {
     const cacheInfo = AppCache.get(applicationId);
@@ -56,9 +57,33 @@ export class Config {
     return config;
   }
 
+  async loadKeys() {
+    const asyncKeys = ['publicServerURL'];
+
+    await Promise.all(
+      asyncKeys.map(async key => {
+        if (typeof this[`_${key}`] === 'function') {
+          this[key] = await this[`_${key}`]();
+        }
+      })
+    );
+
+    Config.put(this);
+  }
+
+  static transformConfiguration(serverConfiguration) {
+    for (const key of Object.keys(serverConfiguration)) {
+      if (asyncKeys.includes(key) && typeof serverConfiguration[key] === 'function') {
+        serverConfiguration[`_${key}`] = serverConfiguration[key];
+        delete serverConfiguration[key];
+      }
+    }
+  }
+
   static put(serverConfiguration) {
     Config.validateOptions(serverConfiguration);
     Config.validateControllers(serverConfiguration);
+    Config.transformConfiguration(serverConfiguration);
     AppCache.put(serverConfiguration.appId, serverConfiguration);
     Config.setupPasswordValidator(serverConfiguration.passwordPolicy);
     return serverConfiguration;
@@ -116,7 +141,11 @@ export class Config {
     }
 
     if (publicServerURL) {
-      if (!publicServerURL.startsWith('http://') && !publicServerURL.startsWith('https://')) {
+      if (
+        typeof publicServerURL !== 'function' &&
+        !publicServerURL.startsWith('http://') &&
+        !publicServerURL.startsWith('https://')
+      ) {
         throw 'publicServerURL should be a valid HTTPS URL starting with https://';
       }
     }
@@ -756,7 +785,6 @@ export class Config {
 
     return this.masterKey;
   }
-
 
   // TODO: Remove this function once PagesRouter replaces the PublicAPIRouter;
   // the (default) endpoint has to be defined in PagesRouter only.

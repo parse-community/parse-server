@@ -615,6 +615,17 @@ describe('server', () => {
     expect(config.masterKeyCache.expiresAt.getTime()).toBeGreaterThan(Date.now());
   });
 
+  it('should load publicServerURL', async () => {
+    await reconfigureServer({
+      publicServerURL: () => 'https://myserver.com/1',
+    });
+
+    await new Parse.Object('TestObject').save();
+
+    const config = Config.get(Parse.applicationId);
+    expect(config.publicServerURL).toEqual('https://myserver.com/1');
+  });
+
   it('should not reload if ttl is not set', async () => {
     const masterKeySpy = jasmine.createSpy().and.returnValue(Promise.resolve('initialMasterKey'));
 
