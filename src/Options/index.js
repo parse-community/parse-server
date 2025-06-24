@@ -314,6 +314,10 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_PLAYGROUND_PATH
   :DEFAULT: /playground */
   playgroundPath: ?string;
+  /* Enables GraphQL Introspection - never use this option in production
+  :ENV: PARSE_SERVER_GRAPHQL_INTROSPECTION
+  :DEFAULT: true */
+  graphQLIntrospection: ?boolean;
   /* Defined schema
   :ENV: PARSE_SERVER_SCHEMA
   */

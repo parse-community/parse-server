@@ -80,6 +80,17 @@ class CheckGroupServerConfig extends CheckGroup {
           }
         },
       }),
+      new Check({
+        title: 'GraphQL Introspection is enabled',
+        warning:
+          'Attackers can retrieve the complete API schema through Introspection queries.',
+        solution: "Change Parse Server configuration to 'graphQLIntrospection: false'.",
+        check: () => {
+          if (config.graphQLIntrospection) {
+            throw 1;
+          }
+        },
+      })
     ];
   }
 }

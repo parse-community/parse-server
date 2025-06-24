@@ -65,7 +65,7 @@ class ParseGraphQLServer {
         // needed since we use graphql upload
         requestHeaders: ['X-Parse-Application-Id'],
       },
-      introspection: true,
+      introspection: this.parseServer.config.graphQLIntrospection,
       plugins: [ApolloServerPluginCacheControlDisabled()],
       schema,
     });

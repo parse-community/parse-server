@@ -115,6 +115,7 @@ export interface ParseServerOptions {
     graphQLPath?: string;
     mountPlayground?: boolean;
     playgroundPath?: string;
+    graphQLIntrospection?: boolean;
     schema?: SchemaOptions;
     serverCloseComplete?: () => void;
     security?: SecurityOptions;

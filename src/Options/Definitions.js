@@ -287,6 +287,12 @@ module.exports.ParseServerOptions = {
     type: 'FileUploadOptions',
     default: {},
   },
+  graphQLIntrospection: {
+    env: 'PARSE_SERVER_GRAPHQL_INTROSPECTION',
+    help: 'Enables GraphQL Introspection - never use this option in production',
+    action: parsers.booleanParser,
+    default: true,
+  },
   graphQLPath: {
     env: 'PARSE_SERVER_GRAPHQL_PATH',
     help: 'Mount path for the GraphQL endpoint, defaults to /graphql',
