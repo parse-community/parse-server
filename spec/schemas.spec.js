@@ -3726,93 +3726,102 @@ describe('schemas', () => {
       });
     });
 
-    it_id('5d0926b2-2d31-459d-a2b1-23ecc32e72a3')(it_exclude_dbs(['postgres']))('get indexes on startup', done => {
-      const obj = new Parse.Object('TestObject');
-      obj
-        .save()
-        .then(() => {
-          return reconfigureServer({
-            appId: 'test',
-            restAPIKey: 'test',
-            publicServerURL: 'http://localhost:8378/1',
+    it_id('5d0926b2-2d31-459d-a2b1-23ecc32e72a3')(it_exclude_dbs(['postgres']))(
+      'get indexes on startup',
+      done => {
+        const obj = new Parse.Object('TestObject');
+        obj
+          .save()
+          .then(() => {
+            return reconfigureServer({
+              appId: 'test',
+              restAPIKey: 'test',
+              publicServerURL: 'http://localhost:8378/1',
+            });
+          })
+          .then(() => {
+            request({
+              url: 'http://localhost:8378/1/schemas/TestObject',
+              headers: masterKeyHeaders,
+              json: true,
+            }).then(response => {
+              expect(response.data.indexes._id_).toBeDefined();
+              done();
+            });
           });
-        })
-        .then(() => {
-          request({
-            url: 'http://localhost:8378/1/schemas/TestObject',
-            headers: masterKeyHeaders,
-            json: true,
-          }).then(response => {
-            expect(response.data.indexes._id_).toBeDefined();
+      }
+    );
+
+    it_id('9f2ba51a-6a9c-4b25-9da0-51c82ac65f90')(it_exclude_dbs(['postgres']))(
+      'get compound indexes on startup',
+      done => {
+        const obj = new Parse.Object('TestObject');
+        obj.set('subject', 'subject');
+        obj.set('comment', 'comment');
+        obj
+          .save()
+          .then(() => {
+            return config.database.adapter.createIndex('TestObject', {
+              subject: 'text',
+              comment: 'text',
+            });
+          })
+          .then(() => {
+            return reconfigureServer({
+              appId: 'test',
+              restAPIKey: 'test',
+              publicServerURL: 'http://localhost:8378/1',
+            });
+          })
+          .then(() => {
+            request({
+              url: 'http://localhost:8378/1/schemas/TestObject',
+              headers: masterKeyHeaders,
+              json: true,
+            }).then(response => {
+              expect(response.data.indexes._id_).toBeDefined();
+              expect(response.data.indexes._id_._id).toEqual(1);
+              expect(response.data.indexes.subject_text_comment_text).toBeDefined();
+              expect(response.data.indexes.subject_text_comment_text.subject).toEqual('text');
+              expect(response.data.indexes.subject_text_comment_text.comment).toEqual('text');
+              done();
+            });
+          });
+      }
+    );
+
+    it_id('cbd5d897-b938-43a4-8f5a-5d02dd2be9be')(it_exclude_dbs(['postgres']))(
+      'cannot update to duplicate value on unique index',
+      done => {
+        const index = {
+          code: 1,
+        };
+        const obj1 = new Parse.Object('UniqueIndexClass');
+        obj1.set('code', 1);
+        const obj2 = new Parse.Object('UniqueIndexClass');
+        obj2.set('code', 2);
+        const adapter = config.database.adapter;
+        adapter
+          ._adaptiveCollection('UniqueIndexClass')
+          .then(collection => {
+            return collection._ensureSparseUniqueIndexInBackground(index);
+          })
+          .then(() => {
+            return obj1.save();
+          })
+          .then(() => {
+            return obj2.save();
+          })
+          .then(() => {
+            obj1.set('code', 2);
+            return obj1.save();
+          })
+          .then(done.fail)
+          .catch(error => {
+            expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
             done();
           });
-        });
-    });
-
-    it_id('9f2ba51a-6a9c-4b25-9da0-51c82ac65f90')(it_exclude_dbs(['postgres']))('get compound indexes on startup', done => {
-      const obj = new Parse.Object('TestObject');
-      obj.set('subject', 'subject');
-      obj.set('comment', 'comment');
-      obj
-        .save()
-        .then(() => {
-          return config.database.adapter.createIndex('TestObject', {
-            subject: 'text',
-            comment: 'text',
-          });
-        })
-        .then(() => {
-          return reconfigureServer({
-            appId: 'test',
-            restAPIKey: 'test',
-            publicServerURL: 'http://localhost:8378/1',
-          });
-        })
-        .then(() => {
-          request({
-            url: 'http://localhost:8378/1/schemas/TestObject',
-            headers: masterKeyHeaders,
-            json: true,
-          }).then(response => {
-            expect(response.data.indexes._id_).toBeDefined();
-            expect(response.data.indexes._id_._id).toEqual(1);
-            expect(response.data.indexes.subject_text_comment_text).toBeDefined();
-            expect(response.data.indexes.subject_text_comment_text.subject).toEqual('text');
-            expect(response.data.indexes.subject_text_comment_text.comment).toEqual('text');
-            done();
-          });
-        });
-    });
-
-    it_id('cbd5d897-b938-43a4-8f5a-5d02dd2be9be')(it_exclude_dbs(['postgres']))('cannot update to duplicate value on unique index', done => {
-      const index = {
-        code: 1,
-      };
-      const obj1 = new Parse.Object('UniqueIndexClass');
-      obj1.set('code', 1);
-      const obj2 = new Parse.Object('UniqueIndexClass');
-      obj2.set('code', 2);
-      const adapter = config.database.adapter;
-      adapter
-        ._adaptiveCollection('UniqueIndexClass')
-        .then(collection => {
-          return collection._ensureSparseUniqueIndexInBackground(index);
-        })
-        .then(() => {
-          return obj1.save();
-        })
-        .then(() => {
-          return obj2.save();
-        })
-        .then(() => {
-          obj1.set('code', 2);
-          return obj1.save();
-        })
-        .then(done.fail)
-        .catch(error => {
-          expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
-          done();
-        });
-    });
+      }
+    );
   });
 });

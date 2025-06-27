@@ -30,12 +30,12 @@ async function config() {
 
   // Get branch
   const branch = ref?.split('/')?.pop()?.split('-')[0] || '(current branch could not be determined)';
-  // eslint-disable-next-line no-console
+
   console.log(`Running on branch: ${branch}`);
 
   // Set changelog file
   const changelogFile = `./changelogs/CHANGELOG_${branch}.md`;
-  // eslint-disable-next-line no-console
+
   console.log(`Changelog file output to: ${changelogFile}`);
 
   // Load template file contents

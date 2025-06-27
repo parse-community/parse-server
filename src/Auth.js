@@ -449,11 +449,15 @@ const findUsersWithAuthData = async (config, authData, beforeFind) => {
 };
 
 const hasMutatedAuthData = (authData, userAuthData) => {
-  if (!userAuthData) { return { hasMutatedAuthData: true, mutatedAuthData: authData }; }
+  if (!userAuthData) {
+    return { hasMutatedAuthData: true, mutatedAuthData: authData };
+  }
   const mutatedAuthData = {};
   Object.keys(authData).forEach(provider => {
     // Anonymous provider is not handled this way
-    if (provider === 'anonymous') { return; }
+    if (provider === 'anonymous') {
+      return;
+    }
     const providerData = authData[provider];
     const userProviderAuthData = userAuthData[provider];
     if (!isDeepStrictEqual(providerData, userProviderAuthData)) {

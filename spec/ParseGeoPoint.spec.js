@@ -207,16 +207,19 @@ describe('Parse.GeoPoint testing', () => {
     done();
   });
 
-  it_id('05f1a454-56b1-4f2e-908e-408a9222cbae')(it)('geo max distance in km california', async () => {
-    await makeSomeGeoPoints();
-    const sfo = new Parse.GeoPoint(37.6189722, -122.3748889);
-    const query = new Parse.Query(TestObject);
-    query.withinKilometers('location', sfo, 3700.0);
-    const results = await query.find();
-    equal(results.length, 2);
-    equal(results[0].get('name'), 'San Francisco');
-    equal(results[1].get('name'), 'Sacramento');
-  });
+  it_id('05f1a454-56b1-4f2e-908e-408a9222cbae')(it)(
+    'geo max distance in km california',
+    async () => {
+      await makeSomeGeoPoints();
+      const sfo = new Parse.GeoPoint(37.6189722, -122.3748889);
+      const query = new Parse.Query(TestObject);
+      query.withinKilometers('location', sfo, 3700.0);
+      const results = await query.find();
+      equal(results.length, 2);
+      equal(results[0].get('name'), 'San Francisco');
+      equal(results[1].get('name'), 'Sacramento');
+    }
+  );
 
   it('geo max distance in km bay area', async () => {
     await makeSomeGeoPoints();
@@ -246,16 +249,19 @@ describe('Parse.GeoPoint testing', () => {
     equal(results.length, 3);
   });
 
-  it_id('9ee376ad-dd6c-4c17-ad28-c7899a4411f1')(it)('geo max distance in miles california', async () => {
-    await makeSomeGeoPoints();
-    const sfo = new Parse.GeoPoint(37.6189722, -122.3748889);
-    const query = new Parse.Query(TestObject);
-    query.withinMiles('location', sfo, 2200.0);
-    const results = await query.find();
-    equal(results.length, 2);
-    equal(results[0].get('name'), 'San Francisco');
-    equal(results[1].get('name'), 'Sacramento');
-  });
+  it_id('9ee376ad-dd6c-4c17-ad28-c7899a4411f1')(it)(
+    'geo max distance in miles california',
+    async () => {
+      await makeSomeGeoPoints();
+      const sfo = new Parse.GeoPoint(37.6189722, -122.3748889);
+      const query = new Parse.Query(TestObject);
+      query.withinMiles('location', sfo, 2200.0);
+      const results = await query.find();
+      equal(results.length, 2);
+      equal(results[0].get('name'), 'San Francisco');
+      equal(results[1].get('name'), 'Sacramento');
+    }
+  );
 
   it('geo max distance in miles bay area', async () => {
     await makeSomeGeoPoints();
@@ -433,48 +439,51 @@ describe('Parse.GeoPoint testing', () => {
       }, done.fail);
   });
 
-  it_id('0a248e11-3598-480a-9ab5-8a0b259258e4')(it)('supports withinPolygon Polygon object', done => {
-    const inbound = new Parse.GeoPoint(1.5, 1.5);
-    const onbound = new Parse.GeoPoint(10, 10);
-    const outbound = new Parse.GeoPoint(20, 20);
-    const obj1 = new Parse.Object('Polygon', { location: inbound });
-    const obj2 = new Parse.Object('Polygon', { location: onbound });
-    const obj3 = new Parse.Object('Polygon', { location: outbound });
-    const polygon = {
-      __type: 'Polygon',
-      coordinates: [
-        [0, 0],
-        [10, 0],
-        [10, 10],
-        [0, 10],
-        [0, 0],
-      ],
-    };
-    Parse.Object.saveAll([obj1, obj2, obj3])
-      .then(() => {
-        const where = {
-          location: {
-            $geoWithin: {
-              $polygon: polygon,
+  it_id('0a248e11-3598-480a-9ab5-8a0b259258e4')(it)(
+    'supports withinPolygon Polygon object',
+    done => {
+      const inbound = new Parse.GeoPoint(1.5, 1.5);
+      const onbound = new Parse.GeoPoint(10, 10);
+      const outbound = new Parse.GeoPoint(20, 20);
+      const obj1 = new Parse.Object('Polygon', { location: inbound });
+      const obj2 = new Parse.Object('Polygon', { location: onbound });
+      const obj3 = new Parse.Object('Polygon', { location: outbound });
+      const polygon = {
+        __type: 'Polygon',
+        coordinates: [
+          [0, 0],
+          [10, 0],
+          [10, 10],
+          [0, 10],
+          [0, 0],
+        ],
+      };
+      Parse.Object.saveAll([obj1, obj2, obj3])
+        .then(() => {
+          const where = {
+            location: {
+              $geoWithin: {
+                $polygon: polygon,
+              },
             },
-          },
-        };
-        return request({
-          method: 'POST',
-          url: Parse.serverURL + '/classes/Polygon',
-          body: { where, _method: 'GET' },
-          headers: {
-            'X-Parse-Application-Id': Parse.applicationId,
-            'X-Parse-Javascript-Key': Parse.javaScriptKey,
-            'Content-Type': 'application/json',
-          },
-        });
-      })
-      .then(resp => {
-        expect(resp.data.results.length).toBe(2);
-        done();
-      }, done.fail);
-  });
+          };
+          return request({
+            method: 'POST',
+            url: Parse.serverURL + '/classes/Polygon',
+            body: { where, _method: 'GET' },
+            headers: {
+              'X-Parse-Application-Id': Parse.applicationId,
+              'X-Parse-Javascript-Key': Parse.javaScriptKey,
+              'Content-Type': 'application/json',
+            },
+          });
+        })
+        .then(resp => {
+          expect(resp.data.results.length).toBe(2);
+          done();
+        }, done.fail);
+    }
+  );
 
   it('invalid Polygon object withinPolygon', done => {
     const point = new Parse.GeoPoint(1.5, 1.5);
@@ -752,38 +761,44 @@ describe('Parse.GeoPoint testing', () => {
     equal(count, 1);
   });
 
-  it_id('0b073d31-0d41-41e7-bd60-f636ffb759dc')(it)('withinKilometers complex supports count', async () => {
-    const inside = new Parse.GeoPoint(10, 10);
-    const middle = new Parse.GeoPoint(20, 20);
-    const outside = new Parse.GeoPoint(30, 30);
-    const obj1 = new Parse.Object('TestObject', { location: inside });
-    const obj2 = new Parse.Object('TestObject', { location: middle });
-    const obj3 = new Parse.Object('TestObject', { location: outside });
+  it_id('0b073d31-0d41-41e7-bd60-f636ffb759dc')(it)(
+    'withinKilometers complex supports count',
+    async () => {
+      const inside = new Parse.GeoPoint(10, 10);
+      const middle = new Parse.GeoPoint(20, 20);
+      const outside = new Parse.GeoPoint(30, 30);
+      const obj1 = new Parse.Object('TestObject', { location: inside });
+      const obj2 = new Parse.Object('TestObject', { location: middle });
+      const obj3 = new Parse.Object('TestObject', { location: outside });
 
-    await Parse.Object.saveAll([obj1, obj2, obj3]);
+      await Parse.Object.saveAll([obj1, obj2, obj3]);
 
-    const q1 = new Parse.Query(TestObject).withinKilometers('location', inside, 5);
-    const q2 = new Parse.Query(TestObject).withinKilometers('location', middle, 5);
-    const query = Parse.Query.or(q1, q2);
-    const count = await query.count();
+      const q1 = new Parse.Query(TestObject).withinKilometers('location', inside, 5);
+      const q2 = new Parse.Query(TestObject).withinKilometers('location', middle, 5);
+      const query = Parse.Query.or(q1, q2);
+      const count = await query.count();
 
-    equal(count, 2);
-  });
+      equal(count, 2);
+    }
+  );
 
-  it_id('26c9a13d-3d71-452e-a91c-9a4589be021c')(it)('fails to fetch geopoints that are specifically not at (0,0)', async () => {
-    const tmp = new TestObject({
-      location: new Parse.GeoPoint({ latitude: 0, longitude: 0 }),
-    });
-    const tmp2 = new TestObject({
-      location: new Parse.GeoPoint({
-        latitude: 49.2577142,
-        longitude: -123.1941149,
-      }),
-    });
-    await Parse.Object.saveAll([tmp, tmp2]);
-    const query = new Parse.Query(TestObject);
-    query.notEqualTo('location', new Parse.GeoPoint({ latitude: 0, longitude: 0 }));
-    const results = await query.find();
-    expect(results.length).toEqual(1);
-  });
+  it_id('26c9a13d-3d71-452e-a91c-9a4589be021c')(it)(
+    'fails to fetch geopoints that are specifically not at (0,0)',
+    async () => {
+      const tmp = new TestObject({
+        location: new Parse.GeoPoint({ latitude: 0, longitude: 0 }),
+      });
+      const tmp2 = new TestObject({
+        location: new Parse.GeoPoint({
+          latitude: 49.2577142,
+          longitude: -123.1941149,
+        }),
+      });
+      await Parse.Object.saveAll([tmp, tmp2]);
+      const query = new Parse.Query(TestObject);
+      query.notEqualTo('location', new Parse.GeoPoint({ latitude: 0, longitude: 0 }));
+      const results = await query.find();
+      expect(results.length).toEqual(1);
+    }
+  );
 });
