@@ -539,9 +539,9 @@ export const addRateLimit = (route, config, cloud) => {
       url: route.redisUrl,
     });
     client.on('error', err => { log.error('Middlewares addRateLimit Redis client error', { error: err }) });
-    client.on('connect', () => {});
-    client.on('reconnecting', () => {});
-    client.on('ready', () => {});
+    client.on('connect', () => { });
+    client.on('reconnecting', () => { });
+    client.on('ready', () => { });
     redisStore.connectionPromise = async () => {
       if (client.isOpen) {
         return;
