@@ -258,6 +258,173 @@ describe('Cloud Code', () => {
     expect(newObj).toBeUndefined();
   });
 
+  const { maybeRunAfterFindTrigger } = require('../lib/triggers');
+
+  describe('maybeRunAfterFindTrigger - direct function tests', () => {
+    const testConfig = {
+      applicationId: 'test',
+      logLevels: { triggerBeforeSuccess: 'info', triggerAfter: 'info' },
+    };
+
+    it('should convert Parse.Object instances to JSON when no trigger defined', async () => {
+      const className = 'TestParseObjectDirect_' + Date.now();
+
+      const parseObj1 = new Parse.Object(className);
+      parseObj1.set('name', 'test1');
+      parseObj1.id = 'obj1';
+
+      const parseObj2 = new Parse.Object(className);
+      parseObj2.set('name', 'test2');
+      parseObj2.id = 'obj2';
+
+      const result = await maybeRunAfterFindTrigger(
+        'afterFind',
+        null,
+        className,
+        [parseObj1, parseObj2],
+        testConfig,
+        null,
+        {}
+      );
+
+      expect(result).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBe(2);
+      expect(result[0].name).toBe('test1');
+      expect(result[1].name).toBe('test2');
+    });
+
+    it('should handle null/undefined objectsInput when no trigger', async () => {
+      const className = 'TestNullDirect_' + Date.now();
+
+      // Test null
+      const resultNull = await maybeRunAfterFindTrigger(
+        'afterFind',
+        null,
+        className,
+        null, // null objectsInput
+        testConfig,
+        null,
+        {}
+      );
+      expect(resultNull).toEqual([]);
+
+      const resultUndefined = await maybeRunAfterFindTrigger(
+        'afterFind',
+        null,
+        className,
+        undefined,
+        testConfig,
+        null,
+        {}
+      );
+      expect(resultUndefined).toEqual([]);
+
+      const resultEmpty = await maybeRunAfterFindTrigger(
+        'afterFind',
+        null,
+        className,
+        [], // empty array
+        testConfig,
+        null,
+        {}
+      );
+      expect(resultEmpty).toEqual([]);
+    });
+
+    it('should handle plain object query with where clause', async () => {
+      const className = 'TestQueryWhereDirect_' + Date.now();
+      let receivedQuery = null;
+
+      Parse.Cloud.afterFind(className, req => {
+        receivedQuery = req.query;
+        return req.objects;
+      });
+
+      const mockObject = { id: 'test123', className: className, name: 'test' };
+
+      const result = await maybeRunAfterFindTrigger(
+        'afterFind',
+        null,
+        className,
+        [mockObject],
+        testConfig,
+        { where: { name: 'test' }, limit: 10 },
+        {}
+      );
+
+      expect(receivedQuery).toBeInstanceOf(Parse.Query);
+      expect(result).toBeDefined();
+    });
+
+    it('should handle plain object query without where clause', async () => {
+      const className = 'TestQueryNoWhereDirect_' + Date.now();
+      let receivedQuery = null;
+
+      Parse.Cloud.afterFind(className, req => {
+        receivedQuery = req.query;
+        return req.objects;
+      });
+
+      const mockObject = { id: 'test456', className: className, name: 'test' };
+
+      const result = await maybeRunAfterFindTrigger(
+        'afterFind',
+        null,
+        className,
+        [mockObject],
+        testConfig,
+        { limit: 5, skip: 0 },
+        {}
+      );
+
+      expect(receivedQuery).toBeInstanceOf(Parse.Query);
+      expect(result).toBeDefined();
+    });
+
+    it('should create default query for invalid query parameter', async () => {
+      const className = 'TestInvalidQueryDirect_' + Date.now();
+      let receivedQuery = null;
+
+      Parse.Cloud.afterFind(className, req => {
+        receivedQuery = req.query;
+        return req.objects;
+      });
+
+      const mockObject = { id: 'test789', className: className, name: 'test' };
+
+      // Test avec string (invalide)
+      await maybeRunAfterFindTrigger(
+        'afterFind',
+        null,
+        className,
+        [mockObject],
+        testConfig,
+        'invalid_query_string',
+        {}
+      );
+
+      expect(receivedQuery).toBeInstanceOf(Parse.Query);
+      expect(receivedQuery.className).toBe(className);
+
+      // Reset pour test suivant
+      receivedQuery = null;
+
+      await maybeRunAfterFindTrigger(
+        'afterFind',
+        null,
+        className,
+        [mockObject],
+        testConfig,
+        null,
+        {}
+      );
+
+      expect(receivedQuery).toBeInstanceOf(Parse.Query);
+      expect(receivedQuery.className).toBe(className);
+    });
+  });
+
   it('beforeSave rejection with custom error code', function (done) {
     Parse.Cloud.beforeSave('BeforeSaveFailWithErrorCode', function () {
       throw new Parse.Error(999, 'Nope');
