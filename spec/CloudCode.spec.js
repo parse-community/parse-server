@@ -297,12 +297,11 @@ describe('Cloud Code', () => {
     it('should handle null/undefined objectsInput when no trigger', async () => {
       const className = 'TestNullDirect_' + Date.now();
 
-      // Test null
       const resultNull = await maybeRunAfterFindTrigger(
         'afterFind',
         null,
         className,
-        null, // null objectsInput
+        null,
         testConfig,
         null,
         {}
@@ -324,7 +323,7 @@ describe('Cloud Code', () => {
         'afterFind',
         null,
         className,
-        [], // empty array
+          [],
         testConfig,
         null,
         {}
@@ -393,7 +392,6 @@ describe('Cloud Code', () => {
 
       const mockObject = { id: 'test789', className: className, name: 'test' };
 
-      // Test avec string (invalide)
       await maybeRunAfterFindTrigger(
         'afterFind',
         null,
@@ -407,7 +405,6 @@ describe('Cloud Code', () => {
       expect(receivedQuery).toBeInstanceOf(Parse.Query);
       expect(receivedQuery.className).toBe(className);
 
-      // Reset pour test suivant
       receivedQuery = null;
 
       await maybeRunAfterFindTrigger(
