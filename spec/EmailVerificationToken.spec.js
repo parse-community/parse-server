@@ -647,7 +647,6 @@ describe('Email Verification Token Expiration:', () => {
 
   it_id('b6c87f35-d887-477d-bc86-a9217a424f53')(it)('setting the email on the user should set a new email verification token and new expiration date for the token when expire email verify token flag is set', async () => {
     const user = new Parse.User();
-    let userBeforeEmailReset;
 
     let sendEmailOptions;
     const sendPromise = resolvingPromise();
@@ -680,7 +679,7 @@ describe('Email Verification Token Expiration:', () => {
         return results[0];
       });
     expect(typeof userFromDb).toBe('object');
-    userBeforeEmailReset = userFromDb;
+    const userBeforeEmailReset = userFromDb;
 
     // trigger another token generation by setting the email
     user.set('email', 'user@parse.com');
@@ -713,7 +712,6 @@ describe('Email Verification Token Expiration:', () => {
     const user = new Parse.User();
     let sendEmailOptions;
     let sendVerificationEmailCallCount = 0;
-    let userBeforeRequest;
     const promise1 = resolvingPromise();
     const promise2 = resolvingPromise();
     const emailAdapter = {
@@ -748,7 +746,7 @@ describe('Email Verification Token Expiration:', () => {
         return results[0];
       });
     // store this user before we make our email request
-    userBeforeRequest = newUser;
+    const userBeforeRequest = newUser;
 
     expect(sendVerificationEmailCallCount).toBe(1);
 
@@ -1011,7 +1009,7 @@ describe('Email Verification Token Expiration:', () => {
     })
       .then(fail)
       .catch(response => response);
-      
+
     expect(response.status).toBe(400);
     expect(sendVerificationEmailCallCount).toBe(0);
     expect(sendEmailOptions).not.toBeDefined();

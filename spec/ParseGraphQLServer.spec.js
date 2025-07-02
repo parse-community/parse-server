@@ -456,7 +456,7 @@ describe('ParseGraphQLServer', () => {
     }
 
     beforeEach(async () => {
-      await createGQLFromParseServer(parseServer);      
+      await createGQLFromParseServer(parseServer);
 
       const subscriptionClient = new SubscriptionClient(
         'ws://localhost:13377/subscriptions',
