@@ -33,6 +33,7 @@ describe('Security Check Groups', () => {
       config.security.enableCheckLog = false;
       config.allowClientClassCreation = false;
       config.enableInsecureAuthAdapters = false;
+      config.graphQLPublicIntrospection = false;
       await reconfigureServer(config);
 
       const group = new CheckGroupServerConfig();
@@ -41,12 +42,14 @@ describe('Security Check Groups', () => {
       expect(group.checks()[1].checkState()).toBe(CheckState.success);
       expect(group.checks()[2].checkState()).toBe(CheckState.success);
       expect(group.checks()[4].checkState()).toBe(CheckState.success);
+      expect(group.checks()[5].checkState()).toBe(CheckState.success);
     });
 
     it('checks fail correctly', async () => {
       config.masterKey = 'insecure';
       config.security.enableCheckLog = true;
       config.allowClientClassCreation = true;
+      config.graphQLPublicIntrospection = true;
       await reconfigureServer(config);
 
       const group = new CheckGroupServerConfig();
@@ -55,6 +58,7 @@ describe('Security Check Groups', () => {
       expect(group.checks()[1].checkState()).toBe(CheckState.fail);
       expect(group.checks()[2].checkState()).toBe(CheckState.fail);
       expect(group.checks()[4].checkState()).toBe(CheckState.fail);
+      expect(group.checks()[5].checkState()).toBe(CheckState.fail);
     });
   });
 

@@ -292,6 +292,12 @@ module.exports.ParseServerOptions = {
     help: 'Mount path for the GraphQL endpoint, defaults to /graphql',
     default: '/graphql',
   },
+  graphQLPublicIntrospection: {
+    env: 'PARSE_SERVER_GRAPHQL_PUBLIC_INTROSPECTION',
+    help: 'Enable public introspection for the GraphQL endpoint, defaults to false',
+    action: parsers.booleanParser,
+    default: false,
+  },
   graphQLSchema: {
     env: 'PARSE_SERVER_GRAPH_QLSCHEMA',
     help: 'Full path to your GraphQL custom schema.graphql file',

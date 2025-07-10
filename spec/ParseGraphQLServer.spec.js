@@ -50,6 +50,7 @@ describe('ParseGraphQLServer', () => {
 
   beforeEach(async () => {
     parseServer = await global.reconfigureServer({
+      maintenanceKey: 'test2',
       maxUploadSize: '1kb',
     });
     parseGraphQLServer = new ParseGraphQLServer(parseServer, {
@@ -88,8 +89,8 @@ describe('ParseGraphQLServer', () => {
 
     it('should initialize parseGraphQLSchema with a log controller', async () => {
       const loggerAdapter = {
-        log: () => {},
-        error: () => {},
+        log: () => { },
+        error: () => { },
       };
       const parseServer = await global.reconfigureServer({
         loggerAdapter,
@@ -124,10 +125,10 @@ describe('ParseGraphQLServer', () => {
       info: new Object(),
       config: new Object(),
       auth: new Object(),
-      get: () => {},
+      get: () => { },
     };
     const res = {
-      set: () => {},
+      set: () => { },
     };
 
     it_id('0696675e-060f-414f-bc77-9d57f31807f5')(it)('should return schema and context with req\'s info, config and auth', async () => {
@@ -431,17 +432,33 @@ describe('ParseGraphQLServer', () => {
       objects.push(object1, object2, object3, object4);
     }
 
-    beforeEach(async () => {
+    async function createGQLFromParseServer(_parseServer, parseGraphQLServerOptions) {
+      if (parseLiveQueryServer) {
+        await parseLiveQueryServer.server.close();
+      }
+      if (httpServer) {
+        await httpServer.close();
+      }
       const expressApp = express();
       httpServer = http.createServer(expressApp);
       expressApp.use('/parse', parseServer.app);
       parseLiveQueryServer = await ParseServer.createLiveQueryServer(httpServer, {
         port: 1338,
       });
+      parseGraphQLServer = new ParseGraphQLServer(_parseServer, {
+        graphQLPath: '/graphql',
+        playgroundPath: '/playground',
+        subscriptionsPath: '/subscriptions',
+        ...parseGraphQLServerOptions,
+      });
       parseGraphQLServer.applyGraphQL(expressApp);
       parseGraphQLServer.applyPlayground(expressApp);
       parseGraphQLServer.createSubscriptions(httpServer);
       await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
+    }
+
+    beforeEach(async () => {
+      await createGQLFromParseServer(parseServer);
 
       const subscriptionClient = new SubscriptionClient(
         'ws://localhost:13377/subscriptions',
@@ -473,8 +490,8 @@ describe('ParseGraphQLServer', () => {
           },
         },
       });
-      spyOn(console, 'warn').and.callFake(() => {});
-      spyOn(console, 'error').and.callFake(() => {});
+      spyOn(console, 'warn').and.callFake(() => { });
+      spyOn(console, 'error').and.callFake(() => { });
     });
 
     afterEach(async () => {
@@ -589,6 +606,96 @@ describe('ParseGraphQLServer', () => {
           parseGraphQLServer.parseGraphQLSchema.schemaCache.clear(),
         ]);
       };
+
+      describe('Introspection', () => {
+        it('should have public introspection disabled by default without master key', async () => {
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Introspection {
+                  __schema {
+                    types {
+                      name
+                    }
+                  }
+                }
+              `,
+            })
+
+            fail('should have thrown an error');
+
+          } catch (e) {
+            expect(e.message).toEqual('Response not successful: Received status code 403');
+            expect(e.networkError.result.errors[0].message).toEqual('Introspection is not allowed');
+          }
+        });
+
+        it('should always work with master key', async () => {
+          const introspection =
+            await apolloClient.query({
+              query: gql`
+                query Introspection {
+                  __schema {
+                    types {
+                      name
+                    }
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              }
+            },)
+          expect(introspection.data).toBeDefined();
+          expect(introspection.errors).not.toBeDefined();
+        });
+
+        it('should always work with maintenance key', async () => {
+          const introspection =
+            await apolloClient.query({
+              query: gql`
+                query Introspection {
+                  __schema {
+                    types {
+                      name
+                    }
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Maintenance-Key': 'test2',
+                },
+              }
+            },)
+          expect(introspection.data).toBeDefined();
+          expect(introspection.errors).not.toBeDefined();
+        });
+
+        it('should have public introspection enabled if enabled', async () => {
+
+          const parseServer = await reconfigureServer();
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
+
+          const introspection =
+            await apolloClient.query({
+              query: gql`
+                query Introspection {
+                  __schema {
+                    types {
+                      name
+                    }
+                  }
+                }
+              `,
+            })
+          expect(introspection.data).toBeDefined();
+        });
+      });
+
 
       describe('Default Types', () => {
         it('should have Object scalar type', async () => {
@@ -734,6 +841,11 @@ describe('ParseGraphQLServer', () => {
                   }
                 }
               `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              }
             })
           ).data['__schema'].types.map(type => type.name);
 
@@ -769,6 +881,11 @@ describe('ParseGraphQLServer', () => {
                   }
                 }
               `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              }
             })
           ).data['__schema'].types.map(type => type.name);
 
@@ -853,7 +970,7 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should have clientMutationId in call function input', async () => {
-          Parse.Cloud.define('hello', () => {});
+          Parse.Cloud.define('hello', () => { });
 
           const callFunctionInputFields = (
             await apolloClient.query({
@@ -875,7 +992,7 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should have clientMutationId in call function payload', async () => {
-          Parse.Cloud.define('hello', () => {});
+          Parse.Cloud.define('hello', () => { });
 
           const callFunctionPayloadFields = (
             await apolloClient.query({
@@ -1301,6 +1418,11 @@ describe('ParseGraphQLServer', () => {
                   }
                 }
               `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              }
             })
           ).data['__schema'].types.map(type => type.name);
 
@@ -7432,9 +7554,9 @@ describe('ParseGraphQLServer', () => {
         it('should send reset password', async () => {
           const clientMutationId = uuidv4();
           const emailAdapter = {
-            sendVerificationEmail: () => {},
+            sendVerificationEmail: () => { },
             sendPasswordResetEmail: () => Promise.resolve(),
-            sendMail: () => {},
+            sendMail: () => { },
           };
           parseServer = await global.reconfigureServer({
             appName: 'test',
@@ -7472,11 +7594,11 @@ describe('ParseGraphQLServer', () => {
           const clientMutationId = uuidv4();
           let resetPasswordToken;
           const emailAdapter = {
-            sendVerificationEmail: () => {},
+            sendVerificationEmail: () => { },
             sendPasswordResetEmail: ({ link }) => {
               resetPasswordToken = link.split('token=')[1].split('&')[0];
             },
-            sendMail: () => {},
+            sendMail: () => { },
           };
           parseServer = await global.reconfigureServer({
             appName: 'test',
@@ -7541,9 +7663,9 @@ describe('ParseGraphQLServer', () => {
         it('should send verification email again', async () => {
           const clientMutationId = uuidv4();
           const emailAdapter = {
-            sendVerificationEmail: () => {},
+            sendVerificationEmail: () => { },
             sendPasswordResetEmail: () => Promise.resolve(),
-            sendMail: () => {},
+            sendMail: () => { },
           };
           parseServer = await global.reconfigureServer({
             appName: 'test',
