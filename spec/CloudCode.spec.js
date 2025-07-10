@@ -3502,9 +3502,9 @@ describe('afterLogin hook', () => {
         'X-Parse-REST-API-Key': 'rest',
         'X-Parse-Cloud-Context': '{"a":"a"}',
       },
-      body: JSON.stringify({_context: { hello: 'world' }}),
+      body: JSON.stringify({ _context: { hello: 'world' } }),
     });
-    
+
   });
 
   it('should have access to context when saving a new object', async () => {
@@ -3929,7 +3929,7 @@ describe('saveFile hooks', () => {
   });
 });
 
-describe('Parse.File hooks', () => { 
+describe('Parse.File hooks', () => {
   it('find hooks should run', async () => {
     const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     await file.save({ useMasterKey: true });
@@ -4047,7 +4047,7 @@ describe('Parse.File hooks', () => {
     });
     expect(response.headers['content-disposition']).toBe(`attachment;filename=${file._name}`);
   });
- });
+});
 
 describe('Cloud Config hooks', () => {
   function testConfig() {
