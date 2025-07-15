@@ -31,8 +31,9 @@ async function runFindTriggers(
   restOptions,
   clientSDK,
   context,
-  isGet
+  options = {}
 ) {
+  const { isGet } = options;
   const result = await triggers.maybeRunQueryTrigger(
     triggers.Types.beforeFind,
     className,
@@ -91,7 +92,7 @@ const find = async (config, auth, className, restWhere, restOptions, clientSDK, 
     restOptions,
     clientSDK,
     context,
-    false
+    { isGet: false }
   );
 };
 
@@ -106,7 +107,7 @@ const get = async (config, auth, className, objectId, restOptions, clientSDK, co
     restOptions,
     clientSDK,
     context,
-    true
+    { isGet: true }
   );
 };
 
