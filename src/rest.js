@@ -58,7 +58,8 @@ async function runFindTriggers(
       objectsFromBeforeFind,
       config,
       new Parse.Query(className).withJSON({ where: restWhere, ...restOptions }),
-      context
+      context,
+      isGet
     );
 
     return {

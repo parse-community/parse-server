@@ -260,7 +260,8 @@ export function getRequestObject(
   parseObject,
   originalParseObject,
   config,
-  context
+  context,
+  isGet
 ) {
   const request = {
     triggerName: triggerType,
@@ -270,6 +271,10 @@ export function getRequestObject(
     headers: config.headers,
     ip: config.ip,
   };
+
+  if (isGet !== undefined) {
+    request.isGet = !!isGet;
+  }
 
   if (originalParseObject) {
     request.original = originalParseObject;
@@ -444,7 +449,8 @@ export function maybeRunAfterFindTrigger(
   objectsInput,
   config,
   query,
-  context
+  context,
+  isGet
 ) {
   return new Promise((resolve, reject) => {
     const trigger = getTrigger(classNameQuery, triggerType, config.applicationId);
@@ -456,7 +462,7 @@ export function maybeRunAfterFindTrigger(
       return resolve(objectsInput || []);
     }
 
-    const request = getRequestObject(triggerType, auth, null, null, config, context);
+    const request = getRequestObject(triggerType, auth, null, null, config, context, isGet);
     if (query instanceof Parse.Query) {
       request.query = query;
     } else if (typeof query === 'object' && query !== null) {
