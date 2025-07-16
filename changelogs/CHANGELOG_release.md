@@ -1,3 +1,10 @@
+## [8.2.2](https://github.com/parse-community/parse-server/compare/8.2.1...8.2.2) (2025-07-10)
+
+
+### Bug Fixes
+
+* Data schema exposed via GraphQL API public introspection (GHSA-48q3-prgv-gm4w) ([#9819](https://github.com/parse-community/parse-server/issues/9819)) ([c58b2eb](https://github.com/parse-community/parse-server/commit/c58b2eb6eb48af9d3c2e69b4829810a021347b40))
+
 ## [8.2.1](https://github.com/parse-community/parse-server/compare/8.2.0...8.2.1) (2025-06-01)
 
 

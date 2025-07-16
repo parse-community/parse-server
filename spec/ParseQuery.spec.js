@@ -5312,7 +5312,7 @@ describe('Parse.Query testing', () => {
       const child = new Parse.Object('Child');
       child.set('key', 'value');
       await child.save();
-  
+
       const parent = new Parse.Object('Parent');
       parent.set('some', {
         nested: {
@@ -5322,19 +5322,19 @@ describe('Parse.Query testing', () => {
         },
       });
       await parent.save();
-  
+
       const query1 = await new Parse.Query('Parent')
         .equalTo('some.nested.key.child', child)
         .find();
-  
+
       expect(query1.length).toEqual(1);
     });
-  
+
     it('queries nested key using containedIn', async () => {
       const child = new Parse.Object('Child');
       child.set('key', 'value');
       await child.save();
-  
+
       const parent = new Parse.Object('Parent');
       parent.set('some', {
         nested: {
@@ -5344,19 +5344,19 @@ describe('Parse.Query testing', () => {
         },
       });
       await parent.save();
-  
+
       const query1 = await new Parse.Query('Parent')
         .containedIn('some.nested.key.child', [child])
         .find();
-  
+
       expect(query1.length).toEqual(1);
     });
-  
+
     it('queries nested key using matchesQuery', async () => {
       const child = new Parse.Object('Child');
       child.set('key', 'value');
       await child.save();
-  
+
       const parent = new Parse.Object('Parent');
       parent.set('some', {
         nested: {
@@ -5366,11 +5366,11 @@ describe('Parse.Query testing', () => {
         },
       });
       await parent.save();
-  
+
       const query1 = await new Parse.Query('Parent')
         .matchesQuery('some.nested.key.child', new Parse.Query('Child').equalTo('key', 'value'))
         .find();
-  
+
       expect(query1.length).toEqual(1);
     });
   });

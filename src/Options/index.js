@@ -306,6 +306,10 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_GRAPHQL_PATH
   :DEFAULT: /graphql */
   graphQLPath: ?string;
+  /* Enable public introspection for the GraphQL endpoint, defaults to false
+  :ENV: PARSE_SERVER_GRAPHQL_PUBLIC_INTROSPECTION
+  :DEFAULT: false */
+  graphQLPublicIntrospection: ?boolean;
   /* Mounts the GraphQL Playground - never use this option in production
   :ENV: PARSE_SERVER_MOUNT_PLAYGROUND
   :DEFAULT: false */
