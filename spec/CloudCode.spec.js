@@ -323,7 +323,7 @@ describe('Cloud Code', () => {
         'afterFind',
         null,
         className,
-          [],
+        [],
         testConfig,
         null,
         {}
