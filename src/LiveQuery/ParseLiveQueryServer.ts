@@ -1,32 +1,31 @@
-import tv4 from 'tv4';
 import Parse from 'parse/node';
-import { Subscription } from './Subscription';
+import tv4 from 'tv4';
 import { Client } from './Client';
 import { ParseWebSocketServer } from './ParseWebSocketServer';
+import { Subscription } from './Subscription';
 // @ts-ignore
-import logger from '../logger';
-import RequestSchema from './RequestSchema';
-import { matchesQuery, queryHash } from './QueryTools';
-import { ParsePubSub } from './ParsePubSub';
-import SchemaController from '../Controllers/SchemaController';
+import deepcopy from 'deepcopy';
 import _ from 'lodash';
+import { LRUCache as LRU } from 'lru-cache';
+import { isDeepStrictEqual } from 'util';
 import { v4 as uuidv4 } from 'uuid';
+import { Auth, getAuthForSessionToken, master as masterAuth } from '../Auth';
+import { getCacheController, getDatabaseController } from '../Controllers';
+import DatabaseController from '../Controllers/DatabaseController';
+import SchemaController from '../Controllers/SchemaController';
+import logger from '../logger';
+import RestQuery from '../RestQuery';
+import UserRouter from '../Routers/UsersRouter';
 import {
-  runLiveQueryEventHandlers,
   getTrigger,
-  runTrigger,
   resolveError,
+  runLiveQueryEventHandlers,
+  runTrigger,
   toJSONwithObjects,
 } from '../triggers';
-import { getAuthForSessionToken, Auth } from '../Auth';
-import { getCacheController, getDatabaseController } from '../Controllers';
-import { LRUCache as LRU } from 'lru-cache';
-import UserRouter from '../Routers/UsersRouter';
-import DatabaseController from '../Controllers/DatabaseController';
-import { isDeepStrictEqual } from 'util';
-import deepcopy from 'deepcopy';
-import RestQuery from '../RestQuery';
-import { master as masterAuth } from '../Auth';
+import { ParsePubSub } from './ParsePubSub';
+import { matchesQuery, queryHash } from './QueryTools';
+import RequestSchema from './RequestSchema';
 
 class ParseLiveQueryServer {
   server: any;
@@ -394,12 +393,16 @@ class ParseLiveQueryServer {
             if (!res.sendEvent) {
               return;
             }
-            if (res.object && typeof res.object.toJSON === 'function') {
-              currentParseObject = toJSONwithObjects(res.object, res.object.className || className);
+            if (res.object) {
+              if (typeof res.object.toJSON === 'function') {
+                currentParseObject = toJSONwithObjects(res.object, res.object.className || className);
+              }
               currentParseObject = await this._applyInclude(client, requestId, currentParseObject);
             }
-            if (res.original && typeof res.original.toJSON === 'function') {
-              originalParseObject = toJSONwithObjects(res.original, res.original.className || className);
+            if (res.original) {
+              if (typeof res.original.toJSON === 'function') {
+                originalParseObject = toJSONwithObjects(res.original, res.original.className || className);
+              }
               originalParseObject = await this._applyInclude(client, requestId, originalParseObject);
             }
             await this._filterSensitiveData(
@@ -691,7 +694,7 @@ class ParseLiveQueryServer {
         ? subscriptionInfo.keys.join(',')
         : subscriptionInfo.keys;
     }
-    return includeObject(this.config, object, include, {}, restOptions, masterAuth(this.config));
+    return this.includeObject(this.config, object, include, {}, restOptions, masterAuth(this.config));
   }
 
   _getCLPOperation(query: any) {
