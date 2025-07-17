@@ -1308,4 +1308,32 @@ describe('ParseLiveQuery', function () {
     await new Promise(resolve => setTimeout(resolve, 100));
     expect(createSpy).toHaveBeenCalledTimes(1);
   });
+
+  it_id('a1b7fa01-877e-46e2-9601-d312ebb9b33a')(fit)('handles query include', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['Queue'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const user = new Parse.User();
+    user.setUsername('testuser');
+    user.setPassword('password');
+    await user.signUp();
+
+    const query = new Parse.Query('Queue');
+    query.include('user');
+    const subscription = await query.subscribe();
+    subscription.on('create', obj => {
+      expect(obj.get('user').get('username')).toBe('testuser');
+      done();
+    });
+
+    const queue = new Parse.Object('Queue');
+    queue.set('user', user);
+    await queue.save();
+  });
 });

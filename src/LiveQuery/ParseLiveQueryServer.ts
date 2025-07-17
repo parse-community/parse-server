@@ -25,6 +25,8 @@ import UserRouter from '../Routers/UsersRouter';
 import DatabaseController from '../Controllers/DatabaseController';
 import { isDeepStrictEqual } from 'util';
 import deepcopy from 'deepcopy';
+import RestQuery from '../RestQuery';
+import { master as masterAuth } from '../Auth';
 
 class ParseLiveQueryServer {
   server: any;
@@ -241,6 +243,7 @@ class ParseLiveQueryServer {
             }
             if (res.object && typeof res.object.toJSON === 'function') {
               deletedParseObject = toJSONwithObjects(res.object, res.object.className || className);
+              deletedParseObject = await this._applyInclude(client, requestId, deletedParseObject);
             }
             await this._filterSensitiveData(
               classLevelPermissions,
@@ -393,12 +396,11 @@ class ParseLiveQueryServer {
             }
             if (res.object && typeof res.object.toJSON === 'function') {
               currentParseObject = toJSONwithObjects(res.object, res.object.className || className);
+              currentParseObject = await this._applyInclude(client, requestId, currentParseObject);
             }
             if (res.original && typeof res.original.toJSON === 'function') {
-              originalParseObject = toJSONwithObjects(
-                res.original,
-                res.original.className || className
-              );
+              originalParseObject = toJSONwithObjects(res.original, res.original.className || className);
+              originalParseObject = await this._applyInclude(client, requestId, originalParseObject);
             }
             await this._filterSensitiveData(
               classLevelPermissions,
@@ -553,7 +555,7 @@ class ParseLiveQueryServer {
     }
   }
 
-  getAuthForSessionToken(sessionToken?: string): Promise<{ auth?: Auth, userId?: string }> {
+  getAuthForSessionToken(sessionToken?: string): Promise<{ auth?: Auth; userId?: string }> {
     if (!sessionToken) {
       return Promise.resolve({});
     }
@@ -672,6 +674,24 @@ class ParseLiveQueryServer {
     };
     res.object = filter(res.object);
     res.original = filter(res.original);
+  }
+
+  async _applyInclude(client: any, requestId: number, object: any) {
+    const subscriptionInfo = client.getSubscriptionInfo(requestId);
+    if (!object || !subscriptionInfo) {
+      return object;
+    }
+    const include = subscriptionInfo.include;
+    if (!include || include.length === 0) {
+      return object;
+    }
+    const restOptions: any = {};
+    if (subscriptionInfo.keys) {
+      restOptions.keys = Array.isArray(subscriptionInfo.keys)
+        ? subscriptionInfo.keys.join(',')
+        : subscriptionInfo.keys;
+    }
+    return includeObject(this.config, object, include, {}, restOptions, masterAuth(this.config));
   }
 
   _getCLPOperation(query: any) {
@@ -933,6 +953,11 @@ class ParseLiveQueryServer {
           ? request.query.keys
           : request.query.keys.split(',');
       }
+      if (request.query.include) {
+        subscriptionInfo.include = Array.isArray(request.query.include)
+          ? request.query.include
+          : request.query.include.split(',');
+      }
       if (request.query.watch) {
         subscriptionInfo.watch = request.query.watch;
       }
@@ -1055,6 +1080,192 @@ class ParseLiveQueryServer {
     logger.verbose(
       `Delete client: ${parseWebsocket.clientId} | subscription: ${request.requestId}`
     );
+  }
+
+  async includePath(
+    config: any,
+    auth: any,
+    response: any,
+    path: Array<string>,
+    context: any,
+    restOptions: any = {},
+  ) {
+    const pointers = this.findPointers(response.results, path);
+    if (pointers.length === 0) {
+      return response;
+    }
+    const pointersHash: any = {};
+    for (const pointer of pointers) {
+      if (!pointer) {
+        continue;
+      }
+      const className = pointer.className;
+      if (className) {
+        pointersHash[className] = pointersHash[className] || new Set();
+        pointersHash[className].add(pointer.objectId);
+      }
+    }
+    const includeRestOptions: any = {};
+    if (restOptions.keys) {
+      const keys = new Set(restOptions.keys.split(','));
+      const keySet = Array.from(keys).reduce((set, key) => {
+        const keyPath = key.split('.');
+        let i = 0;
+        for (; i < path.length; i++) {
+          if (path[i] != keyPath[i]) {
+            return set;
+          }
+        }
+        if (i < keyPath.length) {
+          set.add(keyPath[i]);
+        }
+        return set;
+      }, new Set<string>());
+      if (keySet.size > 0) {
+        includeRestOptions.keys = Array.from(keySet).join(',');
+      }
+    }
+
+    if (restOptions.excludeKeys) {
+      const excludeKeys = new Set(restOptions.excludeKeys.split(','));
+      const excludeKeySet = Array.from(excludeKeys).reduce((set, key) => {
+        const keyPath = key.split('.');
+        let i = 0;
+        for (; i < path.length; i++) {
+          if (path[i] != keyPath[i]) {
+            return set;
+          }
+        }
+        if (i == keyPath.length - 1) {
+          set.add(keyPath[i]);
+        }
+        return set;
+      }, new Set<string>());
+      if (excludeKeySet.size > 0) {
+        includeRestOptions.excludeKeys = Array.from(excludeKeySet).join(',');
+      }
+    }
+
+    if (restOptions.includeReadPreference) {
+      includeRestOptions.readPreference = restOptions.includeReadPreference;
+      includeRestOptions.includeReadPreference = restOptions.includeReadPreference;
+    } else if (restOptions.readPreference) {
+      includeRestOptions.readPreference = restOptions.readPreference;
+    }
+
+    const queryPromises = Object.keys(pointersHash).map(async className => {
+      const objectIds = Array.from(pointersHash[className]);
+      let where;
+      if (objectIds.length === 1) {
+        where = { objectId: objectIds[0] };
+      } else {
+        where = { objectId: { $in: objectIds } };
+      }
+      const query = await RestQuery({
+        method: objectIds.length === 1 ? RestQuery.Method.get : RestQuery.Method.find,
+        config,
+        auth,
+        className,
+        restWhere: where,
+        restOptions: includeRestOptions,
+        context: context,
+      });
+      return query.execute({ op: 'get' }).then(results => {
+        results.className = className;
+        return Promise.resolve(results);
+      });
+    });
+
+    const responses = await Promise.all(queryPromises);
+    const replace = responses.reduce((acc, includeResponse) => {
+      for (const obj of includeResponse.results) {
+        obj.__type = 'Object';
+        obj.className = includeResponse.className;
+        if (obj.className === '_User' && !auth.isMaster) {
+          delete obj.sessionToken;
+          delete obj.authData;
+        }
+        acc[obj.objectId] = obj;
+      }
+      return acc;
+    }, {} as any);
+
+    const resp: any = {
+      results: this.replacePointers(response.results, path, replace),
+    };
+    if (response.count) {
+      resp.count = response.count;
+    }
+    return resp;
+  }
+
+  findPointers(object: any, path: Array<string>): any[] {
+    if (object instanceof Array) {
+      return object.map(x => this.findPointers(x, path)).flat();
+    }
+    if (typeof object !== 'object' || !object) {
+      return [];
+    }
+    if (path.length === 0) {
+      if (object === null || object.__type === 'Pointer') {
+        return [object];
+      }
+      return [];
+    }
+    const subObject = object[path[0]];
+    if (!subObject) {
+      return [];
+    }
+    return this.findPointers(subObject, path.slice(1));
+  }
+
+  replacePointers(object: any, path: Array<string>, replace: any): any {
+    if (object instanceof Array) {
+      return object
+        .map(obj => this.replacePointers(obj, path, replace))
+        .filter(obj => typeof obj !== 'undefined');
+    }
+    if (typeof object !== 'object' || !object) {
+      return object;
+    }
+    if (path.length === 0) {
+      if (object && object.__type === 'Pointer') {
+        return replace[object.objectId];
+      }
+      return object;
+    }
+    const subObject = object[path[0]];
+    if (!subObject) {
+      return object;
+    }
+    const newSub = this.replacePointers(subObject, path.slice(1), replace);
+    const answer: any = {};
+    for (const key in object) {
+      if (key === path[0]) {
+        answer[key] = newSub;
+      } else {
+        answer[key] = object[key];
+      }
+    }
+    return answer;
+  }
+
+  async includeObject(
+    config: any,
+    object: any,
+    include: Array<string>,
+    context: any,
+    restOptions: any,
+    auth: any
+  ) {
+    if (!include || include.length === 0) {
+      return object;
+    }
+    let response = { results: [object] } as any;
+    for (const path of include) {
+      response = await this.includePath(config, auth, response, path.split('.'), context, restOptions);
+    }
+    return response.results[0];
   }
 }
 
