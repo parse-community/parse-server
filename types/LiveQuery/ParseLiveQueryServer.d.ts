@@ -25,6 +25,7 @@ declare class ParseLiveQueryServer {
     }>;
     _matchesCLP(classLevelPermissions?: any, object?: any, client?: any, requestId?: number, op?: string): Promise<any>;
     _filterSensitiveData(classLevelPermissions?: any, res?: any, client?: any, requestId?: number, op?: string, query?: any): Promise<void>;
+    _applyInclude(client: any, requestId: number, object: any): Promise<any>;
     _getCLPOperation(query: any): "get" | "find";
     _verifyACL(acl: any, token: string): Promise<boolean>;
     getAuthFromClient(client: any, requestId: number, sessionToken?: string): Promise<Auth>;
@@ -36,5 +37,9 @@ declare class ParseLiveQueryServer {
     _handleSubscribe(parseWebsocket: any, request: any): Promise<any>;
     _handleUpdateSubscription(parseWebsocket: any, request: any): any;
     _handleUnsubscribe(parseWebsocket: any, request: any, notifyClient?: boolean): any;
+    includePath(config: any, auth: any, response: any, path: Array<string>, context: any, restOptions?: any): Promise<any>;
+    findPointers(object: any, path: Array<string>): any[];
+    replacePointers(object: any, path: Array<string>, replace: any): any;
+    includeObject(config: any, object: any, include: Array<string>, context: any, restOptions: any, auth: any): Promise<any>;
 }
 export { ParseLiveQueryServer };
