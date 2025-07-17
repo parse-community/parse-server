@@ -1312,7 +1312,7 @@ describe('ParseLiveQuery', function () {
   it_id('a1b7fa01-877e-46e2-9601-d312ebb9b33a')(fit)('handles query include', async done => {
     await reconfigureServer({
       liveQuery: {
-        classNames: ['Queue'],
+        classNames: ['TestObject'],
       },
       startLiveQueryServer: true,
       verbose: false,
@@ -1320,20 +1320,20 @@ describe('ParseLiveQuery', function () {
     });
 
     const user = new Parse.User();
-    user.setUsername('testuser');
-    user.setPassword('password');
+    user.setUsername('user');
+    user.setPassword('pass');
     await user.signUp();
 
-    const query = new Parse.Query('Queue');
+    const query = new Parse.Query('TestObject');
     query.include('user');
     const subscription = await query.subscribe();
     subscription.on('create', obj => {
-      expect(obj.get('user').get('username')).toBe('testuser');
+      expect(obj.get('user').get('username')).toBe('user');
       done();
     });
 
-    const queue = new Parse.Object('Queue');
-    queue.set('user', user);
-    await queue.save();
+    const obj = new Parse.Object('TestObject');
+    obj.set('user', user);
+    await obj.save();
   });
 });
