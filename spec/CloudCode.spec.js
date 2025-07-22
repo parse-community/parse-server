@@ -202,60 +202,101 @@ describe('Cloud Code', () => {
     }
   });
   it('beforeFind can return object without DB operation', async () => {
-    Parse.Cloud.beforeFind('beforeFind', () => {
+    const config = Config.get('test');
+    const databaseAdapter = config.database.adapter;
+    const findSpy = spyOn(databaseAdapter, 'find').and.callThrough();
+
+    Parse.Cloud.beforeFind('TestObject', () => {
       return new Parse.Object('TestObject', { foo: 'bar' });
     });
-    Parse.Cloud.afterFind('beforeFind', req => {
+
+    Parse.Cloud.afterFind('TestObject', req => {
       expect(req.objects).toBeDefined();
       expect(req.objects[0].get('foo')).toBe('bar');
     });
-    const newObj = await new Parse.Query('beforeFind').first();
+
+    const newObj = await new Parse.Query('TestObject').first();
     expect(newObj.className).toBe('TestObject');
     expect(newObj.toJSON()).toEqual({ foo: 'bar' });
+
+    expect(findSpy).not.toHaveBeenCalled();
+
     await newObj.save();
   });
 
   it('beforeFind can return array of objects without DB operation', async () => {
-    Parse.Cloud.beforeFind('beforeFind', () => {
+    const config = Config.get('test');
+    const databaseAdapter = config.database.adapter;
+    const findSpy = spyOn(databaseAdapter, 'find').and.callThrough();
+
+    Parse.Cloud.beforeFind('TestObject', () => {
       return [new Parse.Object('TestObject', { foo: 'bar' })];
     });
-    Parse.Cloud.afterFind('beforeFind', req => {
+
+    Parse.Cloud.afterFind('TestObject', req => {
       expect(req.objects).toBeDefined();
       expect(req.objects[0].get('foo')).toBe('bar');
     });
-    const newObj = await new Parse.Query('beforeFind').first();
+
+    const newObj = await new Parse.Query('TestObject').first();
     expect(newObj.className).toBe('TestObject');
     expect(newObj.toJSON()).toEqual({ foo: 'bar' });
+
+    expect(findSpy).not.toHaveBeenCalled();
+
     await newObj.save();
   });
 
   it('beforeFind can return object for get query without DB operation', async () => {
-    Parse.Cloud.beforeFind('beforeFind', () => {
+    const config = Config.get('test');
+    const databaseAdapter = config.database.adapter;
+    const findSpy = spyOn(databaseAdapter, 'find').and.callThrough();
+
+    Parse.Cloud.beforeFind('TestObject', () => {
       return [new Parse.Object('TestObject', { foo: 'bar' })];
     });
-    Parse.Cloud.afterFind('beforeFind', req => {
+
+    Parse.Cloud.afterFind('TestObject', req => {
       expect(req.objects).toBeDefined();
       expect(req.objects[0].get('foo')).toBe('bar');
     });
-    const testObj = new Parse.Object('beforeFind');
+
+    const testObj = new Parse.Object('TestObject');
     await testObj.save();
-    const newObj = await new Parse.Query('beforeFind').get(testObj.id);
+
+    findSpy.calls.reset();
+
+    const newObj = await new Parse.Query('TestObject').get(testObj.id);
     expect(newObj.className).toBe('TestObject');
     expect(newObj.toJSON()).toEqual({ foo: 'bar' });
+
+    expect(findSpy).not.toHaveBeenCalled();
+
     await newObj.save();
   });
 
   it('beforeFind can return empty array without DB operation', async () => {
-    Parse.Cloud.beforeFind('beforeFind', () => {
+    const config = Config.get('test');
+    const databaseAdapter = config.database.adapter;
+    const findSpy = spyOn(databaseAdapter, 'find').and.callThrough();
+
+    Parse.Cloud.beforeFind('TestObject', () => {
       return [];
     });
-    Parse.Cloud.afterFind('beforeFind', req => {
+
+    Parse.Cloud.afterFind('TestObject', req => {
       expect(req.objects.length).toBe(0);
     });
-    const obj = new Parse.Object('beforeFind');
+
+    const obj = new Parse.Object('TestObject');
     await obj.save();
-    const newObj = await new Parse.Query('beforeFind').first();
+
+    findSpy.calls.reset();
+
+    const newObj = await new Parse.Query('TestObject').first();
     expect(newObj).toBeUndefined();
+
+    expect(findSpy).not.toHaveBeenCalled();
   });
 
   const { maybeRunAfterFindTrigger } = require('../lib/triggers');
