@@ -1,4 +1,4 @@
-import { Parse } from 'parse/node';
+import ParseError from '../ParseError';
 import PromiseRouter from '../PromiseRouter';
 import * as middleware from '../middlewares';
 
@@ -20,7 +20,7 @@ export class HooksRouter extends PromiseRouter {
     if (req.params.functionName) {
       return hooksController.getFunction(req.params.functionName).then(foundFunction => {
         if (!foundFunction) {
-          throw new Parse.Error(143, `no function named: ${req.params.functionName} is defined`);
+          throw new ParseError(143, `no function named: ${req.params.functionName} is defined`);
         }
         return Promise.resolve({ response: foundFunction });
       });
@@ -43,7 +43,7 @@ export class HooksRouter extends PromiseRouter {
         .getTrigger(req.params.className, req.params.triggerName)
         .then(foundTrigger => {
           if (!foundTrigger) {
-            throw new Parse.Error(143, `class ${req.params.className} does not exist`);
+            throw new ParseError(143, `class ${req.params.className} does not exist`);
           }
           return Promise.resolve({ response: foundTrigger });
         });
@@ -76,7 +76,7 @@ export class HooksRouter extends PromiseRouter {
       hook.triggerName = req.params.triggerName;
       hook.url = req.body.url;
     } else {
-      throw new Parse.Error(143, 'invalid hook declaration');
+      throw new ParseError(143, 'invalid hook declaration');
     }
     return this.updateHook(hook, req.config);
   }

@@ -1,3 +1,4 @@
+import ParseError from '../../ParseError';
 /**
  * Parse Server authentication adapter for GitHub.
  * @class GitHubAdapter
@@ -88,12 +89,12 @@ class GitHubAdapter extends BaseCodeAuthAdapter {
     });
 
     if (!response.ok) {
-      throw new Parse.Error(Parse.Error.VALIDATION_ERROR, `Failed to exchange code for token: ${response.statusText}`);
+      throw new ParseError(ParseError.VALIDATION_ERROR, `Failed to exchange code for token: ${response.statusText}`);
     }
 
     const data = await response.json();
     if (data.error) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, data.error_description || data.error);
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, data.error_description || data.error);
     }
 
     return data.access_token;
@@ -110,12 +111,12 @@ class GitHubAdapter extends BaseCodeAuthAdapter {
     });
 
     if (!response.ok) {
-      throw new Parse.Error(Parse.Error.VALIDATION_ERROR, `Failed to fetch GitHub user: ${response.statusText}`);
+      throw new ParseError(ParseError.VALIDATION_ERROR, `Failed to fetch GitHub user: ${response.statusText}`);
     }
 
     const userData = await response.json();
     if (!userData.id || !userData.login) {
-      throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Invalid GitHub user data received.');
+      throw new ParseError(ParseError.VALIDATION_ERROR, 'Invalid GitHub user data received.');
     }
 
     return userData;

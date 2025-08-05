@@ -3,7 +3,7 @@ import Config from '../Config';
 import express from 'express';
 import path from 'path';
 import { promises as fs } from 'fs';
-import { Parse } from 'parse/node';
+import ParseError from '../ParseError';
 import Utils from '../Utils';
 import mustache from 'mustache';
 import Page from '../Page';
@@ -186,11 +186,11 @@ export class PagesRouter extends PromiseRouter {
     }
 
     if (!token) {
-      throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'Missing token');
+      throw new ParseError(ParseError.OTHER_CAUSE, 'Missing token');
     }
 
     if (!new_password) {
-      throw new Parse.Error(Parse.Error.PASSWORD_MISSING, 'Missing password');
+      throw new ParseError(ParseError.PASSWORD_MISSING, 'Missing password');
     }
 
     return config.userController
@@ -217,7 +217,7 @@ export class PagesRouter extends PromiseRouter {
             });
           }
           if (result.err) {
-            throw new Parse.Error(Parse.Error.OTHER_CAUSE, `${result.err}`);
+            throw new ParseError(ParseError.OTHER_CAUSE, `${result.err}`);
           }
         }
 

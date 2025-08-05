@@ -1,3 +1,4 @@
+import ParseError from '../../ParseError';
 /**
  * Parse Server authentication adapter for Instagram.
  *
@@ -84,12 +85,12 @@ class InstagramAdapter extends BaseAuthCodeAdapter {
     });
 
     if (!response.ok) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Instagram API request failed.');
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Instagram API request failed.');
     }
 
     const data = await response.json();
     if (data.error) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, data.error_description || data.error);
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, data.error_description || data.error);
     }
 
     return data.access_token;
@@ -103,12 +104,12 @@ class InstagramAdapter extends BaseAuthCodeAdapter {
     const response = await fetch(path);
 
     if (!response.ok) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Instagram API request failed.');
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Instagram API request failed.');
     }
 
     const user = await response.json();
     if (user?.id !== authData.id) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Instagram auth is invalid for this user.');
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Instagram auth is invalid for this user.');
     }
 
     return {

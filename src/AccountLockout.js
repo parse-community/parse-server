@@ -1,5 +1,6 @@
 // This class handles the Account Lockout Policy settings.
-import Parse from 'parse/node';
+import ParseError from './ParseError';
+import { encodeDate } from './Utils';
 
 export class AccountLockout {
   constructor(user, config) {
@@ -81,7 +82,7 @@ export class AccountLockout {
     const now = new Date();
 
     const updateFields = {
-      _account_lockout_expires_at: Parse._encode(
+      _account_lockout_expires_at: encodeDate(
         new Date(now.getTime() + this._config.accountLockout.duration * 60 * 1000)
       ),
     };
@@ -91,7 +92,7 @@ export class AccountLockout {
         err &&
         err.code &&
         err.message &&
-        err.code === Parse.Error.OBJECT_NOT_FOUND &&
+        err.code === ParseError.OBJECT_NOT_FOUND &&
         err.message === 'Object not found.'
       ) {
         return; // nothing to update so we are good
@@ -110,14 +111,14 @@ export class AccountLockout {
   _notLocked() {
     const query = {
       username: this._user.username,
-      _account_lockout_expires_at: { $gt: Parse._encode(new Date()) },
+      _account_lockout_expires_at: { $gt: encodeDate(new Date()) },
       _failed_login_count: { $gte: this._config.accountLockout.threshold },
     };
 
     return this._config.database.find('_User', query).then(users => {
       if (Array.isArray(users) && users.length > 0) {
-        throw new Parse.Error(
-          Parse.Error.OBJECT_NOT_FOUND,
+        throw new ParseError(
+          ParseError.OBJECT_NOT_FOUND,
           'Your account is locked due to multiple failed login attempts. Please try again after ' +
             this._config.accountLockout.duration +
             ' minute(s)'

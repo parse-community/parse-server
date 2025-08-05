@@ -1,6 +1,6 @@
 import { GraphQLNonNull } from 'graphql';
 import getFieldNames from 'graphql-list-fields';
-import Parse from 'parse/node';
+import ParseError from '../../ParseError';
 import rest from '../../rest';
 import { extractKeysAndInclude } from './parseClassTypes';
 import { Auth } from '../../Auth';
@@ -8,7 +8,7 @@ import { Auth } from '../../Auth';
 const getUserFromSessionToken = async (context, queryInfo, keysPrefix, userId) => {
   const { info, config } = context;
   if (!info || !info.sessionToken) {
-    throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+    throw new ParseError(ParseError.INVALID_SESSION_TOKEN, 'Invalid session token');
   }
   const sessionToken = info.sessionToken;
   const selectedFields = getFieldNames(queryInfo)
@@ -62,7 +62,7 @@ const getUserFromSessionToken = async (context, queryInfo, keysPrefix, userId) =
     info.context
   );
   if (!response.results || response.results.length == 0) {
-    throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+    throw new ParseError(ParseError.INVALID_SESSION_TOKEN, 'Invalid session token');
   } else {
     const user = response.results[0];
     return {

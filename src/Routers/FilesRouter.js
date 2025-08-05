@@ -1,8 +1,9 @@
 import express from 'express';
 import * as Middlewares from '../middlewares';
-import Parse from 'parse/node';
+import ParseError from '../ParseError';
 import Config from '../Config';
 import logger from '../logger';
+import { loadModule } from '../Adapters/AdapterLoader';
 const triggers = require('../triggers');
 const http = require('http');
 const Utils = require('../Utils');
@@ -39,7 +40,7 @@ export class FilesRouter {
     router.get('/files/:appId/metadata/:filename', this.metadataHandler);
 
     router.post('/files', function (req, res, next) {
-      next(new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Filename not provided.'));
+      next(new ParseError(ParseError.INVALID_FILE_NAME, 'Filename not provided.'));
     });
 
     router.post(
@@ -69,7 +70,7 @@ export class FilesRouter {
     const config = Config.get(req.params.appId);
     if (!config) {
       res.status(403);
-      const err = new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid application ID.');
+      const err = new ParseError(ParseError.OPERATION_FORBIDDEN, 'Invalid application ID.');
       res.json({ code: err.code, error: err.message });
       return;
     }
@@ -79,16 +80,20 @@ export class FilesRouter {
       const filesController = config.filesController;
       const mime = (await import('mime')).default;
       let contentType = mime.getType(filename);
-      let file = new Parse.File(filename, { base64: '' }, contentType);
-      const triggerResult = await triggers.maybeRunFileTrigger(
-        triggers.Types.beforeFind,
-        { file },
-        config,
-        req.auth
-      );
-      if (triggerResult?.file?._name) {
-        filename = triggerResult?.file?._name;
-        contentType = mime.getType(filename);
+      const hasBeforeFindTrigger = triggers.triggerExists('@File', triggers.Types.beforeFind, config.applicationId);
+      if (hasBeforeFindTrigger) {
+        const Parse = await loadModule('parse/node.js');
+        const file = new Parse.File(filename, { base64: '' }, contentType);
+        const triggerResult = await triggers.maybeRunFileTrigger(
+          triggers.Types.beforeFind,
+          { file },
+          config,
+          req.auth
+        );
+        if (triggerResult?.file?._name) {
+          filename = triggerResult?.file?._name;
+          contentType = mime.getType(filename);
+        }
       }
 
       if (isFileStreamable(req, filesController)) {
@@ -108,19 +113,22 @@ export class FilesRouter {
       if (!data) {
         return;
       }
-      file = new Parse.File(filename, { base64: data.toString('base64') }, contentType);
-      const afterFind = await triggers.maybeRunFileTrigger(
-        triggers.Types.afterFind,
-        { file, forceDownload: false },
-        config,
-        req.auth
-      );
-
+      const hasAfterFindHook = triggers.triggerExists('@File', triggers.Types.afterFind, config.applicationId);
+      let afterFind;
+      if (hasAfterFindHook) {
+        const Parse = await loadModule('parse/node.js');
+        const file = new Parse.File(filename, { base64: data.toString('base64') }, contentType);
+        afterFind = await triggers.maybeRunFileTrigger(
+          triggers.Types.afterFind,
+          { file, forceDownload: false },
+          config,
+          req.auth
+        );
+      }
       if (afterFind?.file) {
         contentType = mime.getType(afterFind.file._name);
         data = Buffer.from(afterFind.file._data, 'base64');
       }
-
       res.status(200);
       res.set('Content-Type', contentType);
       res.set('Content-Length', data.length);
@@ -130,7 +138,7 @@ export class FilesRouter {
       res.end(data);
     } catch (e) {
       const err = triggers.resolveError(e, {
-        code: Parse.Error.SCRIPT_FAILED,
+        code: ParseError.SCRIPT_FAILED,
         message: `Could not find file: ${filename}.`,
       });
       res.status(403);
@@ -142,24 +150,24 @@ export class FilesRouter {
     const config = req.config;
     const user = req.auth.user;
     const isMaster = req.auth.isMaster;
-    const isLinked = user && Parse.AnonymousUtils.isLinked(user);
+    const isLinked = user &&  user._isLinked('anonymous');
     if (!isMaster && !config.fileUpload.enableForAnonymousUser && isLinked) {
       next(
-        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by anonymous user is disabled.')
+        new ParseError(ParseError.FILE_SAVE_ERROR, 'File upload by anonymous user is disabled.')
       );
       return;
     }
     if (!isMaster && !config.fileUpload.enableForAuthenticatedUser && !isLinked && user) {
       next(
-        new Parse.Error(
-          Parse.Error.FILE_SAVE_ERROR,
+        new ParseError(
+          ParseError.FILE_SAVE_ERROR,
           'File upload by authenticated user is disabled.'
         )
       );
       return;
     }
     if (!isMaster && !config.fileUpload.enableForPublic && !user) {
-      next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by public is disabled.'));
+      next(new ParseError(ParseError.FILE_SAVE_ERROR, 'File upload by public is disabled.'));
       return;
     }
     const filesController = config.filesController;
@@ -167,7 +175,7 @@ export class FilesRouter {
     const contentType = req.get('Content-type');
 
     if (!req.body || !req.body.length) {
-      next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Invalid file upload.'));
+      next(new ParseError(ParseError.FILE_SAVE_ERROR, 'Invalid file upload.'));
       return;
     }
 
@@ -200,8 +208,8 @@ export class FilesRouter {
 
       if (extension && !isValidExtension(extension)) {
         next(
-          new Parse.Error(
-            Parse.Error.FILE_SAVE_ERROR,
+          new ParseError(
+            ParseError.FILE_SAVE_ERROR,
             `File upload of extension ${extension} is disabled.`
           )
         );
@@ -210,6 +218,8 @@ export class FilesRouter {
     }
 
     const base64 = req.body.toString('base64');
+    // TODO: Move to beforeSave trigger check
+    const Parse = await loadModule('parse/node.js');
     const file = new Parse.File(filename, { base64 }, contentType);
     const { metadata = {}, tags = {} } = req.fileData || {};
     try {
@@ -217,7 +227,7 @@ export class FilesRouter {
       Utils.checkProhibitedKeywords(config, metadata);
       Utils.checkProhibitedKeywords(config, tags);
     } catch (error) {
-      next(new Parse.Error(Parse.Error.INVALID_KEY_NAME, error));
+      next(new ParseError(ParseError.INVALID_KEY_NAME, error));
       return;
     }
     file.setTags(tags);
@@ -287,7 +297,7 @@ export class FilesRouter {
     } catch (e) {
       logger.error('Error creating a file: ', e);
       const error = triggers.resolveError(e, {
-        code: Parse.Error.FILE_SAVE_ERROR,
+        code: ParseError.FILE_SAVE_ERROR,
         message: `Could not store file: ${fileObject.file._name}.`,
       });
       next(error);
@@ -298,19 +308,23 @@ export class FilesRouter {
     try {
       const { filesController } = req.config;
       const { filename } = req.params;
-      // run beforeDeleteFile trigger
-      const file = new Parse.File(filename);
-      file._url = await filesController.adapter.getFileLocation(req.config, filename);
-      const fileObject = { file, fileSize: null };
-      await triggers.maybeRunFileTrigger(
-        triggers.Types.beforeDelete,
-        fileObject,
-        req.config,
-        req.auth
-      );
-      // delete file
+      const fileObject = { file: null, fileSize: null };
+
+      const hasBeforeDeleteHook = triggers.triggerExists('@File', triggers.Types.beforeDelete, req.config.applicationId);
+      if (hasBeforeDeleteHook) {
+        const Parse = await loadModule('parse/node.js');
+        const file = new Parse.File(filename);
+        file._url = await filesController.adapter.getFileLocation(req.config, filename);
+        fileObject.file = file;
+        await triggers.maybeRunFileTrigger(
+          triggers.Types.beforeDelete,
+          fileObject,
+          req.config,
+          req.auth
+        );
+      }
       await filesController.deleteFile(req.config, filename);
-      // run afterDeleteFile trigger
+
       await triggers.maybeRunFileTrigger(
         triggers.Types.afterDelete,
         fileObject,
@@ -323,7 +337,7 @@ export class FilesRouter {
     } catch (e) {
       logger.error('Error deleting a file: ', e);
       const error = triggers.resolveError(e, {
-        code: Parse.Error.FILE_DELETE_ERROR,
+        code: ParseError.FILE_DELETE_ERROR,
         message: 'Could not delete file.',
       });
       next(error);

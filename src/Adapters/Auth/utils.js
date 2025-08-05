@@ -1,10 +1,11 @@
 const jwt = require('jsonwebtoken');
 const util = require('util');
-const Parse = require('parse/node').Parse;
+import ParseError from '../../ParseError';
+
 const getHeaderFromToken = token => {
   const decodedToken = jwt.decode(token, { complete: true });
   if (!decodedToken) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `provided token does not decode as JWT`);
+    throw new ParseError(ParseError.OBJECT_NOT_FOUND, `provided token does not decode as JWT`);
   }
 
   return decodedToken.header;

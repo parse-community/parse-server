@@ -1,3 +1,4 @@
+import ParseError from '../../ParseError';
 /**
  * Parse Server authentication adapter for LinkedIn.
  *
@@ -82,7 +83,7 @@ class LinkedInAdapter extends BaseAuthCodeAdapter {
     });
 
     if (!response.ok) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'LinkedIn API request failed.');
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'LinkedIn API request failed.');
     }
 
     return response.json();
@@ -104,7 +105,7 @@ class LinkedInAdapter extends BaseAuthCodeAdapter {
     });
 
     if (!response.ok) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'LinkedIn API request failed.');
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'LinkedIn API request failed.');
     }
 
     const json = await response.json();

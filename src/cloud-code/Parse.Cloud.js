@@ -1,4 +1,4 @@
-import { Parse } from 'parse/node';
+import Parse from 'parse/node';
 import * as triggers from '../triggers';
 import { addRateLimit } from '../middlewares';
 const Config = require('../Config');

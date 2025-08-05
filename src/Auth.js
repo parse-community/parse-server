@@ -1,10 +1,13 @@
-const Parse = require('parse/node');
+import Parse from 'parse/node';
+import ParseError from './ParseError';
 import { isDeepStrictEqual } from 'util';
 import { getRequestObject, resolveError } from './triggers';
 import { logger } from './logger';
 import { LRUCache as LRU } from 'lru-cache';
 import RestQuery from './RestQuery';
 import RestWrite from './RestWrite';
+import { encodeDate } from './Utils';
+import { loadModule } from './Adapters/AdapterLoader';
 
 // An Auth object tells you who is requesting something and whether
 // the master key was used.
@@ -115,10 +118,10 @@ const renewSessionIfNeeded = async ({ config, session, sessionToken }) => {
       master(config),
       '_Session',
       { objectId: session.objectId },
-      { expiresAt: Parse._encode(expiresAt) }
+      { expiresAt: encodeDate(expiresAt) }
     ).execute();
   } catch (e) {
-    if (e?.code !== Parse.Error.OBJECT_NOT_FOUND) {
+    if (e?.code !== ParseError.OBJECT_NOT_FOUND) {
       logger.error('Could not update session expiry: ', e);
     }
   }
@@ -168,7 +171,7 @@ const getAuthForSessionToken = async function ({
     results = (await query.execute()).results;
   } else {
     results = (
-      await new Parse.Query(Parse.Session)
+      await new Parse.Query('_Session')
         .limit(1)
         .include('user')
         .equalTo('sessionToken', sessionToken)
@@ -177,18 +180,18 @@ const getAuthForSessionToken = async function ({
   }
 
   if (results.length !== 1 || !results[0]['user']) {
-    throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+    throw new ParseError(ParseError.INVALID_SESSION_TOKEN, 'Invalid session token');
   }
   const session = results[0];
   const now = new Date(),
     expiresAt = session.expiresAt ? new Date(session.expiresAt.iso) : undefined;
   if (expiresAt < now) {
-    throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token is expired.');
+    throw new ParseError(ParseError.INVALID_SESSION_TOKEN, 'Session token is expired.');
   }
   const obj = session.user;
 
   if (typeof obj['objectId'] === 'string' && obj['objectId'].startsWith('role:')) {
-    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid object ID.');
+    throw new ParseError(ParseError.INTERNAL_SERVER_ERROR, 'Invalid object ID.');
   }
 
   delete obj.password;
@@ -225,7 +228,7 @@ var getAuthForLegacySessionToken = async function ({ config, sessionToken, insta
   return query.execute().then(response => {
     var results = response.results;
     if (results.length !== 1) {
-      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid legacy session token');
+      throw new ParseError(ParseError.INVALID_SESSION_TOKEN, 'invalid legacy session token');
     }
     const obj = results[0];
     obj.className = '_User';
@@ -255,7 +258,6 @@ Auth.prototype.getUserRoles = function () {
 };
 
 Auth.prototype.getRolesForUser = async function () {
-  //Stack all Parse.Role
   const results = [];
   if (this.config) {
     const restWhere = {
@@ -276,7 +278,7 @@ Auth.prototype.getRolesForUser = async function () {
     });
     await query.each(result => results.push(result));
   } else {
-    await new Parse.Query(Parse.Role)
+    await new Parse.Query('_Role')
       .equalTo('users', this.user)
       .each(result => results.push(result.toJSON()), { useMasterKey: true });
   }
@@ -346,11 +348,11 @@ Auth.prototype.getRolesByIds = async function (ins) {
   const results = [];
   // Build an OR query across all parentRoles
   if (!this.config) {
-    await new Parse.Query(Parse.Role)
+    await new Parse.Query('_Role')
       .containedIn(
         'roles',
         ins.map(id => {
-          const role = new Parse.Object(Parse.Role);
+          const role = new Parse.Object('_Role');
           role.id = id;
           return role;
         })
@@ -511,14 +513,15 @@ const checkIfUserHasProvidedConfiguredProvidersForLogin = (
     return;
   }
 
-  throw new Parse.Error(
-    Parse.Error.OTHER_CAUSE,
+  throw new ParseError(
+    ParseError.OTHER_CAUSE,
     `Missing additional authData ${additionProvidersNotFound.join(',')}`
   );
 };
 
 // Validate each authData step-by-step and return the provider responses
 const handleAuthDataValidation = async (authData, req, foundUser) => {
+  const Parse = await loadModule('parse/node.js');
   let user;
   if (foundUser) {
     user = Parse.User.fromJSON({ className: '_User', ...foundUser });
@@ -534,8 +537,7 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
     user.id = req.auth.isMaster ? req.getUserId() : req.auth.user.id;
     await user.fetch({ useMasterKey: true });
   }
-
-  const { updatedObject } = req.buildParseObjects();
+  const { updatedObject } = req.buildParseObjects(Parse);
   const requestObject = getRequestObject(undefined, req.auth, updatedObject, user, req.config);
   // Perform validation as step-by-step pipeline for better error consistency
   // and also to avoid to trigger a provider (like OTP SMS) if another one fails
@@ -551,8 +553,8 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
       const { validator } = req.config.authDataManager.getValidatorForProvider(provider) || {};
       const authProvider = (req.config.auth || {})[provider] || {};
       if (!validator || authProvider.enabled === false) {
-        throw new Parse.Error(
-          Parse.Error.UNSUPPORTED_SERVICE,
+        throw new ParseError(
+          ParseError.UNSUPPORTED_SERVICE,
           'This authentication method is unsupported.'
         );
       }
@@ -580,7 +582,7 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
       }
     } catch (err) {
       const e = resolveError(err, {
-        code: Parse.Error.SCRIPT_FAILED,
+        code: ParseError.SCRIPT_FAILED,
         message: 'Auth failed. Unknown error.',
       });
       const userString =

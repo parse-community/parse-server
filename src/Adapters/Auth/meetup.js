@@ -1,5 +1,6 @@
 // Helper functions for accessing the meetup API.
-var Parse = require('parse/node').Parse;
+import Parse from 'parse/node';
+import ParseError from '../../ParseError';
 const httpsRequest = require('./httpsRequest');
 import Config from '../../Config';
 import Deprecator from '../../Deprecator/Deprecator';
@@ -12,12 +13,12 @@ async function validateAuthData(authData) {
   Deprecator.logRuntimeDeprecation({ usage: 'meetup adapter' });
 
   if (!meetupConfig?.enableInsecureAuth) {
-    throw new Parse.Error('Meetup only works with enableInsecureAuth: true');
+    throw new ParseError('Meetup only works with enableInsecureAuth: true');
   }
 
   const data = await request('member/self', authData.access_token);
   if (data?.id !== authData.id) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Meetup auth is invalid for this user.');
+    throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Meetup auth is invalid for this user.');
   }
 }
 

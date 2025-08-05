@@ -7,8 +7,8 @@
 // routes. That's useful for the routes that do really similar
 // things.
 
-var Parse = require('parse/node').Parse;
-
+import Parse from 'parse/node';
+import ParseError from './ParseError';
 var RestQuery = require('./RestQuery');
 var RestWrite = require('./RestWrite');
 var triggers = require('./triggers');
@@ -58,11 +58,11 @@ const get = async (config, auth, className, objectId, restOptions, clientSDK, co
 // Returns a promise that doesn't resolve to any useful value.
 function del(config, auth, className, objectId, context) {
   if (typeof objectId !== 'string') {
-    throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad objectId');
+    throw new ParseError(ParseError.INVALID_JSON, 'bad objectId');
   }
 
   if (className === '_User' && auth.isUnauthenticated()) {
-    throw new Parse.Error(Parse.Error.SESSION_MISSING, 'Insufficient auth to delete user');
+    throw new ParseError(ParseError.SESSION_MISSING, 'Insufficient auth to delete user');
   }
 
   enforceRoleSecurity('delete', className, auth);
@@ -88,7 +88,7 @@ function del(config, auth, className, objectId, context) {
             firstResult.className = className;
             if (className === '_Session' && !auth.isMaster && !auth.isMaintenance) {
               if (!auth.user || firstResult.user.objectId !== auth.user.id) {
-                throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+                throw new ParseError(ParseError.INVALID_SESSION_TOKEN, 'Invalid session token');
               }
             }
             var cacheAdapter = config.cacheController;
@@ -103,7 +103,7 @@ function del(config, auth, className, objectId, context) {
               context
             );
           }
-          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found for delete.');
+          throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Object not found for delete.');
         });
       }
       return Promise.resolve({});
@@ -215,11 +215,11 @@ function handleSessionMissingError(error, className, auth) {
   // If we're trying to update a user without / with bad session token
   if (
     className === '_User' &&
-    error.code === Parse.Error.OBJECT_NOT_FOUND &&
+    error.code === ParseError.OBJECT_NOT_FOUND &&
     !auth.isMaster &&
     !auth.isMaintenance
   ) {
-    throw new Parse.Error(Parse.Error.SESSION_MISSING, 'Insufficient auth.');
+    throw new ParseError(ParseError.SESSION_MISSING, 'Insufficient auth.');
   }
   throw error;
 }

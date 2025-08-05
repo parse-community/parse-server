@@ -5,7 +5,7 @@
 // themselves use our routing information, without disturbing express
 // components that external developers may be modifying.
 
-import Parse from 'parse/node';
+import ParseError from './ParseError';
 import express from 'express';
 import log from './logger';
 import { inspect } from 'util';
@@ -121,7 +121,7 @@ export default class PromiseRouter {
   tryRouteRequest(method, path, request) {
     var match = this.match(method, path);
     if (!match) {
-      throw new Parse.Error(Parse.Error.INVALID_JSON, 'cannot route ' + method + ' ' + path);
+      throw new ParseError(ParseError.INVALID_JSON, 'cannot route ' + method + ' ' + path);
     }
     request.params = match.params;
     return new Promise((resolve, reject) => {

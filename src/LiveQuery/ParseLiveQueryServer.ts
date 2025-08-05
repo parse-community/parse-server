@@ -1,5 +1,6 @@
 import tv4 from 'tv4';
 import Parse from 'parse/node';
+import ParseError from '../ParseError';
 import { Subscription } from './Subscription';
 import { Client } from './Client';
 import { ParseWebSocketServer } from './ParseWebSocketServer';
@@ -529,7 +530,7 @@ class ParseLiveQueryServer {
 
   async _clearCachedRoles(userId: string) {
     try {
-      const validTokens = await new Parse.Query(Parse.Session)
+      const validTokens = await new Parse.Query('_Session')
         .equalTo('user', Parse.User.createWithoutData(userId))
         .find({ useMasterKey: true });
       await Promise.all(
@@ -571,7 +572,7 @@ class ParseLiveQueryServer {
       .catch(error => {
         // There was an error with the session token
         const result: any = {};
-        if (error && error.code === Parse.Error.INVALID_SESSION_TOKEN) {
+        if (error && error.code === ParseError.INVALID_SESSION_TOKEN) {
           result.error = error;
           this.authCache.set(sessionToken, Promise.resolve(result), this.config.cacheTimeout);
         } else {
@@ -620,7 +621,7 @@ class ParseLiveQueryServer {
     //   });
     // })
     // // it's rejected here, check the roles
-    // var rolesQuery = new Parse.Query(Parse.Role);
+    // var rolesQuery = new Parse.Query('_Role');
     // rolesQuery.equalTo("users", user);
     // return rolesQuery.find({useMasterKey:true});
   }
@@ -899,7 +900,7 @@ class ParseLiveQueryServer {
         } else if (!request.master) {
           Client.pushError(
             parseWebsocket,
-            Parse.Error.INVALID_SESSION_TOKEN,
+            ParseError.INVALID_SESSION_TOKEN,
             'Invalid session token',
             false,
             request.requestId

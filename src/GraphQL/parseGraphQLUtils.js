@@ -1,19 +1,19 @@
-import Parse from 'parse/node';
+import ParseError from '../ParseError';
 import { GraphQLError } from 'graphql';
 
 export function enforceMasterKeyAccess(auth) {
   if (!auth.isMaster) {
-    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'unauthorized: master key is required');
+    throw new ParseError(ParseError.OPERATION_FORBIDDEN, 'unauthorized: master key is required');
   }
 }
 
 export function toGraphQLError(error) {
   let code, message;
-  if (error instanceof Parse.Error) {
+  if (error instanceof ParseError) {
     code = error.code;
     message = error.message;
   } else {
-    code = Parse.Error.INTERNAL_SERVER_ERROR;
+    code = ParseError.INTERNAL_SERVER_ERROR;
     message = 'Internal server error';
   }
   return new GraphQLError(message, { extensions: { code } });

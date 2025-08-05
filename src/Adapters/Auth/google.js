@@ -45,8 +45,7 @@
 'use strict';
 
 // Helper functions for accessing the google API.
-var Parse = require('parse/node').Parse;
-
+import ParseError from '../../ParseError';
 const https = require('https');
 const jwt = require('jsonwebtoken');
 const authUtils = require('./utils');
@@ -98,7 +97,7 @@ function getGoogleKeyByKeyId(keyId) {
 
 async function verifyIdToken({ id_token: token, id }, { clientId }) {
   if (!token) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `id token is invalid for this user.`);
+    throw new ParseError(ParseError.OBJECT_NOT_FOUND, `id token is invalid for this user.`);
   }
 
   const { kid: keyId, alg: algorithm } = authUtils.getHeaderFromToken(token);
@@ -112,23 +111,23 @@ async function verifyIdToken({ id_token: token, id }, { clientId }) {
     });
   } catch (exception) {
     const message = exception.message;
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `${message}`);
+    throw new ParseError(ParseError.OBJECT_NOT_FOUND, `${message}`);
   }
 
   if (jwtClaims.iss !== TOKEN_ISSUER && jwtClaims.iss !== HTTPS_TOKEN_ISSUER) {
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
+    throw new ParseError(
+      ParseError.OBJECT_NOT_FOUND,
       `id token not issued by correct provider - expected: ${TOKEN_ISSUER} or ${HTTPS_TOKEN_ISSUER} | from: ${jwtClaims.iss}`
     );
   }
 
   if (jwtClaims.sub !== id) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `auth data is invalid for this user.`);
+    throw new ParseError(ParseError.OBJECT_NOT_FOUND, `auth data is invalid for this user.`);
   }
 
   if (clientId && jwtClaims.aud !== clientId) {
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
+    throw new ParseError(
+      ParseError.OBJECT_NOT_FOUND,
       `id token not authorized for this clientId.`
     );
   }

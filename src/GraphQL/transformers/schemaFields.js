@@ -1,4 +1,4 @@
-import Parse from 'parse/node';
+import ParseError from '../../ParseError';
 
 const transformToParse = (graphQLSchemaFields, existingFields) => {
   if (!graphQLSchemaFields) {
@@ -27,7 +27,7 @@ const transformToParse = (graphQLSchemaFields, existingFields) => {
       return parseSchemaFields;
     }
     if (parseSchemaFields[field.name] || (existingFields && existingFields[field.name])) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Duplicated field name: ${field.name}`);
+      throw new ParseError(ParseError.INVALID_KEY_NAME, `Duplicated field name: ${field.name}`);
     }
     if (type === 'Relation' || type === 'Pointer') {
       return {

@@ -1,10 +1,11 @@
 var https = require('https'),
   crypto = require('crypto');
-var Parse = require('parse/node').Parse;
+
+import ParseError from '../../ParseError';
 
 var OAuth = function (options) {
   if (!options) {
-    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'No options passed to OAuth');
+    throw new ParseError(ParseError.INTERNAL_SERVER_ERROR, 'No options passed to OAuth');
   }
   this.consumer_key = options.consumer_key;
   this.consumer_secret = options.consumer_secret;

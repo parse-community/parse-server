@@ -1,3 +1,4 @@
+import ParseError from '../../ParseError';
 /**
  * Parse Server authentication adapter for Weibo.
  *
@@ -104,7 +105,7 @@ class WeiboAdapter extends BaseAuthCodeAdapter {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Weibo auth is invalid for this user.');
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Weibo auth is invalid for this user.');
     }
 
     return {
@@ -114,8 +115,8 @@ class WeiboAdapter extends BaseAuthCodeAdapter {
 
   async getAccessTokenFromCode(authData) {
     if (!authData?.code || !authData?.redirect_uri) {
-      throw new Parse.Error(
-        Parse.Error.OBJECT_NOT_FOUND,
+      throw new ParseError(
+        ParseError.OBJECT_NOT_FOUND,
         'Weibo auth requires code and redirect_uri to be sent.'
       );
     }
@@ -139,7 +140,7 @@ class WeiboAdapter extends BaseAuthCodeAdapter {
     const data = await response.json();
 
     if (!response.ok || data.errcode) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Weibo auth is invalid for this user.');
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Weibo auth is invalid for this user.');
     }
 
     return data.access_token;

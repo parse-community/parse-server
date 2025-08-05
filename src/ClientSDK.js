@@ -1,3 +1,5 @@
+import Parse from 'parse/node';
+
 var semver = require('semver');
 
 function compatible(compatibleSDK) {
@@ -34,6 +36,10 @@ function fromString(version) {
 }
 
 module.exports = {
+  applicationId: Parse.applicationId,
+  Object: Parse.Object,
+  Query: Parse.Query,
+  Schema: Parse.Schema,
   compatible,
   supportsForwardDelete,
   fromString,

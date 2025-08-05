@@ -1,5 +1,5 @@
 import MongoCollection from './MongoCollection';
-import Parse from 'parse/node';
+import ParseError from '../../../ParseError';
 
 function mongoFieldToParseSchemaField(type) {
   if (type[0] === '*') {
@@ -187,7 +187,7 @@ class MongoSchemaCollection {
       .catch(error => {
         if (error.code === 11000) {
           //Mongo's duplicate key error
-          throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'Class already exists.');
+          throw new ParseError(ParseError.DUPLICATE_VALUE, 'Class already exists.');
         } else {
           throw error;
         }
@@ -229,8 +229,8 @@ class MongoSchemaCollection {
                 existingField => schema.fields[existingField].type === 'GeoPoint'
               )
             ) {
-              throw new Parse.Error(
-                Parse.Error.INCORRECT_TYPE,
+              throw new ParseError(
+                ParseError.INCORRECT_TYPE,
                 'MongoDB only supports one GeoPoint field in a class.'
               );
             }

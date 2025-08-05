@@ -1,3 +1,4 @@
+import ParseError from '../../ParseError';
 /**
  * Parse Server authentication adapter for Twitter.
  *
@@ -91,8 +92,8 @@ class TwitterAuthAdapter extends AuthAdapter {
     }
 
     if (!options.consumer_key || !options.consumer_secret) {
-      throw new Parse.Error(
-        Parse.Error.OBJECT_NOT_FOUND,
+      throw new ParseError(
+        ParseError.OBJECT_NOT_FOUND,
         'Twitter auth configuration missing consumer_key and/or consumer_secret.'
       );
     }
@@ -105,16 +106,16 @@ class TwitterAuthAdapter extends AuthAdapter {
       return;
     }
 
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
+    throw new ParseError(
+      ParseError.OBJECT_NOT_FOUND,
       'Twitter auth is invalid for this user.'
     );
   }
 
   async validateInsecureAuth(authData, options) {
     if (!authData.oauth_token || !authData.oauth_token_secret) {
-      throw new Parse.Error(
-        Parse.Error.OBJECT_NOT_FOUND,
+      throw new ParseError(
+        ParseError.OBJECT_NOT_FOUND,
         'Twitter insecure auth requires oauth_token and oauth_token_secret.'
       );
     }
@@ -128,8 +129,8 @@ class TwitterAuthAdapter extends AuthAdapter {
       return;
     }
 
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
+    throw new ParseError(
+      ParseError.OBJECT_NOT_FOUND,
       'Twitter auth is invalid for this user.'
     );
   }
@@ -159,8 +160,8 @@ class TwitterAuthAdapter extends AuthAdapter {
       const consumer_key = authData.consumer_key;
 
       if (!consumer_key) {
-        throw new Parse.Error(
-          Parse.Error.OBJECT_NOT_FOUND,
+        throw new ParseError(
+          ParseError.OBJECT_NOT_FOUND,
           'Twitter auth is invalid for this user.'
         );
       }
@@ -168,8 +169,8 @@ class TwitterAuthAdapter extends AuthAdapter {
       options = options.filter(option => option.consumer_key === consumer_key);
 
       if (options.length === 0) {
-        throw new Parse.Error(
-          Parse.Error.OBJECT_NOT_FOUND,
+        throw new ParseError(
+          ParseError.OBJECT_NOT_FOUND,
           'Twitter auth is invalid for this user.'
         );
       }
@@ -209,20 +210,20 @@ class TwitterAuthAdapter extends AuthAdapter {
   async beforeFind(authData) {
     if (this.enableInsecureAuth && !authData?.code) {
       if (!authData?.access_token) {
-        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Twitter auth is invalid for this user.');
+        throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Twitter auth is invalid for this user.');
       }
 
       const user = await this.getUserFromAccessToken(authData.access_token, authData);
 
       if (user.id !== authData.id) {
-        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Twitter auth is invalid for this user.');
+        throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Twitter auth is invalid for this user.');
       }
 
       return;
     }
 
     if (!authData?.code) {
-      throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Twitter code is required.');
+      throw new ParseError(ParseError.VALIDATION_ERROR, 'Twitter code is required.');
     }
 
     const access_token = await this.exchangeAccessToken(authData);

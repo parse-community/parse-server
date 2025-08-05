@@ -3,9 +3,10 @@ import { inflate } from '../triggers';
 import AdaptableController from './AdaptableController';
 import MailAdapter from '../Adapters/Email/MailAdapter';
 import rest from '../rest';
-import Parse from 'parse/node';
 import AccountLockout from '../AccountLockout';
 import Config from '../Config';
+import { encodeDate } from '../Utils';
+import { loadModule } from '../Adapters/AdapterLoader';
 
 var RestQuery = require('../RestQuery');
 var Auth = require('../Auth');
@@ -53,7 +54,7 @@ export class UserController extends AdaptableController {
     }
 
     if (this.config.emailVerifyTokenValidityDuration) {
-      user._email_verify_token_expires_at = Parse._encode(
+      user._email_verify_token_expires_at = encodeDate(
         this.config.generateEmailVerifyTokenExpiresAt()
       );
     }
@@ -77,7 +78,7 @@ export class UserController extends AdaptableController {
     // add additional query params and additional fields that need to be updated
     if (this.config.emailVerifyTokenValidityDuration) {
       query.emailVerified = false;
-      query._email_verify_token_expires_at = { $gt: Parse._encode(new Date()) };
+      query._email_verify_token_expires_at = { $gt: encodeDate(new Date()) };
 
       updateFields._email_verify_token_expires_at = { __op: 'Delete' };
     }
@@ -160,6 +161,7 @@ export class UserController extends AdaptableController {
     const fetchedUser = await this.getUserIfNeeded(user);
     let shouldSendEmail = this.config.sendUserEmailVerification;
     if (typeof shouldSendEmail === 'function') {
+      const Parse = await loadModule('parse/node.js');
       const response = await Promise.resolve(
         this.config.sendUserEmailVerification({
           user: Parse.Object.fromJSON({ className: '_User', ...fetchedUser }),
@@ -204,6 +206,7 @@ export class UserController extends AdaptableController {
     ) {
       return Promise.resolve(true);
     }
+    const Parse = await loadModule('parse/node.js');
     const shouldSend = await this.setEmailVerifyToken(user, {
       object: Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
       master,
@@ -232,7 +235,7 @@ export class UserController extends AdaptableController {
     const token = { _perishable_token: randomString(25) };
 
     if (this.config.passwordPolicy && this.config.passwordPolicy.resetTokenValidityDuration) {
-      token._perishable_token_expires_at = Parse._encode(
+      token._perishable_token_expires_at = encodeDate(
         this.config.generatePasswordResetTokenExpiresAt()
       );
     }
@@ -307,7 +310,7 @@ export class UserController extends AdaptableController {
       return await accountLockoutPolicy.unlockAccount();
     } catch (error) {
       if (error && error.message) {
-        // in case of Parse.Error, fail with the error message only
+        // in case of ParseError, fail with the error message only
         return Promise.reject(error.message);
       }
       return Promise.reject(error);

@@ -1,4 +1,4 @@
-import Parse from 'parse/node';
+import ParseError from '../../ParseError';
 import { fromGlobalId } from 'graphql-relay';
 import { handleUpload } from '../loaders/filesMutations';
 import * as objectsMutations from '../helpers/objectsMutations';
@@ -99,7 +99,7 @@ const transformers = {
     } else if (file && file.name) {
       return { name: file.name, __type: 'File', url: file.url };
     }
-    throw new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Invalid file upload.');
+    throw new ParseError(ParseError.FILE_SAVE_ERROR, 'Invalid file upload.');
   },
   polygon: value => ({
     __type: 'Polygon',
@@ -148,8 +148,8 @@ const transformers = {
     { config, auth, info }
   ) => {
     if (Object.keys(value).length === 0)
-    { throw new Parse.Error(
-      Parse.Error.INVALID_POINTER,
+    { throw new ParseError(
+      ParseError.INVALID_POINTER,
       `You need to provide at least one operation on the relation mutation of field ${field}`
     ); }
 
@@ -225,8 +225,8 @@ const transformers = {
     { config, auth, info }
   ) => {
     if (Object.keys(value).length > 1 || Object.keys(value).length === 0)
-    { throw new Parse.Error(
-      Parse.Error.INVALID_POINTER,
+    { throw new ParseError(
+      ParseError.INVALID_POINTER,
       `You need to provide link OR createLink on the pointer mutation of field ${field}`
     ); }
 

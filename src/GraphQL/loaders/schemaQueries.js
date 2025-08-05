@@ -1,4 +1,4 @@
-import Parse from 'parse/node';
+import ParseError from '../../ParseError';
 import deepcopy from 'deepcopy';
 import { GraphQLNonNull, GraphQLList } from 'graphql';
 import { transformToGraphQL } from '../transformers/schemaFields';
@@ -10,9 +10,9 @@ const getClass = async (name, schema) => {
     return await schema.getOneSchema(name, true);
   } catch (e) {
     if (e === undefined) {
-      throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${name} does not exist.`);
+      throw new ParseError(ParseError.INVALID_CLASS_NAME, `Class ${name} does not exist.`);
     } else {
-      throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database adapter error.');
+      throw new ParseError(ParseError.INTERNAL_SERVER_ERROR, 'Database adapter error.');
     }
   }
 };

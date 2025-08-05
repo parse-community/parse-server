@@ -1,3 +1,4 @@
+import ParseError from '../../ParseError';
 /**
  * Parse Server authentication adapter for WeChat.
  *
@@ -86,7 +87,7 @@ class WeChatAdapter extends BaseAuthCodeAdapter {
     const data = await response.json();
 
     if (!response.ok || data.errcode !== 0) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'WeChat auth is invalid for this user.');
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'WeChat auth is invalid for this user.');
     }
 
     return data;
@@ -94,7 +95,7 @@ class WeChatAdapter extends BaseAuthCodeAdapter {
 
   async getAccessTokenFromCode(authData) {
     if (!authData.code) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'WeChat auth requires a code to be sent.');
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'WeChat auth requires a code to be sent.');
     }
 
     const appId = this.clientId;
@@ -108,7 +109,7 @@ class WeChatAdapter extends BaseAuthCodeAdapter {
     const data = await response.json();
 
     if (!response.ok || data.errcode) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'WeChat auth is invalid for this user.');
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'WeChat auth is invalid for this user.');
     }
 
     authData.id = data.openid;

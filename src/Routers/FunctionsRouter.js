@@ -1,18 +1,18 @@
 // FunctionsRouter.js
-
-var Parse = require('parse/node').Parse,
-  triggers = require('../triggers');
+import ParseError from '../ParseError';
+const triggers = require('../triggers');
 
 import PromiseRouter from '../PromiseRouter';
 import { promiseEnforceMasterKeyAccess, promiseEnsureIdempotency } from '../middlewares';
 import { jobStatusHandler } from '../StatusHandler';
 import _ from 'lodash';
 import { logger } from '../logger';
+import { loadModule } from '../Adapters/AdapterLoader';
 
-function parseObject(obj, config) {
+function parseObject(obj, config, Parse) {
   if (Array.isArray(obj)) {
     return obj.map(item => {
-      return parseObject(item, config);
+      return parseObject(item, config, Parse);
     });
   } else if (obj && obj.__type == 'Date') {
     return Object.assign(new Date(obj.iso), obj);
@@ -25,14 +25,14 @@ function parseObject(obj, config) {
       objectId: obj.objectId,
     });
   } else if (obj && typeof obj === 'object') {
-    return parseParams(obj, config);
+    return parseParams(obj, config, Parse);
   } else {
     return obj;
   }
 }
 
-function parseParams(params, config) {
-  return _.mapValues(params, item => parseObject(item, config));
+function parseParams(params, config, Parse) {
+  return _.mapValues(params, item => parseObject(item, config, Parse));
 }
 
 export class FunctionsRouter extends PromiseRouter {
@@ -57,16 +57,17 @@ export class FunctionsRouter extends PromiseRouter {
     });
   }
 
-  static handleCloudJob(req) {
+  static async handleCloudJob(req) {
     const jobName = req.params.jobName || req.body?.jobName;
     const applicationId = req.config.applicationId;
     const jobHandler = jobStatusHandler(req.config);
     const jobFunction = triggers.getJob(jobName, applicationId);
     if (!jobFunction) {
-      throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Invalid job.');
+      throw new ParseError(ParseError.SCRIPT_FAILED, 'Invalid job.');
     }
+    const Parse = await loadModule('parse/node.js');
     let params = Object.assign({}, req.body, req.query);
-    params = parseParams(params, req.config);
+    params = parseParams(params, req.config, Parse);
     const request = {
       params: params,
       log: req.config.loggerController,
@@ -102,7 +103,7 @@ export class FunctionsRouter extends PromiseRouter {
     });
   }
 
-  static createResponseObject(resolve, reject) {
+  static createResponseObject(resolve, reject, Parse) {
     return {
       success: function (result) {
         resolve({
@@ -117,16 +118,17 @@ export class FunctionsRouter extends PromiseRouter {
       },
     };
   }
-  static handleCloudFunction(req) {
+  static async handleCloudFunction(req) {
     const functionName = req.params.functionName;
     const applicationId = req.config.applicationId;
     const theFunction = triggers.getFunction(functionName, applicationId);
 
     if (!theFunction) {
-      throw new Parse.Error(Parse.Error.SCRIPT_FAILED, `Invalid function: "${functionName}"`);
+      throw new ParseError(ParseError.SCRIPT_FAILED, `Invalid function: "${functionName}"`);
     }
+    const Parse = await loadModule('parse/node.js');
     let params = Object.assign({}, req.body, req.query);
-    params = parseParams(params, req.config);
+    params = parseParams(params, req.config, Parse);
     const request = {
       params: params,
       master: req.auth && req.auth.isMaster,
@@ -180,7 +182,8 @@ export class FunctionsRouter extends PromiseRouter {
           } catch (e) {
             reject(e);
           }
-        }
+        },
+        Parse,
       );
       return Promise.resolve()
         .then(() => {

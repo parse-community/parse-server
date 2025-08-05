@@ -1,3 +1,4 @@
+import ParseError from '../../ParseError';
 /**
  * Parse Server authentication adapter for Google Play Games Services.
  *
@@ -87,16 +88,16 @@ class GooglePlayGamesServicesAdapter extends BaseCodeAuthAdapter {
     });
 
     if (!response.ok) {
-      throw new Parse.Error(
-        Parse.Error.VALIDATION_ERROR,
+      throw new ParseError(
+        ParseError.VALIDATION_ERROR,
         `Failed to exchange code for token: ${response.statusText}`
       );
     }
 
     const data = await response.json();
     if (data.error) {
-      throw new Parse.Error(
-        Parse.Error.OBJECT_NOT_FOUND,
+      throw new ParseError(
+        ParseError.OBJECT_NOT_FOUND,
         data.error_description || data.error
       );
     }
@@ -115,16 +116,16 @@ class GooglePlayGamesServicesAdapter extends BaseCodeAuthAdapter {
     });
 
     if (!response.ok) {
-      throw new Parse.Error(
-        Parse.Error.VALIDATION_ERROR,
+      throw new ParseError(
+        ParseError.VALIDATION_ERROR,
         `Failed to fetch Google Play Games Services user: ${response.statusText}`
       );
     }
 
     const userData = await response.json();
     if (!userData.playerId || userData.playerId !== authData.id) {
-      throw new Parse.Error(
-        Parse.Error.VALIDATION_ERROR,
+      throw new ParseError(
+        ParseError.VALIDATION_ERROR,
         'Invalid Google Play Games Services user data received.'
       );
     }

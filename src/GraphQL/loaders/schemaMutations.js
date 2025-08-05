@@ -1,4 +1,4 @@
-import Parse from 'parse/node';
+import ParseError from '../../ParseError';
 import { GraphQLNonNull } from 'graphql';
 import deepcopy from 'deepcopy';
 import { mutationWithClientMutationId } from 'graphql-relay';
@@ -33,8 +33,8 @@ const load = parseGraphQLSchema => {
         enforceMasterKeyAccess(auth);
 
         if (auth.isReadOnly) {
-          throw new Parse.Error(
-            Parse.Error.OPERATION_FORBIDDEN,
+          throw new ParseError(
+            ParseError.OPERATION_FORBIDDEN,
             "read-only masterKey isn't allowed to create a schema."
           );
         }
@@ -82,8 +82,8 @@ const load = parseGraphQLSchema => {
         enforceMasterKeyAccess(auth);
 
         if (auth.isReadOnly) {
-          throw new Parse.Error(
-            Parse.Error.OPERATION_FORBIDDEN,
+          throw new ParseError(
+            ParseError.OPERATION_FORBIDDEN,
             "read-only masterKey isn't allowed to update a schema."
           );
         }
@@ -133,8 +133,8 @@ const load = parseGraphQLSchema => {
         enforceMasterKeyAccess(auth);
 
         if (auth.isReadOnly) {
-          throw new Parse.Error(
-            Parse.Error.OPERATION_FORBIDDEN,
+          throw new ParseError(
+            ParseError.OPERATION_FORBIDDEN,
             "read-only masterKey isn't allowed to delete a schema."
           );
         }

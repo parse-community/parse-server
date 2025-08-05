@@ -7,7 +7,7 @@ var batch = require('./batch'),
   { parse } = require('graphql'),
   path = require('path'),
   fs = require('fs');
-
+import ParseError from './ParseError';
 import { ParseServerOptions, LiveQueryServerOptions } from './Options';
 import defaults from './defaults';
 import * as logging from './logger';
@@ -164,7 +164,7 @@ class ParseServer {
       try {
         await databaseController.performInitialization();
       } catch (e) {
-        if (e.code !== Parse.Error.DUPLICATE_VALUE) {
+        if (e.code !== ParseError.DUPLICATE_VALUE) {
           throw e;
         }
       }

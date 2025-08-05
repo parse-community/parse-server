@@ -13,7 +13,7 @@ import {
   transformPointerString,
 } from './MongoTransform';
 // @flow-disable-next
-import Parse from 'parse/node';
+import ParseError from '../../../ParseError';
 // @flow-disable-next
 import _ from 'lodash';
 import defaults from '../../../defaults';
@@ -120,7 +120,7 @@ function validateExplainValue(explain) {
       true,
     ];
     if (!explainAllowedValues.includes(explain)) {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Invalid value for explain');
+      throw new ParseError(ParseError.INVALID_QUERY, 'Invalid value for explain');
     }
   }
 }
@@ -198,7 +198,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     return this.connectionPromise;
   }
 
-  handleError<T>(error: ?(Error | Parse.Error)): Promise<T> {
+  handleError<T>(error: ?(Error | ParseError)): Promise<T> {
     if (error && error.code === 13) {
       // Unauthorized error
       delete this.client;
@@ -274,11 +274,11 @@ export class MongoStorageAdapter implements StorageAdapter {
     Object.keys(submittedIndexes).forEach(name => {
       const field = submittedIndexes[name];
       if (existingIndexes[name] && field.__op !== 'Delete') {
-        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Index ${name} exists, cannot update.`);
+        throw new ParseError(ParseError.INVALID_QUERY, `Index ${name} exists, cannot update.`);
       }
       if (!existingIndexes[name] && field.__op === 'Delete') {
-        throw new Parse.Error(
-          Parse.Error.INVALID_QUERY,
+        throw new ParseError(
+          ParseError.INVALID_QUERY,
           `Index ${name} does not exist, cannot delete.`
         );
       }
@@ -294,8 +294,8 @@ export class MongoStorageAdapter implements StorageAdapter {
               key.indexOf('_p_') === 0 ? key.replace('_p_', '') : key
             )
           ) {
-            throw new Parse.Error(
-              Parse.Error.INVALID_QUERY,
+            throw new ParseError(
+              ParseError.INVALID_QUERY,
               `Field ${key} does not exist, cannot add index.`
             );
           }
@@ -485,8 +485,8 @@ export class MongoStorageAdapter implements StorageAdapter {
       .catch(error => {
         if (error.code === 11000) {
           // Duplicate value
-          const err = new Parse.Error(
-            Parse.Error.DUPLICATE_VALUE,
+          const err = new ParseError(
+            ParseError.DUPLICATE_VALUE,
             'A duplicate value for a field with unique values was provided'
           );
           err.underlyingError = error;
@@ -522,12 +522,12 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(
         ({ deletedCount }) => {
           if (deletedCount === 0) {
-            throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+            throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Object not found.');
           }
           return Promise.resolve();
         },
         () => {
-          throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database adapter error');
+          throw new ParseError(ParseError.INTERNAL_SERVER_ERROR, 'Database adapter error');
         }
       );
   }
@@ -570,8 +570,8 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(result => mongoObjectToParseObject(className, result, schema))
       .catch(error => {
         if (error.code === 11000) {
-          throw new Parse.Error(
-            Parse.Error.DUPLICATE_VALUE,
+          throw new ParseError(
+            ParseError.DUPLICATE_VALUE,
             'A duplicate value for a field with unique values was provided'
           );
         }
@@ -717,8 +717,8 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(collection => collection._ensureSparseUniqueIndexInBackground(indexCreationRequest))
       .catch(error => {
         if (error.code === 11000) {
-          throw new Parse.Error(
-            Parse.Error.DUPLICATE_VALUE,
+          throw new ParseError(
+            ParseError.DUPLICATE_VALUE,
             'Tried to ensure field uniqueness for a class that already has duplicates.'
           );
         }
@@ -1009,7 +1009,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       case '':
         break;
       default:
-        throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Not supported read preference.');
+        throw new ParseError(ParseError.INVALID_QUERY, 'Not supported read preference.');
     }
     return readPreference;
   }

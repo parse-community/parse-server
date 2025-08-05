@@ -1,3 +1,4 @@
+import ParseError from '../../ParseError';
 /**
  * Parse Server authentication adapter for Apple Game Center.
  *
@@ -120,7 +121,7 @@ class GameCenterAuth extends AuthAdapter {
       !headers.get('content-length') ||
       parseInt(headers.get('content-length'), 10) > 10000
     ) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid rootCertificateURL.');
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Invalid rootCertificateURL.');
     }
 
     this.ca.cert = pki.certificateFromPem(certificate);
@@ -160,7 +161,7 @@ class GameCenterAuth extends AuthAdapter {
 
   async getAppleCertificate(publicKeyUrl) {
     if (!this.verifyPublicKeyUrl(publicKeyUrl)) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `Invalid publicKeyUrl: ${publicKeyUrl}`);
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, `Invalid publicKeyUrl: ${publicKeyUrl}`);
     }
 
     if (this.cache[publicKeyUrl]) {
@@ -185,14 +186,14 @@ class GameCenterAuth extends AuthAdapter {
     const publicKeyCert = pki.certificateFromPem(cert);
 
     if (!this.ca.cert) {
-      throw new Parse.Error(
-        Parse.Error.OBJECT_NOT_FOUND,
+      throw new ParseError(
+        ParseError.OBJECT_NOT_FOUND,
         'Root certificate is invalid or missing.'
       );
     }
 
     if (!this.ca.cert.verify(publicKeyCert)) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `Invalid publicKeyUrl: ${publicKeyUrl}`);
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, `Invalid publicKeyUrl: ${publicKeyUrl}`);
     }
   }
 
@@ -206,7 +207,7 @@ class GameCenterAuth extends AuthAdapter {
     verifier.update(Buffer.from(authData.salt, 'base64'));
 
     if (!verifier.verify(publicKey, authData.signature, 'base64')) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid signature.');
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Invalid signature.');
     }
   }
 
@@ -219,7 +220,7 @@ class GameCenterAuth extends AuthAdapter {
 
     for (const key of requiredKeys) {
       if (!authData[key]) {
-        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `AuthData ${key} is missing.`);
+        throw new ParseError(ParseError.OBJECT_NOT_FOUND, `AuthData ${key} is missing.`);
       }
     }
 

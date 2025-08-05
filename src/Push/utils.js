@@ -1,4 +1,4 @@
-import Parse from 'parse/node';
+import ParseError from '../ParseError';
 import deepcopy from 'deepcopy';
 
 export function isPushIncrementing(body) {
@@ -119,8 +119,8 @@ export function validatePushType(where = {}, validPushTypes = []) {
   for (var i = 0; i < deviceTypes.length; i++) {
     var deviceType = deviceTypes[i];
     if (validPushTypes.indexOf(deviceType) < 0) {
-      throw new Parse.Error(
-        Parse.Error.PUSH_MISCONFIGURED,
+      throw new ParseError(
+        ParseError.PUSH_MISCONFIGURED,
         deviceType + ' is not supported push type.'
       );
     }

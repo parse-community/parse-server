@@ -1,6 +1,5 @@
 // @flow
-// @flow-disable-next Cannot resolve module `parse/node`.
-const Parse = require('parse/node');
+import * as Parse from '../ClientSDK';
 import { logger } from '../logger';
 import Config from '../Config';
 import { internalCreateSchema, internalUpdateSchema } from '../Routers/SchemasRouter';
@@ -380,14 +379,14 @@ export class DefinedSchemas {
 
   handleCLP(
     localSchema: Migrations.JSONSchema,
-    newLocalSchema: Parse.Schema,
-    cloudSchema: Parse.Schema
+    newLocalSchema: Migrations.JSONSchema,
+    cloudSchema: Migrations.JSONSchema
   ) {
     if (!localSchema.classLevelPermissions && !cloudSchema) {
       logger.warn(`classLevelPermissions not provided for ${localSchema.className}.`);
     }
     // Use spread to avoid read only issue (encountered by Moumouls using directAccess)
-    const clp = ({ ...localSchema.classLevelPermissions || {} }: Parse.CLP.PermissionsMap);
+    const clp = ({ ...localSchema.classLevelPermissions || {} }: any);
     // To avoid inconsistency we need to remove all rights on addField
     clp.addField = {};
     newLocalSchema.setCLP(clp);

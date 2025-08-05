@@ -4,7 +4,7 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import qs from 'querystring';
-import { Parse } from 'parse/node';
+import ParseError from '../ParseError';
 import Deprecator from '../Deprecator/Deprecator';
 
 const public_html = path.resolve(__dirname, '../../public_html');
@@ -170,11 +170,11 @@ export class PublicAPIRouter extends PromiseRouter {
     }
 
     if (!token) {
-      throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'Missing token');
+      throw new ParseError(ParseError.OTHER_CAUSE, 'Missing token');
     }
 
     if (!new_password) {
-      throw new Parse.Error(Parse.Error.PASSWORD_MISSING, 'Missing password');
+      throw new ParseError(ParseError.PASSWORD_MISSING, 'Missing password');
     }
 
     return config.userController
@@ -214,7 +214,7 @@ export class PublicAPIRouter extends PromiseRouter {
             });
           }
           if (result.err) {
-            throw new Parse.Error(Parse.Error.OTHER_CAUSE, `${result.err}`);
+            throw new ParseError(ParseError.OTHER_CAUSE, `${result.err}`);
           }
         }
 
