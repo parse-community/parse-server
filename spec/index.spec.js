@@ -626,6 +626,43 @@ describe('server', () => {
     expect(config.publicServerURL).toEqual('https://myserver.com/1');
   });
 
+  it('should load publicServerURL from Promise', async () => {
+    await reconfigureServer({
+      publicServerURL: () => Promise.resolve('https://async-server.com/1'),
+    });
+
+    await new Parse.Object('TestObject').save();
+
+    const config = Config.get(Parse.applicationId);
+    expect(config.publicServerURL).toEqual('https://async-server.com/1');
+  });
+
+  it('should handle publicServerURL function throwing error', async () => {
+    const errorMessage = 'Failed to get public server URL';
+    await reconfigureServer({
+      publicServerURL: () => {
+        throw new Error(errorMessage);
+      },
+    });
+
+    // The error should occur when trying to save an object (which triggers loadKeys in middleware)
+    await expectAsync(
+      new Parse.Object('TestObject').save()
+    ).toBeRejected();
+  });
+
+  it('should handle publicServerURL Promise rejection', async () => {
+    const errorMessage = 'Async fetch of public server URL failed';
+    await reconfigureServer({
+      publicServerURL: () => Promise.reject(new Error(errorMessage)),
+    });
+
+    // The error should occur when trying to save an object (which triggers loadKeys in middleware)
+    await expectAsync(
+      new Parse.Object('TestObject').save()
+    ).toBeRejected();
+  });
+
   it('should not reload if ttl is not set', async () => {
     const masterKeySpy = jasmine.createSpy().and.returnValue(Promise.resolve('initialMasterKey'));
 
