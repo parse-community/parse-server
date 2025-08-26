@@ -280,6 +280,71 @@ describe('Cloud Code', () => {
       expect(findSpy).not.toHaveBeenCalled();
     });
   });
+
+  describe('beforeFind security with returned objects', () => {
+    it('should not expose objects not readable by current user', async () => {
+      const userA = new Parse.User();
+      userA.setUsername('userA');
+      userA.setPassword('passA');
+      await userA.signUp();
+
+      const userB = new Parse.User();
+      userB.setUsername('userB');
+      userB.setPassword('passB');
+      await userB.signUp();
+
+      // Create an object readable only by userB
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(false);
+      acl.setPublicWriteAccess(false);
+      acl.setReadAccess(userB.id, true);
+      acl.setWriteAccess(userB.id, true);
+
+      const secret = new Parse.Object('SecretDoc');
+      secret.set('title', 'top');
+      secret.set('content', 'classified');
+      secret.setACL(acl);
+      await secret.save(null, { sessionToken: userB.getSessionToken() });
+
+      Parse.Cloud.beforeFind('SecretDoc', () => {
+        return [secret];
+      });
+
+      // Query as userA should NOT see the secret
+      const q = new Parse.Query('SecretDoc');
+      const results = await q.find({ sessionToken: userA.getSessionToken() });
+      expect(results.length).toBe(0);
+    });
+
+    it('should apply protectedFields masking after re-filtering', async () => {
+      // Configure protectedFields for SecretMask: mask `secretField` for everyone
+      const protectedFields = { SecretMask: { '*': ['secretField'] } };
+      await reconfigureServer({ protectedFields });
+
+      const user = new Parse.User();
+      user.setUsername('pfUser');
+      user.setPassword('pfPass');
+      await user.signUp();
+
+      // Object is publicly readable but has a protected field
+      const doc = new Parse.Object('SecretMask');
+      doc.set('name', 'visible');
+      doc.set('secretField', 'hiddenValue');
+      await doc.save(null, { useMasterKey: true });
+
+      Parse.Cloud.beforeFind('SecretMask', () => {
+        return [doc];
+      });
+
+      // Query as normal user; after re-filtering, secretField should be removed
+      const res = await new Parse.Query('SecretMask').first({ sessionToken: user.getSessionToken() });
+      expect(res).toBeDefined();
+      expect(res.get('name')).toBe('visible');
+      expect(res.get('secretField')).toBeUndefined();
+      const json = res.toJSON();
+      expect(Object.prototype.hasOwnProperty.call(json, 'secretField')).toBeFalse();
+    });
+  });
   const { maybeRunAfterFindTrigger } = require('../lib/triggers');
 
   describe('maybeRunAfterFindTrigger - direct function tests', () => {
