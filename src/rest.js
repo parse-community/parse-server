@@ -51,11 +51,39 @@ async function runFindTriggers(
   if (result?.objects) {
     const objectsFromBeforeFind = result.objects;
 
+    let objectsForAfterFind = objectsFromBeforeFind;
+
+    if (!auth?.isMaster && !auth?.isMaintenance) {
+      const ids = (Array.isArray(objectsFromBeforeFind) ? objectsFromBeforeFind : [objectsFromBeforeFind])
+        .map(o => (o && (o.id || o.objectId)) || null)
+        .filter(Boolean);
+
+      if (ids.length > 0) {
+        const refilterWhere = isGet ? { objectId: ids[0] } : { objectId: { $in: ids } };
+
+        const refilterQuery = await RestQuery({
+          method: isGet ? RestQuery.Method.get : RestQuery.Method.find,
+          config,
+          auth,
+          className,
+          restWhere: refilterWhere,
+          restOptions,
+          clientSDK,
+          context,
+          runBeforeFind: false,
+          runAfterFind: false,
+        });
+
+        const refiltered = await refilterQuery.execute();
+        objectsForAfterFind = (refiltered && refiltered.results) || [];
+      }
+    }
+
     const afterFindProcessedObjects = await triggers.maybeRunAfterFindTrigger(
       triggers.Types.afterFind,
       auth,
       className,
-      objectsFromBeforeFind,
+      objectsForAfterFind,
       config,
       new Parse.Query(className).withJSON({ where: restWhere, ...restOptions }),
       context,

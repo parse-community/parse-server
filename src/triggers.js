@@ -470,7 +470,7 @@ export function maybeRunAfterFindTrigger(
       if (query.where) {
         parseQueryInstance.withJSON(query);
       } else {
-        parseQueryInstance.withJSON({ where: query });
+        parseQueryInstance.withJSON({ where: {}, ...query });
       }
       request.query = parseQueryInstance;
     } else {
