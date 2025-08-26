@@ -282,14 +282,18 @@ describe('Cloud Code', () => {
   });
 
   describe('beforeFind security with returned objects', () => {
-    it('should not expose objects not readable by current user', async () => {
-      const userA = new Parse.User();
-      userA.setUsername('userA');
+    let userA;
+    let userB;
+    let secret;
+
+    beforeEach(async () => {
+      userA = new Parse.User();
+      userA.setUsername('userA_' + Date.now());
       userA.setPassword('passA');
       await userA.signUp();
 
-      const userB = new Parse.User();
-      userB.setUsername('userB');
+      userB = new Parse.User();
+      userB.setUsername('userB_' + Date.now());
       userB.setPassword('passB');
       await userB.signUp();
 
@@ -300,7 +304,7 @@ describe('Cloud Code', () => {
       acl.setReadAccess(userB.id, true);
       acl.setWriteAccess(userB.id, true);
 
-      const secret = new Parse.Object('SecretDoc');
+      secret = new Parse.Object('SecretDoc');
       secret.set('title', 'top');
       secret.set('content', 'classified');
       secret.setACL(acl);
@@ -309,13 +313,37 @@ describe('Cloud Code', () => {
       Parse.Cloud.beforeFind('SecretDoc', () => {
         return [secret];
       });
+    });
 
-      // Query as userA should NOT see the secret
+    it('should not expose objects not readable by current user', async () => {
       const q = new Parse.Query('SecretDoc');
       const results = await q.find({ sessionToken: userA.getSessionToken() });
       expect(results.length).toBe(0);
     });
 
+    it('should allow authorized user to see their objects', async () => {
+      const q = new Parse.Query('SecretDoc');
+      const results = await q.find({ sessionToken: userB.getSessionToken() });
+      expect(results.length).toBe(1);
+      expect(results[0].id).toBe(secret.id);
+      expect(results[0].get('title')).toBe('top');
+      expect(results[0].get('content')).toBe('classified');
+    });
+
+    it('should return OBJECT_NOT_FOUND on get() for unauthorized user', async () => {
+      const q = new Parse.Query('SecretDoc');
+      await expectAsync(
+        q.get(secret.id, { sessionToken: userA.getSessionToken() })
+      ).toBeRejectedWith(jasmine.objectContaining({ code: Parse.Error.OBJECT_NOT_FOUND }));
+    });
+
+    it('should allow master key to bypass ACL filtering when returning objects', async () => {
+      const q = new Parse.Query('SecretDoc');
+      const results = await q.find({ useMasterKey: true });
+      expect(results.length).toBe(1);
+      expect(results[0].id).toBe(secret.id);
+    });
+      
     it('should apply protectedFields masking after re-filtering', async () => {
       // Configure protectedFields for SecretMask: mask `secretField` for everyone
       const protectedFields = { SecretMask: { '*': ['secretField'] } };
@@ -460,11 +488,15 @@ describe('Cloud Code', () => {
         className,
         [mockObject],
         testConfig,
-        { limit: 5, skip: 0 },
+        { limit: 5, skip: 1 },
         {}
       );
 
       expect(receivedQuery).toBeInstanceOf(Parse.Query);
+      const qJSON = receivedQuery.toJSON();
+      expect(qJSON.limit).toBe(5);
+      expect(qJSON.skip).toBe(1);
+      expect(qJSON.where).toEqual({});
       expect(result).toBeDefined();
     });
 
