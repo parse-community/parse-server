@@ -463,6 +463,7 @@ export function maybeRunAfterFindTrigger(
     }
 
     const request = getRequestObject(triggerType, auth, null, null, config, context, isGet);
+    // Convert query parameter to Parse.Query instance
     if (query instanceof Parse.Query) {
       request.query = query;
     } else if (typeof query === 'object' && query !== null) {
@@ -496,6 +497,8 @@ export function maybeRunAfterFindTrigger(
       auth,
       config.logLevels.triggerBeforeSuccess
     );
+    
+    // Convert plain objects to Parse.Object instances for trigger
     request.objects = objectsInput.map(currentObject => {
       if (currentObject instanceof Parse.Object) {
         return currentObject;

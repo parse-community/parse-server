@@ -34,6 +34,8 @@ async function runFindTriggers(
   options = {}
 ) {
   const { isGet } = options;
+  
+  // Run beforeFind trigger - may modify query or return objects directly
   const result = await triggers.maybeRunQueryTrigger(
     triggers.Types.beforeFind,
     className,
@@ -48,11 +50,14 @@ async function runFindTriggers(
   restWhere = result.restWhere || restWhere;
   restOptions = result.restOptions || restOptions;
 
+  // Short-circuit path: beforeFind returned objects directly
+  // Security risk: These objects may have been fetched with master privileges
   if (result?.objects) {
     const objectsFromBeforeFind = result.objects;
 
     let objectsForAfterFind = objectsFromBeforeFind;
 
+    // Security check: Re-filter objects if not master to ensure ACL/CLP compliance
     if (!auth?.isMaster && !auth?.isMaintenance) {
       const ids = (Array.isArray(objectsFromBeforeFind) ? objectsFromBeforeFind : [objectsFromBeforeFind])
         .map(o => (o && (o.id || o.objectId)) || null)
@@ -61,6 +66,7 @@ async function runFindTriggers(
       if (ids.length > 0) {
         const refilterWhere = isGet ? { objectId: ids[0] } : { objectId: { $in: ids } };
 
+        // Re-query with proper security: no triggers to avoid infinite loops
         const refilterQuery = await RestQuery({
           method: isGet ? RestQuery.Method.get : RestQuery.Method.find,
           config,
@@ -79,6 +85,7 @@ async function runFindTriggers(
       }
     }
 
+    // Run afterFind trigger on security-filtered objects
     const afterFindProcessedObjects = await triggers.maybeRunAfterFindTrigger(
       triggers.Types.afterFind,
       auth,
@@ -95,6 +102,7 @@ async function runFindTriggers(
     };
   }
 
+  // Normal path: execute database query with modified conditions
   const query = await RestQuery({
     method: isGet ? RestQuery.Method.get : RestQuery.Method.find,
     config,
