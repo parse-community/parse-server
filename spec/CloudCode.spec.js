@@ -481,6 +481,7 @@ describe('Cloud Code', () => {
       });
 
       const mockObject = { id: 'test456', className: className, name: 'test' };
+      const pq = new Parse.Query(className).withJSON({ limit: 5, skip: 1 });
 
       const result = await maybeRunAfterFindTrigger(
         'afterFind',
@@ -488,7 +489,7 @@ describe('Cloud Code', () => {
         className,
         [mockObject],
         testConfig,
-        { limit: 5, skip: 1 },
+        pq,
         {}
       );
 
