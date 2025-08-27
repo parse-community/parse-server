@@ -34,7 +34,6 @@ async function runFindTriggers(
   options = {}
 ) {
   const { isGet } = options;
-  
   // Run beforeFind trigger - may modify query or return objects directly
   const result = await triggers.maybeRunQueryTrigger(
     triggers.Types.beforeFind,
@@ -59,11 +58,18 @@ async function runFindTriggers(
 
     // Security check: Re-filter objects if not master to ensure ACL/CLP compliance
     if (!auth?.isMaster && !auth?.isMaintenance) {
-      const ids = (Array.isArray(objectsFromBeforeFind) ? objectsFromBeforeFind : [objectsFromBeforeFind])
+      const inputArray = Array.isArray(objectsFromBeforeFind)
+        ? objectsFromBeforeFind
+        : [objectsFromBeforeFind];
+
+      const ids = inputArray
         .map(o => (o && (o.id || o.objectId)) || null)
         .filter(Boolean);
 
-      if (ids.length > 0) {
+      // If no valid ids are present, do not return unsanitized data
+      if (ids.length === 0) {
+        objectsForAfterFind = [];
+      } else {
         const refilterWhere = isGet ? { objectId: ids[0] } : { objectId: { $in: ids } };
 
         // Re-query with proper security: no triggers to avoid infinite loops
