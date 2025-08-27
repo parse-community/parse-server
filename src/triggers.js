@@ -470,8 +470,6 @@ export function maybeRunAfterFindTrigger(
       const parseQueryInstance = new Parse.Query(classNameQuery);
       if (query.where) {
         parseQueryInstance.withJSON(query);
-      } else {
-        parseQueryInstance.withJSON({ where: {}, ...query });
       }
       request.query = parseQueryInstance;
     } else {
