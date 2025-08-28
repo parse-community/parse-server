@@ -6,7 +6,7 @@ function mongoFieldToParseSchemaField(type) {
   if (!type || typeof type !== 'string') {
     throw new Parse.Error(
       Parse.Error.INVALID_SCHEMA_OPERATION,
-      `Invalid field type: ${type}. Expected a string. Field type must be one of: string, number, boolean, date, map, object, array, geopoint, file, bytes, polygon, or a valid relation/pointer format.`
+      `Invalid field type: ${type}. Expected a string. Fix the type mismatch in your schema configuration.`
     );
   }
 
