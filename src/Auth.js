@@ -423,10 +423,15 @@ const findUsersWithAuthData = async (config, authData, beforeFind) => {
   const queries = await Promise.all(
     providers.map(async provider => {
       const providerAuthData = authData[provider];
+      if (!providerAuthData) {
+        return null;
+      }
 
-      const adapter = config.authDataManager.getValidatorForProvider(provider)?.adapter;
-      if (beforeFind && typeof adapter?.beforeFind === 'function') {
-        await adapter.beforeFind(providerAuthData);
+      if (beforeFind) {
+        const adapter = config.authDataManager.getValidatorForProvider(provider)?.adapter;
+        if (typeof adapter?.beforeFind === 'function') {
+         await adapter.beforeFind(providerAuthData);
+       }
       }
 
       if (!providerAuthData?.id) {
@@ -601,6 +606,70 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
   return acc;
 };
 
+const subsetEqual = (prev, next) => {
+  if (prev === next) return true;
+  if (prev == null || next == null) return false;
+
+  const tp = typeof prev;
+  const tn = typeof next;
+  if (tn !== 'object' || tp !== 'object') return prev === next;
+
+  // arrays: require element-wise equality for the provided portion
+  if (Array.isArray(next)) {
+    if (!Array.isArray(prev)) return false;
+    if (next.length !== prev.length) return false;
+    for (let i = 0; i < next.length; i++) {
+      if (!subsetEqual(prev[i], next[i])) return false;
+    }
+    return true;
+  }
+
+  // objects: every provided key in `next` must match `prev`
+  for (const k of Object.keys(next)) {
+    const nv = next[k];
+    if (typeof nv === 'undefined') continue; // treat "not provided" as no-op
+    const pv = prev[k];
+    if (!subsetEqual(pv, nv)) return false;
+  }
+  return true;
+}
+
+/**
+ * Delta between current and incoming authData with partial update semantics:
+ * - changed: providers truly changed (new or value differs on provided keys)
+ * - unlink: providers explicitly set to null (remove without validation)
+ * - unchanged: providers either absent in incoming or provided as matching subset
+ */
+const diffAuthData = (current = {}, incoming = {}) => {
+  const changed = {};
+  const unlink = {};
+  const unchanged = {};
+
+  const providers = new Set([...Object.keys(current), ...Object.keys(incoming)]);
+  for (const p of providers) {
+    const prev = current[p];
+    const next = incoming[p];
+
+    if (next === null) { unlink[p] = true; continue; }
+    if (typeof next === 'undefined') { // provider untouched
+      if (typeof prev !== 'undefined') unchanged[p] = prev;
+      continue;
+    }
+    if (typeof prev === 'undefined') { // new provider
+      changed[p] = next;
+      continue;
+    }
+
+    // key point: treat sanitized partial payload (subset) as unchanged
+    if (subsetEqual(prev, next)) {
+      unchanged[p] = prev;
+    } else {
+      changed[p] = next;
+    }
+  }
+  return { changed, unlink, unchanged };
+};
+
 module.exports = {
   Auth,
   master,
@@ -614,4 +683,6 @@ module.exports = {
   hasMutatedAuthData,
   checkIfUserHasProvidedConfiguredProvidersForLogin,
   handleAuthDataValidation,
+  subsetEqual,
+  diffAuthData
 };

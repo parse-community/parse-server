@@ -829,6 +829,7 @@ describe('Auth Adapter features', () => {
     expect(firstCall[2].user.id).toEqual(user.id);
     expect(firstCall.length).toEqual(3);
 
+    payload.someData = false;
     await user.save({ authData: { baseAdapter2: payload } }, { useMasterKey: true });
 
     const secondCall = baseAdapter2.validateAuthData.calls.argsFor(1);
