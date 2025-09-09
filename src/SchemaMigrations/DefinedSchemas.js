@@ -350,16 +350,13 @@ export class DefinedSchemas {
         if (!this.isProtectedIndex(localSchema.className, indexName)) {
           if (!localSchema.indexes || !localSchema.indexes[indexName]) {
             // Only delete indexes which are present in database if dropUnknownIndexes is `true`
-            if(this.config.schema.dropUnknownIndexes){
+            if(this.schemaOptions.dropUnknownIndexes !== false){
               newLocalSchema.deleteIndex(indexName);
             }
           } else if (
             !this.paramsAreEquals(localSchema.indexes[indexName], cloudSchema.indexes[indexName])
           ) {
-            // Only delete indexes which are present in database if dropUnknownIndexes is `true`
-            if(this.config.schema.dropUnknownIndexes){
-              newLocalSchema.deleteIndex(indexName);
-            }
+            newLocalSchema.deleteIndex(indexName);
             if (localSchema.indexes) {
               indexesToAdd.push({
                 indexName,

@@ -370,7 +370,7 @@ describe('DefinedSchemas', () => {
       cleanUpIndexes(schema);
       expect(schema.indexes).toEqual(indexes);
     });
-
+    
     it('should delete removed indexes when dropUnknownIndexes is set to false', async () => {
       const server = await reconfigureServer();
 
