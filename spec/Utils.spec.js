@@ -8,7 +8,7 @@ describe('Utils', () => {
       ]
       for (const value of values) {
         expect(Utils.encodeForUrl(value.input)).toBe(value.output);
-      } 
+      }
     });
   });
 

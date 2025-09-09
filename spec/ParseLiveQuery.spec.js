@@ -1182,7 +1182,7 @@ describe('ParseLiveQuery', function () {
     await sleep(100);
     expect(server.liveQueryServer.server.address()).toBeNull();
     expect(server.liveQueryServer.subscriber.isOpen).toBeFalse();
-    
+
     liveQueryConnectionCount = await getConnectionsCount(server.liveQueryServer.server);
     expect(liveQueryConnectionCount).toBe(0);
   });
