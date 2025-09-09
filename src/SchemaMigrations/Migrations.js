@@ -6,6 +6,7 @@ export interface SchemaOptions {
   deleteExtraFields: ?boolean;
   recreateModifiedFields: ?boolean;
   lockSchemas: ?boolean;
+  dropUnknownIndexes: ?boolean;
   beforeMigration: ?() => void | Promise<void>;
   afterMigration: ?() => void | Promise<void>;
 }
