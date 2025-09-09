@@ -344,16 +344,23 @@ export class DefinedSchemas {
 
     const indexesToAdd = [];
 
+    // Only delete indexes which are present in database if dropUnknownIndexes is `true`
     // Check deletion
     if (cloudSchema.indexes) {
       Object.keys(cloudSchema.indexes).forEach(indexName => {
         if (!this.isProtectedIndex(localSchema.className, indexName)) {
           if (!localSchema.indexes || !localSchema.indexes[indexName]) {
-            newLocalSchema.deleteIndex(indexName);
+            // Only delete indexes which are present in database if dropUnknownIndexes is `true`
+            if(this.config.schema.dropUnknownIndexes){
+              newLocalSchema.deleteIndex(indexName);
+            }
           } else if (
             !this.paramsAreEquals(localSchema.indexes[indexName], cloudSchema.indexes[indexName])
           ) {
-            newLocalSchema.deleteIndex(indexName);
+            // Only delete indexes which are present in database if dropUnknownIndexes is `true`
+            if(this.config.schema.dropUnknownIndexes){
+              newLocalSchema.deleteIndex(indexName);
+            }
             if (localSchema.indexes) {
               indexesToAdd.push({
                 indexName,
