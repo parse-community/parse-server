@@ -408,11 +408,13 @@ describe('DefinedSchemas', () => {
       // Change indexes
       await new DefinedSchemas(schemas, server.config).execute();
       let schema = await new Parse.Schema('Test').get();
+      cleanUpIndexes(schema);
       expect(schema.indexes).not.toBeUndefined();
 
       // Update
       await new DefinedSchemas(schemas, server.config).execute();
       schema = await new Parse.Schema('Test').get();
+      cleanUpIndexes(schema);
       expect(schema.indexes).not.toBeUndefined();
     });
 
