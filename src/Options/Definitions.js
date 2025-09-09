@@ -240,12 +240,19 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  enableInsecureAuthAdapters: {
+    env: 'PARSE_SERVER_ENABLE_INSECURE_AUTH_ADAPTERS',
+    help:
+      'Enable (or disable) insecure auth adapters, defaults to true. Insecure auth adapters are deprecated and it is recommended to disable them.',
+    action: parsers.booleanParser,
+    default: true,
+  },
   encodeParseObjectInCloudFunction: {
     env: 'PARSE_SERVER_ENCODE_PARSE_OBJECT_IN_CLOUD_FUNCTION',
     help:
       'If set to `true`, a `Parse.Object` that is in the payload when calling a Cloud Function will be converted to an instance of `Parse.Object`. If `false`, the object will not be converted and instead be a plain JavaScript object, which contains the raw data of a `Parse.Object` but is not an actual instance of `Parse.Object`. Default is `false`. <br><br>\u2139\uFE0F The expected behavior would be that the object is converted to an instance of `Parse.Object`, so you would normally set this option to `true`. The default is `false` because this is a temporary option that has been introduced to avoid a breaking change when fixing a bug where JavaScript objects are not converted to actual instances of `Parse.Object`.',
     action: parsers.booleanParser,
-    default: false,
+    default: true,
   },
   encryptionKey: {
     env: 'PARSE_SERVER_ENCRYPTION_KEY',
@@ -291,6 +298,12 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_GRAPHQL_PATH',
     help: 'Mount path for the GraphQL endpoint, defaults to /graphql',
     default: '/graphql',
+  },
+  graphQLPublicIntrospection: {
+    env: 'PARSE_SERVER_GRAPHQL_PUBLIC_INTROSPECTION',
+    help: 'Enable public introspection for the GraphQL endpoint, defaults to false',
+    action: parsers.booleanParser,
+    default: false,
   },
   graphQLSchema: {
     env: 'PARSE_SERVER_GRAPH_QLSCHEMA',
@@ -376,6 +389,12 @@ module.exports.ParseServerOptions = {
     action: parsers.arrayParser,
     default: ['127.0.0.1', '::1'],
   },
+  masterKeyTtl: {
+    env: 'PARSE_SERVER_MASTER_KEY_TTL',
+    help:
+      '(Optional) The duration in seconds for which the current `masterKey` is being used before it is requested again if `masterKey` is set to a function. If `masterKey` is not set to a function, this option has no effect. Default is `0`, which means the master key is requested by invoking the  `masterKey` function every time the master key is used internally by Parse Server.',
+    action: parsers.numberParser('masterKeyTtl'),
+  },
   maxLimit: {
     env: 'PARSE_SERVER_MAX_LIMIT',
     help: 'Max value for limit option on queries, defaults to unlimited',
@@ -421,8 +440,7 @@ module.exports.ParseServerOptions = {
   },
   pages: {
     env: 'PARSE_SERVER_PAGES',
-    help:
-      'The options for pages such as password reset and email verification. Caution, this is an experimental feature that may not be appropriate for production.',
+    help: 'The options for pages such as password reset and email verification.',
     action: parsers.objectParser,
     type: 'PagesOptions',
     default: {},
@@ -705,7 +723,7 @@ module.exports.PagesOptions = {
   enableRouter: {
     env: 'PARSE_SERVER_PAGES_ENABLE_ROUTER',
     help:
-      'Is true if the pages router should be enabled; this is required for any of the pages options to take effect. Caution, this is an experimental feature that may not be appropriate for production.',
+      'Is true if the pages router should be enabled; this is required for any of the pages options to take effect.',
     action: parsers.booleanParser,
     default: false,
   },
@@ -1051,6 +1069,24 @@ module.exports.FileUploadOptions = {
   },
 };
 module.exports.DatabaseOptions = {
+  autoSelectFamily: {
+    env: 'PARSE_SERVER_DATABASE_AUTO_SELECT_FAMILY',
+    help:
+      'The MongoDB driver option to set whether the socket attempts to connect to IPv6 and IPv4 addresses until a connection is established. If available, the driver will select the first IPv6 address.',
+    action: parsers.booleanParser,
+  },
+  autoSelectFamilyAttemptTimeout: {
+    env: 'PARSE_SERVER_DATABASE_AUTO_SELECT_FAMILY_ATTEMPT_TIMEOUT',
+    help:
+      'The MongoDB driver option to specify the amount of time in milliseconds to wait for a connection attempt to finish before trying the next address when using the autoSelectFamily option. If set to a positive integer less than 10, the value 10 is used instead.',
+    action: parsers.numberParser('autoSelectFamilyAttemptTimeout'),
+  },
+  connectTimeoutMS: {
+    env: 'PARSE_SERVER_DATABASE_CONNECT_TIMEOUT_MS',
+    help:
+      'The MongoDB driver option to specify the amount of time, in milliseconds, to wait to establish a single TCP socket connection to the server before raising an error. Specifying 0 disables the connection timeout.',
+    action: parsers.numberParser('connectTimeoutMS'),
+  },
   enableSchemaHooks: {
     env: 'PARSE_SERVER_DATABASE_ENABLE_SCHEMA_HOOKS',
     help:
@@ -1076,6 +1112,12 @@ module.exports.DatabaseOptions = {
       'The MongoDB driver option to set a cumulative time limit in milliseconds for processing operations on a cursor.',
     action: parsers.numberParser('maxTimeMS'),
   },
+  minPoolSize: {
+    env: 'PARSE_SERVER_DATABASE_MIN_POOL_SIZE',
+    help:
+      'The MongoDB driver option to set the minimum number of opened, cached, ready-to-use database connections maintained by the driver.',
+    action: parsers.numberParser('minPoolSize'),
+  },
   retryWrites: {
     env: 'PARSE_SERVER_DATABASE_RETRY_WRITES',
     help: 'The MongoDB driver option to set whether to retry failed writes.',
@@ -1086,6 +1128,12 @@ module.exports.DatabaseOptions = {
     help:
       'The duration in seconds after which the schema cache expires and will be refetched from the database. Use this option if using multiple Parse Servers instances connected to the same database. A low duration will cause the schema cache to be updated too often, causing unnecessary database reads. A high duration will cause the schema to be updated too rarely, increasing the time required until schema changes propagate to all server instances. This feature can be used as an alternative or in conjunction with the option `enableSchemaHooks`. Default is infinite which means the schema cache never expires.',
     action: parsers.numberParser('schemaCacheTtl'),
+  },
+  socketTimeoutMS: {
+    env: 'PARSE_SERVER_DATABASE_SOCKET_TIMEOUT_MS',
+    help:
+      'The MongoDB driver option to specify the amount of time, in milliseconds, spent attempting to send or receive on a socket before timing out. Specifying 0 means no timeout.',
+    action: parsers.numberParser('socketTimeoutMS'),
   },
 };
 module.exports.AuthAdapter = {

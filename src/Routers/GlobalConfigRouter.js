@@ -46,8 +46,8 @@ export class GlobalConfigRouter extends PromiseRouter {
         "read-only masterKey isn't allowed to update the config."
       );
     }
-    const params = req.body.params;
-    const masterKeyOnly = req.body.masterKeyOnly || {};
+    const params = req.body.params || {};
+    const masterKeyOnly = req.body?.masterKeyOnly || {};
     // Transform in dot notation to make sure it works
     const update = Object.keys(params).reduce((acc, key) => {
       acc[`params.${key}`] = params[key];

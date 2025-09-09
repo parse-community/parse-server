@@ -14,12 +14,6 @@ const flakyTests = [
   "ParseLiveQuery handle invalid websocket payload length",
   // Unhandled promise rejection: TypeError: message.split is not a function
   "rest query query internal field",
-  // TypeError: Cannot read properties of undefined (reading 'link')
-  "UserController sendVerificationEmail parseFrameURL not provided uses publicServerURL",
-  // TypeError: Cannot read properties of undefined (reading 'link')
-  "UserController sendVerificationEmail parseFrameURL provided uses parseFrameURL and includes the destination in the link parameter",
-  // Expected undefined to be defined
-  "Email Verification Token Expiration:  sets the _email_verify_token_expires_at and _email_verify_token fields after user SignUp",
 ];
 
 /** The minimum execution time in seconds for a test to be considered slow. */
@@ -108,6 +102,7 @@ global.retryFlakyTests = function() {
         }
         if (isFlaky) {
           retryMap[spec.result.fullName] = (retryMap[spec.result.fullName] || 0) + 1;
+          await global.afterEachFn();
         }
       }
       if (exceptionCaught) {

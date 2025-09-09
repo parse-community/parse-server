@@ -243,8 +243,8 @@ describe('Personally Identifiable Information', () => {
   });
 
   describe('with deprecated configured sensitive fields', () => {
-    beforeEach(done => {
-      return reconfigureServer({ userSensitiveFields: ['ssn', 'zip'] }).then(done);
+    beforeEach(async () => {
+      await reconfigureServer({ userSensitiveFields: ['ssn', 'zip'] });
     });
 
     it('should be able to get own PII via API with object', done => {
@@ -691,12 +691,12 @@ describe('Personally Identifiable Information', () => {
   });
 
   describe('with configured sensitive fields via CLP', () => {
-    beforeEach(done => {
-      reconfigureServer({
+    beforeEach(async () => {
+      await reconfigureServer({
         protectedFields: {
           _User: { '*': ['ssn', 'zip'], 'role:Administrator': [] },
         },
-      }).then(done);
+      });
     });
 
     it('should be able to get own PII via API with object', done => {

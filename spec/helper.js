@@ -1,9 +1,11 @@
 'use strict';
 const dns = require('dns');
 const semver = require('semver');
+const Parse = require('parse/node');
 const CurrentSpecReporter = require('./support/CurrentSpecReporter.js');
 const { SpecReporter } = require('jasmine-spec-reporter');
 const SchemaCache = require('../lib/Adapters/Cache/SchemaCache').default;
+const { sleep, Connections } = require('../lib/TestUtils');
 
 // Ensure localhost resolves to ipv4 address first on node v17+
 if (dns.setDefaultResultOrder) {
@@ -46,14 +48,13 @@ const PostgresStorageAdapter = require('../lib/Adapters/Storage/Postgres/Postgre
   .default;
 const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
 const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter').default;
-const RESTController = require('parse/lib/node/RESTController');
+const RESTController = require('parse/lib/node/RESTController').default;
 const { VolatileClassesSchemas } = require('../lib/Controllers/SchemaController');
 
 const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
 let databaseAdapter;
 let databaseURI;
-// need to bind for mocking mocha
 
 if (process.env.PARSE_SERVER_DATABASE_ADAPTER) {
   databaseAdapter = JSON.parse(process.env.PARSE_SERVER_DATABASE_ADAPTER);
@@ -73,7 +74,7 @@ if (process.env.PARSE_SERVER_DATABASE_ADAPTER) {
 }
 
 const port = 8378;
-
+const serverURL = `http://localhost:${port}/1`;
 let filesAdapter;
 
 on_db(
@@ -99,7 +100,7 @@ if (process.env.PARSE_SERVER_LOG_LEVEL) {
 // Default server configuration for tests.
 const defaultConfiguration = {
   filesAdapter,
-  serverURL: 'http://localhost:' + port + '/1',
+  serverURL,
   databaseAdapter,
   appId: 'test',
   javascriptKey: 'test',
@@ -153,34 +154,38 @@ if (silent) {
   };
 }
 
-if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
-  defaultConfiguration.cacheAdapter = new RedisCacheAdapter();
-}
-
-const openConnections = {};
-const destroyAliveConnections = function () {
-  for (const socketId in openConnections) {
-    try {
-      openConnections[socketId].destroy();
-      delete openConnections[socketId];
-    } catch (e) {
-      /* */
-    }
-  }
-};
 // Set up a default API server for testing with default configuration.
 let parseServer;
 let didChangeConfiguration = false;
+const openConnections = new Connections();
+
+const shutdownServer = async (_parseServer) => {
+  await _parseServer.handleShutdown();
+  // Connection close events are not immediate on node 10+, so wait a bit
+  await sleep(0);
+  expect(openConnections.count() > 0).toBeFalsy(`There were ${openConnections.count()} open connections to the server left after the test finished`);
+  parseServer = undefined;
+};
 
 // Allows testing specific configurations of Parse Server
 const reconfigureServer = async (changedConfiguration = {}) => {
   if (parseServer) {
-    destroyAliveConnections();
-    await new Promise(resolve => parseServer.server.close(resolve));
-    parseServer = undefined;
+    await shutdownServer(parseServer);
     return reconfigureServer(changedConfiguration);
   }
   didChangeConfiguration = Object.keys(changedConfiguration).length !== 0;
+  databaseAdapter = new databaseAdapter.constructor({
+    uri: databaseURI,
+    collectionPrefix: 'test_',
+  });
+  defaultConfiguration.databaseAdapter = databaseAdapter;
+  global.databaseAdapter = databaseAdapter;
+  if (filesAdapter instanceof GridFSBucketAdapter) {
+    defaultConfiguration.filesAdapter = new GridFSBucketAdapter(mongoURI);
+  }
+  if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
+    defaultConfiguration.cacheAdapter = new RedisCacheAdapter();
+  }
   const newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
     mountPath: '/1',
     port,
@@ -192,100 +197,58 @@ const reconfigureServer = async (changedConfiguration = {}) => {
     console.error(err);
     fail('should not call next');
   });
-  parseServer.liveQueryServer?.server?.on('connection', connection => {
-    const key = `${connection.remoteAddress}:${connection.remotePort}`;
-    openConnections[key] = connection;
-    connection.on('close', () => {
-      delete openConnections[key];
-    });
-  });
-  parseServer.server.on('connection', connection => {
-    const key = `${connection.remoteAddress}:${connection.remotePort}`;
-    openConnections[key] = connection;
-    connection.on('close', () => {
-      delete openConnections[key];
-    });
-  });
+  openConnections.track(parseServer.server);
+  if (parseServer.liveQueryServer?.server && parseServer.liveQueryServer.server !== parseServer.server) {
+    openConnections.track(parseServer.liveQueryServer.server);
+  }
   return parseServer;
 };
 
-// Set up a Parse client to talk to our test API server
-const Parse = require('parse/node');
-Parse.serverURL = 'http://localhost:' + port + '/1';
-
 beforeAll(async () => {
-  try {
-    Parse.User.enableUnsafeCurrentUser();
-  } catch (error) {
-    if (error !== 'You need to call Parse.initialize before using Parse.') {
-      throw error;
-    }
-  }
   await reconfigureServer();
-
   Parse.initialize('test', 'test', 'test');
-  Parse.serverURL = 'http://localhost:' + port + '/1';
+  Parse.serverURL = serverURL;
+  Parse.User.enableUnsafeCurrentUser();
+  Parse.CoreManager.set('REQUEST_ATTEMPT_LIMIT', 1);
 });
 
-afterEach(function (done) {
-  const afterLogOut = async () => {
-    // Jasmine process uses one connection
-    if (Object.keys(openConnections).length > 1) {
-      console.warn(`There were ${Object.keys(openConnections).length} open connections to the server left after the test finished`);
-    }
-    await TestUtils.destroyAllDataPermanently(true);
-    SchemaCache.clear();
-    if (didChangeConfiguration) {
-      await reconfigureServer();
-    } else {
-      await databaseAdapter.performInitialization({ VolatileClassesSchemas });
-    }
-    done();
-  };
+global.afterEachFn = async () => {
   Parse.Cloud._removeAllHooks();
   Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient();
   defaults.protectedFields = { _User: { '*': ['email'] } };
-  databaseAdapter
-    .getAllClasses()
-    .then(allSchemas => {
-      allSchemas.forEach(schema => {
-        const className = schema.className;
-        expect(className).toEqual({
-          asymmetricMatch: className => {
-            if (!className.startsWith('_')) {
-              return true;
-            } else {
-              // Other system classes will break Parse.com, so make sure that we don't save anything to _SCHEMA that will
-              // break it.
-              return (
-                [
-                  '_User',
-                  '_Installation',
-                  '_Role',
-                  '_Session',
-                  '_Product',
-                  '_Audience',
-                  '_Idempotency',
-                ].indexOf(className) >= 0
-              );
-            }
-          },
-        });
-      });
-    })
-    .then(() => Parse.User.logOut())
-    .then(
-      () => {},
-      () => {}
-    ) // swallow errors
-    .then(() => {
-      // Connection close events are not immediate on node 10+... wait a bit
-      return new Promise(resolve => {
-        setTimeout(resolve, 0);
-      });
-    })
-    .then(afterLogOut);
-});
+
+  const allSchemas = await databaseAdapter.getAllClasses().catch(() => []);
+
+  allSchemas.forEach(schema => {
+    const className = schema.className;
+    expect(className).toEqual({
+      asymmetricMatch: className => {
+        if (!className.startsWith('_')) {
+          return true;
+        }
+        return [
+          '_User',
+          '_Installation',
+          '_Role',
+          '_Session',
+          '_Product',
+          '_Audience',
+          '_Idempotency',
+        ].includes(className);
+      },
+    });
+  });
+  await Parse.User.logOut().catch(() => {});
+  await TestUtils.destroyAllDataPermanently(true);
+  SchemaCache.clear();
+
+  if (didChangeConfiguration) {
+    await reconfigureServer();
+  } else {
+    await databaseAdapter.performInitialization({ VolatileClassesSchemas });
+  }
+}
+afterEach(global.afterEachFn);
 
 afterAll(() => {
   global.displayTestStats();
@@ -424,6 +387,25 @@ function mockShortLivedAuth() {
   return auth;
 }
 
+function mockFetch(mockResponses) {
+  global.fetch = jasmine.createSpy('fetch').and.callFake((url, options = { }) => {
+    options.method ||= 'GET';
+    const mockResponse = mockResponses.find(
+      (mock) => mock.url === url && mock.method === options.method
+    );
+
+    if (mockResponse) {
+      return Promise.resolve(mockResponse.response);
+    }
+
+    return Promise.resolve({
+      ok: false,
+      statusText: 'Unknown URL or method',
+    });
+  });
+}
+
+
 // This is polluting, but, it makes it way easier to directly port old tests.
 global.Parse = Parse;
 global.TestObject = TestObject;
@@ -439,11 +421,13 @@ global.arrayContains = arrayContains;
 global.jequal = jequal;
 global.range = range;
 global.reconfigureServer = reconfigureServer;
+global.mockFetch = mockFetch;
 global.defaultConfiguration = defaultConfiguration;
 global.mockCustomAuthenticator = mockCustomAuthenticator;
 global.mockFacebookAuthenticator = mockFacebookAuthenticator;
 global.databaseAdapter = databaseAdapter;
 global.databaseURI = databaseURI;
+global.shutdownServer = shutdownServer;
 global.jfail = function (err) {
   fail(JSON.stringify(err));
 };
@@ -595,6 +579,14 @@ global.fdescribe_only_db = db => {
 global.describe_only = validator => {
   if (validator()) {
     return describe;
+  } else {
+    return xdescribe;
+  }
+};
+
+global.fdescribe_only = validator => {
+  if (validator()) {
+    return fdescribe;
   } else {
     return xdescribe;
   }

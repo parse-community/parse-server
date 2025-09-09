@@ -367,6 +367,25 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function () {
         }
       };
 
+      // add default ACL
+      if (
+        schema?.classLevelPermissions?.ACL &&
+        !this.data.ACL &&
+        JSON.stringify(schema.classLevelPermissions.ACL) !==
+          JSON.stringify({ '*': { read: true, write: true } })
+      ) {
+        const acl = deepcopy(schema.classLevelPermissions.ACL);
+        if (acl.currentUser) {
+          if (this.auth.user?.id) {
+            acl[this.auth.user?.id] = deepcopy(acl.currentUser);
+          }
+          delete acl.currentUser;
+        }
+        this.data.ACL = acl;
+        this.storage.fieldsChangedByTrigger = this.storage.fieldsChangedByTrigger || [];
+        this.storage.fieldsChangedByTrigger.push('ACL');
+      }
+
       // Add default fields
       if (!this.query) {
         // allow customizing createdAt and updatedAt when using maintenance key
@@ -458,9 +477,8 @@ RestWrite.prototype.validateAuthData = function () {
   var providers = Object.keys(authData);
   if (providers.length > 0) {
     const canHandleAuthData = providers.some(provider => {
-      var providerAuthData = authData[provider];
-      var hasToken = providerAuthData && providerAuthData.id;
-      return hasToken || providerAuthData === null;
+      const providerAuthData = authData[provider] || {};
+      return !!Object.keys(providerAuthData).length;
     });
     if (canHandleAuthData || hasUsernameAndPassword || this.auth.isMaster || this.getUserId()) {
       return this.handleAuthData(authData);
@@ -520,7 +538,7 @@ RestWrite.prototype.ensureUniqueAuthDataId = async function () {
 };
 
 RestWrite.prototype.handleAuthData = async function (authData) {
-  const r = await Auth.findUsersWithAuthData(this.config, authData);
+  const r = await Auth.findUsersWithAuthData(this.config, authData, true);
   const results = this.filteredObjectsByACL(r);
 
   const userId = this.getUserId();
