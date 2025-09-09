@@ -344,7 +344,6 @@ export class DefinedSchemas {
 
     const indexesToAdd = [];
 
-    // Only delete indexes which are present in database if dropUnknownIndexes is `true`
     // Check deletion
     if (cloudSchema.indexes) {
       Object.keys(cloudSchema.indexes).forEach(indexName => {
