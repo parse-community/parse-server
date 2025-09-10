@@ -425,7 +425,7 @@ describe('DefinedSchemas', () => {
       let schemas = { definitions: [{ className: 'Test', indexes }], dropUnknownIndexes: false };
       await new DefinedSchemas(schemas, server.config).execute();
 
-      schemas = { definitions: [{ className: 'Test', indexes: {} }], dropUnknownIndexes: false  };
+      schemas = { definitions: [{ className: 'Test', indexes: {} }], dropUnknownIndexes: false };
 
       // Change indexes
       await new DefinedSchemas(schemas, server.config).execute();
