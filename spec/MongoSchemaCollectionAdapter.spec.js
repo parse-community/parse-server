@@ -160,6 +160,7 @@ describe('MongoSchemaCollection', () => {
       } catch (error) {
         expect(error.code).toBe(255);
         expect(error.message).toContain('Invalid field type');
+        expect(error.message).toContain('Expected a string');
       }
     });
 
@@ -172,6 +173,7 @@ describe('MongoSchemaCollection', () => {
       } catch (error) {
         expect(error.code).toBe(255);
         expect(error.message).toContain('Invalid field type');
+        expect(error.message).toContain('Expected a string');
       }
     });
 
@@ -184,6 +186,7 @@ describe('MongoSchemaCollection', () => {
       } catch (error) {
         expect(error.code).toBe(255);
         expect(error.message).toContain('Invalid field type');
+        expect(error.message).toContain('Expected a string');
       }
     });
 
@@ -196,6 +199,7 @@ describe('MongoSchemaCollection', () => {
       } catch (error) {
         expect(error.code).toBe(255);
         expect(error.message).toContain('Invalid field type');
+        expect(error.message).toContain('Expected a string');
       }
     });
   });
