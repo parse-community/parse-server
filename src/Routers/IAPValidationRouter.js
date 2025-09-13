@@ -68,8 +68,8 @@ function getFileForProductIdentifier(productIdentifier, req) {
 
 export class IAPValidationRouter extends PromiseRouter {
   handleRequest(req) {
-    let receipt = req.body.receipt;
-    const productIdentifier = req.body.productIdentifier;
+    let receipt = req.body?.receipt;
+    const productIdentifier = req.body?.productIdentifier;
 
     if (!receipt || !productIdentifier) {
       // TODO: Error, malformed request
@@ -84,7 +84,7 @@ export class IAPValidationRouter extends PromiseRouter {
       }
     }
 
-    if (process.env.TESTING == '1' && req.body.bypassAppStoreValidation) {
+    if (process.env.TESTING == '1' && req.body?.bypassAppStoreValidation) {
       return getFileForProductIdentifier(productIdentifier, req);
     }
 

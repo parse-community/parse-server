@@ -24,7 +24,7 @@ const getMountForRequest = function (req) {
 };
 
 const getBlockList = (ipRangeList, store) => {
-  if (store.get('blockList')) return store.get('blockList');
+  if (store.get('blockList')) { return store.get('blockList'); }
   const blockList = new BlockList();
   ipRangeList.forEach(fullIp => {
     if (fullIp === '::/0' || fullIp === '::') {
@@ -50,9 +50,9 @@ export const checkIp = (ip, ipRangeList, store) => {
   const incomingIpIsV4 = isIPv4(ip);
   const blockList = getBlockList(ipRangeList, store);
 
-  if (store.get(ip)) return true;
-  if (store.get('allowAllIpv4') && incomingIpIsV4) return true;
-  if (store.get('allowAllIpv6') && !incomingIpIsV4) return true;
+  if (store.get(ip)) { return true; }
+  if (store.get('allowAllIpv4') && incomingIpIsV4) { return true; }
+  if (store.get('allowAllIpv6') && !incomingIpIsV4) { return true; }
   const result = blockList.check(ip, incomingIpIsV4 ? 'ipv4' : 'ipv6');
 
   // If the ip is in the list, we store the result in the store
@@ -69,7 +69,7 @@ export const checkIp = (ip, ipRangeList, store) => {
 // Adds info to the request:
 // req.config - the Config for this app
 // req.auth - the Auth for this request
-export function handleParseHeaders(req, res, next) {
+export async function handleParseHeaders(req, res, next) {
   var mount = getMountForRequest(req);
 
   let context = {};
@@ -196,7 +196,7 @@ export function handleParseHeaders(req, res, next) {
     info.clientSDK = ClientSDK.fromString(info.clientVersion);
   }
 
-  if (fileViaJSON) {
+  if (fileViaJSON && req.body) {
     req.fileData = req.body.fileData;
     // We need to repopulate req.body with a buffer
     var base64 = req.body.base64;
@@ -238,7 +238,8 @@ export function handleParseHeaders(req, res, next) {
     );
   }
 
-  let isMaster = info.masterKey === req.config.masterKey;
+  const masterKey = await req.config.loadMasterKey();
+  let isMaster = info.masterKey === masterKey;
 
   if (isMaster && !checkIp(clientIp, req.config.masterKeyIps || [], req.config.masterKeyIpsStore)) {
     const log = req.config?.loggerController || defaultLogger;
@@ -246,6 +247,10 @@ export function handleParseHeaders(req, res, next) {
       `Request using master key rejected as the request IP address '${clientIp}' is not set in Parse Server option 'masterKeyIps'.`
     );
     isMaster = false;
+    const error = new Error();
+    error.status = 403;
+    error.message = `unauthorized`;
+    throw error;
   }
 
   if (isMaster) {
@@ -382,7 +387,7 @@ function getClientIp(req) {
 }
 
 function httpAuth(req) {
-  if (!(req.req || req).headers.authorization) return;
+  if (!(req.req || req).headers.authorization) { return; }
 
   var header = (req.req || req).headers.authorization;
   var appId, masterKey, javascriptKey;
@@ -445,7 +450,7 @@ export function allowCrossDomain(appId) {
 }
 
 export function allowMethodOverride(req, res, next) {
-  if (req.method === 'POST' && req.body._method) {
+  if (req.method === 'POST' && req.body?._method) {
     req.originalMethod = req.method;
     req.method = req.body._method;
     delete req.body._method;
@@ -527,21 +532,23 @@ export const addRateLimit = (route, config, cloud) => {
   const redisStore = {
     connectionPromise: Promise.resolve(),
     store: null,
-    connected: false,
   };
   if (route.redisUrl) {
+    const log = config?.loggerController || defaultLogger;
     const client = createClient({
       url: route.redisUrl,
     });
+    client.on('error', err => { log.error('Middlewares addRateLimit Redis client error', { error: err }) });
+    client.on('connect', () => { });
+    client.on('reconnecting', () => { });
+    client.on('ready', () => { });
     redisStore.connectionPromise = async () => {
-      if (redisStore.connected) {
+      if (client.isOpen) {
         return;
       }
       try {
         await client.connect();
-        redisStore.connected = true;
       } catch (e) {
-        const log = config?.loggerController || defaultLogger;
         log.error(`Could not connect to redisURL in rate limit: ${e}`);
       }
     };
@@ -677,4 +684,17 @@ function invalidRequest(req, res) {
 function malformedContext(req, res) {
   res.status(400);
   res.json({ code: Parse.Error.INVALID_JSON, error: 'Invalid object for context.' });
+}
+
+/**
+ * Express 4 allowed a double forward slash between a route and router. Although
+ * this should be considered an anti-pattern, we need to support it for backwards
+ * compatibility.
+ *
+ * Technically valid URL with double foroward slash:
+ * http://localhost:1337/parse//functions/testFunction
+ */
+export function allowDoubleForwardSlash(req, res, next) {
+  req.url = req.url.startsWith('//') ? req.url.substring(1) : req.url;
+  next();
 }

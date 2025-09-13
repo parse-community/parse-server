@@ -2,6 +2,7 @@ const Parse = require('parse/node');
 import { isDeepStrictEqual } from 'util';
 import { getRequestObject, resolveError } from './triggers';
 import { logger } from './logger';
+import { LRUCache as LRU } from 'lru-cache';
 import RestQuery from './RestQuery';
 import RestWrite from './RestWrite';
 
@@ -67,47 +68,60 @@ function nobody(config) {
   return new Auth({ config, isMaster: false });
 }
 
-const throttle = {};
+const throttle = new LRU({
+  max: 10000,
+  ttl: 500,
+});
+/**
+ * Checks whether session should be updated based on last update time & session length.
+ */
+function shouldUpdateSessionExpiry(config, session) {
+  const resetAfter = config.sessionLength / 2;
+  const lastUpdated = new Date(session?.updatedAt);
+  const skipRange = new Date();
+  skipRange.setTime(skipRange.getTime() - resetAfter * 1000);
+  return lastUpdated <= skipRange;
+}
+
 const renewSessionIfNeeded = async ({ config, session, sessionToken }) => {
   if (!config?.extendSessionOnUse) {
     return;
   }
-  clearTimeout(throttle[sessionToken]);
-  throttle[sessionToken] = setTimeout(async () => {
-    try {
-      if (!session) {
-        const query = await RestQuery({
-          method: RestQuery.Method.get,
-          config,
-          auth: master(config),
-          runBeforeFind: false,
-          className: '_Session',
-          restWhere: { sessionToken },
-          restOptions: { limit: 1 },
-        });
-        const { results } = await query.execute();
-        session = results[0];
-      }
-      const lastUpdated = new Date(session?.updatedAt);
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      if (lastUpdated > yesterday || !session) {
-        return;
-      }
-      const expiresAt = config.generateSessionExpiresAt();
-      await new RestWrite(
+  if (throttle.get(sessionToken)) {
+    return;
+  }
+  throttle.set(sessionToken, true);
+  try {
+    if (!session) {
+      const query = await RestQuery({
+        method: RestQuery.Method.get,
         config,
-        master(config),
-        '_Session',
-        { objectId: session.objectId },
-        { expiresAt: Parse._encode(expiresAt) }
-      ).execute();
-    } catch (e) {
-      if (e?.code !== Parse.Error.OBJECT_NOT_FOUND) {
-        logger.error('Could not update session expiry: ', e);
-      }
+        auth: master(config),
+        runBeforeFind: false,
+        className: '_Session',
+        restWhere: { sessionToken },
+        restOptions: { limit: 1 },
+      });
+      const { results } = await query.execute();
+      session = results[0];
     }
-  }, 500);
+
+    if (!shouldUpdateSessionExpiry(config, session) || !session) {
+      return;
+    }
+    const expiresAt = config.generateSessionExpiresAt();
+    await new RestWrite(
+      config,
+      master(config),
+      '_Session',
+      { objectId: session.objectId },
+      { expiresAt: Parse._encode(expiresAt) }
+    ).execute();
+  } catch (e) {
+    if (e?.code !== Parse.Error.OBJECT_NOT_FOUND) {
+      logger.error('Could not update session expiry: ', e);
+    }
+  }
 };
 
 // Returns a promise that resolves to an Auth object
@@ -172,6 +186,11 @@ const getAuthForSessionToken = async function ({
     throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token is expired.');
   }
   const obj = session.user;
+
+  if (typeof obj['objectId'] === 'string' && obj['objectId'].startsWith('role:')) {
+    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid object ID.');
+  }
+
   delete obj.password;
   obj['className'] = '_User';
   obj['sessionToken'] = sessionToken;
@@ -398,34 +417,43 @@ Auth.prototype._getAllRolesNamesForRoleIds = function (roleIDs, names = [], quer
     });
 };
 
-const findUsersWithAuthData = (config, authData) => {
+const findUsersWithAuthData = async (config, authData, beforeFind) => {
   const providers = Object.keys(authData);
-  const query = providers
-    .reduce((memo, provider) => {
-      if (!authData[provider] || (authData && !authData[provider].id)) {
-        return memo;
-      }
-      const queryKey = `authData.${provider}.id`;
-      const query = {};
-      query[queryKey] = authData[provider].id;
-      memo.push(query);
-      return memo;
-    }, [])
-    .filter(q => {
-      return typeof q !== 'undefined';
-    });
 
-  return query.length > 0
-    ? config.database.find('_User', { $or: query }, { limit: 2 })
-    : Promise.resolve([]);
+  const queries = await Promise.all(
+    providers.map(async provider => {
+      const providerAuthData = authData[provider];
+
+      const adapter = config.authDataManager.getValidatorForProvider(provider)?.adapter;
+      if (beforeFind && typeof adapter?.beforeFind === 'function') {
+        await adapter.beforeFind(providerAuthData);
+      }
+
+      if (!providerAuthData?.id) {
+        return null;
+      }
+
+      return { [`authData.${provider}.id`]: providerAuthData.id };
+    })
+  );
+
+  // Filter out null queries
+  const validQueries = queries.filter(query => query !== null);
+
+  if (!validQueries.length) {
+    return [];
+  }
+
+  // Perform database query
+  return config.database.find('_User', { $or: validQueries }, { limit: 2 });
 };
 
 const hasMutatedAuthData = (authData, userAuthData) => {
-  if (!userAuthData) return { hasMutatedAuthData: true, mutatedAuthData: authData };
+  if (!userAuthData) { return { hasMutatedAuthData: true, mutatedAuthData: authData }; }
   const mutatedAuthData = {};
   Object.keys(authData).forEach(provider => {
     // Anonymous provider is not handled this way
-    if (provider === 'anonymous') return;
+    if (provider === 'anonymous') { return; }
     const providerData = authData[provider];
     const userProviderAuthData = userAuthData[provider];
     if (!isDeepStrictEqual(providerData, userProviderAuthData)) {
@@ -520,7 +548,7 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
         acc.authData[provider] = null;
         continue;
       }
-      const { validator } = req.config.authDataManager.getValidatorForProvider(provider);
+      const { validator } = req.config.authDataManager.getValidatorForProvider(provider) || {};
       const authProvider = (req.config.auth || {})[provider] || {};
       if (!validator || authProvider.enabled === false) {
         throw new Parse.Error(
@@ -579,6 +607,7 @@ module.exports = {
   maintenance,
   nobody,
   readOnly,
+  shouldUpdateSessionExpiry,
   getAuthForSessionToken,
   getAuthForLegacySessionToken,
   findUsersWithAuthData,

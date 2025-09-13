@@ -1,5 +1,5 @@
 import Parse from 'parse/node';
-import { GraphQLYogaError } from '@graphql-yoga/node';
+import { GraphQLError } from 'graphql';
 
 export function enforceMasterKeyAccess(auth) {
   if (!auth.isMaster) {
@@ -16,14 +16,14 @@ export function toGraphQLError(error) {
     code = Parse.Error.INTERNAL_SERVER_ERROR;
     message = 'Internal server error';
   }
-  return new GraphQLYogaError(message, { code });
+  return new GraphQLError(message, { extensions: { code } });
 }
 
 export const extractKeysAndInclude = selectedFields => {
   selectedFields = selectedFields.filter(field => !field.includes('__typename'));
   // Handles "id" field for both current and included objects
   selectedFields = selectedFields.map(field => {
-    if (field === 'id') return 'objectId';
+    if (field === 'id') { return 'objectId'; }
     return field.endsWith('.id')
       ? `${field.substring(0, field.lastIndexOf('.id'))}.objectId`
       : field;

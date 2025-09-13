@@ -1,7 +1,6 @@
 import Parse from 'parse/node';
 import { fromGlobalId } from 'graphql-relay';
 import { handleUpload } from '../loaders/filesMutations';
-import * as defaultGraphQLTypes from '../loaders/defaultGraphQLTypes';
 import * as objectsMutations from '../helpers/objectsMutations';
 
 const transformTypes = async (
@@ -28,27 +27,28 @@ const transformTypes = async (
         inputTypeField = classGraphQLUpdateTypeFields[field];
       }
       if (inputTypeField) {
-        switch (true) {
-          case inputTypeField.type === defaultGraphQLTypes.GEO_POINT_INPUT:
+        const parseFieldType = parseClass.fields[field].type;
+        switch (parseFieldType) {
+          case 'GeoPoint':
             if (fields[field] === null) {
               fields[field] = { __op: 'Delete' };
               break;
             }
             fields[field] = transformers.geoPoint(fields[field]);
             break;
-          case inputTypeField.type === defaultGraphQLTypes.POLYGON_INPUT:
+          case 'Polygon':
             if (fields[field] === null) {
               fields[field] = { __op: 'Delete' };
               break;
             }
             fields[field] = transformers.polygon(fields[field]);
             break;
-          case inputTypeField.type === defaultGraphQLTypes.FILE_INPUT:
-            // Use `originalFields` to handle file upload since fields are a deepcopy and do not
-            // keep the file object
+          case 'File':
+            // We need to use the originalFields to handle the file upload
+            // since fields are a deepcopy and do not keep the file object
             fields[field] = await transformers.file(originalFields[field], req);
             break;
-          case parseClass.fields[field].type === 'Relation':
+          case 'Relation':
             fields[field] = await transformers.relation(
               parseClass.fields[field].targetClass,
               field,
@@ -58,7 +58,7 @@ const transformTypes = async (
               req
             );
             break;
-          case parseClass.fields[field].type === 'Pointer':
+          case 'Pointer':
             if (fields[field] === null) {
               fields[field] = { __op: 'Delete' };
               break;
@@ -82,7 +82,7 @@ const transformTypes = async (
       }
     });
     await Promise.all(promises);
-    if (fields.ACL) fields.ACL = transformers.ACL(fields.ACL);
+    if (fields.ACL) { fields.ACL = transformers.ACL(fields.ACL); }
   }
   return fields;
 };
@@ -148,10 +148,10 @@ const transformers = {
     { config, auth, info }
   ) => {
     if (Object.keys(value).length === 0)
-      throw new Parse.Error(
-        Parse.Error.INVALID_POINTER,
-        `You need to provide at least one operation on the relation mutation of field ${field}`
-      );
+    { throw new Parse.Error(
+      Parse.Error.INVALID_POINTER,
+      `You need to provide at least one operation on the relation mutation of field ${field}`
+    ); }
 
     const op = {
       __op: 'Batch',
@@ -180,7 +180,7 @@ const transformers = {
     }
 
     if (value.add || nestedObjectsToAdd.length > 0) {
-      if (!value.add) value.add = [];
+      if (!value.add) { value.add = []; }
       value.add = value.add.map(input => {
         const globalIdObject = fromGlobalId(input);
         if (globalIdObject.type === targetClass) {
@@ -225,10 +225,10 @@ const transformers = {
     { config, auth, info }
   ) => {
     if (Object.keys(value).length > 1 || Object.keys(value).length === 0)
-      throw new Parse.Error(
-        Parse.Error.INVALID_POINTER,
-        `You need to provide link OR createLink on the pointer mutation of field ${field}`
-      );
+    { throw new Parse.Error(
+      Parse.Error.INVALID_POINTER,
+      `You need to provide link OR createLink on the pointer mutation of field ${field}`
+    ); }
 
     let nestedObjectToAdd;
     if (value.createAndLink) {

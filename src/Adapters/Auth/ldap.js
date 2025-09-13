@@ -1,3 +1,78 @@
+/**
+ * Parse Server authentication adapter for LDAP.
+ *
+ * @class LDAP
+ * @param {Object} options - The adapter configuration options.
+ * @param {String} options.url - The LDAP server URL. Must start with `ldap://` or `ldaps://`.
+ * @param {String} options.suffix - The LDAP suffix for user distinguished names (DN).
+ * @param {String} [options.dn] - The distinguished name (DN) template for user authentication. Replace `{{id}}` with the username.
+ * @param {Object} [options.tlsOptions] - Options for LDAPS TLS connections.
+ * @param {String} [options.groupCn] - The common name (CN) of the group to verify user membership.
+ * @param {String} [options.groupFilter] - The LDAP search filter for groups, with `{{id}}` replaced by the username.
+ *
+ * @param {Object} authData - The authentication data provided by the client.
+ * @param {String} authData.id - The user's LDAP username.
+ * @param {String} authData.password - The user's LDAP password.
+ *
+ * @description
+ * ## Parse Server Configuration
+ * To configure Parse Server for LDAP authentication, use the following structure:
+ * ```javascript
+ * {
+ *   auth: {
+ *     ldap: {
+ *       url: 'ldaps://ldap.example.com',
+ *       suffix: 'ou=users,dc=example,dc=com',
+ *       groupCn: 'admins',
+ *       groupFilter: '(memberUid={{id}})',
+ *       tlsOptions: {
+ *         rejectUnauthorized: false
+ *       }
+ *     }
+ *   }
+ * }
+ * ```
+ *
+ * ## Authentication Process
+ * 1. Validates the provided `authData` using an LDAP bind operation.
+ * 2. Optionally, verifies that the user belongs to a specific group by performing an LDAP search using the provided `groupCn` or `groupFilter`.
+ *
+ * ## Auth Payload
+ * The adapter requires the following `authData` fields:
+ * - `id`: The user's LDAP username.
+ * - `password`: The user's LDAP password.
+ *
+ * ### Example Auth Payload
+ * ```json
+ * {
+ *   "ldap": {
+ *     "id": "jdoe",
+ *     "password": "password123"
+ *   }
+ * }
+ * ```
+ *
+ * @example <caption>Configuration Example</caption>
+ * // Example Parse Server configuration:
+ * const config = {
+ *   auth: {
+ *     ldap: {
+ *       url: 'ldaps://ldap.example.com',
+ *       suffix: 'ou=users,dc=example,dc=com',
+ *       groupCn: 'admins',
+ *       groupFilter: '(memberUid={{id}})',
+ *       tlsOptions: {
+ *         rejectUnauthorized: false
+ *       }
+ *     }
+ *   }
+ * };
+ *
+ * @see {@link https://ldap.com/ LDAP Basics}
+ * @see {@link https://ldap.com/ldap-filters/ LDAP Filters}
+ */
+
+
 const ldapjs = require('ldapjs');
 const Parse = require('parse/node').Parse;
 

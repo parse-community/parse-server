@@ -10,28 +10,6 @@ const request = function (url, callback) {
 };
 
 describe('public API', () => {
-  it('should return missing username error on ajax request without username provided', async () => {
-    await reconfigureServer({
-      publicServerURL: 'http://localhost:8378/1',
-    });
-
-    try {
-      await req({
-        method: 'POST',
-        url: 'http://localhost:8378/1/apps/test/request_password_reset',
-        body: `new_password=user1&token=43634643&username=`,
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-        followRedirects: false,
-      });
-    } catch (error) {
-      expect(error.status).not.toBe(302);
-      expect(error.text).toEqual('{"code":200,"error":"Missing username"}');
-    }
-  });
-
   it('should return missing token error on ajax request without token provided', async () => {
     await reconfigureServer({
       publicServerURL: 'http://localhost:8378/1',
@@ -41,7 +19,7 @@ describe('public API', () => {
       await req({
         method: 'POST',
         url: 'http://localhost:8378/1/apps/test/request_password_reset',
-        body: `new_password=user1&token=&username=Johnny`,
+        body: `new_password=user1&token=`,
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           'X-Requested-With': 'XMLHttpRequest',
@@ -63,7 +41,7 @@ describe('public API', () => {
       await req({
         method: 'POST',
         url: 'http://localhost:8378/1/apps/test/request_password_reset',
-        body: `new_password=&token=132414&username=Johnny`,
+        body: `new_password=&token=132414`,
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           'X-Requested-With': 'XMLHttpRequest',
@@ -111,8 +89,8 @@ describe('public API', () => {
 });
 
 describe('public API without publicServerURL', () => {
-  beforeEach(done => {
-    reconfigureServer({ appName: 'unused' }).then(done, fail);
+  beforeEach(async () => {
+    await reconfigureServer({ appName: 'unused' });
   });
   it('should get 404 on verify_email', done => {
     request('http://localhost:8378/1/apps/test/verify_email', (err, httpResponse) => {
@@ -137,8 +115,8 @@ describe('public API without publicServerURL', () => {
 });
 
 describe('public API supplied with invalid application id', () => {
-  beforeEach(done => {
-    reconfigureServer({ appName: 'unused' }).then(done, fail);
+  beforeEach(async () => {
+    await reconfigureServer({ appName: 'unused' });
   });
 
   it('should get 403 on verify_email', done => {

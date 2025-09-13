@@ -1,12 +1,55 @@
 import corsMiddleware from 'cors';
-import { createServer, renderGraphiQL } from '@graphql-yoga/node';
-import { execute, subscribe } from 'graphql';
+import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.js';
+import { ApolloServer } from '@apollo/server';
+import { expressMiddleware } from '@apollo/server/express4';
+import { ApolloServerPluginCacheControlDisabled } from '@apollo/server/plugin/disabled';
+import express from 'express';
+import { execute, subscribe, GraphQLError } from 'graphql';
 import { SubscriptionServer } from 'subscriptions-transport-ws';
 import { handleParseErrors, handleParseHeaders, handleParseSession } from '../middlewares';
 import requiredParameter from '../requiredParameter';
 import defaultLogger from '../logger';
 import { ParseGraphQLSchema } from './ParseGraphQLSchema';
 import ParseGraphQLController, { ParseGraphQLConfig } from '../Controllers/ParseGraphQLController';
+
+
+const IntrospectionControlPlugin = (publicIntrospection) => ({
+
+
+  requestDidStart: (requestContext) => ({
+
+    didResolveOperation: async () => {
+      // If public introspection is enabled, we allow all introspection queries
+      if (publicIntrospection) {
+        return;
+      }
+
+      const isMasterOrMaintenance = requestContext.contextValue.auth?.isMaster || requestContext.contextValue.auth?.isMaintenance
+      if (isMasterOrMaintenance) {
+        return;
+      }
+
+      // Now we check if the query is an introspection query
+      // this check strategy should work in 99.99% cases
+      // we can have an issue if a user name a field or class __schemaSomething
+      // we want to avoid a full AST check
+      const isIntrospectionQuery =
+        requestContext.request.query?.includes('__schema')
+
+      if (isIntrospectionQuery) {
+        throw new GraphQLError('Introspection is not allowed', {
+          extensions: {
+            http: {
+              status: 403,
+            },
+          }
+        });
+      }
+    },
+
+  })
+
+});
 
 class ParseGraphQLServer {
   parseGraphQLController: ParseGraphQLController;
@@ -33,16 +76,13 @@ class ParseGraphQLServer {
     try {
       return {
         schema: await this.parseGraphQLSchema.load(),
-        context: ({ req: { info, config, auth } }) => ({
-          info,
-          config,
-          auth,
-        }),
-        maskedErrors: false,
-        multipart: {
-          fileSize: this._transformMaxUploadSizeToBytes(
-            this.parseServer.config.maxUploadSize || '20mb'
-          ),
+        context: async ({ req, res }) => {
+          res.set('access-control-allow-origin', req.get('origin') || '*');
+          return {
+            info: req.info,
+            config: req.config,
+            auth: req.auth,
+          };
         },
       };
     } catch (e) {
@@ -57,8 +97,21 @@ class ParseGraphQLServer {
     if (schemaRef === newSchemaRef && this._server) {
       return this._server;
     }
-    const options = await this._getGraphQLOptions();
-    this._server = createServer(options);
+    const { schema, context } = await this._getGraphQLOptions();
+    const apollo = new ApolloServer({
+      csrfPrevention: {
+        // See https://www.apollographql.com/docs/router/configuration/csrf/
+        // needed since we use graphql upload
+        requestHeaders: ['X-Parse-Application-Id'],
+      },
+      introspection: this.config.graphQLPublicIntrospection,
+      plugins: [ApolloServerPluginCacheControlDisabled(), IntrospectionControlPlugin(this.config.graphQLPublicIntrospection)],
+      schema,
+    });
+    await apollo.start();
+    this._server = expressMiddleware(apollo, {
+      context,
+    });
     return this._server;
   }
 
@@ -79,14 +132,21 @@ class ParseGraphQLServer {
     if (!app || !app.use) {
       requiredParameter('You must provide an Express.js app instance!');
     }
-
     app.use(this.config.graphQLPath, corsMiddleware());
     app.use(this.config.graphQLPath, handleParseHeaders);
     app.use(this.config.graphQLPath, handleParseSession);
     app.use(this.config.graphQLPath, handleParseErrors);
-    app.use(this.config.graphQLPath, async (req, res) => {
+    app.use(
+      this.config.graphQLPath,
+      graphqlUploadExpress({
+        maxFileSize: this._transformMaxUploadSizeToBytes(
+          this.parseServer.config.maxUploadSize || '20mb'
+        ),
+      })
+    );
+    app.use(this.config.graphQLPath, express.json(), async (req, res, next) => {
       const server = await this._getServer();
-      return server(req, res);
+      return server(req, res, next);
     });
   }
 
@@ -94,20 +154,33 @@ class ParseGraphQLServer {
     if (!app || !app.get) {
       requiredParameter('You must provide an Express.js app instance!');
     }
+
     app.get(
       this.config.playgroundPath ||
-        requiredParameter('You must provide a config.playgroundPath to applyPlayground!'),
+      requiredParameter('You must provide a config.playgroundPath to applyPlayground!'),
       (_req, res) => {
         res.setHeader('Content-Type', 'text/html');
         res.write(
-          renderGraphiQL({
-            endpoint: this.config.graphQLPath,
-            subscriptionEndpoint: this.config.subscriptionsPath,
-            headers: JSON.stringify({
-              'X-Parse-Application-Id': this.parseServer.config.appId,
-              'X-Parse-Master-Key': this.parseServer.config.masterKey,
-            }),
-          })
+          `<div id="sandbox" style="position:absolute;top:0;right:0;bottom:0;left:0"></div>
+          <script src="https://embeddable-sandbox.cdn.apollographql.com/_latest/embeddable-sandbox.umd.production.min.js"></script>
+          <script>
+           new window.EmbeddedSandbox({
+             target: "#sandbox",
+             endpointIsEditable: false,
+             initialEndpoint: "${JSON.stringify(this.config.graphQLPath)}",
+             handleRequest: (endpointUrl, options) => {
+              return fetch(endpointUrl, {
+                ...options,
+                headers: {
+                    ...options.headers,
+                    'X-Parse-Application-Id': "${JSON.stringify(this.parseServer.config.appId)}",
+                    'X-Parse-Master-Key': "${JSON.stringify(this.parseServer.config.masterKey)}",
+                },
+              })
+            },
+           });
+           // advanced options: https://www.apollographql.com/docs/studio/explorer/sandbox#embedding-sandbox
+          </script>`
         );
         res.end();
       }

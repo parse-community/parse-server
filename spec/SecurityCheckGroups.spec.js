@@ -32,6 +32,8 @@ describe('Security Check Groups', () => {
       config.masterKey = 'aMoreSecur3Passwor7!';
       config.security.enableCheckLog = false;
       config.allowClientClassCreation = false;
+      config.enableInsecureAuthAdapters = false;
+      config.graphQLPublicIntrospection = false;
       await reconfigureServer(config);
 
       const group = new CheckGroupServerConfig();
@@ -39,12 +41,15 @@ describe('Security Check Groups', () => {
       expect(group.checks()[0].checkState()).toBe(CheckState.success);
       expect(group.checks()[1].checkState()).toBe(CheckState.success);
       expect(group.checks()[2].checkState()).toBe(CheckState.success);
+      expect(group.checks()[4].checkState()).toBe(CheckState.success);
+      expect(group.checks()[5].checkState()).toBe(CheckState.success);
     });
 
     it('checks fail correctly', async () => {
       config.masterKey = 'insecure';
       config.security.enableCheckLog = true;
       config.allowClientClassCreation = true;
+      config.graphQLPublicIntrospection = true;
       await reconfigureServer(config);
 
       const group = new CheckGroupServerConfig();
@@ -52,6 +57,8 @@ describe('Security Check Groups', () => {
       expect(group.checks()[0].checkState()).toBe(CheckState.fail);
       expect(group.checks()[1].checkState()).toBe(CheckState.fail);
       expect(group.checks()[2].checkState()).toBe(CheckState.fail);
+      expect(group.checks()[4].checkState()).toBe(CheckState.fail);
+      expect(group.checks()[5].checkState()).toBe(CheckState.fail);
     });
   });
 
@@ -64,18 +71,22 @@ describe('Security Check Groups', () => {
 
     it('checks succeed correctly', async () => {
       const config = Config.get(Parse.applicationId);
+      const uri = config.database.adapter._uri;
       config.database.adapter._uri = 'protocol://user:aMoreSecur3Passwor7!@example.com';
       const group = new CheckGroupDatabase();
       await group.run();
       expect(group.checks()[0].checkState()).toBe(CheckState.success);
+      config.database.adapter._uri = uri;
     });
 
     it('checks fail correctly', async () => {
       const config = Config.get(Parse.applicationId);
+      const uri = config.database.adapter._uri;
       config.database.adapter._uri = 'protocol://user:insecure@example.com';
       const group = new CheckGroupDatabase();
       await group.run();
       expect(group.checks()[0].checkState()).toBe(CheckState.fail);
+      config.database.adapter._uri = uri;
     });
   });
 });

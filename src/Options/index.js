@@ -46,7 +46,9 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_APPLICATION_ID */
   appId: string;
   /* Your Parse Master Key */
-  masterKey: string;
+  masterKey: (() => void) | string;
+  /* (Optional) The duration in seconds for which the current `masterKey` is being used before it is requested again if `masterKey` is set to a function. If `masterKey` is not set to a function, this option has no effect. Default is `0`, which means the master key is requested by invoking the  `masterKey` function every time the master key is used internally by Parse Server. */
+  masterKeyTtl: ?number;
   /* (Optional) The maintenance key is used for modifying internal and read-only fields of Parse Server.<br><br>⚠️ This key is not intended to be used as part of a regular operation of Parse Server. This key is intended to conduct out-of-band changes such as one-time migrations or data correction tasks. Internal fields are not officially documented and may change at any time without publication in release changelogs. We strongly advice not to rely on internal fields as part of your regular operation and to investigate the implications of any planned changes *directly in the source code* of your current version of Parse Server. */
   maintenanceKey: string;
   /* URL to your parse server with http:// or https://.
@@ -148,9 +150,9 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_ENABLE_ANON_USERS
   :DEFAULT: true */
   enableAnonymousUsers: ?boolean;
-  /* Enable (or disable) client class creation, defaults to true
+  /* Enable (or disable) client class creation, defaults to false
   :ENV: PARSE_SERVER_ALLOW_CLIENT_CLASS_CREATION
-  :DEFAULT: true */
+  :DEFAULT: false */
   allowClientClassCreation: ?boolean;
   /* Enable (or disable) custom objectId
   :ENV: PARSE_SERVER_ALLOW_CUSTOM_OBJECT_ID
@@ -159,6 +161,10 @@ export interface ParseServerOptions {
   /* Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication
   :ENV: PARSE_SERVER_AUTH_PROVIDERS */
   auth: ?{ [string]: AuthAdapter };
+  /* Enable (or disable) insecure auth adapters, defaults to true. Insecure auth adapters are deprecated and it is recommended to disable them.
+  :ENV: PARSE_SERVER_ENABLE_INSECURE_AUTH_ADAPTERS
+  :DEFAULT: true */
+  enableInsecureAuthAdapters: ?boolean;
   /* Max file size for uploads, defaults to 20mb
   :DEFAULT: 20mb */
   maxUploadSize: ?string;
@@ -212,12 +218,12 @@ export interface ParseServerOptions {
   /* Adapter module for email sending */
   emailAdapter: ?Adapter<MailAdapter>;
   /* If set to `true`, a `Parse.Object` that is in the payload when calling a Cloud Function will be converted to an instance of `Parse.Object`. If `false`, the object will not be converted and instead be a plain JavaScript object, which contains the raw data of a `Parse.Object` but is not an actual instance of `Parse.Object`. Default is `false`. <br><br>ℹ️ The expected behavior would be that the object is converted to an instance of `Parse.Object`, so you would normally set this option to `true`. The default is `false` because this is a temporary option that has been introduced to avoid a breaking change when fixing a bug where JavaScript objects are not converted to actual instances of `Parse.Object`.
-  :DEFAULT: false */
+  :DEFAULT: true */
   encodeParseObjectInCloudFunction: ?boolean;
   /* Public URL to your parse server with http:// or https://.
   :ENV: PARSE_PUBLIC_SERVER_URL */
   publicServerURL: ?string;
-  /* The options for pages such as password reset and email verification. Caution, this is an experimental feature that may not be appropriate for production.
+  /* The options for pages such as password reset and email verification.
   :DEFAULT: {} */
   pages: ?PagesOptions;
   /* custom pages for password validation and reset
@@ -228,7 +234,7 @@ export interface ParseServerOptions {
   /* Session duration, in seconds, defaults to 1 year
   :DEFAULT: 31536000 */
   sessionLength: ?number;
-  /* Whether Parse Server should automatically extend a valid session by the sessionLength
+  /* Whether Parse Server should automatically extend a valid session by the sessionLength. In order to reduce the number of session updates in the database, a session will only be extended when a request is received after at least half of the current session's lifetime has passed.
   :DEFAULT: false */
   extendSessionOnUse: ?boolean;
   /* Default value for limit option on queries, defaults to `100`.
@@ -300,6 +306,10 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_GRAPHQL_PATH
   :DEFAULT: /graphql */
   graphQLPath: ?string;
+  /* Enable public introspection for the GraphQL endpoint, defaults to false
+  :ENV: PARSE_SERVER_GRAPHQL_PUBLIC_INTROSPECTION
+  :DEFAULT: false */
+  graphQLPublicIntrospection: ?boolean;
   /* Mounts the GraphQL Playground - never use this option in production
   :ENV: PARSE_SERVER_MOUNT_PLAYGROUND
   :DEFAULT: false */
@@ -377,7 +387,7 @@ export interface SecurityOptions {
 }
 
 export interface PagesOptions {
-  /* Is true if the pages router should be enabled; this is required for any of the pages options to take effect. Caution, this is an experimental feature that may not be appropriate for production.
+  /* Is true if the pages router should be enabled; this is required for any of the pages options to take effect.
   :DEFAULT: false */
   enableRouter: ?boolean;
   /* Is true if pages should be localized; this has no effect on custom page redirects.
@@ -576,8 +586,8 @@ export interface PasswordPolicyOptions {
 }
 
 export interface FileUploadOptions {
-  /* Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML files are especially problematic as they may be used by an attacker who uploads a HTML form to look legitimate under your app's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^[^hH][^tT][^mM][^lL]?$` which allows any file extension except HTML files.
-  :DEFAULT: ["^[^hH][^tT][^mM][^lL]?$"] */
+  /* Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML files are especially problematic as they may be used by an attacker who uploads a HTML form to look legitimate under your app's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^(?!(h|H)(t|T)(m|M)(l|L)?$)` which allows any file extension except HTML files.
+  :DEFAULT: ["^(?!(h|H)(t|T)(m|M)(l|L)?$)"] */
   fileExtensions: ?(string[]);
   /*  Is true if file upload should be allowed for anonymous users.
   :DEFAULT: false */
@@ -596,6 +606,24 @@ export interface DatabaseOptions {
   enableSchemaHooks: ?boolean;
   /* The duration in seconds after which the schema cache expires and will be refetched from the database. Use this option if using multiple Parse Servers instances connected to the same database. A low duration will cause the schema cache to be updated too often, causing unnecessary database reads. A high duration will cause the schema to be updated too rarely, increasing the time required until schema changes propagate to all server instances. This feature can be used as an alternative or in conjunction with the option `enableSchemaHooks`. Default is infinite which means the schema cache never expires. */
   schemaCacheTtl: ?number;
+  /* The MongoDB driver option to set whether to retry failed writes. */
+  retryWrites: ?boolean;
+  /* The MongoDB driver option to set a cumulative time limit in milliseconds for processing operations on a cursor. */
+  maxTimeMS: ?number;
+  /* The MongoDB driver option to set the maximum replication lag for reads from secondary nodes.*/
+  maxStalenessSeconds: ?number;
+  /* The MongoDB driver option to set the minimum number of opened, cached, ready-to-use database connections maintained by the driver. */
+  minPoolSize: ?number;
+  /* The MongoDB driver option to set the maximum number of opened, cached, ready-to-use database connections maintained by the driver. */
+  maxPoolSize: ?number;
+  /* The MongoDB driver option to specify the amount of time, in milliseconds, to wait to establish a single TCP socket connection to the server before raising an error. Specifying 0 disables the connection timeout. */
+  connectTimeoutMS: ?number;
+  /* The MongoDB driver option to specify the amount of time, in milliseconds, spent attempting to send or receive on a socket before timing out. Specifying 0 means no timeout. */
+  socketTimeoutMS: ?number;
+  /* The MongoDB driver option to set whether the socket attempts to connect to IPv6 and IPv4 addresses until a connection is established. If available, the driver will select the first IPv6 address. */
+  autoSelectFamily: ?boolean;
+  /* The MongoDB driver option to specify the amount of time in milliseconds to wait for a connection attempt to finish before trying the next address when using the autoSelectFamily option. If set to a positive integer less than 10, the value 10 is used instead. */
+  autoSelectFamilyAttemptTimeout: ?number;
 }
 
 export interface AuthAdapter {

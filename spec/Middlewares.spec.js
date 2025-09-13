@@ -32,7 +32,10 @@ describe('middlewares', () => {
     AppCache.del(fakeReq.body._ApplicationId);
   });
 
-  it('should use _ContentType if provided', done => {
+  it_id('4cc18d90-1763-4725-97fa-f63fb4692fc4')(it)('should use _ContentType if provided', done => {
+    AppCachePut(fakeReq.body._ApplicationId, {
+      masterKeyIps: ['127.0.0.1'],
+    });
     expect(fakeReq.headers['content-type']).toEqual(undefined);
     const contentType = 'image/jpeg';
     fakeReq.body._ContentType = contentType;
@@ -43,32 +46,32 @@ describe('middlewares', () => {
     });
   });
 
-  it('should give invalid response when keys are configured but no key supplied', () => {
+  it('should give invalid response when keys are configured but no key supplied', async () => {
     AppCachePut(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
       restAPIKey: 'restAPIKey',
     });
-    middlewares.handleParseHeaders(fakeReq, fakeRes);
+    await middlewares.handleParseHeaders(fakeReq, fakeRes);
     expect(fakeRes.status).toHaveBeenCalledWith(403);
   });
 
-  it('should give invalid response when keys are configured but supplied key is incorrect', () => {
+  it('should give invalid response when keys are configured but supplied key is incorrect', async () => {
     AppCachePut(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
       restAPIKey: 'restAPIKey',
     });
     fakeReq.headers['x-parse-rest-api-key'] = 'wrongKey';
-    middlewares.handleParseHeaders(fakeReq, fakeRes);
+    await middlewares.handleParseHeaders(fakeReq, fakeRes);
     expect(fakeRes.status).toHaveBeenCalledWith(403);
   });
 
-  it('should give invalid response when keys are configured but different key is supplied', () => {
+  it('should give invalid response when keys are configured but different key is supplied', async () => {
     AppCachePut(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
       restAPIKey: 'restAPIKey',
     });
     fakeReq.headers['x-parse-client-key'] = 'clientKey';
-    middlewares.handleParseHeaders(fakeReq, fakeRes);
+    await middlewares.handleParseHeaders(fakeReq, fakeRes);
     expect(fakeRes.status).toHaveBeenCalledWith(403);
   });
 
@@ -125,7 +128,7 @@ describe('middlewares', () => {
     const otherKeys = BodyKeys.filter(
       otherKey => otherKey !== infoKey && otherKey !== 'javascriptKey'
     );
-    it(`it should pull ${bodyKey} into req.info`, done => {
+    it_id('f9abd7ac-b1f4-4607-b9b0-365ff0559d84')(it)(`it should pull ${bodyKey} into req.info`, done => {
       AppCachePut(fakeReq.body._ApplicationId, {
         masterKeyIps: ['0.0.0.0/0'],
       });
@@ -144,7 +147,7 @@ describe('middlewares', () => {
     });
   });
 
-  it('should not succeed and log if the ip does not belong to masterKeyIps list', async () => {
+  it_id('4a0bce41-c536-4482-a873-12ed023380e2')(it)('should not succeed and log if the ip does not belong to masterKeyIps list', async () => {
     const logger = require('../lib/logger').logger;
     spyOn(logger, 'error').and.callFake(() => {});
     AppCachePut(fakeReq.body._ApplicationId, {
@@ -153,25 +156,17 @@ describe('middlewares', () => {
     });
     fakeReq.ip = '127.0.0.1';
     fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
-    expect(fakeReq.auth.isMaster).toBe(false);
+
+    const error = await middlewares.handleParseHeaders(fakeReq, fakeRes, () => {}).catch(e => e);
+
+    expect(error).toBeDefined();
+    expect(error.message).toEqual(`unauthorized`);
     expect(logger.error).toHaveBeenCalledWith(
       `Request using master key rejected as the request IP address '127.0.0.1' is not set in Parse Server option 'masterKeyIps'.`
     );
   });
 
-  it('should not succeed if the ip does not belong to masterKeyIps list', async () => {
-    AppCachePut(fakeReq.body._ApplicationId, {
-      masterKey: 'masterKey',
-      masterKeyIps: ['10.0.0.1'],
-    });
-    fakeReq.ip = '127.0.0.1';
-    fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
-    expect(fakeReq.auth.isMaster).toBe(false);
-  });
-
-  it('should not succeed if the ip does not belong to maintenanceKeyIps list', async () => {
+  it('should not succeed and log if the ip does not belong to maintenanceKeyIps list', async () => {
     const logger = require('../lib/logger').logger;
     spyOn(logger, 'error').and.callFake(() => {});
     AppCachePut(fakeReq.body._ApplicationId, {
@@ -180,14 +175,17 @@ describe('middlewares', () => {
     });
     fakeReq.ip = '10.0.0.2';
     fakeReq.headers['x-parse-maintenance-key'] = 'masterKey';
-    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
-    expect(fakeReq.auth.isMaintenance).toBe(false);
+
+    const error = await middlewares.handleParseHeaders(fakeReq, fakeRes, () => {}).catch(e => e);
+
+    expect(error).toBeDefined();
+    expect(error.message).toEqual(`unauthorized`);
     expect(logger.error).toHaveBeenCalledWith(
       `Request using maintenance key rejected as the request IP address '10.0.0.2' is not set in Parse Server option 'maintenanceKeyIps'.`
     );
   });
 
-  it('should succeed if the ip does belong to masterKeyIps list', async () => {
+  it_id('2f7fadec-a87c-4626-90d1-65c75653aea9')(it)('should succeed if the ip does belong to masterKeyIps list', async () => {
     AppCachePut(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
       masterKeyIps: ['10.0.0.1'],
@@ -198,7 +196,7 @@ describe('middlewares', () => {
     expect(fakeReq.auth.isMaster).toBe(true);
   });
 
-  it('should allow any ip to use masterKey if masterKeyIps is empty', async () => {
+  it_id('2b251fd4-d43c-48f4-ada9-c8458e40c12a')(it)('should allow any ip to use masterKey if masterKeyIps is empty', async () => {
     AppCachePut(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
       masterKeyIps: ['0.0.0.0/0'],

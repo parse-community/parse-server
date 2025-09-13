@@ -20,6 +20,7 @@ import {
   SecurityOptions,
 } from './Options/Definitions';
 import ParseServer from './cloud-code/Parse.Server';
+import Deprecator from './Deprecator/Deprecator';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -64,6 +65,7 @@ export class Config {
   }
 
   static validateOptions({
+    customPages,
     publicServerURL,
     revokeSessionOnPasswordReset,
     expireInactiveSessions,
@@ -83,6 +85,7 @@ export class Config {
     pages,
     security,
     enforcePrivateUsers,
+    enableInsecureAuthAdapters,
     schema,
     requestKeywordDenylist,
     allowExpiredAuthDataToken,
@@ -90,6 +93,7 @@ export class Config {
     rateLimit,
     databaseOptions,
     extendSessionOnUse,
+    allowClientClassCreation,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -127,11 +131,22 @@ export class Config {
     this.validateSecurityOptions(security);
     this.validateSchemaOptions(schema);
     this.validateEnforcePrivateUsers(enforcePrivateUsers);
+    this.validateEnableInsecureAuthAdapters(enableInsecureAuthAdapters);
     this.validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken);
     this.validateRequestKeywordDenylist(requestKeywordDenylist);
     this.validateRateLimit(rateLimit);
     this.validateLogLevels(logLevels);
     this.validateDatabaseOptions(databaseOptions);
+    this.validateCustomPages(customPages);
+    this.validateAllowClientClassCreation(allowClientClassCreation);
+  }
+
+  static validateCustomPages(customPages) {
+    if (!customPages) { return; }
+
+    if (Object.prototype.toString.call(customPages) !== '[object Object]') {
+      throw Error('Parse Server option customPages must be an object.');
+    }
   }
 
   static validateControllers({
@@ -174,6 +189,12 @@ export class Config {
     }
   }
 
+  static validateAllowClientClassCreation(allowClientClassCreation) {
+    if (typeof allowClientClassCreation !== 'boolean') {
+      throw 'Parse Server option allowClientClassCreation must be a boolean.';
+    }
+  }
+
   static validateSecurityOptions(security) {
     if (Object.prototype.toString.call(security) !== '[object Object]') {
       throw 'Parse Server option security must be an object.';
@@ -191,7 +212,7 @@ export class Config {
   }
 
   static validateSchemaOptions(schema: SchemaOptions) {
-    if (!schema) return;
+    if (!schema) { return; }
     if (Object.prototype.toString.call(schema) !== '[object Object]') {
       throw 'Parse Server option schema must be an object.';
     }
@@ -486,6 +507,15 @@ export class Config {
     }
   }
 
+  static validateEnableInsecureAuthAdapters(enableInsecureAuthAdapters) {
+    if (enableInsecureAuthAdapters && typeof enableInsecureAuthAdapters !== 'boolean') {
+      throw 'Parse Server option enableInsecureAuthAdapters must be a boolean.';
+    }
+    if (enableInsecureAuthAdapters) {
+      Deprecator.logRuntimeDeprecation({ usage: 'insecure adapter' });
+    }
+  }
+
   get mount() {
     var mount = this._mount;
     if (this.publicServerURL) {
@@ -561,6 +591,7 @@ export class Config {
     if (Object.prototype.toString.call(databaseOptions) !== '[object Object]') {
       throw `databaseOptions must be an object`;
     }
+
     if (databaseOptions.enableSchemaHooks === undefined) {
       databaseOptions.enableSchemaHooks = DatabaseOptions.enableSchemaHooks.default;
     } else if (typeof databaseOptions.enableSchemaHooks !== 'boolean') {
@@ -704,6 +735,28 @@ export class Config {
   get verifyEmailURL() {
     return `${this.publicServerURL}/${this.pagesEndpoint}/${this.applicationId}/verify_email`;
   }
+
+  async loadMasterKey() {
+    if (typeof this.masterKey === 'function') {
+      const ttlIsEmpty = !this.masterKeyTtl;
+      const isExpired = this.masterKeyCache?.expiresAt && this.masterKeyCache.expiresAt < new Date();
+
+      if ((!isExpired || ttlIsEmpty) && this.masterKeyCache?.masterKey) {
+        return this.masterKeyCache.masterKey;
+      }
+
+      const masterKey = await this.masterKey();
+
+      const expiresAt = this.masterKeyTtl ? new Date(Date.now() + 1000 * this.masterKeyTtl) : null
+      this.masterKeyCache = { masterKey, expiresAt };
+      Config.put(this);
+
+      return this.masterKeyCache.masterKey;
+    }
+
+    return this.masterKey;
+  }
+
 
   // TODO: Remove this function once PagesRouter replaces the PublicAPIRouter;
   // the (default) endpoint has to be defined in PagesRouter only.

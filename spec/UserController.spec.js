@@ -1,11 +1,12 @@
 const emailAdapter = require('./support/MockEmailAdapter');
 const Config = require('../lib/Config');
 const Auth = require('../lib/Auth');
+const { resolvingPromise } = require('../lib/TestUtils');
 
 describe('UserController', () => {
   describe('sendVerificationEmail', () => {
     describe('parseFrameURL not provided', () => {
-      it('uses publicServerURL', async () => {
+      it_id('61338330-eca7-4c33-8816-7ff05966f43b')(it)('uses publicServerURL', async () => {
         await reconfigureServer({
           publicServerURL: 'http://www.example.com',
           customPages: {
@@ -17,9 +18,10 @@ describe('UserController', () => {
         });
 
         let emailOptions;
+        const sendPromise = resolvingPromise();
         emailAdapter.sendVerificationEmail = options => {
           emailOptions = options;
-          return Promise.resolve();
+          sendPromise.resolve();
         };
 
         const username = 'verificationUser';
@@ -28,6 +30,7 @@ describe('UserController', () => {
         user.setPassword('pass');
         user.setEmail('verification@example.com');
         await user.signUp();
+        await sendPromise;
 
         const config = Config.get('test');
         const rawUser = await config.database.find('_User', { username }, {}, Auth.maintenance(config));
@@ -35,12 +38,13 @@ describe('UserController', () => {
         const rawToken = rawUser[0]._email_verify_token;
         expect(rawToken).toBeDefined();
         expect(rawUsername).toBe(username);
-        expect(emailOptions.link).toEqual(`http://www.example.com/apps/test/verify_email?token=${rawToken}&username=${username}`);
+
+        expect(emailOptions.link).toEqual(`http://www.example.com/apps/test/verify_email?token=${rawToken}`);
       });
     });
 
     describe('parseFrameURL provided', () => {
-      it('uses parseFrameURL and includes the destination in the link parameter', async () => {
+      it_id('673c2bb1-049e-4dda-b6be-88c866260036')(it)('uses parseFrameURL and includes the destination in the link parameter', async () => {
         await reconfigureServer({
           publicServerURL: 'http://www.example.com',
           customPages: {
@@ -52,9 +56,10 @@ describe('UserController', () => {
         });
 
         let emailOptions;
+        const sendPromise = resolvingPromise();
         emailAdapter.sendVerificationEmail = options => {
           emailOptions = options;
-          return Promise.resolve();
+          sendPromise.resolve();
         };
 
         const username = 'verificationUser';
@@ -63,6 +68,7 @@ describe('UserController', () => {
         user.setPassword('pass');
         user.setEmail('verification@example.com');
         await user.signUp();
+        await sendPromise;
 
         const config = Config.get('test');
         const rawUser = await config.database.find('_User', { username }, {}, Auth.maintenance(config));
@@ -70,7 +76,8 @@ describe('UserController', () => {
         const rawToken = rawUser[0]._email_verify_token;
         expect(rawToken).toBeDefined();
         expect(rawUsername).toBe(username);
-        expect(emailOptions.link).toEqual(`http://someother.example.com/handle-parse-iframe?link=%2Fapps%2Ftest%2Fverify_email&token=${rawToken}&username=${username}`);
+
+        expect(emailOptions.link).toEqual(`http://someother.example.com/handle-parse-iframe?link=%2Fapps%2Ftest%2Fverify_email&token=${rawToken}`);
       });
     });
   });

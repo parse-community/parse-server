@@ -28,7 +28,6 @@ export function loadAdapter<T>(adapter, defaultAdapter, options): T {
       }
     }
   } else if (typeof adapter === 'string') {
-    /* eslint-disable */
     adapter = require(adapter);
     // If it's define as a module, get the default
     if (adapter.default) {
@@ -44,6 +43,11 @@ export function loadAdapter<T>(adapter, defaultAdapter, options): T {
   }
   // return the adapter as provided
   return adapter;
+}
+
+export async function loadModule(modulePath) {
+  const module = await import(modulePath);
+  return module?.default || module;
 }
 
 export default loadAdapter;

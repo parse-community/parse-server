@@ -26,6 +26,12 @@ const hasAllPODobject = () => {
 };
 
 const defaultClassLevelPermissions = {
+  ACL: {
+    '*': {
+      read: true,
+      write: true,
+    },
+  },
   find: {
     '*': true,
   },
@@ -2058,10 +2064,68 @@ describe('schemas', () => {
       },
     }).then(fail, response => {
       expect(response.data.error).toEqual(
-        "'1' is not a valid value for class level permissions find:*:1"
+        "'1' is not a valid value for class level permissions acl find:*"
       );
       done();
     });
+  });
+
+  it('should validate defaultAcl with class level permissions when request is not an object', async () => {
+    const response = await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/schemas/AClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        classLevelPermissions: {
+          ACL: {
+            '*': true,
+          },
+        },
+      },
+    }).catch(error => error.data);
+
+    expect(response.error).toEqual(`'true' is not a valid value for class level permissions acl`);
+  });
+
+  it('should validate defaultAcl with class level permissions when request is an object and invalid key', async () => {
+    const response = await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/schemas/AClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        classLevelPermissions: {
+          ACL: {
+            '*': {
+              foo: true,
+            },
+          },
+        },
+      },
+    }).catch(error => error.data);
+
+    expect(response.error).toEqual(`'foo' is not a valid key for class level permissions acl`);
+  });
+
+  it('should validate defaultAcl with class level permissions when request is an object and invalid value', async () => {
+    const response = await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/schemas/AClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        classLevelPermissions: {
+          ACL: {
+            '*': {
+              read: 1,
+            },
+          },
+        },
+      },
+    }).catch(error => error.data);
+
+    expect(response.error).toEqual(`'1' is not a valid value for class level permissions acl`);
   });
 
   it('should throw if permission is empty string', done => {
@@ -2079,7 +2143,7 @@ describe('schemas', () => {
       },
     }).then(fail, response => {
       expect(response.data.error).toEqual(
-        "'' is not a valid value for class level permissions find:*:"
+        `'' is not a valid value for class level permissions acl find:*`
       );
       done();
     });
@@ -2690,6 +2754,12 @@ describe('schemas', () => {
     setPermissionsOnClass(
       '_Role',
       {
+        ACL: {
+          '*': {
+            read: true,
+            write: true,
+          },
+        },
         get: { '*': true },
         find: { '*': true },
         count: { '*': true },
@@ -2710,6 +2780,12 @@ describe('schemas', () => {
       })
       .then(res => {
         expect(res.data.classLevelPermissions).toEqual({
+          ACL: {
+            '*': {
+              read: true,
+              write: true,
+            },
+          },
           get: { '*': true },
           find: { '*': true },
           count: { '*': true },
@@ -2817,7 +2893,7 @@ describe('schemas', () => {
       object.save({
         '!12field': 'field',
       })
-    ).toBeRejectedWith(new Parse.Error(Parse.Error.INVALID_KEY_NAME));
+    ).toBeRejectedWith(new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: !12field'));
     done();
   });
 
@@ -3750,7 +3826,7 @@ describe('schemas', () => {
       });
     });
 
-    it_exclude_dbs(['postgres'])('get indexes on startup', done => {
+    it_id('5d0926b2-2d31-459d-a2b1-23ecc32e72a3')(it_exclude_dbs(['postgres']))('get indexes on startup', done => {
       const obj = new Parse.Object('TestObject');
       obj
         .save()
@@ -3773,7 +3849,7 @@ describe('schemas', () => {
         });
     });
 
-    it_exclude_dbs(['postgres'])('get compound indexes on startup', done => {
+    it_id('9f2ba51a-6a9c-4b25-9da0-51c82ac65f90')(it_exclude_dbs(['postgres']))('get compound indexes on startup', done => {
       const obj = new Parse.Object('TestObject');
       obj.set('subject', 'subject');
       obj.set('comment', 'comment');
@@ -3808,7 +3884,7 @@ describe('schemas', () => {
         });
     });
 
-    it_exclude_dbs(['postgres'])('cannot update to duplicate value on unique index', done => {
+    it_id('cbd5d897-b938-43a4-8f5a-5d02dd2be9be')(it_exclude_dbs(['postgres']))('cannot update to duplicate value on unique index', done => {
       const index = {
         code: 1,
       };

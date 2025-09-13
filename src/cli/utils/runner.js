@@ -6,6 +6,7 @@ function logStartupOptions(options) {
   }
   // Keys that may include sensitive information that will be redacted in logs
   const keysToRedact = [
+    'databaseAdapter',
     'databaseURI',
     'masterKey',
     'maintenanceKey',

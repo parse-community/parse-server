@@ -453,7 +453,7 @@ const load = (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseGraphQLCla
             description: `Use Inline Fragment on Array to get results: https://graphql.org/learn/queries/#inline-fragments`,
             type: parseClass.fields[field].required ? new GraphQLNonNull(type) : type,
             async resolve(source) {
-              if (!source[field]) return null;
+              if (!source[field]) { return null; }
               return source[field].map(async elem => {
                 if (elem.className && elem.objectId && elem.__type === 'Object') {
                   return elem;

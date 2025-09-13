@@ -142,7 +142,7 @@ const filterSensitiveData = (
   object: any
 ) => {
   let userId = null;
-  if (auth && auth.user) userId = auth.user.id;
+  if (auth && auth.user) { userId = auth.user.id; }
 
   // replace protectedFields when using pointer-permissions
   const perms =
@@ -1188,6 +1188,7 @@ class DatabaseController {
       hint,
       caseInsensitive = false,
       explain,
+      comment,
     }: any = {},
     auth: any = {},
     validSchemaController: SchemaController.SchemaController
@@ -1237,6 +1238,7 @@ class DatabaseController {
             hint,
             caseInsensitive: this.options.enableCollationCaseComparison ? false : caseInsensitive,
             explain,
+            comment,
           };
           Object.keys(sort).forEach(fieldName => {
             if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
@@ -1306,7 +1308,8 @@ class DatabaseController {
                     query,
                     readPreference,
                     undefined,
-                    hint
+                    hint,
+                    comment
                   );
                 }
               } else if (distinct) {
@@ -1325,7 +1328,8 @@ class DatabaseController {
                     pipeline,
                     readPreference,
                     hint,
-                    explain
+                    explain,
+                    comment
                   );
                 }
               } else if (explain) {
@@ -1588,12 +1592,12 @@ class DatabaseController {
       schema && schema.getClassLevelPermissions
         ? schema.getClassLevelPermissions(className)
         : schema;
-    if (!perms) return null;
+    if (!perms) { return null; }
 
     const protectedFields = perms.protectedFields;
-    if (!protectedFields) return null;
+    if (!protectedFields) { return null; }
 
-    if (aclGroup.indexOf(query.objectId) > -1) return null;
+    if (aclGroup.indexOf(query.objectId) > -1) { return null; }
 
     // for queries where "keys" are set and do not include all 'userField':{field},
     // we have to transparently include it, and then remove before returning to client
@@ -1847,6 +1851,14 @@ class DatabaseController {
         // only valid ops that produce an actionable result
         // the op may have happened on a keypath
         this._expandResultOnKeyPath(response, key, result);
+        // Revert array to object conversion on dot notation for arrays (e.g. "field.0.key")
+        if (key.includes('.')) {
+          const [field, index] = key.split('.');
+          const isArrayIndex = Array.from(index).every(c => c >= '0' && c <= '9');
+          if (isArrayIndex && Array.isArray(result[field]) && !Array.isArray(response[field])) {
+            response[field] = result[field];
+          }
+        }
       }
     });
     return Promise.resolve(response);
