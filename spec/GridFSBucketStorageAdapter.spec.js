@@ -424,9 +424,9 @@ describe_only_db('mongo')('GridFSBucket', () => {
   it('properly upload a file when disableIndexFieldValidation exist in databaseOptions', async () => {
     const gfsAdapter = new GridFSBucketAdapter(databaseURI, { disableIndexFieldValidation: true });
     const twoMegabytesFile = randomString(2048 * 1024);
-    const res = await gfsAdapter.createFile('myFileName', twoMegabytesFile);
-    expect(res._id).toBeTruthy();
-    expect(res.filename).toEqual('myFileName');
+    await gfsAdapter.createFile('myFileName', twoMegabytesFile);
+    const gfsResult = await gfsAdapter.getFileData('myFileName');
+    expect(gfsResult.toString('utf8')).toBe(twoMegabytesFile);
   });
 
   it('properly deletes a file from GridFS', async () => {
