@@ -9,24 +9,30 @@ import { jobStatusHandler } from '../StatusHandler';
 import _ from 'lodash';
 import { logger } from '../logger';
 
-function parseObject(obj) {
+function parseObject(obj, config) {
   if (Array.isArray(obj)) {
     return obj.map(item => {
-      return parseObject(item);
+      return parseObject(item, config);
     });
   } else if (obj && obj.__type == 'Date') {
     return Object.assign(new Date(obj.iso), obj);
   } else if (obj && obj.__type == 'File') {
     return Parse.File.fromJSON(obj);
+  } else if (obj && obj.__type == 'Pointer' && config.encodeParseObjectInCloudFunction) {
+    return Parse.Object.fromJSON({
+      __type: 'Pointer',
+      className: obj.className,
+      objectId: obj.objectId,
+    });
   } else if (obj && typeof obj === 'object') {
-    return parseParams(obj);
+    return parseParams(obj, config);
   } else {
     return obj;
   }
 }
 
-function parseParams(params) {
-  return _.mapValues(params, parseObject);
+function parseParams(params, config) {
+  return _.mapValues(params, item => parseObject(item, config));
 }
 
 export class FunctionsRouter extends PromiseRouter {
@@ -52,7 +58,7 @@ export class FunctionsRouter extends PromiseRouter {
   }
 
   static handleCloudJob(req) {
-    const jobName = req.params.jobName || req.body.jobName;
+    const jobName = req.params.jobName || req.body?.jobName;
     const applicationId = req.config.applicationId;
     const jobHandler = jobStatusHandler(req.config);
     const jobFunction = triggers.getJob(jobName, applicationId);
@@ -60,7 +66,7 @@ export class FunctionsRouter extends PromiseRouter {
       throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Invalid job.');
     }
     let params = Object.assign({}, req.body, req.query);
-    params = parseParams(params);
+    params = parseParams(params, req.config);
     const request = {
       params: params,
       log: req.config.loggerController,
@@ -70,7 +76,7 @@ export class FunctionsRouter extends PromiseRouter {
       message: jobHandler.setMessage.bind(jobHandler),
     };
 
-    return jobHandler.setRunning(jobName, params).then(jobStatus => {
+    return jobHandler.setRunning(jobName).then(jobStatus => {
       request.jobId = jobStatus.objectId;
       // run the function async
       process.nextTick(() => {
@@ -120,7 +126,7 @@ export class FunctionsRouter extends PromiseRouter {
       throw new Parse.Error(Parse.Error.SCRIPT_FAILED, `Invalid function: "${functionName}"`);
     }
     let params = Object.assign({}, req.body, req.query);
-    params = parseParams(params);
+    params = parseParams(params, req.config);
     const request = {
       params: params,
       master: req.auth && req.auth.isMaster,
@@ -135,19 +141,21 @@ export class FunctionsRouter extends PromiseRouter {
 
     return new Promise(function (resolve, reject) {
       const userString = req.auth && req.auth.user ? req.auth.user.id : undefined;
-      const cleanInput = logger.truncateLogMessage(JSON.stringify(params));
       const { success, error } = FunctionsRouter.createResponseObject(
         result => {
           try {
-            const cleanResult = logger.truncateLogMessage(JSON.stringify(result.response.result));
-            logger.info(
-              `Ran cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput}\n  Result: ${cleanResult}`,
-              {
-                functionName,
-                params,
-                user: userString,
-              }
-            );
+            if (req.config.logLevels.cloudFunctionSuccess !== 'silent') {
+              const cleanInput = logger.truncateLogMessage(JSON.stringify(params));
+              const cleanResult = logger.truncateLogMessage(JSON.stringify(result.response.result));
+              logger[req.config.logLevels.cloudFunctionSuccess](
+                `Ran cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput}\n  Result: ${cleanResult}`,
+                {
+                  functionName,
+                  params,
+                  user: userString,
+                }
+              );
+            }
             resolve(result);
           } catch (e) {
             reject(e);
@@ -155,16 +163,19 @@ export class FunctionsRouter extends PromiseRouter {
         },
         error => {
           try {
-            logger.error(
-              `Failed running cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput}\n  Error: ` +
-                JSON.stringify(error),
-              {
-                functionName,
-                error,
-                params,
-                user: userString,
-              }
-            );
+            if (req.config.logLevels.cloudFunctionError !== 'silent') {
+              const cleanInput = logger.truncateLogMessage(JSON.stringify(params));
+              logger[req.config.logLevels.cloudFunctionError](
+                `Failed running cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput}\n  Error: ` +
+                  JSON.stringify(error),
+                {
+                  functionName,
+                  error,
+                  params,
+                  user: userString,
+                }
+              );
+            }
             reject(error);
           } catch (e) {
             reject(e);

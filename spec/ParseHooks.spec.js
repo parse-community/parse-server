@@ -4,7 +4,6 @@ const request = require('../lib/request');
 const triggers = require('../lib/triggers');
 const HooksController = require('../lib/Controllers/HooksController').default;
 const express = require('express');
-const bodyParser = require('body-parser');
 const auth = require('../lib/Auth');
 const Config = require('../lib/Config');
 
@@ -17,7 +16,7 @@ describe('Hooks', () => {
   beforeEach(done => {
     if (!app) {
       app = express();
-      app.use(bodyParser.json({ type: '*/*' }));
+      app.use(express.json({ type: '*/*' }));
       server = app.listen(port, undefined, done);
     } else {
       done();
@@ -54,7 +53,7 @@ describe('Hooks', () => {
     );
   });
 
-  it('should CRUD a function registration', done => {
+  it_id('26c9a13d-3d71-452e-a91c-9a4589be021c')(it)('should CRUD a function registration', done => {
     // Create
     Parse.Hooks.createFunction('My-Test-Function', 'http://someurl')
       .then(response => {
@@ -98,7 +97,7 @@ describe('Hooks', () => {
       });
   });
 
-  it('should CRUD a trigger registration', done => {
+  it_id('7a81069e-2ee9-47fb-8e27-1120eda09e99')(it)('should CRUD a trigger registration', done => {
     // Create
     Parse.Hooks.createTrigger('MyClass', 'beforeDelete', 'http://someurl')
       .then(
@@ -188,9 +187,9 @@ describe('Hooks', () => {
     });
   });
 
-  it('should fail trying to create two times the same function', done => {
+  it_id('f7ad092f-81dc-4729-afd1-3b02db2f0948')(it)('should fail trying to create two times the same function', done => {
     Parse.Hooks.createFunction('my_new_function', 'http://url.com')
-      .then(() => new Promise(resolve => setTimeout(resolve, 100)))
+      .then(() => jasmine.timeout())
       .then(
         () => {
           return Parse.Hooks.createFunction('my_new_function', 'http://url.com');
@@ -208,7 +207,7 @@ describe('Hooks', () => {
           expect(err).not.toBe(null);
           if (err) {
             expect(err.code).toBe(143);
-            expect(err.message).toBe('function name: my_new_function already exits');
+            expect(err.message).toBe('function name: my_new_function already exists');
           }
           return Parse.Hooks.removeFunction('my_new_function');
         }
@@ -224,7 +223,7 @@ describe('Hooks', () => {
       );
   });
 
-  it('should fail trying to create two times the same trigger', done => {
+  it_id('4db8c249-9174-4e8e-b959-55c8ea959a02')(it)('should fail trying to create two times the same trigger', done => {
     Parse.Hooks.createTrigger('MyClass', 'beforeSave', 'http://url.com')
       .then(
         () => {
@@ -359,7 +358,7 @@ describe('Hooks', () => {
     });
   });
 
-  it('should create hooks and properly preload them', done => {
+  it_id('96d99414-b739-4e36-b3f4-8135e0be83ea')(it)('should create hooks and properly preload them', done => {
     const promises = [];
     for (let i = 0; i < 5; i++) {
       promises.push(
@@ -410,7 +409,7 @@ describe('Hooks', () => {
       );
   });
 
-  it('should run the function on the test server', done => {
+  it_id('fe7d41eb-e570-4804-ac1f-8b6c407fdafe')(it)('should run the function on the test server', done => {
     app.post('/SomeFunction', function (req, res) {
       res.json({ success: 'OK!' });
     });
@@ -439,7 +438,7 @@ describe('Hooks', () => {
       );
   });
 
-  it('should run the function on the test server (error handling)', done => {
+  it_id('63985b4c-a212-4a86-aa0e-eb4600bb485b')(it)('should run the function on the test server (error handling)', done => {
     app.post('/SomeFunctionError', function (req, res) {
       res.json({ error: { code: 1337, error: 'hacking that one!' } });
     });
@@ -473,7 +472,7 @@ describe('Hooks', () => {
       );
   });
 
-  it('should provide X-Parse-Webhook-Key when defined', done => {
+  it_id('bacc1754-2a3a-4a7a-8d0e-f80af36da1ef')(it)('should provide X-Parse-Webhook-Key when defined', done => {
     app.post('/ExpectingKey', function (req, res) {
       if (req.get('X-Parse-Webhook-Key') === 'hook') {
         res.json({ success: 'correct key provided' });
@@ -506,7 +505,7 @@ describe('Hooks', () => {
       );
   });
 
-  it('should not pass X-Parse-Webhook-Key if not provided', done => {
+  it_id('eeb67946-42c6-4581-89af-2abb4927913e')(it)('should not pass X-Parse-Webhook-Key if not provided', done => {
     reconfigureServer({ webhookKey: undefined }).then(() => {
       app.post('/ExpectingKeyAlso', function (req, res) {
         if (req.get('X-Parse-Webhook-Key') === 'hook') {
@@ -545,7 +544,7 @@ describe('Hooks', () => {
     });
   });
 
-  it('should run the beforeSave hook on the test server', done => {
+  it_id('21decb65-4b93-4791-85a3-ab124a9ea3ac')(it)('should run the beforeSave hook on the test server', done => {
     let triggerCount = 0;
     app.post('/BeforeSaveSome', function (req, res) {
       triggerCount++;
@@ -576,7 +575,7 @@ describe('Hooks', () => {
       });
   });
 
-  it('beforeSave hooks should correctly handle responses containing entire object', done => {
+  it_id('52e3152b-5514-4418-9e76-1f394368b8fb')(it)('beforeSave hooks should correctly handle responses containing entire object', done => {
     app.post('/BeforeSaveSome2', function (req, res) {
       const object = Parse.Object.fromJSON(req.body.object);
       object.set('hello', 'world');
@@ -600,7 +599,7 @@ describe('Hooks', () => {
       });
   });
 
-  it('should run the afterSave hook on the test server', done => {
+  it_id('d27a7587-abb5-40d5-9805-051ee91de474')(it)('should run the afterSave hook on the test server', done => {
     let triggerCount = 0;
     let newObjectId;
     app.post('/AfterSaveSome', function (req, res) {
@@ -692,5 +691,38 @@ describe('triggers', () => {
       context
     );
     expect(req.context).toBeUndefined();
+  });
+});
+
+describe('sanitizing names', () => {
+  const invalidNames = [
+    `test'%3bdeclare%20@q%20varchar(99)%3bset%20@q%3d'%5c%5cxxxxxxxxxxxxxxx.yyyyy'%2b'fy.com%5cxus'%3b%20exec%20master.dbo.xp_dirtree%20@q%3b--%20`,
+    `test.function.name`,
+  ];
+
+  it('should not crash server and return error on invalid Cloud Function name', async () => {
+    for (const invalidName of invalidNames) {
+      let error;
+      try {
+        await Parse.Cloud.run(invalidName);
+      } catch (err) {
+        error = err;
+      }
+      expect(error).toBeDefined();
+      expect(error.message).toMatch(/Invalid function/);
+    }
+  });
+
+  it('should not crash server and return error on invalid Cloud Job name', async () => {
+    for (const invalidName of invalidNames) {
+      let error;
+      try {
+        await Parse.Cloud.startJob(invalidName);
+      } catch (err) {
+        error = err;
+      }
+      expect(error).toBeDefined();
+      expect(error.message).toMatch(/Invalid job/);
+    }
   });
 });

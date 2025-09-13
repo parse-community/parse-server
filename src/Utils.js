@@ -358,6 +358,58 @@ class Utils {
     }
     return false;
   }
+
+  static checkProhibitedKeywords(config, data) {
+    if (config?.requestKeywordDenylist) {
+      // Scan request data for denied keywords
+      for (const keyword of config.requestKeywordDenylist) {
+        const match = Utils.objectContainsKeyValue(data, keyword.key, keyword.value);
+        if (match) {
+          throw `Prohibited keyword in request data: ${JSON.stringify(keyword)}.`;
+        }
+      }
+    }
+  }
+
+  /**
+   * Moves the nested keys of a specified key in an object to the root of the object.
+   *
+   * @param {Object} obj The object to modify.
+   * @param {String} key The key whose nested keys will be moved to root.
+   * @returns {Object} The modified object, or the original object if no modification happened.
+   * @example
+   * const obj = {
+   *   a: 1,
+   *   b: {
+   *     c: 2,
+   *     d: 3
+   *   },
+   *   e: 4
+   * };
+   * addNestedKeysToRoot(obj, 'b');
+   * console.log(obj);
+   * // Output: { a: 1, e: 4, c: 2, d: 3 }
+  */
+  static addNestedKeysToRoot(obj, key) {
+    if (obj[key] && typeof obj[key] === 'object') {
+      // Add nested keys to root
+      Object.assign(obj, { ...obj[key] });
+      // Delete original nested key
+      delete obj[key];
+    }
+    return obj;
+  }
+
+  /**
+   * Encodes a string to be used in a URL.
+   * @param {String} input The string to encode.
+   * @returns {String} The encoded string.
+   */
+  static encodeForUrl(input) {
+    return encodeURIComponent(input).replace(/[!'.()*]/g, char =>
+      '%' + char.charCodeAt(0).toString(16).toUpperCase()
+    );
+  }
 }
 
 module.exports = Utils;

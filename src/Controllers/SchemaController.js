@@ -255,6 +255,7 @@ function validateProtectedFieldsKey(key, userIdRegExp) {
 }
 
 const CLPValidKeys = Object.freeze([
+  'ACL',
   'find',
   'count',
   'get',
@@ -364,13 +365,34 @@ function validateCLP(perms: ClassLevelPermissions, fields: SchemaFields, userIdR
         continue;
       }
 
-      // or [entity]: boolean
       const permit = operation[entity];
 
-      if (permit !== true) {
+      if (operationKey === 'ACL') {
+        if (Object.prototype.toString.call(permit) !== '[object Object]') {
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            `'${permit}' is not a valid value for class level permissions acl`
+          );
+        }
+        const invalidKeys = Object.keys(permit).filter(key => !['read', 'write'].includes(key));
+        const invalidValues = Object.values(permit).filter(key => typeof key !== 'boolean');
+        if (invalidKeys.length) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            `'${invalidKeys.join(',')}' is not a valid key for class level permissions acl`
+          );
+        }
+
+        if (invalidValues.length) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            `'${invalidValues.join(',')}' is not a valid value for class level permissions acl`
+          );
+        }
+      } else if (permit !== true) {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          `'${permit}' is not a valid value for class level permissions ${operationKey}:${entity}:${permit}`
+          `'${permit}' is not a valid value for class level permissions acl ${operationKey}:${entity}`
         );
       }
     }
@@ -666,10 +688,10 @@ const VolatileClassesSchemas = [
 ];
 
 const dbTypeMatchesObjectType = (dbType: SchemaField | string, objectType: SchemaField) => {
-  if (dbType.type !== objectType.type) return false;
-  if (dbType.targetClass !== objectType.targetClass) return false;
-  if (dbType === objectType.type) return true;
-  if (dbType.type === objectType.type) return true;
+  if (dbType.type !== objectType.type) { return false; }
+  if (dbType.targetClass !== objectType.targetClass) { return false; }
+  if (dbType === objectType.type) { return true; }
+  if (dbType.type === objectType.type) { return true; }
   return false;
 };
 
@@ -681,6 +703,10 @@ const typeToString = (type: SchemaField | string): string => {
     return `${type.type}<${type.targetClass}>`;
   }
   return `${type.type}`;
+};
+const ttl = {
+  date: Date.now(),
+  duration: undefined,
 };
 
 // Stores the entire schema of the app in a weird hybrid format somewhere between
@@ -694,10 +720,11 @@ export default class SchemaController {
 
   constructor(databaseAdapter: StorageAdapter) {
     this._dbAdapter = databaseAdapter;
+    const config = Config.get(Parse.applicationId);
     this.schemaData = new SchemaData(SchemaCache.all(), this.protectedFields);
-    this.protectedFields = Config.get(Parse.applicationId).protectedFields;
+    this.protectedFields = config.protectedFields;
 
-    const customIds = Config.get(Parse.applicationId).allowCustomObjectId;
+    const customIds = config.allowCustomObjectId;
 
     const customIdRegEx = /^.{1,}$/u; // 1+ chars
     const autoIdRegEx = /^[a-zA-Z0-9]{1,}$/;
@@ -707,6 +734,21 @@ export default class SchemaController {
     this._dbAdapter.watch(() => {
       this.reloadData({ clearCache: true });
     });
+  }
+
+  async reloadDataIfNeeded() {
+    if (this._dbAdapter.enableSchemaHooks) {
+      return;
+    }
+    const { date, duration } = ttl || {};
+    if (!duration) {
+      return;
+    }
+    const now = Date.now();
+    if (now - date > duration) {
+      ttl.date = now;
+      await this.reloadData({ clearCache: true });
+    }
   }
 
   reloadData(options: LoadSchemaOptions = { clearCache: false }): Promise<any> {
@@ -729,10 +771,11 @@ export default class SchemaController {
     return this.reloadDataPromise;
   }
 
-  getAllClasses(options: LoadSchemaOptions = { clearCache: false }): Promise<Array<Schema>> {
+  async getAllClasses(options: LoadSchemaOptions = { clearCache: false }): Promise<Array<Schema>> {
     if (options.clearCache) {
       return this.setAllClasses();
     }
+    await this.reloadDataIfNeeded();
     const cached = SchemaCache.all();
     if (cached && cached.length) {
       return Promise.resolve(cached);
@@ -999,7 +1042,7 @@ export default class SchemaController {
         }
         const fieldType = fields[fieldName];
         const error = fieldTypeIsInvalid(fieldType);
-        if (error) return { code: error.code, error: error.message };
+        if (error) { return { code: error.code, error: error.message }; }
         if (fieldType.defaultValue !== undefined) {
           let defaultValueType = getType(fieldType.defaultValue);
           if (typeof defaultValueType === 'string') {
@@ -1071,14 +1114,27 @@ export default class SchemaController {
     className: string,
     fieldName: string,
     type: string | SchemaField,
-    isValidation?: boolean
+    isValidation?: boolean,
+    maintenance?: boolean
   ) {
     if (fieldName.indexOf('.') > 0) {
-      // subdocument key (x.y) => ok if x is of type 'object'
-      fieldName = fieldName.split('.')[0];
-      type = 'Object';
+      // "<array>.<index>" for Nested Arrays
+      // "<embedded document>.<field>" for Nested Objects
+      // JSON Arrays are treated as Nested Objects
+      const [x, y] = fieldName.split('.');
+      fieldName = x;
+      const isArrayIndex = Array.from(y).every(c => c >= '0' && c <= '9');
+      if (isArrayIndex && !['sentPerUTCOffset', 'failedPerUTCOffset'].includes(fieldName)) {
+        type = 'Array';
+      } else {
+        type = 'Object';
+      }
     }
-    if (!fieldNameIsValid(fieldName, className)) {
+    let fieldNameToValidate = `${fieldName}`;
+    if (maintenance && fieldNameToValidate.charAt(0) === '_') {
+      fieldNameToValidate = fieldNameToValidate.substring(1);
+    }
+    if (!fieldNameIsValid(fieldNameToValidate, className)) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
     }
 
@@ -1228,7 +1284,7 @@ export default class SchemaController {
   // Validates an object provided in REST format.
   // Returns a promise that resolves to the new schema if this object is
   // valid.
-  async validateObject(className: string, object: any, query: any) {
+  async validateObject(className: string, object: any, query: any, maintenance: boolean) {
     let geocount = 0;
     const schema = await this.enforceClassExists(className);
     const promises = [];
@@ -1258,7 +1314,7 @@ export default class SchemaController {
         // Every object has ACL implicitly.
         continue;
       }
-      promises.push(schema.enforceFieldExists(className, fieldName, expected, true));
+      promises.push(schema.enforceFieldExists(className, fieldName, expected, true, maintenance));
     }
     const results = await Promise.all(promises);
     const enforceFields = results.filter(result => !!result);
@@ -1435,6 +1491,7 @@ export default class SchemaController {
 // Returns a promise for a new Schema.
 const load = (dbAdapter: StorageAdapter, options: any): Promise<SchemaController> => {
   const schema = new SchemaController(dbAdapter);
+  ttl.duration = dbAdapter.schemaCacheTtl;
   return schema.reloadData(options).then(() => schema);
 };
 

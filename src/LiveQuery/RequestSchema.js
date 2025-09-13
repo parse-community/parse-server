@@ -62,7 +62,15 @@ const subscribe = {
         where: {
           type: 'object',
         },
-        fields: {
+        keys: {
+          type: 'array',
+          items: {
+            type: 'string',
+          },
+          minItems: 1,
+          uniqueItems: true,
+        },
+        watch: {
           type: 'array',
           items: {
             type: 'string',
@@ -100,7 +108,15 @@ const update = {
         where: {
           type: 'object',
         },
-        fields: {
+        keys: {
+          type: 'array',
+          items: {
+            type: 'string',
+          },
+          minItems: 1,
+          uniqueItems: true,
+        },
+        watch: {
           type: 'array',
           items: {
             type: 'string',

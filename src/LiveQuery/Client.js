@@ -98,13 +98,13 @@ class Client {
         response['requestId'] = subscriptionId;
       }
       if (typeof parseObjectJSON !== 'undefined') {
-        let fields;
+        let keys;
         if (this.subscriptionInfos.has(subscriptionId)) {
-          fields = this.subscriptionInfos.get(subscriptionId).fields;
+          keys = this.subscriptionInfos.get(subscriptionId).keys;
         }
-        response['object'] = this._toJSONWithFields(parseObjectJSON, fields);
+        response['object'] = this._toJSONWithFields(parseObjectJSON, keys);
         if (parseOriginalObjectJSON) {
-          response['original'] = this._toJSONWithFields(parseOriginalObjectJSON, fields);
+          response['original'] = this._toJSONWithFields(parseOriginalObjectJSON, keys);
         }
       }
       Client.pushResponse(this.parseWebSocket, JSON.stringify(response));

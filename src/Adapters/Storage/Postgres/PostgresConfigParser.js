@@ -58,7 +58,7 @@ function getDatabaseOptionsFromURI(uri) {
   databaseOptions.fallback_application_name = queryParams.fallback_application_name;
 
   if (queryParams.poolSize) {
-    databaseOptions.poolSize = parseInt(queryParams.poolSize) || 10;
+    databaseOptions.max = parseInt(queryParams.poolSize) || 10;
   }
   if (queryParams.max) {
     databaseOptions.max = parseInt(queryParams.max) || 10;

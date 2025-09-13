@@ -1,12 +1,11 @@
-// A slightly patched version of node's url module, with support for mongodb://
-// uris.
-//
-// See https://github.com/nodejs/node/blob/master/LICENSE for licensing
-// information
+/*
+ * A slightly patched version of node's URL module, with support for `mongodb://` URIs.
+ * See https://github.com/nodejs/node for licensing information.
+ */
 
 'use strict';
 
-const punycode = require('punycode');
+import punycode from 'punycode/punycode.js';
 
 exports.parse = urlParse;
 exports.resolve = urlResolve;
@@ -67,7 +66,7 @@ const querystring = require('querystring');
 
 /* istanbul ignore next: improve coverage */
 function urlParse(url, parseQueryString, slashesDenoteHost) {
-  if (url instanceof Url) return url;
+  if (url instanceof Url) { return url; }
 
   var u = new Url();
   u.parse(url, parseQueryString, slashesDenoteHost);
@@ -102,7 +101,7 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
       code === 160 /*\u00A0*/ ||
       code === 65279; /*\uFEFF*/
     if (start === -1) {
-      if (isWs) continue;
+      if (isWs) { continue; }
       lastPos = start = i;
     } else {
       if (inWs) {
@@ -126,7 +125,7 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
           split = true;
           break;
         case 92: // '\\'
-          if (i - lastPos > 0) rest += url.slice(lastPos, i);
+          if (i - lastPos > 0) { rest += url.slice(lastPos, i); }
           rest += '/';
           lastPos = i + 1;
           break;
@@ -142,8 +141,8 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
       // We didn't convert any backslashes
 
       if (end === -1) {
-        if (start === 0) rest = url;
-        else rest = url.slice(start);
+        if (start === 0) { rest = url; }
+        else { rest = url.slice(start); }
       } else {
         rest = url.slice(start, end);
       }
@@ -236,13 +235,13 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
         case 124: // '|'
         case 125: // '}'
           // Characters that are never ever allowed in a hostname from RFC 2396
-          if (nonHost === -1) nonHost = i;
+          if (nonHost === -1) { nonHost = i; }
           break;
         case 35: // '#'
         case 47: // '/'
         case 63: // '?'
           // Find the first instance of any host-ending characters
-          if (nonHost === -1) nonHost = i;
+          if (nonHost === -1) { nonHost = i; }
           hostEnd = i;
           break;
         case 64: // '@'
@@ -252,7 +251,7 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
           nonHost = -1;
           break;
       }
-      if (hostEnd !== -1) break;
+      if (hostEnd !== -1) { break; }
     }
     start = 0;
     if (atSign !== -1) {
@@ -272,7 +271,7 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
 
     // we've indicated that there is a hostname,
     // so even if it's empty, it has to be present.
-    if (typeof this.hostname !== 'string') this.hostname = '';
+    if (typeof this.hostname !== 'string') { this.hostname = ''; }
 
     var hostname = this.hostname;
 
@@ -284,7 +283,7 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
     // validate a little.
     if (!ipv6Hostname) {
       const result = validateHostname(this, rest, hostname);
-      if (result !== undefined) rest = result;
+      if (result !== undefined) { rest = result; }
     }
 
     // hostnames are always lower case.
@@ -319,7 +318,7 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
     // escaped, even if encodeURIComponent doesn't think they
     // need to be.
     const result = autoEscapeStr(rest);
-    if (result !== undefined) rest = result;
+    if (result !== undefined) { rest = result; }
   }
 
   var questionIdx = -1;
@@ -355,7 +354,7 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
   var firstIdx =
     questionIdx !== -1 && (hashIdx === -1 || questionIdx < hashIdx) ? questionIdx : hashIdx;
   if (firstIdx === -1) {
-    if (rest.length > 0) this.pathname = rest;
+    if (rest.length > 0) { this.pathname = rest; }
   } else if (firstIdx > 0) {
     this.pathname = rest.slice(0, firstIdx);
   }
@@ -379,7 +378,7 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
 function validateHostname(self, rest, hostname) {
   for (var i = 0, lastPos; i <= hostname.length; ++i) {
     var code;
-    if (i < hostname.length) code = hostname.charCodeAt(i);
+    if (i < hostname.length) { code = hostname.charCodeAt(i); }
     if (code === 46 /*.*/ || i === hostname.length) {
       if (i - lastPos > 0) {
         if (i - lastPos > 63) {
@@ -406,7 +405,7 @@ function validateHostname(self, rest, hostname) {
     }
     // Invalid host character
     self.hostname = hostname.slice(0, i);
-    if (i < hostname.length) return '/' + hostname.slice(i) + rest;
+    if (i < hostname.length) { return '/' + hostname.slice(i) + rest; }
     break;
   }
 }
@@ -420,80 +419,80 @@ function autoEscapeStr(rest) {
     // Also escape single quotes in case of an XSS attack
     switch (rest.charCodeAt(i)) {
       case 9: // '\t'
-        if (i - lastPos > 0) newRest += rest.slice(lastPos, i);
+        if (i - lastPos > 0) { newRest += rest.slice(lastPos, i); }
         newRest += '%09';
         lastPos = i + 1;
         break;
       case 10: // '\n'
-        if (i - lastPos > 0) newRest += rest.slice(lastPos, i);
+        if (i - lastPos > 0) { newRest += rest.slice(lastPos, i); }
         newRest += '%0A';
         lastPos = i + 1;
         break;
       case 13: // '\r'
-        if (i - lastPos > 0) newRest += rest.slice(lastPos, i);
+        if (i - lastPos > 0) { newRest += rest.slice(lastPos, i); }
         newRest += '%0D';
         lastPos = i + 1;
         break;
       case 32: // ' '
-        if (i - lastPos > 0) newRest += rest.slice(lastPos, i);
+        if (i - lastPos > 0) { newRest += rest.slice(lastPos, i); }
         newRest += '%20';
         lastPos = i + 1;
         break;
       case 34: // '"'
-        if (i - lastPos > 0) newRest += rest.slice(lastPos, i);
+        if (i - lastPos > 0) { newRest += rest.slice(lastPos, i); }
         newRest += '%22';
         lastPos = i + 1;
         break;
       case 39: // '\''
-        if (i - lastPos > 0) newRest += rest.slice(lastPos, i);
+        if (i - lastPos > 0) { newRest += rest.slice(lastPos, i); }
         newRest += '%27';
         lastPos = i + 1;
         break;
       case 60: // '<'
-        if (i - lastPos > 0) newRest += rest.slice(lastPos, i);
+        if (i - lastPos > 0) { newRest += rest.slice(lastPos, i); }
         newRest += '%3C';
         lastPos = i + 1;
         break;
       case 62: // '>'
-        if (i - lastPos > 0) newRest += rest.slice(lastPos, i);
+        if (i - lastPos > 0) { newRest += rest.slice(lastPos, i); }
         newRest += '%3E';
         lastPos = i + 1;
         break;
       case 92: // '\\'
-        if (i - lastPos > 0) newRest += rest.slice(lastPos, i);
+        if (i - lastPos > 0) { newRest += rest.slice(lastPos, i); }
         newRest += '%5C';
         lastPos = i + 1;
         break;
       case 94: // '^'
-        if (i - lastPos > 0) newRest += rest.slice(lastPos, i);
+        if (i - lastPos > 0) { newRest += rest.slice(lastPos, i); }
         newRest += '%5E';
         lastPos = i + 1;
         break;
       case 96: // '`'
-        if (i - lastPos > 0) newRest += rest.slice(lastPos, i);
+        if (i - lastPos > 0) { newRest += rest.slice(lastPos, i); }
         newRest += '%60';
         lastPos = i + 1;
         break;
       case 123: // '{'
-        if (i - lastPos > 0) newRest += rest.slice(lastPos, i);
+        if (i - lastPos > 0) { newRest += rest.slice(lastPos, i); }
         newRest += '%7B';
         lastPos = i + 1;
         break;
       case 124: // '|'
-        if (i - lastPos > 0) newRest += rest.slice(lastPos, i);
+        if (i - lastPos > 0) { newRest += rest.slice(lastPos, i); }
         newRest += '%7C';
         lastPos = i + 1;
         break;
       case 125: // '}'
-        if (i - lastPos > 0) newRest += rest.slice(lastPos, i);
+        if (i - lastPos > 0) { newRest += rest.slice(lastPos, i); }
         newRest += '%7D';
         lastPos = i + 1;
         break;
     }
   }
-  if (lastPos === 0) return;
-  if (lastPos < rest.length) return newRest + rest.slice(lastPos);
-  else return newRest;
+  if (lastPos === 0) { return; }
+  if (lastPos < rest.length) { return newRest + rest.slice(lastPos); }
+  else { return newRest; }
 }
 
 // format a parsed object into a url string
@@ -503,12 +502,12 @@ function urlFormat(obj) {
   // If it's an obj, this is a no-op.
   // this way, you can call url_format() on strings
   // to clean up potentially wonky urls.
-  if (typeof obj === 'string') obj = urlParse(obj);
+  if (typeof obj === 'string') { obj = urlParse(obj); }
   else if (typeof obj !== 'object' || obj === null)
-    throw new TypeError(
-      'Parameter "urlObj" must be an object, not ' + obj === null ? 'null' : typeof obj
-    );
-  else if (!(obj instanceof Url)) return Url.prototype.format.call(obj);
+  { throw new TypeError(
+    'Parameter "urlObj" must be an object, not ' + (obj === null ? 'null' : typeof obj)
+  ); }
+  else if (!(obj instanceof Url)) { return Url.prototype.format.call(obj); }
 
   return obj.format();
 }
@@ -537,46 +536,46 @@ Url.prototype.format = function () {
   }
 
   if (this.query !== null && typeof this.query === 'object')
-    query = querystring.stringify(this.query);
+  { query = querystring.stringify(this.query); }
 
   var search = this.search || (query && '?' + query) || '';
 
-  if (protocol && protocol.charCodeAt(protocol.length - 1) !== 58 /*:*/) protocol += ':';
+  if (protocol && protocol.charCodeAt(protocol.length - 1) !== 58 /*:*/) { protocol += ':'; }
 
   var newPathname = '';
   var lastPos = 0;
   for (var i = 0; i < pathname.length; ++i) {
     switch (pathname.charCodeAt(i)) {
       case 35: // '#'
-        if (i - lastPos > 0) newPathname += pathname.slice(lastPos, i);
+        if (i - lastPos > 0) { newPathname += pathname.slice(lastPos, i); }
         newPathname += '%23';
         lastPos = i + 1;
         break;
       case 63: // '?'
-        if (i - lastPos > 0) newPathname += pathname.slice(lastPos, i);
+        if (i - lastPos > 0) { newPathname += pathname.slice(lastPos, i); }
         newPathname += '%3F';
         lastPos = i + 1;
         break;
     }
   }
   if (lastPos > 0) {
-    if (lastPos !== pathname.length) pathname = newPathname + pathname.slice(lastPos);
-    else pathname = newPathname;
+    if (lastPos !== pathname.length) { pathname = newPathname + pathname.slice(lastPos); }
+    else { pathname = newPathname; }
   }
 
   // only the slashedProtocols get the //.  Not mailto:, xmpp:, etc.
   // unless they had them to begin with.
   if (this.slashes || ((!protocol || slashedProtocol[protocol]) && host !== false)) {
     host = '//' + (host || '');
-    if (pathname && pathname.charCodeAt(0) !== 47 /*/*/) pathname = '/' + pathname;
+    if (pathname && pathname.charCodeAt(0) !== 47 /*/*/) { pathname = '/' + pathname; }
   } else if (!host) {
     host = '';
   }
 
   search = search.replace('#', '%23');
 
-  if (hash && hash.charCodeAt(0) !== 35 /*#*/) hash = '#' + hash;
-  if (search && search.charCodeAt(0) !== 63 /*?*/) search = '?' + search;
+  if (hash && hash.charCodeAt(0) !== 35 /*#*/) { hash = '#' + hash; }
+  if (search && search.charCodeAt(0) !== 63 /*?*/) { search = '?' + search; }
 
   return protocol + host + pathname + search + hash;
 };
@@ -593,7 +592,7 @@ Url.prototype.resolve = function (relative) {
 
 /* istanbul ignore next: improve coverage */
 function urlResolveObject(source, relative) {
-  if (!source) return relative;
+  if (!source) { return relative; }
   return urlParse(source, false, true).resolveObject(relative);
 }
 
@@ -628,7 +627,7 @@ Url.prototype.resolveObject = function (relative) {
     var rkeys = Object.keys(relative);
     for (var rk = 0; rk < rkeys.length; rk++) {
       var rkey = rkeys[rk];
-      if (rkey !== 'protocol') result[rkey] = relative[rkey];
+      if (rkey !== 'protocol') { result[rkey] = relative[rkey]; }
     }
 
     //urlParse appends trailing / to urls like http://www.example.com
@@ -666,11 +665,17 @@ Url.prototype.resolveObject = function (relative) {
       !hostlessProtocol[relative.protocol]
     ) {
       const relPath = (relative.pathname || '').split('/');
-      while (relPath.length && !(relative.host = relPath.shift()));
-      if (!relative.host) relative.host = '';
-      if (!relative.hostname) relative.hostname = '';
-      if (relPath[0] !== '') relPath.unshift('');
-      if (relPath.length < 2) relPath.unshift('');
+      while (relPath.length) {
+        const shifted = relPath.shift();
+        if (shifted) {
+          relative.host = shifted;
+          break;
+        }
+      }
+      if (!relative.host) { relative.host = ''; }
+      if (!relative.hostname) { relative.hostname = ''; }
+      if (relPath[0] !== '') { relPath.unshift(''); }
+      if (relPath.length < 2) { relPath.unshift(''); }
       result.pathname = relPath.join('/');
     } else {
       result.pathname = relative.pathname;
@@ -709,16 +714,16 @@ Url.prototype.resolveObject = function (relative) {
     result.hostname = '';
     result.port = null;
     if (result.host) {
-      if (srcPath[0] === '') srcPath[0] = result.host;
-      else srcPath.unshift(result.host);
+      if (srcPath[0] === '') { srcPath[0] = result.host; }
+      else { srcPath.unshift(result.host); }
     }
     result.host = '';
     if (relative.protocol) {
       relative.hostname = null;
       relative.port = null;
       if (relative.host) {
-        if (relPath[0] === '') relPath[0] = relative.host;
-        else relPath.unshift(relative.host);
+        if (relPath[0] === '') { relPath[0] = relative.host; }
+        else { relPath.unshift(relative.host); }
       }
       relative.host = null;
     }
@@ -737,7 +742,7 @@ Url.prototype.resolveObject = function (relative) {
   } else if (relPath.length) {
     // it's relative
     // throw away the existing file, and take the new path instead.
-    if (!srcPath) srcPath = [];
+    if (!srcPath) { srcPath = []; }
     srcPath.pop();
     srcPath = srcPath.concat(relPath);
     result.search = relative.search;
@@ -874,19 +879,19 @@ Url.prototype.parseHost = function () {
     }
     host = host.slice(0, host.length - port.length);
   }
-  if (host) this.hostname = host;
+  if (host) { this.hostname = host; }
 };
 
 // About 1.5x faster than the two-arg version of Array#splice().
 /* istanbul ignore next: improve coverage */
 function spliceOne(list, index) {
-  for (var i = index, k = i + 1, n = list.length; k < n; i += 1, k += 1) list[i] = list[k];
+  for (var i = index, k = i + 1, n = list.length; k < n; i += 1, k += 1) { list[i] = list[k]; }
   list.pop();
 }
 
 var hexTable = new Array(256);
 for (var i = 0; i < 256; ++i)
-  hexTable[i] = '%' + ((i < 16 ? '0' : '') + i.toString(16)).toUpperCase();
+{ hexTable[i] = '%' + ((i < 16 ? '0' : '') + i.toString(16)).toUpperCase(); }
 /* istanbul ignore next: improve coverage */
 function encodeAuth(str) {
   // faster encodeURIComponent alternative for encoding auth uri components
@@ -915,7 +920,7 @@ function encodeAuth(str) {
       continue;
     }
 
-    if (i - lastPos > 0) out += str.slice(lastPos, i);
+    if (i - lastPos > 0) { out += str.slice(lastPos, i); }
 
     lastPos = i + 1;
 
@@ -940,8 +945,8 @@ function encodeAuth(str) {
     // Surrogate pair
     ++i;
     var c2;
-    if (i < str.length) c2 = str.charCodeAt(i) & 0x3ff;
-    else c2 = 0;
+    if (i < str.length) { c2 = str.charCodeAt(i) & 0x3ff; }
+    else { c2 = 0; }
     c = 0x10000 + (((c & 0x3ff) << 10) | c2);
     out +=
       hexTable[0xf0 | (c >> 18)] +
@@ -949,7 +954,7 @@ function encodeAuth(str) {
       hexTable[0x80 | ((c >> 6) & 0x3f)] +
       hexTable[0x80 | (c & 0x3f)];
   }
-  if (lastPos === 0) return str;
-  if (lastPos < str.length) return out + str.slice(lastPos);
+  if (lastPos === 0) { return str; }
+  if (lastPos < str.length) { return out + str.slice(lastPos); }
   return out;
 }

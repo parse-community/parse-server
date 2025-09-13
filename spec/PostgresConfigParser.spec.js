@@ -27,13 +27,13 @@ const baseURI = 'postgres://username:password@localhost:5432/db-name';
 const testfile = fs.readFileSync('./Dockerfile').toString();
 const dbOptionsTest = {};
 dbOptionsTest[
-  `${baseURI}?ssl=true&binary=true&application_name=app_name&fallback_application_name=f_app_name&poolSize=10`
+  `${baseURI}?ssl=true&binary=true&application_name=app_name&fallback_application_name=f_app_name&poolSize=12`
 ] = {
   ssl: true,
   binary: true,
   application_name: 'app_name',
   fallback_application_name: 'f_app_name',
-  poolSize: 10,
+  max: 12,
 };
 dbOptionsTest[`${baseURI}?ssl=&binary=aa`] = {
   binary: false,
@@ -83,6 +83,20 @@ describe('PostgresConfigParser.getDatabaseOptionsFromURI', () => {
   it('sets the poolSize to 10 if the it is not a number', () => {
     const result = parser.getDatabaseOptionsFromURI(`${baseURI}?poolSize=sdf`);
 
-    expect(result.poolSize).toEqual(10);
+    expect(result.max).toEqual(10);
+  });
+
+  it('sets the max to 10 if the it is not a number', () => {
+    const result = parser.getDatabaseOptionsFromURI(`${baseURI}?&max=sdf`);
+
+    expect(result.poolSize).toBeUndefined();
+    expect(result.max).toEqual(10);
+  });
+
+  it('max should take precedence over poolSize', () => {
+    const result = parser.getDatabaseOptionsFromURI(`${baseURI}?poolSize=20&max=12`);
+
+    expect(result.poolSize).toBeUndefined();
+    expect(result.max).toEqual(12);
   });
 });

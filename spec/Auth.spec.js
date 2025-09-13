@@ -81,46 +81,37 @@ describe('Auth', () => {
         .then(roles => expect(roles).toEqual([]))
         .then(() => done());
     });
-
-    it('should properly handle bcrypt upgrade', done => {
-      const bcryptOriginal = require('bcrypt-nodejs');
-      const bcryptNew = require('bcryptjs');
-      bcryptOriginal.hash('my1Long:password', null, null, function (err, res) {
-        bcryptNew.compare('my1Long:password', res, function (err, res) {
-          expect(res).toBeTruthy();
-          done();
-        });
-      });
-    });
   });
 
-  it('should load auth without a config', async () => {
+  it('can use extendSessionOnUse', async () => {
+    await reconfigureServer({
+      extendSessionOnUse: true,
+    });
+
     const user = new Parse.User();
     await user.signUp({
       username: 'hello',
       password: 'password',
     });
-    expect(user.getSessionToken()).not.toBeUndefined();
-    const userAuth = await getAuthForSessionToken({
-      sessionToken: user.getSessionToken(),
-    });
-    expect(userAuth.user instanceof Parse.User).toBe(true);
-    expect(userAuth.user.id).toBe(user.id);
-  });
+    const session = await new Parse.Query(Parse.Session).first();
+    const updatedAt = new Date('2010');
+    const expiry = new Date();
+    expiry.setHours(expiry.getHours() + 1);
 
-  it('should load auth with a config', async () => {
-    const user = new Parse.User();
-    await user.signUp({
-      username: 'hello',
-      password: 'password',
-    });
-    expect(user.getSessionToken()).not.toBeUndefined();
-    const userAuth = await getAuthForSessionToken({
-      sessionToken: user.getSessionToken(),
-      config: Config.get('test'),
-    });
-    expect(userAuth.user instanceof Parse.User).toBe(true);
-    expect(userAuth.user.id).toBe(user.id);
+    await Parse.Server.database.update(
+      '_Session',
+      { objectId: session.id },
+      {
+        expiresAt: { __type: 'Date', iso: expiry.toISOString() },
+        updatedAt: updatedAt.toISOString(),
+      }
+    );
+    Parse.Server.cacheController.clear();
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    await session.fetch();
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    await session.fetch();
+    expect(session.get('expiresAt') > expiry).toBeTrue();
   });
 
   it('should load auth without a config', async () => {
@@ -240,5 +231,26 @@ describe('Auth', () => {
       expect(cloudRoles.length).toBe(rolesNumber);
       expect(cloudRoles2.length).toBe(rolesNumber);
     });
+  });
+});
+
+describe('extendSessionOnUse', () => {
+  it(`shouldUpdateSessionExpiry()`, async () => {
+    const { shouldUpdateSessionExpiry } = require('../lib/Auth');
+    let update = new Date(Date.now() - 86410 * 1000);
+
+    const res = shouldUpdateSessionExpiry(
+      { sessionLength: 86460 },
+      { updatedAt: update }
+    );
+
+    update = new Date(Date.now() - 43210 * 1000);
+    const res2 = shouldUpdateSessionExpiry(
+      { sessionLength: 86460 },
+      { updatedAt: update }
+    );
+
+    expect(res).toBe(true);
+    expect(res2).toBe(false);
   });
 });

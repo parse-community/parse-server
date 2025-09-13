@@ -50,6 +50,7 @@ const getObject = async (
       options.keys = keys;
     }
   } catch (e) {
+    // eslint-disable-next-line no-console
     console.error(e);
   }
   if (include) {

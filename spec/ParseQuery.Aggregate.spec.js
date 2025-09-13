@@ -23,28 +23,28 @@ const loadTestData = () => {
   const data1 = {
     score: 10,
     name: 'foo',
-    sender: { group: 'A' }, // TODO: change to `$group`. See [#7339](https://bit.ly/3incnWx)
+    sender: { group: 'A' },
     views: 900,
     size: ['S', 'M'],
   };
   const data2 = {
     score: 10,
     name: 'foo',
-    sender: { group: 'A' }, // TODO: change to `$group`. See [#7339](https://bit.ly/3incnWx)
+    sender: { group: 'A' },
     views: 800,
     size: ['M', 'L'],
   };
   const data3 = {
     score: 10,
     name: 'bar',
-    sender: { group: 'B' }, // TODO: change to `$group`. See [#7339](https://bit.ly/3incnWx)
+    sender: { group: 'B' },
     views: 700,
     size: ['S'],
   };
   const data4 = {
     score: 20,
     name: 'dpl',
-    sender: { group: 'B' }, // TODO: change to `$group`. See [#7339](https://bit.ly/3incnWx)
+    sender: { group: 'B' },
     views: 700,
     size: ['S'],
   };
@@ -69,8 +69,8 @@ const get = function (url, options) {
 };
 
 describe('Parse.Query Aggregate testing', () => {
-  beforeEach(done => {
-    loadTestData().then(done, done);
+  beforeEach(async () => {
+    await loadTestData();
   });
 
   it('should only query aggregate with master key', done => {
@@ -86,7 +86,7 @@ describe('Parse.Query Aggregate testing', () => {
   it('invalid query group _id required', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        group: {}, // TODO: write as `$group`. See [#7339](https://bit.ly/3incnWx)
+        $group: {},
       },
     });
     get(Parse.serverURL + '/aggregate/TestObject', options).catch(error => {
@@ -95,10 +95,10 @@ describe('Parse.Query Aggregate testing', () => {
     });
   });
 
-  it('group by field', done => {
+  it_id('add7050f-65d5-4a13-b526-5bd1ee09c7f1')(it)('group by field', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        group: { objectId: '$name' }, // TODO: write as `$group`. See [#7339](https://bit.ly/3incnWx)
+        $group: { _id: '$name' },
       },
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
@@ -115,11 +115,11 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
-  it('group by pipeline operator', async () => {
+  it_id('0ab0d776-e45d-419a-9b35-3d11933b77d1')(it)('group by pipeline operator', async () => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         pipeline: {
-          group: { objectId: '$name' }, // TODO: write as `$group`. See [#7339](https://bit.ly/3incnWx)
+          $group: { _id: '$name' },
         },
       },
     });
@@ -133,11 +133,11 @@ describe('Parse.Query Aggregate testing', () => {
     expect(resp.results[2].objectId).not.toBe(undefined);
   });
 
-  it('group by empty object', done => {
+  it_id('b6b42145-7eb4-47aa-ada6-8c1444420e07')(it)('group by empty object', done => {
     const obj = new TestObject();
     const pipeline = [
       {
-        group: { objectId: {} }, // TODO: write as `$group`. See [#7339](https://bit.ly/3incnWx)
+        $group: { _id: {} },
       },
     ];
     obj
@@ -152,11 +152,11 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
-  it('group by empty string', done => {
+  it_id('0f5f6869-e675-41b9-9ad2-52b201124fb0')(it)('group by empty string', done => {
     const obj = new TestObject();
     const pipeline = [
       {
-        group: { objectId: '' }, // TODO: write as `$group`. See [#7339](https://bit.ly/3incnWx)
+        $group: { _id: '' },
       },
     ];
     obj
@@ -171,11 +171,11 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
-  it('group by empty array', done => {
+  it_id('b9c4f1b4-47f4-4ff4-88fb-586711f57e4a')(it)('group by empty array', done => {
     const obj = new TestObject();
     const pipeline = [
       {
-        group: { objectId: [] }, // TODO: write as `$group`. See [#7339](https://bit.ly/3incnWx)
+        $group: { _id: [] },
       },
     ];
     obj
@@ -190,15 +190,14 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
-  it('group by multiple columns ', done => {
+  it_id('bf5ee3e5-986c-4994-9c8d-79310283f602')(it)('group by multiple columns ', done => {
     const obj1 = new TestObject();
     const obj2 = new TestObject();
     const obj3 = new TestObject();
     const pipeline = [
       {
-        // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
-        group: {
-          objectId: {
+        $group: {
+          _id: {
             score: '$score',
             views: '$views',
           },
@@ -217,7 +216,7 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
-  it('group by date object', done => {
+  it_id('3e652c61-78e1-4541-83ac-51ad1def9874')(it)('group by date object', done => {
     const obj1 = new TestObject();
     const obj2 = new TestObject();
     const obj3 = new TestObject();
@@ -247,7 +246,7 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
-  it('group by date object transform', done => {
+  it_id('5d3a0f73-1f49-46f3-9be5-caf1eaefec79')(it)('group by date object transform', done => {
     const obj1 = new TestObject();
     const obj2 = new TestObject();
     const obj3 = new TestObject();
@@ -277,10 +276,10 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
-  it('group by number', done => {
+  it_id('1f9b10f7-dc0e-467f-b506-a303b9c36258')(it)('group by number', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        group: { objectId: '$score' }, // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
+        $group: { _id: '$score' },
       },
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
@@ -297,14 +296,13 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
-  it_exclude_dbs(['postgres'])('group and multiply transform', done => {
+  it_id('c7695018-03de-49e4-8a72-d4d956f70deb')(it_exclude_dbs(['postgres']))('group and multiply transform', done => {
     const obj1 = new TestObject({ name: 'item a', quantity: 2, price: 10 });
     const obj2 = new TestObject({ name: 'item b', quantity: 5, price: 5 });
     const pipeline = [
       {
-        // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
-        group: {
-          objectId: null,
+        $group: {
+          _id: null,
           total: { $sum: { $multiply: ['$quantity', '$price'] } },
         },
       },
@@ -321,15 +319,15 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
-  it_exclude_dbs(['postgres'])('project and multiply transform', done => {
+  it_id('2d278175-7594-4b29-bef4-04c778b7a42f')(it_exclude_dbs(['postgres']))('project and multiply transform', done => {
     const obj1 = new TestObject({ name: 'item a', quantity: 2, price: 10 });
     const obj2 = new TestObject({ name: 'item b', quantity: 5, price: 5 });
     const pipeline = [
       {
-        match: { quantity: { $exists: true } },
+        $match: { quantity: { $exists: true } },
       },
       {
-        project: {
+        $project: {
           name: 1,
           total: { $multiply: ['$quantity', '$price'] },
         },
@@ -353,21 +351,21 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
-  it_exclude_dbs(['postgres'])('project without objectId transform', done => {
+  it_id('9c9d9318-3a9e-4c2a-8a09-d3aa52c7505b')(it_exclude_dbs(['postgres']))('project without objectId transform', done => {
     const obj1 = new TestObject({ name: 'item a', quantity: 2, price: 10 });
     const obj2 = new TestObject({ name: 'item b', quantity: 5, price: 5 });
     const pipeline = [
       {
-        match: { quantity: { $exists: true } },
+        $match: { quantity: { $exists: true } },
       },
       {
-        project: {
-          objectId: 0, // TODO: change to `_id`. See [#7339](https://bit.ly/3incnWx)
+        $project: {
+          _id: 0,
           total: { $multiply: ['$quantity', '$price'] },
         },
       },
       {
-        sort: { total: 1 },
+        $sort: { total: 1 },
       },
     ];
     Parse.Object.saveAll([obj1, obj2])
@@ -385,10 +383,10 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
-  it_exclude_dbs(['postgres'])('project updatedAt only transform', done => {
+  it_id('f92c82ac-1993-4758-b718-45689dfc4154')(it_exclude_dbs(['postgres']))('project updatedAt only transform', done => {
     const pipeline = [
       {
-        project: { objectId: 0, updatedAt: 1 },
+        $project: { _id: 0, updatedAt: 1 },
       },
     ];
     const query = new Parse.Query(TestObject);
@@ -403,21 +401,21 @@ describe('Parse.Query Aggregate testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])(
-    'can group by any date field (it does not work if you have dirty data)', // rows in your collection with non date data in the field that is supposed to be a date
+  it_id('99566b1d-778d-4444-9deb-c398108e659d')(it_exclude_dbs(['postgres']))('can group by any date field (it does not work if you have dirty data)',
     done => {
+      // rows in your collection with non date data in the field that is supposed to be a date
       const obj1 = new TestObject({ dateField2019: new Date(1990, 11, 1) });
       const obj2 = new TestObject({ dateField2019: new Date(1990, 5, 1) });
       const obj3 = new TestObject({ dateField2019: new Date(1990, 11, 1) });
       const pipeline = [
         {
-          match: {
+          $match: {
             dateField2019: { $exists: true },
           },
         },
         {
-          group: {
-            objectId: {
+          $group: {
+            _id: {
               day: { $dayOfMonth: '$dateField2019' },
               month: { $month: '$dateField2019' },
               year: { $year: '$dateField2019' },
@@ -441,6 +439,36 @@ describe('Parse.Query Aggregate testing', () => {
     }
   );
 
+  it_id('3723671d-4100-4103-ad9c-60e4c22e20ff')(it_exclude_dbs(['postgres']))('matches expression with $dateSubtract from $$NOW', async () => {
+    const obj1 = new TestObject({ date: new Date(new Date().getTime() - 1 * 24 * 60 * 60 * 1_000) }); // 1 day ago
+    const obj2 = new TestObject({ date: new Date(new Date().getTime() - 2 * 24 * 60 * 60 * 1_000) }); // 3 days ago
+    await Parse.Object.saveAll([obj1, obj2]);
+
+    const pipeline = [
+      {
+        $match: {
+          $expr: {
+            $gte: [
+              '$date',
+              {
+                $dateSubtract: {
+                  startDate: '$$NOW',
+                  unit: 'day',
+                  amount: 2,
+                },
+              },
+            ],
+          },
+        },
+      },
+    ];
+
+    const query = new Parse.Query('TestObject');
+    const results = await query.aggregate(pipeline, { useMasterKey: true });
+    expect(results.length).toBe(1);
+    expect(new Date(results[0].date.iso)).toEqual(obj1.get('date'));
+  });
+
   it_only_db('postgres')(
     'can group by any date field (it does not work if you have dirty data)', // rows in your collection with non date data in the field that is supposed to be a date
     done => {
@@ -449,9 +477,8 @@ describe('Parse.Query Aggregate testing', () => {
       const obj3 = new TestObject({ dateField2019: new Date(1990, 11, 1) });
       const pipeline = [
         {
-          // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
-          group: {
-            objectId: {
+          $group: {
+            _id: {
               day: { $dayOfMonth: '$dateField2019' },
               month: { $month: '$dateField2019' },
               year: { $year: '$dateField2019' },
@@ -475,13 +502,13 @@ describe('Parse.Query Aggregate testing', () => {
     }
   );
 
-  it('group by pointer', done => {
+  it_id('bf3c2704-b721-4b1b-92fa-e1b129ae4aff')(it)('group by pointer', done => {
     const pointer1 = new TestObject();
     const pointer2 = new TestObject();
     const obj1 = new TestObject({ pointer: pointer1 });
     const obj2 = new TestObject({ pointer: pointer2 });
     const obj3 = new TestObject({ pointer: pointer1 });
-    const pipeline = [{ group: { objectId: '$pointer' } }];
+    const pipeline = [{ $group: { _id: '$pointer' } }];
     Parse.Object.saveAll([pointer1, pointer2, obj1, obj2, obj3])
       .then(() => {
         const query = new Parse.Query(TestObject);
@@ -496,11 +523,10 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
-  it('group sum query', done => {
+  it_id('9ee9e8c0-a590-4af9-97a9-4b8e5080ffae')(it)('group sum query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
-        group: { objectId: null, total: { $sum: '$score' } },
+        $group: { _id: null, total: { $sum: '$score' } },
       },
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
@@ -513,11 +539,10 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
-  it('group count query', done => {
+  it_id('39133cd6-5bdf-4917-b672-a9d7a9157b6f')(it)('group count query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
-        group: { objectId: null, total: { $sum: 1 } },
+        $group: { _id: null, total: { $sum: 1 } },
       },
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
@@ -530,11 +555,10 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
-  it('group min query', done => {
+  it_id('48685ff3-066f-4353-82e7-87f39d812ff7')(it)('group min query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
-        group: { objectId: null, minScore: { $min: '$score' } },
+        $group: { _id: null, minScore: { $min: '$score' } },
       },
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
@@ -547,11 +571,10 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
-  it('group max query', done => {
+  it_id('581efea6-6525-4e10-96d9-76d32c73e7a9')(it)('group max query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
-        group: { objectId: null, maxScore: { $max: '$score' } },
+        $group: { _id: null, maxScore: { $max: '$score' } },
       },
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
@@ -564,11 +587,10 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
-  it('group avg query', done => {
+  it_id('5f880de2-b97f-43d1-89b7-ad903a4be4e2')(it)('group avg query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
-        group: { objectId: null, avgScore: { $avg: '$score' } },
+        $group: { _id: null, avgScore: { $avg: '$score' } },
       },
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
@@ -581,10 +603,10 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
-  it('limit query', done => {
+  it_id('58e7a1a0-fae1-4993-b336-7bcbd5b7c786')(it)('limit query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        limit: 2,
+        $limit: 2,
       },
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
@@ -595,10 +617,10 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
-  it('sort ascending query', done => {
+  it_id('c892a3d2-8ae8-4b88-bf2b-3c958e1cacd8')(it)('sort ascending query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        sort: { name: 1 },
+        $sort: { name: 1 },
       },
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
@@ -613,10 +635,10 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
-  it('sort decending query', done => {
+  it_id('79d4bc2e-8b69-42ec-8526-20d17e968ab3')(it)('sort decending query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        sort: { name: -1 },
+        $sort: { name: -1 },
       },
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
@@ -631,10 +653,10 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
-  it('skip query', done => {
+  it_id('b3d97d48-bd6b-444d-be64-cc1fd4738266')(it)('skip query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        skip: 2,
+        $skip: 2,
       },
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
@@ -645,7 +667,7 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
-  it('match comparison date query', done => {
+  it_id('4a7daee3-5ba1-4c8b-b406-1846a73a64c8')(it)('match comparison date query', done => {
     const today = new Date();
     const yesterday = new Date();
     const tomorrow = new Date();
@@ -654,7 +676,7 @@ describe('Parse.Query Aggregate testing', () => {
     const obj1 = new TestObject({ dateField: yesterday });
     const obj2 = new TestObject({ dateField: today });
     const obj3 = new TestObject({ dateField: tomorrow });
-    const pipeline = [{ match: { dateField: { $lt: tomorrow } } }];
+    const pipeline = [{ $match: { dateField: { $lt: tomorrow } } }];
     Parse.Object.saveAll([obj1, obj2, obj3])
       .then(() => {
         const query = new Parse.Query(TestObject);
@@ -666,7 +688,7 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
-  it('should aggregate with Date object (directAccess)', async () => {
+  it_id('d98c8c20-6dac-4d74-8228-85a1ae46a7d0')(it)('should aggregate with Date object (directAccess)', async () => {
     const rest = require('../lib/rest');
     const auth = require('../lib/Auth');
     const TestObject = Parse.Object.extend('TestObject');
@@ -683,10 +705,10 @@ describe('Parse.Query Aggregate testing', () => {
     expect(resp.results.length).toBe(1);
   });
 
-  it('match comparison query', done => {
+  it_id('3d73d23a-fce1-4ac0-972a-50f6a550f348')(it)('match comparison query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        match: { score: { $gt: 15 } },
+        $match: { score: { $gt: 15 } },
       },
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
@@ -698,10 +720,10 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
-  it('match multiple comparison query', done => {
+  it_id('11772059-6c93-41ac-8dfe-e55b6c97e16f')(it)('match multiple comparison query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        match: { score: { $gt: 5, $lt: 15 } },
+        $match: { score: { $gt: 5, $lt: 15 } },
       },
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
@@ -715,10 +737,10 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
-  it('match complex comparison query', done => {
+  it_id('ca2efb04-8f73-40ca-a5fc-79d0032bc398')(it)('match complex comparison query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        match: { score: { $gt: 5, $lt: 15 }, views: { $gt: 850, $lt: 1000 } },
+        $match: { score: { $gt: 5, $lt: 15 }, views: { $gt: 850, $lt: 1000 } },
       },
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
@@ -731,10 +753,10 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
-  it('match comparison and equality query', done => {
+  it_id('5ef9dcbe-fe54-4db2-b8fb-58c87c6ff072')(it)('match comparison and equality query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        match: { score: { $gt: 5, $lt: 15 }, views: 900 },
+        $match: { score: { $gt: 5, $lt: 15 }, views: 900 },
       },
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
@@ -747,10 +769,10 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
-  it('match $or query', done => {
+  it_id('c910a6af-58df-46aa-bbf8-da014a04cdcd')(it)('match $or query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        match: {
+        $match: {
           $or: [{ score: { $gt: 15, $lt: 25 } }, { views: { $gt: 750, $lt: 850 } }],
         },
       },
@@ -770,12 +792,12 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
-  it('match objectId query', done => {
+  it_id('0f768dc2-0675-4e45-a763-5ca9c895fa5f')(it)('match objectId query', done => {
     const obj1 = new TestObject();
     const obj2 = new TestObject();
     Parse.Object.saveAll([obj1, obj2])
       .then(() => {
-        const pipeline = [{ match: { objectId: obj1.id } }];
+        const pipeline = [{ $match: { _id: obj1.id } }];
         const query = new Parse.Query(TestObject);
         return query.aggregate(pipeline);
       })
@@ -786,12 +808,12 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
-  it('match field query', done => {
+  it_id('27349e04-0d9d-453f-ad85-1a811631582d')(it)('match field query', done => {
     const obj1 = new TestObject({ name: 'TestObject1' });
     const obj2 = new TestObject({ name: 'TestObject2' });
     Parse.Object.saveAll([obj1, obj2])
       .then(() => {
-        const pipeline = [{ match: { name: 'TestObject1' } }];
+        const pipeline = [{ $match: { name: 'TestObject1' } }];
         const query = new Parse.Query(TestObject);
         return query.aggregate(pipeline);
       })
@@ -802,7 +824,7 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
-  it('match pointer query', done => {
+  it_id('9222e025-d450-4699-8d5b-c5cf9a64fb24')(it)('match pointer query', done => {
     const pointer1 = new PointerObject();
     const pointer2 = new PointerObject();
     const obj1 = new TestObject({ pointer: pointer1 });
@@ -811,7 +833,7 @@ describe('Parse.Query Aggregate testing', () => {
 
     Parse.Object.saveAll([pointer1, pointer2, obj1, obj2, obj3])
       .then(() => {
-        const pipeline = [{ match: { pointer: pointer1.id } }];
+        const pipeline = [{ $match: { pointer: pointer1.id } }];
         const query = new Parse.Query(TestObject);
         return query.aggregate(pipeline);
       })
@@ -825,8 +847,8 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
-  it_exclude_dbs(['postgres'])('match exists query', done => {
-    const pipeline = [{ match: { score: { $exists: true } } }];
+  it_id('3a1e2cdc-52c7-4060-bc90-b06d557d85ce')(it_exclude_dbs(['postgres']))('match exists query', done => {
+    const pipeline = [{ $match: { score: { $exists: true } } }];
     const query = new Parse.Query(TestObject);
     query.aggregate(pipeline).then(results => {
       expect(results.length).toEqual(4);
@@ -834,7 +856,7 @@ describe('Parse.Query Aggregate testing', () => {
     });
   });
 
-  it('match date query - createdAt', done => {
+  it_id('0adea3f4-73f7-4b48-a7dd-c764ceb947ec')(it)('match date query - createdAt', done => {
     const obj1 = new TestObject();
     const obj2 = new TestObject();
 
@@ -842,7 +864,7 @@ describe('Parse.Query Aggregate testing', () => {
       .then(() => {
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const pipeline = [{ match: { createdAt: { $gte: today } } }];
+        const pipeline = [{ $match: { createdAt: { $gte: today } } }];
         const query = new Parse.Query(TestObject);
         return query.aggregate(pipeline);
       })
@@ -853,7 +875,7 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
-  it('match date query - updatedAt', done => {
+  it_id('cdc0eecb-f547-4881-84cc-c06fb46a636a')(it)('match date query - updatedAt', done => {
     const obj1 = new TestObject();
     const obj2 = new TestObject();
 
@@ -861,7 +883,7 @@ describe('Parse.Query Aggregate testing', () => {
       .then(() => {
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const pipeline = [{ match: { updatedAt: { $gte: today } } }];
+        const pipeline = [{ $match: { updatedAt: { $gte: today } } }];
         const query = new Parse.Query(TestObject);
         return query.aggregate(pipeline);
       })
@@ -872,7 +894,7 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
-  it('match date query - empty', done => {
+  it_id('621fe00a-1127-4341-a8e1-fc579b7ed8bd')(it)('match date query - empty', done => {
     const obj1 = new TestObject();
     const obj2 = new TestObject();
 
@@ -880,7 +902,7 @@ describe('Parse.Query Aggregate testing', () => {
       .then(() => {
         const now = new Date();
         const future = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
-        const pipeline = [{ match: { createdAt: future } }];
+        const pipeline = [{ $match: { createdAt: future } }];
         const query = new Parse.Query(TestObject);
         return query.aggregate(pipeline);
       })
@@ -890,7 +912,7 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
-  it_exclude_dbs(['postgres'])('match pointer with operator query', done => {
+  it_id('802ffc99-861b-4b72-90a6-0c666a2e3fd8')(it_exclude_dbs(['postgres']))('match pointer with operator query', done => {
     const pointer = new PointerObject();
 
     const obj1 = new TestObject({ pointer });
@@ -899,7 +921,7 @@ describe('Parse.Query Aggregate testing', () => {
 
     Parse.Object.saveAll([pointer, obj1, obj2, obj3])
       .then(() => {
-        const pipeline = [{ match: { pointer: { $exists: true } } }];
+        const pipeline = [{ $match: { pointer: { $exists: true } } }];
         const query = new Parse.Query(TestObject);
         return query.aggregate(pipeline);
       })
@@ -913,7 +935,7 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
-  it_exclude_dbs(['postgres'])('match null values', async () => {
+  it_id('28090280-7c3e-47f8-8bf6-bebf8566a36c')(it_exclude_dbs(['postgres']))('match null values', async () => {
     const obj1 = new Parse.Object('MyCollection');
     obj1.set('language', 'en');
     obj1.set('otherField', 1);
@@ -938,7 +960,7 @@ describe('Parse.Query Aggregate testing', () => {
       (
         await new Parse.Query('MyCollection').aggregate([
           {
-            match: {
+            $match: {
               language: { $in: [null, 'en'] },
             },
           },
@@ -952,7 +974,7 @@ describe('Parse.Query Aggregate testing', () => {
       (
         await new Parse.Query('MyCollection').aggregate([
           {
-            match: {
+            $match: {
               $or: [{ language: 'en' }, { language: null }],
             },
           },
@@ -963,10 +985,10 @@ describe('Parse.Query Aggregate testing', () => {
     ).toEqual([1, 2, 3, 4]);
   });
 
-  it('project query', done => {
+  it_id('df63d1f5-7c37-4ed9-8bc5-20d82f29f509')(it)('project query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        project: { name: 1 },
+        $project: { name: 1 },
       },
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
@@ -983,10 +1005,10 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
-  it('multiple project query', done => {
+  it_id('69224bbb-8ea0-4ab4-af23-398b6432f668')(it)('multiple project query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        project: { name: 1, score: 1, sender: 1 },
+        $project: { name: 1, score: 1, sender: 1 },
       },
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
@@ -1003,7 +1025,7 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
-  it('project pointer query', done => {
+  it_id('97ce4c7c-8d9f-4ffd-9352-394bc9867bab')(it)('project pointer query', done => {
     const pointer = new PointerObject();
     const obj = new TestObject({ pointer, name: 'hello' });
 
@@ -1011,8 +1033,8 @@ describe('Parse.Query Aggregate testing', () => {
       .save()
       .then(() => {
         const pipeline = [
-          { match: { objectId: obj.id } },
-          { project: { pointer: 1, name: 1, createdAt: 1 } },
+          { $match: { _id: obj.id } },
+          { $project: { pointer: 1, name: 1, createdAt: 1 } },
         ];
         const query = new Parse.Query(TestObject);
         return query.aggregate(pipeline);
@@ -1026,12 +1048,11 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
-  it('project with group query', done => {
+  it_id('3940aac3-ac49-4279-8083-af9096de636f')(it)('project with group query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        project: { score: 1 },
-        // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
-        group: { objectId: '$score', score: { $sum: '$score' } },
+        $project: { score: 1 },
+        $group: { _id: '$score', score: { $sum: '$score' } },
       },
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
@@ -1058,8 +1079,7 @@ describe('Parse.Query Aggregate testing', () => {
   it('class does not exist return empty', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
-        group: { objectId: null, total: { $sum: '$score' } },
+        $group: { _id: null, total: { $sum: '$score' } },
       },
     });
     get(Parse.serverURL + '/aggregate/UnknownClass', options)
@@ -1073,8 +1093,7 @@ describe('Parse.Query Aggregate testing', () => {
   it('field does not exist return empty', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
-        group: { objectId: null, total: { $sum: '$unknownfield' } },
+        $group: { _id: null, total: { $sum: '$unknownfield' } },
       },
     });
     get(Parse.serverURL + '/aggregate/UnknownClass', options)
@@ -1085,7 +1104,7 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
-  it('distinct query', done => {
+  it_id('985e7a66-d4f5-4f72-bd54-ee44670e0ab0')(it)('distinct query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: { distinct: 'score' },
     });
@@ -1099,11 +1118,11 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
-  it('distinct query with where', done => {
+  it_id('ef157f86-c456-4a4c-8dac-81910bd0f716')(it)('distinct query with where', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         distinct: 'score',
-        where: {
+        $where: {
           name: 'bar',
         },
       },
@@ -1116,11 +1135,11 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
-  it('distinct query with where string', done => {
+  it_id('7f5275cc-2c34-42bc-8a09-43378419c326')(it)('distinct query with where string', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         distinct: 'score',
-        where: JSON.stringify({ name: 'bar' }),
+        $where: JSON.stringify({ name: 'bar' }),
       },
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
@@ -1131,7 +1150,7 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
-  it('distinct nested', done => {
+  it_id('383b7248-e457-4373-8d5c-f9359384347e')(it)('distinct nested', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: { distinct: 'sender.group' },
     });
@@ -1145,7 +1164,7 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
-  it('distinct pointer', done => {
+  it_id('20f14464-adb7-428c-ac7a-5a91a1952a64')(it)('distinct pointer', done => {
     const pointer1 = new PointerObject();
     const pointer2 = new PointerObject();
     const obj1 = new TestObject({ pointer: pointer1 });
@@ -1164,7 +1183,7 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
-  it('distinct class does not exist return empty', done => {
+  it_id('91e6cb94-2837-44b7-b057-0c4965057caa')(it)('distinct class does not exist return empty', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: { distinct: 'unknown' },
     });
@@ -1176,7 +1195,7 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
-  it('distinct field does not exist return empty', done => {
+  it_id('bd15daaf-8dc7-458c-81e2-170026f4a8a7')(it)('distinct field does not exist return empty', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: { distinct: 'unknown' },
     });
@@ -1193,7 +1212,7 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
-  it('distinct array', done => {
+  it_id('21988fce-8326-425f-82f0-cd444ca3671b')(it)('distinct array', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: { distinct: 'size' },
     });
@@ -1208,13 +1227,13 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
-  it('distinct objectId', async () => {
+  it_id('633fde06-c4af-474b-9841-3ccabc24dd4f')(it)('distinct objectId', async () => {
     const query = new Parse.Query(TestObject);
     const results = await query.distinct('objectId');
     expect(results.length).toBe(4);
   });
 
-  it('distinct createdAt', async () => {
+  it_id('8f9706f4-2703-42f1-b524-f2f7e72bbfe7')(it)('distinct createdAt', async () => {
     const object1 = new TestObject({ createdAt_test: true });
     await object1.save();
     const object2 = new TestObject({ createdAt_test: true });
@@ -1225,7 +1244,7 @@ describe('Parse.Query Aggregate testing', () => {
     expect(results.length).toBe(2);
   });
 
-  it('distinct updatedAt', async () => {
+  it_id('3562e600-8ce5-4d6d-96df-8ff969e81421')(it)('distinct updatedAt', async () => {
     const object1 = new TestObject({ updatedAt_test: true });
     await object1.save();
     const object2 = new TestObject();
@@ -1238,7 +1257,7 @@ describe('Parse.Query Aggregate testing', () => {
     expect(results.length).toBe(2);
   });
 
-  it('distinct null field', done => {
+  it_id('5012cfb1-b0aa-429d-a94f-d32d8aa0b7f9')(it)('distinct null field', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: { distinct: 'distinctField' },
     });
@@ -1267,10 +1286,10 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
-  it('does not return sensitive hidden properties', done => {
+  it_id('d9c19419-e99d-4d9f-b7f3-418e49ee47dd')(it)('does not return sensitive hidden properties', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        match: {
+        $match: {
           score: {
             $gt: 5,
           },
@@ -1316,8 +1335,8 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
-  it_exclude_dbs(['postgres'])('aggregate allow multiple of same stage', async done => {
-    await reconfigureServer();
+  it_id('0a23e791-e9b5-457a-9bf9-9c5ecf406f42')(it_exclude_dbs(['postgres']))('aggregate allow multiple of same stage', async done => {
+    await reconfigureServer({ silent: false });
     const pointer1 = new TestObject({ value: 1 });
     const pointer2 = new TestObject({ value: 2 });
     const pointer3 = new TestObject({ value: 3 });
@@ -1330,17 +1349,17 @@ describe('Parse.Query Aggregate testing', () => {
       body: {
         pipeline: [
           {
-            match: { name: 'Hello' },
+            $match: { name: 'Hello' },
           },
           {
             // Transform className$objectId to objectId and store in new field tempPointer
-            project: {
+            $project: {
               tempPointer: { $substr: ['$_p_pointer', 11, -1] }, // Remove TestObject$
             },
           },
           {
             // Left Join, replace objectId stored in tempPointer with an actual object
-            lookup: {
+            $lookup: {
               from: 'test_TestObject',
               localField: 'tempPointer',
               foreignField: '_id',
@@ -1349,12 +1368,12 @@ describe('Parse.Query Aggregate testing', () => {
           },
           {
             // lookup returns an array, Deconstructs an array field to objects
-            unwind: {
+            $unwind: {
               path: '$tempPointer',
             },
           },
           {
-            match: { 'tempPointer.value': 2 },
+            $match: { 'tempPointer.value': 2 },
           },
         ],
       },
@@ -1398,7 +1417,7 @@ describe('Parse.Query Aggregate testing', () => {
     // Create query
     const pipeline = [
       {
-        geoNear: {
+        $geoNear: {
           near: {
             type: 'Point',
             coordinates: [1, 1],
@@ -1451,7 +1470,7 @@ describe('Parse.Query Aggregate testing', () => {
     // Create query
     const pipeline = [
       {
-        geoNear: {
+        $geoNear: {
           near: {
             type: 'Point',
             coordinates: [1, 1],
@@ -1497,7 +1516,7 @@ describe('Parse.Query Aggregate testing', () => {
     // Create query
     const pipeline = [
       {
-        geoNear: {
+        $geoNear: {
           near: [1, 1],
           key: 'location',
           spherical: true,
@@ -1510,5 +1529,25 @@ describe('Parse.Query Aggregate testing', () => {
     // Check results
     expect(results.length).toEqual(3);
     await database.adapter.deleteAllClasses(false);
+  });
+
+  it_only_db('mongo')('aggregate handle mongodb errors', async () => {
+    const pipeline = [
+      {
+        $search: {
+          index: "default",
+          text: {
+            path: ["name"],
+            query: 'foo',
+          },
+        },
+      },
+    ];
+    try {
+      await new Parse.Query(TestObject).aggregate(pipeline);
+      fail();
+    } catch (e) {
+      expect(e.code).toBe(Parse.Error.INVALID_QUERY);
+    }
   });
 });

@@ -3,6 +3,7 @@
 ## Table of Contents <!-- omit in toc -->
 - [Contributing](#contributing)
   - [Issue vs. Pull Request](#issue-vs-pull-request)
+  - [Scope](#scope)
   - [Templates](#templates)
 - [Why Contributing?](#why-contributing)
 - [Contribution FAQs](#contribution-faqs)
@@ -10,12 +11,17 @@
   - [Review Feedback](#review-feedback)
   - [Merge Readiness](#merge-readiness)
   - [Review Validity](#review-validity)
+  - [Code Ownership](#code-ownership)
+  - [Access Permissions](#access-permissions)
+  - [New Private Repository](#new-private-repository)
+  - [New Public Repository](#new-public-repository)
 - [Environment Setup](#environment-setup)
   - [Recommended Tools](#recommended-tools)
   - [Setting up your local machine](#setting-up-your-local-machine)
   - [Good to Know](#good-to-know)
   - [Troubleshooting](#troubleshooting)
   - [Please Do's](#please-dos)
+  - [TypeScript Tests](#typescript-tests)
   - [Test against Postgres](#test-against-postgres)
     - [Postgres with Docker](#postgres-with-docker)
 - [Breaking Changes](#breaking-changes)
@@ -32,6 +38,10 @@
 - [Merging](#merging)
   - [Breaking Change](#breaking-change-1)
   - [Reverting](#reverting)
+  - [Security Vulnerability](#security-vulnerability)
+    - [Local Testing](#local-testing)
+    - [Environment](#environment)
+    - [Merging](#merging-1)
 - [Releasing](#releasing)
   - [General Considerations](#general-considerations)
   - [Major Release / Long-Term-Support](#major-release--long-term-support)
@@ -63,6 +73,14 @@ An issue is required to be linked in every pull request. We understand that no-o
 - An issue get more visibility than a pull request as issues can be pinned, receive bounties and it is primarily the issue list that people browse through rather than the more technical pull request list. Visibility is a key aspect so others can weigh in on issues and contribute their opinion.
 - The discussion in the issue is different from the discussion in the pull request. The issue discussion is focused on the issue and how to address it, whereas the discussion in the pull request is focused on a specific implemention. An issue may even have multiple pull requests because either the issue requires multiple implementations or multiple pull requests are opened to compare and test different approaches to later decide for one.
 - High-level conceptual discussions about the issue should be still available, even if a pull request is closed because its appraoch was discarded. If these discussions are in the pull request instead, they can easily become fragmented over multiple pull requests and issues, which can make it very hard to make sense of all aspects of an issue.
+
+### Scope
+
+An issue and pull request must limit its scope on a distinct issue. Pull requests can only contain changes that are required to address the scoped issue. While it may seem quick and easy to add unrelated changes to the pull request, it can cause singificant complications after merging. Some of the reasons are:
+
+- A pull request corresponds to a single changelog entry. A changelog entry should not describe multiple unrelated changes in one entry for better readability.
+- A pull request creates a distinct commit; having an individual commit for each limited scope makes it easier for others to go back in the commit history and debug. Bugs are generally more difficult to identify and fix if there are various unrelated changes merged at once.
+- If a pull request needs to be reverted, unrelated changes will be reverted as well. That makes it more complex and time consuming to revert, having to consider its effects and possibly publishing a broken release or requiring a follow-up pull request with code manipulation.
 
 ### Templates
 
@@ -133,6 +151,30 @@ It's contrary to an open, collaborative environment to expect others to be invol
 
 Your arguments must focus on the issue, not on your assumption of someone else's personal experience. We will take immediate and appropriate action in case of personal attacks, regardless of your previous contributions. Personal attacks are not permissible. If you became a victim of personal attacks, you can privately [report](https://docs.github.com/en/communities/maintaining-your-safety-on-github/reporting-abuse-or-spam) the GitHub comment to the Parse Platform PMC.
 
+### Code Ownership
+
+> *Can I open a new pull request based on another author's pull request?*
+
+If your pull request contains work from someone else then you are required to get their permission to use their work in your pull request. Please make sure to observe the [license](LICENSE) for more details. In addition, as an appreciative gesture you should clearly mention that your pull request is based on another pull request with a link in the top-most comment of your pull request. To avoid this issue we encourage contributors to collaborate on a single pull request to preserve the commit history and clearly identify each author's contribution. To do so, you can review the other author's pull request and submit your code suggestions, or ask the original author to grant you write access to their repository to also be able to make commits directly to their pull request.
+
+### Access Permissions
+
+> *Can I get write access to the repository to make changes faster?*
+
+Keeping our products safe and secure is one of your top priorities. Our security policy mandates that write access to repositories is only provided to as few people as necessary. All usual contributions can be made via public pull requests. If you think you need write access, contact the repository team and explain in detail what the constraint is that you are trying to overcome. We want to make contributing for you as easy as possible. If there are any bottlenecks that are slowing you down we are happy to receive your feedback to see where we can improve.
+
+### New Private Repository
+
+> *Can I get a new private repository within the Parse Platform organization to work on some stuff?*
+
+Private repositories are not provided unless there is a significant constraint or requirement that makes it necessary. For example, when collaborating on fixing a security vulnerability we provide private repositories to allow collaborators to share sensitive information within a select group.
+
+### New Public Repository
+
+> *Can I get a new public repository within the Parse Platform organization to work on some stuff?*
+
+First of all, we appreciate your contribution. In rare cases, where we consider it beneficial to the advancement of the repository, a new public repository for a specific purpose may be provided, for example for increased visibility or to provide the organization's GitHub ressources. In other cases, we encourage you to start your contribution in a personal repository of your own GitHub account, and later transfer it to the Parse Platform organization. We will be happy to assist you in the repository transfer.
+
 ## Environment Setup
 
 ### Recommended Tools
@@ -198,11 +240,24 @@ Once you have babel running in watch mode, you can start making changes to parse
 * Mocks belong in the `spec/support` folder.
 * Please consider if any changes to the [docs](http://docs.parseplatform.org) are needed or add additional sections in the case of an enhancement or feature.
 
+#### TypeScript Tests
+
+Type tests are located in [/types/tests.ts](/types/tests.ts) and are responsible for ensuring that the type generation for each class is behaving as expected. Types are generated by manually running the script `npm run build:types`. The generated types are `.d.ts` files located in [/types](/types) and must not be manually changed after generation.
+
+> [!CAUTION]
+> An exemption are type changes to `src/Options/index.js` which must be manually updated in `types/Options/index.d.ts`, as these types are not generated via a script.
+
+When developing type definitions you can run `npm run watch:ts` in order to rebuild your changes automatically upon each save. Use `npm run test:types` in order to run types tests against generated `.d.ts` files.
+
 ### Test against Postgres
 
 If your pull request introduces a change that may affect the storage or retrieval of objects, you may want to make sure it plays nice with Postgres.
 
-* Run the tests against the postgres database with `PARSE_SERVER_TEST_DB=postgres PARSE_SERVER_TEST_DATABASE_URI=postgres://postgres:password@localhost:5432/parse_server_postgres_adapter_test_database npm run testonly`. You'll need to have postgres running on your machine and setup [appropriately](https://github.com/parse-community/parse-server/blob/master/scripts/before_script_postgres.sh) or use [`Docker`](#run-a-parse-postgres-with-docker).
+* You'll need to have postgres running on your machine and setup [appropriately](https://github.com/parse-community/parse-server/blob/master/scripts/before_script_postgres.sh) or use [`Docker`](#postgres-with-docker)
+* Run the tests against the postgres database with:
+  ```
+  PARSE_SERVER_TEST_DB=postgres PARSE_SERVER_TEST_DATABASE_URI=postgres://postgres:password@localhost:5432/parse_server_postgres_adapter_test_database npm run testonly
+  ``` 
 * The Postgres adapter has a special debugger that traces all the sql commands. You can enable it with setting the environment variable `PARSE_SERVER_LOG_LEVEL=debug`
 * If your feature is intended to only work with MongoDB, you should disable PostgreSQL-specific tests with:
 
@@ -218,16 +273,14 @@ If your pull request introduces a change that may affect the storage or retrieva
 * If your feature is intended to work with MongoDB and PostgreSQL, you can include or exclude tests more granularly with:
 
   - `it_only_mongodb_version('>=4.4')` // will test with any version of Postgres but only with version >=4.4 of MongoDB; accepts semver notation to specify a version range
-  - `it_exclude_mongodb_version('<4.4')` // will test with any version of Postgres and MongoDB, excluding version <4.4 of MongoDB; accepts semver notation to specify a version range
   - `it_only_postgres_version('>=13')` // will test with any version of Mongo but only with version >=13 of Postgres; accepts semver notation to specify a version range
-  - `it_exclude_postgres_version('<13')` // will test with any version of Postgres and MongoDB, excluding version <13 of Postgres; accepts semver notation to specify a version range
 
 #### Postgres with Docker
 
-[PostGIS images (select one with v2.2 or higher) on docker dashboard](https://hub.docker.com/r/postgis/postgis) is based off of the official [postgres](https://registry.hub.docker.com/_/postgres/) image and will work out-of-the-box (as long as you create a user with the necessary extensions for each of your Parse databases; see below). To launch the compatible Postgres instance, copy and paste the following line into your shell:
+[PostGIS images (select one with v2.2 or higher) on docker hub](https://hub.docker.com/r/postgis/postgis) is based off of the official [postgres](https://hub.docker.com/_/postgres) image and will work out-of-the-box (as long as you create a user with the necessary extensions for each of your Parse databases; see below). To launch the compatible Postgres instance, copy and paste the following line into your shell:
 
 ```
-docker run -d --name parse-postgres -p 5432:5432 -e POSTGRES_PASSWORD=password --rm postgis/postgis:13-3.2-alpine && sleep 20 && docker exec -it parse-postgres psql -U postgres -c 'CREATE DATABASE parse_server_postgres_adapter_test_database;' && docker exec -it parse-postgres psql -U postgres -c 'CREATE EXTENSION pgcrypto; CREATE EXTENSION postgis;' -d parse_server_postgres_adapter_test_database && docker exec -it parse-postgres psql -U postgres -c 'CREATE EXTENSION postgis_topology;' -d parse_server_postgres_adapter_test_database
+docker run -d --name parse-postgres -p 5432:5432 -e POSTGRES_PASSWORD=password --rm postgis/postgis:17-3.5-alpine && sleep 20 && docker exec -it parse-postgres psql -U postgres -c 'CREATE DATABASE parse_server_postgres_adapter_test_database;' && docker exec -it parse-postgres psql -U postgres -c 'CREATE EXTENSION pgcrypto; CREATE EXTENSION postgis;' -d parse_server_postgres_adapter_test_database && docker exec -it parse-postgres psql -U postgres -c 'CREATE EXTENSION postgis_topology;' -d parse_server_postgres_adapter_test_database
 ```
 To stop the Postgres instance:
 
@@ -235,7 +288,7 @@ To stop the Postgres instance:
 docker stop parse-postgres
 ```
 
-You can also use the [postgis/postgis:13-3.2-alpine](https://hub.docker.com/r/postgis/postgis) image in a Dockerfile and copy this [script](https://github.com/parse-community/parse-server/blob/master/scripts/before_script_postgres.sh) to the image by adding the following lines:
+You can also use the [postgis/postgis:17-3.5-alpine](https://hub.docker.com/r/postgis/postgis) image in a Dockerfile and copy this [script](https://github.com/parse-community/parse-server/blob/master/scripts/before_script_postgres.sh) to the image by adding the following lines:
 
 ```
 #Install additional scripts. These are run in abc order during initial start
@@ -451,6 +504,41 @@ If the commit reverts a previous commit, use the prefix `revert:`, followed by t
   This reverts commit 1234567890abcdef.
   ```
 
+### Security Vulnerability
+
+#### Local Testing
+
+Fixes for security vulnerabilities are developed in private forks with a closed audience, inaccessible to the public. A current GitHub limitation does not allow to run CI tests on pull requests in private forks. Whether a pull requests fully passes all CI tests can only be determined by publishing the fix as a public pull request and running the CI. This means the fix and implicitly information about the vulnerability are made accessible to the public. This increases the risk that a vulnerability fix is published, but then cannot be merged immediately due to a CI issue. To mitigate that risk, before publishing a vulnerability fix, the following tests needs to be run locally and pass:
+
+- `npm run test` to test with MongoDB
+- `npm run test:postgres:testonly` to test with Postgres
+- `npm run madge:circular` to detect circular dependencies
+- `npm run lint` to check lint compliance
+- `npm run definitions` to update the Parse Server options definitions
+
+> [!CAUTION]
+> It is essential to run `npm run build` *after* switching to a different branch or making a commit and *before*  running any tests. Otherwise the tests may run on the build from a different branch or on a build that does not reflect the most recent commits.
+
+#### Environment
+
+A reported vulnerability may have already been fixed since it was reported, either due to a targeted fix or as side-effect of other code changed. To verify that a vulnerability exists, tests need to be run in an environment that uses the latest commit of the development branch of Parse Server.
+
+> [!NOTE]
+> Do not use the latest alpha version for testing as it may be behind the latest commit of the development branch.
+
+Vulnerability test must only be conducted in environments for which the tester can ensure that no unauthorized 3rd party has potentially access to. This is to ensure a vulnerability stays confidential and is not exposed prematurely to the public.
+
+You must not test a vulnerability using any 3rd party APIs that provide Parse Server as a hosted service (SaaS) as this may expose the vulnerability to an unauthorized 3rd party and the effects of the vulnerability may cause issues on the provider's side. 
+
+> [!CAUTION]
+> Utilizing a vulnerability in a third-party service, even for testing or development purposes, can result in legal repercussions. You are solely accountable for any damage arising from such actions and agree to indemnify Parse Platform against any liabilities or claims resulting from your actions.
+
+#### Merging
+
+A current GitHub limitation does not allow to customize the commit message when merging pull requests of a private fork that was created to fix a security vulnerability. Our release automation framework demands a specific commit message syntax which therefore cannot be met. This prohibits to follow the process that GitHub suggest, which is to merge a pull request from a private fork directly to a public branch. Instead, after [local testing](#local-testing), a public pull request needs to be created with the code fix copied over from the private pull request.
+
+This creates a risk that a vulnerability is indirectly disclosed by publishing a pull request with the fix, but the fix cannot be merged due to a CI issue. To mitigate that risk, the pull request title and description should be kept marginal or generic, not hinting to a vulnerability or giving any details about the vulnerability, until the pull request has been successfully merged.
+
 ## Releasing
 
 ### General Considerations
@@ -467,7 +555,6 @@ The following changes are done in the `alpha` branch, before publishing the last
 
 - Make sure all [deprecations](https://github.com/parse-community/parse-server/blob/alpha/DEPRECATIONS.md) are reflected in code, old code is removed and the deprecations table is updated.
 - Add the future LTS branch `release-#.x.x` to the branch list in [release.config.js](https://github.com/parse-community/parse-server/blob/alpha/release.config.js) so that the branch will later be recognized for release automation.
-
 
 ### Publishing Release (forward-merge):
 
@@ -519,6 +606,7 @@ The following changes are done in the `alpha` branch, before publishing the last
 1. Create LTS branch `release-#.x.x` off the latest version tag on `release` branch.
 2. Create temporary branch `build-release` off branch `beta` and create a pull request with `release` as the base branch.
 3. Merge branch `build-release` into `release`. Given that there will be breaking changes, a new major release will be created. In the unlikely case that there have been no breaking changes between the previous major release and the upcoming release, a major version increment has to be triggered manually. See the docs of the release automation framework for how to do that.
+4. Add newly created LTS branch `release-#.x.x` from step 1 to [Snyk](https://snyk.io) so that Snyk opens pull requests for the LTS branch; remove previously existing LTS branch `release-#.x.x` from Snyk.
 
 ## Versioning
 

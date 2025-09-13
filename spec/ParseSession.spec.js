@@ -6,6 +6,8 @@
 const request = require('../lib/request');
 
 function setupTestUsers() {
+  const acl = new Parse.ACL();
+  acl.setPublicReadAccess(true);
   const user1 = new Parse.User();
   const user2 = new Parse.User();
   const user3 = new Parse.User();
@@ -17,6 +19,10 @@ function setupTestUsers() {
   user1.set('password', 'password');
   user2.set('password', 'password');
   user3.set('password', 'password');
+
+  user1.setACL(acl);
+  user2.setACL(acl);
+  user3.setACL(acl);
 
   return user1
     .signUp()

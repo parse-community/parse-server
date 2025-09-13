@@ -1,9 +1,7 @@
 import express from 'express';
-import BodyParser from 'body-parser';
 import * as Middlewares from '../middlewares';
 import Parse from 'parse/node';
 import Config from '../Config';
-import mime from 'mime';
 import logger from '../logger';
 const triggers = require('../triggers');
 const http = require('http');
@@ -46,26 +44,28 @@ export class FilesRouter {
 
     router.post(
       '/files/:filename',
-      BodyParser.raw({
+      express.raw({
         type: () => {
           return true;
         },
         limit: maxUploadSize,
       }), // Allow uploads without Content-Type, or with any Content-Type.
       Middlewares.handleParseHeaders,
+      Middlewares.handleParseSession,
       this.createHandler
     );
 
     router.delete(
       '/files/:filename',
       Middlewares.handleParseHeaders,
+      Middlewares.handleParseSession,
       Middlewares.enforceMasterKeyAccess,
       this.deleteHandler
     );
     return router;
   }
 
-  getHandler(req, res) {
+  async getHandler(req, res) {
     const config = Config.get(req.params.appId);
     if (!config) {
       res.status(403);
@@ -73,29 +73,68 @@ export class FilesRouter {
       res.json({ code: err.code, error: err.message });
       return;
     }
-    const filesController = config.filesController;
-    const filename = req.params.filename;
-    const contentType = mime.getType(filename);
-    if (isFileStreamable(req, filesController)) {
-      filesController.handleFileStream(config, filename, req, res, contentType).catch(() => {
-        res.status(404);
-        res.set('Content-Type', 'text/plain');
-        res.end('File not found.');
-      });
-    } else {
-      filesController
-        .getFileData(config, filename)
-        .then(data => {
-          res.status(200);
-          res.set('Content-Type', contentType);
-          res.set('Content-Length', data.length);
-          res.end(data);
-        })
-        .catch(() => {
+
+    let filename = req.params.filename;
+    try {
+      const filesController = config.filesController;
+      const mime = (await import('mime')).default;
+      let contentType = mime.getType(filename);
+      let file = new Parse.File(filename, { base64: '' }, contentType);
+      const triggerResult = await triggers.maybeRunFileTrigger(
+        triggers.Types.beforeFind,
+        { file },
+        config,
+        req.auth
+      );
+      if (triggerResult?.file?._name) {
+        filename = triggerResult?.file?._name;
+        contentType = mime.getType(filename);
+      }
+
+      if (isFileStreamable(req, filesController)) {
+        filesController.handleFileStream(config, filename, req, res, contentType).catch(() => {
           res.status(404);
           res.set('Content-Type', 'text/plain');
           res.end('File not found.');
         });
+        return;
+      }
+
+      let data = await filesController.getFileData(config, filename).catch(() => {
+        res.status(404);
+        res.set('Content-Type', 'text/plain');
+        res.end('File not found.');
+      });
+      if (!data) {
+        return;
+      }
+      file = new Parse.File(filename, { base64: data.toString('base64') }, contentType);
+      const afterFind = await triggers.maybeRunFileTrigger(
+        triggers.Types.afterFind,
+        { file, forceDownload: false },
+        config,
+        req.auth
+      );
+
+      if (afterFind?.file) {
+        contentType = mime.getType(afterFind.file._name);
+        data = Buffer.from(afterFind.file._data, 'base64');
+      }
+
+      res.status(200);
+      res.set('Content-Type', contentType);
+      res.set('Content-Length', data.length);
+      if (afterFind.forceDownload) {
+        res.set('Content-Disposition', `attachment;filename=${afterFind.file._name}`);
+      }
+      res.end(data);
+    } catch (e) {
+      const err = triggers.resolveError(e, {
+        code: Parse.Error.SCRIPT_FAILED,
+        message: `Could not find file: ${filename}.`,
+      });
+      res.status(403);
+      res.json({ code: err.code, error: err.message });
     }
   }
 
@@ -138,25 +177,48 @@ export class FilesRouter {
       return;
     }
 
+    const fileExtensions = config.fileUpload?.fileExtensions;
+    if (!isMaster && fileExtensions) {
+      const isValidExtension = extension => {
+        return fileExtensions.some(ext => {
+          if (ext === '*') {
+            return true;
+          }
+          const regex = new RegExp(ext);
+          if (regex.test(extension)) {
+            return true;
+          }
+        });
+      };
+      let extension = contentType;
+      if (filename && filename.includes('.')) {
+        extension = filename.substring(filename.lastIndexOf('.') + 1);
+      } else if (contentType && contentType.includes('/')) {
+        extension = contentType.split('/')[1];
+      }
+      extension = extension?.split(' ')?.join('');
+
+      if (extension && !isValidExtension(extension)) {
+        next(
+          new Parse.Error(
+            Parse.Error.FILE_SAVE_ERROR,
+            `File upload of extension ${extension} is disabled.`
+          )
+        );
+        return;
+      }
+    }
+
     const base64 = req.body.toString('base64');
     const file = new Parse.File(filename, { base64 }, contentType);
     const { metadata = {}, tags = {} } = req.fileData || {};
-    if (req.config && req.config.requestKeywordDenylist) {
+    try {
       // Scan request data for denied keywords
-      for (const keyword of req.config.requestKeywordDenylist) {
-        const match =
-          Utils.objectContainsKeyValue(metadata, keyword.key, keyword.value) ||
-          Utils.objectContainsKeyValue(tags, keyword.key, keyword.value);
-        if (match) {
-          next(
-            new Parse.Error(
-              Parse.Error.INVALID_KEY_NAME,
-              `Prohibited keyword in request data: ${JSON.stringify(keyword)}.`
-            )
-          );
-          return;
-        }
-      }
+      Utils.checkProhibitedKeywords(config, metadata);
+      Utils.checkProhibitedKeywords(config, tags);
+    } catch (error) {
+      next(new Parse.Error(Parse.Error.INVALID_KEY_NAME, error));
+      return;
     }
     file.setTags(tags);
     file.setMetadata(metadata);
@@ -238,7 +300,7 @@ export class FilesRouter {
       const { filename } = req.params;
       // run beforeDeleteFile trigger
       const file = new Parse.File(filename);
-      file._url = filesController.adapter.getFileLocation(req.config, filename);
+      file._url = await filesController.adapter.getFileLocation(req.config, filename);
       const fileObject = { file, fileSize: null };
       await triggers.maybeRunFileTrigger(
         triggers.Types.beforeDelete,

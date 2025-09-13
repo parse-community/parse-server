@@ -625,7 +625,7 @@ describe_only_db('mongo')('Read preference option', () => {
     spyOn(Collection.prototype, 'aggregate').and.callThrough();
     // Query
     const query = new Parse.Query('MyObject');
-    const results = await query.aggregate([{ match: { boolKey: false } }]);
+    const results = await query.aggregate([{ $match: { boolKey: false } }]);
     // Validate
     expect(results.length).toBe(1);
     let readPreference = null;
@@ -678,7 +678,7 @@ describe_only_db('mongo')('Read preference option', () => {
     // Query
     const query = new Parse.Query('MyObject');
     query.readPreference('SECONDARY');
-    const results = await query.aggregate([{ match: { boolKey: false } }]);
+    const results = await query.aggregate([{ $match: { boolKey: false } }]);
     // Validate
     expect(results.length).toBe(1);
     let readPreference = null;

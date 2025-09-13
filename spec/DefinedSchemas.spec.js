@@ -554,7 +554,7 @@ describe('DefinedSchemas', () => {
     });
   });
 
-  it('should not delete automatically classes', async () => {
+  it('should not delete classes automatically', async () => {
     await reconfigureServer({
       schema: { definitions: [{ className: '_User' }, { className: 'Test' }] },
     });
@@ -631,7 +631,7 @@ describe('DefinedSchemas', () => {
     const logger = require('../lib/logger').logger;
     spyOn(DefinedSchemas.prototype, 'wait').and.resolveTo();
     spyOn(logger, 'error').and.callThrough();
-    spyOn(Parse.Schema, 'all').and.callFake(() => {
+    spyOn(DefinedSchemas.prototype, 'createDeleteSession').and.callFake(() => {
       throw error;
     });
 
@@ -642,7 +642,8 @@ describe('DefinedSchemas', () => {
 
     expect(logger.error).toHaveBeenCalledWith(`Failed to run migrations: ${error.toString()}`);
   });
-  it('should perform migration in parallel without failing', async () => {
+
+  it_id('a18bf4f2-25c8-4de3-b986-19cb1ab163b8')(it)('should perform migration in parallel without failing', async () => {
     const server = await reconfigureServer();
     const logger = require('../lib/logger').logger;
     spyOn(logger, 'error').and.callThrough();

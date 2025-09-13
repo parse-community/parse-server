@@ -5,17 +5,9 @@ const Config = require('../lib/Config');
 const auth = require('../lib/Auth');
 
 describe('Parse.ACL', () => {
-  it('acl must be valid', done => {
+  it('acl must be valid', () => {
     const user = new Parse.User();
-    ok(
-      !user.setACL("Ceci n'est pas un ACL.", {
-        error: function (user, error) {
-          equal(error.code, -1);
-          done();
-        },
-      }),
-      'setACL should have returned false.'
-    );
+    expect(() => user.setACL('ACL')).toThrow(new Parse.Error(Parse.Error.OTHER_CAUSE, 'ACL must be a Parse ACL.'));
   });
 
   it('refresh object with acl', async done => {
@@ -930,5 +922,33 @@ describe('Parse.ACL', () => {
     });
 
     rest.create(config, auth.nobody(config), '_User', anonUser);
+  });
+
+  it('support defaultACL in schema', async () => {
+    await new Parse.Object('TestObject').save();
+    const schema = await Parse.Server.database.loadSchema();
+    await schema.updateClass(
+      'TestObject',
+      {},
+      {
+        create: {
+          '*': true,
+        },
+        ACL: {
+          '*': { read: true },
+          currentUser: { read: true, write: true },
+        },
+      }
+    );
+    const acls = new Parse.ACL();
+    acls.setPublicReadAccess(true);
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
+    const obj = new Parse.Object('TestObject');
+    await obj.save(null, { sessionToken: user.getSessionToken() });
+    expect(obj.getACL()).toBeDefined();
+    const acl = obj.getACL().toJSON();
+    expect(acl['*']).toEqual({ read: true });
+    expect(acl[user.id].write).toBeTrue();
+    expect(acl[user.id].read).toBeTrue();
   });
 });

@@ -1,14 +1,14 @@
 {
     "plugins": [
-        "transform-object-rest-spread"
+        "@babel/plugin-proposal-object-rest-spread"
     ],
     "presets": [
-        ["env", {
+        "@babel/preset-typescript",
+        ["@babel/preset-env", {
             "targets": {
-                "node": "14"
+                "node": "18"
             }
         }]
     ],
-    "sourceMaps": "inline",
-    "retainLines": true
+    "sourceMaps": "inline"
 }

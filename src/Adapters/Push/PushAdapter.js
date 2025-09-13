@@ -12,10 +12,8 @@
 // android push and APNS for ios push.
 
 /**
- * @module Adapters
- */
-/**
- * @interface PushAdapter
+ * @interface
+ * @memberof module:Adapters
  */
 export class PushAdapter {
   /**

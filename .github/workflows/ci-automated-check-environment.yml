@@ -13,18 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout default branch
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Setup Node
         uses: actions/setup-node@v2
         with:
-          node-version: 14
-      - name: Cache Node.js modules
-        uses: actions/cache@v2
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
+          node-version: 20
+          cache: 'npm'
       - name: Install dependencies
         run: npm ci
       - name: CI Environments Check
@@ -36,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout default branch
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Compose branch name for PR
         id: branch
         run: echo "::set-output name=name::ci-bump-environment"

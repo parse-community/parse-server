@@ -21,11 +21,14 @@ const mockAdapter = {
 
 // Small additional tests to improve overall coverage
 describe('FilesController', () => {
-  it('should properly expand objects', done => {
+  it('should properly expand objects with sync getFileLocation', async () => {
     const config = Config.get(Parse.applicationId);
     const gridFSAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
+    gridFSAdapter.getFileLocation = (config, filename) => {
+      return config.mount + '/files/' + config.applicationId + '/' + encodeURIComponent(filename);
+    }
     const filesController = new FilesController(gridFSAdapter);
-    const result = filesController.expandFilesInObject(config, function () {});
+    const result = await filesController.expandFilesInObject(config, function () { });
 
     expect(result).toBeUndefined();
 
@@ -37,11 +40,68 @@ describe('FilesController', () => {
     const anObject = {
       aFile: fullFile,
     };
-    filesController.expandFilesInObject(config, anObject);
+    await filesController.expandFilesInObject(config, anObject);
     expect(anObject.aFile.url).toEqual('http://an.url');
-
-    done();
   });
+
+  it('should properly expand objects with async getFileLocation', async () => {
+    const config = Config.get(Parse.applicationId);
+    const gridFSAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
+    gridFSAdapter.getFileLocation = async (config, filename) => {
+      await Promise.resolve();
+      return config.mount + '/files/' + config.applicationId + '/' + encodeURIComponent(filename);
+    }
+    const filesController = new FilesController(gridFSAdapter);
+    const result = await filesController.expandFilesInObject(config, function () { });
+
+    expect(result).toBeUndefined();
+
+    const fullFile = {
+      type: '__type',
+      url: 'http://an.url',
+    };
+
+    const anObject = {
+      aFile: fullFile,
+    };
+    await filesController.expandFilesInObject(config, anObject);
+    expect(anObject.aFile.url).toEqual('http://an.url');
+  });
+
+  it('should call getFileLocation when config.fileKey is undefined', async () => {
+    const config = {};
+    const gridFSAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
+
+    const fullFile = {
+      name: 'mock-name',
+      __type: 'File',
+    };
+    gridFSAdapter.getFileLocation = jasmine.createSpy('getFileLocation').and.returnValue(Promise.resolve('mock-url'));
+    const filesController = new FilesController(gridFSAdapter);
+
+    const anObject = { aFile: fullFile };
+    await filesController.expandFilesInObject(config, anObject);
+    expect(gridFSAdapter.getFileLocation).toHaveBeenCalledWith(config, fullFile.name);
+    expect(anObject.aFile.url).toEqual('mock-url');
+  });
+
+  it('should call getFileLocation when config.fileKey is defined', async () => {
+    const config = { fileKey: 'mock-key' };
+    const gridFSAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
+
+    const fullFile = {
+      name: 'mock-name',
+      __type: 'File',
+    };
+    gridFSAdapter.getFileLocation = jasmine.createSpy('getFileLocation').and.returnValue(Promise.resolve('mock-url'));
+    const filesController = new FilesController(gridFSAdapter);
+
+    const anObject = { aFile: fullFile };
+    await filesController.expandFilesInObject(config, anObject);
+    expect(gridFSAdapter.getFileLocation).toHaveBeenCalledWith(config, fullFile.name);
+    expect(anObject.aFile.url).toEqual('mock-url');
+  });
+
 
   it_only_db('mongo')('should pass databaseOptions to GridFSBucketAdapter', async () => {
     await reconfigureServer({
@@ -55,6 +115,8 @@ describe('FilesController', () => {
     const config = Config.get(Parse.applicationId);
     expect(config.database.adapter._mongoOptions.retryWrites).toBeTrue();
     expect(config.filesController.adapter._mongoOptions.retryWrites).toBeTrue();
+    expect(config.filesController.adapter._mongoOptions.enableSchemaHooks).toBeUndefined();
+    expect(config.filesController.adapter._mongoOptions.schemaCacheTtl).toBeUndefined();
   });
 
   it('should create a server log on failure', done => {
@@ -99,7 +161,7 @@ describe('FilesController', () => {
     done();
   });
 
-  it('should add a unique hash to the file name when the preserveFileName option is false', done => {
+  it('should add a unique hash to the file name when the preserveFileName option is false', async () => {
     const config = Config.get(Parse.applicationId);
     const gridFSAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
     spyOn(gridFSAdapter, 'createFile');
@@ -110,17 +172,15 @@ describe('FilesController', () => {
       preserveFileName: false,
     });
 
-    filesController.createFile(config, fileName);
+    await filesController.createFile(config, fileName);
 
     expect(gridFSAdapter.createFile).toHaveBeenCalledTimes(1);
     expect(gridFSAdapter.createFile.calls.mostRecent().args[0]).toMatch(
       `^.{32}_${regexEscapedFileName}$`
     );
-
-    done();
   });
 
-  it('should not add a unique hash to the file name when the preserveFileName option is true', done => {
+  it('should not add a unique hash to the file name when the preserveFileName option is true', async () => {
     const config = Config.get(Parse.applicationId);
     const gridFSAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
     spyOn(gridFSAdapter, 'createFile');
@@ -130,12 +190,10 @@ describe('FilesController', () => {
       preserveFileName: true,
     });
 
-    filesController.createFile(config, fileName);
+    await filesController.createFile(config, fileName);
 
     expect(gridFSAdapter.createFile).toHaveBeenCalledTimes(1);
     expect(gridFSAdapter.createFile.calls.mostRecent().args[0]).toEqual(fileName);
-
-    done();
   });
 
   it('should handle adapter without getMetadata', async () => {

@@ -1,7 +1,6 @@
 // ParseServer - open-source compatible API Server for Parse apps
 
 var batch = require('./batch'),
-  bodyParser = require('body-parser'),
   express = require('express'),
   middlewares = require('./middlewares'),
   Parse = require('parse/node').Parse,
@@ -45,13 +44,23 @@ import { SecurityRouter } from './Routers/SecurityRouter';
 import CheckRunner from './Security/CheckRunner';
 import Deprecator from './Deprecator/Deprecator';
 import { DefinedSchemas } from './SchemaMigrations/DefinedSchemas';
+import OptionsDefinitions from './Options/Definitions';
+import { resolvingPromise, Connections } from './TestUtils';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
 
+// Track connections to destroy them on shutdown
+const connections = new Connections();
+
 // ParseServer works like a constructor of an express app.
 // https://parseplatform.org/parse-server/api/master/ParseServerOptions.html
 class ParseServer {
+  _app: any;
+  config: any;
+  server: any;
+  expressApp: any;
+  liveQueryServer: any;
   /**
    * @constructor
    * @param {ParseServerOptions} options the parse server initialization options
@@ -59,72 +68,151 @@ class ParseServer {
   constructor(options: ParseServerOptions) {
     // Scan for deprecated Parse Server options
     Deprecator.scanParseServerOptions(options);
+
+    const interfaces = JSON.parse(JSON.stringify(OptionsDefinitions));
+
+    function getValidObject(root) {
+      const result = {};
+      for (const key in root) {
+        if (Object.prototype.hasOwnProperty.call(root[key], 'type')) {
+          if (root[key].type.endsWith('[]')) {
+            result[key] = [getValidObject(interfaces[root[key].type.slice(0, -2)])];
+          } else {
+            result[key] = getValidObject(interfaces[root[key].type]);
+          }
+        } else {
+          result[key] = '';
+        }
+      }
+      return result;
+    }
+
+    const optionsBlueprint = getValidObject(interfaces['ParseServerOptions']);
+
+    function validateKeyNames(original, ref, name = '') {
+      let result = [];
+      const prefix = name + (name !== '' ? '.' : '');
+      for (const key in original) {
+        if (!Object.prototype.hasOwnProperty.call(ref, key)) {
+          result.push(prefix + key);
+        } else {
+          if (ref[key] === '') { continue; }
+          let res = [];
+          if (Array.isArray(original[key]) && Array.isArray(ref[key])) {
+            const type = ref[key][0];
+            original[key].forEach((item, idx) => {
+              if (typeof item === 'object' && item !== null) {
+                res = res.concat(validateKeyNames(item, type, prefix + key + `[${idx}]`));
+              }
+            });
+          } else if (typeof original[key] === 'object' && typeof ref[key] === 'object') {
+            res = validateKeyNames(original[key], ref[key], prefix + key);
+          }
+          result = result.concat(res);
+        }
+      }
+      return result;
+    }
+
+    const diff = validateKeyNames(options, optionsBlueprint);
+    if (diff.length > 0) {
+      const logger = (logging as any).logger;
+      logger.error(`Invalid key(s) found in Parse Server configuration: ${diff.join(', ')}`);
+    }
+
     // Set option defaults
     injectDefaults(options);
     const {
       appId = requiredParameter('You must provide an appId!'),
       masterKey = requiredParameter('You must provide a masterKey!'),
-      cloud,
-      security,
       javascriptKey,
       serverURL = requiredParameter('You must provide a serverURL!'),
-      serverStartComplete,
-      schema,
     } = options;
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
-
+    Config.validateOptions(options);
     const allControllers = controllers.getControllers(options);
 
-    const { loggerController, databaseController, hooksController } = allControllers;
+    (options as any).state = 'initialized';
     this.config = Config.put(Object.assign({}, options, allControllers));
+    this.config.masterKeyIpsStore = new Map();
+    this.config.maintenanceKeyIpsStore = new Map();
+    logging.setLogger(allControllers.loggerController);
+  }
 
-    logging.setLogger(loggerController);
+  /**
+   * Starts Parse Server as an express app; this promise resolves when Parse Server is ready to accept requests.
+   */
 
-    // Note: Tests will start to fail if any validation happens after this is called.
-    databaseController
-      .performInitialization()
-      .then(() => hooksController.load())
-      .then(async () => {
-        const startupPromises = [];
-        if (schema) {
-          startupPromises.push(new DefinedSchemas(schema, this.config).execute());
-        }
-        if (
-          options.cacheAdapter &&
-          options.cacheAdapter.connect &&
-          typeof options.cacheAdapter.connect === 'function'
-        ) {
-          startupPromises.push(options.cacheAdapter.connect());
-        }
-        await Promise.all(startupPromises);
-        if (serverStartComplete) {
-          serverStartComplete();
-        }
-      })
-      .catch(error => {
-        if (serverStartComplete) {
-          serverStartComplete(error);
-        } else {
-          console.error(error);
-          process.exit(1);
-        }
-      });
-
-    if (cloud) {
-      addParseCloud();
-      if (typeof cloud === 'function') {
-        cloud(Parse);
-      } else if (typeof cloud === 'string') {
-        require(path.resolve(process.cwd(), cloud));
-      } else {
-        throw "argument 'cloud' must either be a string or a function";
+  async start(): Promise<this> {
+    try {
+      if (this.config.state === 'ok') {
+        return this;
       }
-    }
-
-    if (security && security.enableCheck && security.enableCheckLog) {
-      new CheckRunner(options.security).run();
+      this.config.state = 'starting';
+      Config.put(this.config);
+      const {
+        databaseController,
+        hooksController,
+        cacheController,
+        cloud,
+        security,
+        schema,
+        liveQueryController,
+      } = this.config;
+      try {
+        await databaseController.performInitialization();
+      } catch (e) {
+        if (e.code !== Parse.Error.DUPLICATE_VALUE) {
+          throw e;
+        }
+      }
+      const pushController = await controllers.getPushController(this.config);
+      await hooksController.load();
+      const startupPromises = [this.config.loadMasterKey?.()];
+      if (schema) {
+        startupPromises.push(new DefinedSchemas(schema, this.config).execute());
+      }
+      if (
+        cacheController.adapter?.connect &&
+        typeof cacheController.adapter.connect === 'function'
+      ) {
+        startupPromises.push(cacheController.adapter.connect());
+      }
+      startupPromises.push(liveQueryController.connect());
+      await Promise.all(startupPromises);
+      if (cloud) {
+        addParseCloud();
+        if (typeof cloud === 'function') {
+          await Promise.resolve(cloud(Parse));
+        } else if (typeof cloud === 'string') {
+          let json;
+          if (process.env.npm_package_json) {
+            json = require(process.env.npm_package_json);
+          }
+          if (process.env.npm_package_type === 'module' || json?.type === 'module') {
+            await import(path.resolve(process.cwd(), cloud));
+          } else {
+            require(path.resolve(process.cwd(), cloud));
+          }
+        } else {
+          throw "argument 'cloud' must either be a string or a function";
+        }
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+      if (security && security.enableCheck && security.enableCheckLog) {
+        new CheckRunner(security).run();
+      }
+      this.config.state = 'ok';
+      this.config = { ...this.config, ...pushController };
+      Config.put(this.config);
+      return this;
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error(error);
+      this.config.state = 'error';
+      throw error;
     }
   }
 
@@ -135,8 +223,39 @@ class ParseServer {
     return this._app;
   }
 
-  handleShutdown() {
+  /**
+   * Stops the parse server, cancels any ongoing requests and closes all connections.
+   *
+   * Currently, express doesn't shut down immediately after receiving SIGINT/SIGTERM
+   * if it has client connections that haven't timed out.
+   * (This is a known issue with node - https://github.com/nodejs/node/issues/2642)
+   *
+   * @returns {Promise<void>} a promise that resolves when the server is stopped
+   */
+  async handleShutdown() {
+    const serverClosePromise = resolvingPromise();
+    const liveQueryServerClosePromise = resolvingPromise();
     const promises = [];
+    this.server.close((error) => {
+      /* istanbul ignore next */
+      if (error) {
+        // eslint-disable-next-line no-console
+        console.error('Error while closing parse server', error);
+      }
+      serverClosePromise.resolve();
+    });
+    if (this.liveQueryServer?.server?.close && this.liveQueryServer.server !== this.server) {
+      this.liveQueryServer.server.close((error) => {
+        /* istanbul ignore next */
+        if (error) {
+          // eslint-disable-next-line no-console
+          console.error('Error while closing live query server', error);
+        }
+        liveQueryServerClosePromise.resolve();
+      });
+    } else {
+      liveQueryServerClosePromise.resolve();
+    }
     const { adapter: databaseAdapter } = this.config.databaseController;
     if (databaseAdapter && typeof databaseAdapter.handleShutdown === 'function') {
       promises.push(databaseAdapter.handleShutdown());
@@ -149,11 +268,15 @@ class ParseServer {
     if (cacheAdapter && typeof cacheAdapter.handleShutdown === 'function') {
       promises.push(cacheAdapter.handleShutdown());
     }
-    return (promises.length > 0 ? Promise.all(promises) : Promise.resolve()).then(() => {
-      if (this.config.serverCloseComplete) {
-        this.config.serverCloseComplete();
-      }
-    });
+    if (this.liveQueryServer) {
+      promises.push(this.liveQueryServer.shutdown());
+    }
+    await Promise.all(promises);
+    connections.destroyAll();
+    await Promise.all([serverClosePromise, liveQueryServerClosePromise]);
+    if (this.config.serverCloseComplete) {
+      this.config.serverCloseComplete();
+    }
   }
 
   /**
@@ -161,12 +284,13 @@ class ParseServer {
    * Create an express app for the parse server
    * @param {Object} options let you specify the maxUploadSize when creating the express app  */
   static app(options) {
-    const { maxUploadSize = '20mb', appId, directAccess, pages } = options;
+    const { maxUploadSize = '20mb', appId, directAccess, pages, rateLimit = [] } = options;
     // This app serves the Parse API directly.
     // It's the equivalent of https://api.parse.com/1 in the hosted Parse API.
     var api = express();
     //api.use("/apps", express.static(__dirname + "/public"));
     api.use(middlewares.allowCrossDomain(appId));
+    api.use(middlewares.allowDoubleForwardSlash);
     // File handling needs to be before default middlewares are applied
     api.use(
       '/',
@@ -176,22 +300,32 @@ class ParseServer {
     );
 
     api.use('/health', function (req, res) {
+      res.status(options.state === 'ok' ? 200 : 503);
+      if (options.state === 'starting') {
+        res.set('Retry-After', 1);
+      }
       res.json({
-        status: 'ok',
+        status: options.state,
       });
     });
 
     api.use(
       '/',
-      bodyParser.urlencoded({ extended: false }),
+      express.urlencoded({ extended: false }),
       pages.enableRouter
         ? new PagesRouter(pages).expressRouter()
         : new PublicAPIRouter().expressRouter()
     );
 
-    api.use(bodyParser.json({ type: '*/*', limit: maxUploadSize }));
+    api.use(express.json({ type: '*/*', limit: maxUploadSize }));
     api.use(middlewares.allowMethodOverride);
     api.use(middlewares.handleParseHeaders);
+    api.set('query parser', 'extended');
+    const routes = Array.isArray(rateLimit) ? rateLimit : [rateLimit];
+    for (const route of routes) {
+      middlewares.addRateLimit(route, options);
+    }
+    api.use(middlewares.handleParseSession);
 
     const appRouter = ParseServer.promiseRouter({ appId });
     api.use(appRouter.expressRouter());
@@ -202,18 +336,27 @@ class ParseServer {
     if (!process.env.TESTING) {
       //This causes tests to spew some useless warnings, so disable in test
       /* istanbul ignore next */
-      process.on('uncaughtException', err => {
+      process.on('uncaughtException', (err: any) => {
         if (err.code === 'EADDRINUSE') {
           // user-friendly message for this common error
           process.stderr.write(`Unable to listen on port ${err.port}. The port is already in use.`);
           process.exit(0);
         } else {
-          throw err;
+          if (err.message) {
+            process.stderr.write('An uncaught exception occurred: ' + err.message);
+          }
+          if (err.stack) {
+            process.stderr.write('Stack Trace:\n' + err.stack);
+          } else {
+            process.stderr.write(err);
+          }
+          process.exit(1);
         }
       });
       // verify the server url after a 'mount' event is received
       /* istanbul ignore next */
-      api.on('mount', function () {
+      api.on('mount', async function () {
+        await new Promise(resolve => setTimeout(resolve, 1000));
         ParseServer.verifyServerUrl();
       });
     }
@@ -260,10 +403,17 @@ class ParseServer {
   /**
    * starts the parse server's express app
    * @param {ParseServerOptions} options to use to start the server
-   * @param {Function} callback called when the server has started
    * @returns {ParseServer} the parse server instance
    */
-  start(options: ParseServerOptions, callback: ?() => void) {
+
+  async startApp(options: ParseServerOptions) {
+    try {
+      await this.start();
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error('Error on ParseServer.startApp: ', e);
+      throw e;
+    }
     const app = express();
     if (options.middleware) {
       let middleware;
@@ -274,7 +424,6 @@ class ParseServer {
       }
       app.use(middleware);
     }
-
     app.use(options.mountPath, this.app);
 
     if (options.mountGraphQL === true || options.mountPlayground === true) {
@@ -302,16 +451,26 @@ class ParseServer {
         parseGraphQLServer.applyPlayground(app);
       }
     }
-
-    const server = app.listen(options.port, options.host, callback);
+    const server = await new Promise(resolve => {
+      app.listen(options.port, options.host, function () {
+        resolve(this);
+      });
+    });
     this.server = server;
+    connections.track(server);
 
     if (options.startLiveQueryServer || options.liveQueryServerOptions) {
-      this.liveQueryServer = ParseServer.createLiveQueryServer(
+      this.liveQueryServer = await ParseServer.createLiveQueryServer(
         server,
         options.liveQueryServerOptions,
         options
       );
+      if (this.liveQueryServer.server !== this.server) {
+        connections.track(this.liveQueryServer.server);
+      }
+    }
+    if (options.trustProxy) {
+      app.set('trust proxy', options.trustProxy);
     }
     /* istanbul ignore next */
     if (!process.env.TESTING) {
@@ -324,12 +483,11 @@ class ParseServer {
   /**
    * Creates a new ParseServer and starts it.
    * @param {ParseServerOptions} options used to start the server
-   * @param {Function} callback called when the server has started
    * @returns {ParseServer} the parse server instance
    */
-  static start(options: ParseServerOptions, callback: ?() => void) {
+  static async startApp(options: ParseServerOptions) {
     const parseServer = new ParseServer(options);
-    return parseServer.start(options, callback);
+    return parseServer.startApp(options);
   }
 
   /**
@@ -338,54 +496,73 @@ class ParseServer {
    * @param {Server} httpServer an optional http server to pass
    * @param {LiveQueryServerOptions} config options for the liveQueryServer
    * @param {ParseServerOptions} options options for the ParseServer
-   * @returns {ParseLiveQueryServer} the live query server instance
+   * @returns {Promise<ParseLiveQueryServer>} the live query server instance
    */
-  static createLiveQueryServer(
+  static async createLiveQueryServer(
     httpServer,
     config: LiveQueryServerOptions,
     options: ParseServerOptions
-  ) {
+  ): Promise<ParseLiveQueryServer> {
     if (!httpServer || (config && config.port)) {
       var app = express();
       httpServer = require('http').createServer(app);
       httpServer.listen(config.port);
     }
-    return new ParseLiveQueryServer(httpServer, config, options);
+    const server = new ParseLiveQueryServer(httpServer, config, options);
+    await server.connect();
+    return server;
   }
 
-  static verifyServerUrl(callback) {
+  static async verifyServerUrl() {
     // perform a health check on the serverURL value
     if (Parse.serverURL) {
+      const isValidHttpUrl = string => {
+        let url;
+        try {
+          url = new URL(string);
+        } catch (_) {
+          return false;
+        }
+        return url.protocol === 'http:' || url.protocol === 'https:';
+      };
+      const url = `${Parse.serverURL.replace(/\/$/, '')}/health`;
+      if (!isValidHttpUrl(url)) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `\nWARNING, Unable to connect to '${Parse.serverURL}' as the URL is invalid.` +
+            ` Cloud code and push notifications may be unavailable!\n`
+        );
+        return;
+      }
       const request = require('./request');
-      request({ url: Parse.serverURL.replace(/\/$/, '') + '/health' })
-        .catch(response => response)
-        .then(response => {
-          const json = response.data || null;
-          if (response.status !== 200 || !json || (json && json.status !== 'ok')) {
-            /* eslint-disable no-console */
-            console.warn(
-              `\nWARNING, Unable to connect to '${Parse.serverURL}'.` +
-                ` Cloud code and push notifications may be unavailable!\n`
-            );
-            /* eslint-enable no-console */
-            if (callback) {
-              callback(false);
-            }
-          } else {
-            if (callback) {
-              callback(true);
-            }
-          }
-        });
+      const response = await request({ url }).catch(response => response);
+      const json = response.data || null;
+      const retry = response.headers?.['retry-after'];
+      if (retry) {
+        await new Promise(resolve => setTimeout(resolve, retry * 1000));
+        return this.verifyServerUrl();
+      }
+      if (response.status !== 200 || json?.status !== 'ok') {
+        /* eslint-disable no-console */
+        console.warn(
+          `\nWARNING, Unable to connect to '${Parse.serverURL}'.` +
+            ` Cloud code and push notifications may be unavailable!\n`
+        );
+        /* eslint-enable no-console */
+        return;
+      }
+      return true;
     }
   }
 }
 
 function addParseCloud() {
   const ParseCloud = require('./cloud-code/Parse.Cloud');
+  const ParseServer = require('./cloud-code/Parse.Server');
   Object.defineProperty(Parse, 'Server', {
     get() {
-      return Config.get(Parse.applicationId);
+      const conf = Config.get(Parse.applicationId);
+      return { ...conf, ...ParseServer };
     },
     set(newVal) {
       newVal.appId = Parse.applicationId;
@@ -412,6 +589,7 @@ function injectDefaults(options: ParseServerOptions) {
   if (options.appId) {
     const regex = /[!#$%'()*+&/:;=?@[\]{}^,|<>]/g;
     if (options.appId.match(regex)) {
+      // eslint-disable-next-line no-console
       console.warn(
         `\nWARNING, appId that contains special characters can cause issues while using with urls.\n`
       );
@@ -459,41 +637,13 @@ function injectDefaults(options: ParseServerOptions) {
       });
     }
   });
-
-  options.masterKeyIps = Array.from(
-    new Set(options.masterKeyIps.concat(defaults.masterKeyIps, options.masterKeyIps))
-  );
 }
 
 // Those can't be tested as it requires a subprocess
 /* istanbul ignore next */
 function configureListeners(parseServer) {
-  const server = parseServer.server;
-  const sockets = {};
-  /* Currently, express doesn't shut down immediately after receiving SIGINT/SIGTERM if it has client connections that haven't timed out. (This is a known issue with node - https://github.com/nodejs/node/issues/2642)
-    This function, along with `destroyAliveConnections()`, intend to fix this behavior such that parse server will close all open connections and initiate the shutdown process as soon as it receives a SIGINT/SIGTERM signal. */
-  server.on('connection', socket => {
-    const socketId = socket.remoteAddress + ':' + socket.remotePort;
-    sockets[socketId] = socket;
-    socket.on('close', () => {
-      delete sockets[socketId];
-    });
-  });
-
-  const destroyAliveConnections = function () {
-    for (const socketId in sockets) {
-      try {
-        sockets[socketId].destroy();
-      } catch (e) {
-        /* */
-      }
-    }
-  };
-
   const handleShutdown = function () {
     process.stdout.write('Termination signal received. Shutting down.');
-    destroyAliveConnections();
-    server.close();
     parseServer.handleShutdown();
   };
   process.on('SIGTERM', handleShutdown);

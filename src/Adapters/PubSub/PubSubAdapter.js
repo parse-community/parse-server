@@ -1,9 +1,7 @@
 /*eslint no-unused-vars: "off"*/
 /**
- * @module Adapters
- */
-/**
- * @interface PubSubAdapter
+ * @interface
+ * @memberof module:Adapters
  */
 export class PubSubAdapter {
   /**

@@ -1,10 +1,13 @@
 ############################################################
 # Build stage
 ############################################################
-FROM node:lts-alpine as build
+FROM node:20.19.0-alpine3.20 AS build
 
-RUN apk update; \
-  apk add git;
+RUN apk --no-cache add \
+   build-base \
+   git \
+   python3
+
 WORKDIR /tmp
 
 # Copy package.json first to benefit from layer caching
@@ -13,37 +16,32 @@ COPY package*.json ./
 # Copy src to have config files for install
 COPY . .
 
-# Clean npm cache; added to fix an issue with the install process
-RUN npm cache clean --force
-
-# Install all dependencies
-RUN npm ci
-
-# Run build steps
-RUN npm run build
+# Install without scripts
+RUN npm ci --omit=dev --ignore-scripts \
+    # Copy production node_modules aside for later
+ && cp -R node_modules prod_node_modules \
+    # Install all dependencies
+ && npm ci \
+    # Run build steps
+ && npm run build
 
 ############################################################
 # Release stage
 ############################################################
-FROM node:lts-alpine as release
-
-RUN apk update; \
-  apk add git;
+FROM node:20.19.0-alpine3.20 AS release
 
 VOLUME /parse-server/cloud /parse-server/config
 
 WORKDIR /parse-server
 
+# Copy build stage folders
+COPY --from=build /tmp/prod_node_modules /parse-server/node_modules
+COPY --from=build /tmp/lib lib
+
 COPY package*.json ./
-
-# Clean npm cache; added to fix an issue with the install process
-RUN npm cache clean --force
-RUN npm ci --production --ignore-scripts
-
 COPY bin bin
 COPY public_html public_html
 COPY views views
-COPY --from=build /tmp/lib lib
 RUN mkdir -p logs && chown -R node: logs
 
 ENV PORT=1337

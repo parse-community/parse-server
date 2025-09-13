@@ -1,0 +1,11 @@
+{
+  "appName": "test",
+  "appId": "test",
+  "masterKey": "test",
+  "logLevel": "error",
+  "auth": {
+    "facebook": {
+      "appIds": "test"
+    }
+  }
+}

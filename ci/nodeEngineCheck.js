@@ -87,6 +87,7 @@ class NodeEngineCheck {
           nodeVersion: version
         });
       } catch(e) {
+        // eslint-disable-next-line no-console
         console.log(`Ignoring file because it is not valid JSON: ${file}`);
         core.warning(`Ignoring file because it is not valid JSON: ${file}`);
       }
@@ -171,6 +172,7 @@ async function check() {
   // Get highest version
   const highestVersion = higherVersions.map(v => v.nodeMinVersion).pop();
 
+  /* eslint-disable no-console */
   // If there are higher versions
   if (higherVersions.length > 0) {
     console.log(`\nThere are ${higherVersions.length} dependencies that require a higher node engine version than the parent package (${parentVersion.nodeVersion}):`);
@@ -189,6 +191,7 @@ async function check() {
   }
 
   console.log(`✅ All dependencies satisfy the node version requirement of the parent package (${parentVersion.nodeVersion}).`);
+  /* eslint-enable no-console */
 }
 
 check();

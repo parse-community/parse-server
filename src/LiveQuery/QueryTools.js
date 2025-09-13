@@ -223,7 +223,7 @@ function matchesKeyConstraints(object, key, constraints) {
   // More complex cases
   for (var condition in constraints) {
     compareTo = constraints[condition];
-    if (compareTo.__type) {
+    if (compareTo?.__type) {
       compareTo = Parse._decode(key, compareTo);
     }
     switch (condition) {
@@ -244,6 +244,11 @@ function matchesKeyConstraints(object, key, constraints) {
         break;
       case '$gte':
         if (object[key] < compareTo) {
+          return false;
+        }
+        break;
+      case '$eq':
+        if (!equalObjects(object[key], compareTo)) {
           return false;
         }
         break;

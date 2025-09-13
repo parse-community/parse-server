@@ -8,3 +8,4 @@
 
 [options]
 suppress_comment= \\(.\\|\n\\)*\\@flow-disable-next
+esproposal.optional_chaining=enable

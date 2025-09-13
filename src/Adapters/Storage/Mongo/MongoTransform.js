@@ -188,6 +188,16 @@ const transformInteriorValue = restValue => {
   // Handle atomic values
   var value = transformInteriorAtom(restValue);
   if (value !== CannotTransform) {
+    if (value && typeof value === 'object') {
+      if (value instanceof Date) {
+        return value;
+      }
+      if (value instanceof Array) {
+        value = value.map(transformInteriorValue);
+      } else {
+        value = mapValues(value, transformInteriorValue);
+      }
+    }
     return value;
   }
 
@@ -317,7 +327,7 @@ function transformQueryKeyValue(className, key, value, schema, count = false) {
   }
 
   // Handle query constraints
-  const transformedConstraint = transformConstraint(value, field, count);
+  const transformedConstraint = transformConstraint(value, field, key, count);
   if (transformedConstraint !== CannotTransform) {
     if (transformedConstraint.$text) {
       return { key: '$text', value: transformedConstraint.$text };
@@ -447,6 +457,7 @@ const parseObjectKeyValueToMongoObjectKeyValue = (restKey, restValue, schema) =>
     );
   }
   value = mapValues(restValue, transformInteriorValue);
+
   return { key: restKey, value };
 };
 
@@ -640,12 +651,15 @@ function transformTopLevelAtom(atom, field) {
 // If it is not a valid constraint but it could be a valid something
 // else, return CannotTransform.
 // inArray is whether this is an array field.
-function transformConstraint(constraint, field, count = false) {
+function transformConstraint(constraint, field, queryKey, count = false) {
   const inArray = field && field.type && field.type === 'Array';
+  // Check wether the given key has `.`
+  const isNestedKey = queryKey.indexOf('.') > -1;
   if (typeof constraint !== 'object' || !constraint) {
     return CannotTransform;
   }
-  const transformFunction = inArray ? transformInteriorAtom : transformTopLevelAtom;
+  // For inArray or nested key, we need to transform the interior atom
+  const transformFunction = (inArray || isNestedKey) ? transformInteriorAtom : transformTopLevelAtom;
   const transformer = atom => {
     const result = transformFunction(atom, field);
     if (result === CannotTransform) {
@@ -974,6 +988,13 @@ function transformUpdateOperator({ __op, amount, objects }, flatten) {
         return amount;
       } else {
         return { __op: '$inc', arg: amount };
+      }
+
+    case 'SetOnInsert':
+      if (flatten) {
+        return amount;
+      } else {
+        return { __op: '$setOnInsert', arg: amount };
       }
 
     case 'Add':

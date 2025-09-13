@@ -8,8 +8,8 @@ require('./helper');
 const { updateCLP } = require('./support/dev');
 
 const pluralize = require('pluralize');
-const { getMainDefinition } = require('apollo-utilities');
-const { createUploadLink } = require('apollo-upload-client');
+const { getMainDefinition } = require('@apollo/client/utilities');
+const createUploadLink = (...args) => import('apollo-upload-client/createUploadLink.mjs').then(({ default: fn }) => fn(...args));
 const { SubscriptionClient } = require('subscriptions-transport-ws');
 const { WebSocketLink } = require('@apollo/client/link/ws');
 const { mergeSchemas } = require('@graphql-tools/schema');
@@ -49,7 +49,10 @@ describe('ParseGraphQLServer', () => {
   let parseGraphQLServer;
 
   beforeEach(async () => {
-    parseServer = await global.reconfigureServer({});
+    parseServer = await global.reconfigureServer({
+      maintenanceKey: 'test2',
+      maxUploadSize: '1kb',
+    });
     parseGraphQLServer = new ParseGraphQLServer(parseServer, {
       graphQLPath: '/graphql',
       playgroundPath: '/playground',
@@ -86,8 +89,8 @@ describe('ParseGraphQLServer', () => {
 
     it('should initialize parseGraphQLSchema with a log controller', async () => {
       const loggerAdapter = {
-        log: () => {},
-        error: () => {},
+        log: () => { },
+        error: () => { },
       };
       const parseServer = await global.reconfigureServer({
         loggerAdapter,
@@ -122,15 +125,16 @@ describe('ParseGraphQLServer', () => {
       info: new Object(),
       config: new Object(),
       auth: new Object(),
+      get: () => { },
+    };
+    const res = {
+      set: () => { },
     };
 
-    it("should return schema and context with req's info, config and auth", async () => {
+    it_id('0696675e-060f-414f-bc77-9d57f31807f5')(it)('should return schema and context with req\'s info, config and auth', async () => {
       const options = await parseGraphQLServer._getGraphQLOptions();
-      expect(options.multipart).toEqual({
-        fileSize: 20971520,
-      });
       expect(options.schema).toEqual(parseGraphQLServer.parseGraphQLSchema.graphQLSchema);
-      const contextResponse = options.context({ req });
+      const contextResponse = await options.context({ req, res });
       expect(contextResponse.info).toEqual(req.info);
       expect(contextResponse.config).toEqual(req.config);
       expect(contextResponse.auth).toEqual(req.auth);
@@ -292,30 +296,37 @@ describe('ParseGraphQLServer', () => {
     let objects = [];
 
     async function prepareData() {
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
       user1 = new Parse.User();
       user1.setUsername('user1');
       user1.setPassword('user1');
       user1.setEmail('user1@user1.user1');
+      user1.setACL(acl);
       await user1.signUp();
 
       user2 = new Parse.User();
       user2.setUsername('user2');
       user2.setPassword('user2');
+      user2.setACL(acl);
       await user2.signUp();
 
       user3 = new Parse.User();
       user3.setUsername('user3');
       user3.setPassword('user3');
+      user3.setACL(acl);
       await user3.signUp();
 
       user4 = new Parse.User();
       user4.setUsername('user4');
       user4.setPassword('user4');
+      user4.setACL(acl);
       await user4.signUp();
 
       user5 = new Parse.User();
       user5.setUsername('user5');
       user5.setPassword('user5');
+      user5.setACL(acl);
       await user5.signUp();
 
       const roleACL = new Parse.ACL();
@@ -421,17 +432,33 @@ describe('ParseGraphQLServer', () => {
       objects.push(object1, object2, object3, object4);
     }
 
-    beforeEach(async () => {
+    async function createGQLFromParseServer(_parseServer, parseGraphQLServerOptions) {
+      if (parseLiveQueryServer) {
+        await parseLiveQueryServer.server.close();
+      }
+      if (httpServer) {
+        await httpServer.close();
+      }
       const expressApp = express();
       httpServer = http.createServer(expressApp);
-      expressApp.use('/parse', parseServer.app);
-      parseLiveQueryServer = ParseServer.createLiveQueryServer(httpServer, {
+      expressApp.use('/parse', _parseServer.app);
+      parseLiveQueryServer = await ParseServer.createLiveQueryServer(httpServer, {
         port: 1338,
+      });
+      parseGraphQLServer = new ParseGraphQLServer(_parseServer, {
+        graphQLPath: '/graphql',
+        playgroundPath: '/playground',
+        subscriptionsPath: '/subscriptions',
+        ...parseGraphQLServerOptions,
       });
       parseGraphQLServer.applyGraphQL(expressApp);
       parseGraphQLServer.applyPlayground(expressApp);
       parseGraphQLServer.createSubscriptions(httpServer);
       await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
+    }
+
+    beforeEach(async () => {
+      await createGQLFromParseServer(parseServer);
 
       const subscriptionClient = new SubscriptionClient(
         'ws://localhost:13377/subscriptions',
@@ -442,7 +469,7 @@ describe('ParseGraphQLServer', () => {
         ws
       );
       const wsLink = new WebSocketLink(subscriptionClient);
-      const httpLink = createUploadLink({
+      const httpLink = await createUploadLink({
         uri: 'http://localhost:13377/graphql',
         fetch,
         headers,
@@ -463,8 +490,8 @@ describe('ParseGraphQLServer', () => {
           },
         },
       });
-      spyOn(console, 'warn').and.callFake(() => {});
-      spyOn(console, 'error').and.callFake(() => {});
+      spyOn(console, 'warn').and.callFake(() => { });
+      spyOn(console, 'error').and.callFake(() => { });
     });
 
     afterEach(async () => {
@@ -579,6 +606,96 @@ describe('ParseGraphQLServer', () => {
           parseGraphQLServer.parseGraphQLSchema.schemaCache.clear(),
         ]);
       };
+
+      describe('Introspection', () => {
+        it('should have public introspection disabled by default without master key', async () => {
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Introspection {
+                  __schema {
+                    types {
+                      name
+                    }
+                  }
+                }
+              `,
+            })
+
+            fail('should have thrown an error');
+
+          } catch (e) {
+            expect(e.message).toEqual('Response not successful: Received status code 403');
+            expect(e.networkError.result.errors[0].message).toEqual('Introspection is not allowed');
+          }
+        });
+
+        it('should always work with master key', async () => {
+          const introspection =
+            await apolloClient.query({
+              query: gql`
+                query Introspection {
+                  __schema {
+                    types {
+                      name
+                    }
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              }
+            },)
+          expect(introspection.data).toBeDefined();
+          expect(introspection.errors).not.toBeDefined();
+        });
+
+        it('should always work with maintenance key', async () => {
+          const introspection =
+            await apolloClient.query({
+              query: gql`
+                query Introspection {
+                  __schema {
+                    types {
+                      name
+                    }
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Maintenance-Key': 'test2',
+                },
+              }
+            },)
+          expect(introspection.data).toBeDefined();
+          expect(introspection.errors).not.toBeDefined();
+        });
+
+        it('should have public introspection enabled if enabled', async () => {
+
+          const parseServer = await reconfigureServer();
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
+
+          const introspection =
+            await apolloClient.query({
+              query: gql`
+                query Introspection {
+                  __schema {
+                    types {
+                      name
+                    }
+                  }
+                }
+              `,
+            })
+          expect(introspection.data).toBeDefined();
+        });
+      });
+
 
       describe('Default Types', () => {
         it('should have Object scalar type', async () => {
@@ -724,6 +841,11 @@ describe('ParseGraphQLServer', () => {
                   }
                 }
               `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              }
             })
           ).data['__schema'].types.map(type => type.name);
 
@@ -743,10 +865,6 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
-        afterAll(async () => {
-          await resetGraphQLCache();
-        });
-
         it('should have Node interface', async () => {
           const schemaTypes = (
             await apolloClient.query({
@@ -759,6 +877,11 @@ describe('ParseGraphQLServer', () => {
                   }
                 }
               `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              }
             })
           ).data['__schema'].types.map(type => type.name);
 
@@ -843,7 +966,7 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should have clientMutationId in call function input', async () => {
-          Parse.Cloud.define('hello', () => {});
+          Parse.Cloud.define('hello', () => { });
 
           const callFunctionInputFields = (
             await apolloClient.query({
@@ -865,7 +988,7 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should have clientMutationId in call function payload', async () => {
-          Parse.Cloud.define('hello', () => {});
+          Parse.Cloud.define('hello', () => { });
 
           const callFunctionPayloadFields = (
             await apolloClient.query({
@@ -1291,6 +1414,11 @@ describe('ParseGraphQLServer', () => {
                   }
                 }
               `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              }
             })
           ).data['__schema'].types.map(type => type.name);
 
@@ -1385,7 +1513,7 @@ describe('ParseGraphQLServer', () => {
           await resetGraphQLCache();
         });
 
-        it('should only include types in the enabledForClasses list', async () => {
+        it_id('d6a23a2f-ca18-4b15-bc73-3e636f99e6bc')(it)('should only include types in the enabledForClasses list', async () => {
           const schemaController = await parseServer.config.databaseController.loadSchema();
           await schemaController.addClassIfNotExists('SuperCar', {
             foo: { type: 'String' },
@@ -1416,7 +1544,7 @@ describe('ParseGraphQLServer', () => {
           expect(data.userType).toBeNull();
           expect(data.superCarType).toBeTruthy();
         });
-        it('should not include types in the disabledForClasses list', async () => {
+        it_id('1db2aceb-d24e-4929-ba43-8dbb5d0395e1')(it)('should not include types in the disabledForClasses list', async () => {
           const schemaController = await parseServer.config.databaseController.loadSchema();
           await schemaController.addClassIfNotExists('SuperCar', {
             foo: { type: 'String' },
@@ -1447,7 +1575,7 @@ describe('ParseGraphQLServer', () => {
           expect(data.superCarType).toBeNull();
           expect(data.userType).toBeTruthy();
         });
-        it('should remove query operations when disabled', async () => {
+        it_id('85c2e02f-0239-4819-b66e-392e0125f6c5')(it)('should remove query operations when disabled', async () => {
           const superCar = new Parse.Object('SuperCar');
           await superCar.save({ foo: 'bar' });
           const customer = new Parse.Object('Customer');
@@ -1553,7 +1681,7 @@ describe('ParseGraphQLServer', () => {
           ).toBeRejected();
         });
 
-        it('should remove mutation operations, create, update and delete, when disabled', async () => {
+        it_id('972161a6-8108-4e99-a1a5-71d0267d26c2')(it)('should remove mutation operations, create, update and delete, when disabled', async () => {
           const superCar1 = new Parse.Object('SuperCar');
           await superCar1.save({ foo: 'bar' });
           const customer1 = new Parse.Object('Customer');
@@ -1725,7 +1853,7 @@ describe('ParseGraphQLServer', () => {
           ).toBeRejected();
         });
 
-        it('should only allow the supplied create and update fields for a class', async () => {
+        it_id('4af763b1-ff86-43c7-ba30-060a1c07e730')(it)('should only allow the supplied create and update fields for a class', async () => {
           const schemaController = await parseServer.config.databaseController.loadSchema();
           await schemaController.addClassIfNotExists('SuperCar', {
             engine: { type: 'String' },
@@ -1813,7 +1941,7 @@ describe('ParseGraphQLServer', () => {
           expect(updatedSuperCar).toBeTruthy();
         });
 
-        it('should handle required fields from the Parse class', async () => {
+        it_id('fc9237e9-3e63-4b55-9c1d-e6269f613a93')(it)('should handle required fields from the Parse class', async () => {
           const schemaController = await parseServer.config.databaseController.loadSchema();
           await schemaController.addClassIfNotExists('SuperCar', {
             engine: { type: 'String', required: true },
@@ -1865,7 +1993,7 @@ describe('ParseGraphQLServer', () => {
           expect(__type2.fields.find(o => o.name === 'doors').type.kind).toEqual('NON_NULL');
         });
 
-        it('should only allow the supplied output fields for a class', async () => {
+        it_id('83b6895a-7dfd-4e3b-a5ce-acdb1fa39705')(it)('should only allow the supplied output fields for a class', async () => {
           const schemaController = await parseServer.config.databaseController.loadSchema();
 
           await schemaController.addClassIfNotExists('SuperCar', {
@@ -1982,7 +2110,7 @@ describe('ParseGraphQLServer', () => {
           expect(getSuperCar.objectId).toBe(superCar.id);
         });
 
-        it('should only allow the supplied constraint fields for a class', async () => {
+        it_id('67dfcf94-92fb-45a3-a012-3b22c81899ba')(it)('should only allow the supplied constraint fields for a class', async () => {
           try {
             const schemaController = await parseServer.config.databaseController.loadSchema();
 
@@ -2057,7 +2185,7 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
-        it('should only allow the supplied sort fields for a class', async () => {
+        it_id('a3bdbd5d-8779-42fe-91a1-7a7f90a6177b')(it)('should only allow the supplied sort fields for a class', async () => {
           const schemaController = await parseServer.config.databaseController.loadSchema();
 
           await schemaController.addClassIfNotExists('SuperCar', {
@@ -2811,7 +2939,8 @@ describe('ParseGraphQLServer', () => {
             }
           });
           it('Id inputs should work either with global id or object id with objectId higher than 19', async () => {
-            await reconfigureServer({ objectIdSize: 20 });
+            const parseServer = await reconfigureServer({ objectIdSize: 20 });
+            await createGQLFromParseServer(parseServer);
             const obj = new Parse.Object('SomeClass');
             await obj.save({ name: 'aname', type: 'robot' });
             const result = await apolloClient.query({
@@ -4911,7 +5040,7 @@ describe('ParseGraphQLServer', () => {
             ).toEqual(['someValue1', 'someValue2']);
           });
 
-          it('should support full text search', async () => {
+          it_id('accc59be-fd13-46c5-a103-ec63f2ad6670')(it)('should support full text search', async () => {
             try {
               const obj = new Parse.Object('FullTextSearchTest');
               obj.set('field1', 'Parse GraphQL Server');
@@ -5022,7 +5151,7 @@ describe('ParseGraphQLServer', () => {
             }
           });
 
-          it('should support order, skip and first arguments', async () => {
+          it_id('0fd03d3c-a2c8-4fac-95cc-2391a3032ca2')(it)('should support order, skip and first arguments', async () => {
             const promises = [];
             for (let i = 0; i < 100; i++) {
               const obj = new Parse.Object('SomeClass');
@@ -5069,7 +5198,7 @@ describe('ParseGraphQLServer', () => {
             ]);
           });
 
-          it('should support pagination', async () => {
+          it_id('588a70c6-2932-4d3b-a838-a74c59d8cffb')(it)('should support pagination', async () => {
             const numberArray = (first, last) => {
               const array = [];
               for (let i = first; i <= last; i++) {
@@ -5211,7 +5340,7 @@ describe('ParseGraphQLServer', () => {
             expect(result.data.someClasses.pageInfo.hasNextPage).toEqual(true);
           });
 
-          it('should support count', async () => {
+          it_id('4f6a5f20-9642-4cf0-b31d-e739672a9096')(it)('should support count', async () => {
             await prepareData();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -5268,7 +5397,6 @@ describe('ParseGraphQLServer', () => {
 
           it('should only count', async () => {
             await prepareData();
-
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const where = {
@@ -5315,11 +5443,11 @@ describe('ParseGraphQLServer', () => {
             expect(result.data.find.count).toEqual(2);
           });
 
-          it('should respect max limit', async () => {
+          it_id('942b57be-ca8a-4a5b-8104-2adef8743b1a')(it)('should respect max limit', async () => {
             parseServer = await global.reconfigureServer({
               maxLimit: 10,
             });
-
+            await createGQLFromParseServer(parseServer);
             const promises = [];
             for (let i = 0; i < 100; i++) {
               const obj = new Parse.Object('SomeClass');
@@ -5356,7 +5484,7 @@ describe('ParseGraphQLServer', () => {
             expect(result.data.find.count).toEqual(100);
           });
 
-          it('should support keys argument', async () => {
+          it_id('952634f0-0ad5-4a08-8da2-187c1bd9ee94')(it)('should support keys argument', async () => {
             await prepareData();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -5762,7 +5890,7 @@ describe('ParseGraphQLServer', () => {
             ).toEqual([object3.id, object1.id, object2.id]);
           });
 
-          it('should support including relation', async () => {
+          it_id('47a6adf3-1cb4-4d92-b74c-e480363f9cb5')(it)('should support including relation', async () => {
             await prepareData();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -6667,7 +6795,7 @@ describe('ParseGraphQLServer', () => {
           });
         });
 
-        it('should unset fields when null used on update/create', async () => {
+        it_id('f722e98e-1fd7-45c5-ade3-5177e3d542e8')(it)('should unset fields when null used on update/create', async () => {
           const customerSchema = new Parse.Schema('Customer');
           customerSchema.addString('aString');
           customerSchema.addBoolean('aBoolean');
@@ -6826,13 +6954,13 @@ describe('ParseGraphQLServer', () => {
 
       describe('Files Mutations', () => {
         describe('Create', () => {
-          it_only_node_version('<17')('should return File object', async () => {
+          it('should return File object', async () => {
             const clientMutationId = uuidv4();
 
             parseServer = await global.reconfigureServer({
               publicServerURL: 'http://localhost:13377/parse',
             });
-
+            await createGQLFromParseServer(parseServer);
             const body = new FormData();
             body.append(
               'operations',
@@ -7040,6 +7168,7 @@ describe('ParseGraphQLServer', () => {
               challengeAdapter,
             },
           });
+          await createGQLFromParseServer(parseServer);
           const clientMutationId = uuidv4();
 
           const result = await apolloClient.mutate({
@@ -7066,6 +7195,11 @@ describe('ParseGraphQLServer', () => {
                 },
               },
             },
+            context: {
+              headers: {
+                'X-Parse-Master-Key': 'test',
+              },
+            },
           });
 
           expect(result.data.createUser.clientMutationId).toEqual(clientMutationId);
@@ -7081,6 +7215,7 @@ describe('ParseGraphQLServer', () => {
               challengeAdapter,
             },
           });
+          await createGQLFromParseServer(parseServer);
           const clientMutationId = uuidv4();
           const userSchema = new Parse.Schema('_User');
           userSchema.addString('someField');
@@ -7123,6 +7258,7 @@ describe('ParseGraphQLServer', () => {
                       username: 'user2',
                       password: 'user2',
                       someField: 'someValue2',
+                      ACL: { public: { read: true, write: true } },
                     },
                   },
                   someField: 'someValue',
@@ -7154,7 +7290,7 @@ describe('ParseGraphQLServer', () => {
               },
             },
           });
-
+          await createGQLFromParseServer(parseServer);
           userSchema.addString('someField');
           userSchema.addPointer('aPointer', '_User');
           await userSchema.update();
@@ -7195,6 +7331,7 @@ describe('ParseGraphQLServer', () => {
                       username: 'user2',
                       password: 'user2',
                       someField: 'someValue2',
+                      ACL: { public: { read: true, write: true } },
                     },
                   },
                 },
@@ -7223,7 +7360,7 @@ describe('ParseGraphQLServer', () => {
               challengeAdapter,
             },
           });
-
+          await createGQLFromParseServer(parseServer);
           const user = new Parse.User();
           await user.save({ username: 'username', password: 'password' });
 
@@ -7294,6 +7431,7 @@ describe('ParseGraphQLServer', () => {
               challengeAdapter,
             },
           });
+          await createGQLFromParseServer(parseServer);
           const clientMutationId = uuidv4();
           const user = new Parse.User();
           user.setUsername('user1');
@@ -7416,15 +7554,16 @@ describe('ParseGraphQLServer', () => {
         it('should send reset password', async () => {
           const clientMutationId = uuidv4();
           const emailAdapter = {
-            sendVerificationEmail: () => {},
+            sendVerificationEmail: () => { },
             sendPasswordResetEmail: () => Promise.resolve(),
-            sendMail: () => {},
+            sendMail: () => { },
           };
           parseServer = await global.reconfigureServer({
             appName: 'test',
             emailAdapter: emailAdapter,
             publicServerURL: 'http://test.test',
           });
+          await createGQLFromParseServer(parseServer);
           const user = new Parse.User();
           user.setUsername('user1');
           user.setPassword('user1');
@@ -7456,11 +7595,11 @@ describe('ParseGraphQLServer', () => {
           const clientMutationId = uuidv4();
           let resetPasswordToken;
           const emailAdapter = {
-            sendVerificationEmail: () => {},
+            sendVerificationEmail: () => { },
             sendPasswordResetEmail: ({ link }) => {
               resetPasswordToken = link.split('token=')[1].split('&')[0];
             },
-            sendMail: () => {},
+            sendMail: () => { },
           };
           parseServer = await global.reconfigureServer({
             appName: 'test',
@@ -7472,6 +7611,7 @@ describe('ParseGraphQLServer', () => {
               },
             },
           });
+          await createGQLFromParseServer(parseServer);
           const user = new Parse.User();
           user.setUsername('user1');
           user.setPassword('user1');
@@ -7525,15 +7665,16 @@ describe('ParseGraphQLServer', () => {
         it('should send verification email again', async () => {
           const clientMutationId = uuidv4();
           const emailAdapter = {
-            sendVerificationEmail: () => {},
+            sendVerificationEmail: () => { },
             sendPasswordResetEmail: () => Promise.resolve(),
-            sendMail: () => {},
+            sendMail: () => { },
           };
           parseServer = await global.reconfigureServer({
             appName: 'test',
             emailAdapter: emailAdapter,
             publicServerURL: 'http://test.test',
           });
+          await createGQLFromParseServer(parseServer);
           const user = new Parse.User();
           user.setUsername('user1');
           user.setPassword('user1');
@@ -8304,22 +8445,24 @@ describe('ParseGraphQLServer', () => {
           expect(schema.fields.updatedAt.type).toEqual('Date');
         });
 
-        it('should support ACL', async () => {
+        it_id('93e748f6-ad9b-4c31-8e1e-c5685e2382fb')(it)('should support ACL', async () => {
           const someClass = new Parse.Object('SomeClass');
           await someClass.save();
+
+          const roleACL = new Parse.ACL();
+          roleACL.setPublicReadAccess(true);
 
           const user = new Parse.User();
           user.set('username', 'username');
           user.set('password', 'password');
+          user.setACL(roleACL);
           await user.signUp();
 
           const user2 = new Parse.User();
           user2.set('username', 'username2');
           user2.set('password', 'password2');
+          user2.setACL(roleACL);
           await user2.signUp();
-
-          const roleACL = new Parse.ACL();
-          roleACL.setPublicReadAccess(true);
 
           const role = new Parse.Role('aRole', roleACL);
           await role.save();
@@ -9056,7 +9199,7 @@ describe('ParseGraphQLServer', () => {
           expect(result2.companies.edges[0].node.objectId).toEqual(company1.id);
         });
 
-        it('should support relational where query', async () => {
+        it_id('f4312f2c-90bb-4583-b033-02078ae0ce84')(it)('should support relational where query', async () => {
           const president = new Parse.Object('President');
           president.set('name', 'James');
           await president.save();
@@ -9283,12 +9426,12 @@ describe('ParseGraphQLServer', () => {
           expect(result6[0].node.name).toEqual('imACountry3');
         });
 
-        it_only_node_version('<17')('should support files', async () => {
+        it('should support files', async () => {
           try {
             parseServer = await global.reconfigureServer({
               publicServerURL: 'http://localhost:13377/parse',
             });
-
+            await createGQLFromParseServer(parseServer);
             const body = new FormData();
             body.append(
               'operations',
@@ -9321,11 +9464,9 @@ describe('ParseGraphQLServer', () => {
               headers,
               body,
             });
-
             expect(res.status).toEqual(200);
 
             const result = JSON.parse(await res.text());
-
             expect(result.data.createFile.fileInfo.name).toEqual(
               jasmine.stringMatching(/_myFileName.txt$/)
             );
@@ -9531,9 +9672,235 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
-        it_only_node_version('<17')('should not upload if file is too large', async () => {
-          parseGraphQLServer.parseServer.config.maxUploadSize = '1kb';
+        it('should support files on required file', async () => {
+          try {
+            parseServer = await global.reconfigureServer({
+              publicServerURL: 'http://localhost:13377/parse',
+            });
+            await createGQLFromParseServer(parseServer);
+            const schemaController = await parseServer.config.databaseController.loadSchema();
+            await schemaController.addClassIfNotExists('SomeClassWithRequiredFile', {
+              someField: { type: 'File', required: true },
+            });
+            await resetGraphQLCache();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
+            const body = new FormData();
+            body.append(
+              'operations',
+              JSON.stringify({
+                query: `
+                  mutation CreateSomeObject(
+                    $fields: CreateSomeClassWithRequiredFileFieldsInput
+                  ) {
+                    createSomeClassWithRequiredFile(
+                      input: { fields: $fields }
+                    ) {
+                      someClassWithRequiredFile {
+                        id
+                        someField {
+                          name
+                          url
+                        }
+                      }
+                    }
+                  }
+                  `,
+                variables: {
+                  fields: {
+                    someField: { upload: null },
+                  },
+                },
+              })
+            );
+            body.append('map', JSON.stringify({ 1: ['variables.fields.someField.upload'] }));
+            body.append('1', 'My File Content', {
+              filename: 'myFileName.txt',
+              contentType: 'text/plain',
+            });
+
+            const res = await fetch('http://localhost:13377/graphql', {
+              method: 'POST',
+              headers,
+              body,
+            });
+            expect(res.status).toEqual(200);
+            const resText = await res.text();
+            const result = JSON.parse(resText);
+            expect(
+              result.data.createSomeClassWithRequiredFile.someClassWithRequiredFile.someField.name
+            ).toEqual(jasmine.stringMatching(/_myFileName.txt$/));
+            expect(
+              result.data.createSomeClassWithRequiredFile.someClassWithRequiredFile.someField.url
+            ).toEqual(jasmine.stringMatching(/_myFileName.txt$/));
+          } catch (e) {
+            handleError(e);
+          }
+        });
+
+        it('should support file upload for on fly creation through pointer and relation', async () => {
+          parseServer = await global.reconfigureServer({
+            publicServerURL: 'http://localhost:13377/parse',
+          });
+          await createGQLFromParseServer(parseServer);
+          const schema = new Parse.Schema('SomeClass');
+          schema.addFile('someFileField');
+          schema.addPointer('somePointerField', 'SomeClass');
+          schema.addRelation('someRelationField', 'SomeClass');
+          await schema.save();
+
+          const body = new FormData();
+          body.append(
+            'operations',
+            JSON.stringify({
+              query: `
+                mutation UploadFiles(
+                  $fields: CreateSomeClassFieldsInput
+                ) {
+                  createSomeClass(
+                    input: { fields: $fields }
+                  ) {
+                    someClass {
+                      id
+                      someFileField {
+                        name
+                        url
+                      }
+                      somePointerField {
+                        id
+                        someFileField {
+                          name
+                          url
+                        }
+                      }
+                      someRelationField {
+                        edges {
+                          node {
+                            id
+                            someFileField {
+                              name
+                              url
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                `,
+              variables: {
+                fields: {
+                  someFileField: { upload: null },
+                  somePointerField: {
+                    createAndLink: {
+                      someFileField: { upload: null },
+                    },
+                  },
+                  someRelationField: {
+                    createAndAdd: [
+                      {
+                        someFileField: { upload: null },
+                      },
+                    ],
+                  },
+                },
+              },
+            })
+          );
+          body.append(
+            'map',
+            JSON.stringify({
+              1: ['variables.fields.someFileField.upload'],
+              2: ['variables.fields.somePointerField.createAndLink.someFileField.upload'],
+              3: ['variables.fields.someRelationField.createAndAdd.0.someFileField.upload'],
+            })
+          );
+          body.append('1', 'My File Content someFileField', {
+            filename: 'someFileField.txt',
+            contentType: 'text/plain',
+          });
+          body.append('2', 'My File Content somePointerField', {
+            filename: 'somePointerField.txt',
+            contentType: 'text/plain',
+          });
+          body.append('3', 'My File Content someRelationField', {
+            filename: 'someRelationField.txt',
+            contentType: 'text/plain',
+          });
+
+          const res = await fetch('http://localhost:13377/graphql', {
+            method: 'POST',
+            headers,
+            body,
+          });
+          expect(res.status).toEqual(200);
+          const result = await res.json();
+          expect(result.data.createSomeClass.someClass.someFileField.name).toEqual(
+            jasmine.stringMatching(/_someFileField.txt$/)
+          );
+          expect(result.data.createSomeClass.someClass.somePointerField.someFileField.name).toEqual(
+            jasmine.stringMatching(/_somePointerField.txt$/)
+          );
+          expect(
+            result.data.createSomeClass.someClass.someRelationField.edges[0].node.someFileField.name
+          ).toEqual(jasmine.stringMatching(/_someRelationField.txt$/));
+        });
+
+        it('should support files and add extension from mimetype', async () => {
+          try {
+            parseServer = await global.reconfigureServer({
+              publicServerURL: 'http://localhost:13377/parse',
+            });
+            await createGQLFromParseServer(parseServer);
+            const body = new FormData();
+            body.append(
+              'operations',
+              JSON.stringify({
+                query: `
+                    mutation CreateFile($input: CreateFileInput!) {
+                      createFile(input: $input) {
+                        fileInfo {
+                          name
+                          url
+                        }
+                      }
+                    }
+                  `,
+                variables: {
+                  input: {
+                    upload: null,
+                  },
+                },
+              })
+            );
+            body.append('map', JSON.stringify({ 1: ['variables.input.upload'] }));
+            body.append('1', 'My File Content', {
+              // No extension, the system should add it from mimetype
+              filename: 'myFileName',
+              contentType: 'text/plain',
+            });
+
+            const res = await fetch('http://localhost:13377/graphql', {
+              method: 'POST',
+              headers,
+              body,
+            });
+
+            expect(res.status).toEqual(200);
+
+            const result = JSON.parse(await res.text());
+            expect(result.data.createFile.fileInfo.name).toEqual(
+              jasmine.stringMatching(/_myFileName.txt$/)
+            );
+            expect(result.data.createFile.fileInfo.url).toEqual(
+              jasmine.stringMatching(/_myFileName.txt$/)
+            );
+          } catch (e) {
+            handleError(e);
+          }
+        });
+
+        it('should not upload if file is too large', async () => {
           const body = new FormData();
           body.append(
             'operations',
@@ -9558,6 +9925,7 @@ describe('ParseGraphQLServer', () => {
           body.append('map', JSON.stringify({ 1: ['variables.input.upload'] }));
           body.append(
             '1',
+            // In this test file parse server is setup with 1kb limit
             Buffer.alloc(parseGraphQLServer._transformMaxUploadSizeToBytes('2kb'), 1),
             {
               filename: 'myFileName.txt',
@@ -9572,8 +9940,10 @@ describe('ParseGraphQLServer', () => {
           });
 
           const result = JSON.parse(await res.text());
-          expect(res.status).toEqual(500);
-          expect(result.errors[0].message).toEqual('File size limit exceeded: 1024 bytes');
+          expect(res.status).toEqual(200);
+          expect(result.errors[0].message).toEqual(
+            'File truncated as it exceeds the 1024 byte size limit.'
+          );
         });
 
         it('should support object values', async () => {
@@ -10130,7 +10500,7 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
-        it('should support Bytes', async () => {
+        it_id('43303db7-c5a7-4bc0-91c3-57e03fffa225')(it)('should support Bytes', async () => {
           try {
             const someFieldValue = 'aGVsbG8gd29ybGQ=';
 
@@ -10217,7 +10587,7 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
-        it('should support Geo Points', async () => {
+        it_id('6a253e47-6959-4427-b841-c0c1fa77cf01')(it)('should support Geo Points', async () => {
           try {
             const someFieldValue = {
               __typename: 'GeoPoint',
@@ -10597,6 +10967,9 @@ describe('ParseGraphQLServer', () => {
           const user = new Parse.User();
           user.setUsername('user1');
           user.setPassword('user1');
+          const acl = new Parse.ACL();
+          acl.setPublicReadAccess(true);
+          user.setACL(acl);
           await user.signUp();
 
           await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -10761,7 +11134,7 @@ describe('ParseGraphQLServer', () => {
         });
         parseGraphQLServer.applyGraphQL(expressApp);
         await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
-        const httpLink = createUploadLink({
+        const httpLink = await createUploadLink({
           uri: 'http://localhost:13377/graphql',
           fetch,
           headers,
@@ -10985,7 +11358,7 @@ describe('ParseGraphQLServer', () => {
 
         parseGraphQLServer.applyGraphQL(expressApp);
         await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
-        const httpLink = createUploadLink({
+        const httpLink = await createUploadLink({
           uri: 'http://localhost:13377/graphql',
           fetch,
           headers,
@@ -11180,7 +11553,7 @@ describe('ParseGraphQLServer', () => {
 
           parseGraphQLServer.applyGraphQL(expressApp);
           await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
-          const httpLink = createUploadLink({
+          const httpLink = await createUploadLink({
             uri: 'http://localhost:13377/graphql',
             fetch,
             headers,

@@ -136,7 +136,118 @@ describe('rest create', () => {
       });
   });
 
-  it('handles array, object, date', done => {
+  describe('with maintenance key', () => {
+    let req;
+
+    async function getObject(id) {
+      const res = await request({
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        method: 'GET',
+        url: `http://localhost:8378/1/classes/TestObject/${id}`,
+      });
+
+      return res.data;
+    }
+
+    beforeEach(() => {
+      req = {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Maintenance-Key': 'testing',
+        },
+        method: 'POST',
+        url: 'http://localhost:8378/1/classes/TestObject',
+      };
+    });
+
+    it('allows createdAt', async () => {
+      const createdAt = { __type: 'Date', iso: '2019-01-01T00:00:00.000Z' };
+      req.body = { createdAt };
+
+      const res = await request(req);
+      expect(res.data.createdAt).toEqual(createdAt.iso);
+    });
+
+    it('allows createdAt and updatedAt', async () => {
+      const createdAt = { __type: 'Date', iso: '2019-01-01T00:00:00.000Z' };
+      const updatedAt = { __type: 'Date', iso: '2019-02-01T00:00:00.000Z' };
+      req.body = { createdAt, updatedAt };
+
+      const res = await request(req);
+
+      const obj = await getObject(res.data.objectId);
+      expect(obj.createdAt).toEqual(createdAt.iso);
+      expect(obj.updatedAt).toEqual(updatedAt.iso);
+    });
+
+    it('allows createdAt, updatedAt, and additional field', async () => {
+      const createdAt = { __type: 'Date', iso: '2019-01-01T00:00:00.000Z' };
+      const updatedAt = { __type: 'Date', iso: '2019-02-01T00:00:00.000Z' };
+      req.body = { createdAt, updatedAt, testing: 123 };
+
+      const res = await request(req);
+
+      const obj = await getObject(res.data.objectId);
+      expect(obj.createdAt).toEqual(createdAt.iso);
+      expect(obj.updatedAt).toEqual(updatedAt.iso);
+      expect(obj.testing).toEqual(123);
+    });
+
+    it('cannot set updatedAt dated before createdAt', async () => {
+      const createdAt = { __type: 'Date', iso: '2019-01-01T00:00:00.000Z' };
+      const updatedAt = { __type: 'Date', iso: '2018-12-01T00:00:00.000Z' };
+      req.body = { createdAt, updatedAt };
+
+      try {
+        await request(req);
+        fail();
+      } catch (err) {
+        expect(err.data.code).toEqual(Parse.Error.VALIDATION_ERROR);
+      }
+    });
+
+    it('cannot set updatedAt without createdAt', async () => {
+      const updatedAt = { __type: 'Date', iso: '2018-12-01T00:00:00.000Z' };
+      req.body = { updatedAt };
+
+      const res = await request(req);
+
+      const obj = await getObject(res.data.objectId);
+      expect(obj.updatedAt).not.toEqual(updatedAt.iso);
+    });
+
+    it('handles bad types for createdAt and updatedAt', async () => {
+      const createdAt = 12345;
+      const updatedAt = true;
+      req.body = { createdAt, updatedAt };
+
+      try {
+        await request(req);
+        fail();
+      } catch (err) {
+        expect(err.data.code).toEqual(Parse.Error.INCORRECT_TYPE);
+      }
+    });
+
+    it('cannot set createdAt or updatedAt without maintenance key', async () => {
+      const createdAt = { __type: 'Date', iso: '2019-01-01T00:00:00.000Z' };
+      const updatedAt = { __type: 'Date', iso: '2019-02-01T00:00:00.000Z' };
+      req.body = { createdAt, updatedAt };
+      delete req.headers['X-Parse-Maintenance-Key'];
+
+      const res = await request(req);
+
+      expect(res.data.createdAt).not.toEqual(createdAt.iso);
+      expect(res.data.updatedAt).not.toEqual(updatedAt.iso);
+    });
+  });
+
+  it_id('6c30306f-328c-47f2-88a7-2deffaee997f')(it)('handles array, object, date', done => {
     const now = new Date();
     const obj = {
       array: [1, 2, 3],
@@ -660,6 +771,38 @@ describe('rest create', () => {
       });
   });
 
+  it('cannot get object in volatileClasses if not masterKey through pointer', async () => {
+    const masterKeyOnlyClassObject = new Parse.Object('_PushStatus');
+    await masterKeyOnlyClassObject.save(null, { useMasterKey: true });
+    const obj2 = new Parse.Object('TestObject');
+    // Anyone is can basically create a pointer to any object
+    // or some developers can use master key in some hook to link
+    // private objects to standard objects
+    obj2.set('pointer', masterKeyOnlyClassObject);
+    await obj2.save();
+    const query = new Parse.Query('TestObject');
+    query.include('pointer');
+    await expectAsync(query.get(obj2.id)).toBeRejectedWithError(
+      "Clients aren't allowed to perform the get operation on the _PushStatus collection."
+    );
+  });
+
+  it_id('3ce563bf-93aa-4d0b-9af9-c5fb246ac9fc')(it)('cannot get object in _GlobalConfig if not masterKey through pointer', async () => {
+    await Parse.Config.save({ privateData: 'secret' }, { privateData: true });
+    const obj2 = new Parse.Object('TestObject');
+    obj2.set('globalConfigPointer', {
+      __type: 'Pointer',
+      className: '_GlobalConfig',
+      objectId: 1,
+    });
+    await obj2.save();
+    const query = new Parse.Query('TestObject');
+    query.include('globalConfigPointer');
+    await expectAsync(query.get(obj2.id)).toBeRejectedWithError(
+      "Clients aren't allowed to perform the get operation on the _GlobalConfig collection."
+    );
+  });
+
   it('locks down session', done => {
     let currentUser;
     Parse.User.signUp('foo', 'bar')
@@ -857,6 +1000,15 @@ describe('read-only masterKey', () => {
       expect(err).toEqual(new Error('masterKey and readOnlyMasterKey should be different'));
     }
     await reconfigureServer();
+  });
+
+  it('should throw when masterKey and maintenanceKey are the same', async () => {
+    await expectAsync(
+      reconfigureServer({
+        masterKey: 'yolo',
+        maintenanceKey: 'yolo',
+      })
+    ).toBeRejectedWith(new Error('masterKey and maintenanceKey should be different'));
   });
 
   it('should throw when trying to create RestWrite', () => {

@@ -7,6 +7,8 @@ import { internalCreateSchema, internalUpdateSchema } from '../Routers/SchemasRo
 import { defaultColumns, systemClasses } from '../Controllers/SchemaController';
 import { ParseServerOptions } from '../Options';
 import * as Migrations from './Migrations';
+import Auth from '../Auth';
+import rest from '../rest';
 
 export class DefinedSchemas {
   config: ParseServerOptions;
@@ -78,7 +80,7 @@ export class DefinedSchemas {
       logger.info('Running Migrations Completed');
     } catch (e) {
       logger.error(`Failed to run migrations: ${e}`);
-      if (process.env.NODE_ENV === 'production') process.exit(1);
+      if (process.env.NODE_ENV === 'production') { process.exit(1); }
     }
   }
 
@@ -96,16 +98,17 @@ export class DefinedSchemas {
         }, 20000);
       }
 
-      // Hack to force session schema to be created
       await this.createDeleteSession();
-      this.allCloudSchemas = await Parse.Schema.all();
+      // @flow-disable-next-line
+      const schemaController = await this.config.database.loadSchema();
+      this.allCloudSchemas = await schemaController.getAllClasses();
       clearTimeout(timeout);
       await Promise.all(this.localSchemas.map(async localSchema => this.saveOrUpdate(localSchema)));
 
       this.checkForMissingSchemas();
       await this.enforceCLPForNonProvidedClass();
     } catch (e) {
-      if (timeout) clearTimeout(timeout);
+      if (timeout) { clearTimeout(timeout); }
       if (this.retries < this.maxRetries) {
         this.retries++;
         // first retry 1sec, 2sec, 3sec total 6sec retry sequence
@@ -115,7 +118,7 @@ export class DefinedSchemas {
         await this.executeMigrations();
       } else {
         logger.error(`Failed to run migrations: ${e}`);
-        if (process.env.NODE_ENV === 'production') process.exit(1);
+        if (process.env.NODE_ENV === 'production') { process.exit(1); }
       }
     }
   }
@@ -171,9 +174,8 @@ export class DefinedSchemas {
   // Create a fake session since Parse do not create the _Session until
   // a session is created
   async createDeleteSession() {
-    const session = new Parse.Session();
-    await session.save(null, { useMasterKey: true });
-    await session.destroy({ useMasterKey: true });
+    const { response } = await rest.create(this.config, Auth.master(this.config), '_Session', {});
+    await rest.del(this.config, Auth.master(this.config), '_Session', response.objectId);
   }
 
   async saveOrUpdate(localSchema: Migrations.JSONSchema) {
@@ -385,7 +387,7 @@ export class DefinedSchemas {
       logger.warn(`classLevelPermissions not provided for ${localSchema.className}.`);
     }
     // Use spread to avoid read only issue (encountered by Moumouls using directAccess)
-    const clp = ({ ...localSchema.classLevelPermissions } || {}: Parse.CLP.PermissionsMap);
+    const clp = ({ ...localSchema.classLevelPermissions || {} }: Parse.CLP.PermissionsMap);
     // To avoid inconsistency we need to remove all rights on addField
     clp.addField = {};
     newLocalSchema.setCLP(clp);
@@ -426,7 +428,7 @@ export class DefinedSchemas {
     const keysB: string[] = Object.keys(objB);
 
     // Check key name
-    if (keysA.length !== keysB.length) return false;
+    if (keysA.length !== keysB.length) { return false; }
     return keysA.every(k => objA[k] === objB[k]);
   }
 

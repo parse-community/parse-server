@@ -1,3 +1,47 @@
+/**
+ * Parse Server authentication adapter for Google.
+ *
+ * @class GoogleAdapter
+ * @param {Object} options - The adapter configuration options.
+ * @param {string} options.clientId - Your Google application Client ID. Required for authentication.
+ *
+ * @description
+ * ## Parse Server Configuration
+ * To configure Parse Server for Google authentication, use the following structure:
+ * ```json
+ * {
+ *   "auth": {
+ *     "google": {
+ *       "clientId": "your-client-id"
+ *     }
+ *   }
+ * }
+ * ```
+ *
+ * The adapter requires the following `authData` fields:
+ * - **id**: The Google user ID.
+ * - **id_token**: The Google ID token.
+ * - **access_token**: The Google access token.
+ *
+ * ## Auth Payload
+ * ### Example Auth Data Payload
+ * ```json
+ * {
+ *   "google": {
+ *     "id": "1234567",
+ *     "id_token": "xxxxx.yyyyy.zzzzz",
+ *     "access_token": "abc123def456ghi789"
+ *   }
+ * }
+ * ```
+ *
+ * ## Notes
+ * - Ensure your Google Client ID is configured properly in the Parse Server configuration.
+ * - The `id_token` and `access_token` are validated against Google's authentication services.
+ *
+ * @see {@link https://developers.google.com/identity/sign-in/web/backend-auth Google Authentication Documentation}
+ */
+
 'use strict';
 
 // Helper functions for accessing the google API.
@@ -5,6 +49,7 @@ var Parse = require('parse/node').Parse;
 
 const https = require('https');
 const jwt = require('jsonwebtoken');
+const authUtils = require('./utils');
 
 const TOKEN_ISSUER = 'accounts.google.com';
 const HTTPS_TOKEN_ISSUER = 'https://accounts.google.com';
@@ -51,22 +96,12 @@ function getGoogleKeyByKeyId(keyId) {
   });
 }
 
-function getHeaderFromToken(token) {
-  const decodedToken = jwt.decode(token, { complete: true });
-
-  if (!decodedToken) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `provided token does not decode as JWT`);
-  }
-
-  return decodedToken.header;
-}
-
 async function verifyIdToken({ id_token: token, id }, { clientId }) {
   if (!token) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `id token is invalid for this user.`);
   }
 
-  const { kid: keyId, alg: algorithm } = getHeaderFromToken(token);
+  const { kid: keyId, alg: algorithm } = authUtils.getHeaderFromToken(token);
   let jwtClaims;
   const googleKey = await getGoogleKeyByKeyId(keyId);
 

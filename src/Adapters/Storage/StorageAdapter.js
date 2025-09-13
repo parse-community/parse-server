@@ -19,6 +19,7 @@ export type QueryOptions = {
   caseInsensitive?: boolean,
   action?: string,
   addsField?: boolean,
+  comment?: string,
 };
 
 export type UpdateQueryOptions = {
@@ -30,6 +31,8 @@ export type FullQueryOptions = QueryOptions & UpdateQueryOptions;
 
 export interface StorageAdapter {
   canSortOnJoinTables: boolean;
+  schemaCacheTtl: ?number;
+  enableSchemaHooks: boolean;
 
   classExists(className: string): Promise<boolean>;
   setClassLevelPermissions(className: string, clps: any): Promise<void>;
@@ -95,7 +98,8 @@ export interface StorageAdapter {
     query: QueryType,
     readPreference?: string,
     estimate?: boolean,
-    hint?: mixed
+    hint?: mixed,
+    comment?: string
   ): Promise<number>;
   distinct(
     className: string,
@@ -109,7 +113,8 @@ export interface StorageAdapter {
     pipeline: any,
     readPreference: ?string,
     hint: ?mixed,
-    explain?: boolean
+    explain?: boolean,
+    comment?: string
   ): Promise<any>;
   performInitialization(options: ?any): Promise<void>;
   watch(callback: () => void): void;

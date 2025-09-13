@@ -13,6 +13,9 @@ describe('ProtectedFields', function () {
     user.setPassword('sekrit');
     user.set('email', 'alice@aol.com');
     user.set('favoriteColor', 'yellow');
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    user.setACL(acl);
     await user.save();
 
     const fetched = await new Parse.Query(Parse.User).get(user.id);
@@ -35,6 +38,9 @@ describe('ProtectedFields', function () {
       user.set('timeZone', 'America/Los_Angeles');
       user.set('favoriteColor', 'yellow');
       user.set('favoriteFood', 'pizza');
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      user.setACL(acl);
       await user.save();
 
       const fetched = await new Parse.Query(Parse.User).get(user.id);
@@ -57,6 +63,9 @@ describe('ProtectedFields', function () {
       user.set('timeZone', 'America/Los_Angeles');
       user.set('favoriteColor', 'yellow');
       user.set('favoriteFood', 'pizza');
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      user.setACL(acl);
       await user.save();
 
       const fetched = await new Parse.Query(Parse.User).get(user.id);
@@ -108,6 +117,9 @@ describe('ProtectedFields', function () {
       user.set('timeZone', 'America/Los_Angeles');
       user.set('favoriteColor', 'yellow');
       user.set('favoriteFood', 'pizza');
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      user.setACL(acl);
       await user.save();
 
       const objA = await new Parse.Object('ClassA').set('foo', 'zzz').set('bar', 'yyy').save();

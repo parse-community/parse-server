@@ -2,26 +2,32 @@
 // configured.
 // mount is the URL for the root of the API; includes http, domain, etc.
 
+import { isBoolean, isString } from 'lodash';
+import net from 'net';
 import AppCache from './cache';
 import DatabaseController from './Controllers/DatabaseController';
-import net from 'net';
+import { logLevels as validLogLevels } from './Controllers/LoggerController';
+import { version } from '../package.json';
 import {
-  IdempotencyOptions,
-  FileUploadOptions,
   AccountLockoutOptions,
+  DatabaseOptions,
+  FileUploadOptions,
+  IdempotencyOptions,
+  LogLevels,
   PagesOptions,
-  SecurityOptions,
-  SchemaOptions,
   ParseServerOptions,
+  SchemaOptions,
+  SecurityOptions,
 } from './Options/Definitions';
-import { isBoolean, isString } from 'lodash';
+import ParseServer from './cloud-code/Parse.Server';
+import Deprecator from './Deprecator/Deprecator';
 
 function removeTrailingSlash(str) {
   if (!str) {
     return str;
   }
   if (str.endsWith('/')) {
-    str = str.substr(0, str.length - 1);
+    str = str.substring(0, str.length - 1);
   }
   return str;
 }
@@ -46,56 +52,55 @@ export class Config {
     config.generateEmailVerifyTokenExpiresAt = config.generateEmailVerifyTokenExpiresAt.bind(
       config
     );
+    config.version = version;
     return config;
   }
 
   static put(serverConfiguration) {
-    Config.validate(serverConfiguration);
+    Config.validateOptions(serverConfiguration);
+    Config.validateControllers(serverConfiguration);
     AppCache.put(serverConfiguration.appId, serverConfiguration);
     Config.setupPasswordValidator(serverConfiguration.passwordPolicy);
     return serverConfiguration;
   }
 
-  static validate({
-    verifyUserEmails,
-    userController,
-    appName,
+  static validateOptions({
+    customPages,
     publicServerURL,
     revokeSessionOnPasswordReset,
     expireInactiveSessions,
     sessionLength,
     defaultLimit,
     maxLimit,
-    emailVerifyTokenValidityDuration,
     accountLockout,
     passwordPolicy,
     masterKeyIps,
     masterKey,
+    maintenanceKey,
+    maintenanceKeyIps,
     readOnlyMasterKey,
     allowHeaders,
     idempotencyOptions,
-    emailVerifyTokenReuseIfValid,
     fileUpload,
     pages,
     security,
     enforcePrivateUsers,
+    enableInsecureAuthAdapters,
     schema,
     requestKeywordDenylist,
     allowExpiredAuthDataToken,
+    logLevels,
+    rateLimit,
+    databaseOptions,
+    extendSessionOnUse,
+    allowClientClassCreation,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
     }
 
-    const emailAdapter = userController.adapter;
-    if (verifyUserEmails) {
-      this.validateEmailConfiguration({
-        emailAdapter,
-        appName,
-        publicServerURL,
-        emailVerifyTokenValidityDuration,
-        emailVerifyTokenReuseIfValid,
-      });
+    if (masterKey === maintenanceKey) {
+      throw new Error('masterKey and maintenanceKey should be different');
     }
 
     this.validateAccountLockoutPolicy(accountLockout);
@@ -106,13 +111,18 @@ export class Config {
       throw 'revokeSessionOnPasswordReset must be a boolean value';
     }
 
+    if (typeof extendSessionOnUse !== 'boolean') {
+      throw 'extendSessionOnUse must be a boolean value';
+    }
+
     if (publicServerURL) {
       if (!publicServerURL.startsWith('http://') && !publicServerURL.startsWith('https://')) {
         throw 'publicServerURL should be a valid HTTPS URL starting with https://';
       }
     }
     this.validateSessionConfiguration(sessionLength, expireInactiveSessions);
-    this.validateMasterKeyIps(masterKeyIps);
+    this.validateIps('masterKeyIps', masterKeyIps);
+    this.validateIps('maintenanceKeyIps', maintenanceKeyIps);
     this.validateDefaultLimit(defaultLimit);
     this.validateMaxLimit(maxLimit);
     this.validateAllowHeaders(allowHeaders);
@@ -121,8 +131,42 @@ export class Config {
     this.validateSecurityOptions(security);
     this.validateSchemaOptions(schema);
     this.validateEnforcePrivateUsers(enforcePrivateUsers);
+    this.validateEnableInsecureAuthAdapters(enableInsecureAuthAdapters);
     this.validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken);
     this.validateRequestKeywordDenylist(requestKeywordDenylist);
+    this.validateRateLimit(rateLimit);
+    this.validateLogLevels(logLevels);
+    this.validateDatabaseOptions(databaseOptions);
+    this.validateCustomPages(customPages);
+    this.validateAllowClientClassCreation(allowClientClassCreation);
+  }
+
+  static validateCustomPages(customPages) {
+    if (!customPages) { return; }
+
+    if (Object.prototype.toString.call(customPages) !== '[object Object]') {
+      throw Error('Parse Server option customPages must be an object.');
+    }
+  }
+
+  static validateControllers({
+    verifyUserEmails,
+    userController,
+    appName,
+    publicServerURL,
+    emailVerifyTokenValidityDuration,
+    emailVerifyTokenReuseIfValid,
+  }) {
+    const emailAdapter = userController.adapter;
+    if (verifyUserEmails) {
+      this.validateEmailConfiguration({
+        emailAdapter,
+        appName,
+        publicServerURL,
+        emailVerifyTokenValidityDuration,
+        emailVerifyTokenReuseIfValid,
+      });
+    }
   }
 
   static validateRequestKeywordDenylist(requestKeywordDenylist) {
@@ -145,6 +189,12 @@ export class Config {
     }
   }
 
+  static validateAllowClientClassCreation(allowClientClassCreation) {
+    if (typeof allowClientClassCreation !== 'boolean') {
+      throw 'Parse Server option allowClientClassCreation must be a boolean.';
+    }
+  }
+
   static validateSecurityOptions(security) {
     if (Object.prototype.toString.call(security) !== '[object Object]') {
       throw 'Parse Server option security must be an object.';
@@ -162,7 +212,7 @@ export class Config {
   }
 
   static validateSchemaOptions(schema: SchemaOptions) {
-    if (!schema) return;
+    if (!schema) { return; }
     if (Object.prototype.toString.call(schema) !== '[object Object]') {
       throw 'Parse Server option schema must be an object.';
     }
@@ -363,6 +413,13 @@ export class Config {
       if (passwordPolicy.resetTokenReuseIfValid && !passwordPolicy.resetTokenValidityDuration) {
         throw 'You cannot use resetTokenReuseIfValid without resetTokenValidityDuration';
       }
+
+      if (
+        passwordPolicy.resetPasswordSuccessOnInvalidEmail &&
+        typeof passwordPolicy.resetPasswordSuccessOnInvalidEmail !== 'boolean'
+      ) {
+        throw 'resetPasswordSuccessOnInvalidEmail must be a boolean value';
+      }
     }
   }
 
@@ -432,16 +489,30 @@ export class Config {
     } else if (typeof fileUpload.enableForAuthenticatedUser !== 'boolean') {
       throw 'fileUpload.enableForAuthenticatedUser must be a boolean value.';
     }
+    if (fileUpload.fileExtensions === undefined) {
+      fileUpload.fileExtensions = FileUploadOptions.fileExtensions.default;
+    } else if (!Array.isArray(fileUpload.fileExtensions)) {
+      throw 'fileUpload.fileExtensions must be an array.';
+    }
   }
 
-  static validateMasterKeyIps(masterKeyIps) {
+  static validateIps(field, masterKeyIps) {
     for (let ip of masterKeyIps) {
       if (ip.includes('/')) {
         ip = ip.split('/')[0];
       }
       if (!net.isIP(ip)) {
-        throw `The Parse Server option "masterKeyIps" contains an invalid IP address "${ip}".`;
+        throw `The Parse Server option "${field}" contains an invalid IP address "${ip}".`;
       }
+    }
+  }
+
+  static validateEnableInsecureAuthAdapters(enableInsecureAuthAdapters) {
+    if (enableInsecureAuthAdapters && typeof enableInsecureAuthAdapters !== 'boolean') {
+      throw 'Parse Server option enableInsecureAuthAdapters must be a boolean.';
+    }
+    if (enableInsecureAuthAdapters) {
+      Deprecator.logRuntimeDeprecation({ usage: 'insecure adapter' });
     }
   }
 
@@ -501,6 +572,85 @@ export class Config {
     }
   }
 
+  static validateLogLevels(logLevels) {
+    for (const key of Object.keys(LogLevels)) {
+      if (logLevels[key]) {
+        if (validLogLevels.indexOf(logLevels[key]) === -1) {
+          throw `'${key}' must be one of ${JSON.stringify(validLogLevels)}`;
+        }
+      } else {
+        logLevels[key] = LogLevels[key].default;
+      }
+    }
+  }
+
+  static validateDatabaseOptions(databaseOptions) {
+    if (databaseOptions == undefined) {
+      return;
+    }
+    if (Object.prototype.toString.call(databaseOptions) !== '[object Object]') {
+      throw `databaseOptions must be an object`;
+    }
+
+    if (databaseOptions.enableSchemaHooks === undefined) {
+      databaseOptions.enableSchemaHooks = DatabaseOptions.enableSchemaHooks.default;
+    } else if (typeof databaseOptions.enableSchemaHooks !== 'boolean') {
+      throw `databaseOptions.enableSchemaHooks must be a boolean`;
+    }
+    if (databaseOptions.schemaCacheTtl === undefined) {
+      databaseOptions.schemaCacheTtl = DatabaseOptions.schemaCacheTtl.default;
+    } else if (typeof databaseOptions.schemaCacheTtl !== 'number') {
+      throw `databaseOptions.schemaCacheTtl must be a number`;
+    }
+  }
+
+  static validateRateLimit(rateLimit) {
+    if (!rateLimit) {
+      return;
+    }
+    if (
+      Object.prototype.toString.call(rateLimit) !== '[object Object]' &&
+      !Array.isArray(rateLimit)
+    ) {
+      throw `rateLimit must be an array or object`;
+    }
+    const options = Array.isArray(rateLimit) ? rateLimit : [rateLimit];
+    for (const option of options) {
+      if (Object.prototype.toString.call(option) !== '[object Object]') {
+        throw `rateLimit must be an array of objects`;
+      }
+      if (option.requestPath == null) {
+        throw `rateLimit.requestPath must be defined`;
+      }
+      if (typeof option.requestPath !== 'string') {
+        throw `rateLimit.requestPath must be a string`;
+      }
+      if (option.requestTimeWindow == null) {
+        throw `rateLimit.requestTimeWindow must be defined`;
+      }
+      if (typeof option.requestTimeWindow !== 'number') {
+        throw `rateLimit.requestTimeWindow must be a number`;
+      }
+      if (option.includeInternalRequests && typeof option.includeInternalRequests !== 'boolean') {
+        throw `rateLimit.includeInternalRequests must be a boolean`;
+      }
+      if (option.requestCount == null) {
+        throw `rateLimit.requestCount must be defined`;
+      }
+      if (typeof option.requestCount !== 'number') {
+        throw `rateLimit.requestCount must be a number`;
+      }
+      if (option.errorResponseMessage && typeof option.errorResponseMessage !== 'string') {
+        throw `rateLimit.errorResponseMessage must be a string`;
+      }
+      const options = Object.keys(ParseServer.RateLimitZone);
+      if (option.zone && !options.includes(option.zone)) {
+        const formatter = new Intl.ListFormat('en', { style: 'short', type: 'disjunction' });
+        throw `rateLimit.zone must be one of ${formatter.format(options)}`;
+      }
+    }
+  }
+
   generateEmailVerifyTokenExpiresAt() {
     if (!this.verifyUserEmails || !this.emailVerifyTokenValidityDuration) {
       return undefined;
@@ -523,6 +673,16 @@ export class Config {
     }
     var now = new Date();
     return new Date(now.getTime() + this.sessionLength * 1000);
+  }
+
+  unregisterRateLimiters() {
+    let i = this.rateLimits?.length;
+    while (i--) {
+      const limit = this.rateLimits[i];
+      if (limit.cloud) {
+        this.rateLimits.splice(i, 1);
+      }
+    }
   }
 
   get invalidLinkURL() {
@@ -575,6 +735,28 @@ export class Config {
   get verifyEmailURL() {
     return `${this.publicServerURL}/${this.pagesEndpoint}/${this.applicationId}/verify_email`;
   }
+
+  async loadMasterKey() {
+    if (typeof this.masterKey === 'function') {
+      const ttlIsEmpty = !this.masterKeyTtl;
+      const isExpired = this.masterKeyCache?.expiresAt && this.masterKeyCache.expiresAt < new Date();
+
+      if ((!isExpired || ttlIsEmpty) && this.masterKeyCache?.masterKey) {
+        return this.masterKeyCache.masterKey;
+      }
+
+      const masterKey = await this.masterKey();
+
+      const expiresAt = this.masterKeyTtl ? new Date(Date.now() + 1000 * this.masterKeyTtl) : null
+      this.masterKeyCache = { masterKey, expiresAt };
+      Config.put(this);
+
+      return this.masterKeyCache.masterKey;
+    }
+
+    return this.masterKey;
+  }
+
 
   // TODO: Remove this function once PagesRouter replaces the PublicAPIRouter;
   // the (default) endpoint has to be defined in PagesRouter only.
