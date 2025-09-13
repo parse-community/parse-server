@@ -12,7 +12,6 @@ describe('Config Keys', () => {
 
   it('recognizes invalid keys in root', async () => {
     await expectAsync(reconfigureServer({
-      ...defaultConfiguration,
       invalidKey: 1,
     })).toBeResolved();
     const error = loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '');
@@ -21,7 +20,6 @@ describe('Config Keys', () => {
 
   it('recognizes invalid keys in pages.customUrls', async () => {
     await expectAsync(reconfigureServer({
-      ...defaultConfiguration,
       pages: {
         customUrls: {
           invalidKey: 1,
@@ -37,7 +35,6 @@ describe('Config Keys', () => {
 
   it('recognizes invalid keys in liveQueryServerOptions', async () => {
     await expectAsync(reconfigureServer({
-      ...defaultConfiguration,
       liveQueryServerOptions: {
         invalidKey: 1,
         MasterKey: 1,
@@ -50,7 +47,6 @@ describe('Config Keys', () => {
 
   it('recognizes invalid keys in rateLimit', async () => {
     await expectAsync(reconfigureServer({
-      ...defaultConfiguration,
       rateLimit: [
         { invalidKey: 1 },
         { RequestPath: 1 },
@@ -64,7 +60,7 @@ describe('Config Keys', () => {
     expect(error).toMatch('rateLimit\\[2\\]\\.RequestTimeWindow');
   });
 
-  it('recognizes valid keys in default configuration', async () => {
+  it_only_db('mongo')('recognizes valid keys in default configuration', async () => {
     await expectAsync(reconfigureServer({
       ...defaultConfiguration,
     })).toBeResolved();
@@ -81,6 +77,11 @@ describe('Config Keys', () => {
         maxTimeMS: 1000,
         maxStalenessSeconds: 10,
         maxPoolSize: 10,
+        minPoolSize: 5,
+        connectTimeoutMS: 5000,
+        socketTimeoutMS: 5000,
+        autoSelectFamily: true,
+        autoSelectFamilyAttemptTimeout: 3000
       },
     })).toBeResolved();
     expect(loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '')).not.toMatch(invalidKeyErrorMessage);

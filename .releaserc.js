@@ -30,10 +30,12 @@ async function config() {
 
   // Get branch
   const branch = ref?.split('/')?.pop()?.split('-')[0] || '(current branch could not be determined)';
+  // eslint-disable-next-line no-console
   console.log(`Running on branch: ${branch}`);
 
   // Set changelog file
   const changelogFile = `./changelogs/CHANGELOG_${branch}.md`;
+  // eslint-disable-next-line no-console
   console.log(`Changelog file output to: ${changelogFile}`);
 
   // Load template file contents
@@ -43,10 +45,10 @@ async function config() {
     branches: [
       'release',
       { name: 'alpha', prerelease: true },
-      { name: 'beta', prerelease: true },
+      // { name: 'beta', prerelease: true },
       'next-major',
-      // Long-Term-Support branch of previous major version
-      'release-6.x.x',
+      // Long-Term-Support branch
+      'release-8.x.x',
     ],
     dryRun: false,
     debug: true,
@@ -60,13 +62,13 @@ async function config() {
           { scope: 'no-release', release: false },
         ],
         parserOpts: {
-          noteKeywords: [ 'BREAKING CHANGE', 'BREAKING CHANGES', 'BREAKING' ],
+          noteKeywords: ['BREAKING CHANGE'],
         },
       }],
       ['@semantic-release/release-notes-generator', {
         preset: 'angular',
         parserOpts: {
-          noteKeywords: ['BREAKING CHANGE', 'BREAKING CHANGES', 'BREAKING']
+          noteKeywords: ['BREAKING CHANGE']
         },
         writerOpts: {
           commitsSort: ['subject', 'scope'],
@@ -95,8 +97,9 @@ async function config() {
         "@saithodev/semantic-release-backmerge",
         {
           "backmergeBranches": [
-            { from: "beta", to: "alpha" },
-            { from: "release", to: "beta" },
+            // { from: 'beta', to: 'alpha' },
+            // { from: 'release', to: 'beta' },
+            { from: 'release', to: 'alpha' },
           ]
         }
       ],
@@ -108,7 +111,7 @@ async function config() {
 
 async function loadTemplates() {
   for (const template of Object.keys(templates)) {
-    
+
     // For ES6 modules use:
     // const fileUrl = import.meta.url;
     // const __dirname = dirname(fileURLToPath(fileUrl));

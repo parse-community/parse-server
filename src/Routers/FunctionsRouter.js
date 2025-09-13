@@ -58,7 +58,7 @@ export class FunctionsRouter extends PromiseRouter {
   }
 
   static handleCloudJob(req) {
-    const jobName = req.params.jobName || req.body.jobName;
+    const jobName = req.params.jobName || req.body?.jobName;
     const applicationId = req.config.applicationId;
     const jobHandler = jobStatusHandler(req.config);
     const jobFunction = triggers.getJob(jobName, applicationId);
@@ -76,7 +76,7 @@ export class FunctionsRouter extends PromiseRouter {
       message: jobHandler.setMessage.bind(jobHandler),
     };
 
-    return jobHandler.setRunning(jobName, params).then(jobStatus => {
+    return jobHandler.setRunning(jobName).then(jobStatus => {
       request.jobId = jobStatus.objectId;
       // run the function async
       process.nextTick(() => {

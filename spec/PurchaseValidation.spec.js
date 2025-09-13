@@ -23,13 +23,8 @@ function createProduct() {
 }
 
 describe('test validate_receipt endpoint', () => {
-  beforeEach(done => {
-    createProduct()
-      .then(done)
-      .catch(function (err) {
-        console.error({ err });
-        done();
-      });
+  beforeEach(async () => {
+    await createProduct();
   });
 
   it('should bypass appstore validation', async () => {

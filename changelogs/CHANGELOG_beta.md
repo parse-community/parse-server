@@ -1,3 +1,20 @@
+# [7.4.0-beta.1](https://github.com/parse-community/parse-server/compare/7.3.0...7.4.0-beta.1) (2024-12-23)
+
+
+### Bug Fixes
+
+* `Parse.Query.distinct` fails due to invalid aggregate stage 'hint' ([#9295](https://github.com/parse-community/parse-server/issues/9295)) ([5f66c6a](https://github.com/parse-community/parse-server/commit/5f66c6a075cbe1cdaf9d1b108ee65af8ae596b89))
+* Security upgrade cross-spawn from 7.0.3 to 7.0.6 ([#9444](https://github.com/parse-community/parse-server/issues/9444)) ([3d034e0](https://github.com/parse-community/parse-server/commit/3d034e0a993e3e5bd9bb96a7e382bb3464f1eb68))
+* Security upgrade fast-xml-parser from 4.4.0 to 4.4.1 ([#9262](https://github.com/parse-community/parse-server/issues/9262)) ([992d39d](https://github.com/parse-community/parse-server/commit/992d39d508f230c774dcb764d1d907ec8887e6c5))
+* Security upgrade node from 20.14.0-alpine3.20 to 20.17.0-alpine3.20 ([#9300](https://github.com/parse-community/parse-server/issues/9300)) ([15bb17d](https://github.com/parse-community/parse-server/commit/15bb17d87153bf0d38f08fe4c720da29a204b36b))
+
+### Features
+
+* Add support for MongoDB 8 ([#9269](https://github.com/parse-community/parse-server/issues/9269)) ([4756c66](https://github.com/parse-community/parse-server/commit/4756c66cd9f55afa1621d1a3f6fa850ed605cb53))
+* Add support for PostGIS 3.5 ([#9354](https://github.com/parse-community/parse-server/issues/9354)) ([8ea3538](https://github.com/parse-community/parse-server/commit/8ea35382db3436d54ab59bd30706705564b0985c))
+* Add support for Postgres 17 ([#9324](https://github.com/parse-community/parse-server/issues/9324)) ([fa2ee31](https://github.com/parse-community/parse-server/commit/fa2ee3196e4319a142b3838bb947c98dcba5d5cb))
+* Upgrade @parse/push-adapter from 6.7.1 to 6.8.0 ([#9489](https://github.com/parse-community/parse-server/issues/9489)) ([286aa66](https://github.com/parse-community/parse-server/commit/286aa664ac8830d36c3e70d2316917d15f0b6df5))
+
 # [7.3.0-beta.1](https://github.com/parse-community/parse-server/compare/7.2.0...7.3.0-beta.1) (2024-10-03)
 
 

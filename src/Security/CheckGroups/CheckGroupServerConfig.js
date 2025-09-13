@@ -69,6 +69,27 @@ class CheckGroupServerConfig extends CheckGroup {
           }
         },
       }),
+      new Check({
+        title: 'Insecure auth adapters disabled',
+        warning:
+          "Attackers may explore insecure auth adapters' vulnerabilities and log in on behalf of another user.",
+        solution: "Change Parse Server configuration to 'enableInsecureAuthAdapters: false'.",
+        check: () => {
+          if (config.enableInsecureAuthAdapters !== false) {
+            throw 1;
+          }
+        },
+      }),
+      new Check({
+        title: 'GraphQL public introspection disabled',
+        warning: 'GraphQL public introspection is enabled, which allows anyone to access the GraphQL schema.',
+        solution: "Change Parse Server configuration to 'graphQLPublicIntrospection: false'. You will need to use master key or maintenance key to access the GraphQL schema.",
+        check: () => {
+          if (config.graphQLPublicIntrospection !== false) {
+            throw 1;
+          }
+        },
+      }),
     ];
   }
 }
