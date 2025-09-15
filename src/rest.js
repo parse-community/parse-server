@@ -62,7 +62,10 @@ async function runFindTriggers(
       const ids = (Array.isArray(objectsFromBeforeFind) ? objectsFromBeforeFind : [objectsFromBeforeFind])
         .map(o => (o && (o.id || o.objectId)) || null)
         .filter(Boolean);
-
+        
+      // Objects without IDs are(normally) unsaved objects
+      // For unsaved objects, the ACL security does not apply, so no need to redo the query.
+      // For saved objects, we need to re-query to ensure proper ACL/CLP enforcement
       if (ids.length > 0) {
         const refilterWhere = isGet ? { objectId: ids[0] } : { objectId: { $in: ids } };
 
