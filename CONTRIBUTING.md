@@ -515,7 +515,6 @@ Fixes for security vulnerabilities are developed in private forks with a closed 
 - `npm run madge:circular` to detect circular dependencies
 - `npm run lint` to check lint compliance
 - `npm run definitions` to update the Parse Server options definitions
-- `npm run clean:mongodb` to clean mongodb-runner cache if you encounter error `Error: kill ESRCH` during testing 
 
 > [!CAUTION]
 > It is essential to run `npm run build` *after* switching to a different branch or making a commit and *before*  running any tests. Otherwise the tests may run on the build from a different branch or on a build that does not reflect the most recent commits.
