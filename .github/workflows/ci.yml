@@ -210,8 +210,7 @@ jobs:
             ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
       - name: Install dependencies
         run: npm ci
-      - run: npm run pretest
-      - run: npm run coverage
+      - run: npm run coverage:mongodb
         env:
           CI: true
       - name: Upload code coverage
