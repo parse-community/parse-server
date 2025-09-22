@@ -495,7 +495,7 @@ export function maybeRunAfterFindTrigger(
       auth,
       config.logLevels.triggerBeforeSuccess
     );
-    
+
     // Convert plain objects to Parse.Object instances for trigger
     request.objects = objectsInput.map(currentObject => {
       if (currentObject instanceof Parse.Object) {

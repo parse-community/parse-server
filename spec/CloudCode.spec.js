@@ -343,7 +343,7 @@ describe('Cloud Code', () => {
       expect(results.length).toBe(1);
       expect(results[0].id).toBe(secret.id);
     });
-      
+
     it('should apply protectedFields masking after re-filtering', async () => {
       // Configure protectedFields for SecretMask: mask `secretField` for everyone
       const protectedFields = { SecretMask: { '*': ['secretField'] } };
