@@ -320,8 +320,11 @@ describe('Audit Logging - User Authentication', () => {
 
     try {
       await Parse.User.logIn('audituser2', 'wrongpassword');
+      fail('Expected login to fail with wrong password');
     } catch (error) {
-      // Expected error
+      // Verify this is the expected authentication failure
+      expect(error.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      expect(error.message).toContain('Invalid username/password');
     }
 
     await new Promise(resolve => setTimeout(resolve, 200));

@@ -317,7 +317,7 @@ export class UsersRouter extends ClassesRouter {
 
       if (req.config.auditLogController) {
         req.config.auditLogController.logUserLogin({
-          auth: { ...req.auth, user: afterLoginUser, sessionToken: user.sessionToken },
+          auth: { ...req.auth, user: afterLoginUser, sessionToken: user.sessionToken ? '***masked***' : undefined },
           req,
           username: user.username || user.email,
           success: true,
@@ -393,7 +393,7 @@ export class UsersRouter extends ClassesRouter {
       if (req.config.auditLogController) {
         const afterLoginUser = Parse.User.fromJSON(Object.assign({ className: '_User' }, user));
         req.config.auditLogController.logUserLogin({
-          auth: { ...req.auth, user: afterLoginUser, sessionToken: user.sessionToken },
+          auth: { ...req.auth, user: afterLoginUser, sessionToken: user.sessionToken ? '***masked***' : undefined },
           req,
           username: user.username || user.email || userId,
           success: true,

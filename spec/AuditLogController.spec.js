@@ -482,10 +482,4 @@ describe('AuditLogController', () => {
       expect(controller.isEnabled()).toBe(false);
     });
   });
-
-  describe('expectedAdapterType', () => {
-    it('should return AuditLogAdapter', () => {
-      expect(controller.expectedAdapterType()).toBe(AuditLogAdapter);
-    });
-  });
 });

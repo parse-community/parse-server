@@ -1803,7 +1803,9 @@ RestWrite.prototype.logAuditDataWrite = function () {
     return Promise.resolve();
   }
 
-  if ((this.auth.isMaster || this.auth.isMaintenance) && !this.auth.user) {
+  // Skip only master key operations without a user context
+  // Maintenance mode operations should still be audited
+  if (this.auth.isMaster && !this.auth.user) {
     return Promise.resolve();
   }
 
@@ -1815,8 +1817,10 @@ RestWrite.prototype.logAuditDataWrite = function () {
   const isCreate = !this.query;
   const isUpdate = !!this.query;
 
-  const aclModified = this.originalData && this.originalData.ACL && this.data.ACL &&
-    JSON.stringify(this.originalData.ACL) !== JSON.stringify(this.data.ACL);
+  // Check if ACL was modified, including cases where ACL was added or removed
+  const originalACL = this.originalData?.ACL ?? null;
+  const newACL = this.data?.ACL ?? null;
+  const aclModified = isUpdate && JSON.stringify(originalACL) !== JSON.stringify(newACL);
 
   try {
     if (isCreate) {
@@ -1849,15 +1853,14 @@ RestWrite.prototype.logAuditDataWrite = function () {
         req: { config: this.config },
         className: this.className,
         objectId: objectId,
-        oldACL: this.originalData.ACL,
-        newACL: this.data.ACL,
+        oldACL: originalACL,
+        newACL: newACL,
         success: true,
       });
     }
   } catch (error) {
     // Don't fail the write if audit logging fails
-    // eslint-disable-next-line no-console
-    console.error('Audit logging error:', error);
+    this.config.loggerController.error('Audit logging error in RestWrite', { error });
   }
 
   return Promise.resolve();

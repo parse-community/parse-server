@@ -2371,8 +2371,6 @@ describe('Audit Logging - CRUD Operations', () => {
   });
 
   it('should not log internal master key operations without user', async () => {
-    Parse.Cloud.useMasterKey();
-
     const TestClass = Parse.Object.extend('AuditCRUDInternal');
     const obj = new TestClass();
     obj.set('name', 'internal');

@@ -63,7 +63,25 @@ export function configureAuditLogger({
   maxFiles,
 } = {}) {
   if (!auditLogFolder) {
-    // Audit logging disabled
+    // Audit logging disabled - close and remove any existing transports
+    try {
+      if (auditLogger.transports && auditLogger.transports.length > 0) {
+        // Close all transports
+        auditLogger.transports.forEach(transport => {
+          try {
+            if (transport.close) {
+              transport.close();
+            }
+          } catch (err) {
+            // Ignore errors during transport cleanup
+          }
+        });
+        // Clear all transports
+        auditLogger.clear();
+      }
+    } catch (err) {
+      // Ignore errors during cleanup
+    }
     return;
   }
 
@@ -77,6 +95,23 @@ export function configureAuditLogger({
   } catch (e) {
     // eslint-disable-next-line no-console
     console.error('Failed to create audit log folder:', e);
+    // Clean up existing transports since audit logging cannot be enabled
+    try {
+      if (auditLogger.transports && auditLogger.transports.length > 0) {
+        auditLogger.transports.forEach(transport => {
+          try {
+            if (transport.close) {
+              transport.close();
+            }
+          } catch (err) {
+            // Ignore errors during transport cleanup
+          }
+        });
+        auditLogger.clear();
+      }
+    } catch (err) {
+      // Ignore errors during cleanup
+    }
     return;
   }
 

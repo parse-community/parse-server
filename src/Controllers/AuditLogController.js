@@ -1,14 +1,14 @@
-import AdaptableController from './AdaptableController';
 import { AuditLogAdapter } from '../Adapters/Logger/AuditLogAdapter';
 
 /**
  * AuditLogController
  * Controller for managing GDPR-compliant audit logging
  */
-export class AuditLogController extends AdaptableController {
+export class AuditLogController {
   constructor(adapter, appId, options = {}) {
-    super(adapter, appId, options);
     this.adapter = adapter;
+    this.appId = appId;
+    this.options = options;
   }
 
   /**
@@ -311,11 +311,7 @@ export class AuditLogController extends AdaptableController {
    * @returns {boolean} True if enabled
    */
   isEnabled() {
-    return this.adapter && this.adapter.isEnabled();
-  }
-
-  expectedAdapterType() {
-    return AuditLogAdapter;
+    return !!(this.adapter && this.adapter.isEnabled());
   }
 }
 
