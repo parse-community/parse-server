@@ -211,6 +211,10 @@ export interface ParseServerOptions {
   sendUserEmailVerification: ?(boolean | void);
   /* The account lockout policy for failed login attempts. */
   accountLockout: ?AccountLockoutOptions;
+  /* Configuration for GDPR-compliant audit logging. Logs user login, data access, data manipulation, schema changes, ACL changes, and push notifications.
+  :ENV: PARSE_SERVER_AUDIT_LOG
+  :DEFAULT: {} */
+  auditLog: ?AuditLogOptions;
   /* The password policy for enforcing password related rules. */
   passwordPolicy: ?PasswordPolicyOptions;
   /* Adapter module for the cache */
@@ -536,6 +540,26 @@ export interface AccountLockoutOptions {
   Requires options `duration` and `threshold` to be set.
   :DEFAULT: false */
   unlockOnPasswordReset: ?boolean;
+}
+
+export interface AuditLogOptions {
+  /* Folder path where audit logs will be stored. If not set, audit logging is disabled. */
+  auditLogFolder: ?string;
+  /* Date pattern for log file rotation.
+  <br><br>
+  Default is 'YYYY-MM-DD' (daily rotation).
+  :DEFAULT: YYYY-MM-DD */
+  datePattern: ?string;
+  /* Maximum size of each log file (e.g., '20m', '1g').
+  <br><br>
+  Default is '20m'.
+  :DEFAULT: 20m */
+  maxSize: ?string;
+  /* Maximum number of log files to retain (e.g., '14d', '10').
+  <br><br>
+  Default is '14d' (14 days).
+  :DEFAULT: 14d */
+  maxFiles: ?string;
 }
 
 export interface PasswordPolicyOptions {

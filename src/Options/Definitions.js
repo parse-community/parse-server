@@ -105,6 +105,14 @@ module.exports.ParseServerOptions = {
     help:
       'Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication',
   },
+  auditLog: {
+    env: 'PARSE_SERVER_AUDIT_LOG',
+    help:
+      'Configuration for GDPR-compliant audit logging. Logs user login, data access, data manipulation, schema changes, ACL changes, and push notifications.',
+    action: parsers.objectParser,
+    type: 'AuditLogOptions',
+    default: {},
+  },
   cacheAdapter: {
     env: 'PARSE_SERVER_CACHE_ADAPTER',
     help: 'Adapter module for the cache',
@@ -976,6 +984,27 @@ module.exports.AccountLockoutOptions = {
       'Set to `true`  if the account should be unlocked after a successful password reset.<br><br>Default is `false`.<br>Requires options `duration` and `threshold` to be set.',
     action: parsers.booleanParser,
     default: false,
+  },
+};
+module.exports.AuditLogOptions = {
+  auditLogFolder: {
+    env: 'PARSE_SERVER_AUDIT_LOG_FOLDER',
+    help: 'Folder path where audit logs will be stored. If not set, audit logging is disabled.',
+  },
+  datePattern: {
+    env: 'PARSE_SERVER_AUDIT_LOG_DATE_PATTERN',
+    help: 'Date pattern for log file rotation. Default is \'YYYY-MM-DD\' (daily rotation).',
+    default: 'YYYY-MM-DD',
+  },
+  maxSize: {
+    env: 'PARSE_SERVER_AUDIT_LOG_MAX_SIZE',
+    help: 'Maximum size of each log file (e.g., \'20m\', \'1g\'). Default is \'20m\'.',
+    default: '20m',
+  },
+  maxFiles: {
+    env: 'PARSE_SERVER_AUDIT_LOG_MAX_FILES',
+    help: 'Maximum number of log files to retain (e.g., \'14d\', \'10\'). Default is \'14d\' (14 days).',
+    default: '14d',
   },
 };
 module.exports.PasswordPolicyOptions = {

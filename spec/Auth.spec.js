@@ -254,3 +254,164 @@ describe('extendSessionOnUse', () => {
     expect(res2).toBe(false);
   });
 });
+
+describe('Audit Logging - User Authentication', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const testLogFolder = path.join(__dirname, 'temp-audit-logs-auth');
+
+  beforeEach(async () => {
+    if (fs.existsSync(testLogFolder)) {
+      fs.rmSync(testLogFolder, { recursive: true, force: true });
+    }
+  });
+
+  afterEach(async () => {
+    if (fs.existsSync(testLogFolder)) {
+      fs.rmSync(testLogFolder, { recursive: true, force: true });
+    }
+  });
+
+  it('should log successful user login', async () => {
+    await reconfigureServer({
+      auditLog: {
+        auditLogFolder: testLogFolder,
+      },
+    });
+
+    const user = new Parse.User();
+    await user.signUp({
+      username: 'audituser1',
+      password: 'password123',
+    });
+
+    await Parse.User.logOut();
+    await Parse.User.logIn('audituser1', 'password123');
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    expect(fs.existsSync(testLogFolder)).toBe(true);
+    const logFiles = fs.readdirSync(testLogFolder);
+    expect(logFiles.length).toBeGreaterThan(0);
+
+    const logFile = path.join(testLogFolder, logFiles[0]);
+    const logContent = fs.readFileSync(logFile, 'utf8');
+
+    expect(logContent).toContain('USER_LOGIN');
+    expect(logContent).toContain('audituser1');
+    expect(logContent).toContain('"success":true');
+    expect(logContent).toContain('***masked***');
+  });
+
+  it('should log failed login attempt', async () => {
+    await reconfigureServer({
+      auditLog: {
+        auditLogFolder: testLogFolder,
+      },
+    });
+
+    const user = new Parse.User();
+    await user.signUp({
+      username: 'audituser2',
+      password: 'password123',
+    });
+
+    try {
+      await Parse.User.logIn('audituser2', 'wrongpassword');
+    } catch (error) {
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    const logFiles = fs.readdirSync(testLogFolder);
+    expect(logFiles.length).toBeGreaterThan(0);
+
+    const logFile = path.join(testLogFolder, logFiles[0]);
+    const logContent = fs.readFileSync(logFile, 'utf8');
+
+    expect(logContent).toContain('USER_LOGIN');
+    expect(logContent).toContain('"success":false');
+  });
+
+  it('should log loginAs with master key', async () => {
+    await reconfigureServer({
+      auditLog: {
+        auditLogFolder: testLogFolder,
+      },
+    });
+
+    const user = new Parse.User();
+    await user.signUp({
+      username: 'audituser3',
+      password: 'password123',
+    });
+
+    const response = await request({
+      method: 'POST',
+      url: Parse.serverURL + '/loginAs',
+      body: {
+        userId: user.id,
+      },
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
+      },
+    });
+
+    expect(response.data.sessionToken).toBeDefined();
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    const logFiles = fs.readdirSync(testLogFolder);
+    expect(logFiles.length).toBeGreaterThan(0);
+
+    const logFile = path.join(testLogFolder, logFiles[0]);
+    const logContent = fs.readFileSync(logFile, 'utf8');
+
+    expect(logContent).toContain('USER_LOGIN');
+    expect(logContent).toContain('masterkey');
+    expect(logContent).toContain('"success":true');
+  });
+
+  it('should capture IP address in login logs', async () => {
+    await reconfigureServer({
+      auditLog: {
+        auditLogFolder: testLogFolder,
+      },
+    });
+
+    const user = new Parse.User();
+    await user.signUp({
+      username: 'audituser4',
+      password: 'password123',
+    });
+
+    await Parse.User.logOut();
+    await Parse.User.logIn('audituser4', 'password123');
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    const logFiles = fs.readdirSync(testLogFolder);
+    const logFile = path.join(testLogFolder, logFiles[0]);
+    const logContent = fs.readFileSync(logFile, 'utf8');
+
+    expect(logContent).toContain('ipAddress');
+  });
+
+  it('should not log when audit logging is disabled', async () => {
+    await reconfigureServer({});
+
+    const user = new Parse.User();
+    await user.signUp({
+      username: 'audituser5',
+      password: 'password123',
+    });
+
+    await Parse.User.logOut();
+    await Parse.User.logIn('audituser5', 'password123');
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    expect(fs.existsSync(testLogFolder)).toBe(false);
+  });
+});

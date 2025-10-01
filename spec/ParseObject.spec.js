@@ -2172,3 +2172,221 @@ describe('Parse.Object testing', () => {
     }
   });
 });
+
+describe('Audit Logging - CRUD Operations', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const testLogFolder = path.join(__dirname, 'temp-audit-logs-crud');
+
+  beforeEach(async () => {
+    if (fs.existsSync(testLogFolder)) {
+      fs.rmSync(testLogFolder, { recursive: true, force: true });
+    }
+
+    await reconfigureServer({
+      auditLog: {
+        auditLogFolder: testLogFolder,
+      },
+    });
+  });
+
+  afterEach(async () => {
+    if (fs.existsSync(testLogFolder)) {
+      fs.rmSync(testLogFolder, { recursive: true, force: true });
+    }
+  });
+
+  it('should log object creation', async () => {
+    const user = new Parse.User();
+    await user.signUp({
+      username: 'cruduser1',
+      password: 'password123',
+    });
+
+    const TestClass = Parse.Object.extend('AuditCRUD');
+    const obj = new TestClass();
+    obj.set('name', 'created object');
+    await obj.save();
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    const logFiles = fs.readdirSync(testLogFolder);
+    expect(logFiles.length).toBeGreaterThan(0);
+
+    const logFile = path.join(testLogFolder, logFiles[0]);
+    const logContent = fs.readFileSync(logFile, 'utf8');
+
+    expect(logContent).toContain('DATA_CREATE');
+    expect(logContent).toContain('AuditCRUD');
+    expect(logContent).toContain(obj.id);
+  });
+
+  it('should log object update', async () => {
+    const user = new Parse.User();
+    await user.signUp({
+      username: 'cruduser2',
+      password: 'password123',
+    });
+
+    const TestClass = Parse.Object.extend('AuditCRUDUpdate');
+    const obj = new TestClass();
+    obj.set('name', 'original');
+    await obj.save();
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+    const logFiles1 = fs.readdirSync(testLogFolder);
+    if (logFiles1.length > 0) {
+      fs.unlinkSync(path.join(testLogFolder, logFiles1[0]));
+    }
+
+    obj.set('name', 'updated');
+    await obj.save();
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    const logFiles = fs.readdirSync(testLogFolder);
+    expect(logFiles.length).toBeGreaterThan(0);
+
+    const logFile = path.join(testLogFolder, logFiles[0]);
+    const logContent = fs.readFileSync(logFile, 'utf8');
+
+    expect(logContent).toContain('DATA_UPDATE');
+    expect(logContent).toContain('AuditCRUDUpdate');
+    expect(logContent).toContain(obj.id);
+  });
+
+  it('should log object deletion', async () => {
+    const user = new Parse.User();
+    await user.signUp({
+      username: 'cruduser3',
+      password: 'password123',
+    });
+
+    const TestClass = Parse.Object.extend('AuditCRUDDelete');
+    const obj = new TestClass();
+    obj.set('name', 'to be deleted');
+    await obj.save();
+
+    const objectId = obj.id;
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+    const logFiles1 = fs.readdirSync(testLogFolder);
+    if (logFiles1.length > 0) {
+      fs.unlinkSync(path.join(testLogFolder, logFiles1[0]));
+    }
+
+    await obj.destroy();
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    const logFiles = fs.readdirSync(testLogFolder);
+    expect(logFiles.length).toBeGreaterThan(0);
+
+    const logFile = path.join(testLogFolder, logFiles[0]);
+    const logContent = fs.readFileSync(logFile, 'utf8');
+
+    expect(logContent).toContain('DATA_DELETE');
+    expect(logContent).toContain('AuditCRUDDelete');
+    expect(logContent).toContain(objectId);
+  });
+
+  it('should log ACL modifications', async () => {
+    const user = new Parse.User();
+    await user.signUp({
+      username: 'cruduser4',
+      password: 'password123',
+    });
+
+    const TestClass = Parse.Object.extend('AuditCRUDACL');
+    const obj = new TestClass();
+    obj.set('name', 'with acl');
+    const acl = new Parse.ACL(user);
+    obj.setACL(acl);
+    await obj.save();
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+    const logFiles1 = fs.readdirSync(testLogFolder);
+    if (logFiles1.length > 0) {
+      fs.unlinkSync(path.join(testLogFolder, logFiles1[0]));
+    }
+
+    const newAcl = new Parse.ACL(user);
+    newAcl.setPublicReadAccess(true);
+    obj.setACL(newAcl);
+    await obj.save();
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    const logFiles = fs.readdirSync(testLogFolder);
+    const logFile = path.join(testLogFolder, logFiles[0]);
+    const logContent = fs.readFileSync(logFile, 'utf8');
+
+    expect(logContent).toContain('ACL_MODIFY');
+    expect(logContent).toContain('AuditCRUDACL');
+  });
+
+  it('should mask sensitive fields in create logs', async () => {
+    const user = new Parse.User();
+    await user.signUp({
+      username: 'cruduser5',
+      password: 'password123',
+    });
+
+    const newUser = new Parse.User();
+    await newUser.signUp({
+      username: 'cruduser5sub',
+      password: 'secretpassword123',
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    const logFiles = fs.readdirSync(testLogFolder);
+    const logFile = path.join(testLogFolder, logFiles[0]);
+    const logContent = fs.readFileSync(logFile, 'utf8');
+
+    expect(logContent).toContain('***masked***');
+    expect(logContent).not.toContain('secretpassword123');
+  });
+
+  it('should capture user ID in CRUD logs', async () => {
+    const user = new Parse.User();
+    await user.signUp({
+      username: 'cruduser6',
+      password: 'password123',
+    });
+
+    const TestClass = Parse.Object.extend('AuditCRUDUserID');
+    const obj = new TestClass();
+    obj.set('name', 'test');
+    await obj.save();
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    const logFiles = fs.readdirSync(testLogFolder);
+    const logFile = path.join(testLogFolder, logFiles[0]);
+    const logContent = fs.readFileSync(logFile, 'utf8');
+
+    expect(logContent).toContain('userId');
+    expect(logContent).toContain(user.id);
+  });
+
+  it('should not log internal master key operations without user', async () => {
+    Parse.Cloud.useMasterKey();
+
+    const TestClass = Parse.Object.extend('AuditCRUDInternal');
+    const obj = new TestClass();
+    obj.set('name', 'internal');
+    await obj.save(null, { useMasterKey: true });
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    const logFiles = fs.readdirSync(testLogFolder);
+    if (logFiles.length > 0) {
+      const logFile = path.join(testLogFolder, logFiles[0]);
+      const logContent = fs.readFileSync(logFile, 'utf8');
+
+      const internalLogs = logContent.split('\n').filter(line => line.includes('AuditCRUDInternal'));
+      expect(internalLogs.length).toBe(0);
+    }
+  });
+});

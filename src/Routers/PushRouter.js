@@ -20,14 +20,31 @@ export class PushRouter extends PromiseRouter {
     }
 
     const where = PushRouter.getQueryCondition(req);
+    const body = req.body || {};
+    const channels = body.channels;
+
     let resolve;
-    const promise = new Promise(_resolve => {
+    let reject;
+    const promise = new Promise((_resolve, _reject) => {
       resolve = _resolve;
+      reject = _reject;
     });
     let pushStatusId;
     pushController
-      .sendPush(req.body || {}, where, req.config, req.auth, objectId => {
+      .sendPush(body, where, req.config, req.auth, objectId => {
         pushStatusId = objectId;
+
+        if (req.config.auditLogController) {
+          req.config.auditLogController.logPushSend({
+            auth: req.auth,
+            req,
+            query: where,
+            channels: channels,
+            targetCount: undefined,
+            success: true,
+          });
+        }
+
         resolve({
           headers: {
             'X-Parse-Push-Status-Id': pushStatusId,
@@ -42,6 +59,20 @@ export class PushRouter extends PromiseRouter {
           `_PushStatus ${pushStatusId}: error while sending push`,
           err
         );
+
+        if (req.config.auditLogController) {
+          req.config.auditLogController.logPushSend({
+            auth: req.auth,
+            req,
+            query: where,
+            channels: channels,
+            targetCount: undefined,
+            success: false,
+            error: err.message,
+          });
+        }
+
+        reject(err);
       });
     return promise;
   }

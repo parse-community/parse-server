@@ -155,6 +155,9 @@ RestWrite.prototype.execute = function () {
       return this.cleanUserAuthData();
     })
     .then(() => {
+      return this.logAuditDataWrite();
+    })
+    .then(() => {
       // Append the authDataResponse if exists
       if (this.authDataResponse) {
         if (this.response && this.response.response) {
@@ -1793,6 +1796,70 @@ RestWrite.prototype.cleanUserAuthData = function () {
       }
     }
   }
+};
+
+RestWrite.prototype.logAuditDataWrite = function () {
+  if (!this.config.auditLogController || !this.config.auditLogController.isEnabled()) {
+    return Promise.resolve();
+  }
+
+  if ((this.auth.isMaster || this.auth.isMaintenance) && !this.auth.user) {
+    return Promise.resolve();
+  }
+
+  if (!this.response || !this.response.response) {
+    return Promise.resolve();
+  }
+
+  const objectId = this.response.response.objectId;
+  const isCreate = !this.query;
+  const isUpdate = !!this.query;
+
+  const aclModified = this.originalData && this.originalData.ACL && this.data.ACL &&
+    JSON.stringify(this.originalData.ACL) !== JSON.stringify(this.data.ACL);
+
+  try {
+    if (isCreate) {
+      this.config.auditLogController.logDataCreate({
+        auth: this.auth,
+        req: { config: this.config },
+        className: this.className,
+        objectId: objectId,
+        data: this.data,
+        success: true,
+      });
+    } else if (isUpdate) {
+      // Extract only the fields that were updated
+      const updatedFields = Object.keys(this.data);
+
+      this.config.auditLogController.logDataUpdate({
+        auth: this.auth,
+        req: { config: this.config },
+        className: this.className,
+        objectId: objectId,
+        updatedFields: updatedFields,
+        success: true,
+      });
+    }
+
+    // If ACL was modified, log it separately
+    if (aclModified) {
+      this.config.auditLogController.logACLModify({
+        auth: this.auth,
+        req: { config: this.config },
+        className: this.className,
+        objectId: objectId,
+        oldACL: this.originalData.ACL,
+        newACL: this.data.ACL,
+        success: true,
+      });
+    }
+  } catch (error) {
+    // Don't fail the write if audit logging fails
+    console.error('Audit logging error:', error);
+  }
+
+  return Promise.resolve();
 };
 
 RestWrite.prototype._updateResponseWithData = function (response, data) {

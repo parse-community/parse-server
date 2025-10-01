@@ -199,8 +199,9 @@ export class UsersRouter extends ClassesRouter {
   }
 
   async handleLogIn(req) {
-    const user = await this._authenticateUserFromRequest(req);
-    const authData = req.body && req.body.authData;
+    try {
+      const user = await this._authenticateUserFromRequest(req);
+      const authData = req.body && req.body.authData;
     // Check if user has provided their required auth providers
     Auth.checkIfUserHasProvidedConfiguredProvidersForLogin(
       req,
@@ -309,12 +310,35 @@ export class UsersRouter extends ClassesRouter {
       req.info.context
     );
 
-    if (authDataResponse) {
-      user.authDataResponse = authDataResponse;
-    }
-    await req.config.authDataManager.runAfterFind(req, user.authData);
+      if (authDataResponse) {
+        user.authDataResponse = authDataResponse;
+      }
+      await req.config.authDataManager.runAfterFind(req, user.authData);
 
-    return { response: user };
+      if (req.config.auditLogController) {
+        req.config.auditLogController.logUserLogin({
+          auth: { ...req.auth, user: afterLoginUser, sessionToken: user.sessionToken },
+          req,
+          username: user.username || user.email,
+          success: true,
+          loginMethod: authData ? 'oauth' : 'password',
+        });
+      }
+
+      return { response: user };
+    } catch (error) {
+      if (req.config.auditLogController) {
+        req.config.auditLogController.logUserLogin({
+          auth: req.auth,
+          req,
+          username: req.body?.username || req.body?.email || req.query?.username || req.query?.email,
+          success: false,
+          error: error.message,
+          loginMethod: req.body?.authData ? 'oauth' : 'password',
+        });
+      }
+      throw error;
+    }
   }
 
   /**
@@ -332,40 +356,65 @@ export class UsersRouter extends ClassesRouter {
    * different reasons from /login
    */
   async handleLogInAs(req) {
-    if (!req.auth.isMaster) {
-      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'master key is required');
+    try {
+      if (!req.auth.isMaster) {
+        throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'master key is required');
+      }
+
+      const userId = req.body?.userId || req.query.userId;
+      if (!userId) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_VALUE,
+          'userId must not be empty, null, or undefined'
+        );
+      }
+
+      const queryResults = await req.config.database.find('_User', { objectId: userId });
+      const user = queryResults[0];
+      if (!user) {
+        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'user not found');
+      }
+
+      this._sanitizeAuthData(user);
+
+      const { sessionData, createSession } = RestWrite.createSession(req.config, {
+        userId,
+        createdWith: {
+          action: 'login',
+          authProvider: 'masterkey',
+        },
+        installationId: req.info.installationId,
+      });
+
+      user.sessionToken = sessionData.sessionToken;
+
+      await createSession();
+
+      if (req.config.auditLogController) {
+        const afterLoginUser = Parse.User.fromJSON(Object.assign({ className: '_User' }, user));
+        req.config.auditLogController.logUserLogin({
+          auth: { ...req.auth, user: afterLoginUser, sessionToken: user.sessionToken },
+          req,
+          username: user.username || user.email || userId,
+          success: true,
+          loginMethod: 'masterkey',
+        });
+      }
+
+      return { response: user };
+    } catch (error) {
+      if (req.config.auditLogController) {
+        req.config.auditLogController.logUserLogin({
+          auth: req.auth,
+          req,
+          username: req.body?.userId || req.query.userId,
+          success: false,
+          error: error.message,
+          loginMethod: 'masterkey',
+        });
+      }
+      throw error;
     }
-
-    const userId = req.body?.userId || req.query.userId;
-    if (!userId) {
-      throw new Parse.Error(
-        Parse.Error.INVALID_VALUE,
-        'userId must not be empty, null, or undefined'
-      );
-    }
-
-    const queryResults = await req.config.database.find('_User', { objectId: userId });
-    const user = queryResults[0];
-    if (!user) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'user not found');
-    }
-
-    this._sanitizeAuthData(user);
-
-    const { sessionData, createSession } = RestWrite.createSession(req.config, {
-      userId,
-      createdWith: {
-        action: 'login',
-        authProvider: 'masterkey',
-      },
-      installationId: req.info.installationId,
-    });
-
-    user.sessionToken = sessionData.sessionToken;
-
-    await createSession();
-
-    return { response: user };
   }
 
   handleVerifyPassword(req) {

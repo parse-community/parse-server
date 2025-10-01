@@ -5374,4 +5374,196 @@ describe('Parse.Query testing', () => {
       expect(query1.length).toEqual(1);
     });
   });
+
+  describe('Audit Logging - Data View', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const testLogFolder = path.join(__dirname, 'temp-audit-logs-query');
+
+    beforeEach(async () => {
+      if (fs.existsSync(testLogFolder)) {
+        fs.rmSync(testLogFolder, { recursive: true, force: true });
+      }
+
+      await reconfigureServer({
+        auditLog: {
+          auditLogFolder: testLogFolder,
+        },
+      });
+    });
+
+    afterEach(async () => {
+      if (fs.existsSync(testLogFolder)) {
+        fs.rmSync(testLogFolder, { recursive: true, force: true });
+      }
+    });
+
+    it('should log data view when querying objects', async () => {
+      const user = new Parse.User();
+      await user.signUp({
+        username: 'queryuser1',
+        password: 'password123',
+      });
+
+      const TestClass = Parse.Object.extend('AuditTest');
+      const obj1 = new TestClass();
+      obj1.set('name', 'test1');
+      await obj1.save();
+
+      const query = new Parse.Query('AuditTest');
+      const results = await query.find();
+      expect(results.length).toBeGreaterThan(0);
+
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      const logFiles = fs.readdirSync(testLogFolder);
+      expect(logFiles.length).toBeGreaterThan(0);
+
+      const logFile = path.join(testLogFolder, logFiles[0]);
+      const logContent = fs.readFileSync(logFile, 'utf8');
+
+      expect(logContent).toContain('DATA_VIEW');
+      expect(logContent).toContain('AuditTest');
+      expect(logContent).toContain(obj1.id);
+    });
+
+    it('should log data view with result count', async () => {
+      const user = new Parse.User();
+      await user.signUp({
+        username: 'queryuser2',
+        password: 'password123',
+      });
+
+      const TestClass = Parse.Object.extend('AuditTestMulti');
+      const objects = [];
+      for (let i = 0; i < 5; i++) {
+        const obj = new TestClass();
+        obj.set('index', i);
+        objects.push(obj);
+      }
+      await Parse.Object.saveAll(objects);
+
+      const query = new Parse.Query('AuditTestMulti');
+      const results = await query.find();
+      expect(results.length).toBe(5);
+
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      const logFiles = fs.readdirSync(testLogFolder);
+      const logFile = path.join(testLogFolder, logFiles[0]);
+      const logContent = fs.readFileSync(logFile, 'utf8');
+
+      expect(logContent).toContain('DATA_VIEW');
+      expect(logContent).toContain('resultCount');
+      expect(logContent).toContain('5');
+    });
+
+    it('should log data view with query conditions', async () => {
+      const user = new Parse.User();
+      await user.signUp({
+        username: 'queryuser3',
+        password: 'password123',
+      });
+
+      const TestClass = Parse.Object.extend('AuditTestQuery');
+      const obj = new TestClass();
+      obj.set('name', 'searchable');
+      await obj.save();
+
+      const query = new Parse.Query('AuditTestQuery');
+      query.equalTo('name', 'searchable');
+      const results = await query.find();
+      expect(results.length).toBe(1);
+
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      const logFiles = fs.readdirSync(testLogFolder);
+      const logFile = path.join(testLogFolder, logFiles[0]);
+      const logContent = fs.readFileSync(logFile, 'utf8');
+
+      expect(logContent).toContain('DATA_VIEW');
+      expect(logContent).toContain('name');
+    });
+
+    it('should not log empty query results', async () => {
+      const user = new Parse.User();
+      await user.signUp({
+        username: 'queryuser4',
+        password: 'password123',
+      });
+
+      const query = new Parse.Query('NonExistentClass');
+      const results = await query.find();
+      expect(results.length).toBe(0);
+
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      const logFiles = fs.readdirSync(testLogFolder);
+      const logFile = path.join(testLogFolder, logFiles[0]);
+      const logContent = fs.readFileSync(logFile, 'utf8');
+
+      const dataViewCount = (logContent.match(/DATA_VIEW/g) || []).length;
+      expect(dataViewCount).toBeLessThan(2);
+    });
+
+    it('should capture user ID in query logs', async () => {
+      const user = new Parse.User();
+      await user.signUp({
+        username: 'queryuser5',
+        password: 'password123',
+      });
+
+      const TestClass = Parse.Object.extend('AuditTestUser');
+      const obj = new TestClass();
+      await obj.save();
+
+      const query = new Parse.Query('AuditTestUser');
+      await query.find();
+
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      const logFiles = fs.readdirSync(testLogFolder);
+      const logFile = path.join(testLogFolder, logFiles[0]);
+      const logContent = fs.readFileSync(logFile, 'utf8');
+
+      expect(logContent).toContain('userId');
+      expect(logContent).toContain(user.id);
+    });
+
+    it('should limit object IDs in log to 100', async () => {
+      const user = new Parse.User();
+      await user.signUp({
+        username: 'queryuser6',
+        password: 'password123',
+      });
+
+      const TestClass = Parse.Object.extend('AuditTestLimit');
+      const objects = [];
+      for (let i = 0; i < 150; i++) {
+        const obj = new TestClass();
+        obj.set('index', i);
+        objects.push(obj);
+      }
+      await Parse.Object.saveAll(objects);
+
+      const query = new Parse.Query('AuditTestLimit');
+      query.limit(150);
+      const results = await query.find();
+      expect(results.length).toBe(150);
+
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      const logFiles = fs.readdirSync(testLogFolder);
+      const logFile = path.join(testLogFolder, logFiles[0]);
+      const logContent = fs.readFileSync(logFile, 'utf8');
+
+      const logLines = logContent.split('\n').filter(line => line.includes('DATA_VIEW'));
+      expect(logLines.length).toBeGreaterThan(0);
+
+      const logEntry = JSON.parse(logLines[0]);
+      if (logEntry.details && logEntry.details.objectIds) {
+        expect(logEntry.details.objectIds.length).toBeLessThanOrEqual(100);
+      }
+    });
+  });
 });

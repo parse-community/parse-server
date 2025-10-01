@@ -4,6 +4,7 @@ import { loadAdapter, loadModule } from '../Adapters/AdapterLoader';
 import defaults from '../defaults';
 // Controllers
 import { LoggerController } from './LoggerController';
+import { AuditLogController } from './AuditLogController';
 import { FilesController } from './FilesController';
 import { HooksController } from './HooksController';
 import { UserController } from './UserController';
@@ -18,6 +19,7 @@ import DatabaseController from './DatabaseController';
 // Adapters
 import { GridFSBucketAdapter } from '../Adapters/Files/GridFSBucketAdapter';
 import { WinstonLoggerAdapter } from '../Adapters/Logger/WinstonLoggerAdapter';
+import { AuditLogAdapter } from '../Adapters/Logger/AuditLogAdapter';
 import { InMemoryCacheAdapter } from '../Adapters/Cache/InMemoryCacheAdapter';
 import { AnalyticsAdapter } from '../Adapters/Analytics/AnalyticsAdapter';
 import MongoStorageAdapter from '../Adapters/Storage/Mongo/MongoStorageAdapter';
@@ -27,6 +29,7 @@ import SchemaCache from '../Adapters/Cache/SchemaCache';
 
 export function getControllers(options: ParseServerOptions) {
   const loggerController = getLoggerController(options);
+  const auditLogController = getAuditLogController(options);
   const filesController = getFilesController(options);
   const userController = getUserController(options);
   const cacheController = getCacheController(options);
@@ -41,6 +44,7 @@ export function getControllers(options: ParseServerOptions) {
   });
   return {
     loggerController,
+    auditLogController,
     filesController,
     userController,
     analyticsController,
@@ -75,6 +79,25 @@ export function getLoggerController(options: ParseServerOptions): LoggerControll
   };
   const loggerControllerAdapter = loadAdapter(loggerAdapter, WinstonLoggerAdapter, loggerOptions);
   return new LoggerController(loggerControllerAdapter, appId, loggerOptions);
+}
+
+export function getAuditLogController(options: ParseServerOptions): AuditLogController {
+  const { appId, auditLog } = options;
+
+  if (!auditLog || !auditLog.auditLogFolder) {
+    // Audit logging is disabled, return a controller with no adapter
+    return new AuditLogController(null, appId, {});
+  }
+
+  const auditLogOptions = {
+    auditLogFolder: auditLog.auditLogFolder,
+    datePattern: auditLog.datePattern,
+    maxSize: auditLog.maxSize,
+    maxFiles: auditLog.maxFiles,
+  };
+
+  const auditLogAdapter = new AuditLogAdapter(auditLogOptions);
+  return new AuditLogController(auditLogAdapter, appId, auditLogOptions);
 }
 
 export function getFilesController(options: ParseServerOptions): FilesController {

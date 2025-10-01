@@ -303,6 +303,9 @@ _UnsafeRestQuery.prototype.execute = function (executeOptions) {
       return this.handleAuthAdapters();
     })
     .then(() => {
+      return this.logAuditDataView();
+    })
+    .then(() => {
       return this.response;
     });
 };
@@ -944,6 +947,41 @@ _UnsafeRestQuery.prototype.handleAuthAdapters = async function () {
       )
     )
   );
+};
+
+_UnsafeRestQuery.prototype.logAuditDataView = function () {
+  if (!this.config.auditLogController || !this.config.auditLogController.isEnabled()) {
+    return Promise.resolve();
+  }
+
+  if (this.auth.isMaster && !this.auth.user) {
+    return Promise.resolve();
+  }
+
+  if (!this.response.results || this.response.results.length === 0) {
+    return Promise.resolve();
+  }
+
+  const objectIds = this.response.results
+    .map(result => result.objectId)
+    .filter(id => id !== undefined)
+    .slice(0, 100);
+
+  try {
+    this.config.auditLogController.logDataView({
+      auth: this.auth,
+      req: { config: this.config }, // Minimal req object since we don't have access to full request here
+      className: this.className,
+      query: this.restWhere,
+      resultCount: this.response.results.length,
+      objectIds: objectIds,
+    });
+  } catch (error) {
+    // Don't fail the query if audit logging fails
+    console.error('Audit logging error:', error);
+  }
+
+  return Promise.resolve();
 };
 
 // Adds included values to the response.

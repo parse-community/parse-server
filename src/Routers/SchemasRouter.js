@@ -88,10 +88,38 @@ async function createSchema(req) {
     throw new Parse.Error(135, `POST ${req.path} needs a class name.`);
   }
 
-  return await internalCreateSchema(className, req.body || {}, req.config);
+  try {
+    const result = await internalCreateSchema(className, req.body || {}, req.config);
+
+    if (req.config.auditLogController) {
+      req.config.auditLogController.logSchemaModify({
+        auth: req.auth,
+        req,
+        className,
+        operation: 'create',
+        changes: req.body,
+        success: true,
+      });
+    }
+
+    return result;
+  } catch (error) {
+    if (req.config.auditLogController) {
+      req.config.auditLogController.logSchemaModify({
+        auth: req.auth,
+        req,
+        className,
+        operation: 'create',
+        changes: req.body,
+        success: false,
+        error: error.message,
+      });
+    }
+    throw error;
+  }
 }
 
-function modifySchema(req) {
+async function modifySchema(req) {
   checkIfDefinedSchemasIsUsed(req);
   if (req.auth.isReadOnly) {
     throw new Parse.Error(
@@ -104,10 +132,38 @@ function modifySchema(req) {
   }
   const className = req.params.className;
 
-  return internalUpdateSchema(className, req.body || {}, req.config);
+  try {
+    const result = await internalUpdateSchema(className, req.body || {}, req.config);
+
+    if (req.config.auditLogController) {
+      req.config.auditLogController.logSchemaModify({
+        auth: req.auth,
+        req,
+        className,
+        operation: 'update',
+        changes: req.body,
+        success: true,
+      });
+    }
+
+    return result;
+  } catch (error) {
+    if (req.config.auditLogController) {
+      req.config.auditLogController.logSchemaModify({
+        auth: req.auth,
+        req,
+        className,
+        operation: 'update',
+        changes: req.body,
+        success: false,
+        error: error.message,
+      });
+    }
+    throw error;
+  }
 }
 
-const deleteSchema = req => {
+const deleteSchema = async req => {
   if (req.auth.isReadOnly) {
     throw new Parse.Error(
       Parse.Error.OPERATION_FORBIDDEN,
@@ -120,7 +176,38 @@ const deleteSchema = req => {
       SchemaController.invalidClassNameMessage(req.params.className)
     );
   }
-  return req.config.database.deleteSchema(req.params.className).then(() => ({ response: {} }));
+
+  const className = req.params.className;
+
+  try {
+    await req.config.database.deleteSchema(className);
+
+    if (req.config.auditLogController) {
+      req.config.auditLogController.logSchemaModify({
+        auth: req.auth,
+        req,
+        className,
+        operation: 'delete',
+        changes: {},
+        success: true,
+      });
+    }
+
+    return { response: {} };
+  } catch (error) {
+    if (req.config.auditLogController) {
+      req.config.auditLogController.logSchemaModify({
+        auth: req.auth,
+        req,
+        className,
+        operation: 'delete',
+        changes: {},
+        success: false,
+        error: error.message,
+      });
+    }
+    throw error;
+  }
 };
 
 export class SchemasRouter extends PromiseRouter {
