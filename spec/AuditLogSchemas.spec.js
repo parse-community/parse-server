@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const request = require('../lib/request');
 
 describe('Audit Logging - Schema Operations', () => {
   const testLogFolder = path.join(__dirname, 'temp-audit-logs-schema');

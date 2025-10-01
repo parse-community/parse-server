@@ -1,5 +1,7 @@
 'use strict';
 
+const request = require('../lib/request');
+
 describe('Auth', () => {
   const { Auth, getAuthForSessionToken } = require('../lib/Auth.js');
   const Config = require('../lib/Config');
@@ -319,6 +321,7 @@ describe('Audit Logging - User Authentication', () => {
     try {
       await Parse.User.logIn('audituser2', 'wrongpassword');
     } catch (error) {
+      // Expected error
     }
 
     await new Promise(resolve => setTimeout(resolve, 200));

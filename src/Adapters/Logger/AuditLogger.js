@@ -43,6 +43,7 @@ function configureAuditTransports(options) {
       level: 'info',
     });
   } catch (e) {
+    // eslint-disable-next-line no-console
     console.error('Failed to configure audit logger:', e);
   }
 }
@@ -74,6 +75,7 @@ export function configureAuditLogger({
   try {
     fs.mkdirSync(logFolder, { recursive: true });
   } catch (e) {
+    // eslint-disable-next-line no-console
     console.error('Failed to create audit log folder:', e);
     return;
   }

@@ -1856,6 +1856,7 @@ RestWrite.prototype.logAuditDataWrite = function () {
     }
   } catch (error) {
     // Don't fail the write if audit logging fails
+    // eslint-disable-next-line no-console
     console.error('Audit logging error:', error);
   }
 

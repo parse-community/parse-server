@@ -978,6 +978,7 @@ _UnsafeRestQuery.prototype.logAuditDataView = function () {
     });
   } catch (error) {
     // Don't fail the query if audit logging fails
+    // eslint-disable-next-line no-console
     console.error('Audit logging error:', error);
   }
 

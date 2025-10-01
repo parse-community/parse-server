@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const request = require('../lib/request');
 
 describe('End-to-End Audit Logging', () => {
   const testLogFolder = path.join(__dirname, 'temp-audit-logs-e2e');
