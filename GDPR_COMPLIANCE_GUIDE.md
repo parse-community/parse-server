@@ -48,8 +48,6 @@ new ParseServer({
 });
 ```
 
-See [GDPR_AUDIT_LOGGING.md](./GDPR_AUDIT_LOGGING.md) for complete documentation.
-
 ### That's It
 
 Parse Server provides **only** audit logging because:
