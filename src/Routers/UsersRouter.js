@@ -202,113 +202,113 @@ export class UsersRouter extends ClassesRouter {
     try {
       const user = await this._authenticateUserFromRequest(req);
       const authData = req.body && req.body.authData;
-    // Check if user has provided their required auth providers
-    Auth.checkIfUserHasProvidedConfiguredProvidersForLogin(
-      req,
-      authData,
-      user.authData,
-      req.config
-    );
-
-    let authDataResponse;
-    let validatedAuthData;
-    if (authData) {
-      const res = await Auth.handleAuthDataValidation(
+      // Check if user has provided their required auth providers
+      Auth.checkIfUserHasProvidedConfiguredProvidersForLogin(
+        req,
         authData,
-        new RestWrite(
-          req.config,
-          req.auth,
-          '_User',
-          { objectId: user.objectId },
-          req.body || {},
-          user,
-          req.info.clientSDK,
-          req.info.context
-        ),
-        user
+        user.authData,
+        req.config
       );
-      authDataResponse = res.authDataResponse;
-      validatedAuthData = res.authData;
-    }
 
-    // handle password expiry policy
-    if (req.config.passwordPolicy && req.config.passwordPolicy.maxPasswordAge) {
-      let changedAt = user._password_changed_at;
+      let authDataResponse;
+      let validatedAuthData;
+      if (authData) {
+        const res = await Auth.handleAuthDataValidation(
+          authData,
+          new RestWrite(
+            req.config,
+            req.auth,
+            '_User',
+            { objectId: user.objectId },
+            req.body || {},
+            user,
+            req.info.clientSDK,
+            req.info.context
+          ),
+          user
+        );
+        authDataResponse = res.authDataResponse;
+        validatedAuthData = res.authData;
+      }
 
-      if (!changedAt) {
+      // handle password expiry policy
+      if (req.config.passwordPolicy && req.config.passwordPolicy.maxPasswordAge) {
+        let changedAt = user._password_changed_at;
+
+        if (!changedAt) {
         // password was created before expiry policy was enabled.
         // simply update _User object so that it will start enforcing from now
-        changedAt = new Date();
-        req.config.database.update(
-          '_User',
-          { username: user.username },
-          { _password_changed_at: Parse._encode(changedAt) }
-        );
-      } else {
+          changedAt = new Date();
+          req.config.database.update(
+            '_User',
+            { username: user.username },
+            { _password_changed_at: Parse._encode(changedAt) }
+          );
+        } else {
         // check whether the password has expired
-        if (changedAt.__type == 'Date') {
-          changedAt = new Date(changedAt.iso);
+          if (changedAt.__type == 'Date') {
+            changedAt = new Date(changedAt.iso);
+          }
+          // Calculate the expiry time.
+          const expiresAt = new Date(
+            changedAt.getTime() + 86400000 * req.config.passwordPolicy.maxPasswordAge
+          );
+          if (expiresAt < new Date())
+          // fail of current time is past password expiry time
+          { throw new Parse.Error(
+            Parse.Error.OBJECT_NOT_FOUND,
+            'Your password has expired. Please reset your password.'
+          ); }
         }
-        // Calculate the expiry time.
-        const expiresAt = new Date(
-          changedAt.getTime() + 86400000 * req.config.passwordPolicy.maxPasswordAge
-        );
-        if (expiresAt < new Date())
-        // fail of current time is past password expiry time
-        { throw new Parse.Error(
-          Parse.Error.OBJECT_NOT_FOUND,
-          'Your password has expired. Please reset your password.'
-        ); }
       }
-    }
 
-    // Remove hidden properties.
-    UsersRouter.removeHiddenProperties(user);
+      // Remove hidden properties.
+      UsersRouter.removeHiddenProperties(user);
 
-    await req.config.filesController.expandFilesInObject(req.config, user);
+      await req.config.filesController.expandFilesInObject(req.config, user);
 
-    // Before login trigger; throws if failure
-    await maybeRunTrigger(
-      TriggerTypes.beforeLogin,
-      req.auth,
-      Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
-      null,
-      req.config,
-      req.info.context
-    );
-
-    // If we have some new validated authData update directly
-    if (validatedAuthData && Object.keys(validatedAuthData).length) {
-      await req.config.database.update(
-        '_User',
-        { objectId: user.objectId },
-        { authData: validatedAuthData },
-        {}
+      // Before login trigger; throws if failure
+      await maybeRunTrigger(
+        TriggerTypes.beforeLogin,
+        req.auth,
+        Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
+        null,
+        req.config,
+        req.info.context
       );
-    }
 
-    const { sessionData, createSession } = RestWrite.createSession(req.config, {
-      userId: user.objectId,
-      createdWith: {
-        action: 'login',
-        authProvider: 'password',
-      },
-      installationId: req.info.installationId,
-    });
+      // If we have some new validated authData update directly
+      if (validatedAuthData && Object.keys(validatedAuthData).length) {
+        await req.config.database.update(
+          '_User',
+          { objectId: user.objectId },
+          { authData: validatedAuthData },
+          {}
+        );
+      }
 
-    user.sessionToken = sessionData.sessionToken;
+      const { sessionData, createSession } = RestWrite.createSession(req.config, {
+        userId: user.objectId,
+        createdWith: {
+          action: 'login',
+          authProvider: 'password',
+        },
+        installationId: req.info.installationId,
+      });
 
-    await createSession();
+      user.sessionToken = sessionData.sessionToken;
 
-    const afterLoginUser = Parse.User.fromJSON(Object.assign({ className: '_User' }, user));
-    await maybeRunTrigger(
-      TriggerTypes.afterLogin,
-      { ...req.auth, user: afterLoginUser },
-      afterLoginUser,
-      null,
-      req.config,
-      req.info.context
-    );
+      await createSession();
+
+      const afterLoginUser = Parse.User.fromJSON(Object.assign({ className: '_User' }, user));
+      await maybeRunTrigger(
+        TriggerTypes.afterLogin,
+        { ...req.auth, user: afterLoginUser },
+        afterLoginUser,
+        null,
+        req.config,
+        req.info.context
+      );
 
       if (authDataResponse) {
         user.authDataResponse = authDataResponse;
