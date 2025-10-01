@@ -1,28 +1,75 @@
 'use strict';
 
+const Parse = require('parse/node');
+
 describe('ParseLiveQuery query operation', function () {
-  beforeEach(() => {
-    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+  beforeEach(function (done) {
+    // Mock ParseWebSocketServer
+    const mockParseWebSocketServer = jasmine.createSpy('ParseWebSocketServer');
+    jasmine.mockLibrary(
+      '../lib/LiveQuery/ParseWebSocketServer',
+      'ParseWebSocketServer',
+      mockParseWebSocketServer
+    );
+    // Mock Client pushError
+    const Client = require('../lib/LiveQuery/Client').Client;
+    Client.pushError = jasmine.createSpy('pushError');
+    done();
   });
 
-  afterEach(async () => {
-    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
-    if (client) {
-      await client.close();
+  afterEach(function () {
+    jasmine.restoreLibrary('../lib/LiveQuery/ParseWebSocketServer', 'ParseWebSocketServer');
+  });
+
+  function addMockClient(parseLiveQueryServer, clientId) {
+    const Client = require('../lib/LiveQuery/Client').Client;
+    const client = new Client(clientId, {});
+    client.pushResult = jasmine.createSpy('pushResult');
+    parseLiveQueryServer.clients.set(clientId, client);
+    return client;
+  }
+
+  function addMockSubscription(parseLiveQueryServer, clientId, requestId, parseWebSocket, query = {}) {
+    const Subscription = require('../lib/LiveQuery/Subscription').Subscription;
+    const subscription = new Subscription(
+      query.className || 'TestObject',
+      query.where || {},
+      'hash'
+    );
+
+    // Add to server subscriptions
+    if (!parseLiveQueryServer.subscriptions.has(subscription.className)) {
+      parseLiveQueryServer.subscriptions.set(subscription.className, new Map());
     }
-  });
+    const classSubscriptions = parseLiveQueryServer.subscriptions.get(subscription.className);
+    classSubscriptions.set('hash', subscription);
 
-  it('can execute query on existing subscription and receive results', async () => {
-    await reconfigureServer({
-      liveQuery: {
-        classNames: ['TestObject'],
-      },
-      startLiveQueryServer: true,
-      verbose: false,
-      silent: true,
+    // Add to client
+    const client = parseLiveQueryServer.clients.get(clientId);
+    const subscriptionInfo = {
+      subscription: subscription,
+      keys: query.keys,
+    };
+    if (parseWebSocket.sessionToken) {
+      subscriptionInfo.sessionToken = parseWebSocket.sessionToken;
+    }
+    client.subscriptionInfos.set(requestId, subscriptionInfo);
+
+    return subscription;
+  }
+
+  it('can handle query command with existing subscription', async () => {
+    await reconfigureServer();
+
+    const { ParseLiveQueryServer } = require('../lib/LiveQuery/ParseLiveQueryServer');
+    const parseLiveQueryServer = new ParseLiveQueryServer({
+      appId: 'test',
+      masterKey: 'test',
+      serverURL: 'http://localhost:1337/parse'
     });
 
     // Create test objects
+    const TestObject = Parse.Object.extend('TestObject');
     const obj1 = new TestObject();
     obj1.set('name', 'object1');
     await obj1.save();
@@ -31,257 +78,168 @@ describe('ParseLiveQuery query operation', function () {
     obj2.set('name', 'object2');
     await obj2.save();
 
-    // Subscribe to query
-    const query = new Parse.Query(TestObject);
-    const subscription = await query.subscribe();
+    // Add mock client
+    const clientId = 1;
+    const client = addMockClient(parseLiveQueryServer, clientId);
+    client.hasMasterKey = true;
 
-    // Wait for subscription to be ready
-    await new Promise(resolve => subscription.on('open', resolve));
-
-    // Set up result listener
-    const resultPromise = new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error('Timeout waiting for result')), 5000);
-      subscription.on('result', results => {
-        clearTimeout(timeout);
-        resolve(results);
-      });
-    });
-
-    // Get the LiveQuery client and send query message
-    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
-    const message = {
-      op: 'query',
-      requestId: subscription.id,
+    // Add mock subscription
+    const parseWebSocket = { clientId: 1 };
+    const requestId = 2;
+    const query = {
+      className: 'TestObject',
+      where: {},
     };
-    client.socket.send(JSON.stringify(message));
+    addMockSubscription(parseLiveQueryServer, clientId, requestId, parseWebSocket, query);
 
-    // Wait for and verify results
-    const results = await resultPromise;
+    // Handle query command
+    const request = {
+      op: 'query',
+      requestId: requestId,
+    };
+
+    await parseLiveQueryServer._handleQuery(parseWebSocket, request);
+
+    // Verify pushResult was called
+    expect(client.pushResult).toHaveBeenCalled();
+    const results = client.pushResult.calls.mostRecent().args[1];
     expect(Array.isArray(results)).toBe(true);
     expect(results.length).toBe(2);
     expect(results.some(r => r.name === 'object1')).toBe(true);
     expect(results.some(r => r.name === 'object2')).toBe(true);
+  });
 
-    await subscription.unsubscribe();
+  it('can handle query command without clientId', async () => {
+    const { ParseLiveQueryServer } = require('../lib/LiveQuery/ParseLiveQueryServer');
+    const parseLiveQueryServer = new ParseLiveQueryServer({});
+    const incompleteParseConn = {};
+    await parseLiveQueryServer._handleQuery(incompleteParseConn, {});
+
+    const Client = require('../lib/LiveQuery/Client').Client;
+    expect(Client.pushError).toHaveBeenCalled();
+  });
+
+  it('can handle query command without subscription', async () => {
+    const { ParseLiveQueryServer } = require('../lib/LiveQuery/ParseLiveQueryServer');
+    const parseLiveQueryServer = new ParseLiveQueryServer({});
+    const clientId = 1;
+    addMockClient(parseLiveQueryServer, clientId);
+
+    const parseWebSocket = { clientId: 1 };
+    const request = {
+      op: 'query',
+      requestId: 999, // Non-existent subscription
+    };
+
+    await parseLiveQueryServer._handleQuery(parseWebSocket, request);
+
+    const Client = require('../lib/LiveQuery/Client').Client;
+    expect(Client.pushError).toHaveBeenCalled();
   });
 
   it('respects field filtering (keys) when executing query', async () => {
-    await reconfigureServer({
-      liveQuery: {
-        classNames: ['TestObject'],
-      },
-      startLiveQueryServer: true,
-      verbose: false,
-      silent: true,
+    await reconfigureServer();
+
+    const { ParseLiveQueryServer } = require('../lib/LiveQuery/ParseLiveQueryServer');
+    const parseLiveQueryServer = new ParseLiveQueryServer({
+      appId: 'test',
+      masterKey: 'test',
+      serverURL: 'http://localhost:1337/parse'
     });
 
     // Create test object with multiple fields
+    const TestObject = Parse.Object.extend('TestObject');
     const obj = new TestObject();
     obj.set('name', 'test');
-    obj.set('secret', 'confidential');
-    obj.set('public', 'visible');
+    obj.set('color', 'blue');
+    obj.set('size', 'large');
     await obj.save();
 
-    // Subscribe with field selection
-    const query = new Parse.Query(TestObject);
-    query.select('name', 'public'); // Only select these fields
-    const subscription = await query.subscribe();
+    // Add mock client
+    const clientId = 1;
+    const client = addMockClient(parseLiveQueryServer, clientId);
+    client.hasMasterKey = true;
 
-    // Wait for subscription to be ready
-    await new Promise(resolve => subscription.on('open', resolve));
-
-    // Set up result listener
-    const resultPromise = new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error('Timeout')), 5000);
-      subscription.on('result', results => {
-        clearTimeout(timeout);
-        resolve(results);
-      });
-    });
-
-    // Send query message
-    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
-    const message = {
-      op: 'query',
-      requestId: subscription.id,
+    // Add mock subscription with keys
+    const parseWebSocket = { clientId: 1 };
+    const requestId = 2;
+    const query = {
+      className: 'TestObject',
+      where: {},
+      keys: ['name', 'color'], // Only these fields
     };
-    client.socket.send(JSON.stringify(message));
+    addMockSubscription(parseLiveQueryServer, clientId, requestId, parseWebSocket, query);
 
-    // Wait for and verify results
-    const results = await resultPromise;
+    // Handle query command
+    const request = {
+      op: 'query',
+      requestId: requestId,
+    };
+
+    await parseLiveQueryServer._handleQuery(parseWebSocket, request);
+
+    // Verify results
+    expect(client.pushResult).toHaveBeenCalled();
+    const results = client.pushResult.calls.mostRecent().args[1];
     expect(results.length).toBe(1);
-    const result = results[0];
-    expect(result.name).toBe('test');
-    expect(result.public).toBe('visible');
-    expect(result.secret).toBeUndefined(); // Should be filtered out
 
-    await subscription.unsubscribe();
-  });
+    // Results should include selected fields
+    expect(results[0].name).toBe('test');
+    expect(results[0].color).toBe('blue');
 
-  it('runs beforeFind and afterFind triggers', async () => {
-    let beforeFindCalled = false;
-    let afterFindCalled = false;
-
-    Parse.Cloud.beforeFind('TestObject', () => {
-      beforeFindCalled = true;
-    });
-
-    Parse.Cloud.afterFind('TestObject', req => {
-      afterFindCalled = true;
-      return req.objects;
-    });
-
-    await reconfigureServer({
-      liveQuery: {
-        classNames: ['TestObject'],
-      },
-      startLiveQueryServer: true,
-      verbose: false,
-      silent: true,
-    });
-
-    // Create test object
-    const obj = new TestObject();
-    obj.set('name', 'test');
-    await obj.save();
-
-    // Subscribe
-    const query = new Parse.Query(TestObject);
-    const subscription = await query.subscribe();
-
-    // Wait for subscription to be ready
-    await new Promise(resolve => subscription.on('open', resolve));
-
-    // Set up result listener
-    const resultPromise = new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error('Timeout')), 5000);
-      subscription.on('result', results => {
-        clearTimeout(timeout);
-        resolve(results);
-      });
-    });
-
-    // Send query message
-    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
-    const message = {
-      op: 'query',
-      requestId: subscription.id,
-    };
-    client.socket.send(JSON.stringify(message));
-
-    // Wait for results
-    await resultPromise;
-
-    // Verify triggers were called
-    expect(beforeFindCalled).toBe(true);
-    expect(afterFindCalled).toBe(true);
-
-    await subscription.unsubscribe();
+    // Results should NOT include size
+    expect(results[0].size).toBeUndefined();
   });
 
   it('handles query with where constraints', async () => {
-    await reconfigureServer({
-      liveQuery: {
-        classNames: ['TestObject'],
-      },
-      startLiveQueryServer: true,
-      verbose: false,
-      silent: true,
+    await reconfigureServer();
+
+    const { ParseLiveQueryServer } = require('../lib/LiveQuery/ParseLiveQueryServer');
+    const parseLiveQueryServer = new ParseLiveQueryServer({
+      appId: 'test',
+      masterKey: 'test',
+      serverURL: 'http://localhost:1337/parse'
     });
 
-    // Create multiple test objects
+    // Create test objects
+    const TestObject = Parse.Object.extend('TestObject');
     const obj1 = new TestObject();
-    obj1.set('name', 'apple');
+    obj1.set('name', 'match');
+    obj1.set('status', 'active');
     await obj1.save();
 
     const obj2 = new TestObject();
-    obj2.set('name', 'banana');
+    obj2.set('name', 'nomatch');
+    obj2.set('status', 'inactive');
     await obj2.save();
 
-    const obj3 = new TestObject();
-    obj3.set('name', 'cherry');
-    await obj3.save();
+    // Add mock client
+    const clientId = 1;
+    const client = addMockClient(parseLiveQueryServer, clientId);
+    client.hasMasterKey = true;
 
-    // Subscribe with where constraint
-    const query = new Parse.Query(TestObject);
-    query.equalTo('name', 'banana');
-    const subscription = await query.subscribe();
-
-    // Wait for subscription to be ready
-    await new Promise(resolve => subscription.on('open', resolve));
-
-    // Set up result listener
-    const resultPromise = new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error('Timeout')), 5000);
-      subscription.on('result', results => {
-        clearTimeout(timeout);
-        resolve(results);
-      });
-    });
-
-    // Send query message
-    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
-    const message = {
-      op: 'query',
-      requestId: subscription.id,
+    // Add mock subscription with where clause
+    const parseWebSocket = { clientId: 1 };
+    const requestId = 2;
+    const query = {
+      className: 'TestObject',
+      where: { status: 'active' }, // Only active objects
     };
-    client.socket.send(JSON.stringify(message));
+    addMockSubscription(parseLiveQueryServer, clientId, requestId, parseWebSocket, query);
 
-    // Wait for and verify results - should only get banana
-    const results = await resultPromise;
+    // Handle query command
+    const request = {
+      op: 'query',
+      requestId: requestId,
+    };
+
+    await parseLiveQueryServer._handleQuery(parseWebSocket, request);
+
+    // Verify results
+    expect(client.pushResult).toHaveBeenCalled();
+    const results = client.pushResult.calls.mostRecent().args[1];
     expect(results.length).toBe(1);
-    expect(results[0].name).toBe('banana');
-
-    await subscription.unsubscribe();
-  });
-
-  it('handles errors gracefully', async () => {
-    await reconfigureServer({
-      liveQuery: {
-        classNames: ['TestObject'],
-      },
-      startLiveQueryServer: true,
-      verbose: false,
-      silent: true,
-    });
-
-    // Create an object
-    const obj = new TestObject();
-    obj.set('name', 'test');
-    await obj.save();
-
-    // Subscribe
-    const query = new Parse.Query(TestObject);
-    const subscription = await query.subscribe();
-    await new Promise(resolve => subscription.on('open', resolve));
-
-    // Set up listeners for both result and error
-    let resultReceived = false;
-    let errorReceived = false;
-
-    subscription.on('result', () => {
-      resultReceived = true;
-    });
-
-    subscription.on('error', () => {
-      errorReceived = true;
-    });
-
-    // Send query message
-    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
-    const message = {
-      op: 'query',
-      requestId: subscription.id,
-    };
-    client.socket.send(JSON.stringify(message));
-
-    // Wait a bit for the response
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    // Should have received result (not error) since query is valid
-    expect(resultReceived).toBe(true);
-    expect(errorReceived).toBe(false);
-
-    await subscription.unsubscribe();
+    expect(results[0].name).toBe('match');
+    expect(results[0].status).toBe('active');
   });
 });

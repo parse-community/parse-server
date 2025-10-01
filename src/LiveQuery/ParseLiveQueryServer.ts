@@ -1095,11 +1095,11 @@ class ParseLiveQueryServer {
       const sessionToken = subscriptionInfo.sessionToken || client.sessionToken;
       const parseQuery = new Parse.Query(className);
 
-      if (query && Object.keys(query).length > 0) {
+      if (query && typeof query === 'object' && query !== null && Object.keys(query).length > 0) {
         parseQuery._where = query;
       }
 
-      if (subscriptionInfo.keys && subscriptionInfo.keys.length > 0) {
+      if (subscriptionInfo.keys && Array.isArray(subscriptionInfo.keys) && subscriptionInfo.keys.length > 0) {
         parseQuery.select(...subscriptionInfo.keys);
       }
 
