@@ -4,6 +4,7 @@ const Parse = require('parse/node');
 
 describe('ParseLiveQuery query operation', function () {
   beforeEach(function (done) {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
     // Mock ParseWebSocketServer
     const mockParseWebSocketServer = jasmine.createSpy('ParseWebSocketServer');
     jasmine.mockLibrary(
@@ -17,7 +18,11 @@ describe('ParseLiveQuery query operation', function () {
     done();
   });
 
-  afterEach(function () {
+  afterEach(async function () {
+    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+    if (client) {
+      await client.close();
+    }
     jasmine.restoreLibrary('../lib/LiveQuery/ParseWebSocketServer', 'ParseWebSocketServer');
   });
 
@@ -59,7 +64,14 @@ describe('ParseLiveQuery query operation', function () {
   }
 
   it('can handle query command with existing subscription', async () => {
-    await reconfigureServer();
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
 
     const { ParseLiveQueryServer } = require('../lib/LiveQuery/ParseLiveQueryServer');
     const parseLiveQueryServer = new ParseLiveQueryServer({
@@ -138,7 +150,14 @@ describe('ParseLiveQuery query operation', function () {
   });
 
   it('respects field filtering (keys) when executing query', async () => {
-    await reconfigureServer();
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
 
     const { ParseLiveQueryServer } = require('../lib/LiveQuery/ParseLiveQueryServer');
     const parseLiveQueryServer = new ParseLiveQueryServer({
@@ -192,7 +211,14 @@ describe('ParseLiveQuery query operation', function () {
   });
 
   it('handles query with where constraints', async () => {
-    await reconfigureServer();
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
 
     const { ParseLiveQueryServer } = require('../lib/LiveQuery/ParseLiveQueryServer');
     const parseLiveQueryServer = new ParseLiveQueryServer({
