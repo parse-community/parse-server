@@ -1083,6 +1083,12 @@ class ParseLiveQueryServer {
     }
 
     const { subscription } = subscriptionInfo;
+    if (!subscription) {
+      Client.pushError(parseWebsocket, 2, 'Subscription not found for requestId ' + requestId);
+      logger.error('Subscription not found for requestId ' + requestId);
+      return;
+    }
+
     const { className, query } = subscription;
 
     try {
