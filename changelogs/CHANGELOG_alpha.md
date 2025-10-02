@@ -1,3 +1,10 @@
+## [8.2.5-alpha.1](https://github.com/parse-community/parse-server/compare/8.2.4...8.2.5-alpha.1) (2025-09-21)
+
+
+### Bug Fixes
+
+* GraphQL playground shows blank page ([#9858](https://github.com/parse-community/parse-server/issues/9858)) ([7b5395c](https://github.com/parse-community/parse-server/commit/7b5395c5d481235c022d96603280672366a50715))
+
 ## [8.2.4-alpha.1](https://github.com/parse-community/parse-server/compare/8.2.3...8.2.4-alpha.1) (2025-08-02)
 
 
