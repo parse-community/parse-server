@@ -2113,17 +2113,14 @@ describe('Parse.Query testing', () => {
       .then(done);
   });
 
-  it('regex with unicode option', function (done) {
+  it_id('351f57a8-e00a-4da2-887d-6e25c9e359fc')(it)('regex with unicode option', async function () {
     const thing = new TestObject();
     thing.set('myString', 'hello 世界');
-    Parse.Object.saveAll([thing]).then(function () {
-      const query = new Parse.Query(TestObject);
-      query.matches('myString', '世界', 'u');
-      query.find().then(function (results) {
-        equal(results.length, 1);
-        done();
-      });
-    });
+    await Parse.Object.saveAll([thing]);
+    const query = new Parse.Query(TestObject);
+    query.matches('myString', '世界', 'u');
+    const results = await query.find();
+    equal(results.length, 1);
   });
 
   it_id('823852f6-1de5-45ba-a2b9-ed952fcc6012')(it)('Use a regex that requires all modifiers', function (done) {
