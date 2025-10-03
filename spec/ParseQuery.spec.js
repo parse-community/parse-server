@@ -2113,6 +2113,19 @@ describe('Parse.Query testing', () => {
       .then(done);
   });
 
+  it('regex with unicode option', function (done) {
+    const thing = new TestObject();
+    thing.set('myString', 'hello 世界');
+    Parse.Object.saveAll([thing]).then(function () {
+      const query = new Parse.Query(TestObject);
+      query.matches('myString', '世界', 'u');
+      query.find().then(function (results) {
+        equal(results.length, 1);
+        done();
+      });
+    });
+  });
+
   it_id('823852f6-1de5-45ba-a2b9-ed952fcc6012')(it)('Use a regex that requires all modifiers', function (done) {
     const thing = new TestObject();
     thing.set('myString', 'PArSe\nCom');
