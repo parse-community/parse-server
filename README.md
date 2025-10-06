@@ -152,7 +152,7 @@ Parse Server is continuously tested with the most recent releases of PostgreSQL 
 | Postgres 15 | 3.3, 3.4, 3.5           | November 2027 | <= 8.x (2025)        |
 | Postgres 16 | 3.5                     | November 2028 | <= 9.x (2026)        |
 | Postgres 17 | 3.5                     | November 2029 | <= 10.x (2027)       |
-| Postgres 17 | 3.6                     | November 2030 | <= 11.x (2028)       |
+| Postgres 18 | 3.6                     | November 2030 | <= 11.x (2028)       |
 
 ### Locally
 
