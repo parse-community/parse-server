@@ -851,6 +851,8 @@ describe('rest create', () => {
       })
     );
 
+    // when we try to include and unreadable child & ignore include errors
+    // then the raw pointer is simply returned unhydrated.
     const response = await request({
       method: 'GET',
       url: `${baseUrl}&ignoreIncludeErrors=true`,

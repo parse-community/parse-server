@@ -113,19 +113,6 @@ function _UnsafeRestQuery(
   this.response = null;
   this.findOptions = {};
   this.context = context || {};
-  const hasIgnoreIncludeErrors = Object.prototype.hasOwnProperty.call(
-    restOptions,
-    'ignoreIncludeErrors'
-  );
-  this.ignoreIncludeErrors = hasIgnoreIncludeErrors
-    ? !!restOptions.ignoreIncludeErrors
-    : false;
-  if (hasIgnoreIncludeErrors) {
-    this.restOptions.ignoreIncludeErrors = this.ignoreIncludeErrors;
-    if (this.ignoreIncludeErrors) {
-      this.findOptions.ignoreIncludeErrors = true;
-    }
-  }
   if (!this.auth.isMaster) {
     if (this.className == '_Session') {
       if (!this.auth.user) {
@@ -218,6 +205,7 @@ function _UnsafeRestQuery(
       case 'includeAll':
         this.includeAll = true;
         break;
+      // Propagate these options from restOptions to findOptions too
       case 'explain':
       case 'hint':
       case 'distinct':
@@ -226,9 +214,8 @@ function _UnsafeRestQuery(
       case 'limit':
       case 'readPreference':
       case 'comment':
-        this.findOptions[option] = restOptions[option];
-        break;
       case 'ignoreIncludeErrors':
+        this.findOptions[option] = restOptions[option];
         break;
       case 'order':
         var fields = restOptions.order.split(',');
@@ -756,9 +743,6 @@ _UnsafeRestQuery.prototype.runFind = async function (options = {}) {
     return Promise.resolve();
   }
   const findOptions = Object.assign({}, this.findOptions);
-  if (this.ignoreIncludeErrors) {
-    findOptions.ignoreIncludeErrors = true;
-  }
   if (this.keys) {
     findOptions.keys = this.keys.map(key => {
       return key.split('.')[0];
