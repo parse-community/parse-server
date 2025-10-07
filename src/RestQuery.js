@@ -1114,8 +1114,6 @@ function replacePointers(object, path, replace, options = {}) {
   const preserveMissing = !!options.preserveMissing;
   if (object instanceof Array) {
     const mapped = object.map(obj => replacePointers(obj, path, replace, options));
-    // TODO: Is this change really correct? If we do this then preserveMissing will essentially 
-    // cause the array to have undefined values inside?
     return preserveMissing ? mapped : mapped.filter(obj => typeof obj !== 'undefined');
   }
 
