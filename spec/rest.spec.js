@@ -803,6 +803,128 @@ describe('rest create', () => {
     );
   });
 
+  it('supports ignoreIncludeErrors for unreadable pointers', async () => {
+    const schemaController = await config.database.loadSchema();
+    await schemaController.addClassIfNotExists(
+      'IncludeChild',
+      { owner: { type: 'Pointer', targetClass: '_User' } },
+      {
+        get: { pointerFields: ['owner'] },
+        find: { pointerFields: ['owner'] },
+      }
+    );
+    await config.schemaCache.clear();
+
+    const owner = await Parse.User.signUp('includeOwner', 'password');
+    const child = new Parse.Object('IncludeChild');
+    child.set('owner', owner);
+    child.set('label', 'unreadable');
+    await child.save(null, { useMasterKey: true });
+
+    const parent = new Parse.Object('IncludeParent');
+    parent.set('child', child);
+    const parentACL = new Parse.ACL();
+    parentACL.setPublicReadAccess(true);
+    parentACL.setPublicWriteAccess(false);
+    parent.setACL(parentACL);
+    await parent.save(null, { useMasterKey: true });
+
+    await Parse.User.logOut();
+
+    const headers = {
+      'X-Parse-Application-Id': Parse.applicationId,
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const baseUrl = `${Parse.serverURL}/classes/IncludeParent/${parent.id}?include=child`;
+
+    await expectAsync(
+      request({
+        method: 'GET',
+        url: baseUrl,
+        headers,
+      })
+    ).toBeRejectedWith(
+      jasmine.objectContaining({
+        status: 404,
+        data: jasmine.objectContaining({ code: Parse.Error.OBJECT_NOT_FOUND }),
+      })
+    );
+
+    const response = await request({
+      method: 'GET',
+      url: `${baseUrl}&ignoreIncludeErrors=true`,
+      headers,
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.data.child).toEqual(
+      jasmine.objectContaining({
+        __type: 'Pointer',
+        className: 'IncludeChild',
+        objectId: child.id,
+      })
+    );
+  });
+
+  it('preserves unresolved pointers in arrays when ignoreIncludeErrors is true', async () => {
+    const childOne = await new Parse.Object('IgnoreIncludeChild').save({ name: 'first' });
+    const childTwo = await new Parse.Object('IgnoreIncludeChild').save({ name: 'second' });
+
+    const parent = new Parse.Object('IgnoreIncludeParent');
+    parent.set('primary', childOne);
+    parent.set('others', [childOne, childTwo]);
+    await parent.save();
+
+    await childOne.destroy({ useMasterKey: true });
+
+    const headers = {
+      'X-Parse-Application-Id': Parse.applicationId,
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const baseUrl = `${Parse.serverURL}/classes/IgnoreIncludeParent/${parent.id}?include=primary,others`;
+
+    const defaultResponse = await request({
+      method: 'GET',
+      url: baseUrl,
+      headers,
+    });
+    expect(defaultResponse.status).toBe(200);
+    expect(Array.isArray(defaultResponse.data.others)).toBeTrue();
+    expect(defaultResponse.data.others.length).toBe(1);
+
+    const response = await request({
+      method: 'GET',
+      url: `${baseUrl}&ignoreIncludeErrors=true`,
+      headers,
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.data.primary).toEqual(
+      jasmine.objectContaining({
+        __type: 'Pointer',
+        className: 'IgnoreIncludeChild',
+        objectId: childOne.id,
+      })
+    );
+    expect(response.data.others.length).toBe(2);
+    expect(response.data.others[0]).toEqual(
+      jasmine.objectContaining({
+        __type: 'Pointer',
+        className: 'IgnoreIncludeChild',
+        objectId: childOne.id,
+      })
+    );
+    expect(response.data.others[1]).toEqual(
+      jasmine.objectContaining({
+        __type: 'Object',
+        className: 'IgnoreIncludeChild',
+        objectId: childTwo.id,
+      })
+    );
+  });
+
   it('locks down session', done => {
     let currentUser;
     Parse.User.signUp('foo', 'bar')

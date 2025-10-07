@@ -20,6 +20,7 @@ export type QueryOptions = {
   action?: string,
   addsField?: boolean,
   comment?: string,
+  ignoreIncludeErrors?: boolean,
 };
 
 export type UpdateQueryOptions = {

@@ -113,6 +113,19 @@ function _UnsafeRestQuery(
   this.response = null;
   this.findOptions = {};
   this.context = context || {};
+  const hasIgnoreIncludeErrors = Object.prototype.hasOwnProperty.call(
+    restOptions,
+    'ignoreIncludeErrors'
+  );
+  this.ignoreIncludeErrors = hasIgnoreIncludeErrors
+    ? !!restOptions.ignoreIncludeErrors
+    : false;
+  if (hasIgnoreIncludeErrors) {
+    this.restOptions.ignoreIncludeErrors = this.ignoreIncludeErrors;
+    if (this.ignoreIncludeErrors) {
+      this.findOptions.ignoreIncludeErrors = true;
+    }
+  }
   if (!this.auth.isMaster) {
     if (this.className == '_Session') {
       if (!this.auth.user) {
@@ -214,6 +227,8 @@ function _UnsafeRestQuery(
       case 'readPreference':
       case 'comment':
         this.findOptions[option] = restOptions[option];
+        break;
+      case 'ignoreIncludeErrors':
         break;
       case 'order':
         var fields = restOptions.order.split(',');
@@ -741,6 +756,9 @@ _UnsafeRestQuery.prototype.runFind = async function (options = {}) {
     return Promise.resolve();
   }
   const findOptions = Object.assign({}, this.findOptions);
+  if (this.ignoreIncludeErrors) {
+    findOptions.ignoreIncludeErrors = true;
+  }
   if (this.keys) {
     findOptions.keys = this.keys.map(key => {
       return key.split('.')[0];
@@ -1013,6 +1031,13 @@ function includePath(config, auth, response, path, context, restOptions = {}) {
   } else if (restOptions.readPreference) {
     includeRestOptions.readPreference = restOptions.readPreference;
   }
+  // Flag for replacePointers if missing pointers should be preserved without throwing errors
+  // defaults to false to continue previous behaviour
+  let preserveMissing = false;
+  if (restOptions.ignoreIncludeErrors) {
+    includeRestOptions.ignoreIncludeErrors = restOptions.ignoreIncludeErrors;
+    preserveMissing = true;
+  }
 
   const queryPromises = Object.keys(pointersHash).map(async className => {
     const objectIds = Array.from(pointersHash[className]);
@@ -1054,7 +1079,9 @@ function includePath(config, auth, response, path, context, restOptions = {}) {
     }, {});
 
     var resp = {
-      results: replacePointers(response.results, path, replace),
+      results: replacePointers(response.results, path, replace, {
+        preserveMissing,
+      }),
     };
     if (response.count) {
       resp.count = response.count;
@@ -1095,13 +1122,17 @@ function findPointers(object, path) {
 // in, or it may be a single object.
 // Path is a list of fields to search into.
 // replace is a map from object id -> object.
+// `options` is an optional options object; options currently include
+// `preserveMissing?: boolean` where if it is true
 // Returns something analogous to object, but with the appropriate
 // pointers inflated.
-function replacePointers(object, path, replace) {
+function replacePointers(object, path, replace, options = {}) {
+  const preserveMissing = !!options.preserveMissing;
   if (object instanceof Array) {
-    return object
-      .map(obj => replacePointers(obj, path, replace))
-      .filter(obj => typeof obj !== 'undefined');
+    const mapped = object.map(obj => replacePointers(obj, path, replace, options));
+    // TODO: Is this change really correct? If we do this then preserveMissing will essentially 
+    // cause the array to have undefined values inside?
+    return preserveMissing ? mapped : mapped.filter(obj => typeof obj !== 'undefined');
   }
 
   if (typeof object !== 'object' || !object) {
@@ -1110,7 +1141,11 @@ function replacePointers(object, path, replace) {
 
   if (path.length === 0) {
     if (object && object.__type === 'Pointer') {
-      return replace[object.objectId];
+      const replacement = replace[object.objectId];
+      if (typeof replacement === 'undefined') {
+        return preserveMissing ? object : undefined;
+      }
+      return replacement;
     }
     return object;
   }
@@ -1119,7 +1154,7 @@ function replacePointers(object, path, replace) {
   if (!subobject) {
     return object;
   }
-  var newsub = replacePointers(subobject, path.slice(1), replace);
+  var newsub = replacePointers(subobject, path.slice(1), replace, options);
   var answer = {};
   for (var key in object) {
     if (key == path[0]) {
