@@ -77,6 +77,7 @@ export interface ParseServerOptions {
     verifyUserEmails?: (boolean | void);
     preventLoginWithUnverifiedEmail?: boolean;
     preventSignupWithUnverifiedEmail?: boolean;
+    autoSignupOnLogin?: boolean;
     emailVerifyTokenValidityDuration?: number;
     emailVerifyTokenReuseIfValid?: boolean;
     sendUserEmailVerification?: (boolean | void);

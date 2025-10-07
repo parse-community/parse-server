@@ -482,6 +482,13 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  autoSignupOnLogin: {
+    env: 'PARSE_SERVER_AUTO_SIGNUP_ON_LOGIN',
+    help:
+      'Set to `true` to automatically create a user when calling the login endpoint with username/email and password if no matching user exists.<br><br>Default is `false`.',
+    action: parsers.booleanParser,
+    default: false,
+  },
   protectedFields: {
     env: 'PARSE_SERVER_PROTECTED_FIELDS',
     help: 'Protected fields that should be treated with extra security when fetching details.',

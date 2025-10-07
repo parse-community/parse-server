@@ -190,6 +190,11 @@ export interface ParseServerOptions {
   Requires option `verifyUserEmails: true`.
   :DEFAULT: false */
   preventSignupWithUnverifiedEmail: ?boolean;
+  /* Set to `true` to automatically create a user when calling the login endpoint with username/email and password if no matching user exists.
+  <br><br>
+  Default is `false`.
+  :DEFAULT: false */
+  autoSignupOnLogin: ?boolean;
   /* Set the validity duration of the email verification token in seconds after which the token expires. The token is used in the link that is set in the email. After the token expires, the link becomes invalid and a new link has to be sent. If the option is not set or set to `undefined`, then the token never expires.
   <br><br>
   For example, to expire the token after 2 hours, set a value of 7200 seconds (= 60 seconds * 60 minutes * 2 hours).

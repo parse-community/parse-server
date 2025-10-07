@@ -85,6 +85,7 @@ export class Config {
     pages,
     security,
     enforcePrivateUsers,
+    autoSignupOnLogin,
     enableInsecureAuthAdapters,
     schema,
     requestKeywordDenylist,
@@ -131,6 +132,7 @@ export class Config {
     this.validateSecurityOptions(security);
     this.validateSchemaOptions(schema);
     this.validateEnforcePrivateUsers(enforcePrivateUsers);
+    this.validateAutoSignupOnLogin(autoSignupOnLogin);
     this.validateEnableInsecureAuthAdapters(enableInsecureAuthAdapters);
     this.validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken);
     this.validateRequestKeywordDenylist(requestKeywordDenylist);
@@ -180,6 +182,12 @@ export class Config {
   static validateEnforcePrivateUsers(enforcePrivateUsers) {
     if (typeof enforcePrivateUsers !== 'boolean') {
       throw 'Parse Server option enforcePrivateUsers must be a boolean.';
+    }
+  }
+
+  static validateAutoSignupOnLogin(autoSignupOnLogin) {
+    if (typeof autoSignupOnLogin !== 'boolean') {
+      throw 'Parse Server option autoSignupOnLogin must be a boolean.';
     }
   }
 

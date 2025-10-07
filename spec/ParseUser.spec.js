@@ -186,6 +186,32 @@ describe('Parse.User testing', () => {
       });
   });
 
+  it('auto signs up user on login when enabled', async () => {
+    await reconfigureServer({ autoSignupOnLogin: true });
+    const username = 'autoLoginUser';
+    const password = 'autoLoginPass';
+    const response = await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/login',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+      body: {
+        username,
+        password,
+      },
+    });
+    expect(response.data.username).toBe(username);
+    expect(response.data.sessionToken).toBeDefined();
+
+    const user = await Parse.User.logIn(username, password);
+    expect(user).toBeDefined();
+    await Parse.User.logOut();
+    await reconfigureServer({ autoSignupOnLogin: false });
+  });
+
   it('user login', async done => {
     await Parse.User.signUp('asdf', 'zxcv');
     const user = await Parse.User.logIn('asdf', 'zxcv');

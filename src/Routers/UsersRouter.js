@@ -199,8 +199,23 @@ export class UsersRouter extends ClassesRouter {
   }
 
   async handleLogIn(req) {
-    const user = await this._authenticateUserFromRequest(req);
     const authData = req.body && req.body.authData;
+    let user;
+    let signupSessionToken;
+
+    try {
+      user = await this._authenticateUserFromRequest(req);
+    } catch (error) {
+      const autoSignupCredentials = this._prepareAutoSignupCredentials(req, error);
+      if (!autoSignupCredentials) {
+        throw error;
+      }
+      // Create the missing user but continue through the standard login path so
+      // that all login-time policies, triggers, and session metadata remain unchanged.
+      signupSessionToken = await this._autoSignupOnLogin(req, autoSignupCredentials);
+      user = await this._authenticateUserFromRequest(req);
+    }
+
     // Check if user has provided their required auth providers
     Auth.checkIfUserHasProvidedConfiguredProvidersForLogin(
       req,
@@ -299,6 +314,18 @@ export class UsersRouter extends ClassesRouter {
 
     await createSession();
 
+    if (signupSessionToken) {
+      // Discard the session issued by the signup shortcut; the login session we just
+      // created is the single source of truth for the client.
+      try {
+        await req.config.database.destroy('_Session', { sessionToken: signupSessionToken });
+      } catch (sessionError) {
+        if (sessionError && sessionError.code !== Parse.Error.OBJECT_NOT_FOUND) {
+          logger.warn('Failed to clean up auto sign-up session token', sessionError);
+        }
+      }
+    }
+
     const afterLoginUser = Parse.User.fromJSON(Object.assign({ className: '_User' }, user));
     await maybeRunTrigger(
       TriggerTypes.afterLogin,
@@ -315,6 +342,83 @@ export class UsersRouter extends ClassesRouter {
     await req.config.authDataManager.runAfterFind(req, user.authData);
 
     return { response: user };
+  }
+
+
+  _getLoginPayload(req) {
+    let source = req.body || {};
+    if (
+      (!source.username && req.query && req.query.username) ||
+      (!source.email && req.query && req.query.email)
+    ) {
+      source = req.query;
+    }
+    return {
+      username: source.username,
+      email: source.email,
+      password: source.password,
+    };
+  }
+  
+  // Returns data for auto-signup if autoSignupOnLogin is true and the error is that the user doesn't exist.
+  // If the conditions don't match, we return `null`.
+  // This gathers minimal credentials so that the signup path can rely on RestWrite's own validation.
+  _prepareAutoSignupCredentials(req, error) {
+    if (!req.config.autoSignupOnLogin) {
+      return null;
+    }
+    if (!(error instanceof Parse.Error) || error.code !== Parse.Error.OBJECT_NOT_FOUND) {
+      return null;
+    }
+    if (req.body && req.body.authData) {
+      return null;
+    }
+    const payload = this._getLoginPayload(req);
+    const rawUsername = typeof payload.username === 'string' ? payload.username.trim() : '';
+    const rawEmail = typeof payload.email === 'string' ? payload.email.trim() : '';
+    const password = payload.password;
+    const hasUsername = rawUsername.length > 0;
+    const hasEmail = rawEmail.length > 0;
+    if (!hasUsername && !hasEmail) {
+      return null;
+    }
+    if (typeof password !== 'string') {
+      return null;
+    }
+    return {
+      username: hasUsername ? rawUsername : rawEmail,
+      email: hasEmail ? rawEmail : undefined,
+      password,
+    };
+  }
+
+  async _autoSignupOnLogin(req, credentials) {
+    const userData = {
+      username: credentials.username,
+      password: credentials.password,
+    };
+    if (credentials.email !== undefined) {
+      userData.email = credentials.email;
+    }
+    // Just call the existing user creation flow so we get all schema checks, triggers,
+    // adapters, and side effects exactly once.
+    // As for params validation, RestWrite's validateAuthData will handle the validation of the params internally anyway.
+    const result = await rest.create(
+      req.config,
+      req.auth,
+      '_User',
+      userData,
+      req.info.clientSDK,
+      req.info.context
+    );
+    const user = result?.response;
+    if (!user) {
+      throw new Parse.Error(
+        Parse.Error.INTERNAL_SERVER_ERROR,
+        'Unable to automatically sign up user.'
+      );
+    }
+    return user.sessionToken;
   }
 
   /**
