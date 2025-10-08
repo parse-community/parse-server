@@ -1,5 +1,4 @@
 const { ApolloClient, gql, InMemoryCache } = require('@apollo/client/core');
-const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 describe('requestContextMiddleware', () => {
   const requestContextMiddleware = (req, res, next) => {
     req.config.aCustomController = 'aCustomController';
@@ -33,7 +32,6 @@ describe('requestContextMiddleware', () => {
     const client = new ApolloClient({
       uri: 'http://localhost:8378/graphql',
       cache: new InMemoryCache(),
-      fetch,
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-Master-Key': 'test',
