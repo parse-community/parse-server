@@ -1014,7 +1014,8 @@ export class PostgresStorageAdapter implements StorageAdapter {
           await self.createIndexes(className, insertedIndexes, t);
         }
       } catch (e) {
-        const columnDoesNotExistError = e.errors && e.errors[0] && e.errors[0].code === '42703';
+        // pg-promise use Batch error see https://github.com/vitaly-t/spex/blob/e572030f261be1a8e9341fc6f637e36ad07f5231/src/errors/batch.js#L59
+        const columnDoesNotExistError = e.getErrors && e.getErrors()[0] && e.getErrors()[0].code === '42703';
         // Specific case when the column does not exist
         if (columnDoesNotExistError) {
           // If the disableIndexFieldValidation is true, we should ignore the error
