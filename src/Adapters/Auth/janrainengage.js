@@ -2,9 +2,18 @@
 var httpsRequest = require('./httpsRequest');
 var Parse = require('parse/node').Parse;
 var querystring = require('querystring');
+import Config from '../../Config';
+import Deprecator from '../../Deprecator/Deprecator';
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData, options) {
+  const config = Config.get(Parse.applicationId);
+
+  Deprecator.logRuntimeDeprecation({ usage: 'janrainengage adapter' });
+  if (!config?.auth?.janrainengage?.enableInsecureAuth || !config.enableInsecureAuthAdapters) {
+    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'janrainengage adapter only works with enableInsecureAuth: true');
+  }
+
   return apiRequest(options.api_key, authData.auth_token).then(data => {
     //successful response will have a "stat" (status) of 'ok' and a profile node with an identifier
     //see: http://developers.janrain.com/overview/social-login/identity-providers/user-profile-data/#normalized-user-profile-data

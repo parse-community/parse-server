@@ -9,10 +9,10 @@ import MongoStorageAdapter from './Adapters/Storage/Mongo/MongoStorageAdapter';
 import PostgresStorageAdapter from './Adapters/Storage/Postgres/PostgresStorageAdapter';
 import rateLimit from 'express-rate-limit';
 import { RateLimitOptions } from './Options/Definitions';
-import pathToRegexp from 'path-to-regexp';
-import ipRangeCheck from 'ip-range-check';
+import { pathToRegexp } from 'path-to-regexp';
 import RedisStore from 'rate-limit-redis';
 import { createClient } from 'redis';
+import { BlockList, isIPv4 } from 'net';
 
 export const DEFAULT_ALLOWED_HEADERS =
   'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, X-Parse-Request-Id, Content-Type, Pragma, Cache-Control';
@@ -23,13 +23,53 @@ const getMountForRequest = function (req) {
   return req.protocol + '://' + req.get('host') + mountPath;
 };
 
+const getBlockList = (ipRangeList, store) => {
+  if (store.get('blockList')) { return store.get('blockList'); }
+  const blockList = new BlockList();
+  ipRangeList.forEach(fullIp => {
+    if (fullIp === '::/0' || fullIp === '::') {
+      store.set('allowAllIpv6', true);
+      return;
+    }
+    if (fullIp === '0.0.0.0/0' || fullIp === '0.0.0.0') {
+      store.set('allowAllIpv4', true);
+      return;
+    }
+    const [ip, mask] = fullIp.split('/');
+    if (!mask) {
+      blockList.addAddress(ip, isIPv4(ip) ? 'ipv4' : 'ipv6');
+    } else {
+      blockList.addSubnet(ip, Number(mask), isIPv4(ip) ? 'ipv4' : 'ipv6');
+    }
+  });
+  store.set('blockList', blockList);
+  return blockList;
+};
+
+export const checkIp = (ip, ipRangeList, store) => {
+  const incomingIpIsV4 = isIPv4(ip);
+  const blockList = getBlockList(ipRangeList, store);
+
+  if (store.get(ip)) { return true; }
+  if (store.get('allowAllIpv4') && incomingIpIsV4) { return true; }
+  if (store.get('allowAllIpv6') && !incomingIpIsV4) { return true; }
+  const result = blockList.check(ip, incomingIpIsV4 ? 'ipv4' : 'ipv6');
+
+  // If the ip is in the list, we store the result in the store
+  // so we have a optimized path for the next request
+  if (ipRangeList.includes(ip) && result) {
+    store.set(ip, result);
+  }
+  return result;
+};
+
 // Checks that the request is authorized for this app and checks user
 // auth too.
 // The bodyparser should run before this middleware.
 // Adds info to the request:
 // req.config - the Config for this app
 // req.auth - the Auth for this request
-export function handleParseHeaders(req, res, next) {
+export async function handleParseHeaders(req, res, next) {
   var mount = getMountForRequest(req);
 
   let context = {};
@@ -156,7 +196,7 @@ export function handleParseHeaders(req, res, next) {
     info.clientSDK = ClientSDK.fromString(info.clientVersion);
   }
 
-  if (fileViaJSON) {
+  if (fileViaJSON && req.body) {
     req.fileData = req.body.fileData;
     // We need to repopulate req.body with a buffer
     var base64 = req.body.base64;
@@ -183,7 +223,7 @@ export function handleParseHeaders(req, res, next) {
   const isMaintenance =
     req.config.maintenanceKey && info.maintenanceKey === req.config.maintenanceKey;
   if (isMaintenance) {
-    if (ipRangeCheck(clientIp, req.config.maintenanceKeyIps || [])) {
+    if (checkIp(clientIp, req.config.maintenanceKeyIps || [], req.config.maintenanceKeyIpsStore)) {
       req.auth = new auth.Auth({
         config: req.config,
         installationId: info.installationId,
@@ -198,13 +238,19 @@ export function handleParseHeaders(req, res, next) {
     );
   }
 
-  let isMaster = info.masterKey === req.config.masterKey;
-  if (isMaster && !ipRangeCheck(clientIp, req.config.masterKeyIps || [])) {
+  const masterKey = await req.config.loadMasterKey();
+  let isMaster = info.masterKey === masterKey;
+
+  if (isMaster && !checkIp(clientIp, req.config.masterKeyIps || [], req.config.masterKeyIpsStore)) {
     const log = req.config?.loggerController || defaultLogger;
     log.error(
       `Request using master key rejected as the request IP address '${clientIp}' is not set in Parse Server option 'masterKeyIps'.`
     );
     isMaster = false;
+    const error = new Error();
+    error.status = 403;
+    error.message = `unauthorized`;
+    throw error;
   }
 
   if (isMaster) {
@@ -301,7 +347,7 @@ const handleRateLimit = async (req, res, next) => {
 export const handleParseSession = async (req, res, next) => {
   try {
     const info = req.info;
-    if (req.auth) {
+    if (req.auth || req.url === '/sessions/me') {
       next();
       return;
     }
@@ -341,7 +387,7 @@ function getClientIp(req) {
 }
 
 function httpAuth(req) {
-  if (!(req.req || req).headers.authorization) return;
+  if (!(req.req || req).headers.authorization) { return; }
 
   var header = (req.req || req).headers.authorization;
   var appId, masterKey, javascriptKey;
@@ -384,8 +430,13 @@ export function allowCrossDomain(appId) {
     if (config && config.allowHeaders) {
       allowHeaders += `, ${config.allowHeaders.join(', ')}`;
     }
-    const allowOrigin = (config && config.allowOrigin) || '*';
-    res.header('Access-Control-Allow-Origin', allowOrigin);
+
+    const baseOrigins =
+      typeof config?.allowOrigin === 'string' ? [config.allowOrigin] : config?.allowOrigin ?? ['*'];
+    const requestOrigin = req.headers.origin;
+    const allowOrigins =
+      requestOrigin && baseOrigins.includes(requestOrigin) ? requestOrigin : baseOrigins[0];
+    res.header('Access-Control-Allow-Origin', allowOrigins);
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
     res.header('Access-Control-Allow-Headers', allowHeaders);
     res.header('Access-Control-Expose-Headers', 'X-Parse-Job-Status-Id, X-Parse-Push-Status-Id');
@@ -399,7 +450,7 @@ export function allowCrossDomain(appId) {
 }
 
 export function allowMethodOverride(req, res, next) {
-  if (req.method === 'POST' && req.body._method) {
+  if (req.method === 'POST' && req.body?._method) {
     req.originalMethod = req.method;
     req.method = req.body._method;
     delete req.body._method;
@@ -481,21 +532,23 @@ export const addRateLimit = (route, config, cloud) => {
   const redisStore = {
     connectionPromise: Promise.resolve(),
     store: null,
-    connected: false,
   };
   if (route.redisUrl) {
+    const log = config?.loggerController || defaultLogger;
     const client = createClient({
       url: route.redisUrl,
     });
+    client.on('error', err => { log.error('Middlewares addRateLimit Redis client error', { error: err }) });
+    client.on('connect', () => { });
+    client.on('reconnecting', () => { });
+    client.on('ready', () => { });
     redisStore.connectionPromise = async () => {
-      if (redisStore.connected) {
+      if (client.isOpen) {
         return;
       }
       try {
         await client.connect();
-        redisStore.connected = true;
       } catch (e) {
-        const log = config?.loggerController || defaultLogger;
         log.error(`Could not connect to redisURL in rate limit: ${e}`);
       }
     };
@@ -507,8 +560,12 @@ export const addRateLimit = (route, config, cloud) => {
       },
     });
   }
+  let transformPath = route.requestPath.split('/*').join('/(.*)');
+  if (transformPath === '*') {
+    transformPath = '(.*)';
+  }
   config.rateLimits.push({
-    path: pathToRegexp(route.requestPath),
+    path: pathToRegexp(transformPath),
     handler: rateLimit({
       windowMs: route.requestTimeWindow,
       max: route.requestCount,
@@ -540,7 +597,22 @@ export const addRateLimit = (route, config, cloud) => {
         }
         return request.auth?.isMaster;
       },
-      keyGenerator: request => {
+      keyGenerator: async request => {
+        if (route.zone === Parse.Server.RateLimitZone.global) {
+          return request.config.appId;
+        }
+        const token = request.info.sessionToken;
+        if (route.zone === Parse.Server.RateLimitZone.session && token) {
+          return token;
+        }
+        if (route.zone === Parse.Server.RateLimitZone.user && token) {
+          if (!request.auth) {
+            await new Promise(resolve => handleParseSession(request, null, resolve));
+          }
+          if (request.auth?.user?.id && request.zone === 'user') {
+            return request.auth.user.id;
+          }
+        }
         return request.config.ip;
       },
       store: redisStore.store,
@@ -612,4 +684,17 @@ function invalidRequest(req, res) {
 function malformedContext(req, res) {
   res.status(400);
   res.json({ code: Parse.Error.INVALID_JSON, error: 'Invalid object for context.' });
+}
+
+/**
+ * Express 4 allowed a double forward slash between a route and router. Although
+ * this should be considered an anti-pattern, we need to support it for backwards
+ * compatibility.
+ *
+ * Technically valid URL with double foroward slash:
+ * http://localhost:1337/parse//functions/testFunction
+ */
+export function allowDoubleForwardSlash(req, res, next) {
+  req.url = req.url.startsWith('//') ? req.url.substring(1) : req.url;
+  next();
 }

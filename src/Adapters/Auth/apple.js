@@ -1,9 +1,52 @@
+/**
+ * Parse Server authentication adapter for Apple.
+ *
+ * @class AppleAdapter
+ * @param {Object} options - Configuration options for the adapter.
+ * @param {string} options.clientId - Your Apple App ID.
+ *
+ * @param {Object} authData - The authentication data provided by the client.
+ * @param {string} authData.id - The user ID obtained from Apple.
+ * @param {string} authData.token - The token obtained from Apple.
+ *
+ * @description
+ * ## Parse Server Configuration
+ * To configure Parse Server for Apple authentication, use the following structure:
+ * ```json
+ * {
+ *   "auth": {
+ *     "apple": {
+ *       "clientId": "12345"
+ *     }
+ *   }
+ * }
+ * ```
+ *
+ * ## Expected `authData` from the Client
+ * The adapter expects the client to provide the following `authData` payload:
+ * - `authData.id` (**string**, required): The user ID obtained from Apple.
+ * - `authData.token` (**string**, required): The token obtained from Apple.
+ *
+ * Parse Server stores the required authentication data in the database.
+ *
+ * ### Example AuthData from Apple
+ * ```json
+ * {
+ *   "apple": {
+ *     "id": "1234567",
+ *     "token": "xxxxx.yyyyy.zzzzz"
+ *   }
+ * }
+ * ```
+ *
+ * @see {@link https://developer.apple.com/documentation/signinwithapplerestapi Sign in with Apple REST API Documentation}
+ */
+
 // Apple SignIn Auth
 // https://developer.apple.com/documentation/signinwithapplerestapi
 
 const Parse = require('parse/node').Parse;
 const jwksClient = require('jwks-rsa');
-const util = require('util');
 const jwt = require('jsonwebtoken');
 const authUtils = require('./utils');
 
@@ -17,11 +60,9 @@ const getAppleKeyByKeyId = async (keyId, cacheMaxEntries, cacheMaxAge) => {
     cacheMaxAge,
   });
 
-  const asyncGetSigningKeyFunction = util.promisify(client.getSigningKey);
-
   let key;
   try {
-    key = await asyncGetSigningKeyFunction(keyId);
+    key = await authUtils.getSigningKey(client, keyId);
   } catch (error) {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,

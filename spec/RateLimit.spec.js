@@ -335,6 +335,99 @@ describe('rate limit', () => {
     await Parse.Cloud.run('test2');
   });
 
+  describe('zone', () => {
+    const middlewares = require('../lib/middlewares');
+    it('can use global zone', async () => {
+      await reconfigureServer({
+        rateLimit: {
+          requestPath: '*',
+          requestTimeWindow: 10000,
+          requestCount: 1,
+          errorResponseMessage: 'Too many requests',
+          includeInternalRequests: true,
+          zone: Parse.Server.RateLimitZone.global,
+        },
+      });
+      const fakeReq = {
+        originalUrl: 'http://example.com/parse/',
+        url: 'http://example.com/',
+        body: {
+          _ApplicationId: 'test',
+        },
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        get: key => {
+          return fakeReq.headers[key];
+        },
+      };
+      fakeReq.ip = '127.0.0.1';
+      let fakeRes = jasmine.createSpyObj('fakeRes', ['end', 'status', 'setHeader', 'json']);
+      await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
+      fakeReq.ip = '127.0.0.2';
+      fakeRes = jasmine.createSpyObj('fakeRes', ['end', 'status', 'setHeader']);
+      let resolvingPromise;
+      const promise = new Promise(resolve => {
+        resolvingPromise = resolve;
+      });
+      fakeRes.json = jasmine.createSpy('json').and.callFake(resolvingPromise);
+      middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
+        throw 'Should not call next';
+      });
+      await promise;
+      expect(fakeRes.status).toHaveBeenCalledWith(429);
+      expect(fakeRes.json).toHaveBeenCalledWith({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many requests',
+      });
+    });
+
+    it('can use session zone', async () => {
+      await reconfigureServer({
+        rateLimit: {
+          requestPath: '/functions/*',
+          requestTimeWindow: 10000,
+          requestCount: 1,
+          errorResponseMessage: 'Too many requests',
+          includeInternalRequests: true,
+          zone: Parse.Server.RateLimitZone.session,
+        },
+      });
+      Parse.Cloud.define('test', () => 'Abc');
+      await Parse.User.signUp('username', 'password');
+      await Parse.Cloud.run('test');
+      await expectAsync(Parse.Cloud.run('test')).toBeRejectedWith(
+        new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
+      );
+      await Parse.User.logIn('username', 'password');
+      await Parse.Cloud.run('test');
+    });
+
+    it('can use user zone', async () => {
+      await reconfigureServer({
+        rateLimit: {
+          requestPath: '/functions/*',
+          requestTimeWindow: 10000,
+          requestCount: 1,
+          errorResponseMessage: 'Too many requests',
+          includeInternalRequests: true,
+          zone: Parse.Server.RateLimitZone.user,
+        },
+      });
+      Parse.Cloud.define('test', () => 'Abc');
+      await Parse.User.signUp('username', 'password');
+      await Parse.Cloud.run('test');
+      await expectAsync(Parse.Cloud.run('test')).toBeRejectedWith(
+        new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
+      );
+      await Parse.User.logIn('username', 'password');
+      await expectAsync(Parse.Cloud.run('test')).toBeRejectedWith(
+        new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
+      );
+    });
+  });
+
   it('can validate rateLimit', async () => {
     const Config = require('../lib/Config');
     const validateRateLimit = ({ rateLimit }) => Config.validateRateLimit(rateLimit);
@@ -350,6 +443,11 @@ describe('rate limit', () => {
     expect(() =>
       validateRateLimit({ rateLimit: [{ requestTimeWindow: [], requestPath: 'a' }] })
     ).toThrow('rateLimit.requestTimeWindow must be a number');
+    expect(() =>
+      validateRateLimit({
+        rateLimit: [{ requestPath: 'a', requestTimeWindow: 1000, requestCount: 3, zone: 'abc' }],
+      })
+    ).toThrow('rateLimit.zone must be one of global, session, user, or ip');
     expect(() =>
       validateRateLimit({
         rateLimit: [

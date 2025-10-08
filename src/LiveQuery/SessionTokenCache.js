@@ -1,5 +1,5 @@
 import Parse from 'parse/node';
-import LRU from 'lru-cache';
+import { LRUCache as LRU } from 'lru-cache';
 import logger from '../logger';
 
 function userForSessionToken(sessionToken) {

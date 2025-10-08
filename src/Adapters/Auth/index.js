@@ -3,29 +3,31 @@ import Parse from 'parse/node';
 import AuthAdapter from './AuthAdapter';
 
 const apple = require('./apple');
-const gcenter = require('./gcenter');
-const gpgames = require('./gpgames');
-const facebook = require('./facebook');
-const instagram = require('./instagram');
-const linkedin = require('./linkedin');
-const meetup = require('./meetup');
-const google = require('./google');
-const github = require('./github');
-const twitter = require('./twitter');
-const spotify = require('./spotify');
 const digits = require('./twitter'); // digits tokens are validated by twitter
-const janrainengage = require('./janrainengage');
+const facebook = require('./facebook');
+import gcenter from './gcenter';
+import github from './github';
+const google = require('./google');
+import gpgames from './gpgames';
+import instagram from './instagram';
 const janraincapture = require('./janraincapture');
-const line = require('./line');
-const vkontakte = require('./vkontakte');
-const qq = require('./qq');
-const wechat = require('./wechat');
-const weibo = require('./weibo');
-const oauth2 = require('./oauth2');
-const phantauth = require('./phantauth');
-const microsoft = require('./microsoft');
+const janrainengage = require('./janrainengage');
 const keycloak = require('./keycloak');
 const ldap = require('./ldap');
+import line from './line';
+import linkedin from './linkedin';
+const meetup = require('./meetup');
+import mfa from './mfa';
+import microsoft from './microsoft';
+import oauth2 from './oauth2';
+const phantauth = require('./phantauth');
+import qq from './qq';
+import spotify from './spotify';
+import twitter from './twitter';
+const vkontakte = require('./vkontakte');
+import wechat from './wechat';
+import weibo from './weibo';
+
 
 const anonymous = {
   validateAuthData: () => {
@@ -44,6 +46,7 @@ const providers = {
   instagram,
   linkedin,
   meetup,
+  mfa,
   google,
   github,
   twitter,
@@ -75,7 +78,11 @@ function authDataValidator(provider, adapter, appIds, options) {
     if (appIds && typeof adapter.validateAppId === 'function') {
       await Promise.resolve(adapter.validateAppId(appIds, authData, options, requestObject));
     }
-    if (adapter.policy && !authAdapterPolicies[adapter.policy]) {
+    if (
+      adapter.policy &&
+      !authAdapterPolicies[adapter.policy] &&
+      typeof adapter.policy !== 'function'
+    ) {
       throw new Parse.Error(
         Parse.Error.OTHER_CAUSE,
         'AuthAdapter policy is not configured correctly. The value must be either "solo", "additional", "default" or undefined (will be handled as "default")'
@@ -209,7 +216,7 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
       return { validator: undefined };
     }
     const authAdapter = loadAuthAdapter(provider, authOptions);
-    if (!authAdapter) return;
+    if (!authAdapter) { return; }
     const { adapter, appIds, providerOptions } = authAdapter;
     return { validator: authDataValidator(provider, adapter, appIds, providerOptions), adapter };
   };
@@ -225,17 +232,20 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
         if (!authAdapter) {
           return;
         }
-        const {
-          adapter: { afterFind },
-          providerOptions,
-        } = authAdapter;
+        const { adapter, providerOptions } = authAdapter;
+        const afterFind = adapter.afterFind;
         if (afterFind && typeof afterFind === 'function') {
           const requestObject = {
             ip: req.config.ip,
             user: req.auth.user,
             master: req.auth.isMaster,
           };
-          const result = afterFind(requestObject, authData[provider], providerOptions);
+          const result = afterFind.call(
+            adapter,
+            authData[provider],
+            providerOptions,
+            requestObject,
+          );
           if (result) {
             authData[provider] = result;
           }

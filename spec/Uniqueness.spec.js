@@ -68,7 +68,7 @@ describe('Uniqueness', function () {
       });
   });
 
-  it('fails when attempting to ensure uniqueness of fields that are not currently unique', done => {
+  it_id('802650a9-a6db-447e-88d0-8aae99100088')(it)('fails when attempting to ensure uniqueness of fields that are not currently unique', done => {
     const o1 = new Parse.Object('UniqueFail');
     o1.set('key', 'val');
     const o2 = new Parse.Object('UniqueFail');

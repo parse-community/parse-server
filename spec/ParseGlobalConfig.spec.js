@@ -4,7 +4,7 @@ const request = require('../lib/request');
 const Config = require('../lib/Config');
 
 describe('a GlobalConfig', () => {
-  beforeEach(done => {
+  beforeEach(async () => {
     const config = Config.get('test');
     const query = on_db(
       'mongo',
@@ -16,7 +16,7 @@ describe('a GlobalConfig', () => {
         return { objectId: '1' };
       }
     );
-    config.database.adapter
+    await config.database.adapter
       .upsertOneObject(
         '_GlobalConfig',
         {
@@ -28,14 +28,10 @@ describe('a GlobalConfig', () => {
         },
         query,
         {
-          params: { companies: ['US', 'DK'], internalParam: 'internal' },
+          params: { companies: ['US', 'DK'], counter: 20, internalParam: 'internal' },
           masterKeyOnly: { internalParam: true },
         }
-      )
-      .then(done, err => {
-        jfail(err);
-        done();
-      });
+      );
   });
 
   const headers = {
@@ -114,6 +110,34 @@ describe('a GlobalConfig', () => {
     });
   });
 
+  it_only_db('mongo')('can addUnique', async () => {
+    await Parse.Config.save({ companies: { __op: 'AddUnique', objects: ['PA', 'RS', 'E'] }  });
+    const config = await Parse.Config.get();
+    const companies = config.get('companies');
+    expect(companies).toEqual(['US', 'DK', 'PA', 'RS', 'E']);
+  });
+
+  it_only_db('mongo')('can add to array', async () => {
+    await Parse.Config.save({ companies: { __op: 'Add', objects: ['PA'] }  });
+    const config = await Parse.Config.get();
+    const companies = config.get('companies');
+    expect(companies).toEqual(['US', 'DK', 'PA']);
+  });
+
+  it_only_db('mongo')('can remove from array', async () => {
+    await Parse.Config.save({ companies: { __op: 'Remove', objects: ['US'] }  });
+    const config = await Parse.Config.get();
+    const companies = config.get('companies');
+    expect(companies).toEqual(['DK']);
+  });
+
+  it('can increment', async () => {
+    await Parse.Config.save({ counter: { __op: 'Increment', amount: 49 }  });
+    const config = await Parse.Config.get();
+    const counter = config.get('counter');
+    expect(counter).toEqual(69);
+  });
+
   it('can add and retrive files', done => {
     request({
       method: 'PUT',
@@ -157,7 +181,7 @@ describe('a GlobalConfig', () => {
     });
   });
 
-  it('properly handles delete op', done => {
+  it_id('5ebbd0cf-d1a5-49d9-aac7-5216abc5cb62')(it)('properly handles delete op', done => {
     request({
       method: 'PUT',
       url: 'http://localhost:8378/1/config',
@@ -165,6 +189,7 @@ describe('a GlobalConfig', () => {
       body: {
         params: {
           companies: { __op: 'Delete' },
+          counter: { __op: 'Delete' },
           internalParam: { __op: 'Delete' },
           foo: 'bar',
         },
@@ -183,6 +208,7 @@ describe('a GlobalConfig', () => {
         try {
           expect(response.status).toEqual(200);
           expect(body.params.companies).toBeUndefined();
+          expect(body.params.counter).toBeUndefined();
           expect(body.params.foo).toBe('bar');
           expect(Object.keys(body.params).length).toBe(1);
         } catch (e) {

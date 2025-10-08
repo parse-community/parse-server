@@ -7,7 +7,7 @@ import { isFunction, isString } from 'lodash';
 
 /**
  * A security check.
- * @class Check
+ * @class
  */
 class Check {
   /**

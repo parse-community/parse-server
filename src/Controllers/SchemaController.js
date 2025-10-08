@@ -255,6 +255,7 @@ function validateProtectedFieldsKey(key, userIdRegExp) {
 }
 
 const CLPValidKeys = Object.freeze([
+  'ACL',
   'find',
   'count',
   'get',
@@ -364,13 +365,34 @@ function validateCLP(perms: ClassLevelPermissions, fields: SchemaFields, userIdR
         continue;
       }
 
-      // or [entity]: boolean
       const permit = operation[entity];
 
-      if (permit !== true) {
+      if (operationKey === 'ACL') {
+        if (Object.prototype.toString.call(permit) !== '[object Object]') {
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            `'${permit}' is not a valid value for class level permissions acl`
+          );
+        }
+        const invalidKeys = Object.keys(permit).filter(key => !['read', 'write'].includes(key));
+        const invalidValues = Object.values(permit).filter(key => typeof key !== 'boolean');
+        if (invalidKeys.length) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            `'${invalidKeys.join(',')}' is not a valid key for class level permissions acl`
+          );
+        }
+
+        if (invalidValues.length) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            `'${invalidValues.join(',')}' is not a valid value for class level permissions acl`
+          );
+        }
+      } else if (permit !== true) {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          `'${permit}' is not a valid value for class level permissions ${operationKey}:${entity}:${permit}`
+          `'${permit}' is not a valid value for class level permissions acl ${operationKey}:${entity}`
         );
       }
     }
@@ -666,10 +688,10 @@ const VolatileClassesSchemas = [
 ];
 
 const dbTypeMatchesObjectType = (dbType: SchemaField | string, objectType: SchemaField) => {
-  if (dbType.type !== objectType.type) return false;
-  if (dbType.targetClass !== objectType.targetClass) return false;
-  if (dbType === objectType.type) return true;
-  if (dbType.type === objectType.type) return true;
+  if (dbType.type !== objectType.type) { return false; }
+  if (dbType.targetClass !== objectType.targetClass) { return false; }
+  if (dbType === objectType.type) { return true; }
+  if (dbType.type === objectType.type) { return true; }
   return false;
 };
 
@@ -1020,7 +1042,7 @@ export default class SchemaController {
         }
         const fieldType = fields[fieldName];
         const error = fieldTypeIsInvalid(fieldType);
-        if (error) return { code: error.code, error: error.message };
+        if (error) { return { code: error.code, error: error.message }; }
         if (fieldType.defaultValue !== undefined) {
           let defaultValueType = getType(fieldType.defaultValue);
           if (typeof defaultValueType === 'string') {
@@ -1096,9 +1118,17 @@ export default class SchemaController {
     maintenance?: boolean
   ) {
     if (fieldName.indexOf('.') > 0) {
-      // subdocument key (x.y) => ok if x is of type 'object'
-      fieldName = fieldName.split('.')[0];
-      type = 'Object';
+      // "<array>.<index>" for Nested Arrays
+      // "<embedded document>.<field>" for Nested Objects
+      // JSON Arrays are treated as Nested Objects
+      const [x, y] = fieldName.split('.');
+      fieldName = x;
+      const isArrayIndex = Array.from(y).every(c => c >= '0' && c <= '9');
+      if (isArrayIndex && !['sentPerUTCOffset', 'failedPerUTCOffset'].includes(fieldName)) {
+        type = 'Array';
+      } else {
+        type = 'Object';
+      }
     }
     let fieldNameToValidate = `${fieldName}`;
     if (maintenance && fieldNameToValidate.charAt(0) === '_') {

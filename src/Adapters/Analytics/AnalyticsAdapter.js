@@ -1,9 +1,7 @@
 /*eslint no-unused-vars: "off"*/
 /**
- * @module Adapters
- */
-/**
  * @interface AnalyticsAdapter
+ * @module Adapters
  */
 export class AnalyticsAdapter {
   /**

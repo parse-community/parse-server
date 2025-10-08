@@ -108,7 +108,7 @@ describe('Pages Router', () => {
       const res = await request({
         method: 'POST',
         url: 'http://localhost:8378/1/apps/test/request_password_reset',
-        body: `new_password=user1&token=43634643&username=username`,
+        body: `new_password=user1&token=43634643`,
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           'X-Requested-With': 'XMLHttpRequest',
@@ -124,7 +124,7 @@ describe('Pages Router', () => {
         await request({
           method: 'POST',
           url: 'http://localhost:8378/1/apps/test/request_password_reset',
-          body: `new_password=&token=132414&username=Johnny`,
+          body: `new_password=&token=132414`,
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             'X-Requested-With': 'XMLHttpRequest',
@@ -137,30 +137,12 @@ describe('Pages Router', () => {
       }
     });
 
-    it('request_password_reset: responds with AJAX error on missing username', async () => {
-      try {
-        await request({
-          method: 'POST',
-          url: 'http://localhost:8378/1/apps/test/request_password_reset',
-          body: `new_password=user1&token=43634643&username=`,
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-Requested-With': 'XMLHttpRequest',
-          },
-          followRedirects: false,
-        });
-      } catch (error) {
-        expect(error.status).not.toBe(302);
-        expect(error.text).toEqual('{"code":200,"error":"Missing username"}');
-      }
-    });
-
     it('request_password_reset: responds with AJAX error on missing token', async () => {
       try {
         await request({
           method: 'POST',
           url: 'http://localhost:8378/1/apps/test/request_password_reset',
-          body: `new_password=user1&token=&username=Johnny`,
+          body: `new_password=user1&token=`,
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             'X-Requested-With': 'XMLHttpRequest',
@@ -577,7 +559,7 @@ describe('Pages Router', () => {
         spyOnProperty(Page.prototype, 'defaultFile').and.returnValue(jsonPageFile);
 
         const response = await request({
-          url: `http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&username=exampleUsername&locale=${exampleLocale}`,
+          url: `http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&locale=${exampleLocale}`,
           followRedirects: false,
         }).catch(e => e);
         expect(response.status).toEqual(200);
@@ -626,7 +608,7 @@ describe('Pages Router', () => {
         await reconfigureServer(config);
         const response = await request({
           url:
-            'http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&username=exampleUsername&locale=de-AT',
+            'http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&locale=de-AT',
           followRedirects: false,
           method: 'POST',
         });
@@ -640,7 +622,7 @@ describe('Pages Router', () => {
         await reconfigureServer(config);
         const response = await request({
           url:
-            'http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&username=exampleUsername&locale=de-AT',
+            'http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&locale=de-AT',
           followRedirects: false,
           method: 'GET',
         });
@@ -676,13 +658,11 @@ describe('Pages Router', () => {
         const appId = linkResponse.headers['x-parse-page-param-appid'];
         const token = linkResponse.headers['x-parse-page-param-token'];
         const locale = linkResponse.headers['x-parse-page-param-locale'];
-        const username = linkResponse.headers['x-parse-page-param-username'];
         const publicServerUrl = linkResponse.headers['x-parse-page-param-publicserverurl'];
         const passwordResetPagePath = pageResponse.calls.all()[0].args[0];
         expect(appId).toBeDefined();
         expect(token).toBeDefined();
         expect(locale).toBeDefined();
-        expect(username).toBeDefined();
         expect(publicServerUrl).toBeDefined();
         expect(passwordResetPagePath).toMatch(
           new RegExp(`\/${exampleLocale}\/${pages.passwordReset.defaultFile}`)
@@ -696,7 +676,6 @@ describe('Pages Router', () => {
           body: {
             token,
             locale,
-            username,
             new_password: 'newPassword',
           },
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -738,7 +717,7 @@ describe('Pages Router', () => {
         );
       });
 
-      it('localizes end-to-end for verify email: success', async () => {
+      it_id('2845c2ea-23ba-45d2-a33f-63181d419bca')(it)('localizes end-to-end for verify email: success', async () => {
         await reconfigureServer(config);
         const sendVerificationEmail = spyOn(
           config.emailAdapter,
@@ -749,6 +728,7 @@ describe('Pages Router', () => {
         user.setPassword('examplePassword');
         user.set('email', 'mail@example.com');
         await user.signUp();
+        await jasmine.timeout();
 
         const link = sendVerificationEmail.calls.all()[0].args[0].link;
         const linkWithLocale = new URL(link);
@@ -766,7 +746,7 @@ describe('Pages Router', () => {
         );
       });
 
-      it('localizes end-to-end for verify email: invalid verification link - link send success', async () => {
+      it_id('f2272b94-b4ac-474f-8e47-1ca74de136f5')(it)('localizes end-to-end for verify email: invalid verification link - link send success', async () => {
         await reconfigureServer(config);
         const sendVerificationEmail = spyOn(
           config.emailAdapter,
@@ -777,6 +757,7 @@ describe('Pages Router', () => {
         user.setPassword('examplePassword');
         user.set('email', 'mail@example.com');
         await user.signUp();
+        await jasmine.timeout();
 
         const link = sendVerificationEmail.calls.all()[0].args[0].link;
         const linkWithLocale = new URL(link);
@@ -791,15 +772,13 @@ describe('Pages Router', () => {
 
         const appId = linkResponse.headers['x-parse-page-param-appid'];
         const locale = linkResponse.headers['x-parse-page-param-locale'];
-        const username = linkResponse.headers['x-parse-page-param-username'];
         const publicServerUrl = linkResponse.headers['x-parse-page-param-publicserverurl'];
         const invalidVerificationPagePath = pageResponse.calls.all()[0].args[0];
         expect(appId).toBeDefined();
         expect(locale).toBe(exampleLocale);
-        expect(username).toBeDefined();
         expect(publicServerUrl).toBeDefined();
         expect(invalidVerificationPagePath).toMatch(
-          new RegExp(`\/${exampleLocale}\/${pages.emailVerificationLinkExpired.defaultFile}`)
+          new RegExp(`\/${exampleLocale}\/${pages.emailVerificationLinkInvalid.defaultFile}`)
         );
 
         const formUrl = `${publicServerUrl}/apps/${appId}/resend_verification_email`;
@@ -808,7 +787,7 @@ describe('Pages Router', () => {
           method: 'POST',
           body: {
             locale,
-            username,
+            username: 'exampleUsername',
           },
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           followRedirects: false,
@@ -819,7 +798,7 @@ describe('Pages Router', () => {
         );
       });
 
-      it('localizes end-to-end for verify email: invalid verification link - link send fail', async () => {
+      it_id('1d46d36a-e455-4ae7-8717-e0d286e95f02')(it)('localizes end-to-end for verify email: invalid verification link - link send fail', async () => {
         await reconfigureServer(config);
         const sendVerificationEmail = spyOn(
           config.emailAdapter,
@@ -830,6 +809,7 @@ describe('Pages Router', () => {
         user.setPassword('examplePassword');
         user.set('email', 'mail@example.com');
         await user.signUp();
+        await jasmine.timeout();
 
         const link = sendVerificationEmail.calls.all()[0].args[0].link;
         const linkWithLocale = new URL(link);
@@ -844,15 +824,15 @@ describe('Pages Router', () => {
 
         const appId = linkResponse.headers['x-parse-page-param-appid'];
         const locale = linkResponse.headers['x-parse-page-param-locale'];
-        const username = linkResponse.headers['x-parse-page-param-username'];
         const publicServerUrl = linkResponse.headers['x-parse-page-param-publicserverurl'];
+        await jasmine.timeout();
+
         const invalidVerificationPagePath = pageResponse.calls.all()[0].args[0];
         expect(appId).toBeDefined();
         expect(locale).toBe(exampleLocale);
-        expect(username).toBeDefined();
         expect(publicServerUrl).toBeDefined();
         expect(invalidVerificationPagePath).toMatch(
-          new RegExp(`\/${exampleLocale}\/${pages.emailVerificationLinkExpired.defaultFile}`)
+          new RegExp(`\/${exampleLocale}\/${pages.emailVerificationLinkInvalid.defaultFile}`)
         );
 
         spyOn(UserController.prototype, 'resendVerificationEmail').and.callFake(() =>
@@ -865,7 +845,7 @@ describe('Pages Router', () => {
           method: 'POST',
           body: {
             locale,
-            username,
+            username: 'exampleUsername',
           },
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           followRedirects: false,
@@ -1150,12 +1130,10 @@ describe('Pages Router', () => {
 
         const appId = linkResponse.headers['x-parse-page-param-appid'];
         const token = linkResponse.headers['x-parse-page-param-token'];
-        const username = linkResponse.headers['x-parse-page-param-username'];
         const publicServerUrl = linkResponse.headers['x-parse-page-param-publicserverurl'];
         const passwordResetPagePath = pageResponse.calls.all()[0].args[0];
         expect(appId).toBeDefined();
         expect(token).toBeDefined();
-        expect(username).toBeDefined();
         expect(publicServerUrl).toBeDefined();
         expect(passwordResetPagePath).toMatch(new RegExp(`\/${pages.passwordReset.defaultFile}`));
         pageResponse.calls.reset();
@@ -1166,7 +1144,6 @@ describe('Pages Router', () => {
           method: 'POST',
           body: {
             token,
-            username,
             new_password: 'newPassword',
           },
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -1178,7 +1155,7 @@ describe('Pages Router', () => {
         );
       });
 
-      it('email verification works with custom endpoint', async () => {
+      it_id('81c1c28e-5dfd-4ffb-a09b-283156c08483')(it)('email verification works with custom endpoint', async () => {
         config.pages.pagesEndpoint = 'customEndpoint';
         await reconfigureServer(config);
         const sendVerificationEmail = spyOn(
@@ -1190,6 +1167,7 @@ describe('Pages Router', () => {
         user.setPassword('examplePassword');
         user.set('email', 'mail@example.com');
         await user.signUp();
+        await jasmine.timeout();
 
         const link = sendVerificationEmail.calls.all()[0].args[0].link;
         const linkResponse = await request({
@@ -1197,7 +1175,6 @@ describe('Pages Router', () => {
           followRedirects: false,
         });
         expect(linkResponse.status).toBe(200);
-
         const pagePath = pageResponse.calls.all()[0].args[0];
         expect(pagePath).toMatch(new RegExp(`\/${pages.emailVerificationSuccess.defaultFile}`));
       });

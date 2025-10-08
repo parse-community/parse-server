@@ -1,9 +1,7 @@
 /*eslint no-unused-vars: "off"*/
 /**
- * @module Adapters
- */
-/**
- * @interface MailAdapter
+ * @interface
+ * @memberof module:Adapters
  * Mail Adapter prototype
  * A MailAdapter should implement at least sendMail()
  */

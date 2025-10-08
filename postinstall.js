@@ -1,50 +1,38 @@
-const pkg = require('./package.json');
+const message = `
+                 1111111111
+              1111111111111111
+           1111111111111111111111
+         11111111111111111111111111
+       111111111111111       11111111
+      1111111111111     111     111111
+     1111111111111   111111111   111111
+     111111111111   11111111111   111111
+    1111111111111   11111111111   111111
+    1111111111111   1111111111    111111
+    1111111111111111111111111    1111111
+    11111111                    11111111
+     111111    111  1111111111111111111
+     11111   11111  111111111111111111
+      11111    1    11111111111111111
+       111111     111111111111111111
+         11111111111111111111111111
+           1111111111111111111111
+             111111111111111111
+                 11111111111
+ 
+    Thank you for using Parse Platform!
+         https://parseplatform.org
+ 
+Please consider donating to help us maintain
+                this package:
 
-const version = parseFloat(process.version.substr(1));
-const minimum = parseFloat(pkg.engines.node.match(/\d+/g).join('.'));
+👉 https://opencollective.com/parse-server 👈
 
-module.exports = function () {
-  const openCollective = `
-                  1111111111
-               1111111111111111
-            1111111111111111111111
-          11111111111111111111111111
-        111111111111111       11111111
-       1111111111111             111111
-      1111111111111   111111111   111111
-      111111111111   11111111111   111111
-     1111111111111   11111111111   111111
-     1111111111111   1111111111    111111
-     1111111111111111111111111    1111111
-     11111111                    11111111
-      111111         1111111111111111111
-      11111   11111  111111111111111111
-       11111         11111111111111111
-        111111     111111111111111111
-          11111111111111111111111111
-            1111111111111111111111
-              111111111111111111
-                  11111111111
+`;
 
+function main() {
+  process.stdout.write(message);
+  process.exit(0);
+}
 
-        Thanks for installing parse 🙏
-  Please consider donating to our open collective
-      to help us maintain this package.
-
-  👉 https://opencollective.com/parse-server
-
-  `;
-  process.stdout.write(openCollective);
-  if (version >= minimum) {
-    process.exit(0);
-  }
-
-  const errorMessage = `
-    ⚠️  parse-server requires at least node@${minimum}!
-    You have node@${version}
-
-  `;
-
-  process.stdout.write(errorMessage);
-  process.exit(1);
-};
+module.exports = main;

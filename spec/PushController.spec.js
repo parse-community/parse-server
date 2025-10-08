@@ -26,14 +26,12 @@ const successfulIOS = function (body, installations) {
   return Promise.all(promises);
 };
 
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-
 const pushCompleted = async pushId => {
   const query = new Parse.Query('_PushStatus');
   query.equalTo('objectId', pushId);
   let result = await query.first({ useMasterKey: true });
   while (!(result && result.get('status') === 'succeeded')) {
-    await sleep(100);
+    await jasmine.timeout();
     result = await query.first({ useMasterKey: true });
   }
 };
@@ -170,7 +168,7 @@ describe('PushController', () => {
     done();
   });
 
-  it('properly increment badges', async () => {
+  it_id('01e3e1b8-fad2-4249-b664-5a3efaab8cb1')(it)('properly increment badges', async () => {
     const pushAdapter = {
       send: function (body, installations) {
         const badge = body.data.badge;
@@ -184,6 +182,9 @@ describe('PushController', () => {
         return ['ios', 'android'];
       },
     };
+    await reconfigureServer({
+      push: { adapter: pushAdapter },
+    });
     const payload = {
       data: {
         alert: 'Hello World!',
@@ -214,9 +215,6 @@ describe('PushController', () => {
     const auth = {
       isMaster: true,
     };
-    await reconfigureServer({
-      push: { adapter: pushAdapter },
-    });
     await Parse.Object.saveAll(installations);
     const pushStatusId = await sendPush(payload, {}, config, auth);
     await pushCompleted(pushStatusId);
@@ -235,7 +233,7 @@ describe('PushController', () => {
     }
   });
 
-  it('properly increment badges by more than 1', async () => {
+  it_id('14afcedf-e65d-41cd-981e-07f32df84c14')(it)('properly increment badges by more than 1', async () => {
     const pushAdapter = {
       send: function (body, installations) {
         const badge = body.data.badge;
@@ -249,6 +247,9 @@ describe('PushController', () => {
         return ['ios', 'android'];
       },
     };
+    await reconfigureServer({
+      push: { adapter: pushAdapter },
+    });
     const payload = {
       data: {
         alert: 'Hello World!',
@@ -279,9 +280,6 @@ describe('PushController', () => {
     const auth = {
       isMaster: true,
     };
-    await reconfigureServer({
-      push: { adapter: pushAdapter },
-    });
     await Parse.Object.saveAll(installations);
     const pushStatusId = await sendPush(payload, {}, config, auth);
     await pushCompleted(pushStatusId);
@@ -297,7 +295,7 @@ describe('PushController', () => {
     }
   });
 
-  it('properly set badges to 1', async () => {
+  it_id('758dd579-aa91-4010-9033-8d48d3463644')(it)('properly set badges to 1', async () => {
     const pushAdapter = {
       send: function (body, installations) {
         const badge = body.data.badge;
@@ -311,7 +309,9 @@ describe('PushController', () => {
         return ['ios'];
       },
     };
-
+    await reconfigureServer({
+      push: { adapter: pushAdapter },
+    });
     const payload = {
       data: {
         alert: 'Hello World!',
@@ -333,9 +333,6 @@ describe('PushController', () => {
     const auth = {
       isMaster: true,
     };
-    await reconfigureServer({
-      push: { adapter: pushAdapter },
-    });
     await Parse.Object.saveAll(installations);
     const pushStatusId = await sendPush(payload, {}, config, auth);
     await pushCompleted(pushStatusId);
@@ -352,7 +349,7 @@ describe('PushController', () => {
     }
   });
 
-  it('properly set badges to 1 with complex query #2903 #3022', async () => {
+  it_id('75c39ae3-06ac-4354-b321-931e81c5a927')(it)('properly set badges to 1 with complex query #2903 #3022', async () => {
     const payload = {
       data: {
         alert: 'Hello World!',
@@ -384,14 +381,13 @@ describe('PushController', () => {
         return ['ios'];
       },
     };
-
+    await reconfigureServer({
+      push: { adapter: pushAdapter },
+    });
     const config = Config.get(Parse.applicationId);
     const auth = {
       isMaster: true,
     };
-    await reconfigureServer({
-      push: { adapter: pushAdapter },
-    });
     await Parse.Object.saveAll(installations);
     const objectIds = installations.map(installation => {
       return installation.id;
@@ -408,7 +404,7 @@ describe('PushController', () => {
     expect(results.length).toBe(5);
   });
 
-  it('properly creates _PushStatus', async () => {
+  it_id('667f31c0-b458-4f61-ab57-668c04e3cc0b')(it)('properly creates _PushStatus', async () => {
     const pushStatusAfterSave = {
       handler: function () {},
     };
@@ -447,14 +443,13 @@ describe('PushController', () => {
         return ['ios'];
       },
     };
-
+    await reconfigureServer({
+      push: { adapter: pushAdapter },
+    });
     const config = Config.get(Parse.applicationId);
     const auth = {
       isMaster: true,
     };
-    await reconfigureServer({
-      push: { adapter: pushAdapter },
-    });
     await Parse.Object.saveAll(installations);
     const pushStatusId = await sendPush(payload, {}, config, auth);
     await pushCompleted(pushStatusId);
@@ -523,7 +518,7 @@ describe('PushController', () => {
     expect(succeedCount).toBe(1);
   });
 
-  it('properly creates _PushStatus without serverURL', async () => {
+  it_id('30e0591a-56de-4720-8c60-7d72291b532a')(it)('properly creates _PushStatus without serverURL', async () => {
     const pushStatusAfterSave = {
       handler: function () {},
     };
@@ -550,19 +545,18 @@ describe('PushController', () => {
         return ['ios'];
       },
     };
-
-    const config = Config.get(Parse.applicationId);
-    const auth = {
-      isMaster: true,
-    };
     await installation.save();
     await reconfigureServer({
       serverURL: 'http://localhost:8378/', // server with borked URL
       push: { adapter: pushAdapter },
     });
+    const config = Config.get(Parse.applicationId);
+    const auth = {
+      isMaster: true,
+    };
     const pushStatusId = await sendPush(payload, {}, config, auth);
     // it is enqueued so it can take time
-    await sleep(1000);
+    await jasmine.timeout(1000);
     Parse.serverURL = 'http://localhost:8378/1'; // GOOD url
     const result = await Parse.Push.getPushStatus(pushStatusId);
     expect(result).toBeDefined();
@@ -582,6 +576,9 @@ describe('PushController', () => {
         return ['ios'];
       },
     };
+    await reconfigureServer({
+      push: { adapter: pushAdapter },
+    });
     // $ins is invalid query
     const where = {
       channels: {
@@ -598,9 +595,6 @@ describe('PushController', () => {
       isMaster: true,
     };
     const pushController = new PushController();
-    await reconfigureServer({
-      push: { adapter: pushAdapter },
-    });
     const config = Config.get(Parse.applicationId);
     try {
       await pushController.sendPush(payload, where, config, auth);
@@ -617,7 +611,7 @@ describe('PushController', () => {
     }
   });
 
-  it('should support full RESTQuery for increment', async () => {
+  it_id('53551fc3-b975-4774-92e6-7e5f3c05e105')(it)('should support full RESTQuery for increment', async () => {
     const payload = {
       data: {
         alert: 'Hello World!',
@@ -633,6 +627,9 @@ describe('PushController', () => {
         return ['ios'];
       },
     };
+    await reconfigureServer({
+      push: { adapter: pushAdapter },
+    });
     const config = Config.get(Parse.applicationId);
     const auth = {
       isMaster: true,
@@ -643,9 +640,6 @@ describe('PushController', () => {
         $in: ['device_token_0', 'device_token_1', 'device_token_2'],
       },
     };
-    await reconfigureServer({
-      push: { adapter: pushAdapter },
-    });
     const installations = [];
     while (installations.length != 5) {
       const installation = new Parse.Object('_Installation');
@@ -680,7 +674,9 @@ describe('PushController', () => {
         return ['ios'];
       },
     };
-
+    await reconfigureServer({
+      push: { adapter: pushAdapter },
+    });
     const config = Config.get(Parse.applicationId);
     const auth = {
       isMaster: true,
@@ -688,9 +684,6 @@ describe('PushController', () => {
     const where = {
       deviceType: 'ios',
     };
-    await reconfigureServer({
-      push: { adapter: pushAdapter },
-    });
     const installations = [];
     while (installations.length != 5) {
       const installation = new Parse.Object('_Installation');
@@ -764,10 +757,6 @@ describe('PushController', () => {
   });
 
   it('should not schedule push when not configured', async () => {
-    const config = Config.get(Parse.applicationId);
-    const auth = {
-      isMaster: true,
-    };
     const pushAdapter = {
       send: function (body, installations) {
         return successfulTransmissions(body, installations);
@@ -776,7 +765,13 @@ describe('PushController', () => {
         return ['ios'];
       },
     };
-
+    await reconfigureServer({
+      push: { adapter: pushAdapter },
+    });
+    const config = Config.get(Parse.applicationId);
+    const auth = {
+      isMaster: true,
+    };
     const pushController = new PushController();
     const payload = {
       data: {
@@ -795,13 +790,9 @@ describe('PushController', () => {
       installation.set('deviceType', 'ios');
       installations.push(installation);
     }
-
-    await reconfigureServer({
-      push: { adapter: pushAdapter },
-    });
     await Parse.Object.saveAll(installations);
     await pushController.sendPush(payload, {}, config, auth);
-    await sleep(1000);
+    await jasmine.timeout(1000);
     const query = new Parse.Query('_PushStatus');
     const results = await query.find({ useMasterKey: true });
     expect(results.length).toBe(1);
@@ -856,7 +847,7 @@ describe('PushController', () => {
     const config = Config.get(Parse.applicationId);
     await Parse.Object.saveAll(installations);
     await pushController.sendPush(payload, {}, config, auth);
-    await sleep(1000);
+    await jasmine.timeout(1000);
     const query = new Parse.Query('_PushStatus');
     const results = await query.find({ useMasterKey: true });
     expect(results.length).toBe(1);
@@ -988,6 +979,10 @@ describe('PushController', () => {
         return ['ios'];
       },
     };
+    spyOn(pushAdapter, 'send').and.callThrough();
+    await reconfigureServer({
+      push: { adapter: pushAdapter },
+    });
     const config = Config.get(Parse.applicationId);
     const auth = {
       isMaster: true,
@@ -1009,10 +1004,6 @@ describe('PushController', () => {
     installations[1].set('localeIdentifier', 'fr-FR');
     installations[2].set('localeIdentifier', 'en-US');
 
-    spyOn(pushAdapter, 'send').and.callThrough();
-    await reconfigureServer({
-      push: { adapter: pushAdapter },
-    });
     await Parse.Object.saveAll(installations);
     const pushStatusId = await sendPush(payload, where, config, auth);
     await pushCompleted(pushStatusId);
@@ -1032,7 +1023,7 @@ describe('PushController', () => {
     // No installation is in es so only 1 call for fr, and another for default
   });
 
-  it('should update audiences', async () => {
+  it_id('ef2e5569-50c3-40c2-ab49-175cdbd5f024')(it)('should update audiences', async () => {
     const pushAdapter = {
       send: function (body, installations) {
         return successfulTransmissions(body, installations);
@@ -1041,7 +1032,10 @@ describe('PushController', () => {
         return ['ios'];
       },
     };
-
+    spyOn(pushAdapter, 'send').and.callThrough();
+    await reconfigureServer({
+      push: { adapter: pushAdapter },
+    });
     const config = Config.get(Parse.applicationId);
     const auth = {
       isMaster: true,
@@ -1062,10 +1056,6 @@ describe('PushController', () => {
       installation.set('deviceType', 'ios');
       installations.push(installation);
     }
-    spyOn(pushAdapter, 'send').and.callThrough();
-    await reconfigureServer({
-      push: { adapter: pushAdapter },
-    });
     await Parse.Object.saveAll(installations);
 
     // Create an audience
@@ -1226,14 +1216,11 @@ describe('PushController', () => {
       },
     };
 
-    beforeEach(done => {
-      reconfigureServer({
+    beforeEach(async () => {
+      await reconfigureServer({
         push: { adapter: pushAdapter },
-      })
-        .then(() => {
-          config = Config.get(Parse.applicationId);
-        })
-        .then(done, done.fail);
+      });
+      config = Config.get(Parse.applicationId);
     });
 
     it('should throw if both expiration_time and expiration_interval are set', () => {
