@@ -4,6 +4,7 @@
  * @property {Function} beforeMigration Execute a callback before running schema migrations.
  * @property {Any} definitions Rest representation on Parse.Schema https://docs.parseplatform.org/rest/guide/#adding-a-schema
  * @property {Boolean} deleteExtraFields Is true if Parse Server should delete any fields not defined in a schema definition. This should only be used during development.
+ * @property {Boolean} keepUnknownIndexes (Optional) Keep indexes that are present in the database but not defined in the schema. Set this to `true` if you are adding indexes manually, so that they won't be removed when running schema migration. Default is `false`.
  * @property {Boolean} lockSchemas Is true if Parse Server will reject any attempts to modify the schema while the server is running.
  * @property {Boolean} recreateModifiedFields Is true if Parse Server should recreate any fields that are different between the current database schema and theschema definition. This should only be used during development.
  * @property {Boolean} strict Is true if Parse Server should exit if schema update fail.

@@ -1,3 +1,31 @@
+# [8.3.0-alpha.3](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.2...8.3.0-alpha.3) (2025-10-07)
+
+
+### Features
+
+* Add support for Postgres 18 ([#9870](https://github.com/parse-community/parse-server/issues/9870)) ([d275c18](https://github.com/parse-community/parse-server/commit/d275c1806e0a5a037cc06cde7eefff3e12c91d7d))
+
+# [8.3.0-alpha.2](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.1...8.3.0-alpha.2) (2025-10-03)
+
+
+### Features
+
+* Add regex option `u` for unicode support in `Parse.Query.matches` for MongoDB ([#9867](https://github.com/parse-community/parse-server/issues/9867)) ([7cb962a](https://github.com/parse-community/parse-server/commit/7cb962a02845f3dded61baffd84515f94b66ee50))
+
+# [8.3.0-alpha.1](https://github.com/parse-community/parse-server/compare/8.2.5...8.3.0-alpha.1) (2025-10-03)
+
+
+### Features
+
+* Add option `keepUnknownIndexes` to retain indexes which are not specified in schema ([#9857](https://github.com/parse-community/parse-server/issues/9857)) ([89fad46](https://github.com/parse-community/parse-server/commit/89fad468c3a43772879c06c4d939a83b72517a8e))
+
+## [8.2.5-alpha.1](https://github.com/parse-community/parse-server/compare/8.2.4...8.2.5-alpha.1) (2025-09-21)
+
+
+### Bug Fixes
+
+* GraphQL playground shows blank page ([#9858](https://github.com/parse-community/parse-server/issues/9858)) ([7b5395c](https://github.com/parse-community/parse-server/commit/7b5395c5d481235c022d96603280672366a50715))
+
 ## [8.2.4-alpha.1](https://github.com/parse-community/parse-server/compare/8.2.3...8.2.4-alpha.1) (2025-08-02)
 
 
