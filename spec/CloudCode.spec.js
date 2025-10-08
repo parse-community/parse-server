@@ -2545,7 +2545,7 @@ describe('beforeFind hooks', () => {
     const query = new Parse.Query('MyObject');
     query.equalTo('objectId', myObject.id);
     await Promise.all([query.get(myObject.id), query.first(), query.find()]);
-})
+  })
   it('should run beforeFind on pointers and array of pointers from an object', async () => {
     const obj1 = new Parse.Object('TestObject');
     const obj2 = new Parse.Object('TestObject2');
