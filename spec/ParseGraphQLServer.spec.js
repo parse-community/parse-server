@@ -616,7 +616,7 @@ describe('ParseGraphQLServer', () => {
 
           let called
           const parseServer = await reconfigureServer({ requestContextMiddleware });
-          createGQLFromParseServer(parseServer);
+          await createGQLFromParseServer(parseServer);
           Parse.Cloud.beforeSave('_User', request => {
             expect(request.config.aCustomController).toEqual('aCustomController');
             called = true;
