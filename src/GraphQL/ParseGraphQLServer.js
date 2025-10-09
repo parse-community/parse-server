@@ -137,7 +137,7 @@ class ParseGraphQLServer {
       if (typeof options.requestContextMiddleware !== 'function') {
         throw new Error('requestContextMiddleware must be a function');
       }
-      api.use(options.requestContextMiddleware);
+      api.use(this.config.graphQLPath, options.requestContextMiddleware);
     }
   }
 
