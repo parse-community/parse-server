@@ -212,8 +212,36 @@ export class UsersRouter extends ClassesRouter {
       }
       // Create the missing user but continue through the standard login path so
       // that all login-time policies, triggers, and session metadata remain unchanged.
-      signupSessionToken = await this._autoSignupOnLogin(req, autoSignupCredentials);
-      user = await this._authenticateUserFromRequest(req);
+      try {
+        signupSessionToken = await this._autoSignupOnLogin(req, autoSignupCredentials);
+      } catch (signupError) {
+        // Another request created the user or user exists with wrong password
+        // we try authenticating again in that case; if it works then it works.
+        // and we continue with the "usual" login flow.
+        if (signupError.code === Parse.Error.DUPLICATE_VALUE ||
+          signupError.code === Parse.Error.USERNAME_TAKEN ||
+          signupError.code === Parse.Error.EMAIL_TAKEN) {
+          user = await this._authenticateUserFromRequest(req);
+        } else {
+          throw signupError;
+        }
+      }
+      if (signupSessionToken) {
+        // Discard the session issued by the signup shortcut; the login session we just
+        // created is the single source of truth for the client.
+        try {
+          await req.config.database.destroy('_Session', { sessionToken: signupSessionToken });
+        } catch (sessionError) {
+          if (sessionError && sessionError.code !== Parse.Error.OBJECT_NOT_FOUND) {
+            logger.warn('Failed to clean up auto sign-up session token', sessionError);
+          }
+        }
+      }
+      // If no user was set from the catch-clause (no race condition)
+      // then we simply authenticate the user as usual.
+      if (!user) {
+        user = await this._authenticateUserFromRequest(req);
+      }
     }
 
     // Check if user has provided their required auth providers
@@ -269,10 +297,12 @@ export class UsersRouter extends ClassesRouter {
         );
         if (expiresAt < new Date())
         // fail of current time is past password expiry time
-        { throw new Parse.Error(
-          Parse.Error.OBJECT_NOT_FOUND,
-          'Your password has expired. Please reset your password.'
-        ); }
+        {
+          throw new Parse.Error(
+            Parse.Error.OBJECT_NOT_FOUND,
+            'Your password has expired. Please reset your password.'
+          );
+        }
       }
     }
 
@@ -300,7 +330,6 @@ export class UsersRouter extends ClassesRouter {
         {}
       );
     }
-
     const { sessionData, createSession } = RestWrite.createSession(req.config, {
       userId: user.objectId,
       createdWith: {
@@ -313,18 +342,6 @@ export class UsersRouter extends ClassesRouter {
     user.sessionToken = sessionData.sessionToken;
 
     await createSession();
-
-    if (signupSessionToken) {
-      // Discard the session issued by the signup shortcut; the login session we just
-      // created is the single source of truth for the client.
-      try {
-        await req.config.database.destroy('_Session', { sessionToken: signupSessionToken });
-      } catch (sessionError) {
-        if (sessionError && sessionError.code !== Parse.Error.OBJECT_NOT_FOUND) {
-          logger.warn('Failed to clean up auto sign-up session token', sessionError);
-        }
-      }
-    }
 
     const afterLoginUser = Parse.User.fromJSON(Object.assign({ className: '_User' }, user));
     await maybeRunTrigger(
@@ -359,7 +376,7 @@ export class UsersRouter extends ClassesRouter {
       password: source.password,
     };
   }
-  
+
   // Returns data for auto-signup if autoSignupOnLogin is true and the error is that the user doesn't exist.
   // If the conditions don't match, we return `null`.
   // This gathers minimal credentials so that the signup path can rely on RestWrite's own validation.
@@ -724,7 +741,7 @@ export class UsersRouter extends ClassesRouter {
         const userString = req.auth && req.auth.user ? req.auth.user.id : undefined;
         logger.error(
           `Failed running auth step challenge for ${provider} for user ${userString} with Error: ` +
-            JSON.stringify(e),
+          JSON.stringify(e),
           {
             authenticationStep: 'challenge',
             error: e,
