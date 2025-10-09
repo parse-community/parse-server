@@ -1,4 +1,3 @@
-const { ApolloClient, gql, InMemoryCache } = require('@apollo/client/core');
 describe('requestContextMiddleware', () => {
   const requestContextMiddleware = (req, res, next) => {
     req.config.aCustomController = 'aCustomController';
@@ -29,25 +28,25 @@ describe('requestContextMiddleware', () => {
       mountGraphQL: true,
       graphQLPath: '/graphql',
     });
-    const client = new ApolloClient({
-      uri: 'http://localhost:8378/graphql',
-      cache: new InMemoryCache(),
+
+    await fetch('http://localhost:8378/graphql', {
+      method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'X-Parse-Application-Id': 'test',
         'X-Parse-Master-Key': 'test',
       },
-    });
-
-    await client.mutate({
-      mutation: gql`
-        mutation {
-          createUser(input: { fields: { username: "test", password: "test" } }) {
-            user {
-              objectId
+      body: JSON.stringify({
+        query: `
+          mutation {
+            createUser(input: { fields: { username: "test", password: "test" } }) {
+              user {
+                objectId
+              }
             }
           }
-        }
-      `,
+        `,
+      }),
     });
     expect(called).toBeTruthy();
   });
