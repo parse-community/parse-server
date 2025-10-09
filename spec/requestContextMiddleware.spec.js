@@ -1,4 +1,4 @@
-describe('requestContextMiddlewareGraphQL', () => {
+describe('requestContextMiddleware', () => {
 
   it('should support dependency injection on graphql api', async () => {
     const requestContextMiddleware = (req, res, next) => {
