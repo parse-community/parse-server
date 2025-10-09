@@ -140,6 +140,7 @@ export class MongoStorageAdapter implements StorageAdapter {
   canSortOnJoinTables: boolean;
   enableSchemaHooks: boolean;
   schemaCacheTtl: ?number;
+  disableIndexFieldValidation: boolean;
 
   constructor({ uri = defaults.DefaultMongoURI, collectionPrefix = '', mongoOptions = {} }: any) {
     this._uri = uri;
@@ -152,7 +153,8 @@ export class MongoStorageAdapter implements StorageAdapter {
     this.canSortOnJoinTables = true;
     this.enableSchemaHooks = !!mongoOptions.enableSchemaHooks;
     this.schemaCacheTtl = mongoOptions.schemaCacheTtl;
-    for (const key of ['enableSchemaHooks', 'schemaCacheTtl', 'maxTimeMS']) {
+    this.disableIndexFieldValidation = !!mongoOptions.disableIndexFieldValidation;
+    for (const key of ['enableSchemaHooks', 'schemaCacheTtl', 'maxTimeMS', 'disableIndexFieldValidation']) {
       delete mongoOptions[key];
       delete this._mongoOptions[key];
     }
@@ -289,6 +291,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       } else {
         Object.keys(field).forEach(key => {
           if (
+            !this.disableIndexFieldValidation &&
             !Object.prototype.hasOwnProperty.call(
               fields,
               key.indexOf('_p_') === 0 ? key.replace('_p_', '') : key

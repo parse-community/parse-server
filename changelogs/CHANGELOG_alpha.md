@@ -1,3 +1,10 @@
+# [8.3.0-alpha.4](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.3...8.3.0-alpha.4) (2025-10-09)
+
+
+### Features
+
+* Disable index-field validation to create index for fields that don't yet exist ([#8137](https://github.com/parse-community/parse-server/issues/8137)) ([1b23475](https://github.com/parse-community/parse-server/commit/1b2347524ca84ade0f6badf175a815fc8a7bef49))
+
 # [8.3.0-alpha.3](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.2...8.3.0-alpha.3) (2025-10-07)
 
 
