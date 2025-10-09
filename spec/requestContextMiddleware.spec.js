@@ -6,14 +6,15 @@ describe('requestContextMiddlewareGraphQL', () => {
       next();
     };
     let called = false;
-    Parse.Cloud.beforeSave('_User', request => {
-      expect(request.config.aCustomController).toEqual('aCustomController');
-      called = true;
-    });
     await reconfigureServer({
       requestContextMiddleware,
       mountGraphQL: true,
       graphQLPath: '/graphql',
+    });
+
+    Parse.Cloud.beforeSave('_User', request => {
+      expect(request.config.aCustomController).toEqual('aCustomController');
+      called = true;
     });
 
     await fetch('http://localhost:8378/graphql', {
@@ -35,6 +36,25 @@ describe('requestContextMiddlewareGraphQL', () => {
           `,
       }),
     });
+    expect(called).toBeTruthy();
+  });
+
+  it('should support dependency injection on rest api', async () => {
+    const requestContextMiddleware = (req, res, next) => {
+      req.config.aCustomController = 'aCustomController';
+      next();
+    };
+
+    let called;
+    await reconfigureServer({ requestContextMiddleware });
+    Parse.Cloud.beforeSave('_User', request => {
+      expect(request.config.aCustomController).toEqual('aCustomController');
+      called = true;
+    });
+    const user = new Parse.User();
+    user.setUsername('test');
+    user.setPassword('test');
+    await user.signUp();
     expect(called).toBeTruthy();
   });
 });
