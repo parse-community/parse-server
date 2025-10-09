@@ -614,7 +614,7 @@ describe('ParseGraphQLServer', () => {
             next();
           };
 
-          let called
+          let called;
           const parseServer = await reconfigureServer({ requestContextMiddleware });
           await createGQLFromParseServer(parseServer);
           Parse.Cloud.beforeSave('_User', request => {
