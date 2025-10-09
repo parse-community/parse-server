@@ -1,21 +1,21 @@
 describe('requestContextMiddleware', () => {
 
-  it('should support dependency injection on graphql api', async () => {
+  it('should support dependency injection on graphql and rest api', async () => {
     const requestContextMiddleware = (req, res, next) => {
       req.config.aCustomController = 'aCustomController';
       next();
     };
-    let called = false;
-    await reconfigureServer({
-      requestContextMiddleware,
-      mountGraphQL: true,
-      graphQLPath: '/graphql',
-    });
 
+    let called = 0
+    await reconfigureServer({ requestContextMiddleware, mountGraphQL: true, graphQLPath: '/graphql' });
     Parse.Cloud.beforeSave('_User', request => {
       expect(request.config.aCustomController).toEqual('aCustomController');
-      called = true;
+      called++;
     });
+    const user = new Parse.User();
+    user.setUsername('test');
+    user.setPassword('test');
+    await user.signUp();
 
     await fetch('http://localhost:8378/graphql', {
       method: 'POST',
@@ -27,7 +27,7 @@ describe('requestContextMiddleware', () => {
       body: JSON.stringify({
         query: `
             mutation {
-              createUser(input: { fields: { username: "test", password: "test" } }) {
+              createUser(input: { fields: { username: "test2", password: "test2" } }) {
                 user {
                   objectId
                 }
@@ -36,25 +36,6 @@ describe('requestContextMiddleware', () => {
           `,
       }),
     });
-    expect(called).toBeTruthy();
-  });
-
-  it('should support dependency injection on rest api', async () => {
-    const requestContextMiddleware = (req, res, next) => {
-      req.config.aCustomController = 'aCustomController';
-      next();
-    };
-
-    let called;
-    await reconfigureServer({ requestContextMiddleware });
-    Parse.Cloud.beforeSave('_User', request => {
-      expect(request.config.aCustomController).toEqual('aCustomController');
-      called = true;
-    });
-    const user = new Parse.User();
-    user.setUsername('test');
-    user.setPassword('test');
-    await user.signUp();
-    expect(called).toBeTruthy();
+    expect(called).toBe(2);
   });
 });
