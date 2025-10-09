@@ -1,3 +1,10 @@
+# [8.3.0-alpha.3](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.2...8.3.0-alpha.3) (2025-10-07)
+
+
+### Features
+
+* Add support for Postgres 18 ([#9870](https://github.com/parse-community/parse-server/issues/9870)) ([d275c18](https://github.com/parse-community/parse-server/commit/d275c1806e0a5a037cc06cde7eefff3e12c91d7d))
+
 # [8.3.0-alpha.2](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.1...8.3.0-alpha.2) (2025-10-03)
 
 
