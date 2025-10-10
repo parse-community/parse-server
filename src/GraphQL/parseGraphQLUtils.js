@@ -22,13 +22,7 @@ export function toGraphQLError(error) {
 export const extractKeysAndInclude = selectedFields => {
   selectedFields = selectedFields
     .filter(field => !field.includes('__typename'))
-    // GraphQL relation connections expose data under `edges.node.*`. Those
-    // segments do not correspond to actual Parse fields, so strip them to
-    // ensure the root relation key remains in the keys list (e.g. convert
-    // `users.edges.node.username` -> `users.username`). This preserves the
-    // synthetic relation placeholders that Parse injects while still
-    // respecting field projections.
-    .map(field => field.replace(/\.edges\.node/g, ''));
+
   // Handles "id" field for both current and included objects
   selectedFields = selectedFields.map(field => {
     if (field === 'id') { return 'objectId'; }

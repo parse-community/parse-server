@@ -107,8 +107,13 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
           const { keys, include } = extractKeysAndInclude(
             selectedFields
               .filter(field => field.startsWith('edges.node.'))
-              .map(field => field.replace('edges.node.', ''))
-              .map(field => field.replace(/\.edges\.node/g, ''))
+              // GraphQL relation connections expose data under `edges.node.*`. Those
+              // segments do not correspond to actual Parse fields, so strip them to
+              // ensure the root relation key remains in the keys list (e.g. convert
+              // `users.edges.node.username` -> `users.username`). This preserves the
+              // synthetic relation placeholders that Parse injects while still
+              // respecting field projections.
+              .map(field => field.replace('edges.node.', '').replace(/\.edges\.node/g, ''))
               .filter(field => field.indexOf('edges.node') < 0)
           );
           const parseOrder = order && order.join(',');
