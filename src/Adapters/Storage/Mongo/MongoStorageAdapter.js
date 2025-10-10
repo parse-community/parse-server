@@ -664,7 +664,30 @@ export class MongoStorageAdapter implements StorageAdapter {
         if (explain) {
           return objects;
         }
-        return objects.map(object => mongoObjectToParseObject(className, object, schema));
+        return objects.map(object => {
+          const parseObject = mongoObjectToParseObject(className, object, schema);
+          // If there are returned keys specified; we filter them first.
+          // We need to do this because in `mongoObjectToParseObject`, all 'Relation' fields
+          // are copied over from schema without any filters. (either keep this filtering here 
+          // or pass keys into `mongoObjectToParseObject` via additional optional parameter)
+          if (Array.isArray(keys)) {
+            // set of string keys
+            const keysSet = new Set(keys);
+            const shouldIncludeField = (fieldName) => {
+              return keysSet.has(fieldName);
+            };
+            // filter out relation fields
+            Object.keys(schema.fields).forEach(fieldName => {
+              if (
+                schema.fields[fieldName].type === 'Relation' &&
+                !shouldIncludeField(fieldName)
+              ) {
+                delete parseObject[fieldName];
+              }
+            });
+          }
+          return parseObject;
+        });
       })
       .catch(err => this.handleError(err));
   }
