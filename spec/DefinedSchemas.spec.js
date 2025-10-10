@@ -371,7 +371,7 @@ describe('DefinedSchemas', () => {
       expect(schema.indexes).toEqual(indexes);
     });
 
-    it('should delete removed indexes', async () => {
+    it('should delete unknown indexes when keepUnknownIndexes is not set', async () => {
       const server = await reconfigureServer();
 
       let indexes = { complex: { createdAt: 1, updatedAt: 1 } };
@@ -393,6 +393,53 @@ describe('DefinedSchemas', () => {
       cleanUpIndexes(schema);
       expect(schema.indexes).toBeUndefined();
     });
+
+    it('should delete unknown indexes when keepUnknownIndexes is set to false', async () => {
+      const server = await reconfigureServer();
+
+      let indexes = { complex: { createdAt: 1, updatedAt: 1 } };
+
+      let schemas = { definitions: [{ className: 'Test', indexes }], keepUnknownIndexes: false };
+      await new DefinedSchemas(schemas, server.config).execute();
+
+      indexes = {};
+      schemas = { definitions: [{ className: 'Test', indexes }], keepUnknownIndexes: false };
+      // Change indexes
+      await new DefinedSchemas(schemas, server.config).execute();
+      let schema = await new Parse.Schema('Test').get();
+      cleanUpIndexes(schema);
+      expect(schema.indexes).toBeUndefined();
+
+      // Update
+      await new DefinedSchemas(schemas, server.config).execute();
+      schema = await new Parse.Schema('Test').get();
+      cleanUpIndexes(schema);
+      expect(schema.indexes).toBeUndefined();
+    });
+
+    it('should not delete unknown indexes when keepUnknownIndexes is set to true', async () => {
+      const server = await reconfigureServer();
+
+      const indexes = { complex: { createdAt: 1, updatedAt: 1 } };
+
+      let schemas = { definitions: [{ className: 'Test', indexes }], keepUnknownIndexes: true };
+      await new DefinedSchemas(schemas, server.config).execute();
+
+      schemas = { definitions: [{ className: 'Test', indexes: {} }], keepUnknownIndexes: true };
+
+      // Change indexes
+      await new DefinedSchemas(schemas, server.config).execute();
+      let schema = await new Parse.Schema('Test').get();
+      cleanUpIndexes(schema);
+      expect(schema.indexes).toEqual({ complex: { createdAt: 1, updatedAt: 1 } });
+
+      // Update
+      await new DefinedSchemas(schemas, server.config).execute();
+      schema = await new Parse.Schema('Test').get();
+      cleanUpIndexes(schema);
+      expect(schema.indexes).toEqual(indexes);
+    });
+
     xit('should keep protected indexes', async () => {
       const server = await reconfigureServer();
 
