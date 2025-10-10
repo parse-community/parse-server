@@ -670,7 +670,7 @@ export class MongoStorageAdapter implements StorageAdapter {
           // We need to do this because in `mongoObjectToParseObject`, all 'Relation' fields
           // are copied over from schema without any filters. (either keep this filtering here 
           // or pass keys into `mongoObjectToParseObject` via additional optional parameter)
-          if (Array.isArray(keys)) {
+          if (Array.isArray(keys) && keys.length > 0) {
             // set of string keys
             const keysSet = new Set(keys);
             const shouldIncludeField = (fieldName) => {
