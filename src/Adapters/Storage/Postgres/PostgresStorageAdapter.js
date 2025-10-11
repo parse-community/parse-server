@@ -1927,7 +1927,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
           // We need to do this because in `postgresObjectToParseObject`, all 'Relation' fields
           // are copied over from schema without any filters. (either keep this filtering here 
           // or pass keys into `postgresObjectToParseObject` via additional optional parameter)
-          if (selectedKeys.length > 0) {
+          if (Array.isArray(selectedKeys) && selectedKeys.length > 0) {
             // set of string keys
             const keysSet = new Set(selectedKeys);
             const shouldIncludeField = (fieldName) => {
