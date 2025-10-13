@@ -28,6 +28,13 @@ module.exports.SchemaOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  keepUnknownIndexes: {
+    env: 'PARSE_SERVER_SCHEMA_KEEP_UNKNOWN_INDEXES',
+    help:
+      "(Optional) Keep indexes that are present in the database but not defined in the schema. Set this to `true` if you are adding indexes manually, so that they won't be removed when running schema migration. Default is `false`.",
+    action: parsers.booleanParser,
+    default: false,
+  },
   lockSchemas: {
     env: 'PARSE_SERVER_SCHEMA_LOCK_SCHEMAS',
     help:
