@@ -1,3 +1,10 @@
+# [8.3.0-alpha.5](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.4...8.3.0-alpha.5) (2025-10-14)
+
+
+### Features
+
+* Allow returning objects in `Parse.Cloud.beforeFind` without invoking database query ([#9770](https://github.com/parse-community/parse-server/issues/9770)) ([0b47407](https://github.com/parse-community/parse-server/commit/0b4740714c29ba99672bc535619ee3516abd356f))
+
 # [8.3.0-alpha.4](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.3...8.3.0-alpha.4) (2025-10-09)
 
 

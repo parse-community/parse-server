@@ -50,6 +50,7 @@ async function RestQuery({
   if (![RestQuery.Method.find, RestQuery.Method.get].includes(method)) {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'bad query type');
   }
+  const isGet = method === RestQuery.Method.get;
   enforceRoleSecurity(method, className, auth);
   const result = runBeforeFind
     ? await triggers.maybeRunQueryTrigger(
@@ -60,7 +61,7 @@ async function RestQuery({
       config,
       auth,
       context,
-      method === RestQuery.Method.get
+      isGet
     )
     : Promise.resolve({ restWhere, restOptions });
 
@@ -72,7 +73,8 @@ async function RestQuery({
     result.restOptions || restOptions,
     clientSDK,
     runAfterFind,
-    context
+    context,
+    isGet
   );
 }
 
@@ -101,7 +103,8 @@ function _UnsafeRestQuery(
   restOptions = {},
   clientSDK,
   runAfterFind = true,
-  context
+  context,
+  isGet
 ) {
   this.config = config;
   this.auth = auth;
@@ -113,6 +116,7 @@ function _UnsafeRestQuery(
   this.response = null;
   this.findOptions = {};
   this.context = context || {};
+  this.isGet = isGet;
   if (!this.auth.isMaster) {
     if (this.className == '_Session') {
       if (!this.auth.user) {
@@ -914,7 +918,8 @@ _UnsafeRestQuery.prototype.runAfterFindTrigger = function () {
       this.response.results,
       this.config,
       parseQuery,
-      this.context
+      this.context,
+      this.isGet
     )
     .then(results => {
       // Ensure we properly set the className back

@@ -202,6 +202,346 @@ describe('Cloud Code', () => {
     }
   });
 
+  describe('beforeFind without DB operations', () => {
+    let findSpy;
+
+    beforeEach(() => {
+      const config = Config.get('test');
+      const databaseAdapter = config.database.adapter;
+      findSpy = spyOn(databaseAdapter, 'find').and.callThrough();
+    });
+
+    it('beforeFind can return object without DB operation', async () => {
+      Parse.Cloud.beforeFind('TestObject', () => {
+        return new Parse.Object('TestObject', { foo: 'bar' });
+      });
+      Parse.Cloud.afterFind('TestObject', req => {
+        expect(req.objects).toBeDefined();
+        expect(req.objects[0].get('foo')).toBe('bar');
+      });
+
+      const newObj = await new Parse.Query('TestObject').first();
+      expect(newObj.className).toBe('TestObject');
+      expect(newObj.toJSON()).toEqual({ foo: 'bar' });
+      expect(findSpy).not.toHaveBeenCalled();
+      await newObj.save();
+    });
+
+    it('beforeFind can return array of objects without DB operation', async () => {
+      Parse.Cloud.beforeFind('TestObject', () => {
+        return [new Parse.Object('TestObject', { foo: 'bar' })];
+      });
+      Parse.Cloud.afterFind('TestObject', req => {
+        expect(req.objects).toBeDefined();
+        expect(req.objects[0].get('foo')).toBe('bar');
+      });
+
+      const newObj = await new Parse.Query('TestObject').first();
+      expect(newObj.className).toBe('TestObject');
+      expect(newObj.toJSON()).toEqual({ foo: 'bar' });
+      expect(findSpy).not.toHaveBeenCalled();
+      await newObj.save();
+    });
+
+    it('beforeFind can return object for get query without DB operation', async () => {
+      Parse.Cloud.beforeFind('TestObject', () => {
+        return [new Parse.Object('TestObject', { foo: 'bar' })];
+      });
+      Parse.Cloud.afterFind('TestObject', req => {
+        expect(req.objects).toBeDefined();
+        expect(req.objects[0].get('foo')).toBe('bar');
+      });
+
+      const testObj = new Parse.Object('TestObject');
+      await testObj.save();
+      findSpy.calls.reset();
+
+      const newObj = await new Parse.Query('TestObject').get(testObj.id);
+      expect(newObj.className).toBe('TestObject');
+      expect(newObj.toJSON()).toEqual({ foo: 'bar' });
+      expect(findSpy).not.toHaveBeenCalled();
+      await newObj.save();
+    });
+
+    it('beforeFind can return empty array without DB operation', async () => {
+      Parse.Cloud.beforeFind('TestObject', () => {
+        return [];
+      });
+      Parse.Cloud.afterFind('TestObject', req => {
+        expect(req.objects.length).toBe(0);
+      });
+
+      const obj = new Parse.Object('TestObject');
+      await obj.save();
+      findSpy.calls.reset();
+
+      const newObj = await new Parse.Query('TestObject').first();
+      expect(newObj).toBeUndefined();
+      expect(findSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('beforeFind security with returned objects', () => {
+    let userA;
+    let userB;
+    let secret;
+
+    beforeEach(async () => {
+      userA = new Parse.User();
+      userA.setUsername('userA_' + Date.now());
+      userA.setPassword('passA');
+      await userA.signUp();
+
+      userB = new Parse.User();
+      userB.setUsername('userB_' + Date.now());
+      userB.setPassword('passB');
+      await userB.signUp();
+
+      // Create an object readable only by userB
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(false);
+      acl.setPublicWriteAccess(false);
+      acl.setReadAccess(userB.id, true);
+      acl.setWriteAccess(userB.id, true);
+
+      secret = new Parse.Object('SecretDoc');
+      secret.set('title', 'top');
+      secret.set('content', 'classified');
+      secret.setACL(acl);
+      await secret.save(null, { sessionToken: userB.getSessionToken() });
+
+      Parse.Cloud.beforeFind('SecretDoc', () => {
+        return [secret];
+      });
+    });
+
+    it('should not expose objects not readable by current user', async () => {
+      const q = new Parse.Query('SecretDoc');
+      const results = await q.find({ sessionToken: userA.getSessionToken() });
+      expect(results.length).toBe(0);
+    });
+
+    it('should allow authorized user to see their objects', async () => {
+      const q = new Parse.Query('SecretDoc');
+      const results = await q.find({ sessionToken: userB.getSessionToken() });
+      expect(results.length).toBe(1);
+      expect(results[0].id).toBe(secret.id);
+      expect(results[0].get('title')).toBe('top');
+      expect(results[0].get('content')).toBe('classified');
+    });
+
+    it('should return OBJECT_NOT_FOUND on get() for unauthorized user', async () => {
+      const q = new Parse.Query('SecretDoc');
+      await expectAsync(
+        q.get(secret.id, { sessionToken: userA.getSessionToken() })
+      ).toBeRejectedWith(jasmine.objectContaining({ code: Parse.Error.OBJECT_NOT_FOUND }));
+    });
+
+    it('should allow master key to bypass ACL filtering when returning objects', async () => {
+      const q = new Parse.Query('SecretDoc');
+      const results = await q.find({ useMasterKey: true });
+      expect(results.length).toBe(1);
+      expect(results[0].id).toBe(secret.id);
+    });
+
+    it('should apply protectedFields masking after re-filtering', async () => {
+      // Configure protectedFields for SecretMask: mask `secretField` for everyone
+      const protectedFields = { SecretMask: { '*': ['secretField'] } };
+      await reconfigureServer({ protectedFields });
+
+      const user = new Parse.User();
+      user.setUsername('pfUser');
+      user.setPassword('pfPass');
+      await user.signUp();
+
+      // Object is publicly readable but has a protected field
+      const doc = new Parse.Object('SecretMask');
+      doc.set('name', 'visible');
+      doc.set('secretField', 'hiddenValue');
+      await doc.save(null, { useMasterKey: true });
+
+      Parse.Cloud.beforeFind('SecretMask', () => {
+        return [doc];
+      });
+
+      // Query as normal user; after re-filtering, secretField should be removed
+      const res = await new Parse.Query('SecretMask').first({ sessionToken: user.getSessionToken() });
+      expect(res).toBeDefined();
+      expect(res.get('name')).toBe('visible');
+      expect(res.get('secretField')).toBeUndefined();
+      const json = res.toJSON();
+      expect(Object.prototype.hasOwnProperty.call(json, 'secretField')).toBeFalse();
+    });
+  });
+  const { maybeRunAfterFindTrigger } = require('../lib/triggers');
+
+  describe('maybeRunAfterFindTrigger - direct function tests', () => {
+    const testConfig = {
+      applicationId: 'test',
+      logLevels: { triggerBeforeSuccess: 'info', triggerAfter: 'info' },
+    };
+
+    it('should convert Parse.Object instances to JSON when no trigger defined', async () => {
+      const className = 'TestParseObjectDirect_' + Date.now();
+
+      const parseObj1 = new Parse.Object(className);
+      parseObj1.set('name', 'test1');
+      parseObj1.id = 'obj1';
+
+      const parseObj2 = new Parse.Object(className);
+      parseObj2.set('name', 'test2');
+      parseObj2.id = 'obj2';
+
+      const result = await maybeRunAfterFindTrigger(
+        'afterFind',
+        null,
+        className,
+        [parseObj1, parseObj2],
+        testConfig,
+        null,
+        {}
+      );
+
+      expect(result).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBe(2);
+      expect(result[0].name).toBe('test1');
+      expect(result[1].name).toBe('test2');
+    });
+
+    it('should handle null/undefined objectsInput when no trigger', async () => {
+      const className = 'TestNullDirect_' + Date.now();
+
+      const resultNull = await maybeRunAfterFindTrigger(
+        'afterFind',
+        null,
+        className,
+        null,
+        testConfig,
+        null,
+        {}
+      );
+      expect(resultNull).toEqual([]);
+
+      const resultUndefined = await maybeRunAfterFindTrigger(
+        'afterFind',
+        null,
+        className,
+        undefined,
+        testConfig,
+        null,
+        {}
+      );
+      expect(resultUndefined).toEqual([]);
+
+      const resultEmpty = await maybeRunAfterFindTrigger(
+        'afterFind',
+        null,
+        className,
+        [],
+        testConfig,
+        null,
+        {}
+      );
+      expect(resultEmpty).toEqual([]);
+    });
+
+    it('should handle plain object query with where clause', async () => {
+      const className = 'TestQueryWhereDirect_' + Date.now();
+      let receivedQuery = null;
+
+      Parse.Cloud.afterFind(className, req => {
+        receivedQuery = req.query;
+        return req.objects;
+      });
+
+      const mockObject = { id: 'test123', className: className, name: 'test' };
+
+      const result = await maybeRunAfterFindTrigger(
+        'afterFind',
+        null,
+        className,
+        [mockObject],
+        testConfig,
+        { where: { name: 'test' }, limit: 10 },
+        {}
+      );
+
+      expect(receivedQuery).toBeInstanceOf(Parse.Query);
+      expect(result).toBeDefined();
+    });
+
+    it('should handle plain object query without where clause', async () => {
+      const className = 'TestQueryNoWhereDirect_' + Date.now();
+      let receivedQuery = null;
+
+      Parse.Cloud.afterFind(className, req => {
+        receivedQuery = req.query;
+        return req.objects;
+      });
+
+      const mockObject = { id: 'test456', className: className, name: 'test' };
+      const pq = new Parse.Query(className).withJSON({ limit: 5, skip: 1 });
+
+      const result = await maybeRunAfterFindTrigger(
+        'afterFind',
+        null,
+        className,
+        [mockObject],
+        testConfig,
+        pq,
+        {}
+      );
+
+      expect(receivedQuery).toBeInstanceOf(Parse.Query);
+      const qJSON = receivedQuery.toJSON();
+      expect(qJSON.limit).toBe(5);
+      expect(qJSON.skip).toBe(1);
+      expect(qJSON.where).toEqual({});
+      expect(result).toBeDefined();
+    });
+
+    it('should create default query for invalid query parameter', async () => {
+      const className = 'TestInvalidQueryDirect_' + Date.now();
+      let receivedQuery = null;
+
+      Parse.Cloud.afterFind(className, req => {
+        receivedQuery = req.query;
+        return req.objects;
+      });
+
+      const mockObject = { id: 'test789', className: className, name: 'test' };
+
+      await maybeRunAfterFindTrigger(
+        'afterFind',
+        null,
+        className,
+        [mockObject],
+        testConfig,
+        'invalid_query_string',
+        {}
+      );
+
+      expect(receivedQuery).toBeInstanceOf(Parse.Query);
+      expect(receivedQuery.className).toBe(className);
+
+      receivedQuery = null;
+
+      await maybeRunAfterFindTrigger(
+        'afterFind',
+        null,
+        className,
+        [mockObject],
+        testConfig,
+        null,
+        {}
+      );
+
+      expect(receivedQuery).toBeInstanceOf(Parse.Query);
+      expect(receivedQuery.className).toBe(className);
+    });
+  });
+
   it('beforeSave rejection with custom error code', function (done) {
     Parse.Cloud.beforeSave('BeforeSaveFailWithErrorCode', function () {
       throw new Parse.Error(999, 'Nope');
