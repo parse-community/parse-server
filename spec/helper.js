@@ -252,6 +252,8 @@ afterEach(global.afterEachFn);
 
 afterAll(() => {
   global.displayTestStats();
+  // restore fetch
+  global.restoreFetch();
 });
 
 const TestObject = Parse.Object.extend({
@@ -387,10 +389,28 @@ function mockShortLivedAuth() {
   return auth;
 }
 
+const originalFetch = global.fetch;
+
+global.restoreFetch = () => {
+  global.fetch = originalFetch;
+}
+
 function mockFetch(mockResponses) {
-  global.fetch = jasmine.createSpy('fetch').and.callFake((url, options = { }) => {
+  const spy = jasmine.createSpy('fetch');
+
+  global.fetch = (url, options = {}) => {
+    // Allow requests to the Parse Server to pass through WITHOUT recording in spy
+    // This prevents tests from failing when they check that fetch wasn't called
+    // but the Parse SDK makes internal requests to the Parse Server
+    if (typeof url === 'string' && url.includes(serverURL)) {
+      return originalFetch(url, options);
+    }
+
+    // Record non-Parse-Server calls in the spy
+    spy(url, options);
+
     options.method ||= 'GET';
-    const mockResponse = mockResponses.find(
+    const mockResponse = mockResponses?.find(
       (mock) => mock.url === url && mock.method === options.method
     );
 
@@ -402,7 +422,11 @@ function mockFetch(mockResponses) {
       ok: false,
       statusText: 'Unknown URL or method',
     });
-  });
+  };
+
+  // Expose spy methods for test assertions
+  global.fetch.calls = spy.calls;
+  global.fetch.and = spy.and;
 }
 
 
