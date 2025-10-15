@@ -1075,7 +1075,7 @@ module.exports.FileUploadOptions = {
   uriSourceEnabled: {
     env: 'PARSE_SERVER_FILE_UPLOAD_URI_SOURCE_ENABLED',
     help:
-      'Enables or disables uploading a file by providing a URI. If set to `false`, file uploads via URI are completely disabled. Default is `true` to maintain backward compatibility. This will be set to `false` by default in Parse Server 9.',
+      "Enables or disables uploading a file by providing a URI. If set to `false`, file uploads via URI are completely disabled. Default is `true`.<br><br>Enabling this option allows users to upload files from a remote location by providing a URI, for example `new Parse.File('test.txt', { uri })`. Parse Server will fetch the file from the provided URI and store it in its configured file storage.<br><br>\u26A0\uFE0F Allowing URI uploads can introduce security risks, such as SSRF (Server-Side Request Forgery) attacks. It is crucial to validate and sanitize any user-provided URIs to mitigate these risks. Consider implementing additional security measures, such as restricting allowed URI patterns, validating the source of the URI, and limiting the types of files that can be uploaded. For enhanced security, it is recommended to use this option in conjunction with `uriSourceRegex`, `uriSourceIpsAllowed`, and `uriSourceIpsDenied` to tightly control which URIs are permissible for file uploads.",
     action: parsers.booleanParser,
     default: true,
   },
