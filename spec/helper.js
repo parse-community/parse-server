@@ -7,6 +7,15 @@ const { SpecReporter } = require('jasmine-spec-reporter');
 const SchemaCache = require('../lib/Adapters/Cache/SchemaCache').default;
 const { sleep, Connections } = require('../lib/TestUtils');
 
+const originalFetch = global.fetch;
+let fetchWasMocked = false;
+
+global.restoreFetch = () => {
+  global.fetch = originalFetch;
+  fetchWasMocked = false;
+}
+
+
 // Ensure localhost resolves to ipv4 address first on node v17+
 if (dns.setDefaultResultOrder) {
   dns.setDefaultResultOrder('ipv4first');
@@ -205,6 +214,7 @@ const reconfigureServer = async (changedConfiguration = {}) => {
 };
 
 beforeAll(async () => {
+  global.restoreFetch();
   await reconfigureServer();
   Parse.initialize('test', 'test', 'test');
   Parse.serverURL = serverURL;
@@ -213,6 +223,11 @@ beforeAll(async () => {
 });
 
 global.afterEachFn = async () => {
+  // Restore fetch to prevent mock pollution between tests (only if it was mocked)
+  if (fetchWasMocked) {
+    global.restoreFetch();
+  }
+
   Parse.Cloud._removeAllHooks();
   Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient();
   defaults.protectedFields = { _User: { '*': ['email'] } };
@@ -251,9 +266,8 @@ global.afterEachFn = async () => {
 afterEach(global.afterEachFn);
 
 afterAll(() => {
-  global.displayTestStats();
-  // restore fetch
   global.restoreFetch();
+  global.displayTestStats();
 });
 
 const TestObject = Parse.Object.extend({
@@ -389,14 +403,9 @@ function mockShortLivedAuth() {
   return auth;
 }
 
-const originalFetch = global.fetch;
-
-global.restoreFetch = () => {
-  global.fetch = originalFetch;
-}
-
 function mockFetch(mockResponses) {
   const spy = jasmine.createSpy('fetch');
+  fetchWasMocked = true; // Track that fetch was mocked for cleanup
 
   global.fetch = (url, options = {}) => {
     // Allow requests to the Parse Server to pass through WITHOUT recording in spy
