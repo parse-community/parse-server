@@ -343,7 +343,7 @@ export interface ParseServerOptions {
   :DEFAULT: [] */
   rateLimit: ?(RateLimitOptions[]);
   /* Options to customize the request context using inversion of control/dependency injection.*/
-  requestContextMiddleware: ?(req: any, res: any, next: any) => void;
+  requestContextMiddleware: ?((req: any, res: any, next: any) => void);
 }
 
 export interface RateLimitOptions {
