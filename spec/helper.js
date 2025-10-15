@@ -222,6 +222,12 @@ beforeAll(async () => {
   Parse.CoreManager.set('REQUEST_ATTEMPT_LIMIT', 1);
 });
 
+beforeEach(async () => {
+  if(fetchWasMocked) {
+    global.restoreFetch();
+  }
+});
+
 global.afterEachFn = async () => {
   // Restore fetch to prevent mock pollution between tests (only if it was mocked)
   if (fetchWasMocked) {
