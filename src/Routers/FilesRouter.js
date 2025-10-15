@@ -5,26 +5,200 @@ import Config from '../Config';
 import logger from '../logger';
 const triggers = require('../triggers');
 const http = require('http');
+const https = require('https');
+const url = require('url');
+const dns = require('dns');
+const { promisify } = require('util');
+const { BlockList, isIPv4 } = require('net');
 const Utils = require('../Utils');
 
-const downloadFileFromURI = uri => {
+const dnsLookup = promisify(dns.lookup);
+
+/**
+ * Creates a BlockList from an array of IP ranges
+ * @param {string[]} ipRangeList - Array of IP addresses or CIDR notations
+ * @returns {Object} - Object with blockList and flags for allowing all IPs
+ */
+const createBlockList = (ipRangeList) => {
+  const blockList = new BlockList();
+  const flags = {
+    allowAllIpv4: false,
+    allowAllIpv6: false,
+  };
+
+  ipRangeList.forEach(fullIp => {
+    if (fullIp === '::/0' || fullIp === '::0') {
+      flags.allowAllIpv6 = true;
+      return;
+    }
+    if (fullIp === '0.0.0.0/0' || fullIp === '0.0.0.0') {
+      flags.allowAllIpv4 = true;
+      return;
+    }
+    const [ip, mask] = fullIp.split('/');
+    if (!mask) {
+      blockList.addAddress(ip, isIPv4(ip) ? 'ipv4' : 'ipv6');
+    } else {
+      blockList.addSubnet(ip, Number(mask), isIPv4(ip) ? 'ipv4' : 'ipv6');
+    }
+  });
+
+  return { blockList, ...flags };
+};
+
+/**
+ * Checks if an IP matches any CIDR in the list
+ * @param {string} ip - The IP address to check
+ * @param {string[]} ipRangeList - Array of CIDR notations
+ * @returns {boolean} - True if IP matches any CIDR
+ */
+const checkIpInList = (ip, ipRangeList) => {
+  if (!ipRangeList || ipRangeList.length === 0) {
+    return false;
+  }
+
+  const incomingIpIsV4 = isIPv4(ip);
+  const { blockList, allowAllIpv4, allowAllIpv6 } = createBlockList(ipRangeList);
+
+  if (allowAllIpv4 && incomingIpIsV4) {
+    return true;
+  }
+  if (allowAllIpv6 && !incomingIpIsV4) {
+    return true;
+  }
+
+  return blockList.check(ip, incomingIpIsV4 ? 'ipv4' : 'ipv6');
+};
+
+/**
+ * Downloads a file from a URI with security validation
+ * @param {string} uri - The URI to download from
+ * @param {Object} config - Parse Server configuration
+ * @returns {Promise<string>} - Base64 encoded file data
+ */
+const downloadFileFromURI = async (uri, config) => {
+  const fileUploadConfig = config.fileUpload;
+
+  // Check if URI source is enabled
+  if (fileUploadConfig.uriSourceEnabled === false) {
+    throw new Parse.Error(
+      Parse.Error.FILE_SAVE_ERROR,
+      'File upload from URI is disabled.'
+    );
+  }
+
+  // Validate URI against regex pattern
+  const regex = new RegExp(fileUploadConfig.uriSourceRegex);
+  if (!regex.test(uri)) {
+    throw new Parse.Error(
+      Parse.Error.FILE_SAVE_ERROR,
+      `URI does not match allowed pattern.`
+    );
+  }
+
+  // Parse the URI
+  let parsedUrl;
+  try {
+    parsedUrl = new url.URL(uri);
+  } catch (e) {
+    throw new Parse.Error(
+      Parse.Error.FILE_SAVE_ERROR,
+      `Invalid URI format: ${e.message}`
+    );
+  }
+
+  // Only allow HTTP and HTTPS protocols
+  if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+    throw new Parse.Error(
+      Parse.Error.FILE_SAVE_ERROR,
+      'Only HTTP and HTTPS protocols are allowed for URI uploads.'
+    );
+  }
+
+  // Resolve hostname to IP address
+  // Note: parsedUrl.hostname includes brackets for IPv6 (e.g., [::1])
+  // but dns.lookup doesn't accept brackets, so we need to strip them
+  let hostname = parsedUrl.hostname;
+  if (hostname.startsWith('[') && hostname.endsWith(']')) {
+    hostname = hostname.slice(1, -1);
+  }
+
+  let ipAddress;
+  try {
+    const result = await dnsLookup(hostname);
+    ipAddress = result.address;
+  } catch (e) {
+    throw new Parse.Error(
+      Parse.Error.FILE_SAVE_ERROR,
+      `Failed to resolve hostname: ${e.message}`
+    );
+  }
+
+  // Check IP against denied list (takes precedence)
+  if (fileUploadConfig.uriSourceIpsDenied.length > 0 && checkIpInList(ipAddress, fileUploadConfig.uriSourceIpsDenied)) {
+    throw new Parse.Error(
+      Parse.Error.FILE_SAVE_ERROR,
+      'URI resolves to a denied IP address.'
+    );
+  }
+
+  // Check IP against allowed list
+  if (!checkIpInList(ipAddress, fileUploadConfig.uriSourceIpsAllowed)) {
+    throw new Parse.Error(
+      Parse.Error.FILE_SAVE_ERROR,
+      'URI resolves to a non-allowed IP address.'
+    );
+  }
+
+  // Get timeout from config (already has default applied)
+  const timeout = fileUploadConfig.uriSourceTimeout;
+
   return new Promise((res, rej) => {
-    http
-      .get(uri, response => {
-        response.setDefaultEncoding('base64');
-        let body = `data:${response.headers['content-type']};base64,`;
-        response.on('data', data => (body += data));
-        response.on('end', () => res(body));
-      })
-      .on('error', e => {
-        rej(`Error downloading file from ${uri}: ${e.message}`);
+    const protocol = parsedUrl.protocol === 'https:' ? https : http;
+
+    const request = protocol.get(uri, { timeout }, response => {
+      // Node.js http.get does not follow redirects automatically
+      // Any redirect (3xx) response will be rejected as non-200
+      if (response.statusCode !== 200) {
+        rej(new Parse.Error(
+          Parse.Error.FILE_SAVE_ERROR,
+          `Failed to download file: HTTP ${response.statusCode}`
+        ));
+        return;
+      }
+
+      response.setDefaultEncoding('base64');
+      let body = `data:${response.headers['content-type']};base64,`;
+      response.on('data', data => (body += data));
+      response.on('end', () => res(body));
+      response.on('error', e => {
+        rej(new Parse.Error(
+          Parse.Error.FILE_SAVE_ERROR,
+          `Error downloading file from ${uri}: ${e.message}`
+        ));
       });
+    });
+
+    request.on('timeout', () => {
+      request.destroy();
+      rej(new Parse.Error(
+        Parse.Error.FILE_SAVE_ERROR,
+        `Download timeout after ${timeout}ms`
+      ));
+    });
+
+    request.on('error', e => {
+      rej(new Parse.Error(
+        Parse.Error.FILE_SAVE_ERROR,
+        `Error downloading file from ${uri}: ${e.message}`
+      ));
+    });
   });
 };
 
-const addFileDataIfNeeded = async file => {
+const addFileDataIfNeeded = async (file, config) => {
   if (file._source.format === 'uri') {
-    const base64 = await downloadFileFromURI(file._source.uri);
+    const base64 = await downloadFileFromURI(file._source.uri, config);
     file._previousSave = file;
     file._data = base64;
     file._requestTask = null;
@@ -248,7 +422,7 @@ export class FilesRouter {
       // if the file returned by the trigger has already been saved skip saving anything
       if (!saveResult) {
         // if the ParseFile returned is type uri, download the file before saving it
-        await addFileDataIfNeeded(fileObject.file);
+        await addFileDataIfNeeded(fileObject.file, config);
         // update fileSize
         const bufferData = Buffer.from(fileObject.file._data, 'base64');
         fileObject.fileSize = Buffer.byteLength(bufferData);
