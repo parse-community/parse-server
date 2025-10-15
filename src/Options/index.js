@@ -603,21 +603,6 @@ export interface FileUploadOptions {
   /* Is true if file upload should be allowed for anyone, regardless of user authentication.
   :DEFAULT: false */
   enableForPublic: ?boolean;
-  /* Enables or disables uploading a file by providing a URI. If set to `false`, file uploads via URI are completely disabled. Default is `true` to maintain backward compatibility. This will be set to `false` by default in Parse Server 9.
-  :DEFAULT: true */
-  uriSourceEnabled: ?boolean;
-  /* Specifies the regex pattern that a provided upload URI must match to be allowed. The default is `.*` which allows any URI. For example, to allow only HTTPS on port 80 or 8080 with hostname `example.org` use `^https://example\.org:(80|8080)/.*$`.
-  :DEFAULT: .* */
-  uriSourceRegex: ?string;
-  /* Specifies the array of CIDR notations of IP addresses that are allowed for URI upload. The default is `['0.0.0.0/0', '::0']` which allows all IPv4 and IPv6 addresses.
-  :DEFAULT: ["0.0.0.0/0", "::0"] */
-  uriSourceIpsAllowed: ?(string[]);
-  /* Specifies the array of CIDR notations of IP addresses that are denied for URI upload. This takes precedence over `uriSourceIpsAllowed`. The default is `[]` which denies no IPs.
-  :DEFAULT: [] */
-  uriSourceIpsDenied: ?(string[]);
-  /* Specifies the timeout in milliseconds after which a URI download is cancelled. The default is `60000` (60 seconds).
-  :DEFAULT: 60000 */
-  uriSourceTimeout: ?number;
 }
 
 export interface DatabaseOptions {
