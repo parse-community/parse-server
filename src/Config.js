@@ -494,35 +494,6 @@ export class Config {
     } else if (!Array.isArray(fileUpload.fileExtensions)) {
       throw 'fileUpload.fileExtensions must be an array.';
     }
-    if (fileUpload.uriSourceEnabled === undefined) {
-      fileUpload.uriSourceEnabled = FileUploadOptions.uriSourceEnabled.default;
-    } else if (typeof fileUpload.uriSourceEnabled !== 'boolean') {
-      throw 'fileUpload.uriSourceEnabled must be a boolean value.';
-    }
-    if (fileUpload.uriSourceRegex === undefined) {
-      fileUpload.uriSourceRegex = FileUploadOptions.uriSourceRegex.default;
-    } else if (typeof fileUpload.uriSourceRegex !== 'string') {
-      throw 'fileUpload.uriSourceRegex must be a string.';
-    }
-    if (fileUpload.uriSourceIpsAllowed === undefined) {
-      fileUpload.uriSourceIpsAllowed = FileUploadOptions.uriSourceIpsAllowed.default;
-    } else if (!Array.isArray(fileUpload.uriSourceIpsAllowed)) {
-      throw 'fileUpload.uriSourceIpsAllowed must be an array.';
-    } else {
-      this.validateIps('fileUpload.uriSourceIpsAllowed', fileUpload.uriSourceIpsAllowed);
-    }
-    if (fileUpload.uriSourceIpsDenied === undefined) {
-      fileUpload.uriSourceIpsDenied = FileUploadOptions.uriSourceIpsDenied.default;
-    } else if (!Array.isArray(fileUpload.uriSourceIpsDenied)) {
-      throw 'fileUpload.uriSourceIpsDenied must be an array.';
-    } else {
-      this.validateIps('fileUpload.uriSourceIpsDenied', fileUpload.uriSourceIpsDenied);
-    }
-    if (fileUpload.uriSourceTimeout === undefined) {
-      fileUpload.uriSourceTimeout = FileUploadOptions.uriSourceTimeout.default;
-    } else if (typeof fileUpload.uriSourceTimeout !== 'number' || fileUpload.uriSourceTimeout <= 0) {
-      throw 'fileUpload.uriSourceTimeout must be a positive number.';
-    }
   }
 
   static validateIps(field, masterKeyIps) {
