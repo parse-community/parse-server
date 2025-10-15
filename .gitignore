@@ -61,3 +61,4 @@ lib/
 
 # Redis Dump
 dump.rdb
+/.claude
