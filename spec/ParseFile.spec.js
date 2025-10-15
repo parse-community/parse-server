@@ -653,6 +653,79 @@ describe('Parse.File testing', () => {
         done();
       });
     });
+
+    describe('URI-backed file upload is disabled to prevent SSRF attack', () => {
+      const express = require('express');
+      let testServer;
+      let testServerPort;
+      let requestsMade;
+
+      beforeEach(async () => {
+        requestsMade = [];
+        const app = express();
+        app.use((req, res) => {
+          requestsMade.push({ url: req.url, method: req.method });
+          res.status(200).send('test file content');
+        });
+        testServer = app.listen(0);
+        testServerPort = testServer.address().port;
+      });
+
+      afterEach(async () => {
+        if (testServer) {
+          await new Promise(resolve => testServer.close(resolve));
+        }
+      });
+
+      it('does not access URI when file upload attempted over REST', async () => {
+        const response = await request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/classes/TestClass',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          body: {
+            file: {
+              __type: 'File',
+              name: 'test.txt',
+              _source: {
+                format: 'uri',
+                uri: `http://127.0.0.1:${testServerPort}/secret-file.txt`,
+              },
+            },
+          },
+        });
+        expect(response.status).toBe(201);
+        // Verify no HTTP request was made to the URI
+        expect(requestsMade.length).toBe(0);
+      });
+
+      it('does not access URI when file created in beforeSave trigger', async () => {
+        Parse.Cloud.beforeSave(Parse.File, () => {
+          return new Parse.File('trigger-file.txt', {
+            uri: `http://127.0.0.1:${testServerPort}/secret-file.txt`,
+          });
+        });
+        try {
+          await request({
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/octet-stream',
+              'X-Parse-Application-Id': 'test',
+              'X-Parse-REST-API-Key': 'rest',
+            },
+            url: 'http://localhost:8378/1/files/test.txt',
+            body: 'test content',
+          });
+        } catch (error) {
+          expect(error.status).toBe(400);
+        }
+        // Verify no HTTP request was made to the URI
+        expect(requestsMade.length).toBe(0);
+      });
+    });
   });
 
   describe('deleting files', () => {
