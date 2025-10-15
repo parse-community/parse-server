@@ -1072,6 +1072,40 @@ module.exports.FileUploadOptions = {
     action: parsers.arrayParser,
     default: ['^(?!(h|H)(t|T)(m|M)(l|L)?$)'],
   },
+  uriSourceEnabled: {
+    env: 'PARSE_SERVER_FILE_UPLOAD_URI_SOURCE_ENABLED',
+    help:
+      'Enables or disables uploading a file by providing a URI. If set to `false`, file uploads via URI are completely disabled. Default is `true` to maintain backward compatibility. This will be set to `false` by default in Parse Server 9.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  uriSourceIpsAllowed: {
+    env: 'PARSE_SERVER_FILE_UPLOAD_URI_SOURCE_IPS_ALLOWED',
+    help:
+      "Specifies the array of CIDR notations of IP addresses that are allowed for URI upload. The default is `['0.0.0.0/0', '::0']` which allows all IPv4 and IPv6 addresses.",
+    action: parsers.arrayParser,
+    default: ['0.0.0.0/0', '::0'],
+  },
+  uriSourceIpsDenied: {
+    env: 'PARSE_SERVER_FILE_UPLOAD_URI_SOURCE_IPS_DENIED',
+    help:
+      'Specifies the array of CIDR notations of IP addresses that are denied for URI upload. This takes precedence over `uriSourceIpsAllowed`. The default is `[]` which denies no IPs.',
+    action: parsers.arrayParser,
+    default: [],
+  },
+  uriSourceRegex: {
+    env: 'PARSE_SERVER_FILE_UPLOAD_URI_SOURCE_REGEX',
+    help:
+      'Specifies the regex pattern that a provided upload URI must match to be allowed. The default is `.*` which allows any URI. For example, to allow only HTTPS on port 80 or 8080 with hostname `example.org` use `^https://example\\.org:(80|8080)/.*$`.',
+    default: '.*',
+  },
+  uriSourceTimeout: {
+    env: 'PARSE_SERVER_FILE_UPLOAD_URI_SOURCE_TIMEOUT',
+    help:
+      'Specifies the timeout in milliseconds after which a URI download is cancelled. The default is `60000` (60 seconds).',
+    action: parsers.numberParser('uriSourceTimeout'),
+    default: 60000,
+  },
 };
 module.exports.DatabaseOptions = {
   autoSelectFamily: {

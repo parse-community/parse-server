@@ -235,6 +235,11 @@
  * @property {Boolean} enableForAuthenticatedUser Is true if file upload should be allowed for authenticated users.
  * @property {Boolean} enableForPublic Is true if file upload should be allowed for anyone, regardless of user authentication.
  * @property {String[]} fileExtensions Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML files are especially problematic as they may be used by an attacker who uploads a HTML form to look legitimate under your app's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^(?!(h|H)(t|T)(m|M)(l|L)?$)` which allows any file extension except HTML files.
+ * @property {Boolean} uriSourceEnabled Enables or disables uploading a file by providing a URI. If set to `false`, file uploads via URI are completely disabled. Default is `true` to maintain backward compatibility. This will be set to `false` by default in Parse Server 9.
+ * @property {String[]} uriSourceIpsAllowed Specifies the array of CIDR notations of IP addresses that are allowed for URI upload. The default is `['0.0.0.0/0', '::0']` which allows all IPv4 and IPv6 addresses.
+ * @property {String[]} uriSourceIpsDenied Specifies the array of CIDR notations of IP addresses that are denied for URI upload. This takes precedence over `uriSourceIpsAllowed`. The default is `[]` which denies no IPs.
+ * @property {String} uriSourceRegex Specifies the regex pattern that a provided upload URI must match to be allowed. The default is `.*` which allows any URI. For example, to allow only HTTPS on port 80 or 8080 with hostname `example.org` use `^https://example\.org:(80|8080)/.*$`.
+ * @property {Number} uriSourceTimeout Specifies the timeout in milliseconds after which a URI download is cancelled. The default is `60000` (60 seconds).
  */
 
 /**
