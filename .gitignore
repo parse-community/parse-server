@@ -61,4 +61,6 @@ lib/
 
 # Redis Dump
 dump.rdb
-/.claude
+
+# AI agents
+.claude
