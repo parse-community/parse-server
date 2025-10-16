@@ -25,7 +25,7 @@ describe('Cloud Code Logger', () => {
     })
       .then(() => {
         return Parse.User.signUp('tester', 'abc')
-          .catch(() => {})
+          .catch(() => { })
           .then(loggedInUser => (user = loggedInUser))
           .then(() => Parse.User.logIn(user.get('username'), 'abc'));
       })
@@ -139,7 +139,7 @@ describe('Cloud Code Logger', () => {
   });
 
   it_id('9857e15d-bb18-478d-8a67-fdaad3e89565')(it)('should log an afterSave', done => {
-    Parse.Cloud.afterSave('MyObject', () => {});
+    Parse.Cloud.afterSave('MyObject', () => { });
     new Parse.Object('MyObject')
       .save()
       .then(() => {
@@ -383,22 +383,39 @@ describe('Cloud Code Logger', () => {
         triggerBeforeError: 'silent',
       },
     });
+
+    let afterSaveCompleted;
+    const afterSavePromise = new Promise(resolve => {
+      afterSaveCompleted = resolve;
+    });
+
     Parse.Cloud.beforeSave('TestClassError', () => {
       throw new Error('Failed');
     });
-    Parse.Cloud.beforeSave('TestClass', () => {});
-    Parse.Cloud.afterSave('TestClass', () => {});
+    Parse.Cloud.beforeSave('TestClass', () => { });
+    Parse.Cloud.afterSave('TestClass', async () => {
+      try {
+        // Ensure afterSave completes without errors
+        afterSaveCompleted();
+      } catch (e) {
+        // Prevent unhandled rejections
+        afterSaveCompleted();
+      }
+    });
 
     spy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
 
     const obj = new Parse.Object('TestClass');
     await obj.save();
-    // Wait for afterSave to complete
+    // Wait for afterSave to actually complete
+    await afterSavePromise;
     await new Promise(resolve => setTimeout(resolve, 100));
     expect(spy).toHaveBeenCalledTimes(0);
 
     const objError = new Parse.Object('TestClassError');
     await expectAsync(objError.save()).toBeRejected();
+    // Wait for any async error handling to complete
+    await new Promise(resolve => setTimeout(resolve, 100));
     // Not "beforeSave failed for TestClassError for user ..."
     expect(spy).toHaveBeenCalledTimes(1);
   });
