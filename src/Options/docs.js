@@ -103,6 +103,7 @@
  * @property {String} serverURL URL to your parse server with http:// or https://.
  * @property {Number} sessionLength Session duration, in seconds, defaults to 1 year
  * @property {Boolean} silent Disables console output
+ * @property {Boolean} skipVerifyServerUrl Set to `true` to skip the server URL verification on startup. This can be useful in environments where the server URL is not accessible from the server itself, such as when running behind a firewall, in certain containerized environments, or in test environments like Jest where the verification may cause issues or unnecessary delays during test execution.<br><br>Default is `false`.
  * @property {Boolean} startLiveQueryServer Starts the liveQuery server
  * @property {Any} trustProxy The trust proxy settings. It is important to understand the exact setup of the reverse proxy, since this setting will trust values provided in the Parse Server API request. See the <a href="https://expressjs.com/en/guide/behind-proxies.html">express trust proxy settings</a> documentation. Defaults to `false`.
  * @property {String[]} userSensitiveFields Personally identifiable information fields in the user table the should be removed for non-authorized users. Deprecated @see protectedFields

@@ -296,7 +296,14 @@ class ParseServer {
    * Create an express app for the parse server
    * @param {Object} options let you specify the maxUploadSize when creating the express app  */
   static app(options) {
-    const { maxUploadSize = '20mb', appId, directAccess, pages, rateLimit = [] } = options;
+    const {
+      maxUploadSize = '20mb',
+      appId,
+      directAccess,
+      pages,
+      rateLimit = [],
+      skipVerifyServerUrl,
+    } = options;
     // This app serves the Parse API directly.
     // It's the equivalent of https://api.parse.com/1 in the hosted Parse API.
     var api = express();
@@ -367,10 +374,12 @@ class ParseServer {
       });
       // verify the server url after a 'mount' event is received
       /* istanbul ignore next */
-      api.on('mount', async function () {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        ParseServer.verifyServerUrl();
-      });
+      if (!skipVerifyServerUrl) {
+        api.on('mount', async function () {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          ParseServer.verifyServerUrl();
+        });
+      }
     }
     if (process.env.PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS === '1' || directAccess) {
       Parse.CoreManager.setRESTController(ParseServerRESTController(appId, appRouter));

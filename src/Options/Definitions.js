@@ -593,6 +593,13 @@ module.exports.ParseServerOptions = {
     help: 'Disables console output',
     action: parsers.booleanParser,
   },
+  skipVerifyServerUrl: {
+    env: 'PARSE_SERVER_SKIP_VERIFY_SERVER_URL',
+    help:
+      'Set to `true` to skip the server URL verification on startup. This can be useful in environments where the server URL is not accessible from the server itself, such as when running behind a firewall, in certain containerized environments, or in test environments like Jest where the verification may cause issues or unnecessary delays during test execution.<br><br>Default is `false`.',
+    action: parsers.booleanParser,
+    default: false,
+  },
   startLiveQueryServer: {
     env: 'PARSE_SERVER_START_LIVE_QUERY_SERVER',
     help: 'Starts the liveQuery server',
