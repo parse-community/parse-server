@@ -1743,6 +1743,12 @@ RestWrite.prototype.buildParseObjects = function () {
   const readOnlyAttributes = className.constructor.readOnlyAttributes
     ? className.constructor.readOnlyAttributes()
     : [];
+  // For _Role class, the 'name' field is read-only after the object has been saved
+  // Since _handleSaveResponse is called after buildParseObjects and sets the objectId,
+  // we need to exclude 'name' from being set to avoid "A role's name can only be set before it has been saved" error
+  if (this.className === '_Role' && !readOnlyAttributes.includes('name')) {
+    readOnlyAttributes.push('name');
+  }
   if (!this.originalData) {
     for (const attribute of readOnlyAttributes) {
       extraData[attribute] = this.data[attribute];

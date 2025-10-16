@@ -601,4 +601,34 @@ describe('Parse Role testing', () => {
       });
     });
   });
+
+  it('should trigger afterSave hook when using Parse.Role class reference', done => {
+    let afterSaveCalled = false;
+
+    Parse.Cloud.afterSave(Parse.Role, req => {
+      afterSaveCalled = true;
+      expect(req.object).toBeDefined();
+      expect(req.object.get('name')).toBe('AnotherTestRole');
+    });
+
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    const role = new Parse.Role('AnotherTestRole', acl);
+
+    role
+      .save({}, { useMasterKey: true })
+      .then(savedRole => {
+        expect(savedRole.id).toBeDefined();
+        // Give the afterSave hook some time to execute
+        return new Promise(resolve => setTimeout(resolve, 100));
+      })
+      .then(() => {
+        expect(afterSaveCalled).toBe(true);
+        done();
+      })
+      .catch(err => {
+        fail(`Should not have failed: ${err.message}`);
+        done();
+      });
+  });
 });
