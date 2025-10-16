@@ -602,7 +602,7 @@ describe('Parse Role testing', () => {
     });
   });
 
-  it('should trigger afterSave hook when using Parse.Role class reference', done => {
+  it('should trigger afterSave hook when using Parse.Role', done => {
     let afterSaveCalled = false;
 
     Parse.Cloud.afterSave(Parse.Role, req => {
@@ -624,6 +624,86 @@ describe('Parse Role testing', () => {
       })
       .then(() => {
         expect(afterSaveCalled).toBe(true);
+        done();
+      })
+      .catch(err => {
+        fail(`Should not have failed: ${err.message}`);
+        done();
+      });
+  });
+
+  it('should trigger beforeSave hook and allow modifying role in beforeSave', done => {
+    Parse.Cloud.beforeSave(Parse.Role, req => {
+      // Add a custom field in beforeSave
+      req.object.set('customField', 'addedInBeforeSave');
+    });
+
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    const role = new Parse.Role('ModifiedRole', acl);
+
+    role
+      .save({}, { useMasterKey: true })
+      .then(savedRole => {
+        expect(savedRole.id).toBeDefined();
+        expect(savedRole.get('customField')).toBe('addedInBeforeSave');
+        done();
+      })
+      .catch(err => {
+        fail(`Should not have failed: ${err.message}`);
+        done();
+      });
+  });
+
+  it('should trigger beforeSave hook using Parse.Role', done => {
+    let beforeSaveCalled = false;
+
+    Parse.Cloud.beforeSave(Parse.Role, req => {
+      beforeSaveCalled = true;
+      expect(req.object).toBeDefined();
+      expect(req.object.get('name')).toBe('BeforeSaveWithClassRef');
+    });
+
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    const role = new Parse.Role('BeforeSaveWithClassRef', acl);
+
+    role
+      .save({}, { useMasterKey: true })
+      .then(savedRole => {
+        expect(savedRole.id).toBeDefined();
+        expect(beforeSaveCalled).toBe(true);
+        done();
+      })
+      .catch(err => {
+        fail(`Should not have failed: ${err.message}`);
+        done();
+      });
+  });
+
+  it('should allow modifying role name in beforeSave hook', done => {
+    Parse.Cloud.beforeSave(Parse.Role, req => {
+      // Modify the role name in beforeSave
+      if (req.object.get('name') === 'OriginalName') {
+        req.object.set('name', 'ModifiedName');
+      }
+    });
+
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    const role = new Parse.Role('OriginalName', acl);
+
+    role
+      .save({}, { useMasterKey: true })
+      .then(savedRole => {
+        expect(savedRole.id).toBeDefined();
+        expect(savedRole.get('name')).toBe('ModifiedName');
+        // Verify the name was actually saved to the database
+        const query = new Parse.Query(Parse.Role);
+        return query.get(savedRole.id, { useMasterKey: true });
+      })
+      .then(fetchedRole => {
+        expect(fetchedRole.get('name')).toBe('ModifiedName');
         done();
       })
       .catch(err => {
