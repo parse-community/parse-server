@@ -602,37 +602,26 @@ describe('Parse Role testing', () => {
     });
   });
 
-  it('should trigger afterSave hook when using Parse.Role', done => {
-    let afterSaveCalled = false;
-
-    Parse.Cloud.afterSave(Parse.Role, req => {
-      afterSaveCalled = true;
-      expect(req.object).toBeDefined();
-      expect(req.object.get('name')).toBe('AnotherTestRole');
+  it('should trigger afterSave hook when using Parse.Role', async () => {
+    const afterSavePromise = new Promise(resolve => {
+      Parse.Cloud.afterSave(Parse.Role, req => {
+        expect(req.object).toBeDefined();
+        expect(req.object.get('name')).toBe('AnotherTestRole');
+        resolve();
+      });
     });
 
     const acl = new Parse.ACL();
     acl.setPublicReadAccess(true);
     const role = new Parse.Role('AnotherTestRole', acl);
 
-    role
-      .save({}, { useMasterKey: true })
-      .then(savedRole => {
-        expect(savedRole.id).toBeDefined();
-        // Give the afterSave hook some time to execute
-        return new Promise(resolve => setTimeout(resolve, 100));
-      })
-      .then(() => {
-        expect(afterSaveCalled).toBe(true);
-        done();
-      })
-      .catch(err => {
-        fail(`Should not have failed: ${err.message}`);
-        done();
-      });
+    const savedRole = await role.save({}, { useMasterKey: true });
+    expect(savedRole.id).toBeDefined();
+
+    await afterSavePromise;
   });
 
-  it('should trigger beforeSave hook and allow modifying role in beforeSave', done => {
+  it('should trigger beforeSave hook and allow modifying role in beforeSave', async () => {
     Parse.Cloud.beforeSave(Parse.Role, req => {
       // Add a custom field in beforeSave
       req.object.set('customField', 'addedInBeforeSave');
@@ -642,20 +631,12 @@ describe('Parse Role testing', () => {
     acl.setPublicReadAccess(true);
     const role = new Parse.Role('ModifiedRole', acl);
 
-    role
-      .save({}, { useMasterKey: true })
-      .then(savedRole => {
-        expect(savedRole.id).toBeDefined();
-        expect(savedRole.get('customField')).toBe('addedInBeforeSave');
-        done();
-      })
-      .catch(err => {
-        fail(`Should not have failed: ${err.message}`);
-        done();
-      });
+    const savedRole = await role.save({}, { useMasterKey: true });
+    expect(savedRole.id).toBeDefined();
+    expect(savedRole.get('customField')).toBe('addedInBeforeSave');
   });
 
-  it('should trigger beforeSave hook using Parse.Role', done => {
+  it('should trigger beforeSave hook using Parse.Role', async () => {
     let beforeSaveCalled = false;
 
     Parse.Cloud.beforeSave(Parse.Role, req => {
@@ -668,20 +649,12 @@ describe('Parse Role testing', () => {
     acl.setPublicReadAccess(true);
     const role = new Parse.Role('BeforeSaveWithClassRef', acl);
 
-    role
-      .save({}, { useMasterKey: true })
-      .then(savedRole => {
-        expect(savedRole.id).toBeDefined();
-        expect(beforeSaveCalled).toBe(true);
-        done();
-      })
-      .catch(err => {
-        fail(`Should not have failed: ${err.message}`);
-        done();
-      });
+    const savedRole = await role.save({}, { useMasterKey: true });
+    expect(savedRole.id).toBeDefined();
+    expect(beforeSaveCalled).toBe(true);
   });
 
-  it('should allow modifying role name in beforeSave hook', done => {
+  it('should allow modifying role name in beforeSave hook', async () => {
     Parse.Cloud.beforeSave(Parse.Role, req => {
       // Modify the role name in beforeSave
       if (req.object.get('name') === 'OriginalName') {
@@ -693,22 +666,13 @@ describe('Parse Role testing', () => {
     acl.setPublicReadAccess(true);
     const role = new Parse.Role('OriginalName', acl);
 
-    role
-      .save({}, { useMasterKey: true })
-      .then(savedRole => {
-        expect(savedRole.id).toBeDefined();
-        expect(savedRole.get('name')).toBe('ModifiedName');
-        // Verify the name was actually saved to the database
-        const query = new Parse.Query(Parse.Role);
-        return query.get(savedRole.id, { useMasterKey: true });
-      })
-      .then(fetchedRole => {
-        expect(fetchedRole.get('name')).toBe('ModifiedName');
-        done();
-      })
-      .catch(err => {
-        fail(`Should not have failed: ${err.message}`);
-        done();
-      });
+    const savedRole = await role.save({}, { useMasterKey: true });
+    expect(savedRole.id).toBeDefined();
+    expect(savedRole.get('name')).toBe('ModifiedName');
+
+    // Verify the name was actually saved to the database
+    const query = new Parse.Query(Parse.Role);
+    const fetchedRole = await query.get(savedRole.id, { useMasterKey: true });
+    expect(fetchedRole.get('name')).toBe('ModifiedName');
   });
 });
