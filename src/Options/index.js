@@ -342,6 +342,8 @@ export interface ParseServerOptions {
   /* Options to limit repeated requests to Parse Server APIs. This can be used to protect sensitive endpoints such as `/requestPasswordReset` from brute-force attacks or Parse Server as a whole from denial-of-service (DoS) attacks.<br><br>ℹ️ Mind the following limitations:<br>- rate limits applied per IP address; this limits protection against distributed denial-of-service (DDoS) attacks where many requests are coming from various IP addresses<br>- if multiple Parse Server instances are behind a load balancer or ran in a cluster, each instance will calculate it's own request rates, independent from other instances; this limits the applicability of this feature when using a load balancer and another rate limiting solution that takes requests across all instances into account may be more suitable<br>- this feature provides basic protection against denial-of-service attacks, but a more sophisticated solution works earlier in the request flow and prevents a malicious requests to even reach a server instance; it's therefore recommended to implement a solution according to architecture and user case.
   :DEFAULT: [] */
   rateLimit: ?(RateLimitOptions[]);
+  /* Options to customize the request context using inversion of control/dependency injection.*/
+  requestContextMiddleware: ?(req: any, res: any, next: any) => void;
 }
 
 export interface RateLimitOptions {
@@ -627,6 +629,8 @@ export interface DatabaseOptions {
   autoSelectFamily: ?boolean;
   /* The MongoDB driver option to specify the amount of time in milliseconds to wait for a connection attempt to finish before trying the next address when using the autoSelectFamily option. If set to a positive integer less than 10, the value 10 is used instead. */
   autoSelectFamilyAttemptTimeout: ?number;
+  /* Set to `true` to disable validation of index fields. When disabled, indexes can be created even if the fields do not exist in the schema. This can be useful when creating indexes on fields that will be added later. */
+  disableIndexFieldValidation: ?boolean;
 }
 
 export interface AuthAdapter {

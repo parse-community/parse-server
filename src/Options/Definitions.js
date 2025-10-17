@@ -514,6 +514,11 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_READ_ONLY_MASTER_KEY',
     help: 'Read-only key, which has the same capabilities as MasterKey without writes',
   },
+  requestContextMiddleware: {
+    env: 'PARSE_SERVER_REQUEST_CONTEXT_MIDDLEWARE',
+    help:
+      'Options to customize the request context using inversion of control/dependency injection.',
+  },
   requestKeywordDenylist: {
     env: 'PARSE_SERVER_REQUEST_KEYWORD_DENYLIST',
     help:
@@ -1086,6 +1091,12 @@ module.exports.DatabaseOptions = {
     help:
       'The MongoDB driver option to specify the amount of time, in milliseconds, to wait to establish a single TCP socket connection to the server before raising an error. Specifying 0 disables the connection timeout.',
     action: parsers.numberParser('connectTimeoutMS'),
+  },
+  disableIndexFieldValidation: {
+    env: 'PARSE_SERVER_DATABASE_DISABLE_INDEX_FIELD_VALIDATION',
+    help:
+      'Set to `true` to disable validation of index fields. When disabled, indexes can be created even if the fields do not exist in the schema. This can be useful when creating indexes on fields that will be added later.',
+    action: parsers.booleanParser,
   },
   enableSchemaHooks: {
     env: 'PARSE_SERVER_DATABASE_ENABLE_SCHEMA_HOOKS',
