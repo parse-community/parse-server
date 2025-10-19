@@ -281,6 +281,18 @@ class ParseServer {
 
   /**
    * @static
+   * Allow developers to customize each request with inversion of control/dependency injection
+   */
+  static applyRequestContextMiddleware(api, options) {
+    if (options.requestContextMiddleware) {
+      if (typeof options.requestContextMiddleware !== 'function') {
+        throw new Error('requestContextMiddleware must be a function');
+      }
+      api.use(options.requestContextMiddleware);
+    }
+  }
+  /**
+   * @static
    * Create an express app for the parse server
    * @param {Object} options let you specify the maxUploadSize when creating the express app  */
   static app(options) {
@@ -326,7 +338,7 @@ class ParseServer {
       middlewares.addRateLimit(route, options);
     }
     api.use(middlewares.handleParseSession);
-
+    this.applyRequestContextMiddleware(api, options);
     const appRouter = ParseServer.promiseRouter({ appId });
     api.use(appRouter.expressRouter());
 
@@ -352,12 +364,6 @@ class ParseServer {
           }
           process.exit(1);
         }
-      });
-      // verify the server url after a 'mount' event is received
-      /* istanbul ignore next */
-      api.on('mount', async function () {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        ParseServer.verifyServerUrl();
       });
     }
     if (process.env.PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS === '1' || directAccess) {
@@ -475,6 +481,7 @@ class ParseServer {
     /* istanbul ignore next */
     if (!process.env.TESTING) {
       configureListeners(this);
+      await ParseServer.verifyServerUrl();
     }
     this.expressApp = app;
     return this;

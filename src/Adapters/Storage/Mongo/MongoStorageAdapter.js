@@ -140,6 +140,7 @@ export class MongoStorageAdapter implements StorageAdapter {
   canSortOnJoinTables: boolean;
   enableSchemaHooks: boolean;
   schemaCacheTtl: ?number;
+  disableIndexFieldValidation: boolean;
 
   constructor({ uri = defaults.DefaultMongoURI, collectionPrefix = '', mongoOptions = {} }: any) {
     this._uri = uri;
@@ -152,7 +153,8 @@ export class MongoStorageAdapter implements StorageAdapter {
     this.canSortOnJoinTables = true;
     this.enableSchemaHooks = !!mongoOptions.enableSchemaHooks;
     this.schemaCacheTtl = mongoOptions.schemaCacheTtl;
-    for (const key of ['enableSchemaHooks', 'schemaCacheTtl', 'maxTimeMS']) {
+    this.disableIndexFieldValidation = !!mongoOptions.disableIndexFieldValidation;
+    for (const key of ['enableSchemaHooks', 'schemaCacheTtl', 'maxTimeMS', 'disableIndexFieldValidation']) {
       delete mongoOptions[key];
       delete this._mongoOptions[key];
     }
@@ -289,6 +291,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       } else {
         Object.keys(field).forEach(key => {
           if (
+            !this.disableIndexFieldValidation &&
             !Object.prototype.hasOwnProperty.call(
               fields,
               key.indexOf('_p_') === 0 ? key.replace('_p_', '') : key
@@ -960,23 +963,28 @@ export class MongoStorageAdapter implements StorageAdapter {
     return pipeline;
   }
 
-  // This function will attempt to convert the provided value to a Date object. Since this is part
-  // of an aggregation pipeline, the value can either be a string or it can be another object with
-  // an operator in it (like $gt, $lt, etc). Because of this I felt it was easier to make this a
-  // recursive method to traverse down to the "leaf node" which is going to be the string.
+  /**
+   * Recursively converts values to Date objects. Since the passed object is part of an aggregation
+   * pipeline and can contain various logic operators (like $gt, $lt, etc), this function will
+   * traverse the object and convert any strings that can be parsed as dates into Date objects.
+   * @param {any} value The value to convert.
+   * @returns {any} The original value if not convertible to Date, or a Date object if it is.
+   */
   _convertToDate(value: any): any {
     if (value instanceof Date) {
       return value;
     }
     if (typeof value === 'string') {
-      return new Date(value);
+      return isNaN(Date.parse(value)) ? value : new Date(value);
     }
-
-    const returnValue = {};
-    for (const field in value) {
-      returnValue[field] = this._convertToDate(value[field]);
+    if (typeof value === 'object') {
+      const returnValue = {};
+      for (const field in value) {
+        returnValue[field] = this._convertToDate(value[field]);
+      }
+      return returnValue;
     }
-    return returnValue;
+    return value;
   }
 
   _parseReadPreference(readPreference: ?string): ?string {

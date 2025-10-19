@@ -2113,6 +2113,16 @@ describe('Parse.Query testing', () => {
       .then(done);
   });
 
+  it_id('351f57a8-e00a-4da2-887d-6e25c9e359fc')(it)('regex with unicode option', async function () {
+    const thing = new TestObject();
+    thing.set('myString', 'hello 世界');
+    await Parse.Object.saveAll([thing]);
+    const query = new Parse.Query(TestObject);
+    query.matches('myString', '世界', 'u');
+    const results = await query.find();
+    equal(results.length, 1);
+  });
+
   it_id('823852f6-1de5-45ba-a2b9-ed952fcc6012')(it)('Use a regex that requires all modifiers', function (done) {
     const thing = new TestObject();
     thing.set('myString', 'PArSe\nCom');
@@ -5312,7 +5322,7 @@ describe('Parse.Query testing', () => {
       const child = new Parse.Object('Child');
       child.set('key', 'value');
       await child.save();
-  
+
       const parent = new Parse.Object('Parent');
       parent.set('some', {
         nested: {
@@ -5322,19 +5332,19 @@ describe('Parse.Query testing', () => {
         },
       });
       await parent.save();
-  
+
       const query1 = await new Parse.Query('Parent')
         .equalTo('some.nested.key.child', child)
         .find();
-  
+
       expect(query1.length).toEqual(1);
     });
-  
+
     it('queries nested key using containedIn', async () => {
       const child = new Parse.Object('Child');
       child.set('key', 'value');
       await child.save();
-  
+
       const parent = new Parse.Object('Parent');
       parent.set('some', {
         nested: {
@@ -5344,19 +5354,19 @@ describe('Parse.Query testing', () => {
         },
       });
       await parent.save();
-  
+
       const query1 = await new Parse.Query('Parent')
         .containedIn('some.nested.key.child', [child])
         .find();
-  
+
       expect(query1.length).toEqual(1);
     });
-  
+
     it('queries nested key using matchesQuery', async () => {
       const child = new Parse.Object('Child');
       child.set('key', 'value');
       await child.save();
-  
+
       const parent = new Parse.Object('Parent');
       parent.set('some', {
         nested: {
@@ -5366,11 +5376,11 @@ describe('Parse.Query testing', () => {
         },
       });
       await parent.save();
-  
+
       const query1 = await new Parse.Query('Parent')
         .matchesQuery('some.nested.key.child', new Parse.Query('Child').equalTo('key', 'value'))
         .find();
-  
+
       expect(query1.length).toEqual(1);
     });
   });

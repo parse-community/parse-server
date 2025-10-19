@@ -4,13 +4,52 @@ import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@apollo/server/express4';
 import { ApolloServerPluginCacheControlDisabled } from '@apollo/server/plugin/disabled';
 import express from 'express';
-import { execute, subscribe } from 'graphql';
+import { execute, subscribe, GraphQLError } from 'graphql';
 import { SubscriptionServer } from 'subscriptions-transport-ws';
 import { handleParseErrors, handleParseHeaders, handleParseSession } from '../middlewares';
 import requiredParameter from '../requiredParameter';
 import defaultLogger from '../logger';
 import { ParseGraphQLSchema } from './ParseGraphQLSchema';
 import ParseGraphQLController, { ParseGraphQLConfig } from '../Controllers/ParseGraphQLController';
+
+
+const IntrospectionControlPlugin = (publicIntrospection) => ({
+
+
+  requestDidStart: (requestContext) => ({
+
+    didResolveOperation: async () => {
+      // If public introspection is enabled, we allow all introspection queries
+      if (publicIntrospection) {
+        return;
+      }
+
+      const isMasterOrMaintenance = requestContext.contextValue.auth?.isMaster || requestContext.contextValue.auth?.isMaintenance
+      if (isMasterOrMaintenance) {
+        return;
+      }
+
+      // Now we check if the query is an introspection query
+      // this check strategy should work in 99.99% cases
+      // we can have an issue if a user name a field or class __schemaSomething
+      // we want to avoid a full AST check
+      const isIntrospectionQuery =
+        requestContext.request.query?.includes('__schema')
+
+      if (isIntrospectionQuery) {
+        throw new GraphQLError('Introspection is not allowed', {
+          extensions: {
+            http: {
+              status: 403,
+            },
+          }
+        });
+      }
+    },
+
+  })
+
+});
 
 class ParseGraphQLServer {
   parseGraphQLController: ParseGraphQLController;
@@ -65,8 +104,8 @@ class ParseGraphQLServer {
         // needed since we use graphql upload
         requestHeaders: ['X-Parse-Application-Id'],
       },
-      introspection: true,
-      plugins: [ApolloServerPluginCacheControlDisabled()],
+      introspection: this.config.graphQLPublicIntrospection,
+      plugins: [ApolloServerPluginCacheControlDisabled(), IntrospectionControlPlugin(this.config.graphQLPublicIntrospection)],
       schema,
     });
     await apollo.start();
@@ -89,6 +128,19 @@ class ParseGraphQLServer {
     );
   }
 
+  /**
+   * @static
+   * Allow developers to customize each request with inversion of control/dependency injection
+   */
+  applyRequestContextMiddleware(api, options) {
+    if (options.requestContextMiddleware) {
+      if (typeof options.requestContextMiddleware !== 'function') {
+        throw new Error('requestContextMiddleware must be a function');
+      }
+      api.use(this.config.graphQLPath, options.requestContextMiddleware);
+    }
+  }
+
   applyGraphQL(app) {
     if (!app || !app.use) {
       requiredParameter('You must provide an Express.js app instance!');
@@ -96,6 +148,7 @@ class ParseGraphQLServer {
     app.use(this.config.graphQLPath, corsMiddleware());
     app.use(this.config.graphQLPath, handleParseHeaders);
     app.use(this.config.graphQLPath, handleParseSession);
+    this.applyRequestContextMiddleware(app, this.parseServer.config);
     app.use(this.config.graphQLPath, handleParseErrors);
     app.use(
       this.config.graphQLPath,
@@ -118,7 +171,7 @@ class ParseGraphQLServer {
 
     app.get(
       this.config.playgroundPath ||
-        requiredParameter('You must provide a config.playgroundPath to applyPlayground!'),
+      requiredParameter('You must provide a config.playgroundPath to applyPlayground!'),
       (_req, res) => {
         res.setHeader('Content-Type', 'text/html');
         res.write(
@@ -128,14 +181,14 @@ class ParseGraphQLServer {
            new window.EmbeddedSandbox({
              target: "#sandbox",
              endpointIsEditable: false,
-             initialEndpoint: "${JSON.stringify(this.config.graphQLPath)}",
+             initialEndpoint: ${JSON.stringify(this.config.graphQLPath)},
              handleRequest: (endpointUrl, options) => {
               return fetch(endpointUrl, {
                 ...options,
                 headers: {
                     ...options.headers,
-                    'X-Parse-Application-Id': "${JSON.stringify(this.parseServer.config.appId)}",
-                    'X-Parse-Master-Key': "${JSON.stringify(this.parseServer.config.masterKey)}",
+                    'X-Parse-Application-Id': ${JSON.stringify(this.parseServer.config.appId)},
+                    'X-Parse-Master-Key': ${JSON.stringify(this.parseServer.config.masterKey)},
                 },
               })
             },

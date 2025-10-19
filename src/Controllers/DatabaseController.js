@@ -111,7 +111,7 @@ const validateQuery = (
   Object.keys(query).forEach(key => {
     if (query && query[key] && query[key].$regex) {
       if (typeof query[key].$options === 'string') {
-        if (!query[key].$options.match(/^[imxs]+$/)) {
+        if (!query[key].$options.match(/^[imxsu]+$/)) {
           throw new Parse.Error(
             Parse.Error.INVALID_QUERY,
             `Bad $options value for query: ${query[key].$options}`

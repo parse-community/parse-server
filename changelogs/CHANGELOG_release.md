@@ -1,3 +1,31 @@
+## [8.2.5](https://github.com/parse-community/parse-server/compare/8.2.4...8.2.5) (2025-10-02)
+
+
+### Bug Fixes
+
+* GraphQL playground shows blank page ([#9858](https://github.com/parse-community/parse-server/issues/9858)) ([7b5395c](https://github.com/parse-community/parse-server/commit/7b5395c5d481235c022d96603280672366a50715))
+
+## [8.2.4](https://github.com/parse-community/parse-server/compare/8.2.3...8.2.4) (2025-09-01)
+
+
+### Bug Fixes
+
+* Security upgrade form-data from 4.0.3 to 4.0.4 ([#9829](https://github.com/parse-community/parse-server/issues/9829)) ([c2c593f](https://github.com/parse-community/parse-server/commit/c2c593f437c33f37101b4f3bb1287eef31dbbc3b))
+
+## [8.2.3](https://github.com/parse-community/parse-server/compare/8.2.2...8.2.3) (2025-08-01)
+
+
+### Bug Fixes
+
+* MongoDB aggregation pipeline with `$dateSubtract` from `$$NOW` returns no results ([#9822](https://github.com/parse-community/parse-server/issues/9822)) ([847a274](https://github.com/parse-community/parse-server/commit/847a274cdb8c22f8e0fc249162e5e2c9e29a594a))
+
+## [8.2.2](https://github.com/parse-community/parse-server/compare/8.2.1...8.2.2) (2025-07-10)
+
+
+### Bug Fixes
+
+* Data schema exposed via GraphQL API public introspection (GHSA-48q3-prgv-gm4w) ([#9819](https://github.com/parse-community/parse-server/issues/9819)) ([c58b2eb](https://github.com/parse-community/parse-server/commit/c58b2eb6eb48af9d3c2e69b4829810a021347b40))
+
 ## [8.2.1](https://github.com/parse-community/parse-server/compare/8.2.0...8.2.1) (2025-06-01)
 
 

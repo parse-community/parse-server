@@ -175,12 +175,10 @@ describe('Vulnerabilities', () => {
           },
         });
       });
-      await expectAsync(new Parse.Object('TestObject').save()).toBeRejectedWith(
-        new Parse.Error(
-          Parse.Error.INVALID_KEY_NAME,
-          'Prohibited keyword in request data: {"key":"constructor"}.'
-        )
-      );
+      // The new Parse SDK handles prototype pollution prevention in .set()
+      // so no error is thrown, but the object prototype should not be polluted
+      await new Parse.Object('TestObject').save();
+      expect(Object.prototype.dummy).toBeUndefined();
     });
 
     it('denies creating global config with polluted data', async () => {
@@ -270,12 +268,10 @@ describe('Vulnerabilities', () => {
         res.json({ success: object });
       });
       await Parse.Hooks.createTrigger('TestObject', 'beforeSave', hookServerURL + '/BeforeSave');
-      await expectAsync(new Parse.Object('TestObject').save()).toBeRejectedWith(
-        new Parse.Error(
-          Parse.Error.INVALID_KEY_NAME,
-          'Prohibited keyword in request data: {"key":"constructor"}.'
-        )
-      );
+      // The new Parse SDK handles prototype pollution prevention in .set()
+      // so no error is thrown, but the object prototype should not be polluted
+      await new Parse.Object('TestObject').save();
+      expect(Object.prototype.dummy).toBeUndefined();
       await new Promise(resolve => server.close(resolve));
     });
 

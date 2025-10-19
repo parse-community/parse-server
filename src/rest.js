@@ -23,11 +23,91 @@ function checkTriggers(className, config, types) {
 function checkLiveQuery(className, config) {
   return config.liveQueryController && config.liveQueryController.hasLiveQuery(className);
 }
+async function runFindTriggers(
+  config,
+  auth,
+  className,
+  restWhere,
+  restOptions,
+  clientSDK,
+  context,
+  options = {}
+) {
+  const { isGet } = options;
 
-// Returns a promise for an object with optional keys 'results' and 'count'.
-const find = async (config, auth, className, restWhere, restOptions, clientSDK, context) => {
+  // Run beforeFind trigger - may modify query or return objects directly
+  const result = await triggers.maybeRunQueryTrigger(
+    triggers.Types.beforeFind,
+    className,
+    restWhere,
+    restOptions,
+    config,
+    auth,
+    context,
+    isGet
+  );
+
+  restWhere = result.restWhere || restWhere;
+  restOptions = result.restOptions || restOptions;
+
+  // Short-circuit path: beforeFind returned objects directly
+  // Security risk: These objects may have been fetched with master privileges
+  if (result?.objects) {
+    const objectsFromBeforeFind = result.objects;
+
+    let objectsForAfterFind = objectsFromBeforeFind;
+
+    // Security check: Re-filter objects if not master to ensure ACL/CLP compliance
+    if (!auth?.isMaster && !auth?.isMaintenance) {
+      const ids = (Array.isArray(objectsFromBeforeFind) ? objectsFromBeforeFind : [objectsFromBeforeFind])
+        .map(o => (o && (o.id || o.objectId)) || null)
+        .filter(Boolean);
+
+      // Objects without IDs are(normally) unsaved objects
+      // For unsaved objects, the ACL security does not apply, so no need to redo the query.
+      // For saved objects, we need to re-query to ensure proper ACL/CLP enforcement
+      if (ids.length > 0) {
+        const refilterWhere = isGet ? { objectId: ids[0] } : { objectId: { $in: ids } };
+
+        // Re-query with proper security: no triggers to avoid infinite loops
+        const refilterQuery = await RestQuery({
+          method: isGet ? RestQuery.Method.get : RestQuery.Method.find,
+          config,
+          auth,
+          className,
+          restWhere: refilterWhere,
+          restOptions,
+          clientSDK,
+          context,
+          runBeforeFind: false,
+          runAfterFind: false,
+        });
+
+        const refiltered = await refilterQuery.execute();
+        objectsForAfterFind = (refiltered && refiltered.results) || [];
+      }
+    }
+
+    // Run afterFind trigger on security-filtered objects
+    const afterFindProcessedObjects = await triggers.maybeRunAfterFindTrigger(
+      triggers.Types.afterFind,
+      auth,
+      className,
+      objectsForAfterFind,
+      config,
+      new Parse.Query(className).withJSON({ where: restWhere, ...restOptions }),
+      context,
+      isGet
+    );
+
+    return {
+      results: afterFindProcessedObjects,
+    };
+  }
+
+  // Normal path: execute database query with modified conditions
   const query = await RestQuery({
-    method: RestQuery.Method.find,
+    method: isGet ? RestQuery.Method.get : RestQuery.Method.find,
     config,
     auth,
     className,
@@ -35,24 +115,40 @@ const find = async (config, auth, className, restWhere, restOptions, clientSDK, 
     restOptions,
     clientSDK,
     context,
+    runBeforeFind: false,
   });
+
   return query.execute();
+}
+
+// Returns a promise for an object with optional keys 'results' and 'count'.
+const find = async (config, auth, className, restWhere, restOptions, clientSDK, context) => {
+  enforceRoleSecurity('find', className, auth);
+  return runFindTriggers(
+    config,
+    auth,
+    className,
+    restWhere,
+    restOptions,
+    clientSDK,
+    context,
+    { isGet: false }
+  );
 };
 
 // get is just like find but only queries an objectId.
 const get = async (config, auth, className, objectId, restOptions, clientSDK, context) => {
-  var restWhere = { objectId };
-  const query = await RestQuery({
-    method: RestQuery.Method.get,
+  enforceRoleSecurity('get', className, auth);
+  return runFindTriggers(
     config,
     auth,
     className,
-    restWhere,
+    { objectId },
     restOptions,
     clientSDK,
     context,
-  });
-  return query.execute();
+    { isGet: true }
+  );
 };
 
 // Returns a promise that doesn't resolve to any useful value.

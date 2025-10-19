@@ -439,6 +439,36 @@ describe('Parse.Query Aggregate testing', () => {
     }
   );
 
+  it_id('3723671d-4100-4103-ad9c-60e4c22e20ff')(it_exclude_dbs(['postgres']))('matches expression with $dateSubtract from $$NOW', async () => {
+    const obj1 = new TestObject({ date: new Date(new Date().getTime() - 1 * 24 * 60 * 60 * 1_000) }); // 1 day ago
+    const obj2 = new TestObject({ date: new Date(new Date().getTime() - 2 * 24 * 60 * 60 * 1_000) }); // 3 days ago
+    await Parse.Object.saveAll([obj1, obj2]);
+
+    const pipeline = [
+      {
+        $match: {
+          $expr: {
+            $gte: [
+              '$date',
+              {
+                $dateSubtract: {
+                  startDate: '$$NOW',
+                  unit: 'day',
+                  amount: 2,
+                },
+              },
+            ],
+          },
+        },
+      },
+    ];
+
+    const query = new Parse.Query('TestObject');
+    const results = await query.aggregate(pipeline, { useMasterKey: true });
+    expect(results.length).toBe(1);
+    expect(new Date(results[0].date.iso)).toEqual(obj1.get('date'));
+  });
+
   it_only_db('postgres')(
     'can group by any date field (it does not work if you have dirty data)', // rows in your collection with non date data in the field that is supposed to be a date
     done => {

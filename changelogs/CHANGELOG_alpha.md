@@ -1,3 +1,94 @@
+# [8.3.0-alpha.9](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.8...8.3.0-alpha.9) (2025-10-19)
+
+
+### Bug Fixes
+
+* Server URL verification before server is ready ([#9882](https://github.com/parse-community/parse-server/issues/9882)) ([178bd5c](https://github.com/parse-community/parse-server/commit/178bd5c5e258d9501c9ac4d35a3a105ab64be67e))
+
+# [8.3.0-alpha.8](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.7...8.3.0-alpha.8) (2025-10-16)
+
+
+### Bug Fixes
+
+* Warning logged when setting option `databaseOptions.disableIndexFieldValidation` ([#9880](https://github.com/parse-community/parse-server/issues/9880)) ([1815b01](https://github.com/parse-community/parse-server/commit/1815b019b52565d2bc87be2596a49aea7600aeba))
+
+# [8.3.0-alpha.7](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.6...8.3.0-alpha.7) (2025-10-15)
+
+
+### Bug Fixes
+
+* Security upgrade to parse 7.0.1 ([#9877](https://github.com/parse-community/parse-server/issues/9877)) ([abfa94c](https://github.com/parse-community/parse-server/commit/abfa94cd6de2c4e76337931c8ea8311c4ccf2a1a))
+
+# [8.3.0-alpha.6](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.5...8.3.0-alpha.6) (2025-10-14)
+
+
+### Features
+
+* Add request context middleware for config and dependency injection in hooks ([#8480](https://github.com/parse-community/parse-server/issues/8480)) ([64f104e](https://github.com/parse-community/parse-server/commit/64f104e5c5f8863098e801eee632c14fcbd9b6f9))
+
+# [8.3.0-alpha.5](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.4...8.3.0-alpha.5) (2025-10-14)
+
+
+### Features
+
+* Allow returning objects in `Parse.Cloud.beforeFind` without invoking database query ([#9770](https://github.com/parse-community/parse-server/issues/9770)) ([0b47407](https://github.com/parse-community/parse-server/commit/0b4740714c29ba99672bc535619ee3516abd356f))
+
+# [8.3.0-alpha.4](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.3...8.3.0-alpha.4) (2025-10-09)
+
+
+### Features
+
+* Disable index-field validation to create index for fields that don't yet exist ([#8137](https://github.com/parse-community/parse-server/issues/8137)) ([1b23475](https://github.com/parse-community/parse-server/commit/1b2347524ca84ade0f6badf175a815fc8a7bef49))
+
+# [8.3.0-alpha.3](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.2...8.3.0-alpha.3) (2025-10-07)
+
+
+### Features
+
+* Add support for Postgres 18 ([#9870](https://github.com/parse-community/parse-server/issues/9870)) ([d275c18](https://github.com/parse-community/parse-server/commit/d275c1806e0a5a037cc06cde7eefff3e12c91d7d))
+
+# [8.3.0-alpha.2](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.1...8.3.0-alpha.2) (2025-10-03)
+
+
+### Features
+
+* Add regex option `u` for unicode support in `Parse.Query.matches` for MongoDB ([#9867](https://github.com/parse-community/parse-server/issues/9867)) ([7cb962a](https://github.com/parse-community/parse-server/commit/7cb962a02845f3dded61baffd84515f94b66ee50))
+
+# [8.3.0-alpha.1](https://github.com/parse-community/parse-server/compare/8.2.5...8.3.0-alpha.1) (2025-10-03)
+
+
+### Features
+
+* Add option `keepUnknownIndexes` to retain indexes which are not specified in schema ([#9857](https://github.com/parse-community/parse-server/issues/9857)) ([89fad46](https://github.com/parse-community/parse-server/commit/89fad468c3a43772879c06c4d939a83b72517a8e))
+
+## [8.2.5-alpha.1](https://github.com/parse-community/parse-server/compare/8.2.4...8.2.5-alpha.1) (2025-09-21)
+
+
+### Bug Fixes
+
+* GraphQL playground shows blank page ([#9858](https://github.com/parse-community/parse-server/issues/9858)) ([7b5395c](https://github.com/parse-community/parse-server/commit/7b5395c5d481235c022d96603280672366a50715))
+
+## [8.2.4-alpha.1](https://github.com/parse-community/parse-server/compare/8.2.3...8.2.4-alpha.1) (2025-08-02)
+
+
+### Bug Fixes
+
+* Security upgrade form-data from 4.0.3 to 4.0.4 ([#9829](https://github.com/parse-community/parse-server/issues/9829)) ([c2c593f](https://github.com/parse-community/parse-server/commit/c2c593f437c33f37101b4f3bb1287eef31dbbc3b))
+
+## [8.2.3-alpha.1](https://github.com/parse-community/parse-server/compare/8.2.2...8.2.3-alpha.1) (2025-07-13)
+
+
+### Bug Fixes
+
+* MongoDB aggregation pipeline with `$dateSubtract` from `$$NOW` returns no results ([#9822](https://github.com/parse-community/parse-server/issues/9822)) ([847a274](https://github.com/parse-community/parse-server/commit/847a274cdb8c22f8e0fc249162e5e2c9e29a594a))
+
+## [8.2.2-alpha.1](https://github.com/parse-community/parse-server/compare/8.2.1...8.2.2-alpha.1) (2025-07-10)
+
+
+### Bug Fixes
+
+* Data schema exposed via GraphQL API public introspection (GHSA-48q3-prgv-gm4w) ([#9819](https://github.com/parse-community/parse-server/issues/9819)) ([c58b2eb](https://github.com/parse-community/parse-server/commit/c58b2eb6eb48af9d3c2e69b4829810a021347b40))
+
 ## [8.2.1-alpha.2](https://github.com/parse-community/parse-server/compare/8.2.1-alpha.1...8.2.1-alpha.2) (2025-05-14)
 
 
