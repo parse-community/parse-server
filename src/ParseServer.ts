@@ -365,12 +365,6 @@ class ParseServer {
           process.exit(1);
         }
       });
-      // verify the server url after a 'mount' event is received
-      /* istanbul ignore next */
-      api.on('mount', async function () {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        ParseServer.verifyServerUrl();
-      });
     }
     if (process.env.PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS === '1' || directAccess) {
       Parse.CoreManager.setRESTController(ParseServerRESTController(appId, appRouter));
@@ -487,6 +481,7 @@ class ParseServer {
     /* istanbul ignore next */
     if (!process.env.TESTING) {
       configureListeners(this);
+      await ParseServer.verifyServerUrl();
     }
     this.expressApp = app;
     return this;
