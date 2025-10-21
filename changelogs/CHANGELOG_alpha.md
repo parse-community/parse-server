@@ -1,3 +1,10 @@
+# [8.3.0-alpha.9](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.8...8.3.0-alpha.9) (2025-10-19)
+
+
+### Bug Fixes
+
+* Server URL verification before server is ready ([#9882](https://github.com/parse-community/parse-server/issues/9882)) ([178bd5c](https://github.com/parse-community/parse-server/commit/178bd5c5e258d9501c9ac4d35a3a105ab64be67e))
+
 # [8.3.0-alpha.8](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.7...8.3.0-alpha.8) (2025-10-16)
 
 
