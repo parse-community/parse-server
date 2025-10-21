@@ -394,13 +394,7 @@ describe('Cloud Code Logger', () => {
     });
     Parse.Cloud.beforeSave('TestClass', () => { });
     Parse.Cloud.afterSave('TestClass', async () => {
-      try {
-        // Ensure afterSave completes without errors
-        afterSaveCompleted();
-      } catch (e) {
-        // Prevent unhandled rejections
-        afterSaveCompleted();
-      }
+      afterSaveCompleted();
     });
 
     spy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
