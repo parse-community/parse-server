@@ -247,8 +247,6 @@ describe('Cloud Code Logger', () => {
       spy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
       const obj = new Parse.Object('TestClass');
       await obj.save();
-      // Wait for afterSave to complete
-      await new Promise(resolve => setTimeout(resolve, 100));
 
       return {
         beforeSave: spy.calls
@@ -273,7 +271,7 @@ describe('Cloud Code Logger', () => {
     });
 
     Parse.Cloud.run('aFunction', { foo: 'bar' })
-      .catch(() => {})
+      .catch(() => { })
       .then(() => {
         const logs = spy.calls.all().reverse();
         expect(logs[0].args[1]).toBe('Parse error: ');
@@ -383,33 +381,20 @@ describe('Cloud Code Logger', () => {
         triggerBeforeError: 'silent',
       },
     });
-
-    let afterSaveCompleted;
-    const afterSavePromise = new Promise(resolve => {
-      afterSaveCompleted = resolve;
-    });
-
     Parse.Cloud.beforeSave('TestClassError', () => {
       throw new Error('Failed');
     });
     Parse.Cloud.beforeSave('TestClass', () => { });
-    Parse.Cloud.afterSave('TestClass', async () => {
-      afterSaveCompleted();
-    });
+    Parse.Cloud.afterSave('TestClass', () => { });
 
     spy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
 
     const obj = new Parse.Object('TestClass');
     await obj.save();
-    // Wait for afterSave to actually complete
-    await afterSavePromise;
-    await new Promise(resolve => setTimeout(resolve, 100));
     expect(spy).toHaveBeenCalledTimes(0);
 
     const objError = new Parse.Object('TestClassError');
     await expectAsync(objError.save()).toBeRejected();
-    // Wait for any async error handling to complete
-    await new Promise(resolve => setTimeout(resolve, 100));
     // Not "beforeSave failed for TestClassError for user ..."
     expect(spy).toHaveBeenCalledTimes(1);
   });
