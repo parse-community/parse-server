@@ -655,7 +655,7 @@ describe('DatabaseController', function () {
       expect(findSpy).toHaveBeenCalled();
       const findCall = findSpy.calls.mostRecent();
       expect(findCall.args[3]).toEqual({ readPreference: 'primary' }); // options parameter
-      
+
       // Verify that findOneAndUpdate was NOT called (only validation, no actual update)
       expect(findOneAndUpdateSpy).not.toHaveBeenCalled();
     });
