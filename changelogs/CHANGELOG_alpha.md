@@ -1,3 +1,24 @@
+# [8.3.0-alpha.10](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.9...8.3.0-alpha.10) (2025-10-22)
+
+
+### Bug Fixes
+
+* Error in `afterSave` trigger for `Parse.Role` due to `name` field ([#9883](https://github.com/parse-community/parse-server/issues/9883)) ([eb052d8](https://github.com/parse-community/parse-server/commit/eb052d8e6abe1ae32505fd068d5445eaf950a770))
+
+# [8.3.0-alpha.9](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.8...8.3.0-alpha.9) (2025-10-19)
+
+
+### Bug Fixes
+
+* Server URL verification before server is ready ([#9882](https://github.com/parse-community/parse-server/issues/9882)) ([178bd5c](https://github.com/parse-community/parse-server/commit/178bd5c5e258d9501c9ac4d35a3a105ab64be67e))
+
+# [8.3.0-alpha.8](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.7...8.3.0-alpha.8) (2025-10-16)
+
+
+### Bug Fixes
+
+* Warning logged when setting option `databaseOptions.disableIndexFieldValidation` ([#9880](https://github.com/parse-community/parse-server/issues/9880)) ([1815b01](https://github.com/parse-community/parse-server/commit/1815b019b52565d2bc87be2596a49aea7600aeba))
+
 # [8.3.0-alpha.7](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.6...8.3.0-alpha.7) (2025-10-15)
 
 

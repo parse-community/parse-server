@@ -302,7 +302,6 @@ class ParseServer {
       directAccess,
       pages,
       rateLimit = [],
-      skipVerifyServerUrl,
     } = options;
     // This app serves the Parse API directly.
     // It's the equivalent of https://api.parse.com/1 in the hosted Parse API.
@@ -372,14 +371,6 @@ class ParseServer {
           process.exit(1);
         }
       });
-      // verify the server url after a 'mount' event is received
-      /* istanbul ignore next */
-      if (!skipVerifyServerUrl) {
-        api.on('mount', async function () {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          ParseServer.verifyServerUrl();
-        });
-      }
     }
     if (process.env.PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS === '1' || directAccess) {
       Parse.CoreManager.setRESTController(ParseServerRESTController(appId, appRouter));
@@ -496,6 +487,9 @@ class ParseServer {
     /* istanbul ignore next */
     if (!process.env.TESTING) {
       configureListeners(this);
+      if(!options.skipVerifyServerUrl) {
+        await ParseServer.verifyServerUrl();
+      }
     }
     this.expressApp = app;
     return this;
