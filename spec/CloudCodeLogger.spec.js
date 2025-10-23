@@ -25,7 +25,7 @@ describe('Cloud Code Logger', () => {
     })
       .then(() => {
         return Parse.User.signUp('tester', 'abc')
-          .catch(() => {})
+          .catch(() => { })
           .then(loggedInUser => (user = loggedInUser))
           .then(() => Parse.User.logIn(user.get('username'), 'abc'));
       })
@@ -139,7 +139,7 @@ describe('Cloud Code Logger', () => {
   });
 
   it_id('9857e15d-bb18-478d-8a67-fdaad3e89565')(it)('should log an afterSave', done => {
-    Parse.Cloud.afterSave('MyObject', () => {});
+    Parse.Cloud.afterSave('MyObject', () => { });
     new Parse.Object('MyObject')
       .save()
       .then(() => {
@@ -271,7 +271,7 @@ describe('Cloud Code Logger', () => {
     });
 
     Parse.Cloud.run('aFunction', { foo: 'bar' })
-      .catch(() => {})
+      .catch(() => { })
       .then(() => {
         const logs = spy.calls.all().reverse();
         expect(logs[0].args[1]).toBe('Parse error: ');
@@ -384,8 +384,8 @@ describe('Cloud Code Logger', () => {
     Parse.Cloud.beforeSave('TestClassError', () => {
       throw new Error('Failed');
     });
-    Parse.Cloud.beforeSave('TestClass', () => {});
-    Parse.Cloud.afterSave('TestClass', () => {});
+    Parse.Cloud.beforeSave('TestClass', () => { });
+    Parse.Cloud.afterSave('TestClass', () => { });
 
     spy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
 

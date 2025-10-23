@@ -1,3 +1,10 @@
+# [8.3.0-alpha.10](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.9...8.3.0-alpha.10) (2025-10-22)
+
+
+### Bug Fixes
+
+* Error in `afterSave` trigger for `Parse.Role` due to `name` field ([#9883](https://github.com/parse-community/parse-server/issues/9883)) ([eb052d8](https://github.com/parse-community/parse-server/commit/eb052d8e6abe1ae32505fd068d5445eaf950a770))
+
 # [8.3.0-alpha.9](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.8...8.3.0-alpha.9) (2025-10-19)
 
 
