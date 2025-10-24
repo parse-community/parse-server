@@ -487,7 +487,7 @@ class ParseServer {
     /* istanbul ignore next */
     if (!process.env.TESTING) {
       configureListeners(this);
-      if(!options.skipVerifyServerUrl) {
+      if (options.verifyServerUrl !== false) {
         await ParseServer.verifyServerUrl();
       }
     }
