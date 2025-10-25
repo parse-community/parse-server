@@ -53,7 +53,7 @@
  * @property {String} fileKey Key for your files
  * @property {Adapter<FilesAdapter>} filesAdapter Adapter module for the files sub-system
  * @property {FileUploadOptions} fileUpload Options for file uploads
- * @property {String} graphQLPath Mount path for the GraphQL endpoint, defaults to /graphql
+ * @property {String} graphQLPath The mount path for the GraphQL endpoint<br><br>⚠️ File upload inside the GraphQL mutation system requires Parse Server to be able to call itself by making requests to the URL set in `serverURL`.<br><br>Defaults is `/graphql`.
  * @property {Boolean} graphQLPublicIntrospection Enable public introspection for the GraphQL endpoint, defaults to false
  * @property {String} graphQLSchema Full path to your GraphQL custom schema.graphql file
  * @property {String} host The host to serve ParseServer on, defaults to 0.0.0.0
@@ -91,6 +91,7 @@
  * @property {Any} push Configuration for push, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#push-notifications
  * @property {RateLimitOptions[]} rateLimit Options to limit repeated requests to Parse Server APIs. This can be used to protect sensitive endpoints such as `/requestPasswordReset` from brute-force attacks or Parse Server as a whole from denial-of-service (DoS) attacks.<br><br>ℹ️ Mind the following limitations:<br>- rate limits applied per IP address; this limits protection against distributed denial-of-service (DDoS) attacks where many requests are coming from various IP addresses<br>- if multiple Parse Server instances are behind a load balancer or ran in a cluster, each instance will calculate it's own request rates, independent from other instances; this limits the applicability of this feature when using a load balancer and another rate limiting solution that takes requests across all instances into account may be more suitable<br>- this feature provides basic protection against denial-of-service attacks, but a more sophisticated solution works earlier in the request flow and prevents a malicious requests to even reach a server instance; it's therefore recommended to implement a solution according to architecture and user case.
  * @property {String} readOnlyMasterKey Read-only key, which has the same capabilities as MasterKey without writes
+ * @property {Function} requestContextMiddleware Options to customize the request context using inversion of control/dependency injection.
  * @property {RequestKeywordDenylist[]} requestKeywordDenylist An array of keys and values that are prohibited in database read and write requests to prevent potential security vulnerabilities. It is possible to specify only a key (`{"key":"..."}`), only a value (`{"value":"..."}`) or a key-value pair (`{"key":"...","value":"..."}`). The specification can use the following types: `boolean`, `numeric` or `string`, where `string` will be interpreted as a regex notation. Request data is deep-scanned for matching definitions to detect also any nested occurrences. Defaults are patterns that are likely to be used in malicious requests. Setting this option will override the default patterns.
  * @property {String} restAPIKey Key for REST calls
  * @property {Boolean} revokeSessionOnPasswordReset When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.
@@ -99,13 +100,14 @@
  * @property {SecurityOptions} security The security options to identify and report weak security settings.
  * @property {Boolean} sendUserEmailVerification Set to `false` to prevent sending of verification email. Supports a function with a return value of `true` or `false` for conditional email sending.<br><br>Default is `true`.<br>
  * @property {Function} serverCloseComplete Callback when server has closed
- * @property {String} serverURL URL to your parse server with http:// or https://.
+ * @property {String} serverURL The URL to Parse Server.<br><br>⚠️ Certain server features or adapters may require Parse Server to be able to call itself by making requests to the URL set in `serverURL`. If a feature requires this, it is mentioned in the documentation. In that case ensure that the URL is accessible from the server itself.
  * @property {Number} sessionLength Session duration, in seconds, defaults to 1 year
  * @property {Boolean} silent Disables console output
  * @property {Boolean} startLiveQueryServer Starts the liveQuery server
  * @property {Any} trustProxy The trust proxy settings. It is important to understand the exact setup of the reverse proxy, since this setting will trust values provided in the Parse Server API request. See the <a href="https://expressjs.com/en/guide/behind-proxies.html">express trust proxy settings</a> documentation. Defaults to `false`.
  * @property {String[]} userSensitiveFields Personally identifiable information fields in the user table the should be removed for non-authorized users. Deprecated @see protectedFields
  * @property {Boolean} verbose Set the logging to verbose
+ * @property {Boolean} verifyServerUrl Parse Server makes a HTTP request to the URL set in `serverURL` at the end of its launch routine to verify that the launch succeeded. If this option is set to `false`, the verification will be skipped. This can be useful in environments where the server URL is not accessible from the server itself, such as when running behind a firewall or in certain containerized environments.<br><br>⚠️ Server URL verification requires Parse Server to be able to call itself by making requests to the URL set in `serverURL`.<br><br>Default is `true`.
  * @property {Boolean} verifyUserEmails Set to `true` to require users to verify their email address to complete the sign-up process. Supports a function with a return value of `true` or `false` for conditional verification.<br><br>Default is `false`.
  * @property {String} webhookKey Key sent with outgoing webhook calls
  */
@@ -241,6 +243,7 @@
  * @property {Boolean} autoSelectFamily The MongoDB driver option to set whether the socket attempts to connect to IPv6 and IPv4 addresses until a connection is established. If available, the driver will select the first IPv6 address.
  * @property {Number} autoSelectFamilyAttemptTimeout The MongoDB driver option to specify the amount of time in milliseconds to wait for a connection attempt to finish before trying the next address when using the autoSelectFamily option. If set to a positive integer less than 10, the value 10 is used instead.
  * @property {Number} connectTimeoutMS The MongoDB driver option to specify the amount of time, in milliseconds, to wait to establish a single TCP socket connection to the server before raising an error. Specifying 0 disables the connection timeout.
+ * @property {Boolean} disableIndexFieldValidation Set to `true` to disable validation of index fields. When disabled, indexes can be created even if the fields do not exist in the schema. This can be useful when creating indexes on fields that will be added later.
  * @property {Boolean} enableSchemaHooks Enables database real-time hooks to update single schema cache. Set to `true` if using multiple Parse Servers instances connected to the same database. Failing to do so will cause a schema change to not propagate to all instances and re-syncing will only happen when the instances restart. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required.
  * @property {Number} maxPoolSize The MongoDB driver option to set the maximum number of opened, cached, ready-to-use database connections maintained by the driver.
  * @property {Number} maxStalenessSeconds The MongoDB driver option to set the maximum replication lag for reads from secondary nodes.

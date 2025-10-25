@@ -593,7 +593,7 @@ class DatabaseController {
               convertUsernameToLowercase(update, className, this.options);
               transformAuthData(className, update, schema);
               if (validateOnly) {
-                return this.adapter.find(className, schema, query, {}).then(result => {
+                return this.adapter.find(className, schema, query, { readPreference: 'primary' }).then(result => {
                   if (!result || !result.length) {
                     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
                   }

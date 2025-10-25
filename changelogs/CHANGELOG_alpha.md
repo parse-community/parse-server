@@ -1,3 +1,59 @@
+# [8.3.0-alpha.12](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.11...8.3.0-alpha.12) (2025-10-25)
+
+
+### Features
+
+* Add Parse Server option `verifyServerUrl` to disable server URL verification on server launch ([#9881](https://github.com/parse-community/parse-server/issues/9881)) ([b298ccc](https://github.com/parse-community/parse-server/commit/b298cccd9fb4f664b9d83894faad6d1ea7a3c964))
+
+# [8.3.0-alpha.11](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.10...8.3.0-alpha.11) (2025-10-24)
+
+
+### Bug Fixes
+
+* Stale data read in validation query on `Parse.Object` update causes inconsistency between validation read and subsequent update write operation ([#9859](https://github.com/parse-community/parse-server/issues/9859)) ([f49efaf](https://github.com/parse-community/parse-server/commit/f49efaf5bb1d6b19f6d6712f7cdf073855c95c6e))
+
+# [8.3.0-alpha.10](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.9...8.3.0-alpha.10) (2025-10-22)
+
+
+### Bug Fixes
+
+* Error in `afterSave` trigger for `Parse.Role` due to `name` field ([#9883](https://github.com/parse-community/parse-server/issues/9883)) ([eb052d8](https://github.com/parse-community/parse-server/commit/eb052d8e6abe1ae32505fd068d5445eaf950a770))
+
+# [8.3.0-alpha.9](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.8...8.3.0-alpha.9) (2025-10-19)
+
+
+### Bug Fixes
+
+* Server URL verification before server is ready ([#9882](https://github.com/parse-community/parse-server/issues/9882)) ([178bd5c](https://github.com/parse-community/parse-server/commit/178bd5c5e258d9501c9ac4d35a3a105ab64be67e))
+
+# [8.3.0-alpha.8](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.7...8.3.0-alpha.8) (2025-10-16)
+
+
+### Bug Fixes
+
+* Warning logged when setting option `databaseOptions.disableIndexFieldValidation` ([#9880](https://github.com/parse-community/parse-server/issues/9880)) ([1815b01](https://github.com/parse-community/parse-server/commit/1815b019b52565d2bc87be2596a49aea7600aeba))
+
+# [8.3.0-alpha.7](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.6...8.3.0-alpha.7) (2025-10-15)
+
+
+### Bug Fixes
+
+* Security upgrade to parse 7.0.1 ([#9877](https://github.com/parse-community/parse-server/issues/9877)) ([abfa94c](https://github.com/parse-community/parse-server/commit/abfa94cd6de2c4e76337931c8ea8311c4ccf2a1a))
+
+# [8.3.0-alpha.6](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.5...8.3.0-alpha.6) (2025-10-14)
+
+
+### Features
+
+* Add request context middleware for config and dependency injection in hooks ([#8480](https://github.com/parse-community/parse-server/issues/8480)) ([64f104e](https://github.com/parse-community/parse-server/commit/64f104e5c5f8863098e801eee632c14fcbd9b6f9))
+
+# [8.3.0-alpha.5](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.4...8.3.0-alpha.5) (2025-10-14)
+
+
+### Features
+
+* Allow returning objects in `Parse.Cloud.beforeFind` without invoking database query ([#9770](https://github.com/parse-community/parse-server/issues/9770)) ([0b47407](https://github.com/parse-community/parse-server/commit/0b4740714c29ba99672bc535619ee3516abd356f))
+
 # [8.3.0-alpha.4](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.3...8.3.0-alpha.4) (2025-10-09)
 
 

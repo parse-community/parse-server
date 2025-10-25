@@ -607,6 +607,41 @@ describe('ParseGraphQLServer', () => {
         ]);
       };
 
+      describe('Context', () => {
+        it('should support dependency injection on graphql  api', async () => {
+          const requestContextMiddleware = (req, res, next) => {
+            req.config.aCustomController = 'aCustomController';
+            next();
+          };
+
+          let called;
+          const parseServer = await reconfigureServer({ requestContextMiddleware });
+          await createGQLFromParseServer(parseServer);
+          Parse.Cloud.beforeSave('_User', request => {
+            expect(request.config.aCustomController).toEqual('aCustomController');
+            called = true;
+          });
+
+          await apolloClient.query({
+            query: gql`
+                  mutation {
+                    createUser(input: { fields: { username: "test", password: "test" } }) {
+                      user {
+                        objectId
+                      }
+                    }
+                  }
+                `,
+            context: {
+              headers: {
+                'X-Parse-Master-Key': 'test',
+              },
+            }
+          })
+          expect(called).toBe(true);
+        })
+      })
+
       describe('Introspection', () => {
         it('should have public introspection disabled by default without master key', async () => {
 
