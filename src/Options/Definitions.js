@@ -619,7 +619,7 @@ module.exports.ParseServerOptions = {
   verifyServerUrl: {
     env: 'PARSE_SERVER_VERIFY_SERVER_URL',
     help:
-      'Set to `false` to skip the server URL verification on startup. This can be useful in environments where the server URL is not accessible from the server itself, such as when running behind a firewall, in certain containerized environments, or in test environments like Jest where the verification may cause issues or unnecessary delays during test execution.<br><br>Default is `true`.',
+      'Parse Server makes a HTTP request to the URL set in `serverURL` at the end of its launch routine to verify that the launch succeeded. If this option is set to `false`, the verification will be skipped. This can be useful in environments where the server URL is not accessible from the server itself, such as when running behind a firewall or in certain containerized environments.<br><br>⚠️ Certain server features or adapters may require Parse Server to be able to call itself by making requests to the URL set in `serverURL`. If a feature requires this, it is mentioned in the documentation.<br><br>Default is `true`.',
     action: parsers.booleanParser,
     default: true,
   },
