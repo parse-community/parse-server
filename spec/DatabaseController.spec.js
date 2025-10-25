@@ -615,6 +615,76 @@ describe('DatabaseController', function () {
       expect(result2.length).toEqual(1);
     });
   });
+
+  describe('update with validateOnly', () => {
+    const mockStorageAdapter = {
+      findOneAndUpdate: () => Promise.resolve({}),
+      find: () => Promise.resolve([{ objectId: 'test123', testField: 'initialValue' }]),
+      watch: () => Promise.resolve(),
+      getAllClasses: () =>
+        Promise.resolve([
+          {
+            className: 'TestObject',
+            fields: { testField: 'String' },
+            indexes: {},
+            classLevelPermissions: { protectedFields: {} },
+          },
+        ]),
+    };
+
+    it('should use primary readPreference when validateOnly is true', async () => {
+      const databaseController = new DatabaseController(mockStorageAdapter, {});
+      const findSpy = spyOn(mockStorageAdapter, 'find').and.callThrough();
+      const findOneAndUpdateSpy = spyOn(mockStorageAdapter, 'findOneAndUpdate').and.callThrough();
+
+      try {
+        // Call update with validateOnly: true (same as RestWrite.runBeforeSaveTrigger)
+        await databaseController.update(
+          'TestObject',
+          { objectId: 'test123' },
+          { testField: 'newValue' },
+          {},
+          true, // skipSanitization: true (matches RestWrite behavior)
+          true  // validateOnly: true
+        );
+      } catch (error) {
+        // validateOnly may throw, but we're checking the find call options
+      }
+
+      // Verify that find was called with primary readPreference
+      expect(findSpy).toHaveBeenCalled();
+      const findCall = findSpy.calls.mostRecent();
+      expect(findCall.args[3]).toEqual({ readPreference: 'primary' }); // options parameter
+
+      // Verify that findOneAndUpdate was NOT called (only validation, no actual update)
+      expect(findOneAndUpdateSpy).not.toHaveBeenCalled();
+    });
+
+    it('should not use primary readPreference when validateOnly is false', async () => {
+      const databaseController = new DatabaseController(mockStorageAdapter, {});
+      const findSpy = spyOn(mockStorageAdapter, 'find').and.callThrough();
+      const findOneAndUpdateSpy = spyOn(mockStorageAdapter, 'findOneAndUpdate').and.callThrough();
+
+      try {
+        // Call update with validateOnly: false
+        await databaseController.update(
+          'TestObject',
+          { objectId: 'test123' },
+          { testField: 'newValue' },
+          {},
+          false, // skipSanitization
+          false  // validateOnly
+        );
+      } catch (error) {
+        // May throw for other reasons, but we're checking the call pattern
+      }
+
+      // When validateOnly is false, find should not be called for validation
+      // Instead, findOneAndUpdate should be called
+      expect(findSpy).not.toHaveBeenCalled();
+      expect(findOneAndUpdateSpy).toHaveBeenCalled();
+    });
+  });
 });
 
 function buildCLP(pointerNames) {

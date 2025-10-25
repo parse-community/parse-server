@@ -1,3 +1,10 @@
+# [8.3.0-alpha.11](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.10...8.3.0-alpha.11) (2025-10-24)
+
+
+### Bug Fixes
+
+* Stale data read in validation query on `Parse.Object` update causes inconsistency between validation read and subsequent update write operation ([#9859](https://github.com/parse-community/parse-server/issues/9859)) ([f49efaf](https://github.com/parse-community/parse-server/commit/f49efaf5bb1d6b19f6d6712f7cdf073855c95c6e))
+
 # [8.3.0-alpha.10](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.9...8.3.0-alpha.10) (2025-10-22)
 
 
