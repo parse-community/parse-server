@@ -14,7 +14,8 @@ The following is a list of deprecations, according to the [Deprecation Policy](h
 | DEPPS8 | Login with expired 3rd party authentication token defaults to `false` | [#7079](https://github.com/parse-community/parse-server/pull/7079)   | 5.3.0 (2022)                    | 7.0.0 (2024)                    | removed            | -     |
 | DEPPS9 | Rename LiveQuery `fields` option to `keys` | [#8389](https://github.com/parse-community/parse-server/issues/8389)   | 6.0.0 (2023)                    | 7.0.0 (2024)                    | removed            | -     |
 | DEPPS10 | Encode `Parse.Object` in Cloud Function and remove option `encodeParseObjectInCloudFunction` | [#8634](https://github.com/parse-community/parse-server/issues/8634)   | 6.2.0 (2023)                    | 9.0.0 (2026)                    | deprecated            | -     |
-| DEPPS11 | Replace `PublicAPIRouter` with `PagesRouter` | [#7625](https://github.com/parse-community/parse-server/issues/7625)   | 8.0.0 (2025)                    | 9.0.0 (2026)                    | deprecated            | -     |
+| DEPPS11 | Replace `PublicAPIRouter` with `PagesRouter` | [#7625](https://github.com/parse-community/parse-server/issues/7625)   | 8.0.0 (2025)                    | 9.0.0 (2026)     
+| DEPPS12 | Restrict `explain` query parameter to master key                                             | [#7519](https://github.com/parse-community/parse-server/issues/7519) | 8.3.0 (2025)                    | 9.0.0 (2027)                    | deprecated            |               | deprecated            | -     |
 
 [i_deprecation]: ## "The version and date of the deprecation."
 [i_removal]: ## "The version and date of the planned removal."

@@ -13,6 +13,7 @@ var RestQuery = require('./RestQuery');
 var RestWrite = require('./RestWrite');
 var triggers = require('./triggers');
 const { enforceRoleSecurity } = require('./SharedRest');
+const Deprecator = require('./Deprecator/Deprecator');
 
 function checkTriggers(className, config, types) {
   return types.some(triggerType => {
@@ -34,6 +35,19 @@ async function runFindTriggers(
   options = {}
 ) {
   const { isGet } = options;
+
+  if (restOptions && restOptions.explain && !auth.isMaster) {
+    // After the Deprecation DEPPS12 uncomment this to throw an error
+    // throw new Parse.Error(
+    //   Parse.Error.INVALID_QUERY,
+    //   'Using the explain query parameter without the master key'
+    // );
+
+    // Deprecation DEPPS12
+    Deprecator.logRuntimeDeprecation({
+      usage: 'Using the explain query parameter without the master key',
+    });
+  }
 
   // Run beforeFind trigger - may modify query or return objects directly
   const result = await triggers.maybeRunQueryTrigger(
