@@ -1,3 +1,10 @@
+# [8.3.0-alpha.12](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.11...8.3.0-alpha.12) (2025-10-25)
+
+
+### Features
+
+* Add Parse Server option `verifyServerUrl` to disable server URL verification on server launch ([#9881](https://github.com/parse-community/parse-server/issues/9881)) ([b298ccc](https://github.com/parse-community/parse-server/commit/b298cccd9fb4f664b9d83894faad6d1ea7a3c964))
+
 # [8.3.0-alpha.11](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.10...8.3.0-alpha.11) (2025-10-24)
 
 

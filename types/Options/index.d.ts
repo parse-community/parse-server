@@ -122,6 +122,7 @@ export interface ParseServerOptions {
     allowExpiredAuthDataToken?: boolean;
     requestKeywordDenylist?: (RequestKeywordDenylist[]);
     rateLimit?: (RateLimitOptions[]);
+    verifyServerUrl?: boolean;
 }
 export interface RateLimitOptions {
     requestPath: string;
