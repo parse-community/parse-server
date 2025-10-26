@@ -1,7 +1,7 @@
 import corsMiddleware from 'cors';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.js';
 import { ApolloServer } from '@apollo/server';
-import { expressMiddleware } from '@apollo/server/express4';
+import { expressMiddleware } from '@as-integrations/express5';
 import { ApolloServerPluginCacheControlDisabled } from '@apollo/server/plugin/disabled';
 import express from 'express';
 import { execute, subscribe, GraphQLError } from 'graphql';
@@ -104,7 +104,7 @@ class ParseGraphQLServer {
         // needed since we use graphql upload
         requestHeaders: ['X-Parse-Application-Id'],
       },
-      introspection: this.config.graphQLPublicIntrospection,
+      introspection: true,
       plugins: [ApolloServerPluginCacheControlDisabled(), IntrospectionControlPlugin(this.config.graphQLPublicIntrospection)],
       schema,
     });
