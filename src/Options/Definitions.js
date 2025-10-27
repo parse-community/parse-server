@@ -296,7 +296,8 @@ module.exports.ParseServerOptions = {
   },
   graphQLPath: {
     env: 'PARSE_SERVER_GRAPHQL_PATH',
-    help: 'Mount path for the GraphQL endpoint, defaults to /graphql',
+    help:
+      'The mount path for the GraphQL endpoint<br><br>\u26A0\uFE0F File upload inside the GraphQL mutation system requires Parse Server to be able to call itself by making requests to the URL set in `serverURL`.<br><br>Defaults is `/graphql`.',
     default: '/graphql',
   },
   graphQLPublicIntrospection: {
@@ -579,7 +580,8 @@ module.exports.ParseServerOptions = {
   },
   serverURL: {
     env: 'PARSE_SERVER_URL',
-    help: 'URL to your parse server with http:// or https://.',
+    help:
+      'The URL to Parse Server.<br><br>\u26A0\uFE0F Certain server features or adapters may require Parse Server to be able to call itself by making requests to the URL set in `serverURL`. If a feature requires this, it is mentioned in the documentation. In that case ensure that the URL is accessible from the server itself.',
     required: true,
   },
   sessionLength: {
@@ -615,6 +617,13 @@ module.exports.ParseServerOptions = {
     env: 'VERBOSE',
     help: 'Set the logging to verbose',
     action: parsers.booleanParser,
+  },
+  verifyServerUrl: {
+    env: 'PARSE_SERVER_VERIFY_SERVER_URL',
+    help:
+      'Parse Server makes a HTTP request to the URL set in `serverURL` at the end of its launch routine to verify that the launch succeeded. If this option is set to `false`, the verification will be skipped. This can be useful in environments where the server URL is not accessible from the server itself, such as when running behind a firewall or in certain containerized environments.<br><br>\u26A0\uFE0F Server URL verification requires Parse Server to be able to call itself by making requests to the URL set in `serverURL`.<br><br>Default is `true`.',
+    action: parsers.booleanParser,
+    default: true,
   },
   verifyUserEmails: {
     env: 'PARSE_SERVER_VERIFY_USER_EMAILS',
