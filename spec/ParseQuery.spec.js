@@ -8,6 +8,7 @@ const Parse = require('parse/node');
 const request = require('../lib/request');
 const ParseServerRESTController = require('../lib/ParseServerRESTController').ParseServerRESTController;
 const ParseServer = require('../lib/ParseServer').default;
+import Deprecator from '../lib/Deprecator/Deprecator';
 
 const masterKeyHeaders = {
   'X-Parse-Application-Id': 'test',
