@@ -729,10 +729,134 @@ describe('ParseGraphQLServer', () => {
             })
           expect(introspection.data).toBeDefined();
         });
+
+        it('should block __type introspection without master key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                query TypeIntrospection {
+                  __type(name: "User") {
+                    name
+                    kind
+                  }
+                }
+              `,
+            });
+
+            fail('should have thrown an error');
+          } catch (e) {
+            expect(e.message).toEqual('Response not successful: Received status code 403');
+            expect(e.networkError.result.errors[0].message).toEqual('Introspection is not allowed');
+          }
+        });
+
+        it('should block aliased __type introspection without master key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                query AliasedTypeIntrospection {
+                  myAlias: __type(name: "User") {
+                    name
+                    kind
+                  }
+                }
+              `,
+            });
+
+            fail('should have thrown an error');
+          } catch (e) {
+            expect(e.message).toEqual('Response not successful: Received status code 403');
+            expect(e.networkError.result.errors[0].message).toEqual('Introspection is not allowed');
+          }
+        });
+
+        it('should allow __type introspection with master key', async () => {
+          const introspection = await apolloClient.query({
+            query: gql`
+              query TypeIntrospection {
+                __type(name: "User") {
+                  name
+                  kind
+                }
+              }
+            `,
+            context: {
+              headers: {
+                'X-Parse-Master-Key': 'test',
+              },
+            },
+          });
+          expect(introspection.data).toBeDefined();
+          expect(introspection.data.__type).toBeDefined();
+          expect(introspection.errors).not.toBeDefined();
+        });
+
+        it('should allow aliased __type introspection with master key', async () => {
+          const introspection = await apolloClient.query({
+            query: gql`
+              query AliasedTypeIntrospection {
+                myAlias: __type(name: "User") {
+                  name
+                  kind
+                }
+              }
+            `,
+            context: {
+              headers: {
+                'X-Parse-Master-Key': 'test',
+              },
+            },
+          });
+          expect(introspection.data).toBeDefined();
+          expect(introspection.data.myAlias).toBeDefined();
+          expect(introspection.errors).not.toBeDefined();
+        });
+
+        it('should allow __type introspection with maintenance key', async () => {
+          const introspection = await apolloClient.query({
+            query: gql`
+              query TypeIntrospection {
+                __type(name: "User") {
+                  name
+                  kind
+                }
+              }
+            `,
+            context: {
+              headers: {
+                'X-Parse-Maintenance-Key': 'test2',
+              },
+            },
+          });
+          expect(introspection.data).toBeDefined();
+          expect(introspection.data.__type).toBeDefined();
+          expect(introspection.errors).not.toBeDefined();
+        });
+
+        it('should allow __type introspection when public introspection is enabled', async () => {
+          const parseServer = await reconfigureServer();
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
+
+          const introspection = await apolloClient.query({
+            query: gql`
+              query TypeIntrospection {
+                __type(name: "User") {
+                  name
+                  kind
+                }
+              }
+            `,
+          });
+          expect(introspection.data).toBeDefined();
+          expect(introspection.data.__type).toBeDefined();
+        });
       });
 
 
       describe('Default Types', () => {
+        beforeEach(async () => {
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
+        });
         it('should have Object scalar type', async () => {
           const objectType = (
             await apolloClient.query({
@@ -892,6 +1016,10 @@ describe('ParseGraphQLServer', () => {
       });
 
       describe('Relay Specific Types', () => {
+        beforeEach(async () => {
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
+        });
+
         let clearCache;
         beforeEach(async () => {
           if (!clearCache) {
@@ -1435,6 +1563,9 @@ describe('ParseGraphQLServer', () => {
       });
 
       describe('Parse Class Types', () => {
+        beforeEach(async () => {
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
+        });
         it('should have all expected types', async () => {
           await parseServer.config.databaseController.loadSchema();
 
@@ -1546,6 +1677,7 @@ describe('ParseGraphQLServer', () => {
         beforeEach(async () => {
           await parseGraphQLServer.setGraphQLConfig({});
           await resetGraphQLCache();
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
         });
 
         it_id('d6a23a2f-ca18-4b15-bc73-3e636f99e6bc')(it)('should only include types in the enabledForClasses list', async () => {
@@ -6695,7 +6827,7 @@ describe('ParseGraphQLServer', () => {
             );
             expect(
               (await deleteObject(object4.className, object4.id)).data.delete[
-                object4.className.charAt(0).toLowerCase() + object4.className.slice(1)
+              object4.className.charAt(0).toLowerCase() + object4.className.slice(1)
               ]
             ).toEqual({ objectId: object4.id, __typename: 'PublicClass' });
             await expectAsync(object4.fetch({ useMasterKey: true })).toBeRejectedWith(
@@ -7832,6 +7964,9 @@ describe('ParseGraphQLServer', () => {
       });
 
       describe('Functions Mutations', () => {
+        beforeEach(async () => {
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
+        });
         it('can be called', async () => {
           try {
             const clientMutationId = uuidv4();
@@ -11299,25 +11434,25 @@ describe('ParseGraphQLServer', () => {
           },
         });
         const SomeClassType = new GraphQLObjectType({
-            name: 'SomeClass',
-            fields: {
-              nameUpperCase: {
-                type: new GraphQLNonNull(GraphQLString),
-                resolve: p => p.name.toUpperCase(),
-              },
-              type: { type: TypeEnum },
-              language: {
-                type: new GraphQLEnumType({
-                  name: 'LanguageEnum',
-                  values: {
-                    fr: { value: 'fr' },
-                    en: { value: 'en' },
-                  },
-                }),
-                resolve: () => 'fr',
-              },
+          name: 'SomeClass',
+          fields: {
+            nameUpperCase: {
+              type: new GraphQLNonNull(GraphQLString),
+              resolve: p => p.name.toUpperCase(),
             },
-          }),
+            type: { type: TypeEnum },
+            language: {
+              type: new GraphQLEnumType({
+                name: 'LanguageEnum',
+                values: {
+                  fr: { value: 'fr' },
+                  en: { value: 'en' },
+                },
+              }),
+              resolve: () => 'fr',
+            },
+          },
+        }),
           parseGraphQLServer = new ParseGraphQLServer(parseServer, {
             graphQLPath: '/graphql',
             graphQLCustomTypeDefs: new GraphQLSchema({
