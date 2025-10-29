@@ -2,7 +2,7 @@
 
 ### Features
 
-- Deprecation DEPPS12: `explain` query parameter without master key ([#7519](https://github.com/parse-community/parse-server/issues/7519)) ([DEPPS12](https://github.com/parse-community/parse-server/blob/alpha/DEPRECATIONS.md#depps12))
+- Deprecation DEPPS12: database option `allowPublicExplain` defaults to `true` ([#7519](https://github.com/parse-community/parse-server/issues/7519)) ([DEPPS12](https://github.com/parse-community/parse-server/blob/alpha/DEPRECATIONS.md#depps12))
 
 # [8.3.0-alpha.12](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.11...8.3.0-alpha.12) (2025-10-25)
 
