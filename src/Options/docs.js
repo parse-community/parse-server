@@ -240,6 +240,7 @@
 
 /**
  * @interface DatabaseOptions
+ * @property {Boolean} allowPublicExplain Set to `true` to allow explain queries without master key. This option is deprecated and the default will change to `false` in a future version.
  * @property {Boolean} autoSelectFamily The MongoDB driver option to set whether the socket attempts to connect to IPv6 and IPv4 addresses until a connection is established. If available, the driver will select the first IPv6 address.
  * @property {Number} autoSelectFamilyAttemptTimeout The MongoDB driver option to specify the amount of time in milliseconds to wait for a connection attempt to finish before trying the next address when using the autoSelectFamily option. If set to a positive integer less than 10, the value 10 is used instead.
  * @property {Number} connectTimeoutMS The MongoDB driver option to specify the amount of time, in milliseconds, to wait to establish a single TCP socket connection to the server before raising an error. Specifying 0 disables the connection timeout.

@@ -5385,39 +5385,86 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_id('DEPPS12')(it_only_db('mongo'))(
-    'throws error when using explain without master key',
+  it_id('a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d')(it_only_db('mongo'))(
+    'explain works with and without master key when allowPublicExplain is true',
     async () => {
+      await reconfigureServer({
+        databaseURI: 'mongodb://localhost:27017/parse',
+        databaseAdapter: null,
+        databaseOptions: {
+          allowPublicExplain: true,
+        },
+      });
+
       const obj = new TestObject({ foo: 'bar' });
       await obj.save();
 
-      const spyLogRuntimeDeprecation = spyOn(Deprecator, 'logRuntimeDeprecation');
-
-      // Test that explain without master key throws an error
+      // Without master key
       const query = new Parse.Query(TestObject);
       query.explain();
+      const resultWithoutMasterKey = await query.find();
+      expect(resultWithoutMasterKey).toBeDefined();
 
-      try {
-        await query.find();
+      // With master key
+      const queryWithMasterKey = new Parse.Query(TestObject);
+      queryWithMasterKey.explain();
+      const resultWithMasterKey = await queryWithMasterKey.find({ useMasterKey: true });
+      expect(resultWithMasterKey).toBeDefined();
+    }
+  );
 
-        expect(spyLogRuntimeDeprecation).toHaveBeenCalledTimes(1);
-        expect(spyLogRuntimeDeprecation).toHaveBeenCalledWith({
-          usage: 'Using the explain query parameter without the master key',
-        });
-        // fail('Should have thrown an error');
-      } catch (error) {
-        // Uncomment this after the Deprecation DEPPS12
-        // expect(error.code).toEqual(Parse.Error.INVALID_QUERY);
-        // expect(error.message).toEqual('Using the explain query parameter without the master key');
-      }
+  it_id('b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e')(it_only_db('mongo'))(
+    'explain requires master key when allowPublicExplain is false',
+    async () => {
+      console.log("just before test")
+      await reconfigureServer({
+        databaseURI: 'mongodb://localhost:27017/parse',
+        databaseAdapter: null,
+        databaseOptions: {
+          allowPublicExplain: false,
+        },
+      });
 
-      // Test that explain with master key works fine
+      const obj = new TestObject({ foo: 'bar' });
+      await obj.save();
+
+      // Without master key
+      const query = new Parse.Query(TestObject);
+      query.explain();
+      await expectAsync(query.find()).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.INVALID_QUERY,
+          'Using the explain query parameter requires the master key'
+        )
+      );
+
+      // With master key
       const queryWithMasterKey = new Parse.Query(TestObject);
       queryWithMasterKey.explain();
       const result = await queryWithMasterKey.find({ useMasterKey: true });
-
-      // Should return explain result (not throw error)
       expect(result).toBeDefined();
+    }
+  );
+
+  it_id('c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f')(it_only_db('mongo'))(
+    'explain works with and without master key by default (allowPublicExplain not set)',
+    async () => {
+      await reconfigureServer({});
+
+      const obj = new TestObject({ foo: 'bar' });
+      await obj.save();
+
+      // Without master key (default behavior)
+      const query = new Parse.Query(TestObject);
+      query.explain();
+      const resultWithoutMasterKey = await query.find();
+      expect(resultWithoutMasterKey).toBeDefined();
+
+      // With master key
+      const queryWithMasterKey = new Parse.Query(TestObject);
+      queryWithMasterKey.explain();
+      const resultWithMasterKey = await queryWithMasterKey.find({ useMasterKey: true });
+      expect(resultWithMasterKey).toBeDefined();
     }
   );
 });

@@ -154,8 +154,13 @@ export class MongoStorageAdapter implements StorageAdapter {
     this.enableSchemaHooks = !!mongoOptions.enableSchemaHooks;
     this.schemaCacheTtl = mongoOptions.schemaCacheTtl;
     this.disableIndexFieldValidation = !!mongoOptions.disableIndexFieldValidation;
-    for (const key of ['enableSchemaHooks', 'schemaCacheTtl', 'maxTimeMS', 'disableIndexFieldValidation']) {
-      delete mongoOptions[key];
+    for (const key of [
+      'enableSchemaHooks',
+      'schemaCacheTtl',
+      'maxTimeMS',
+      'disableIndexFieldValidation',
+      'allowPublicExplain',
+    ]) {
       delete this._mongoOptions[key];
     }
   }

@@ -1083,6 +1083,13 @@ module.exports.FileUploadOptions = {
   },
 };
 module.exports.DatabaseOptions = {
+  allowPublicExplain: {
+    env: 'PARSE_SERVER_DATABASE_ALLOW_PUBLIC_EXPLAIN',
+    help:
+      'Set to `true` to allow explain queries without master key. This option is deprecated and the default will change to `false` in a future version.',
+    action: parsers.booleanParser,
+    default: true,
+  },
   autoSelectFamily: {
     env: 'PARSE_SERVER_DATABASE_AUTO_SELECT_FAMILY',
     help:
