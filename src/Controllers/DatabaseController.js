@@ -1764,6 +1764,20 @@ class DatabaseController {
       throw error;
     });
 
+    await this.adapter
+      .ensureIndex('_User', requiredUserFields, ['_email_verify_token'], '_email_verify_token', false)
+      .catch(error => {
+        logger.warn('Unable to create index for email verification token: ', error);
+        throw error;
+      });
+
+    await this.adapter
+      .ensureIndex('_User', requiredUserFields, ['_perishable_token'], '_perishable_token', false)
+      .catch(error => {
+        logger.warn('Unable to create index for password reset token: ', error);
+        throw error;
+      });
+
     await this.adapter.ensureUniqueness('_Role', requiredRoleFields, ['name']).catch(error => {
       logger.warn('Unable to ensure uniqueness for role name: ', error);
       throw error;
