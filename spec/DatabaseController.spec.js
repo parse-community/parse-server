@@ -413,6 +413,8 @@ describe('DatabaseController', function () {
           case_insensitive_username: { username: 1 },
           case_insensitive_email: { email: 1 },
           email_1: { email: 1 },
+          _email_verify_token: { _email_verify_token: 1 },
+          _perishable_token: { _perishable_token: 1 },
         });
       }
     );
@@ -437,6 +439,8 @@ describe('DatabaseController', function () {
           _id_: { _id: 1 },
           username_1: { username: 1 },
           email_1: { email: 1 },
+          _email_verify_token: { _email_verify_token: 1 },
+          _perishable_token: { _perishable_token: 1 },
         });
       }
     );
