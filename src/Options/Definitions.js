@@ -1101,6 +1101,34 @@ module.exports.DatabaseOptions = {
       'The MongoDB driver option to specify the amount of time, in milliseconds, to wait to establish a single TCP socket connection to the server before raising an error. Specifying 0 disables the connection timeout.',
     action: parsers.numberParser('connectTimeoutMS'),
   },
+  createIndexEmail: {
+    env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_EMAIL',
+    help:
+      'Set to `true` to automatically create indexes on the email field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F The automatically created index may change in the future to be optimized for the internal usage by Parse Server. Keep this in mind when manually creating this index.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  createIndexEmailVerifyToken: {
+    env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_EMAIL_VERIFY_TOKEN',
+    help:
+      'Set to `true` to automatically create an index on the _email_verify_token field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F The automatically created index may change in the future to be optimized for the internal usage by Parse Server. Keep this in mind when manually creating this index.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  createIndexPasswordResetToken: {
+    env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_PASSWORD_RESET_TOKEN',
+    help:
+      'Set to `true` to automatically create an index on the _perishable_token field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F The automatically created index may change in the future to be optimized for the internal usage by Parse Server. Keep this in mind when manually creating this index.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  createIndexUsername: {
+    env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_USERNAME',
+    help:
+      'Set to `true` to automatically create indexes on the username field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F The automatically created index may change in the future to be optimized for the internal usage by Parse Server. Keep this in mind when manually creating this index.',
+    action: parsers.booleanParser,
+    default: true,
+  },
   disableIndexFieldValidation: {
     env: 'PARSE_SERVER_DATABASE_DISABLE_INDEX_FIELD_VALIDATION',
     help:
