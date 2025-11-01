@@ -77,7 +77,7 @@ describe('ParseLiveQuery query operation', function () {
     const parseLiveQueryServer = new ParseLiveQueryServer({
       appId: 'test',
       masterKey: 'test',
-      serverURL: 'http://localhost:1337/parse'
+      serverURL: Parse.serverURL
     });
 
     // Create test objects
@@ -163,7 +163,7 @@ describe('ParseLiveQuery query operation', function () {
     const parseLiveQueryServer = new ParseLiveQueryServer({
       appId: 'test',
       masterKey: 'test',
-      serverURL: 'http://localhost:1337/parse'
+      serverURL: Parse.serverURL
     });
 
     // Create test object with multiple fields
@@ -224,7 +224,7 @@ describe('ParseLiveQuery query operation', function () {
     const parseLiveQueryServer = new ParseLiveQueryServer({
       appId: 'test',
       masterKey: 'test',
-      serverURL: 'http://localhost:1337/parse'
+      serverURL: Parse.serverURL
     });
 
     // Create test objects
