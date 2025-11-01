@@ -649,4 +649,159 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       });
     });
   }
+
+  describe('index creation options', () => {
+    beforeEach(async () => {
+      await new MongoStorageAdapter({ uri: databaseURI }).deleteAllClasses();
+    });
+
+    async function getIndexes(collectionName) {
+      const adapter = Config.get(Parse.applicationId).database.adapter;
+      const collections = await adapter.database.listCollections({ name: collectionName }).toArray();
+      if (collections.length === 0) {
+        return [];
+      }
+      return await adapter.database.collection(collectionName).indexes();
+    }
+
+    it('should skip username index when createIndexUsername is false', async () => {
+      await reconfigureServer({
+        databaseAdapter: undefined,
+        databaseURI,
+        databaseOptions: { createIndexUsername: false },
+      });
+      const indexes = await getIndexes('_User');
+      expect(indexes.find(idx => idx.name === 'username_1')).toBeUndefined();
+    });
+
+    it('should create username index when createIndexUsername is true', async () => {
+      await reconfigureServer({
+        databaseAdapter: undefined,
+        databaseURI,
+        databaseOptions: { createIndexUsername: true },
+      });
+      const indexes = await getIndexes('_User');
+      expect(indexes.find(idx => idx.name === 'username_1')).toBeDefined();
+    });
+
+    it('should skip case-insensitive username index when createIndexUsernameCaseInsensitive is false', async () => {
+      await reconfigureServer({
+        databaseAdapter: undefined,
+        databaseURI,
+        databaseOptions: { createIndexUsernameCaseInsensitive: false },
+      });
+      const indexes = await getIndexes('_User');
+      expect(indexes.find(idx => idx.name === 'case_insensitive_username')).toBeUndefined();
+    });
+
+    it('should create case-insensitive username index when createIndexUsernameCaseInsensitive is true', async () => {
+      await reconfigureServer({
+        databaseAdapter: undefined,
+        databaseURI,
+        databaseOptions: { createIndexUsernameCaseInsensitive: true },
+      });
+      const indexes = await getIndexes('_User');
+      expect(indexes.find(idx => idx.name === 'case_insensitive_username')).toBeDefined();
+    });
+
+    it('should skip email index when createIndexEmail is false', async () => {
+      await reconfigureServer({
+        databaseAdapter: undefined,
+        databaseURI,
+        databaseOptions: { createIndexEmail: false },
+      });
+      const indexes = await getIndexes('_User');
+      expect(indexes.find(idx => idx.name === 'email_1')).toBeUndefined();
+    });
+
+    it('should create email index when createIndexEmail is true', async () => {
+      await reconfigureServer({
+        databaseAdapter: undefined,
+        databaseURI,
+        databaseOptions: { createIndexEmail: true },
+      });
+      const indexes = await getIndexes('_User');
+      expect(indexes.find(idx => idx.name === 'email_1')).toBeDefined();
+    });
+
+    it('should skip case-insensitive email index when createIndexEmailCaseInsensitive is false', async () => {
+      await reconfigureServer({
+        databaseAdapter: undefined,
+        databaseURI,
+        databaseOptions: { createIndexEmailCaseInsensitive: false },
+      });
+      const indexes = await getIndexes('_User');
+      expect(indexes.find(idx => idx.name === 'case_insensitive_email')).toBeUndefined();
+    });
+
+    it('should create case-insensitive email index when createIndexEmailCaseInsensitive is true', async () => {
+      await reconfigureServer({
+        databaseAdapter: undefined,
+        databaseURI,
+        databaseOptions: { createIndexEmailCaseInsensitive: true },
+      });
+      const indexes = await getIndexes('_User');
+      expect(indexes.find(idx => idx.name === 'case_insensitive_email')).toBeDefined();
+    });
+
+    it('should skip email verify token index when createIndexEmailVerifyToken is false', async () => {
+      await reconfigureServer({
+        databaseAdapter: undefined,
+        databaseURI,
+        databaseOptions: { createIndexEmailVerifyToken: false },
+      });
+      const indexes = await getIndexes('_User');
+      expect(indexes.find(idx => idx.name === '_email_verify_token' || idx.name === '_email_verify_token_1')).toBeUndefined();
+    });
+
+    it('should create email verify token index when createIndexEmailVerifyToken is true', async () => {
+      await reconfigureServer({
+        databaseAdapter: undefined,
+        databaseURI,
+        databaseOptions: { createIndexEmailVerifyToken: true },
+      });
+      const indexes = await getIndexes('_User');
+      expect(indexes.find(idx => idx.name === '_email_verify_token' || idx.name === '_email_verify_token_1')).toBeDefined();
+    });
+
+    it('should skip password reset token index when createIndexPasswordResetToken is false', async () => {
+      await reconfigureServer({
+        databaseAdapter: undefined,
+        databaseURI,
+        databaseOptions: { createIndexPasswordResetToken: false },
+      });
+      const indexes = await getIndexes('_User');
+      expect(indexes.find(idx => idx.name === '_perishable_token' || idx.name === '_perishable_token_1')).toBeUndefined();
+    });
+
+    it('should create password reset token index when createIndexPasswordResetToken is true', async () => {
+      await reconfigureServer({
+        databaseAdapter: undefined,
+        databaseURI,
+        databaseOptions: { createIndexPasswordResetToken: true },
+      });
+      const indexes = await getIndexes('_User');
+      expect(indexes.find(idx => idx.name === '_perishable_token' || idx.name === '_perishable_token_1')).toBeDefined();
+    });
+
+    it('should skip role name index when createIndexRoleName is false', async () => {
+      await reconfigureServer({
+        databaseAdapter: undefined,
+        databaseURI,
+        databaseOptions: { createIndexRoleName: false },
+      });
+      const indexes = await getIndexes('_Role');
+      expect(indexes.find(idx => idx.name === 'name_1')).toBeUndefined();
+    });
+
+    it('should create role name index when createIndexRoleName is true', async () => {
+      await reconfigureServer({
+        databaseAdapter: undefined,
+        databaseURI,
+        databaseOptions: { createIndexRoleName: true },
+      });
+      const indexes = await getIndexes('_Role');
+      expect(indexes.find(idx => idx.name === 'name_1')).toBeDefined();
+    });
+  });
 });
