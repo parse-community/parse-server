@@ -3,7 +3,7 @@
 const Parse = require('parse/node');
 
 describe('ParseLiveQuery query operation', function () {
-  beforeEach(function (done) {
+  beforeEach(function () {
     Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
     // Mock ParseWebSocketServer
     const mockParseWebSocketServer = jasmine.createSpy('ParseWebSocketServer');
@@ -15,7 +15,6 @@ describe('ParseLiveQuery query operation', function () {
     // Mock Client pushError
     const Client = require('../lib/LiveQuery/Client').Client;
     Client.pushError = jasmine.createSpy('pushError');
-    done();
   });
 
   afterEach(async function () {
