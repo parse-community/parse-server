@@ -1740,7 +1740,7 @@ class DatabaseController {
 
     const databaseOptions = this.options.databaseOptions || {};
 
-    if (databaseOptions.createIndexUsername) {
+    if (databaseOptions.createIndexUsername !== false) {
       await this.adapter.ensureUniqueness('_User', requiredUserFields, ['username']).catch(error => {
         logger.warn('Unable to ensure uniqueness for usernames: ', error);
         throw error;
@@ -1748,7 +1748,7 @@ class DatabaseController {
     }
 
     if (!this.options.enableCollationCaseComparison) {
-      if (databaseOptions.createIndexUsernameCaseInsensitive) {
+      if (databaseOptions.createIndexUsernameCaseInsensitive !== false) {
         await this.adapter
           .ensureIndex('_User', requiredUserFields, ['username'], 'case_insensitive_username', true)
           .catch(error => {
@@ -1757,7 +1757,7 @@ class DatabaseController {
           });
       }
 
-      if (databaseOptions.createIndexEmailCaseInsensitive) {
+      if (databaseOptions.createIndexEmailCaseInsensitive !== false) {
         await this.adapter
           .ensureIndex('_User', requiredUserFields, ['email'], 'case_insensitive_email', true)
           .catch(error => {
@@ -1767,14 +1767,14 @@ class DatabaseController {
       }
     }
 
-    if (databaseOptions.createIndexEmail) {
+    if (databaseOptions.createIndexEmail !== false) {
       await this.adapter.ensureUniqueness('_User', requiredUserFields, ['email']).catch(error => {
         logger.warn('Unable to ensure uniqueness for user email addresses: ', error);
         throw error;
       });
     }
 
-    if (databaseOptions.createIndexEmailVerifyToken) {
+    if (databaseOptions.createIndexEmailVerifyToken !== false) {
       await this.adapter
         .ensureIndex('_User', requiredUserFields, ['_email_verify_token'], '_email_verify_token', false)
         .catch(error => {
@@ -1783,7 +1783,7 @@ class DatabaseController {
         });
     }
 
-    if (databaseOptions.createIndexPasswordResetToken) {
+    if (databaseOptions.createIndexPasswordResetToken !== false) {
       await this.adapter
         .ensureIndex('_User', requiredUserFields, ['_perishable_token'], '_perishable_token', false)
         .catch(error => {
@@ -1792,7 +1792,7 @@ class DatabaseController {
         });
     }
 
-    if (databaseOptions.createIndexRoleName) {
+    if (databaseOptions.createIndexRoleName !== false) {
       await this.adapter.ensureUniqueness('_Role', requiredRoleFields, ['name']).catch(error => {
         logger.warn('Unable to ensure uniqueness for role name: ', error);
         throw error;
