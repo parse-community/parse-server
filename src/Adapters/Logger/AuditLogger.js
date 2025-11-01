@@ -28,11 +28,10 @@ function configureAuditTransports(options) {
       datePattern: options.datePattern || 'YYYY-MM-DD',
       maxSize: options.maxSize || '20m',
       maxFiles: options.maxFiles || '14d',
-      json: true,
-      format: format.combine(
-        format.timestamp(),
-        format.json()
-      ),
+      format: format.printf(info => {
+        const { level, message, timestamp, ...auditData } = info;
+        return JSON.stringify(auditData);
+      }),
     });
 
     auditLogTransport.name = 'parse-server-audit';

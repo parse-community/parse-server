@@ -6,6 +6,7 @@ const request = require('../lib/request');
 
 describe('Audit Logging - Schema Operations', () => {
   const testLogFolder = path.join(__dirname, 'temp-audit-logs-schema');
+  const getLogFiles = (folder) => fs.readdirSync(folder).filter(f => f.endsWith('.log'));
 
   beforeEach(async () => {
     if (fs.existsSync(testLogFolder)) {
@@ -45,7 +46,7 @@ describe('Audit Logging - Schema Operations', () => {
 
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    const logFiles = fs.readdirSync(testLogFolder);
+    const logFiles = getLogFiles(testLogFolder);
     expect(logFiles.length).toBeGreaterThan(0);
 
     const logFile = path.join(testLogFolder, logFiles[0]);
@@ -75,7 +76,7 @@ describe('Audit Logging - Schema Operations', () => {
     });
 
     await new Promise(resolve => setTimeout(resolve, 200));
-    const logFiles1 = fs.readdirSync(testLogFolder);
+    const logFiles1 = getLogFiles(testLogFolder);
     if (logFiles1.length > 0) {
       fs.unlinkSync(path.join(testLogFolder, logFiles1[0]));
     }
@@ -96,7 +97,7 @@ describe('Audit Logging - Schema Operations', () => {
 
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    const logFiles = fs.readdirSync(testLogFolder);
+    const logFiles = getLogFiles(testLogFolder);
     expect(logFiles.length).toBeGreaterThan(0);
 
     const logFile = path.join(testLogFolder, logFiles[0]);
@@ -126,7 +127,7 @@ describe('Audit Logging - Schema Operations', () => {
     });
 
     await new Promise(resolve => setTimeout(resolve, 200));
-    const logFiles1 = fs.readdirSync(testLogFolder);
+    const logFiles1 = getLogFiles(testLogFolder);
     if (logFiles1.length > 0) {
       fs.unlinkSync(path.join(testLogFolder, logFiles1[0]));
     }
@@ -142,7 +143,7 @@ describe('Audit Logging - Schema Operations', () => {
 
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    const logFiles = fs.readdirSync(testLogFolder);
+    const logFiles = getLogFiles(testLogFolder);
     expect(logFiles.length).toBeGreaterThan(0);
 
     const logFile = path.join(testLogFolder, logFiles[0]);
@@ -177,7 +178,7 @@ describe('Audit Logging - Schema Operations', () => {
 
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    const logFiles = fs.readdirSync(testLogFolder);
+    const logFiles = getLogFiles(testLogFolder);
     if (logFiles.length > 0) {
       const logFile = path.join(testLogFolder, logFiles[0]);
       const logContent = fs.readFileSync(logFile, 'utf8');
@@ -207,7 +208,7 @@ describe('Audit Logging - Schema Operations', () => {
 
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    const logFiles = fs.readdirSync(testLogFolder);
+    const logFiles = getLogFiles(testLogFolder);
     const logFile = path.join(testLogFolder, logFiles[0]);
     const logContent = fs.readFileSync(logFile, 'utf8');
 
@@ -236,7 +237,7 @@ describe('Audit Logging - Schema Operations', () => {
 
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    const logFiles = fs.readdirSync(testLogFolder);
+    const logFiles = getLogFiles(testLogFolder);
     const logFile = path.join(testLogFolder, logFiles[0]);
     const logContent = fs.readFileSync(logFile, 'utf8');
 

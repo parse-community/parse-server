@@ -140,6 +140,20 @@ function del(config, auth, className, objectId, context) {
       // Notify LiveQuery server if possible
       const perms = schemaController.getClassLevelPermissions(className);
       config.liveQueryController.onAfterDelete(className, inflatedObject, null, perms);
+
+      // Audit log successful delete
+      try {
+        config.auditLogController?.logDataDelete({
+          auth,
+          req: { config },
+          className,
+          objectId,
+          success: true,
+        });
+      } catch (error) {
+        config.loggerController.error('Audit logging error in rest.del', { error });
+      }
+
       return triggers.maybeRunTrigger(
         triggers.Types.afterDelete,
         auth,
@@ -150,6 +164,19 @@ function del(config, auth, className, objectId, context) {
       );
     })
     .catch(error => {
+      // Audit log failed delete
+      try {
+        config.auditLogController?.logDataDelete({
+          auth,
+          req: { config },
+          className,
+          objectId,
+          success: false,
+          error: error.message,
+        });
+      } catch (auditError) {
+        config.loggerController.error('Audit logging error in rest.del', { error: auditError });
+      }
       handleSessionMissingError(error, className, auth);
     });
 }

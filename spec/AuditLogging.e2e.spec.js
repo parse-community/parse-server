@@ -6,6 +6,7 @@ const request = require('../lib/request');
 
 describe('End-to-End Audit Logging', () => {
   const testLogFolder = path.join(__dirname, 'temp-audit-logs-e2e');
+  const getLogFiles = (folder) => fs.readdirSync(folder).filter(f => f.endsWith('.log'));
 
   beforeEach(async () => {
     if (fs.existsSync(testLogFolder)) {
@@ -52,7 +53,7 @@ describe('End-to-End Audit Logging', () => {
 
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      const logFiles = fs.readdirSync(testLogFolder);
+      const logFiles = getLogFiles(testLogFolder);
       expect(logFiles.length).toBeGreaterThan(0);
 
       const logFile = path.join(testLogFolder, logFiles[0]);
@@ -94,7 +95,7 @@ describe('End-to-End Audit Logging', () => {
 
       await new Promise(resolve => setTimeout(resolve, 200));
 
-      const logFiles = fs.readdirSync(testLogFolder);
+      const logFiles = getLogFiles(testLogFolder);
       expect(logFiles.length).toBeGreaterThan(0);
 
       const filenamePattern = /parse-server-audit-\d{4}-\d{2}-\d{2}\.log/;
@@ -142,7 +143,7 @@ describe('End-to-End Audit Logging', () => {
 
       await new Promise(resolve => setTimeout(resolve, 200));
 
-      const logFiles = fs.readdirSync(testLogFolder);
+      const logFiles = getLogFiles(testLogFolder);
       expect(logFiles.length).toBeGreaterThan(0);
 
       const filenamePattern = /parse-server-audit-\d{4}-\d{2}\.log/;
@@ -197,7 +198,7 @@ describe('End-to-End Audit Logging', () => {
       await new Promise(resolve => setTimeout(resolve, 200));
 
       expect(fs.existsSync(testLogFolder)).toBe(true);
-      const logFiles = fs.readdirSync(testLogFolder);
+      const logFiles = getLogFiles(testLogFolder);
       expect(logFiles.length).toBeGreaterThan(0);
     });
   });
@@ -221,7 +222,7 @@ describe('End-to-End Audit Logging', () => {
 
       await new Promise(resolve => setTimeout(resolve, 200));
 
-      const logFiles = fs.readdirSync(testLogFolder);
+      const logFiles = getLogFiles(testLogFolder);
       const logFile = path.join(testLogFolder, logFiles[0]);
       const logContent = fs.readFileSync(logFile, 'utf8');
       const logLines = logContent.split('\n').filter(line => line.includes('USER_LOGIN'));
@@ -253,7 +254,7 @@ describe('End-to-End Audit Logging', () => {
 
       await new Promise(resolve => setTimeout(resolve, 200));
 
-      const logFiles = fs.readdirSync(testLogFolder);
+      const logFiles = getLogFiles(testLogFolder);
       const logFile = path.join(testLogFolder, logFiles[0]);
       const logContent = fs.readFileSync(logFile, 'utf8');
       const logLines = logContent.split('\n').filter(line => line.trim().length > 0);
@@ -279,7 +280,7 @@ describe('End-to-End Audit Logging', () => {
 
       await new Promise(resolve => setTimeout(resolve, 200));
 
-      const logFiles = fs.readdirSync(testLogFolder);
+      const logFiles = getLogFiles(testLogFolder);
       const logFile = path.join(testLogFolder, logFiles[0]);
       const logContent = fs.readFileSync(logFile, 'utf8');
 
@@ -312,7 +313,7 @@ describe('End-to-End Audit Logging', () => {
 
       await new Promise(resolve => setTimeout(resolve, 300));
 
-      const logFiles = fs.readdirSync(testLogFolder);
+      const logFiles = getLogFiles(testLogFolder);
       const logFile = path.join(testLogFolder, logFiles[0]);
       const logContent = fs.readFileSync(logFile, 'utf8');
       const logLines = logContent.split('\n').filter(line => line.trim().length > 0);
@@ -371,7 +372,7 @@ describe('End-to-End Audit Logging', () => {
 
       await new Promise(resolve => setTimeout(resolve, 200));
 
-      const logFiles = fs.readdirSync(testLogFolder);
+      const logFiles = getLogFiles(testLogFolder);
       const logFile = path.join(testLogFolder, logFiles[0]);
       const logContent = fs.readFileSync(logFile, 'utf8');
 
@@ -416,7 +417,7 @@ describe('End-to-End Audit Logging', () => {
 
       await new Promise(resolve => setTimeout(resolve, 300));
 
-      const logFiles = fs.readdirSync(testLogFolder);
+      const logFiles = getLogFiles(testLogFolder);
       const logFile = path.join(testLogFolder, logFiles[0]);
       const logContent = fs.readFileSync(logFile, 'utf8');
       const createLogs = logContent.split('\n').filter(line => line.includes('DATA_CREATE'));
@@ -452,7 +453,7 @@ describe('End-to-End Audit Logging', () => {
 
       await new Promise(resolve => setTimeout(resolve, 200));
 
-      const logFiles = fs.readdirSync(testLogFolder);
+      const logFiles = getLogFiles(testLogFolder);
       const logFile = path.join(testLogFolder, logFiles[0]);
       const logContent = fs.readFileSync(logFile, 'utf8');
 

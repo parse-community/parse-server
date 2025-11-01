@@ -31,9 +31,9 @@ Parse Server includes a comprehensive audit logging system that tracks:
 - Configurable via code or environment variables
 
 **What This Means:**
-- You get automatic compliance with GDPR Article 30 (Records of Processing Activities)
-- You have an audit trail for Article 33 (Data Breach Notification)
-- You have evidence for Article 32 (Security of Processing)
+- Helps you maintain records relevant to Article 30 (Records of Processing Activities)
+- Provides audit trails that support Article 33 (Breach Notification)
+- Provides evidence that can support Article 32 (Security of Processing)
 
 **Configuration:**
 ```javascript
@@ -169,7 +169,9 @@ Parse.Cloud.define('deleteMyData', async (request) => {
   for (const order of allOrders) {
     order.set('user', null);
     order.set('userName', 'DELETED_USER');
-    order.set('userEmail', 'deleted@example.com');
+    // Prefer null for email if schema allows; otherwise use unique non-deliverable placeholder
+    // to avoid unique constraint violations and prevent accidental messaging
+    order.set('userEmail', null);  // Or: `deleted-${order.id}@example.invalid` for unique RFC-compliant placeholder
     order.set('userPhone', null);
     await order.save(null, { useMasterKey: true });
   }
@@ -370,6 +372,14 @@ Parse.Cloud.beforeSave('MarketingEmail', async (request) => {
 
 **Implementation Example:**
 
+**Note on Tracking User Inactivity:**
+Parse Server doesn't include a `lastLoginAt` field by default. You have two options:
+
+1. **Option A (Recommended): Query _Session class** - Works immediately, no setup required. Query sessions to determine last activity. Suitable for most use cases.
+2. **Option B: Maintain custom lastLoginAt field** - Better performance for large user bases. Requires adding an `afterLogin` hook to update the field.
+
+The example below shows **Option A**. For **Option B**, see the alternative implementation at the end of this section.
+
 ```javascript
 // Scheduled job (runs daily)
 Parse.Cloud.job('enforceDataRetention', async (request) => {
@@ -379,9 +389,22 @@ Parse.Cloud.job('enforceDataRetention', async (request) => {
   const inactiveThreshold = new Date();
   inactiveThreshold.setFullYear(inactiveThreshold.getFullYear() - 2);
 
-  const inactiveUsers = await new Parse.Query('_User')
-    .lessThan('lastLoginAt', inactiveThreshold)
+  // APPROACH 1: Query _Session to find last activity (works out of the box)
+  // Find all sessions created after the threshold to identify ACTIVE users
+  const activeSessions = await new Parse.Query('_Session')
+    .greaterThan('createdAt', inactiveThreshold)
+    .select('user')
+    .limit(10000)
     .find({ useMasterKey: true });
+
+  const activeUserIds = new Set(activeSessions.map(s => s.get('user')?.id).filter(Boolean));
+
+  // Get all users and filter out the active ones
+  const allUsers = await new Parse.Query('_User')
+    .limit(10000)
+    .find({ useMasterKey: true });
+
+  const inactiveUsers = allUsers.filter(user => !activeUserIds.has(user.id));
 
   message(`Found ${inactiveUsers.length} inactive users`);
 
@@ -419,7 +442,8 @@ Parse.Cloud.job('enforceDataRetention', async (request) => {
 
   for (const order of oldOrders) {
     order.set('userName', 'ANONYMIZED');
-    order.set('userEmail', 'anonymized@example.com');
+    // Use unique non-deliverable placeholder to avoid unique constraint violations
+    order.set('userEmail', `anonymized-${order.id}@example.invalid`);
     order.set('shippingAddress', null);
     order.set('billingAddress', null);
     await order.save(null, { useMasterKey: true });
@@ -438,6 +462,41 @@ schedule.scheduleJob('0 2 * * *', async () => {
   await Parse.Cloud.startJob('enforceDataRetention');
 });
 ```
+
+**Option B: Using Custom lastLoginAt Field**
+
+If you have a large user base and need better query performance, maintain a custom field:
+
+```javascript
+// 1. Add an afterLogin hook to track login times
+Parse.Cloud.afterLogin(async (request) => {
+  const user = request.user;
+  user.set('lastLoginAt', new Date());
+  await user.save(null, { useMasterKey: true });
+});
+
+// 2. Simplified retention job using the custom field
+Parse.Cloud.job('enforceDataRetention', async (request) => {
+  const { message } = request;
+
+  const inactiveThreshold = new Date();
+  inactiveThreshold.setFullYear(inactiveThreshold.getFullYear() - 2);
+
+  // Direct query on lastLoginAt field (requires the field to exist)
+  const inactiveUsers = await new Parse.Query('_User')
+    .lessThan('lastLoginAt', inactiveThreshold)
+    .limit(10000)
+    .find({ useMasterKey: true });
+
+  message(`Found ${inactiveUsers.length} inactive users`);
+
+  for (const user of inactiveUsers) {
+    // Use your deletion logic...
+  }
+});
+```
+
+**Note:** With Option B, ensure `lastLoginAt` is set for all users before relying on it for retention policies. You may need a one-time migration to populate this field from existing session data.
 
 ---
 

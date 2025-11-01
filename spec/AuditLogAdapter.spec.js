@@ -7,19 +7,27 @@ const path = require('path');
 
 describe('AuditLogAdapter', () => {
   const testLogFolder = path.join(__dirname, 'temp-audit-logs');
+  const getLogFiles = (folder) => fs.readdirSync(folder).filter(f => f.endsWith('.log'));
 
   beforeEach(() => {
     // Clean up test log folder
     if (fs.existsSync(testLogFolder)) {
       fs.rmSync(testLogFolder, { recursive: true, force: true });
     }
+    // Reset audit logger
+    configureAuditLogger();
   });
 
-  afterEach(() => {
-    // Clean up test log folder
-    if (fs.existsSync(testLogFolder)) {
-      fs.rmSync(testLogFolder, { recursive: true, force: true });
-    }
+  afterEach(done => {
+    // Disable audit logger BEFORE deleting files
+    configureAuditLogger();
+    // Give Winston time to close file handles
+    setTimeout(() => {
+      if (fs.existsSync(testLogFolder)) {
+        fs.rmSync(testLogFolder, { recursive: true, force: true });
+      }
+      done();
+    }, 100);
   });
 
   describe('constructor', () => {
@@ -74,7 +82,7 @@ describe('AuditLogAdapter', () => {
 
       // Give winston time to write
       setTimeout(() => {
-        const logFiles = fs.readdirSync(testLogFolder);
+        const logFiles = getLogFiles(testLogFolder);
         expect(logFiles.length).toBeGreaterThan(0);
         done();
       }, 100);
@@ -110,7 +118,7 @@ describe('AuditLogAdapter', () => {
       });
 
       setTimeout(() => {
-        const logFiles = fs.readdirSync(testLogFolder);
+        const logFiles = getLogFiles(testLogFolder);
         expect(logFiles.length).toBeGreaterThan(0);
 
         const logFile = path.join(testLogFolder, logFiles[0]);
@@ -137,7 +145,7 @@ describe('AuditLogAdapter', () => {
       });
 
       setTimeout(() => {
-        const logFile = path.join(testLogFolder, fs.readdirSync(testLogFolder)[0]);
+        const logFile = path.join(testLogFolder, getLogFiles(testLogFolder)[0]);
         const logContent = fs.readFileSync(logFile, 'utf8');
         expect(logContent).toContain('USER_LOGIN');
         expect(logContent).toContain('Invalid credentials');
@@ -176,7 +184,7 @@ describe('AuditLogAdapter', () => {
       });
 
       setTimeout(() => {
-        const logFile = path.join(testLogFolder, fs.readdirSync(testLogFolder)[0]);
+        const logFile = path.join(testLogFolder, getLogFiles(testLogFolder)[0]);
         const logContent = fs.readFileSync(logFile, 'utf8');
         expect(logContent).toContain('DATA_VIEW');
         expect(logContent).toContain('TestClass');
@@ -202,7 +210,7 @@ describe('AuditLogAdapter', () => {
       });
 
       setTimeout(() => {
-        const logFile = path.join(testLogFolder, fs.readdirSync(testLogFolder)[0]);
+        const logFile = path.join(testLogFolder, getLogFiles(testLogFolder)[0]);
         const logContent = fs.readFileSync(logFile, 'utf8');
         expect(logContent).toContain('DATA_CREATE');
         expect(logContent).toContain('TestClass');
@@ -226,7 +234,7 @@ describe('AuditLogAdapter', () => {
       });
 
       setTimeout(() => {
-        const logFile = path.join(testLogFolder, fs.readdirSync(testLogFolder)[0]);
+        const logFile = path.join(testLogFolder, getLogFiles(testLogFolder)[0]);
         const logContent = fs.readFileSync(logFile, 'utf8');
         expect(logContent).toContain('Validation failed');
         expect(logContent).toContain('"success":false');
@@ -251,7 +259,7 @@ describe('AuditLogAdapter', () => {
       });
 
       setTimeout(() => {
-        const logFile = path.join(testLogFolder, fs.readdirSync(testLogFolder)[0]);
+        const logFile = path.join(testLogFolder, getLogFiles(testLogFolder)[0]);
         const logContent = fs.readFileSync(logFile, 'utf8');
         expect(logContent).toContain('DATA_UPDATE');
         expect(logContent).toContain('TestClass');
@@ -276,7 +284,7 @@ describe('AuditLogAdapter', () => {
       });
 
       setTimeout(() => {
-        const logFile = path.join(testLogFolder, fs.readdirSync(testLogFolder)[0]);
+        const logFile = path.join(testLogFolder, getLogFiles(testLogFolder)[0]);
         const logContent = fs.readFileSync(logFile, 'utf8');
         expect(logContent).toContain('DATA_DELETE');
         expect(logContent).toContain('TestClass');
@@ -306,7 +314,7 @@ describe('AuditLogAdapter', () => {
       });
 
       setTimeout(() => {
-        const logFile = path.join(testLogFolder, fs.readdirSync(testLogFolder)[0]);
+        const logFile = path.join(testLogFolder, getLogFiles(testLogFolder)[0]);
         const logContent = fs.readFileSync(logFile, 'utf8');
         expect(logContent).toContain('ACL_MODIFY');
         expect(logContent).toContain('TestClass');
@@ -332,7 +340,7 @@ describe('AuditLogAdapter', () => {
       });
 
       setTimeout(() => {
-        const logFile = path.join(testLogFolder, fs.readdirSync(testLogFolder)[0]);
+        const logFile = path.join(testLogFolder, getLogFiles(testLogFolder)[0]);
         const logContent = fs.readFileSync(logFile, 'utf8');
         expect(logContent).toContain('SCHEMA_MODIFY');
         expect(logContent).toContain('NewClass');
@@ -355,7 +363,7 @@ describe('AuditLogAdapter', () => {
       });
 
       setTimeout(() => {
-        const logFile = path.join(testLogFolder, fs.readdirSync(testLogFolder)[0]);
+        const logFile = path.join(testLogFolder, getLogFiles(testLogFolder)[0]);
         const logContent = fs.readFileSync(logFile, 'utf8');
         expect(logContent).toContain('update');
         done();
@@ -376,7 +384,7 @@ describe('AuditLogAdapter', () => {
       });
 
       setTimeout(() => {
-        const logFile = path.join(testLogFolder, fs.readdirSync(testLogFolder)[0]);
+        const logFile = path.join(testLogFolder, getLogFiles(testLogFolder)[0]);
         const logContent = fs.readFileSync(logFile, 'utf8');
         expect(logContent).toContain('delete');
         done();
@@ -400,7 +408,7 @@ describe('AuditLogAdapter', () => {
       });
 
       setTimeout(() => {
-        const logFile = path.join(testLogFolder, fs.readdirSync(testLogFolder)[0]);
+        const logFile = path.join(testLogFolder, getLogFiles(testLogFolder)[0]);
         const logContent = fs.readFileSync(logFile, 'utf8');
         expect(logContent).toContain('PUSH_SEND');
         expect(logContent).toContain('channel1');
@@ -423,7 +431,7 @@ describe('AuditLogAdapter', () => {
       });
 
       setTimeout(() => {
-        const logFile = path.join(testLogFolder, fs.readdirSync(testLogFolder)[0]);
+        const logFile = path.join(testLogFolder, getLogFiles(testLogFolder)[0]);
         const logContent = fs.readFileSync(logFile, 'utf8');
         expect(logContent).toContain('No devices found');
         expect(logContent).toContain('"success":false');
@@ -455,7 +463,7 @@ describe('AuditLogAdapter', () => {
       });
 
       setTimeout(() => {
-        const logFiles = fs.readdirSync(testLogFolder);
+        const logFiles = getLogFiles(testLogFolder);
         expect(logFiles.length).toBeGreaterThan(0);
         expect(logFiles[0]).toMatch(/parse-server-audit-\d{4}-\d{2}-\d{2}\.log/);
         done();
