@@ -75,12 +75,6 @@ describe('Audit Logging - Schema Operations', () => {
       },
     });
 
-    await new Promise(resolve => setTimeout(resolve, 200));
-    const logFiles1 = getLogFiles(testLogFolder);
-    if (logFiles1.length > 0) {
-      fs.unlinkSync(path.join(testLogFolder, logFiles1[0]));
-    }
-
     await request({
       method: 'PUT',
       url: Parse.serverURL + '/schemas/AuditSchemaUpdate',
@@ -102,10 +96,12 @@ describe('Audit Logging - Schema Operations', () => {
 
     const logFile = path.join(testLogFolder, logFiles[0]);
     const logContent = fs.readFileSync(logFile, 'utf8');
+    const updateLogs = logContent.split('\n').filter(line =>
+      line.includes('SCHEMA_MODIFY') && line.includes('update')
+    );
 
-    expect(logContent).toContain('SCHEMA_MODIFY');
-    expect(logContent).toContain('AuditSchemaUpdate');
-    expect(logContent).toContain('update');
+    expect(updateLogs.length).toBeGreaterThan(0);
+    expect(updateLogs[0]).toContain('AuditSchemaUpdate');
   });
 
   it('should log schema deletion', async () => {
@@ -126,12 +122,6 @@ describe('Audit Logging - Schema Operations', () => {
       },
     });
 
-    await new Promise(resolve => setTimeout(resolve, 200));
-    const logFiles1 = getLogFiles(testLogFolder);
-    if (logFiles1.length > 0) {
-      fs.unlinkSync(path.join(testLogFolder, logFiles1[0]));
-    }
-
     await request({
       method: 'DELETE',
       url: Parse.serverURL + '/schemas/AuditSchemaDelete',
@@ -148,10 +138,12 @@ describe('Audit Logging - Schema Operations', () => {
 
     const logFile = path.join(testLogFolder, logFiles[0]);
     const logContent = fs.readFileSync(logFile, 'utf8');
+    const deleteLogs = logContent.split('\n').filter(line =>
+      line.includes('SCHEMA_MODIFY') && line.includes('delete')
+    );
 
-    expect(logContent).toContain('SCHEMA_MODIFY');
-    expect(logContent).toContain('AuditSchemaDelete');
-    expect(logContent).toContain('delete');
+    expect(deleteLogs.length).toBeGreaterThan(0);
+    expect(deleteLogs[0]).toContain('AuditSchemaDelete');
   });
 
   it('should log failed schema creation', async () => {

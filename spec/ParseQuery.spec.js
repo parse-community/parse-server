@@ -5379,6 +5379,7 @@ describe('Parse.Query testing', () => {
     const fs = require('fs');
     const path = require('path');
     const testLogFolder = path.join(__dirname, 'temp-audit-logs-query');
+    const getLogFiles = (folder) => fs.readdirSync(folder).filter(f => f.endsWith('.log'));
 
     beforeEach(async () => {
       if (fs.existsSync(testLogFolder)) {
@@ -5416,7 +5417,7 @@ describe('Parse.Query testing', () => {
 
       await new Promise(resolve => setTimeout(resolve, 200));
 
-      const logFiles = fs.readdirSync(testLogFolder);
+      const logFiles = getLogFiles(testLogFolder);
       expect(logFiles.length).toBeGreaterThan(0);
 
       const logFile = path.join(testLogFolder, logFiles[0]);
@@ -5449,7 +5450,7 @@ describe('Parse.Query testing', () => {
 
       await new Promise(resolve => setTimeout(resolve, 200));
 
-      const logFiles = fs.readdirSync(testLogFolder);
+      const logFiles = getLogFiles(testLogFolder);
       const logFile = path.join(testLogFolder, logFiles[0]);
       const logContent = fs.readFileSync(logFile, 'utf8');
 
@@ -5477,7 +5478,7 @@ describe('Parse.Query testing', () => {
 
       await new Promise(resolve => setTimeout(resolve, 200));
 
-      const logFiles = fs.readdirSync(testLogFolder);
+      const logFiles = getLogFiles(testLogFolder);
       const logFile = path.join(testLogFolder, logFiles[0]);
       const logContent = fs.readFileSync(logFile, 'utf8');
 
@@ -5498,7 +5499,7 @@ describe('Parse.Query testing', () => {
 
       await new Promise(resolve => setTimeout(resolve, 200));
 
-      const logFiles = fs.readdirSync(testLogFolder);
+      const logFiles = getLogFiles(testLogFolder);
       const logFile = path.join(testLogFolder, logFiles[0]);
       const logContent = fs.readFileSync(logFile, 'utf8');
 
@@ -5522,7 +5523,7 @@ describe('Parse.Query testing', () => {
 
       await new Promise(resolve => setTimeout(resolve, 200));
 
-      const logFiles = fs.readdirSync(testLogFolder);
+      const logFiles = getLogFiles(testLogFolder);
       const logFile = path.join(testLogFolder, logFiles[0]);
       const logContent = fs.readFileSync(logFile, 'utf8');
 
@@ -5553,7 +5554,7 @@ describe('Parse.Query testing', () => {
 
       await new Promise(resolve => setTimeout(resolve, 200));
 
-      const logFiles = fs.readdirSync(testLogFolder);
+      const logFiles = getLogFiles(testLogFolder);
       const logFile = path.join(testLogFolder, logFiles[0]);
       const logContent = fs.readFileSync(logFile, 'utf8');
 

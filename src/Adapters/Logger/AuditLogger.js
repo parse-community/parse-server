@@ -28,10 +28,11 @@ function configureAuditTransports(options) {
       datePattern: options.datePattern || 'YYYY-MM-DD',
       maxSize: options.maxSize || '20m',
       maxFiles: options.maxFiles || '14d',
-      format: format.printf(info => {
-        const { level, message, timestamp, ...auditData } = info;
-        return JSON.stringify(auditData);
-      }),
+      json: true,
+      format: format.combine(
+        format.timestamp(),
+        format.json()
+      ),
     });
 
     auditLogTransport.name = 'parse-server-audit';
@@ -42,7 +43,6 @@ function configureAuditTransports(options) {
       level: 'info',
     });
   } catch (e) {
-    // eslint-disable-next-line no-console
     console.error('Failed to configure audit logger:', e);
   }
 }
@@ -62,25 +62,7 @@ export function configureAuditLogger({
   maxFiles,
 } = {}) {
   if (!auditLogFolder) {
-    // Audit logging disabled - close and remove any existing transports
-    try {
-      if (auditLogger.transports && auditLogger.transports.length > 0) {
-        // Close all transports
-        auditLogger.transports.forEach(transport => {
-          try {
-            if (transport.close) {
-              transport.close();
-            }
-          } catch (err) {
-            // Ignore errors during transport cleanup
-          }
-        });
-        // Clear all transports
-        auditLogger.clear();
-      }
-    } catch (err) {
-      // Ignore errors during cleanup
-    }
+    // Audit logging disabled
     return;
   }
 
@@ -92,25 +74,7 @@ export function configureAuditLogger({
   try {
     fs.mkdirSync(logFolder, { recursive: true });
   } catch (e) {
-    // eslint-disable-next-line no-console
     console.error('Failed to create audit log folder:', e);
-    // Clean up existing transports since audit logging cannot be enabled
-    try {
-      if (auditLogger.transports && auditLogger.transports.length > 0) {
-        auditLogger.transports.forEach(transport => {
-          try {
-            if (transport.close) {
-              transport.close();
-            }
-          } catch (err) {
-            // Ignore errors during transport cleanup
-          }
-        });
-        auditLogger.clear();
-      }
-    } catch (err) {
-      // Ignore errors during cleanup
-    }
     return;
   }
 

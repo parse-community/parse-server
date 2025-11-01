@@ -2177,6 +2177,7 @@ describe('Audit Logging - CRUD Operations', () => {
   const fs = require('fs');
   const path = require('path');
   const testLogFolder = path.join(__dirname, 'temp-audit-logs-crud');
+  const getLogFiles = (folder) => fs.readdirSync(folder).filter(f => f.endsWith('.log'));
 
   beforeEach(async () => {
     if (fs.existsSync(testLogFolder)) {
@@ -2210,7 +2211,7 @@ describe('Audit Logging - CRUD Operations', () => {
 
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    const logFiles = fs.readdirSync(testLogFolder);
+    const logFiles = getLogFiles(testLogFolder);
     expect(logFiles.length).toBeGreaterThan(0);
 
     const logFile = path.join(testLogFolder, logFiles[0]);
@@ -2233,26 +2234,21 @@ describe('Audit Logging - CRUD Operations', () => {
     obj.set('name', 'original');
     await obj.save();
 
-    await new Promise(resolve => setTimeout(resolve, 200));
-    const logFiles1 = fs.readdirSync(testLogFolder);
-    if (logFiles1.length > 0) {
-      fs.unlinkSync(path.join(testLogFolder, logFiles1[0]));
-    }
-
     obj.set('name', 'updated');
     await obj.save();
 
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    const logFiles = fs.readdirSync(testLogFolder);
+    const logFiles = getLogFiles(testLogFolder);
     expect(logFiles.length).toBeGreaterThan(0);
 
     const logFile = path.join(testLogFolder, logFiles[0]);
     const logContent = fs.readFileSync(logFile, 'utf8');
+    const updateLogs = logContent.split('\n').filter(line => line.includes('DATA_UPDATE'));
 
-    expect(logContent).toContain('DATA_UPDATE');
-    expect(logContent).toContain('AuditCRUDUpdate');
-    expect(logContent).toContain(obj.id);
+    expect(updateLogs.length).toBeGreaterThan(0);
+    expect(updateLogs[0]).toContain('AuditCRUDUpdate');
+    expect(updateLogs[0]).toContain(obj.id);
   });
 
   it('should log object deletion', async () => {
@@ -2269,25 +2265,20 @@ describe('Audit Logging - CRUD Operations', () => {
 
     const objectId = obj.id;
 
-    await new Promise(resolve => setTimeout(resolve, 200));
-    const logFiles1 = fs.readdirSync(testLogFolder);
-    if (logFiles1.length > 0) {
-      fs.unlinkSync(path.join(testLogFolder, logFiles1[0]));
-    }
-
     await obj.destroy();
 
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    const logFiles = fs.readdirSync(testLogFolder);
+    const logFiles = getLogFiles(testLogFolder);
     expect(logFiles.length).toBeGreaterThan(0);
 
     const logFile = path.join(testLogFolder, logFiles[0]);
     const logContent = fs.readFileSync(logFile, 'utf8');
+    const deleteLogs = logContent.split('\n').filter(line => line.includes('DATA_DELETE'));
 
-    expect(logContent).toContain('DATA_DELETE');
-    expect(logContent).toContain('AuditCRUDDelete');
-    expect(logContent).toContain(objectId);
+    expect(deleteLogs.length).toBeGreaterThan(0);
+    expect(deleteLogs[0]).toContain('AuditCRUDDelete');
+    expect(deleteLogs[0]).toContain(objectId);
   });
 
   it('should log ACL modifications', async () => {
@@ -2304,12 +2295,6 @@ describe('Audit Logging - CRUD Operations', () => {
     obj.setACL(acl);
     await obj.save();
 
-    await new Promise(resolve => setTimeout(resolve, 200));
-    const logFiles1 = fs.readdirSync(testLogFolder);
-    if (logFiles1.length > 0) {
-      fs.unlinkSync(path.join(testLogFolder, logFiles1[0]));
-    }
-
     const newAcl = new Parse.ACL(user);
     newAcl.setPublicReadAccess(true);
     obj.setACL(newAcl);
@@ -2317,12 +2302,13 @@ describe('Audit Logging - CRUD Operations', () => {
 
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    const logFiles = fs.readdirSync(testLogFolder);
+    const logFiles = getLogFiles(testLogFolder);
     const logFile = path.join(testLogFolder, logFiles[0]);
     const logContent = fs.readFileSync(logFile, 'utf8');
+    const aclLogs = logContent.split('\n').filter(line => line.includes('ACL_MODIFY'));
 
-    expect(logContent).toContain('ACL_MODIFY');
-    expect(logContent).toContain('AuditCRUDACL');
+    expect(aclLogs.length).toBeGreaterThan(0);
+    expect(aclLogs[0]).toContain('AuditCRUDACL');
   });
 
   it('should mask sensitive fields in create logs', async () => {
@@ -2340,7 +2326,7 @@ describe('Audit Logging - CRUD Operations', () => {
 
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    const logFiles = fs.readdirSync(testLogFolder);
+    const logFiles = getLogFiles(testLogFolder);
     const logFile = path.join(testLogFolder, logFiles[0]);
     const logContent = fs.readFileSync(logFile, 'utf8');
 
@@ -2362,7 +2348,7 @@ describe('Audit Logging - CRUD Operations', () => {
 
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    const logFiles = fs.readdirSync(testLogFolder);
+    const logFiles = getLogFiles(testLogFolder);
     const logFile = path.join(testLogFolder, logFiles[0]);
     const logContent = fs.readFileSync(logFile, 'utf8');
 
@@ -2378,7 +2364,7 @@ describe('Audit Logging - CRUD Operations', () => {
 
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    const logFiles = fs.readdirSync(testLogFolder);
+    const logFiles = getLogFiles(testLogFolder);
     if (logFiles.length > 0) {
       const logFile = path.join(testLogFolder, logFiles[0]);
       const logContent = fs.readFileSync(logFile, 'utf8');
