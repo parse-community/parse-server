@@ -1765,14 +1765,14 @@ class DatabaseController {
     });
 
     await this.adapter
-      .ensureIndex('_User', requiredUserFields, ['_email_verify_token'], '_email_verify_token', false)
+      .ensureIndex('_User', requiredUserFields, ['_email_verify_token'], '_email_verify_token', false, { sparse: false })
       .catch(error => {
         logger.warn('Unable to create index for email verification token: ', error);
         throw error;
       });
 
     await this.adapter
-      .ensureIndex('_User', requiredUserFields, ['_perishable_token'], '_perishable_token', false)
+      .ensureIndex('_User', requiredUserFields, ['_perishable_token'], '_perishable_token', false, { sparse: false })
       .catch(error => {
         logger.warn('Unable to create index for password reset token: ', error);
         throw error;

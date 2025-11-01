@@ -687,6 +687,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     const defaultOptions: Object = { background: true, sparse: true };
     const indexNameOptions: Object = indexName ? { name: indexName } : {};
     const ttlOptions: Object = options.ttl !== undefined ? { expireAfterSeconds: options.ttl } : {};
+    const sparseOptions: Object = options.sparse !== undefined ? { sparse: options.sparse } : {};
     const caseInsensitiveOptions: Object = caseInsensitive
       ? { collation: MongoCollection.caseInsensitiveCollation() }
       : {};
@@ -695,6 +696,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       ...caseInsensitiveOptions,
       ...indexNameOptions,
       ...ttlOptions,
+      ...sparseOptions,
     };
 
     return this._adaptiveCollection(className)
