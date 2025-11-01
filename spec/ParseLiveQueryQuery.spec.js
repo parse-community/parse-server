@@ -23,6 +23,9 @@ describe('ParseLiveQuery query operation', function () {
       await client.close();
     }
     jasmine.restoreLibrary('../lib/LiveQuery/ParseWebSocketServer', 'ParseWebSocketServer');
+    // Restore Client.pushError
+    const Client = require('../lib/LiveQuery/Client').Client;
+    delete Client.pushError;
   });
 
   function addMockClient(parseLiveQueryServer, clientId) {
