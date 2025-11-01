@@ -1104,28 +1104,49 @@ module.exports.DatabaseOptions = {
   createIndexEmail: {
     env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_EMAIL',
     help:
-      'Set to `true` to automatically create indexes on the email field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F The automatically created index may change in the future to be optimized for the internal usage by Parse Server. Keep this in mind when manually creating this index.',
+      'Set to `true` to automatically create indexes on the email field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  createIndexEmailCaseInsensitive: {
+    env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_EMAIL_CASE_INSENSITIVE',
+    help:
+      'Set to `true` to automatically create a case-insensitive index on the email field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.',
     action: parsers.booleanParser,
     default: true,
   },
   createIndexEmailVerifyToken: {
     env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_EMAIL_VERIFY_TOKEN',
     help:
-      'Set to `true` to automatically create an index on the _email_verify_token field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F The automatically created index may change in the future to be optimized for the internal usage by Parse Server. Keep this in mind when manually creating this index.',
+      'Set to `true` to automatically create an index on the _email_verify_token field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.',
     action: parsers.booleanParser,
     default: true,
   },
   createIndexPasswordResetToken: {
     env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_PASSWORD_RESET_TOKEN',
     help:
-      'Set to `true` to automatically create an index on the _perishable_token field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F The automatically created index may change in the future to be optimized for the internal usage by Parse Server. Keep this in mind when manually creating this index.',
+      'Set to `true` to automatically create an index on the _perishable_token field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  createIndexRoleName: {
+    env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_ROLE_NAME',
+    help:
+      'Set to `true` to automatically create a unique index on the name field of the _Role collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.',
     action: parsers.booleanParser,
     default: true,
   },
   createIndexUsername: {
     env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_USERNAME',
     help:
-      'Set to `true` to automatically create indexes on the username field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F The automatically created index may change in the future to be optimized for the internal usage by Parse Server. Keep this in mind when manually creating this index.',
+      'Set to `true` to automatically create indexes on the username field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  createIndexUsernameCaseInsensitive: {
+    env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_USERNAME_CASE_INSENSITIVE',
+    help:
+      'Set to `true` to automatically create a case-insensitive index on the username field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.',
     action: parsers.booleanParser,
     default: true,
   },

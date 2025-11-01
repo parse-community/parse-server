@@ -163,9 +163,12 @@ export class MongoStorageAdapter implements StorageAdapter {
       'maxTimeMS',
       'disableIndexFieldValidation',
       'createIndexUsername',
+      'createIndexUsernameCaseInsensitive',
       'createIndexEmail',
+      'createIndexEmailCaseInsensitive',
       'createIndexEmailVerifyToken',
       'createIndexPasswordResetToken',
+      'createIndexRoleName',
     ]) {
       delete this._mongoOptions[key];
     }
