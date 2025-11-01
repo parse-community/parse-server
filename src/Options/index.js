@@ -634,22 +634,22 @@ export interface DatabaseOptions {
   autoSelectFamilyAttemptTimeout: ?number;
   /* Set to `true` to automatically create indexes on the email field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
   :DEFAULT: true */
-  createIndexEmail: ?boolean;
+  createIndexUserEmail: ?boolean;
   /* Set to `true` to automatically create a case-insensitive index on the email field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
   :DEFAULT: true */
-  createIndexEmailCaseInsensitive: ?boolean;
+  createIndexUserEmailCaseInsensitive: ?boolean;
   /* Set to `true` to automatically create an index on the _email_verify_token field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
   :DEFAULT: true */
-  createIndexEmailVerifyToken: ?boolean;
+  createIndexUserEmailVerifyToken: ?boolean;
   /* Set to `true` to automatically create an index on the _perishable_token field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
   :DEFAULT: true */
-  createIndexPasswordResetToken: ?boolean;
+  createIndexUserPasswordResetToken: ?boolean;
   /* Set to `true` to automatically create indexes on the username field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
   :DEFAULT: true */
-  createIndexUsername: ?boolean;
+  createIndexUserUsername: ?boolean;
   /* Set to `true` to automatically create a case-insensitive index on the username field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
   :DEFAULT: true */
-  createIndexUsernameCaseInsensitive: ?boolean;
+  createIndexUserUsernameCaseInsensitive: ?boolean;
   /* Set to `true` to automatically create a unique index on the name field of the _Role collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
   :DEFAULT: true */
   createIndexRoleName: ?boolean;

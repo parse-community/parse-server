@@ -1740,7 +1740,7 @@ class DatabaseController {
 
     const databaseOptions = this.options.databaseOptions || {};
 
-    if (databaseOptions.createIndexUsername !== false) {
+    if (databaseOptions.createIndexUserUsername !== false) {
       await this.adapter.ensureUniqueness('_User', requiredUserFields, ['username']).catch(error => {
         logger.warn('Unable to ensure uniqueness for usernames: ', error);
         throw error;
@@ -1748,7 +1748,7 @@ class DatabaseController {
     }
 
     if (!this.options.enableCollationCaseComparison) {
-      if (databaseOptions.createIndexUsernameCaseInsensitive !== false) {
+      if (databaseOptions.createIndexUserUsernameCaseInsensitive !== false) {
         await this.adapter
           .ensureIndex('_User', requiredUserFields, ['username'], 'case_insensitive_username', true)
           .catch(error => {
@@ -1757,7 +1757,7 @@ class DatabaseController {
           });
       }
 
-      if (databaseOptions.createIndexEmailCaseInsensitive !== false) {
+      if (databaseOptions.createIndexUserEmailCaseInsensitive !== false) {
         await this.adapter
           .ensureIndex('_User', requiredUserFields, ['email'], 'case_insensitive_email', true)
           .catch(error => {
@@ -1767,14 +1767,14 @@ class DatabaseController {
       }
     }
 
-    if (databaseOptions.createIndexEmail !== false) {
+    if (databaseOptions.createIndexUserEmail !== false) {
       await this.adapter.ensureUniqueness('_User', requiredUserFields, ['email']).catch(error => {
         logger.warn('Unable to ensure uniqueness for user email addresses: ', error);
         throw error;
       });
     }
 
-    if (databaseOptions.createIndexEmailVerifyToken !== false) {
+    if (databaseOptions.createIndexUserEmailVerifyToken !== false) {
       await this.adapter
         .ensureIndex('_User', requiredUserFields, ['_email_verify_token'], '_email_verify_token', false)
         .catch(error => {
@@ -1783,7 +1783,7 @@ class DatabaseController {
         });
     }
 
-    if (databaseOptions.createIndexPasswordResetToken !== false) {
+    if (databaseOptions.createIndexUserPasswordResetToken !== false) {
       await this.adapter
         .ensureIndex('_User', requiredUserFields, ['_perishable_token'], '_perishable_token', false)
         .catch(error => {

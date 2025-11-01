@@ -162,12 +162,12 @@ export class MongoStorageAdapter implements StorageAdapter {
       'schemaCacheTtl',
       'maxTimeMS',
       'disableIndexFieldValidation',
-      'createIndexUsername',
-      'createIndexUsernameCaseInsensitive',
-      'createIndexEmail',
-      'createIndexEmailCaseInsensitive',
-      'createIndexEmailVerifyToken',
-      'createIndexPasswordResetToken',
+      'createIndexUserUsername',
+      'createIndexUserUsernameCaseInsensitive',
+      'createIndexUserEmail',
+      'createIndexUserEmailCaseInsensitive',
+      'createIndexUserEmailVerifyToken',
+      'createIndexUserPasswordResetToken',
       'createIndexRoleName',
     ]) {
       delete this._mongoOptions[key];
