@@ -1,3 +1,10 @@
+## [8.3.1-alpha.1](https://github.com/parse-community/parse-server/compare/8.3.0...8.3.1-alpha.1) (2025-11-05)
+
+
+### Bug Fixes
+
+* Add problematic MIME types to default value of Parse Server option `fileUpload.fileExtensions` ([#9902](https://github.com/parse-community/parse-server/issues/9902)) ([fa245cb](https://github.com/parse-community/parse-server/commit/fa245cbb5f5b7a0dad962b2ce0524fa4dafcb5f7))
+
 # [8.3.0-alpha.14](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.13...8.3.0-alpha.14) (2025-11-01)
 
 
