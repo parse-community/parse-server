@@ -1,3 +1,15 @@
+# [8.4.0](https://github.com/parse-community/parse-server/compare/8.3.0...8.4.0) (2025-11-05)
+
+
+### Bug Fixes
+
+* Add problematic MIME types to default value of Parse Server option `fileUpload.fileExtensions` ([#9902](https://github.com/parse-community/parse-server/issues/9902)) ([fa245cb](https://github.com/parse-community/parse-server/commit/fa245cbb5f5b7a0dad962b2ce0524fa4dafcb5f7))
+* Uploading a file by providing an origin URL allows for Server-Side Request Forgery (SSRF); fixes vulnerability [GHSA-x4qj-2f4q-r4rx](https://github.com/parse-community/parse-server/security/advisories/GHSA-x4qj-2f4q-r4rx) ([#9903](https://github.com/parse-community/parse-server/issues/9903)) ([9776386](https://github.com/parse-community/parse-server/commit/97763863b72689a29ad7a311dfb590c3e3c50585))
+
+### Features
+
+* Add support for Node 24 ([#9901](https://github.com/parse-community/parse-server/issues/9901)) ([25dfe19](https://github.com/parse-community/parse-server/commit/25dfe19fef02fd44224e4a6d198584a694a1aa52))
+
 # [8.3.0](https://github.com/parse-community/parse-server/compare/8.2.5...8.3.0) (2025-11-01)
 
 

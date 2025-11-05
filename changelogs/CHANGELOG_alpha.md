@@ -1,3 +1,10 @@
+# [8.4.0-alpha.2](https://github.com/parse-community/parse-server/compare/8.4.0-alpha.1...8.4.0-alpha.2) (2025-11-05)
+
+
+### Bug Fixes
+
+* Uploading a file by providing an origin URL allows for Server-Side Request Forgery (SSRF); fixes vulnerability [GHSA-x4qj-2f4q-r4rx](https://github.com/parse-community/parse-server/security/advisories/GHSA-x4qj-2f4q-r4rx) ([#9903](https://github.com/parse-community/parse-server/issues/9903)) ([9776386](https://github.com/parse-community/parse-server/commit/97763863b72689a29ad7a311dfb590c3e3c50585))
+
 # [8.4.0-alpha.1](https://github.com/parse-community/parse-server/compare/8.3.1-alpha.1...8.4.0-alpha.1) (2025-11-05)
 
 
