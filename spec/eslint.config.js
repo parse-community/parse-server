@@ -25,6 +25,7 @@ module.exports = [
         it_id: "readonly",
         fit_id: "readonly",
         it_only_db: "readonly",
+        fit_only_db: "readonly",
         it_only_mongodb_version: "readonly",
         it_only_postgres_version: "readonly",
         it_only_node_version: "readonly",

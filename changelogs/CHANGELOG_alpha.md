@@ -1,3 +1,31 @@
+# [8.4.0-alpha.1](https://github.com/parse-community/parse-server/compare/8.3.1-alpha.1...8.4.0-alpha.1) (2025-11-05)
+
+
+### Features
+
+* Add support for Node 24 ([#9901](https://github.com/parse-community/parse-server/issues/9901)) ([25dfe19](https://github.com/parse-community/parse-server/commit/25dfe19fef02fd44224e4a6d198584a694a1aa52))
+
+## [8.3.1-alpha.1](https://github.com/parse-community/parse-server/compare/8.3.0...8.3.1-alpha.1) (2025-11-05)
+
+
+### Bug Fixes
+
+* Add problematic MIME types to default value of Parse Server option `fileUpload.fileExtensions` ([#9902](https://github.com/parse-community/parse-server/issues/9902)) ([fa245cb](https://github.com/parse-community/parse-server/commit/fa245cbb5f5b7a0dad962b2ce0524fa4dafcb5f7))
+
+# [8.3.0-alpha.14](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.13...8.3.0-alpha.14) (2025-11-01)
+
+
+### Features
+
+* Add options to skip automatic creation of internal database indexes on server start ([#9897](https://github.com/parse-community/parse-server/issues/9897)) ([ea91aca](https://github.com/parse-community/parse-server/commit/ea91aca1420c33e038516a321b2640709589f886))
+
+# [8.3.0-alpha.13](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.12...8.3.0-alpha.13) (2025-11-01)
+
+
+### Bug Fixes
+
+* Indexes `_email_verify_token` for email verification and `_perishable_token` password reset are not created automatically ([#9893](https://github.com/parse-community/parse-server/issues/9893)) ([62dd3c5](https://github.com/parse-community/parse-server/commit/62dd3c565ab70765cb1c547996b616b72e9bb800))
+
 # [8.3.0-alpha.12](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.11...8.3.0-alpha.12) (2025-10-25)
 
 

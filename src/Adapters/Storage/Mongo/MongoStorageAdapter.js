@@ -154,8 +154,22 @@ export class MongoStorageAdapter implements StorageAdapter {
     this.enableSchemaHooks = !!mongoOptions.enableSchemaHooks;
     this.schemaCacheTtl = mongoOptions.schemaCacheTtl;
     this.disableIndexFieldValidation = !!mongoOptions.disableIndexFieldValidation;
-    for (const key of ['enableSchemaHooks', 'schemaCacheTtl', 'maxTimeMS', 'disableIndexFieldValidation']) {
-      delete mongoOptions[key];
+    // Remove Parse Server-specific options that should not be passed to MongoDB client
+    // Note: We only delete from this._mongoOptions, not from the original mongoOptions object,
+    // because other components (like DatabaseController) need access to these options
+    for (const key of [
+      'enableSchemaHooks',
+      'schemaCacheTtl',
+      'maxTimeMS',
+      'disableIndexFieldValidation',
+      'createIndexUserUsername',
+      'createIndexUserUsernameCaseInsensitive',
+      'createIndexUserEmail',
+      'createIndexUserEmailCaseInsensitive',
+      'createIndexUserEmailVerifyToken',
+      'createIndexUserPasswordResetToken',
+      'createIndexRoleName',
+    ]) {
       delete this._mongoOptions[key];
     }
   }
@@ -687,6 +701,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     const defaultOptions: Object = { background: true, sparse: true };
     const indexNameOptions: Object = indexName ? { name: indexName } : {};
     const ttlOptions: Object = options.ttl !== undefined ? { expireAfterSeconds: options.ttl } : {};
+    const sparseOptions: Object = options.sparse !== undefined ? { sparse: options.sparse } : {};
     const caseInsensitiveOptions: Object = caseInsensitive
       ? { collation: MongoCollection.caseInsensitiveCollation() }
       : {};
@@ -695,6 +710,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       ...caseInsensitiveOptions,
       ...indexNameOptions,
       ...ttlOptions,
+      ...sparseOptions,
     };
 
     return this._adaptiveCollection(className)
