@@ -24,7 +24,9 @@ describe('End-to-End Audit Logging', () => {
     it('should create complete audit trail for user signup → login → CRUD → logout', async () => {
       await reconfigureServer({
         auditLog: {
-          auditLogFolder: testLogFolder,
+          adapterOptions: {
+            auditLogFolder: testLogFolder,
+          },
         },
       });
 
@@ -82,8 +84,10 @@ describe('End-to-End Audit Logging', () => {
     it('should create log files with correct naming pattern', async () => {
       await reconfigureServer({
         auditLog: {
-          auditLogFolder: testLogFolder,
-          datePattern: 'YYYY-MM-DD',
+          adapterOptions: {
+            auditLogFolder: testLogFolder,
+            datePattern: 'YYYY-MM-DD',
+          },
         },
       });
 
@@ -184,7 +188,9 @@ describe('End-to-End Audit Logging', () => {
 
       await reconfigureServer({
         auditLog: {
-          auditLogFolder: testLogFolder,
+          adapterOptions: {
+            auditLogFolder: testLogFolder,
+          },
         },
       });
 
@@ -207,7 +213,9 @@ describe('End-to-End Audit Logging', () => {
     it('should log all required fields for each event type', async () => {
       await reconfigureServer({
         auditLog: {
-          auditLogFolder: testLogFolder,
+          adapterOptions: {
+            auditLogFolder: testLogFolder,
+          },
         },
       });
 
@@ -233,16 +241,18 @@ describe('End-to-End Audit Logging', () => {
 
       expect(loginLog.timestamp).toBeDefined();
       expect(loginLog.eventType).toBe('USER_LOGIN');
+      expect(loginLog.appId).toBeDefined();
       expect(loginLog.userId).toBeDefined();
-      expect(loginLog.action).toBeDefined();
       expect(loginLog.success).toBeDefined();
-      expect(loginLog.ipAddress).toBeDefined();
+      expect(loginLog.ip).toBeDefined();
     });
 
     it('should properly format JSON in log files', async () => {
       await reconfigureServer({
         auditLog: {
-          auditLogFolder: testLogFolder,
+          adapterOptions: {
+            auditLogFolder: testLogFolder,
+          },
         },
       });
 
@@ -267,7 +277,9 @@ describe('End-to-End Audit Logging', () => {
     it('should mask all sensitive data fields', async () => {
       await reconfigureServer({
         auditLog: {
-          auditLogFolder: testLogFolder,
+          adapterOptions: {
+            auditLogFolder: testLogFolder,
+          },
         },
       });
 
@@ -294,7 +306,9 @@ describe('End-to-End Audit Logging', () => {
     it('should handle concurrent operations correctly', async () => {
       await reconfigureServer({
         auditLog: {
-          auditLogFolder: testLogFolder,
+          adapterOptions: {
+            auditLogFolder: testLogFolder,
+          },
         },
       });
 
@@ -354,7 +368,9 @@ describe('End-to-End Audit Logging', () => {
     it('should log failed operations with error messages', async () => {
       await reconfigureServer({
         auditLog: {
-          auditLogFolder: testLogFolder,
+          adapterOptions: {
+            auditLogFolder: testLogFolder,
+          },
         },
       });
 
@@ -389,7 +405,9 @@ describe('End-to-End Audit Logging', () => {
     it('should handle high-volume logging without significant performance degradation', async () => {
       await reconfigureServer({
         auditLog: {
-          auditLogFolder: testLogFolder,
+          adapterOptions: {
+            auditLogFolder: testLogFolder,
+          },
         },
       });
 
@@ -430,7 +448,9 @@ describe('End-to-End Audit Logging', () => {
     it('should log schema modifications', async () => {
       await reconfigureServer({
         auditLog: {
-          auditLogFolder: testLogFolder,
+          adapterOptions: {
+            auditLogFolder: testLogFolder,
+          },
         },
       });
 

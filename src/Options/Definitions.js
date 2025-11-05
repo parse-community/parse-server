@@ -100,18 +100,17 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_APP_NAME',
     help: 'Sets the app name',
   },
-  auth: {
-    env: 'PARSE_SERVER_AUTH_PROVIDERS',
-    help:
-      'Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication',
-  },
   auditLog: {
     env: 'PARSE_SERVER_AUDIT_LOG',
     help:
       'Configuration for GDPR-compliant audit logging. Logs user login, data access, data manipulation, schema changes, ACL changes, and push notifications.',
     action: parsers.objectParser,
     type: 'AuditLogOptions',
-    default: {},
+  },
+  auth: {
+    env: 'PARSE_SERVER_AUTH_PROVIDERS',
+    help:
+      'Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication',
   },
   cacheAdapter: {
     env: 'PARSE_SERVER_CACHE_ADAPTER',
@@ -986,25 +985,88 @@ module.exports.AccountLockoutOptions = {
     default: false,
   },
 };
-module.exports.AuditLogOptions = {
+module.exports.AuditLogFilterOptions = {
+  events: {
+    env: 'PARSE_SERVER_AUDIT_LOG_FILTER_EVENTS',
+    help:
+      "Whitelist of event types to log. If not set, all event types are logged.<br><br>Valid values: 'SYSTEM', 'USER_LOGIN', 'DATA_VIEW', 'DATA_CREATE', 'DATA_UPDATE', 'DATA_DELETE', 'ACL_MODIFY', 'SCHEMA_MODIFY', 'PUSH_SEND'",
+    action: parsers.arrayParser,
+  },
+  excludeClasses: {
+    env: 'PARSE_SERVER_AUDIT_LOG_FILTER_EXCLUDE_CLASSES',
+    help:
+      "Blacklist of Parse classes to exclude from logging.<br><br>Example: ['_Session', 'TempData']",
+    action: parsers.arrayParser,
+  },
+  excludeMasterKey: {
+    env: 'PARSE_SERVER_AUDIT_LOG_FILTER_EXCLUDE_MASTER_KEY',
+    help: 'Exclude operations performed with master key from logging (default: false).',
+    action: parsers.booleanParser,
+  },
+  excludeRoles: {
+    env: 'PARSE_SERVER_AUDIT_LOG_FILTER_EXCLUDE_ROLES',
+    help: "Blacklist of user roles to exclude from logging.<br><br>Example: ['system', 'bot']",
+    action: parsers.arrayParser,
+  },
+  filter: {
+    env: 'PARSE_SERVER_AUDIT_LOG_FILTER_FILTER',
+    help:
+      "Custom filter function for advanced filtering.<br><br>Function receives an audit event object and returns true to log or false to skip.<br><br>Example: (event) => event.userId !== 'system'",
+    required: true,
+    action: parsers.objectParser,
+  },
+  includeClasses: {
+    env: 'PARSE_SERVER_AUDIT_LOG_FILTER_INCLUDE_CLASSES',
+    help:
+      "Whitelist of Parse classes to log. If not set, all classes are logged.<br><br>Example: ['_User', 'Order', 'Product']",
+    action: parsers.arrayParser,
+  },
+  includeRoles: {
+    env: 'PARSE_SERVER_AUDIT_LOG_FILTER_INCLUDE_ROLES',
+    help:
+      "Whitelist of user roles to log. If not set, all roles are logged.<br><br>Example: ['admin', 'moderator']",
+    action: parsers.arrayParser,
+  },
+};
+module.exports.WinstonFileAuditLogAdapterOptions = {
   auditLogFolder: {
-    env: 'PARSE_SERVER_AUDIT_LOG_FOLDER',
+    env: 'PARSE_SERVER_AUDIT_LOG_AUDIT_LOG_FOLDER',
     help: 'Folder path where audit logs will be stored. If not set, audit logging is disabled.',
   },
   datePattern: {
     env: 'PARSE_SERVER_AUDIT_LOG_DATE_PATTERN',
-    help: 'Date pattern for log file rotation. Default is \'YYYY-MM-DD\' (daily rotation).',
-    default: 'YYYY-MM-DD',
-  },
-  maxSize: {
-    env: 'PARSE_SERVER_AUDIT_LOG_MAX_SIZE',
-    help: 'Maximum size of each log file (e.g., \'20m\', \'1g\'). Default is \'20m\'.',
-    default: '20m',
+    help: "Date pattern for log file rotation (default: 'YYYY-MM-DD').",
   },
   maxFiles: {
     env: 'PARSE_SERVER_AUDIT_LOG_MAX_FILES',
-    help: 'Maximum number of log files to retain (e.g., \'14d\', \'10\'). Default is \'14d\' (14 days).',
-    default: '14d',
+    help: "Maximum number of log files to retain (default: '14d').",
+  },
+  maxSize: {
+    env: 'PARSE_SERVER_AUDIT_LOG_MAX_SIZE',
+    help: "Maximum size of each log file (default: '20m').",
+  },
+};
+module.exports.AuditLogOptions = {
+  adapter: {
+    env: 'PARSE_SERVER_AUDIT_LOG_ADAPTER',
+    help:
+      "Audit log adapter to use. Can be:<br><br>- 'winston-file' (default): File-based logging with Winston<br>- String path to custom adapter module<br>- Object with module/class/adapter properties<br>- Direct adapter instance implementing AuditLogAdapterInterface",
+    required: true,
+    action: parsers.objectParser,
+  },
+  adapterOptions: {
+    env: 'PARSE_SERVER_AUDIT_LOG_ADAPTER_OPTIONS',
+    help:
+      "Adapter-specific configuration options.<br><br>For 'winston-file' adapter, use WinstonFileAuditLogAdapterOptions.<br>For custom adapters, use adapter-specific option structure.",
+    required: true,
+    action: parsers.objectParser,
+  },
+  logFilter: {
+    env: 'PARSE_SERVER_AUDIT_LOG_LOG_FILTER',
+    help:
+      'Filter configuration for selective audit logging.<br><br>Allows filtering by event types, Parse classes, user roles, and custom logic.',
+    action: parsers.objectParser,
+    type: 'AuditLogFilterOptions',
   },
 };
 module.exports.PasswordPolicyOptions = {

@@ -19,7 +19,7 @@ import DatabaseController from './DatabaseController';
 // Adapters
 import { GridFSBucketAdapter } from '../Adapters/Files/GridFSBucketAdapter';
 import { WinstonLoggerAdapter } from '../Adapters/Logger/WinstonLoggerAdapter';
-import { AuditLogAdapter } from '../Adapters/Logger/AuditLogAdapter';
+import { WinstonFileAuditLogAdapter } from '../Adapters/AuditLog/WinstonFileAuditLogAdapter';
 import { InMemoryCacheAdapter } from '../Adapters/Cache/InMemoryCacheAdapter';
 import { AnalyticsAdapter } from '../Adapters/Analytics/AnalyticsAdapter';
 import MongoStorageAdapter from '../Adapters/Storage/Mongo/MongoStorageAdapter';
@@ -84,20 +84,26 @@ export function getLoggerController(options: ParseServerOptions): LoggerControll
 export function getAuditLogController(options: ParseServerOptions): AuditLogController {
   const { appId, auditLog } = options;
 
-  if (!auditLog || !auditLog.auditLogFolder) {
-    // Audit logging is disabled, return a controller with no adapter
+  // If no audit log config, return a controller with no adapter (disabled)
+  if (!auditLog) {
     return new AuditLogController(null, appId, {});
   }
 
-  const auditLogOptions = {
-    auditLogFolder: auditLog.auditLogFolder,
-    datePattern: auditLog.datePattern,
-    maxSize: auditLog.maxSize,
-    maxFiles: auditLog.maxFiles,
-  };
+  // Extract configuration
+  const { adapter, logFilter, adapterOptions } = auditLog;
 
-  const auditLogAdapter = new AuditLogAdapter(auditLogOptions);
-  return new AuditLogController(auditLogAdapter, appId, auditLogOptions);
+  // Load the audit log adapter using loadAdapter pattern
+  // Defaults to WinstonFileAuditLogAdapter if no adapter specified
+  const auditLogAdapter = loadAdapter(
+    adapter,
+    WinstonFileAuditLogAdapter,
+    adapterOptions || {}
+  );
+
+  // Create controller with adapter and filter configuration
+  return new AuditLogController(auditLogAdapter, appId, {
+    logFilter: logFilter || {},
+  });
 }
 
 export function getFilesController(options: ParseServerOptions): FilesController {

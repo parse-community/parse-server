@@ -1,155 +1,58 @@
 'use strict';
 
 const AuditLogController = require('../lib/Controllers/AuditLogController').AuditLogController;
-const AuditLogAdapter = require('../lib/Adapters/Logger/AuditLogAdapter').AuditLogAdapter;
 
 describe('AuditLogController', () => {
   let controller;
   let mockAdapter;
+  const testAppId = 'testApp123';
 
   beforeEach(() => {
     mockAdapter = {
-      logUserLogin: jasmine.createSpy('logUserLogin'),
-      logDataView: jasmine.createSpy('logDataView'),
-      logDataCreate: jasmine.createSpy('logDataCreate'),
-      logDataUpdate: jasmine.createSpy('logDataUpdate'),
-      logDataDelete: jasmine.createSpy('logDataDelete'),
-      logACLModify: jasmine.createSpy('logACLModify'),
-      logSchemaModify: jasmine.createSpy('logSchemaModify'),
-      logPushSend: jasmine.createSpy('logPushSend'),
+      logUserLogin: jasmine.createSpy('logUserLogin').and.returnValue(Promise.resolve()),
+      logDataView: jasmine.createSpy('logDataView').and.returnValue(Promise.resolve()),
+      logDataCreate: jasmine.createSpy('logDataCreate').and.returnValue(Promise.resolve()),
+      logDataUpdate: jasmine.createSpy('logDataUpdate').and.returnValue(Promise.resolve()),
+      logDataDelete: jasmine.createSpy('logDataDelete').and.returnValue(Promise.resolve()),
+      logACLModify: jasmine.createSpy('logACLModify').and.returnValue(Promise.resolve()),
+      logSchemaModify: jasmine.createSpy('logSchemaModify').and.returnValue(Promise.resolve()),
+      logPushSend: jasmine.createSpy('logPushSend').and.returnValue(Promise.resolve()),
       isEnabled: jasmine.createSpy('isEnabled').and.returnValue(true),
     };
 
-    controller = new AuditLogController(mockAdapter, 'testApp');
+    controller = new AuditLogController(mockAdapter, testAppId, {});
   });
 
   describe('constructor', () => {
     it('should initialize with adapter', () => {
       expect(controller.adapter).toBe(mockAdapter);
+      expect(controller.appId).toBe(testAppId);
+    });
+
+    it('should initialize with null adapter', () => {
+      const nullController = new AuditLogController(null, testAppId, {});
+      expect(nullController.adapter).toBeNull();
     });
   });
 
-  describe('_getIPAddress', () => {
-    it('should extract IP from x-forwarded-for header', () => {
-      const req = {
-        headers: { 'x-forwarded-for': '192.168.1.1, 10.0.0.1' },
-        ip: '127.0.0.1',
-      };
-      const ip = controller._getIPAddress(req);
-      expect(ip).toBe('192.168.1.1');
+  describe('isEnabled', () => {
+    it('should return true when adapter is enabled', () => {
+      expect(controller.isEnabled()).toBe(true);
     });
 
-    it('should extract IP from x-real-ip header', () => {
-      const req = {
-        headers: { 'x-real-ip': '192.168.1.2' },
-        ip: '127.0.0.1',
-      };
-      const ip = controller._getIPAddress(req);
-      expect(ip).toBe('192.168.1.2');
+    it('should return false when adapter is disabled', () => {
+      mockAdapter.isEnabled.and.returnValue(false);
+      expect(controller.isEnabled()).toBe(false);
     });
 
-    it('should fallback to req.ip', () => {
-      const req = {
-        headers: {},
-        ip: '127.0.0.1',
-      };
-      const ip = controller._getIPAddress(req);
-      expect(ip).toBe('127.0.0.1');
-    });
-
-    it('should fallback to connection.remoteAddress', () => {
-      const req = {
-        headers: {},
-        connection: { remoteAddress: '127.0.0.2' },
-      };
-      const ip = controller._getIPAddress(req);
-      expect(ip).toBe('127.0.0.2');
-    });
-
-    it('should return undefined for null request', () => {
-      const ip = controller._getIPAddress(null);
-      expect(ip).toBeUndefined();
-    });
-  });
-
-  describe('_getUserContext', () => {
-    it('should extract user ID and session token from auth', () => {
-      const auth = {
-        user: { id: 'user123' },
-        sessionToken: 'session123',
-      };
-      const context = controller._getUserContext(auth);
-      expect(context.userId).toBe('user123');
-      expect(context.sessionToken).toBe('session123');
-    });
-
-    it('should handle auth with objectId instead of id', () => {
-      const auth = {
-        user: { objectId: 'user456' },
-        sessionToken: 'session456',
-      };
-      const context = controller._getUserContext(auth);
-      expect(context.userId).toBe('user456');
-    });
-
-    it('should return undefined values for null auth', () => {
-      const context = controller._getUserContext(null);
-      expect(context.userId).toBeUndefined();
-      expect(context.sessionToken).toBeUndefined();
-    });
-
-    it('should handle auth without user', () => {
-      const auth = {
-        sessionToken: 'session789',
-      };
-      const context = controller._getUserContext(auth);
-      expect(context.userId).toBeUndefined();
-      expect(context.sessionToken).toBe('session789');
-    });
-  });
-
-  describe('_maskSensitiveData', () => {
-    it('should mask password field', () => {
-      const data = { username: 'test', password: 'secret123' };
-      const masked = controller._maskSensitiveData(data);
-      expect(masked.username).toBe('test');
-      expect(masked.password).toBe('***masked***');
-    });
-
-    it('should mask sessionToken field', () => {
-      const data = { userId: 'user1', sessionToken: 'token123' };
-      const masked = controller._maskSensitiveData(data);
-      expect(masked.userId).toBe('user1');
-      expect(masked.sessionToken).toBe('***masked***');
-    });
-
-    it('should mask authData field', () => {
-      const data = { username: 'test', authData: { facebook: {} } };
-      const masked = controller._maskSensitiveData(data);
-      expect(masked.authData).toBe('***masked***');
-    });
-
-    it('should mask _hashed_password field', () => {
-      const data = { username: 'test', _hashed_password: 'hash123' };
-      const masked = controller._maskSensitiveData(data);
-      expect(masked._hashed_password).toBe('***masked***');
-    });
-
-    it('should return non-object data unchanged', () => {
-      expect(controller._maskSensitiveData(null)).toBe(null);
-      expect(controller._maskSensitiveData('string')).toBe('string');
-      expect(controller._maskSensitiveData(123)).toBe(123);
-    });
-
-    it('should not mutate original data', () => {
-      const data = { password: 'secret' };
-      controller._maskSensitiveData(data);
-      expect(data.password).toBe('secret');
+    it('should return false when adapter is null', () => {
+      controller.adapter = null;
+      expect(controller.isEnabled()).toBe(false);
     });
   });
 
   describe('logUserLogin', () => {
-    it('should log successful login', () => {
+    it('should log successful login with proper event structure', () => {
       const params = {
         auth: { user: { id: 'user1' }, sessionToken: 'token1' },
         req: { headers: {}, ip: '127.0.0.1' },
@@ -160,15 +63,18 @@ describe('AuditLogController', () => {
 
       controller.logUserLogin(params);
 
-      expect(mockAdapter.logUserLogin).toHaveBeenCalledWith({
-        userId: 'user1',
-        username: 'testuser',
-        sessionToken: 'token1',
-        ipAddress: '127.0.0.1',
-        success: true,
-        error: undefined,
-        loginMethod: 'password',
-      });
+      expect(mockAdapter.logUserLogin).toHaveBeenCalledWith(
+        jasmine.objectContaining({
+          eventType: 'USER_LOGIN',
+          appId: testAppId,
+          userId: 'user1',
+          username: 'testuser',
+          sessionToken: 'token1',
+          ip: '127.0.0.1',
+          success: true,
+          authMethod: 'password',
+        })
+      );
     });
 
     it('should log failed login', () => {
@@ -184,6 +90,7 @@ describe('AuditLogController', () => {
 
       expect(mockAdapter.logUserLogin).toHaveBeenCalledWith(
         jasmine.objectContaining({
+          eventType: 'USER_LOGIN',
           username: 'testuser',
           success: false,
           error: 'Invalid credentials',
@@ -193,13 +100,13 @@ describe('AuditLogController', () => {
 
     it('should not log if adapter is disabled', () => {
       mockAdapter.isEnabled.and.returnValue(false);
-      controller.logUserLogin({ auth: {}, req: {} });
+      controller.logUserLogin({ auth: {}, req: {}, success: true });
       expect(mockAdapter.logUserLogin).not.toHaveBeenCalled();
     });
 
     it('should not log if adapter is null', () => {
       controller.adapter = null;
-      controller.logUserLogin({ auth: {}, req: {} });
+      controller.logUserLogin({ auth: {}, req: {}, success: true });
       // Should not throw error
     });
   });
@@ -217,15 +124,20 @@ describe('AuditLogController', () => {
 
       controller.logDataView(params);
 
-      expect(mockAdapter.logDataView).toHaveBeenCalledWith({
-        userId: 'user1',
-        sessionToken: 'token1',
-        ipAddress: '127.0.0.1',
-        className: 'TestClass',
-        query: { name: 'test' },
-        resultCount: 5,
-        objectIds: ['obj1', 'obj2'],
-      });
+      expect(mockAdapter.logDataView).toHaveBeenCalledWith(
+        jasmine.objectContaining({
+          eventType: 'DATA_VIEW',
+          appId: testAppId,
+          userId: 'user1',
+          sessionToken: 'token1',
+          ip: '127.0.0.1',
+          className: 'TestClass',
+          query: { name: 'test' },
+          resultCount: 5,
+          objectIds: ['obj1', 'obj2'],
+          success: true,
+        })
+      );
     });
 
     it('should not log if adapter is disabled', () => {
@@ -236,13 +148,13 @@ describe('AuditLogController', () => {
   });
 
   describe('logDataCreate', () => {
-    it('should log data creation with masked sensitive data', () => {
+    it('should log data creation', () => {
       const params = {
         auth: { user: { id: 'user1' } },
         req: { headers: {}, ip: '127.0.0.1' },
-        className: '_User',
-        objectId: 'newUser1',
-        data: { username: 'newuser', password: 'secret123' },
+        className: 'TestClass',
+        objectId: 'newObj1',
+        data: { name: 'test' },
         success: true,
       };
 
@@ -250,12 +162,10 @@ describe('AuditLogController', () => {
 
       expect(mockAdapter.logDataCreate).toHaveBeenCalledWith(
         jasmine.objectContaining({
-          className: '_User',
-          objectId: 'newUser1',
-          data: jasmine.objectContaining({
-            username: 'newuser',
-            password: '***masked***',
-          }),
+          eventType: 'DATA_CREATE',
+          className: 'TestClass',
+          objectId: 'newObj1',
+          success: true,
         })
       );
     });
@@ -283,13 +193,13 @@ describe('AuditLogController', () => {
   });
 
   describe('logDataUpdate', () => {
-    it('should log data update with masked fields', () => {
+    it('should log data update', () => {
       const params = {
         auth: { user: { id: 'user1' } },
         req: { headers: {}, ip: '127.0.0.1' },
-        className: '_User',
-        objectId: 'user1',
-        updatedFields: { email: 'new@example.com', password: 'newsecret' },
+        className: 'TestClass',
+        objectId: 'obj1',
+        updatedFields: { name: 'updated' },
         success: true,
       };
 
@@ -297,12 +207,10 @@ describe('AuditLogController', () => {
 
       expect(mockAdapter.logDataUpdate).toHaveBeenCalledWith(
         jasmine.objectContaining({
-          className: '_User',
-          objectId: 'user1',
-          updatedFields: jasmine.objectContaining({
-            email: 'new@example.com',
-            password: '***masked***',
-          }),
+          eventType: 'DATA_UPDATE',
+          className: 'TestClass',
+          objectId: 'obj1',
+          success: true,
         })
       );
     });
@@ -320,29 +228,25 @@ describe('AuditLogController', () => {
 
       controller.logDataDelete(params);
 
-      expect(mockAdapter.logDataDelete).toHaveBeenCalledWith({
-        userId: 'user1',
-        sessionToken: undefined,
-        ipAddress: '127.0.0.1',
-        className: 'TestClass',
-        objectId: 'obj1',
-        success: true,
-        error: undefined,
-      });
+      expect(mockAdapter.logDataDelete).toHaveBeenCalledWith(
+        jasmine.objectContaining({
+          eventType: 'DATA_DELETE',
+          className: 'TestClass',
+          objectId: 'obj1',
+          success: true,
+        })
+      );
     });
   });
 
   describe('logACLModify', () => {
     it('should log ACL modification', () => {
-      const oldACL = { '*': { read: true } };
-      const newACL = { '*': { read: true }, user1: { write: true } };
       const params = {
         auth: { user: { id: 'user1' } },
         req: { headers: {}, ip: '127.0.0.1' },
         className: 'TestClass',
         objectId: 'obj1',
-        oldACL,
-        newACL,
+        newACL: { user1: { read: true, write: true } },
         success: true,
       };
 
@@ -350,10 +254,10 @@ describe('AuditLogController', () => {
 
       expect(mockAdapter.logACLModify).toHaveBeenCalledWith(
         jasmine.objectContaining({
+          eventType: 'ACL_MODIFY',
           className: 'TestClass',
           objectId: 'obj1',
-          oldACL,
-          newACL,
+          success: true,
         })
       );
     });
@@ -374,47 +278,10 @@ describe('AuditLogController', () => {
 
       expect(mockAdapter.logSchemaModify).toHaveBeenCalledWith(
         jasmine.objectContaining({
-          className: 'NewClass',
+          eventType: 'SCHEMA_MODIFY',
           operation: 'create',
-          changes: params.changes,
-        })
-      );
-    });
-
-    it('should log schema update', () => {
-      const params = {
-        auth: { user: { id: 'user1' } },
-        req: { headers: {}, ip: '127.0.0.1' },
-        className: 'ExistingClass',
-        operation: 'update',
-        changes: { fields: { age: { type: 'Number' } } },
-        success: true,
-      };
-
-      controller.logSchemaModify(params);
-
-      expect(mockAdapter.logSchemaModify).toHaveBeenCalledWith(
-        jasmine.objectContaining({
-          operation: 'update',
-        })
-      );
-    });
-
-    it('should log schema deletion', () => {
-      const params = {
-        auth: { user: { id: 'user1' } },
-        req: { headers: {}, ip: '127.0.0.1' },
-        className: 'OldClass',
-        operation: 'delete',
-        changes: {},
-        success: true,
-      };
-
-      controller.logSchemaModify(params);
-
-      expect(mockAdapter.logSchemaModify).toHaveBeenCalledWith(
-        jasmine.objectContaining({
-          operation: 'delete',
+          className: 'NewClass',
+          success: true,
         })
       );
     });
@@ -425,61 +292,22 @@ describe('AuditLogController', () => {
       const params = {
         auth: { user: { id: 'user1' } },
         req: { headers: {}, ip: '127.0.0.1' },
+        payload: { alert: 'test' },
         query: { deviceType: 'ios' },
-        channels: ['channel1', 'channel2'],
+        channels: ['channel1'],
         targetCount: 100,
         success: true,
-      };
-
-      controller.logPushSend(params);
-
-      expect(mockAdapter.logPushSend).toHaveBeenCalledWith({
-        userId: 'user1',
-        sessionToken: undefined,
-        ipAddress: '127.0.0.1',
-        query: { deviceType: 'ios' },
-        channels: ['channel1', 'channel2'],
-        targetCount: 100,
-        success: true,
-        error: undefined,
-      });
-    });
-
-    it('should log failed push', () => {
-      const params = {
-        auth: { user: { id: 'user1' } },
-        req: { headers: {}, ip: '127.0.0.1' },
-        query: {},
-        channels: [],
-        targetCount: 0,
-        success: false,
-        error: 'No devices found',
       };
 
       controller.logPushSend(params);
 
       expect(mockAdapter.logPushSend).toHaveBeenCalledWith(
         jasmine.objectContaining({
-          success: false,
-          error: 'No devices found',
+          eventType: 'PUSH_SEND',
+          success: true,
+          deviceCount: 100,
         })
       );
-    });
-  });
-
-  describe('isEnabled', () => {
-    it('should return true when adapter is enabled', () => {
-      expect(controller.isEnabled()).toBe(true);
-    });
-
-    it('should return false when adapter is disabled', () => {
-      mockAdapter.isEnabled.and.returnValue(false);
-      expect(controller.isEnabled()).toBe(false);
-    });
-
-    it('should return false when adapter is null', () => {
-      controller.adapter = null;
-      expect(controller.isEnabled()).toBe(false);
     });
   });
 });

@@ -1,84 +1,98 @@
 'use strict';
 
-const AuditLogAdapter = require('../lib/Adapters/Logger/AuditLogAdapter').AuditLogAdapter;
-const { configureAuditLogger, logAuditEvent, isAuditLogEnabled } = require('../lib/Adapters/Logger/AuditLogger');
+const { WinstonFileAuditLogAdapter } = require('../lib/Adapters/AuditLog/WinstonFileAuditLogAdapter');
 const fs = require('fs');
 const path = require('path');
 
 describe('AuditLogAdapter', () => {
   const testLogFolder = path.join(__dirname, 'temp-audit-logs');
   const getLogFiles = (folder) => fs.readdirSync(folder).filter(f => f.endsWith('.log'));
+  const testAppId = 'testApp123';
+
+  let adapter;
 
   beforeEach(() => {
     // Clean up test log folder
     if (fs.existsSync(testLogFolder)) {
       fs.rmSync(testLogFolder, { recursive: true, force: true });
     }
-    // Reset audit logger
-    configureAuditLogger();
+    adapter = null;
   });
 
-  afterEach(done => {
-    // Disable audit logger BEFORE deleting files
-    configureAuditLogger();
+  afterEach(async () => {
+    // Close adapter before deleting files
+    if (adapter && adapter.close) {
+      await adapter.close();
+    }
     // Give Winston time to close file handles
-    setTimeout(() => {
-      if (fs.existsSync(testLogFolder)) {
-        fs.rmSync(testLogFolder, { recursive: true, force: true });
-      }
-      done();
-    }, 100);
+    await new Promise(resolve => setTimeout(resolve, 100));
+    if (fs.existsSync(testLogFolder)) {
+      fs.rmSync(testLogFolder, { recursive: true, force: true });
+    }
   });
 
   describe('constructor', () => {
     it('should initialize without options', () => {
-      const adapter = new AuditLogAdapter();
+      adapter = new WinstonFileAuditLogAdapter({});
       expect(adapter).toBeDefined();
+      expect(adapter.isEnabled()).toBe(false);
     });
 
     it('should initialize with auditLogFolder option', () => {
-      const adapter = new AuditLogAdapter({
+      adapter = new WinstonFileAuditLogAdapter({
         auditLogFolder: testLogFolder,
       });
       expect(adapter).toBeDefined();
       expect(fs.existsSync(testLogFolder)).toBe(true);
+      expect(adapter.isEnabled()).toBe(true);
     });
 
     it('should not create folder without auditLogFolder option', () => {
-      const adapter = new AuditLogAdapter({});
+      adapter = new WinstonFileAuditLogAdapter({});
       expect(adapter).toBeDefined();
       expect(fs.existsSync(testLogFolder)).toBe(false);
+      expect(adapter.isEnabled()).toBe(false);
     });
   });
 
   describe('isEnabled', () => {
     it('should return false when not configured', () => {
-      const adapter = new AuditLogAdapter();
+      const adapter = new WinstonFileAuditLogAdapter();
       expect(adapter.isEnabled()).toBe(false);
     });
 
     it('should return true when configured with folder', () => {
-      const adapter = new AuditLogAdapter({
+      const adapter = new WinstonFileAuditLogAdapter({
         auditLogFolder: testLogFolder,
       });
       expect(adapter.isEnabled()).toBe(true);
     });
   });
 
-  describe('log', () => {
+  describe('logSystemEvent', () => {
     it('should not throw when audit logging is disabled', () => {
-      const adapter = new AuditLogAdapter();
+      const adapter = new WinstonFileAuditLogAdapter();
       expect(() => {
-        adapter.log('info', 'test message', { key: 'value' });
+        adapter.logSystemEvent({
+          eventType: 'SYSTEM',
+          timestamp: new Date().toISOString(),
+          appId: testAppId,
+          success: true,
+        });
       }).not.toThrow();
     });
 
     it('should log system event when enabled', done => {
-      const adapter = new AuditLogAdapter({
+      const adapter = new WinstonFileAuditLogAdapter({
         auditLogFolder: testLogFolder,
       });
 
-      adapter.log('info', 'test message', { key: 'value' });
+      adapter.logSystemEvent({
+        eventType: 'SYSTEM',
+        timestamp: new Date().toISOString(),
+        appId: testAppId,
+        success: true,
+      });
 
       // Give winston time to write
       setTimeout(() => {
@@ -91,30 +105,36 @@ describe('AuditLogAdapter', () => {
 
   describe('logUserLogin', () => {
     it('should not throw when disabled', () => {
-      const adapter = new AuditLogAdapter();
+      const adapter = new WinstonFileAuditLogAdapter();
       expect(() => {
         adapter.logUserLogin({
+          eventType: 'USER_LOGIN',
+          timestamp: new Date().toISOString(),
+          appId: testAppId,
           userId: 'user1',
           username: 'testuser',
           sessionToken: 'token123',
-          ipAddress: '127.0.0.1',
+          ip: '127.0.0.1',
           success: true,
         });
       }).not.toThrow();
     });
 
     it('should log successful login', done => {
-      const adapter = new AuditLogAdapter({
+      const adapter = new WinstonFileAuditLogAdapter({
         auditLogFolder: testLogFolder,
       });
 
       adapter.logUserLogin({
+        eventType: 'USER_LOGIN',
+        timestamp: new Date().toISOString(),
+        appId: testAppId,
         userId: 'user1',
         username: 'testuser',
         sessionToken: 'token123',
-        ipAddress: '127.0.0.1',
+        ip: '127.0.0.1',
         success: true,
-        loginMethod: 'password',
+        authMethod: 'password',
       });
 
       setTimeout(() => {
@@ -132,14 +152,17 @@ describe('AuditLogAdapter', () => {
     });
 
     it('should log failed login', done => {
-      const adapter = new AuditLogAdapter({
+      const adapter = new WinstonFileAuditLogAdapter({
         auditLogFolder: testLogFolder,
       });
 
       adapter.logUserLogin({
+        eventType: 'USER_LOGIN',
+        timestamp: new Date().toISOString(),
+        appId: testAppId,
         userId: 'user1',
         username: 'testuser',
-        ipAddress: '127.0.0.1',
+        ip: '127.0.0.1',
         success: false,
         error: 'Invalid credentials',
       });
@@ -157,10 +180,14 @@ describe('AuditLogAdapter', () => {
 
   describe('logDataView', () => {
     it('should not throw when disabled', () => {
-      const adapter = new AuditLogAdapter();
+      const adapter = new WinstonFileAuditLogAdapter();
       expect(() => {
         adapter.logDataView({
+          eventType: 'DATA_VIEW',
+          timestamp: new Date().toISOString(),
+          appId: testAppId,
           userId: 'user1',
+          success: true,
           className: 'TestClass',
           query: {},
           resultCount: 5,
@@ -169,14 +196,18 @@ describe('AuditLogAdapter', () => {
     });
 
     it('should log data view event', done => {
-      const adapter = new AuditLogAdapter({
+      const adapter = new WinstonFileAuditLogAdapter({
         auditLogFolder: testLogFolder,
       });
 
       adapter.logDataView({
+        eventType: 'DATA_VIEW',
+        timestamp: new Date().toISOString(),
+        appId: testAppId,
         userId: 'user1',
         sessionToken: 'token123',
-        ipAddress: '127.0.0.1',
+        ip: '127.0.0.1',
+        success: true,
         className: 'TestClass',
         query: { name: 'test' },
         resultCount: 5,
@@ -196,17 +227,20 @@ describe('AuditLogAdapter', () => {
 
   describe('logDataCreate', () => {
     it('should log data creation', done => {
-      const adapter = new AuditLogAdapter({
+      const adapter = new WinstonFileAuditLogAdapter({
         auditLogFolder: testLogFolder,
       });
 
       adapter.logDataCreate({
+        eventType: 'DATA_CREATE',
+        timestamp: new Date().toISOString(),
+        appId: testAppId,
         userId: 'user1',
-        ipAddress: '127.0.0.1',
+        ip: '127.0.0.1',
+        success: true,
         className: 'TestClass',
         objectId: 'obj1',
         data: { name: 'test', value: 123 },
-        success: true,
       });
 
       setTimeout(() => {
@@ -220,17 +254,20 @@ describe('AuditLogAdapter', () => {
     });
 
     it('should log failed creation', done => {
-      const adapter = new AuditLogAdapter({
+      const adapter = new WinstonFileAuditLogAdapter({
         auditLogFolder: testLogFolder,
       });
 
       adapter.logDataCreate({
+        eventType: 'DATA_CREATE',
+        timestamp: new Date().toISOString(),
+        appId: testAppId,
         userId: 'user1',
+        success: false,
+        error: 'Validation failed',
         className: 'TestClass',
         objectId: 'obj1',
         data: {},
-        success: false,
-        error: 'Validation failed',
       });
 
       setTimeout(() => {
@@ -245,17 +282,20 @@ describe('AuditLogAdapter', () => {
 
   describe('logDataUpdate', () => {
     it('should log data update', done => {
-      const adapter = new AuditLogAdapter({
+      const adapter = new WinstonFileAuditLogAdapter({
         auditLogFolder: testLogFolder,
       });
 
       adapter.logDataUpdate({
+        eventType: 'DATA_UPDATE',
+        timestamp: new Date().toISOString(),
+        appId: testAppId,
         userId: 'user1',
-        ipAddress: '127.0.0.1',
+        ip: '127.0.0.1',
+        success: true,
         className: 'TestClass',
         objectId: 'obj1',
         updatedFields: { name: 'updated' },
-        success: true,
       });
 
       setTimeout(() => {
@@ -271,16 +311,19 @@ describe('AuditLogAdapter', () => {
 
   describe('logDataDelete', () => {
     it('should log data deletion', done => {
-      const adapter = new AuditLogAdapter({
+      const adapter = new WinstonFileAuditLogAdapter({
         auditLogFolder: testLogFolder,
       });
 
       adapter.logDataDelete({
+        eventType: 'DATA_DELETE',
+        timestamp: new Date().toISOString(),
+        appId: testAppId,
         userId: 'user1',
-        ipAddress: '127.0.0.1',
+        ip: '127.0.0.1',
+        success: true,
         className: 'TestClass',
         objectId: 'obj1',
-        success: true,
       });
 
       setTimeout(() => {
@@ -296,21 +339,22 @@ describe('AuditLogAdapter', () => {
 
   describe('logACLModify', () => {
     it('should log ACL modification', done => {
-      const adapter = new AuditLogAdapter({
+      const adapter = new WinstonFileAuditLogAdapter({
         auditLogFolder: testLogFolder,
       });
 
-      const oldACL = { '*': { read: true } };
-      const newACL = { '*': { read: true }, user1: { write: true } };
+      const acl = { '*': { read: true }, user1: { write: true } };
 
       adapter.logACLModify({
+        eventType: 'ACL_MODIFY',
+        timestamp: new Date().toISOString(),
+        appId: testAppId,
         userId: 'user1',
-        ipAddress: '127.0.0.1',
+        ip: '127.0.0.1',
+        success: true,
         className: 'TestClass',
         objectId: 'obj1',
-        oldACL,
-        newACL,
-        success: true,
+        acl,
       });
 
       setTimeout(() => {
@@ -326,17 +370,20 @@ describe('AuditLogAdapter', () => {
 
   describe('logSchemaModify', () => {
     it('should log schema creation', done => {
-      const adapter = new AuditLogAdapter({
+      const adapter = new WinstonFileAuditLogAdapter({
         auditLogFolder: testLogFolder,
       });
 
       adapter.logSchemaModify({
+        eventType: 'SCHEMA_MODIFY',
+        timestamp: new Date().toISOString(),
+        appId: testAppId,
         userId: 'user1',
-        ipAddress: '127.0.0.1',
+        ip: '127.0.0.1',
+        success: true,
         className: 'NewClass',
         operation: 'create',
-        changes: { fields: { name: { type: 'String' } } },
-        success: true,
+        schemaData: { fields: { name: { type: 'String' } } },
       });
 
       setTimeout(() => {
@@ -350,16 +397,19 @@ describe('AuditLogAdapter', () => {
     });
 
     it('should log schema update', done => {
-      const adapter = new AuditLogAdapter({
+      const adapter = new WinstonFileAuditLogAdapter({
         auditLogFolder: testLogFolder,
       });
 
       adapter.logSchemaModify({
+        eventType: 'SCHEMA_MODIFY',
+        timestamp: new Date().toISOString(),
+        appId: testAppId,
         userId: 'user1',
+        success: true,
         className: 'ExistingClass',
         operation: 'update',
-        changes: { fields: { age: { type: 'Number' } } },
-        success: true,
+        schemaData: { fields: { age: { type: 'Number' } } },
       });
 
       setTimeout(() => {
@@ -371,16 +421,19 @@ describe('AuditLogAdapter', () => {
     });
 
     it('should log schema deletion', done => {
-      const adapter = new AuditLogAdapter({
+      const adapter = new WinstonFileAuditLogAdapter({
         auditLogFolder: testLogFolder,
       });
 
       adapter.logSchemaModify({
+        eventType: 'SCHEMA_MODIFY',
+        timestamp: new Date().toISOString(),
+        appId: testAppId,
         userId: 'user1',
+        success: true,
         className: 'OldClass',
         operation: 'delete',
-        changes: {},
-        success: true,
+        schemaData: {},
       });
 
       setTimeout(() => {
@@ -394,17 +447,20 @@ describe('AuditLogAdapter', () => {
 
   describe('logPushSend', () => {
     it('should log push notification', done => {
-      const adapter = new AuditLogAdapter({
+      const adapter = new WinstonFileAuditLogAdapter({
         auditLogFolder: testLogFolder,
       });
 
       adapter.logPushSend({
+        eventType: 'PUSH_SEND',
+        timestamp: new Date().toISOString(),
+        appId: testAppId,
         userId: 'user1',
-        ipAddress: '127.0.0.1',
-        query: { deviceType: 'ios' },
-        channels: ['channel1', 'channel2'],
-        targetCount: 100,
+        ip: '127.0.0.1',
         success: true,
+        payload: { alert: 'test' },
+        target: { deviceType: 'ios', channels: ['channel1', 'channel2'] },
+        deviceCount: 100,
       });
 
       setTimeout(() => {
@@ -417,17 +473,19 @@ describe('AuditLogAdapter', () => {
     });
 
     it('should log failed push', done => {
-      const adapter = new AuditLogAdapter({
+      const adapter = new WinstonFileAuditLogAdapter({
         auditLogFolder: testLogFolder,
       });
 
       adapter.logPushSend({
+        eventType: 'PUSH_SEND',
+        timestamp: new Date().toISOString(),
+        appId: testAppId,
         userId: 'user1',
-        query: {},
-        channels: [],
-        targetCount: 0,
         success: false,
         error: 'No devices found',
+        target: {},
+        deviceCount: 0,
       });
 
       setTimeout(() => {
@@ -444,7 +502,7 @@ describe('AuditLogAdapter', () => {
     it('should create log folder if it does not exist', () => {
       expect(fs.existsSync(testLogFolder)).toBe(false);
 
-      new AuditLogAdapter({
+      new WinstonFileAuditLogAdapter({
         auditLogFolder: testLogFolder,
       });
 
@@ -452,14 +510,16 @@ describe('AuditLogAdapter', () => {
     });
 
     it('should create logs with date pattern in filename', done => {
-      new AuditLogAdapter({
+      const adapter = new WinstonFileAuditLogAdapter({
         auditLogFolder: testLogFolder,
         datePattern: 'YYYY-MM-DD',
       });
 
-      logAuditEvent({
+      adapter.logSystemEvent({
         eventType: 'SYSTEM',
-        action: 'test',
+        timestamp: new Date().toISOString(),
+        appId: testAppId,
+        success: true,
       });
 
       setTimeout(() => {

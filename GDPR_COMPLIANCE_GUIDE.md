@@ -36,16 +36,123 @@ Parse Server includes a comprehensive audit logging system that tracks:
 - Provides evidence that can support Article 32 (Security of Processing)
 
 **Configuration:**
+
+**Basic Configuration (File-based logging):**
 ```javascript
 new ParseServer({
   // ... other options
   auditLog: {
-    auditLogFolder: './audit-logs',  // Required to enable
-    datePattern: 'YYYY-MM-DD',        // Optional (default: daily rotation)
-    maxSize: '20m',                   // Optional (default: 20MB per file)
-    maxFiles: '14d',                  // Optional (default: 14 days retention)
+    adapter: 'winston-file', // Optional - default is 'winston-file'
+    adapterOptions: {
+      auditLogFolder: './audit-logs',  // Required to enable
+      datePattern: 'YYYY-MM-DD',        // Optional (default: daily rotation)
+      maxSize: '20m',                   // Optional (default: 20MB per file)
+      maxFiles: '14d',                  // Optional (default: 14 days retention)
+    }
   }
 });
+```
+
+**Advanced Configuration (with filtering):**
+```javascript
+new ParseServer({
+  // ... other options
+  auditLog: {
+    adapter: 'winston-file',
+    adapterOptions: {
+      auditLogFolder: './audit-logs',
+      datePattern: 'YYYY-MM-DD',
+      maxSize: '20m',
+      maxFiles: '14d',
+    },
+    logFilter: {
+      // Log only specific event types
+      events: ['USER_LOGIN', 'DATA_DELETE', 'SCHEMA_MODIFY'],
+
+      // Log only specific Parse classes
+      includeClasses: ['_User', 'Order', 'Payment'],
+
+      // Exclude certain classes from logging
+      excludeClasses: ['_Session', 'TempData'],
+
+      // Exclude master key operations (optional)
+      excludeMasterKey: false,
+
+      // Filter by user roles
+      includeRoles: ['admin', 'moderator'],
+
+      // Custom filter function for advanced logic
+      filter: (event) => {
+        // Example: Don't log system user operations
+        return event.userId !== 'system';
+      }
+    }
+  }
+});
+```
+
+**Custom Adapter (e.g., S3 storage):**
+```javascript
+import { MyS3AuditLogAdapter } from './adapters/MyS3AuditLogAdapter';
+
+new ParseServer({
+  // ... other options
+  auditLog: {
+    adapter: MyS3AuditLogAdapter, // Custom adapter instance
+    adapterOptions: {
+      bucket: 'my-audit-logs',
+      region: 'eu-west-1',
+      encryption: 'AES256',
+    },
+    logFilter: {
+      events: ['USER_LOGIN', 'DATA_DELETE'],
+    }
+  }
+});
+```
+
+**Pluggable Adapter Architecture:**
+
+Parse Server's audit logging now uses a pluggable adapter pattern (similar to CacheAdapter, LoggerAdapter, etc.), allowing you to:
+
+- **File-based storage** (default): Winston with daily rotation
+- **S3 storage**: Immutable logs via S3 bucket settings
+- **Database storage**: Store in MongoDB/PostgreSQL for easy querying
+- **External SIEM**: Forward to CloudWatch, Datadog, Splunk, etc.
+- **Custom implementation**: Implement `AuditLogAdapterInterface` for your needs
+
+**Creating a Custom Adapter:**
+
+```javascript
+// src/adapters/MyCustomAuditLogAdapter.js
+import { AuditLogAdapterInterface } from 'parse-server/lib/Adapters/AuditLog/AuditLogAdapterInterface';
+
+export class MyCustomAuditLogAdapter extends AuditLogAdapterInterface {
+  constructor(options) {
+    super();
+    this.options = options;
+    // Initialize your storage backend
+  }
+
+  isEnabled() {
+    return true;
+  }
+
+  async logUserLogin(event) {
+    // Store login event to your backend
+    await this.store(event);
+  }
+
+  async logDataView(event) {
+    await this.store(event);
+  }
+
+  // ... implement other methods (logDataCreate, logDataUpdate, etc.)
+
+  async store(event) {
+    // Your custom storage logic (S3, database, external service, etc.)
+  }
+}
 ```
 
 ### That's It

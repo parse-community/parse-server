@@ -20,6 +20,7 @@
  * @property {Adapter<AnalyticsAdapter>} analyticsAdapter Adapter module for the analytics
  * @property {String} appId Your Parse Application ID
  * @property {String} appName Sets the app name
+ * @property {AuditLogOptions} auditLog Configuration for GDPR-compliant audit logging. Logs user login, data access, data manipulation, schema changes, ACL changes, and push notifications.
  * @property {Object} auth Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication
  * @property {Adapter<CacheAdapter>} cacheAdapter Adapter module for the cache
  * @property {Number} cacheMaxSize Sets the maximum size for the in memory cache, defaults to 10000
@@ -212,6 +213,32 @@
  * @property {Number} duration Set the duration in minutes that a locked-out account remains locked out before automatically becoming unlocked.<br><br>Valid values are greater than `0` and less than `100000`.
  * @property {Number} threshold Set the number of failed sign-in attempts that will cause a user account to be locked. If the account is locked. The account will unlock after the duration set in the `duration` option has passed and no further login attempts have been made.<br><br>Valid values are greater than `0` and less than `1000`.
  * @property {Boolean} unlockOnPasswordReset Set to `true`  if the account should be unlocked after a successful password reset.<br><br>Default is `false`.<br>Requires options `duration` and `threshold` to be set.
+ */
+
+/**
+ * @interface AuditLogFilterOptions
+ * @property {String[]} events Whitelist of event types to log. If not set, all event types are logged.<br><br>Valid values: 'SYSTEM', 'USER_LOGIN', 'DATA_VIEW', 'DATA_CREATE', 'DATA_UPDATE', 'DATA_DELETE', 'ACL_MODIFY', 'SCHEMA_MODIFY', 'PUSH_SEND'
+ * @property {String[]} excludeClasses Blacklist of Parse classes to exclude from logging.<br><br>Example: ['_Session', 'TempData']
+ * @property {Boolean} excludeMasterKey Exclude operations performed with master key from logging (default: false).
+ * @property {String[]} excludeRoles Blacklist of user roles to exclude from logging.<br><br>Example: ['system', 'bot']
+ * @property {Any} filter Custom filter function for advanced filtering.<br><br>Function receives an audit event object and returns true to log or false to skip.<br><br>Example: (event) => event.userId !== 'system'
+ * @property {String[]} includeClasses Whitelist of Parse classes to log. If not set, all classes are logged.<br><br>Example: ['_User', 'Order', 'Product']
+ * @property {String[]} includeRoles Whitelist of user roles to log. If not set, all roles are logged.<br><br>Example: ['admin', 'moderator']
+ */
+
+/**
+ * @interface WinstonFileAuditLogAdapterOptions
+ * @property {String} auditLogFolder Folder path where audit logs will be stored. If not set, audit logging is disabled.
+ * @property {String} datePattern Date pattern for log file rotation (default: 'YYYY-MM-DD').
+ * @property {String} maxFiles Maximum number of log files to retain (default: '14d').
+ * @property {String} maxSize Maximum size of each log file (default: '20m').
+ */
+
+/**
+ * @interface AuditLogOptions
+ * @property {Any} adapter Audit log adapter to use. Can be:<br><br>- 'winston-file' (default): File-based logging with Winston<br>- String path to custom adapter module<br>- Object with module/class/adapter properties<br>- Direct adapter instance implementing AuditLogAdapterInterface
+ * @property {Any} adapterOptions Adapter-specific configuration options.<br><br>For 'winston-file' adapter, use WinstonFileAuditLogAdapterOptions.<br>For custom adapters, use adapter-specific option structure.
+ * @property {AuditLogFilterOptions} logFilter Filter configuration for selective audit logging.<br><br>Allows filtering by event types, Parse classes, user roles, and custom logic.
  */
 
 /**

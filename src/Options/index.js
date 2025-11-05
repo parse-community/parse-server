@@ -212,8 +212,7 @@ export interface ParseServerOptions {
   /* The account lockout policy for failed login attempts. */
   accountLockout: ?AccountLockoutOptions;
   /* Configuration for GDPR-compliant audit logging. Logs user login, data access, data manipulation, schema changes, ACL changes, and push notifications.
-  :ENV: PARSE_SERVER_AUDIT_LOG
-  :DEFAULT: {} */
+  :ENV: PARSE_SERVER_AUDIT_LOG */
   auditLog: ?AuditLogOptions;
   /* The password policy for enforcing password related rules. */
   passwordPolicy: ?PasswordPolicyOptions;
@@ -542,24 +541,69 @@ export interface AccountLockoutOptions {
   unlockOnPasswordReset: ?boolean;
 }
 
-export interface AuditLogOptions {
+export interface AuditLogFilterOptions {
+  /* Whitelist of event types to log. If not set, all event types are logged.
+  <br><br>
+  Valid values: 'SYSTEM', 'USER_LOGIN', 'DATA_VIEW', 'DATA_CREATE', 'DATA_UPDATE', 'DATA_DELETE', 'ACL_MODIFY', 'SCHEMA_MODIFY', 'PUSH_SEND' */
+  events: ?(string[]);
+  /* Whitelist of Parse classes to log. If not set, all classes are logged.
+  <br><br>
+  Example: ['_User', 'Order', 'Product'] */
+  includeClasses: ?(string[]);
+  /* Blacklist of Parse classes to exclude from logging.
+  <br><br>
+  Example: ['_Session', 'TempData'] */
+  excludeClasses: ?(string[]);
+  /* Exclude operations performed with master key from logging (default: false). */
+  excludeMasterKey: ?boolean;
+  /* Whitelist of user roles to log. If not set, all roles are logged.
+  <br><br>
+  Example: ['admin', 'moderator'] */
+  includeRoles: ?(string[]);
+  /* Blacklist of user roles to exclude from logging.
+  <br><br>
+  Example: ['system', 'bot'] */
+  excludeRoles: ?(string[]);
+  /* Custom filter function for advanced filtering.
+  <br><br>
+  Function receives an audit event object and returns true to log or false to skip.
+  <br><br>
+  Example: (event) => event.userId !== 'system' */
+  filter: any;
+}
+
+export interface WinstonFileAuditLogAdapterOptions {
   /* Folder path where audit logs will be stored. If not set, audit logging is disabled. */
   auditLogFolder: ?string;
-  /* Date pattern for log file rotation.
-  <br><br>
-  Default is 'YYYY-MM-DD' (daily rotation).
-  :DEFAULT: YYYY-MM-DD */
+  /* Date pattern for log file rotation (default: 'YYYY-MM-DD'). */
   datePattern: ?string;
-  /* Maximum size of each log file (e.g., '20m', '1g').
-  <br><br>
-  Default is '20m'.
-  :DEFAULT: 20m */
+  /* Maximum size of each log file (default: '20m'). */
   maxSize: ?string;
-  /* Maximum number of log files to retain (e.g., '14d', '10').
-  <br><br>
-  Default is '14d' (14 days).
-  :DEFAULT: 14d */
+  /* Maximum number of log files to retain (default: '14d'). */
   maxFiles: ?string;
+}
+
+export interface AuditLogOptions {
+  /* Audit log adapter to use. Can be:
+  <br><br>
+  - 'winston-file' (default): File-based logging with Winston
+  <br>
+  - String path to custom adapter module
+  <br>
+  - Object with module/class/adapter properties
+  <br>
+  - Direct adapter instance implementing AuditLogAdapterInterface */
+  adapter: any;
+  /* Filter configuration for selective audit logging.
+  <br><br>
+  Allows filtering by event types, Parse classes, user roles, and custom logic. */
+  logFilter: ?AuditLogFilterOptions;
+  /* Adapter-specific configuration options.
+  <br><br>
+  For 'winston-file' adapter, use WinstonFileAuditLogAdapterOptions.
+  <br>
+  For custom adapters, use adapter-specific option structure. */
+  adapterOptions: any;
 }
 
 export interface PasswordPolicyOptions {

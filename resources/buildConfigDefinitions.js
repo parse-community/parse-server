@@ -13,6 +13,8 @@ const parsers = require('../src/Options/parsers');
 
 /** The types of nested options. */
 const nestedOptionTypes = [
+  'AuditLogFilterOptions',
+  'AuditLogOptions',
   'CustomPagesOptions',
   'DatabaseOptions',
   'FileUploadOptions',
@@ -25,11 +27,14 @@ const nestedOptionTypes = [
   'SecurityOptions',
   'SchemaOptions',
   'LogLevels',
+  'WinstonFileAuditLogAdapterOptions',
 ];
 
 /** The prefix of environment variables for nested options. */
 const nestedOptionEnvPrefix = {
   AccountLockoutOptions: 'PARSE_SERVER_ACCOUNT_LOCKOUT_',
+  AuditLogOptions: 'PARSE_SERVER_AUDIT_LOG_',
+  AuditLogFilterOptions: 'PARSE_SERVER_AUDIT_LOG_FILTER_',
   CustomPagesOptions: 'PARSE_SERVER_CUSTOM_PAGES_',
   DatabaseOptions: 'PARSE_SERVER_DATABASE_',
   FileUploadOptions: 'PARSE_SERVER_FILE_UPLOAD_',
@@ -45,6 +50,7 @@ const nestedOptionEnvPrefix = {
   SchemaOptions: 'PARSE_SERVER_SCHEMA_',
   LogLevels: 'PARSE_SERVER_LOG_LEVELS_',
   RateLimitOptions: 'PARSE_SERVER_RATE_LIMIT_',
+  WinstonFileAuditLogAdapterOptions: 'PARSE_SERVER_AUDIT_LOG_',
 };
 
 function last(array) {
@@ -280,11 +286,13 @@ function inject(t, list) {
       if (elt.defaultValue) {
         let parsedValue = parseDefaultValue(elt, elt.defaultValue, t);
         if (!parsedValue) {
-          for (const type of elt.typeAnnotation.types) {
-            elt.type = type.type;
-            parsedValue = parseDefaultValue(elt, elt.defaultValue, t);
-            if (parsedValue) {
-              break;
+          if (elt.typeAnnotation && elt.typeAnnotation.types && Array.isArray(elt.typeAnnotation.types)) {
+            for (const type of elt.typeAnnotation.types) {
+              elt.type = type.type;
+              parsedValue = parseDefaultValue(elt, elt.defaultValue, t);
+              if (parsedValue) {
+                break;
+              }
             }
           }
         }
