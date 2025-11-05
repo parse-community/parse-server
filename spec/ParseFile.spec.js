@@ -675,6 +675,7 @@ describe('Parse.File testing', () => {
         if (testServer) {
           await new Promise(resolve => testServer.close(resolve));
         }
+        Parse.Cloud._removeAllHooks();
       });
 
       it('does not access URI when file upload attempted over REST', async () => {
@@ -708,8 +709,8 @@ describe('Parse.File testing', () => {
             uri: `http://127.0.0.1:${testServerPort}/secret-file.txt`,
           });
         });
-        try {
-          await request({
+        await expectAsync(
+          request({
             method: 'POST',
             headers: {
               'Content-Type': 'application/octet-stream',
@@ -718,10 +719,10 @@ describe('Parse.File testing', () => {
             },
             url: 'http://localhost:8378/1/files/test.txt',
             body: 'test content',
-          });
-        } catch (error) {
-          expect(error.status).toBe(400);
-        }
+          })
+        ).toBeRejectedWith(jasmine.objectContaining({
+          status: 400
+        }));
         // Verify no HTTP request was made to the URI
         expect(requestsMade.length).toBe(0);
       });
