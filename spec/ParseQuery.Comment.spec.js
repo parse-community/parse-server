@@ -46,7 +46,7 @@ describe_only_db('mongo')('Parse.Query with comment testing', () => {
   });
 
   it('send comment with query through REST', async () => {
-    const comment = 'Hello Parse';
+    const comment = `Hello Parse ${Date.now()}`;
     const object = new TestObject();
     object.set('name', 'object');
     await object.save();
@@ -58,23 +58,55 @@ describe_only_db('mongo')('Parse.Query with comment testing', () => {
       },
     });
     await request(options);
-    const result = await database.collection('system.profile').findOne({}, { sort: { ts: -1 } });
+
+    // Wait for profile entry to appear with retry logic
+    let result;
+    const maxRetries = 10;
+    const retryDelay = 100;
+    for (let i = 0; i < maxRetries; i++) {
+      result = await database.collection('system.profile').findOne(
+        { 'command.explain.comment': comment },
+        { sort: { ts: -1 } }
+      );
+      if (result) {
+        break;
+      }
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
+    }
+
+    expect(result).toBeDefined();
     expect(result.command.explain.comment).toBe(comment);
   });
 
   it('send comment with query', async () => {
-    const comment = 'Hello Parse';
+    const comment = `Hello Parse ${Date.now()}`;
     const object = new TestObject();
     object.set('name', 'object');
     await object.save();
     const collection = await config.database.adapter._adaptiveCollection('TestObject');
     await collection._rawFind({ name: 'object' }, { comment: comment });
-    const result = await database.collection('system.profile').findOne({}, { sort: { ts: -1 } });
+
+    // Wait for profile entry to appear with retry logic
+    let result;
+    const maxRetries = 10;
+    const retryDelay = 100;
+    for (let i = 0; i < maxRetries; i++) {
+      result = await database.collection('system.profile').findOne(
+        { 'command.comment': comment },
+        { sort: { ts: -1 } }
+      );
+      if (result) {
+        break;
+      }
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
+    }
+
+    expect(result).toBeDefined();
     expect(result.command.comment).toBe(comment);
   });
 
   it('send a comment with a count query', async () => {
-    const comment = 'Hello Parse';
+    const comment = `Hello Parse ${Date.now()}`;
     const object = new TestObject();
     object.set('name', 'object');
     await object.save();
@@ -86,12 +118,28 @@ describe_only_db('mongo')('Parse.Query with comment testing', () => {
     const collection = await config.database.adapter._adaptiveCollection('TestObject');
     const countResult = await collection.count({ name: 'object' }, { comment: comment });
     expect(countResult).toEqual(2);
-    const result = await database.collection('system.profile').findOne({}, { sort: { ts: -1 } });
+
+    // Wait for profile entry to appear with retry logic
+    let result;
+    const maxRetries = 10;
+    const retryDelay = 100;
+    for (let i = 0; i < maxRetries; i++) {
+      result = await database.collection('system.profile').findOne(
+        { 'command.comment': comment },
+        { sort: { ts: -1 } }
+      );
+      if (result) {
+        break;
+      }
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
+    }
+
+    expect(result).toBeDefined();
     expect(result.command.comment).toBe(comment);
   });
 
   it('attach a comment to an aggregation', async () => {
-    const comment = 'Hello Parse';
+    const comment = `Hello Parse ${Date.now()}`;
     const object = new TestObject();
     object.set('name', 'object');
     await object.save();
@@ -100,7 +148,23 @@ describe_only_db('mongo')('Parse.Query with comment testing', () => {
       explain: true,
       comment: comment,
     });
-    const result = await database.collection('system.profile').findOne({}, { sort: { ts: -1 } });
+
+    // Wait for profile entry to appear with retry logic
+    let result;
+    const maxRetries = 10;
+    const retryDelay = 100;
+    for (let i = 0; i < maxRetries; i++) {
+      result = await database.collection('system.profile').findOne(
+        { 'command.explain.comment': comment },
+        { sort: { ts: -1 } }
+      );
+      if (result) {
+        break;
+      }
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
+    }
+
+    expect(result).toBeDefined();
     expect(result.command.explain.comment).toBe(comment);
   });
 });

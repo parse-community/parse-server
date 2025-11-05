@@ -1,3 +1,73 @@
+# [8.4.0-alpha.1](https://github.com/parse-community/parse-server/compare/8.3.1-alpha.1...8.4.0-alpha.1) (2025-11-05)
+
+
+### Features
+
+* Add support for Node 24 ([#9901](https://github.com/parse-community/parse-server/issues/9901)) ([25dfe19](https://github.com/parse-community/parse-server/commit/25dfe19fef02fd44224e4a6d198584a694a1aa52))
+
+## [8.3.1-alpha.1](https://github.com/parse-community/parse-server/compare/8.3.0...8.3.1-alpha.1) (2025-11-05)
+
+
+### Bug Fixes
+
+* Add problematic MIME types to default value of Parse Server option `fileUpload.fileExtensions` ([#9902](https://github.com/parse-community/parse-server/issues/9902)) ([fa245cb](https://github.com/parse-community/parse-server/commit/fa245cbb5f5b7a0dad962b2ce0524fa4dafcb5f7))
+
+# [8.3.0-alpha.14](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.13...8.3.0-alpha.14) (2025-11-01)
+
+
+### Features
+
+* Add options to skip automatic creation of internal database indexes on server start ([#9897](https://github.com/parse-community/parse-server/issues/9897)) ([ea91aca](https://github.com/parse-community/parse-server/commit/ea91aca1420c33e038516a321b2640709589f886))
+
+# [8.3.0-alpha.13](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.12...8.3.0-alpha.13) (2025-11-01)
+
+
+### Bug Fixes
+
+* Indexes `_email_verify_token` for email verification and `_perishable_token` password reset are not created automatically ([#9893](https://github.com/parse-community/parse-server/issues/9893)) ([62dd3c5](https://github.com/parse-community/parse-server/commit/62dd3c565ab70765cb1c547996b616b72e9bb800))
+
+# [8.3.0-alpha.12](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.11...8.3.0-alpha.12) (2025-10-25)
+
+
+### Features
+
+* Add Parse Server option `verifyServerUrl` to disable server URL verification on server launch ([#9881](https://github.com/parse-community/parse-server/issues/9881)) ([b298ccc](https://github.com/parse-community/parse-server/commit/b298cccd9fb4f664b9d83894faad6d1ea7a3c964))
+
+# [8.3.0-alpha.11](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.10...8.3.0-alpha.11) (2025-10-24)
+
+
+### Bug Fixes
+
+* Stale data read in validation query on `Parse.Object` update causes inconsistency between validation read and subsequent update write operation ([#9859](https://github.com/parse-community/parse-server/issues/9859)) ([f49efaf](https://github.com/parse-community/parse-server/commit/f49efaf5bb1d6b19f6d6712f7cdf073855c95c6e))
+
+# [8.3.0-alpha.10](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.9...8.3.0-alpha.10) (2025-10-22)
+
+
+### Bug Fixes
+
+* Error in `afterSave` trigger for `Parse.Role` due to `name` field ([#9883](https://github.com/parse-community/parse-server/issues/9883)) ([eb052d8](https://github.com/parse-community/parse-server/commit/eb052d8e6abe1ae32505fd068d5445eaf950a770))
+
+# [8.3.0-alpha.9](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.8...8.3.0-alpha.9) (2025-10-19)
+
+
+### Bug Fixes
+
+* Server URL verification before server is ready ([#9882](https://github.com/parse-community/parse-server/issues/9882)) ([178bd5c](https://github.com/parse-community/parse-server/commit/178bd5c5e258d9501c9ac4d35a3a105ab64be67e))
+
+# [8.3.0-alpha.8](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.7...8.3.0-alpha.8) (2025-10-16)
+
+
+### Bug Fixes
+
+* Warning logged when setting option `databaseOptions.disableIndexFieldValidation` ([#9880](https://github.com/parse-community/parse-server/issues/9880)) ([1815b01](https://github.com/parse-community/parse-server/commit/1815b019b52565d2bc87be2596a49aea7600aeba))
+
+# [8.3.0-alpha.7](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.6...8.3.0-alpha.7) (2025-10-15)
+
+
+### Bug Fixes
+
+* Security upgrade to parse 7.0.1 ([#9877](https://github.com/parse-community/parse-server/issues/9877)) ([abfa94c](https://github.com/parse-community/parse-server/commit/abfa94cd6de2c4e76337931c8ea8311c4ccf2a1a))
+
 # [8.3.0-alpha.6](https://github.com/parse-community/parse-server/compare/8.3.0-alpha.5...8.3.0-alpha.6) (2025-10-14)
 
 
