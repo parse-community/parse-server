@@ -662,6 +662,34 @@ describe('server', () => {
       new Parse.Object('TestObject').save()
     ).toBeRejected();
   });
+  
+  it('should execute publicServerURL function on every access', async () => {
+    let counter = 0;
+    await reconfigureServer({
+      publicServerURL: () => {
+        counter++;
+        return `https://server-${counter}.com/1`;
+      },
+    });
+  
+    // First request - should call the function
+    await new Parse.Object('TestObject').save();
+    const config1 = Config.get(Parse.applicationId);
+    expect(config1.publicServerURL).toEqual('https://server-1.com/1');
+    expect(counter).toEqual(1);
+  
+    // Second request - should call the function again
+    await new Parse.Object('TestObject').save();
+    const config2 = Config.get(Parse.applicationId);
+    expect(config2.publicServerURL).toEqual('https://server-2.com/1');
+    expect(counter).toEqual(2);
+  
+    // Third request - should call the function again
+    await new Parse.Object('TestObject').save();
+    const config3 = Config.get(Parse.applicationId);
+    expect(config3.publicServerURL).toEqual('https://server-3.com/1');
+    expect(counter).toEqual(3);
+  });
 
   it('should not reload if ttl is not set', async () => {
     const masterKeySpy = jasmine.createSpy().and.returnValue(Promise.resolve('initialMasterKey'));
