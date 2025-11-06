@@ -3307,19 +3307,19 @@ describe('afterFind hooks', () => {
     }).not.toThrow('Only the _User class is allowed for the beforeLogin and afterLogin triggers');
     expect(() => {
       Parse.Cloud.beforeLogin('SomeClass', () => { });
-    }).toThrow('Only the _User class is allowed for the beforeLogin and afterLogin triggers');
+    }).toThrow('Only the _User class is allowed for the beforeLogin, afterLogin, and beforePasswordResetRequest triggers');
     expect(() => {
       Parse.Cloud.afterLogin(() => { });
-    }).not.toThrow('Only the _User class is allowed for the beforeLogin and afterLogin triggers');
+    }).not.toThrow('Only the _User class is allowed for the beforeLogin, afterLogin, and beforePasswordResetRequest triggers');
     expect(() => {
       Parse.Cloud.afterLogin('_User', () => { });
-    }).not.toThrow('Only the _User class is allowed for the beforeLogin and afterLogin triggers');
+    }).not.toThrow('Only the _User class is allowed for the beforeLogin, afterLogin, and beforePasswordResetRequest triggers');
     expect(() => {
       Parse.Cloud.afterLogin(Parse.User, () => { });
-    }).not.toThrow('Only the _User class is allowed for the beforeLogin and afterLogin triggers');
+    }).not.toThrow('Only the _User class is allowed for the beforeLogin, afterLogin, and beforePasswordResetRequest triggers');
     expect(() => {
       Parse.Cloud.afterLogin('SomeClass', () => { });
-    }).toThrow('Only the _User class is allowed for the beforeLogin and afterLogin triggers');
+    }).toThrow('Only the _User class is allowed for the beforeLogin, afterLogin, and beforePasswordResetRequest triggers');
     expect(() => {
       Parse.Cloud.afterLogout(() => { });
     }).not.toThrow();
@@ -3777,60 +3777,258 @@ describe('beforeLogin hook', () => {
     await Parse.User.logIn('tupac', 'shakur');
     done();
   });
+});
 
-  it('afterFind should not be triggered when saving an object', async () => {
-    let beforeSaves = 0;
-    Parse.Cloud.beforeSave('SavingTest', () => {
-      beforeSaves++;
+describe('beforePasswordResetRequest hook', () => {
+  it('should run beforePasswordResetRequest with valid user', async done => {
+    let hit = 0;
+    let sendPasswordResetEmailCalled = false;
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: () => {
+        sendPasswordResetEmailCalled = true;
+      },
+      sendMail: () => {},
+    };
+
+    await reconfigureServer({
+      appName: 'test',
+      emailAdapter: emailAdapter,
+      publicServerURL: 'http://localhost:8378/1',
     });
 
-    let afterSaves = 0;
-    Parse.Cloud.afterSave('SavingTest', () => {
-      afterSaves++;
+    Parse.Cloud.beforePasswordResetRequest(req => {
+      hit++;
+      expect(req.object).toBeDefined();
+      expect(req.object.get('email')).toEqual('test@parse.com');
+      expect(req.object.get('username')).toEqual('testuser');
     });
 
-    let beforeFinds = 0;
-    Parse.Cloud.beforeFind('SavingTest', () => {
-      beforeFinds++;
-    });
+    const user = new Parse.User();
+    user.setUsername('testuser');
+    user.setPassword('password');
+    user.set('email', 'test@parse.com');
+    await user.signUp();
 
-    let afterFinds = 0;
-    Parse.Cloud.afterFind('SavingTest', () => {
-      afterFinds++;
-    });
-
-    const obj = new Parse.Object('SavingTest');
-    obj.set('someField', 'some value 1');
-    await obj.save();
-
-    expect(beforeSaves).toEqual(1);
-    expect(afterSaves).toEqual(1);
-    expect(beforeFinds).toEqual(0);
-    expect(afterFinds).toEqual(0);
-
-    obj.set('someField', 'some value 2');
-    await obj.save();
-
-    expect(beforeSaves).toEqual(2);
-    expect(afterSaves).toEqual(2);
-    expect(beforeFinds).toEqual(0);
-    expect(afterFinds).toEqual(0);
-
-    await obj.fetch();
-
-    expect(beforeSaves).toEqual(2);
-    expect(afterSaves).toEqual(2);
-    expect(beforeFinds).toEqual(1);
-    expect(afterFinds).toEqual(1);
-
-    obj.set('someField', 'some value 3');
-    await obj.save();
-
-    expect(beforeSaves).toEqual(3);
-    expect(afterSaves).toEqual(3);
-    expect(beforeFinds).toEqual(1);
-    expect(afterFinds).toEqual(1);
+    await Parse.User.requestPasswordReset('test@parse.com');
+    expect(hit).toBe(1);
+    expect(sendPasswordResetEmailCalled).toBe(true);
+    done();
   });
+
+  it('should be able to block password reset request if an error is thrown', async done => {
+    let hit = 0;
+    let sendPasswordResetEmailCalled = false;
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: () => {
+        sendPasswordResetEmailCalled = true;
+      },
+      sendMail: () => {},
+    };
+
+    await reconfigureServer({
+      appName: 'test',
+      emailAdapter: emailAdapter,
+      publicServerURL: 'http://localhost:8378/1',
+    });
+
+    Parse.Cloud.beforePasswordResetRequest(req => {
+      hit++;
+      if (req.object.get('isBanned')) {
+        throw new Error('banned account');
+      }
+    });
+
+    const user = new Parse.User();
+    user.setUsername('banneduser');
+    user.setPassword('password');
+    user.set('email', 'banned@parse.com');
+    await user.signUp();
+    await user.save({ isBanned: true });
+
+    try {
+      await Parse.User.requestPasswordReset('banned@parse.com');
+      throw new Error('should not have sent password reset email.');
+    } catch (e) {
+      expect(e.message).toBe('banned account');
+    }
+    expect(hit).toBe(1);
+    expect(sendPasswordResetEmailCalled).toBe(false);
+    done();
+  });
+
+  it('should be able to block password reset request if an error is thrown even if the user has an attached file', async done => {
+    let hit = 0;
+    let sendPasswordResetEmailCalled = false;
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: () => {
+        sendPasswordResetEmailCalled = true;
+      },
+      sendMail: () => {},
+    };
+
+    await reconfigureServer({
+      appName: 'test',
+      emailAdapter: emailAdapter,
+      publicServerURL: 'http://localhost:8378/1',
+    });
+
+    Parse.Cloud.beforePasswordResetRequest(req => {
+      hit++;
+      if (req.object.get('isBanned')) {
+        throw new Error('banned account');
+      }
+    });
+
+    const user = new Parse.User();
+    user.setUsername('banneduser2');
+    user.setPassword('password');
+    user.set('email', 'banned2@parse.com');
+    await user.signUp();
+    const base64 = 'V29ya2luZyBhdCBQYXJzZSBpcyBncmVhdCE=';
+    const file = new Parse.File('myfile.txt', { base64 });
+    await file.save();
+    await user.save({ isBanned: true, file });
+
+    try {
+      await Parse.User.requestPasswordReset('banned2@parse.com');
+      throw new Error('should not have sent password reset email.');
+    } catch (e) {
+      expect(e.message).toBe('banned account');
+    }
+    expect(hit).toBe(1);
+    expect(sendPasswordResetEmailCalled).toBe(false);
+    done();
+  });
+
+  it('should not run beforePasswordResetRequest if email does not exist', async done => {
+    let hit = 0;
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: () => {},
+      sendMail: () => {},
+    };
+
+    await reconfigureServer({
+      emailAdapter: emailAdapter,
+      publicServerURL: 'http://localhost:8378/1',
+    });
+
+    Parse.Cloud.beforePasswordResetRequest(req => {
+      hit++;
+    });
+
+    try {
+      await Parse.User.requestPasswordReset('nonexistent@parse.com');
+    } catch (e) {
+      // May or may not throw depending on passwordPolicy.resetPasswordSuccessOnInvalidEmail
+    }
+    expect(hit).toBe(0);
+    done();
+  });
+
+  it('should have expected data in request in beforePasswordResetRequest', async done => {
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: () => {},
+      sendMail: () => {},
+    };
+
+    await reconfigureServer({
+      appName: 'test',
+      emailAdapter: emailAdapter,
+      publicServerURL: 'http://localhost:8378/1',
+    });
+
+    Parse.Cloud.beforePasswordResetRequest(req => {
+      expect(req.object).toBeDefined();
+      expect(req.object.get('email')).toBeDefined();
+      expect(req.headers).toBeDefined();
+      expect(req.ip).toBeDefined();
+      expect(req.installationId).toBeDefined();
+      expect(req.context).toBeDefined();
+      expect(req.config).toBeDefined();
+    });
+
+    const user = new Parse.User();
+    user.setUsername('testuser2');
+    user.setPassword('password');
+    user.set('email', 'test2@parse.com');
+    await user.signUp();
+    await Parse.User.requestPasswordReset('test2@parse.com');
+    done();
+  });
+
+  it('should validate that only _User class is allowed for beforePasswordResetRequest', () => {
+    expect(() => {
+      Parse.Cloud.beforePasswordResetRequest('SomeClass', () => { });
+    }).toThrow('Only the _User class is allowed for the beforeLogin, afterLogin, and beforePasswordResetRequest triggers');
+    expect(() => {
+      Parse.Cloud.beforePasswordResetRequest(() => { });
+    }).not.toThrow();
+    expect(() => {
+      Parse.Cloud.beforePasswordResetRequest('_User', () => { });
+    }).not.toThrow();
+    expect(() => {
+      Parse.Cloud.beforePasswordResetRequest(Parse.User, () => { });
+    }).not.toThrow();
+  });
+});
+
+it('afterFind should not be triggered when saving an object', async () => {
+  let beforeSaves = 0;
+  Parse.Cloud.beforeSave('SavingTest', () => {
+    beforeSaves++;
+  });
+
+  let afterSaves = 0;
+  Parse.Cloud.afterSave('SavingTest', () => {
+    afterSaves++;
+  });
+
+  let beforeFinds = 0;
+  Parse.Cloud.beforeFind('SavingTest', () => {
+    beforeFinds++;
+  });
+
+  let afterFinds = 0;
+  Parse.Cloud.afterFind('SavingTest', () => {
+    afterFinds++;
+  });
+
+  const obj = new Parse.Object('SavingTest');
+  obj.set('someField', 'some value 1');
+  await obj.save();
+
+  expect(beforeSaves).toEqual(1);
+  expect(afterSaves).toEqual(1);
+  expect(beforeFinds).toEqual(0);
+  expect(afterFinds).toEqual(0);
+
+  obj.set('someField', 'some value 2');
+  await obj.save();
+
+  expect(beforeSaves).toEqual(2);
+  expect(afterSaves).toEqual(2);
+  expect(beforeFinds).toEqual(0);
+  expect(afterFinds).toEqual(0);
+
+  await obj.fetch();
+
+  expect(beforeSaves).toEqual(2);
+  expect(afterSaves).toEqual(2);
+  expect(beforeFinds).toEqual(1);
+  expect(afterFinds).toEqual(1);
+
+  obj.set('someField', 'some value 3');
+  await obj.save();
+
+  expect(beforeSaves).toEqual(3);
+  expect(afterSaves).toEqual(3);
+  expect(beforeFinds).toEqual(1);
+  expect(afterFinds).toEqual(1);
 });
 
 describe('afterLogin hook', () => {
