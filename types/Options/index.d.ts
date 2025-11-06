@@ -238,6 +238,7 @@ export interface DatabaseOptions {
     socketTimeoutMS?: number;
     autoSelectFamily?: boolean;
     autoSelectFamilyAttemptTimeout?: number;
+    allowPublicExplain?: boolean;
 }
 export interface AuthAdapter {
     enabled?: boolean;
