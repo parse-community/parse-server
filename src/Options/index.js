@@ -594,8 +594,8 @@ export interface PasswordPolicyOptions {
 }
 
 export interface FileUploadOptions {
-  /* Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML files are especially problematic as they may be used by an attacker who uploads a HTML form to look legitimate under your app's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^(?!(h|H)(t|T)(m|M)(l|L)?$)` which allows any file extension except HTML files.
-  :DEFAULT: ["^(?!(h|H)(t|T)(m|M)(l|L)?$)"] */
+  /* Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML files are especially problematic as they may be used by an attacker who uploads a HTML form to look legitimate under your app's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^(?![xXsS]?[hH][tT][mM][lL]?$)` which allows any file extension except those MIME types that are mapped to `text/html` and are rendered as website by a web browser.
+  :DEFAULT: ["^(?![xXsS]?[hH][tT][mM][lL]?$)"] */
   fileExtensions: ?(string[]);
   /*  Is true if file upload should be allowed for anonymous users.
   :DEFAULT: false */
@@ -632,6 +632,27 @@ export interface DatabaseOptions {
   autoSelectFamily: ?boolean;
   /* The MongoDB driver option to specify the amount of time in milliseconds to wait for a connection attempt to finish before trying the next address when using the autoSelectFamily option. If set to a positive integer less than 10, the value 10 is used instead. */
   autoSelectFamilyAttemptTimeout: ?number;
+  /* Set to `true` to automatically create indexes on the email field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
+  :DEFAULT: true */
+  createIndexUserEmail: ?boolean;
+  /* Set to `true` to automatically create a case-insensitive index on the email field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
+  :DEFAULT: true */
+  createIndexUserEmailCaseInsensitive: ?boolean;
+  /* Set to `true` to automatically create an index on the _email_verify_token field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
+  :DEFAULT: true */
+  createIndexUserEmailVerifyToken: ?boolean;
+  /* Set to `true` to automatically create an index on the _perishable_token field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
+  :DEFAULT: true */
+  createIndexUserPasswordResetToken: ?boolean;
+  /* Set to `true` to automatically create indexes on the username field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
+  :DEFAULT: true */
+  createIndexUserUsername: ?boolean;
+  /* Set to `true` to automatically create a case-insensitive index on the username field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
+  :DEFAULT: true */
+  createIndexUserUsernameCaseInsensitive: ?boolean;
+  /* Set to `true` to automatically create a unique index on the name field of the _Role collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
+  :DEFAULT: true */
+  createIndexRoleName: ?boolean;
   /* Set to `true` to disable validation of index fields. When disabled, indexes can be created even if the fields do not exist in the schema. This can be useful when creating indexes on fields that will be added later. */
   disableIndexFieldValidation: ?boolean;
   /* Set to `true` to allow explain queries without master key. This option is deprecated and the default will change to `false` in a future version.

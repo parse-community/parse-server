@@ -1077,9 +1077,9 @@ module.exports.FileUploadOptions = {
   fileExtensions: {
     env: 'PARSE_SERVER_FILE_UPLOAD_FILE_EXTENSIONS',
     help:
-      "Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML files are especially problematic as they may be used by an attacker who uploads a HTML form to look legitimate under your app's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^(?!(h|H)(t|T)(m|M)(l|L)?$)` which allows any file extension except HTML files.",
+      "Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML files are especially problematic as they may be used by an attacker who uploads a HTML form to look legitimate under your app's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^(?![xXsS]?[hH][tT][mM][lL]?$)` which allows any file extension except those MIME types that are mapped to `text/html` and are rendered as website by a web browser.",
     action: parsers.arrayParser,
-    default: ['^(?!(h|H)(t|T)(m|M)(l|L)?$)'],
+    default: ['^(?![xXsS]?[hH][tT][mM][lL]?$)'],
   },
 };
 module.exports.DatabaseOptions = {
@@ -1107,6 +1107,55 @@ module.exports.DatabaseOptions = {
     help:
       'The MongoDB driver option to specify the amount of time, in milliseconds, to wait to establish a single TCP socket connection to the server before raising an error. Specifying 0 disables the connection timeout.',
     action: parsers.numberParser('connectTimeoutMS'),
+  },
+  createIndexRoleName: {
+    env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_ROLE_NAME',
+    help:
+      'Set to `true` to automatically create a unique index on the name field of the _Role collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  createIndexUserEmail: {
+    env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_USER_EMAIL',
+    help:
+      'Set to `true` to automatically create indexes on the email field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  createIndexUserEmailCaseInsensitive: {
+    env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_USER_EMAIL_CASE_INSENSITIVE',
+    help:
+      'Set to `true` to automatically create a case-insensitive index on the email field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  createIndexUserEmailVerifyToken: {
+    env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_USER_EMAIL_VERIFY_TOKEN',
+    help:
+      'Set to `true` to automatically create an index on the _email_verify_token field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  createIndexUserPasswordResetToken: {
+    env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_USER_PASSWORD_RESET_TOKEN',
+    help:
+      'Set to `true` to automatically create an index on the _perishable_token field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  createIndexUserUsername: {
+    env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_USER_USERNAME',
+    help:
+      'Set to `true` to automatically create indexes on the username field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  createIndexUserUsernameCaseInsensitive: {
+    env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_USER_USERNAME_CASE_INSENSITIVE',
+    help:
+      'Set to `true` to automatically create a case-insensitive index on the username field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.',
+    action: parsers.booleanParser,
+    default: true,
   },
   disableIndexFieldValidation: {
     env: 'PARSE_SERVER_DATABASE_DISABLE_INDEX_FIELD_VALIDATION',
