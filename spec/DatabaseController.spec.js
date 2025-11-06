@@ -413,6 +413,8 @@ describe('DatabaseController', function () {
           case_insensitive_username: { username: 1 },
           case_insensitive_email: { email: 1 },
           email_1: { email: 1 },
+          _email_verify_token: { _email_verify_token: 1 },
+          _perishable_token: { _perishable_token: 1 },
         });
       }
     );
@@ -437,7 +439,151 @@ describe('DatabaseController', function () {
           _id_: { _id: 1 },
           username_1: { username: 1 },
           email_1: { email: 1 },
+          _email_verify_token: { _email_verify_token: 1 },
+          _perishable_token: { _perishable_token: 1 },
         });
+      }
+    );
+
+    it_only_db('mongo')(
+      'should use _email_verify_token index in email verification',
+      async () => {
+        const TestUtils = require('../lib/TestUtils');
+        let emailVerificationLink;
+        const emailSentPromise = TestUtils.resolvingPromise();
+        const emailAdapter = {
+          sendVerificationEmail: options => {
+            emailVerificationLink = options.link;
+            emailSentPromise.resolve();
+          },
+          sendPasswordResetEmail: () => Promise.resolve(),
+          sendMail: () => {},
+        };
+        await reconfigureServer({
+          databaseURI: 'mongodb://localhost:27017/testEmailVerifyTokenIndexStats',
+          databaseAdapter: undefined,
+          appName: 'test',
+          verifyUserEmails: true,
+          emailAdapter: emailAdapter,
+          publicServerURL: 'http://localhost:8378/1',
+        });
+
+        // Create a user to trigger email verification
+        const user = new Parse.User();
+        user.setUsername('statsuser');
+        user.setPassword('password');
+        user.set('email', 'stats@example.com');
+        await user.signUp();
+        await emailSentPromise;
+
+        // Get index stats before the query
+        const config = Config.get(Parse.applicationId);
+        const collection = await config.database.adapter._adaptiveCollection('_User');
+        const statsBefore = await collection._mongoCollection.aggregate([
+          { $indexStats: {} },
+        ]).toArray();
+        const emailVerifyIndexBefore = statsBefore.find(
+          stat => stat.name === '_email_verify_token'
+        );
+        const accessesBefore = emailVerifyIndexBefore?.accesses?.ops || 0;
+
+        // Perform email verification (this should use the index)
+        const request = require('../lib/request');
+        await request({
+          url: emailVerificationLink,
+          followRedirects: false,
+        });
+
+        // Get index stats after the query
+        const statsAfter = await collection._mongoCollection.aggregate([
+          { $indexStats: {} },
+        ]).toArray();
+        const emailVerifyIndexAfter = statsAfter.find(
+          stat => stat.name === '_email_verify_token'
+        );
+        const accessesAfter = emailVerifyIndexAfter?.accesses?.ops || 0;
+
+        // Verify the index was actually used
+        expect(accessesAfter).toBeGreaterThan(accessesBefore);
+        expect(emailVerifyIndexAfter).toBeDefined();
+
+        // Verify email verification succeeded
+        await user.fetch();
+        expect(user.get('emailVerified')).toBe(true);
+      }
+    );
+
+    it_only_db('mongo')(
+      'should use _perishable_token index in password reset',
+      async () => {
+        const TestUtils = require('../lib/TestUtils');
+        let passwordResetLink;
+        const emailSentPromise = TestUtils.resolvingPromise();
+        const emailAdapter = {
+          sendVerificationEmail: () => Promise.resolve(),
+          sendPasswordResetEmail: options => {
+            passwordResetLink = options.link;
+            emailSentPromise.resolve();
+          },
+          sendMail: () => {},
+        };
+        await reconfigureServer({
+          databaseURI: 'mongodb://localhost:27017/testPerishableTokenIndexStats',
+          databaseAdapter: undefined,
+          appName: 'test',
+          emailAdapter: emailAdapter,
+          publicServerURL: 'http://localhost:8378/1',
+        });
+
+        // Create a user
+        const user = new Parse.User();
+        user.setUsername('statsuser2');
+        user.setPassword('oldpassword');
+        user.set('email', 'stats2@example.com');
+        await user.signUp();
+
+        // Request password reset
+        await Parse.User.requestPasswordReset('stats2@example.com');
+        await emailSentPromise;
+
+        const url = new URL(passwordResetLink);
+        const token = url.searchParams.get('token');
+
+        // Get index stats before the query
+        const config = Config.get(Parse.applicationId);
+        const collection = await config.database.adapter._adaptiveCollection('_User');
+        const statsBefore = await collection._mongoCollection.aggregate([
+          { $indexStats: {} },
+        ]).toArray();
+        const perishableTokenIndexBefore = statsBefore.find(
+          stat => stat.name === '_perishable_token'
+        );
+        const accessesBefore = perishableTokenIndexBefore?.accesses?.ops || 0;
+
+        // Perform password reset (this should use the index)
+        const request = require('../lib/request');
+        await request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/apps/test/request_password_reset',
+          body: { new_password: 'newpassword', token, username: 'statsuser2' },
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          followRedirects: false,
+        });
+
+        // Get index stats after the query
+        const statsAfter = await collection._mongoCollection.aggregate([
+          { $indexStats: {} },
+        ]).toArray();
+        const perishableTokenIndexAfter = statsAfter.find(
+          stat => stat.name === '_perishable_token'
+        );
+        const accessesAfter = perishableTokenIndexAfter?.accesses?.ops || 0;
+
+        // Verify the index was actually used
+        expect(accessesAfter).toBeGreaterThan(accessesBefore);
+        expect(perishableTokenIndexAfter).toBeDefined();
       }
     );
   });
