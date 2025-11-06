@@ -3008,6 +3008,7 @@ describe('schemas', () => {
     beforeEach(async () => {
       await TestUtils.destroyAllDataPermanently(false);
       await config.database.adapter.performInitialization({ VolatileClassesSchemas: [] });
+      databaseAdapter.disableIndexFieldValidation = false;
     });
 
     it('cannot create index if field does not exist', done => {
@@ -3034,6 +3035,29 @@ describe('schemas', () => {
           done();
         });
       });
+    });
+
+    it('can create index if field does not exist with disableIndexFieldValidation true ', async () => {
+      databaseAdapter.disableIndexFieldValidation = true;
+      await request({
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        method: 'POST',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {},
+      });
+      const response = await request({
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        method: 'PUT',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          indexes: {
+            name1: { aString: 1 },
+          },
+        },
+      });
+      expect(response.data.indexes.name1).toEqual({ aString: 1 });
     });
 
     it('can create index on default field', done => {

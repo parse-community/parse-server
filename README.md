@@ -8,9 +8,9 @@
 [![Coverage](https://codecov.io/github/parse-community/parse-server/branch/alpha/graph/badge.svg)](https://app.codecov.io/github/parse-community/parse-server/tree/alpha)
 [![auto-release](https://img.shields.io/badge/%F0%9F%9A%80-auto--release-9e34eb.svg)](https://github.com/parse-community/parse-dashboard/releases)
 
-[![Node Version](https://img.shields.io/badge/nodejs-18,_20,_22-green.svg?logo=node.js&style=flat)](https://nodejs.org)
+[![Node Version](https://img.shields.io/badge/nodejs-18,_20,_22,_24-green.svg?logo=node.js&style=flat)](https://nodejs.org)
 [![MongoDB Version](https://img.shields.io/badge/mongodb-6,_7,_8-green.svg?logo=mongodb&style=flat)](https://www.mongodb.com)
-[![Postgres Version](https://img.shields.io/badge/postgresql-13,_14,_15,_16,_17-green.svg?logo=postgresql&style=flat)](https://www.postgresql.org)
+[![Postgres Version](https://img.shields.io/badge/postgresql-13,_14,_15,_16,_17,_18-green.svg?logo=postgresql&style=flat)](https://www.postgresql.org)
 
 [![npm latest version](https://img.shields.io/npm/v/parse-server/latest.svg)](https://www.npmjs.com/package/parse-server)
 [![npm alpha version](https://img.shields.io/npm/v/parse-server/alpha.svg)](https://www.npmjs.com/package/parse-server)
@@ -130,6 +130,7 @@ Parse Server is continuously tested with the most recent releases of Node.js to 
 | Node.js 18 | 18.20.4         | April 2025  | <= 8.x (2025)        |
 | Node.js 20 | 20.18.0         | April 2026  | <= 9.x (2026)        |
 | Node.js 22 | 22.12.0         | April 2027  | <= 10.x (2027)       |
+| Node.js 24 | 24.11.0         | April 2028  | <= 11.x (2028)       |
 
 #### MongoDB
 
@@ -152,6 +153,7 @@ Parse Server is continuously tested with the most recent releases of PostgreSQL 
 | Postgres 15 | 3.3, 3.4, 3.5           | November 2027 | <= 8.x (2025)        |
 | Postgres 16 | 3.5                     | November 2028 | <= 9.x (2026)        |
 | Postgres 17 | 3.5                     | November 2029 | <= 10.x (2027)       |
+| Postgres 18 | 3.6                     | November 2030 | <= 11.x (2028)       |
 
 ### Locally
 

@@ -7,6 +7,15 @@ const { SpecReporter } = require('jasmine-spec-reporter');
 const SchemaCache = require('../lib/Adapters/Cache/SchemaCache').default;
 const { sleep, Connections } = require('../lib/TestUtils');
 
+const originalFetch = global.fetch;
+let fetchWasMocked = false;
+
+global.restoreFetch = () => {
+  global.fetch = originalFetch;
+  fetchWasMocked = false;
+}
+
+
 // Ensure localhost resolves to ipv4 address first on node v17+
 if (dns.setDefaultResultOrder) {
   dns.setDefaultResultOrder('ipv4first');
@@ -205,6 +214,7 @@ const reconfigureServer = async (changedConfiguration = {}) => {
 };
 
 beforeAll(async () => {
+  global.restoreFetch();
   await reconfigureServer();
   Parse.initialize('test', 'test', 'test');
   Parse.serverURL = serverURL;
@@ -212,7 +222,18 @@ beforeAll(async () => {
   Parse.CoreManager.set('REQUEST_ATTEMPT_LIMIT', 1);
 });
 
+beforeEach(async () => {
+  if(fetchWasMocked) {
+    global.restoreFetch();
+  }
+});
+
 global.afterEachFn = async () => {
+  // Restore fetch to prevent mock pollution between tests (only if it was mocked)
+  if (fetchWasMocked) {
+    global.restoreFetch();
+  }
+
   Parse.Cloud._removeAllHooks();
   Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient();
   defaults.protectedFields = { _User: { '*': ['email'] } };
@@ -251,6 +272,7 @@ global.afterEachFn = async () => {
 afterEach(global.afterEachFn);
 
 afterAll(() => {
+  global.restoreFetch();
   global.displayTestStats();
 });
 
@@ -388,9 +410,22 @@ function mockShortLivedAuth() {
 }
 
 function mockFetch(mockResponses) {
-  global.fetch = jasmine.createSpy('fetch').and.callFake((url, options = { }) => {
+  const spy = jasmine.createSpy('fetch');
+  fetchWasMocked = true; // Track that fetch was mocked for cleanup
+
+  global.fetch = (url, options = {}) => {
+    // Allow requests to the Parse Server to pass through WITHOUT recording in spy
+    // This prevents tests from failing when they check that fetch wasn't called
+    // but the Parse SDK makes internal requests to the Parse Server
+    if (typeof url === 'string' && url.includes(serverURL)) {
+      return originalFetch(url, options);
+    }
+
+    // Record non-Parse-Server calls in the spy
+    spy(url, options);
+
     options.method ||= 'GET';
-    const mockResponse = mockResponses.find(
+    const mockResponse = mockResponses?.find(
       (mock) => mock.url === url && mock.method === options.method
     );
 
@@ -402,7 +437,11 @@ function mockFetch(mockResponses) {
       ok: false,
       statusText: 'Unknown URL or method',
     });
-  });
+  };
+
+  // Expose spy methods for test assertions
+  global.fetch.calls = spy.calls;
+  global.fetch.and = spy.and;
 }
 
 
@@ -471,6 +510,17 @@ global.it_only_db = db => {
     (!process.env.PARSE_SERVER_TEST_DB && db == 'mongo')
   ) {
     return it;
+  } else {
+    return xit;
+  }
+};
+
+global.fit_only_db = db => {
+  if (
+    process.env.PARSE_SERVER_TEST_DB === db ||
+    (!process.env.PARSE_SERVER_TEST_DB && db == 'mongo')
+  ) {
+    return fit;
   } else {
     return xit;
   }
