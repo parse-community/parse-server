@@ -617,24 +617,24 @@ describe('server', () => {
 
   it('should load publicServerURL', async () => {
     await reconfigureServer({
-      publicServerURL: () => 'https://myserver.com/1',
+      publicServerURL: () => 'https://example.com/1',
     });
 
     await new Parse.Object('TestObject').save();
 
     const config = Config.get(Parse.applicationId);
-    expect(config.publicServerURL).toEqual('https://myserver.com/1');
+    expect(config.publicServerURL).toEqual('https://example.com/1');
   });
 
   it('should load publicServerURL from Promise', async () => {
     await reconfigureServer({
-      publicServerURL: () => Promise.resolve('https://async-server.com/1'),
+      publicServerURL: () => Promise.resolve('https://example.com/1'),
     });
 
     await new Parse.Object('TestObject').save();
 
     const config = Config.get(Parse.applicationId);
-    expect(config.publicServerURL).toEqual('https://async-server.com/1');
+    expect(config.publicServerURL).toEqual('https://example.com/1');
   });
 
   it('should handle publicServerURL function throwing error', async () => {
