@@ -686,7 +686,7 @@ describe('server', () => {
       .catch(done.fail);
   });
 
-  fdescribe('publicServerURL', () => {
+  describe('publicServerURL', () => {
     it('should load publicServerURL', async () => {
       await reconfigureServer({
         publicServerURL: () => 'https://example.com/1',

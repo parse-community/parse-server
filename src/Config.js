@@ -183,6 +183,7 @@ export class Config {
     userController,
     appName,
     publicServerURL,
+    _publicServerURL,
     emailVerifyTokenValidityDuration,
     emailVerifyTokenReuseIfValid,
   }) {
@@ -191,7 +192,7 @@ export class Config {
       this.validateEmailConfiguration({
         emailAdapter,
         appName,
-        publicServerURL,
+        publicServerURL: publicServerURL || _publicServerURL,
         emailVerifyTokenValidityDuration,
         emailVerifyTokenReuseIfValid,
       });
@@ -474,7 +475,7 @@ export class Config {
     if (typeof appName !== 'string') {
       throw 'An app name is required for e-mail verification and password resets.';
     }
-    if (typeof publicServerURL !== 'string') {
+    if (typeof publicServerURL !== 'string' && typeof publicServerURL !== 'function') {
       throw 'A public server url is required for e-mail verification and password resets.';
     }
     if (emailVerifyTokenValidityDuration) {
