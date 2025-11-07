@@ -234,6 +234,9 @@ export interface DatabaseOptions {
     maxStalenessSeconds?: number;
     minPoolSize?: number;
     maxPoolSize?: number;
+    serverSelectionTimeoutMS?: number;
+    maxIdleTimeMS?: number;
+    heartbeatFrequencyMS?: number;
     connectTimeoutMS?: number;
     socketTimeoutMS?: number;
     autoSelectFamily?: boolean;

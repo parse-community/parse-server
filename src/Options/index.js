@@ -624,6 +624,12 @@ export interface DatabaseOptions {
   minPoolSize: ?number;
   /* The MongoDB driver option to set the maximum number of opened, cached, ready-to-use database connections maintained by the driver. */
   maxPoolSize: ?number;
+  /* The MongoDB driver option to specify the amount of time in milliseconds for a server to be considered suitable for selection. */
+  serverSelectionTimeoutMS: ?number;
+  /* The MongoDB driver option to specify the amount of time in milliseconds that a connection can remain idle in the connection pool before being removed and closed. */
+  maxIdleTimeMS: ?number;
+  /* The MongoDB driver option to specify the frequency in milliseconds at which the driver checks the state of the MongoDB deployment. */
+  heartbeatFrequencyMS: ?number;
   /* The MongoDB driver option to specify the amount of time, in milliseconds, to wait to establish a single TCP socket connection to the server before raising an error. Specifying 0 disables the connection timeout. */
   connectTimeoutMS: ?number;
   /* The MongoDB driver option to specify the amount of time, in milliseconds, spent attempting to send or receive on a socket before timing out. Specifying 0 means no timeout. */
