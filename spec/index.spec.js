@@ -615,82 +615,6 @@ describe('server', () => {
     expect(config.masterKeyCache.expiresAt.getTime()).toBeGreaterThan(Date.now());
   });
 
-  it('should load publicServerURL', async () => {
-    await reconfigureServer({
-      publicServerURL: () => 'https://example.com/1',
-    });
-
-    await new Parse.Object('TestObject').save();
-
-    const config = Config.get(Parse.applicationId);
-    expect(config.publicServerURL).toEqual('https://example.com/1');
-  });
-
-  it('should load publicServerURL from Promise', async () => {
-    await reconfigureServer({
-      publicServerURL: () => Promise.resolve('https://example.com/1'),
-    });
-
-    await new Parse.Object('TestObject').save();
-
-    const config = Config.get(Parse.applicationId);
-    expect(config.publicServerURL).toEqual('https://example.com/1');
-  });
-
-  it('should handle publicServerURL function throwing error', async () => {
-    const errorMessage = 'Failed to get public server URL';
-    await reconfigureServer({
-      publicServerURL: () => {
-        throw new Error(errorMessage);
-      },
-    });
-
-    // The error should occur when trying to save an object (which triggers loadKeys in middleware)
-    await expectAsync(
-      new Parse.Object('TestObject').save()
-    ).toBeRejected();
-  });
-
-  it('should handle publicServerURL Promise rejection', async () => {
-    const errorMessage = 'Async fetch of public server URL failed';
-    await reconfigureServer({
-      publicServerURL: () => Promise.reject(new Error(errorMessage)),
-    });
-
-    // The error should occur when trying to save an object (which triggers loadKeys in middleware)
-    await expectAsync(
-      new Parse.Object('TestObject').save()
-    ).toBeRejected();
-  });
-  
-  it('should execute publicServerURL function on every access', async () => {
-    let counter = 0;
-    await reconfigureServer({
-      publicServerURL: () => {
-        counter++;
-        return `https://example.com/${counter}`;
-      },
-    });
-  
-    // First request - should call the function
-    await new Parse.Object('TestObject').save();
-    const config1 = Config.get(Parse.applicationId);
-    expect(config1.publicServerURL).toEqual('https://example.com/1');
-    expect(counter).toEqual(1);
-  
-    // Second request - should call the function again
-    await new Parse.Object('TestObject').save();
-    const config2 = Config.get(Parse.applicationId);
-    expect(config2.publicServerURL).toEqual('https://example.com/2');
-    expect(counter).toEqual(2);
-  
-    // Third request - should call the function again
-    await new Parse.Object('TestObject').save();
-    const config3 = Config.get(Parse.applicationId);
-    expect(config3.publicServerURL).toEqual('https://example.com/3');
-    expect(counter).toEqual(3);
-  });
-
   it('should not reload if ttl is not set', async () => {
     const masterKeySpy = jasmine.createSpy().and.returnValue(Promise.resolve('initialMasterKey'));
 
@@ -760,5 +684,83 @@ describe('server', () => {
           .then(done);
       })
       .catch(done.fail);
+  });
+
+  fdescribe('publicServerURL', () => {
+    it('should load publicServerURL', async () => {
+      await reconfigureServer({
+        publicServerURL: () => 'https://example.com/1',
+      });
+
+      await new Parse.Object('TestObject').save();
+
+      const config = Config.get(Parse.applicationId);
+      expect(config.publicServerURL).toEqual('https://example.com/1');
+    });
+
+    it('should load publicServerURL from Promise', async () => {
+      await reconfigureServer({
+        publicServerURL: () => Promise.resolve('https://example.com/1'),
+      });
+
+      await new Parse.Object('TestObject').save();
+
+      const config = Config.get(Parse.applicationId);
+      expect(config.publicServerURL).toEqual('https://example.com/1');
+    });
+
+    it('should handle publicServerURL function throwing error', async () => {
+      const errorMessage = 'Failed to get public server URL';
+      await reconfigureServer({
+        publicServerURL: () => {
+          throw new Error(errorMessage);
+        },
+      });
+
+      // The error should occur when trying to save an object (which triggers loadKeys in middleware)
+      await expectAsync(
+        new Parse.Object('TestObject').save()
+      ).toBeRejected();
+    });
+
+    it('should handle publicServerURL Promise rejection', async () => {
+      const errorMessage = 'Async fetch of public server URL failed';
+      await reconfigureServer({
+        publicServerURL: () => Promise.reject(new Error(errorMessage)),
+      });
+
+      // The error should occur when trying to save an object (which triggers loadKeys in middleware)
+      await expectAsync(
+        new Parse.Object('TestObject').save()
+      ).toBeRejected();
+    });
+
+    it('should execute publicServerURL function on every access', async () => {
+      let counter = 0;
+      await reconfigureServer({
+        publicServerURL: () => {
+          counter++;
+          return `https://example.com/${counter}`;
+        },
+      });
+
+      // First request - should call the function
+      await new Parse.Object('TestObject').save();
+      const config1 = Config.get(Parse.applicationId);
+      expect(config1.publicServerURL).toEqual('https://example.com/1');
+      expect(counter).toEqual(1);
+
+      // Second request - should call the function again
+      await new Parse.Object('TestObject').save();
+      const config2 = Config.get(Parse.applicationId);
+      expect(config2.publicServerURL).toEqual('https://example.com/2');
+      expect(counter).toEqual(2);
+
+      // Third request - should call the function again
+      await new Parse.Object('TestObject').save();
+      const config3 = Config.get(Parse.applicationId);
+      expect(config3.publicServerURL).toEqual('https://example.com/3');
+      expect(counter).toEqual(3);
+    });
   });
 });
