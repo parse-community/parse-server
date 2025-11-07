@@ -85,7 +85,7 @@ export interface ParseServerOptions {
     cacheAdapter?: Adapter<CacheAdapter>;
     emailAdapter?: Adapter<MailAdapter>;
     encodeParseObjectInCloudFunction?: boolean;
-    publicServerURL?: string;
+    publicServerURL?: string | (() => string) | (() => Promise<string>);
     pages?: PagesOptions;
     customPages?: CustomPagesOptions;
     liveQuery?: LiveQueryOptions;

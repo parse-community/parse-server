@@ -495,7 +495,8 @@ module.exports.ParseServerOptions = {
   },
   publicServerURL: {
     env: 'PARSE_PUBLIC_SERVER_URL',
-    help: 'Public URL to your parse server with http:// or https://.',
+    help:
+      'Optional. The public URL to Parse Server. This URL will be used to reach Parse Server publicly for features like password reset and email verification links. The option can be set to a string or a function that can be asynchronously resolved. The returned URL string must start with `http://` or `https://`.',
   },
   push: {
     env: 'PARSE_SERVER_PUSH',
