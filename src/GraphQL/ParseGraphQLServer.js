@@ -20,7 +20,7 @@ const hasTypeIntrospection = (query) => {
     // Note: selection.name.value is the actual field name, so this correctly handles
     // aliases like "myAlias: __type(...)" where name.value === "__type"
     for (const definition of ast.definitions) {
-      if (definition.kind === 'OperationDefinition' && definition.selectionSet) {
+      if ((definition.kind === 'OperationDefinition' || definition.kind === 'FragmentDefinition') && definition.selectionSet) {
         for (const selection of definition.selectionSet.selections) {
           if (selection.kind === 'Field' && selection.name.value === '__type') {
             // GraphQL's introspection __type field requires a 'name' argument

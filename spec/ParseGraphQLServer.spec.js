@@ -770,6 +770,30 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
+        it('should block __type introspection in fragments without master key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                fragment TypeIntrospectionFields on Query {
+                  typeInfo: __type(name: "User") {
+                    name
+                    kind
+                  }
+                }
+                
+                query FragmentTypeIntrospection {
+                  ...TypeIntrospectionFields
+                }
+              `,
+            });
+
+            fail('should have thrown an error');
+          } catch (e) {
+            expect(e.message).toEqual('Response not successful: Received status code 403');
+            expect(e.networkError.result.errors[0].message).toEqual('Introspection is not allowed');
+          }
+        });
+
         it('should allow __type introspection with master key', async () => {
           const introspection = await apolloClient.query({
             query: gql`
