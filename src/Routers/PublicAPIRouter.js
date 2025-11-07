@@ -88,26 +88,29 @@ export class PublicAPIRouter extends PromiseRouter {
     );
   }
 
-  changePassword(req) {
+  async changePassword(req) {
+    const config = Config.get(req.query.id);
+
+    if (!config) {
+      this.invalidRequest();
+    }
+
+    if (!config.publicServerURL) {
+      return {
+        status: 404,
+        text: 'Not found.',
+      };
+    }
+
+    const publicServerURL = await config.getPublicServerURL();
+
+    // Should we keep the file in memory or leave like that?
     return new Promise((resolve, reject) => {
-      const config = Config.get(req.query.id);
-
-      if (!config) {
-        this.invalidRequest();
-      }
-
-      if (!config.publicServerURL) {
-        return resolve({
-          status: 404,
-          text: 'Not found.',
-        });
-      }
-      // Should we keep the file in memory or leave like that?
       fs.readFile(path.resolve(views, 'choose_password'), 'utf-8', (err, data) => {
         if (err) {
           return reject(err);
         }
-        data = data.replace('PARSE_SERVER_URL', `'${config.publicServerURL}'`);
+        data = data.replace('PARSE_SERVER_URL', `'${publicServerURL}'`);
         resolve({
           text: data,
         });
