@@ -130,15 +130,14 @@ export class PagesRouter extends PromiseRouter {
     );
   }
 
-  async passwordReset(req) {
+  passwordReset(req) {
     const config = req.config;
-    const publicServerURL = await config.getPublicServerURL();
     const params = {
       [pageParams.appId]: req.params.appId,
       [pageParams.appName]: config.appName,
       [pageParams.token]: req.query.token,
       [pageParams.username]: req.query.username,
-      [pageParams.publicServerUrl]: publicServerURL,
+      [pageParams.publicServerUrl]: config.publicServerURL,
     };
     return this.goToPage(req, pages.passwordReset, params);
   }
@@ -256,7 +255,7 @@ export class PagesRouter extends PromiseRouter {
    * - POST request -> redirect response (PRG pattern)
    * @returns {Promise<Object>} The PromiseRouter response.
    */
-  async goToPage(req, page, params = {}, responseType) {
+  goToPage(req, page, params = {}, responseType) {
     const config = req.config;
 
     // Determine redirect either by force, response setting or request method
@@ -267,7 +266,7 @@ export class PagesRouter extends PromiseRouter {
         : req.method == 'POST';
 
     // Include default parameters
-    const defaultParams = await this.getDefaultParams(config);
+    const defaultParams = this.getDefaultParams(config);
     if (Object.values(defaultParams).includes(undefined)) {
       return this.notFound();
     }
@@ -282,8 +281,7 @@ export class PagesRouter extends PromiseRouter {
     // Compose paths and URLs
     const defaultFile = page.defaultFile;
     const defaultPath = this.defaultPagePath(defaultFile);
-    const publicServerURL = await config.getPublicServerURL();
-    const defaultUrl = this.composePageUrl(defaultFile, publicServerURL);
+    const defaultUrl = this.composePageUrl(defaultFile, config.publicServerURL);
 
     // If custom URL is set redirect to it without localization
     const customUrl = config.pages.customUrls[page.id];
@@ -302,7 +300,7 @@ export class PagesRouter extends PromiseRouter {
       return Utils.getLocalizedPath(defaultPath, locale).then(({ path, subdir }) =>
         redirect
           ? this.redirectResponse(
-            this.composePageUrl(defaultFile, publicServerURL, subdir),
+            this.composePageUrl(defaultFile, config.publicServerURL, subdir),
             params
           )
           : this.pageResponse(path, params, placeholders)
@@ -531,16 +529,14 @@ export class PagesRouter extends PromiseRouter {
    * @param {Object} config The Parse Server configuration.
    * @returns {Object} The default parameters.
    */
-  async getDefaultParams(config) {
-    if (!config) {
-      return {};
-    }
-    const publicServerURL = await config.getPublicServerURL();
-    return {
-      [pageParams.appId]: config.appId,
-      [pageParams.appName]: config.appName,
-      [pageParams.publicServerUrl]: publicServerURL,
-    };
+  getDefaultParams(config) {
+    return config
+      ? {
+        [pageParams.appId]: config.appId,
+        [pageParams.appName]: config.appName,
+        [pageParams.publicServerUrl]: config.publicServerURL,
+      }
+      : {};
   }
 
   /**

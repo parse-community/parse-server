@@ -171,8 +171,7 @@ export class UserController extends AdaptableController {
     if (!shouldSendEmail) {
       return;
     }
-    const verifyEmailURL = await this.config.verifyEmailURL();
-    const link = await buildEmailLink(verifyEmailURL, token, this.config);
+    const link = buildEmailLink(this.config.verifyEmailURL, token, this.config);
     const options = {
       appName: this.config.appName,
       link: link,
@@ -283,8 +282,7 @@ export class UserController extends AdaptableController {
       user = await this.setPasswordResetToken(email);
     }
     const token = encodeURIComponent(user._perishable_token);
-    const requestResetPasswordURL = await this.config.requestResetPasswordURL();
-    const link = await buildEmailLink(requestResetPasswordURL, token, this.config);
+    const link = buildEmailLink(this.config.requestResetPasswordURL, token, this.config);
     const options = {
       appName: this.config.appName,
       link: link,
@@ -363,11 +361,10 @@ function updateUserPassword(user, password, config) {
     .then(() => user);
 }
 
-async function buildEmailLink(destination, token, config) {
+function buildEmailLink(destination, token, config) {
   token = `token=${token}`;
   if (config.parseFrameURL) {
-    const publicServerURL = await config.getPublicServerURL();
-    const destinationWithoutHost = destination.replace(publicServerURL, '');
+    const destinationWithoutHost = destination.replace(config.publicServerURL, '');
 
     return `${config.parseFrameURL}?link=${encodeURIComponent(destinationWithoutHost)}&${token}`;
   } else {

@@ -63,7 +63,7 @@ function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
 
 // Returns a promise for a {response} object.
 // TODO: pass along auth correctly
-async function handleBatch(router, req) {
+function handleBatch(router, req) {
   if (!Array.isArray(req.body?.requests)) {
     throw new Parse.Error(Parse.Error.INVALID_JSON, 'requests must be an array');
   }
@@ -77,11 +77,10 @@ async function handleBatch(router, req) {
     throw 'internal routing problem - expected url to end with batch';
   }
 
-  const publicServerURL = await req.config.getPublicServerURL();
   const makeRoutablePath = makeBatchRoutingPathFunction(
     req.originalUrl,
     req.config.serverURL,
-    publicServerURL
+    req.config.publicServerURL
   );
 
   const batch = transactionRetries => {

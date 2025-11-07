@@ -32,6 +32,7 @@ function removeTrailingSlash(str) {
   return str;
 }
 
+const asyncKeys = ['publicServerURL'];
 export class Config {
   static get(applicationId: string, mount: string) {
     const cacheInfo = AppCache.get(applicationId);
@@ -56,16 +57,33 @@ export class Config {
     return config;
   }
 
-  async getPublicServerURL() {
-    if (typeof this.publicServerURL === 'function') {
-      return await this.publicServerURL();
+  async loadKeys() {
+    const asyncKeys = ['publicServerURL'];
+
+    await Promise.all(
+      asyncKeys.map(async key => {
+        if (typeof this[`_${key}`] === 'function') {
+          this[key] = await this[`_${key}`]();
+        }
+      })
+    );
+
+    AppCache.put(this.appId, this);
+  }
+
+  static transformConfiguration(serverConfiguration) {
+    for (const key of Object.keys(serverConfiguration)) {
+      if (asyncKeys.includes(key) && typeof serverConfiguration[key] === 'function') {
+        serverConfiguration[`_${key}`] = serverConfiguration[key];
+        delete serverConfiguration[key];
+      }
     }
-    return this.publicServerURL;
   }
 
   static put(serverConfiguration) {
     Config.validateOptions(serverConfiguration);
     Config.validateControllers(serverConfiguration);
+    Config.transformConfiguration(serverConfiguration);
     AppCache.put(serverConfiguration.appId, serverConfiguration);
     Config.setupPasswordValidator(serverConfiguration.passwordPolicy);
     return serverConfiguration;
@@ -456,7 +474,7 @@ export class Config {
     if (typeof appName !== 'string') {
       throw 'An app name is required for e-mail verification and password resets.';
     }
-    if (!publicServerURL || (typeof publicServerURL !== 'string' && typeof publicServerURL !== 'function')) {
+    if (typeof publicServerURL !== 'string') {
       throw 'A public server url is required for e-mail verification and password resets.';
     }
     if (emailVerifyTokenValidityDuration) {
@@ -528,7 +546,11 @@ export class Config {
   }
 
   get mount() {
-    return this._mount;
+    var mount = this._mount;
+    if (this.publicServerURL) {
+      mount = this.publicServerURL;
+    }
+    return mount;
   }
 
   set mount(newValue) {
@@ -692,54 +714,46 @@ export class Config {
     }
   }
 
-  async invalidLinkURL() {
-    const publicServerURL = await this.getPublicServerURL();
-    return this.customPages.invalidLink || `${publicServerURL}/apps/invalid_link.html`;
+  get invalidLinkURL() {
+    return this.customPages.invalidLink || `${this.publicServerURL}/apps/invalid_link.html`;
   }
 
-  async invalidVerificationLinkURL() {
-    const publicServerURL = await this.getPublicServerURL();
+  get invalidVerificationLinkURL() {
     return (
       this.customPages.invalidVerificationLink ||
-      `${publicServerURL}/apps/invalid_verification_link.html`
+      `${this.publicServerURL}/apps/invalid_verification_link.html`
     );
   }
 
-  async linkSendSuccessURL() {
-    const publicServerURL = await this.getPublicServerURL();
+  get linkSendSuccessURL() {
     return (
-      this.customPages.linkSendSuccess || `${publicServerURL}/apps/link_send_success.html`
+      this.customPages.linkSendSuccess || `${this.publicServerURL}/apps/link_send_success.html`
     );
   }
 
-  async linkSendFailURL() {
-    const publicServerURL = await this.getPublicServerURL();
-    return this.customPages.linkSendFail || `${publicServerURL}/apps/link_send_fail.html`;
+  get linkSendFailURL() {
+    return this.customPages.linkSendFail || `${this.publicServerURL}/apps/link_send_fail.html`;
   }
 
-  async verifyEmailSuccessURL() {
-    const publicServerURL = await this.getPublicServerURL();
+  get verifyEmailSuccessURL() {
     return (
       this.customPages.verifyEmailSuccess ||
-      `${publicServerURL}/apps/verify_email_success.html`
+      `${this.publicServerURL}/apps/verify_email_success.html`
     );
   }
 
-  async choosePasswordURL() {
-    const publicServerURL = await this.getPublicServerURL();
-    return this.customPages.choosePassword || `${publicServerURL}/apps/choose_password`;
+  get choosePasswordURL() {
+    return this.customPages.choosePassword || `${this.publicServerURL}/apps/choose_password`;
   }
 
-  async requestResetPasswordURL() {
-    const publicServerURL = await this.getPublicServerURL();
-    return `${publicServerURL}/${this.pagesEndpoint}/${this.applicationId}/request_password_reset`;
+  get requestResetPasswordURL() {
+    return `${this.publicServerURL}/${this.pagesEndpoint}/${this.applicationId}/request_password_reset`;
   }
 
-  async passwordResetSuccessURL() {
-    const publicServerURL = await this.getPublicServerURL();
+  get passwordResetSuccessURL() {
     return (
       this.customPages.passwordResetSuccess ||
-      `${publicServerURL}/apps/password_reset_success.html`
+      `${this.publicServerURL}/apps/password_reset_success.html`
     );
   }
 
@@ -747,9 +761,8 @@ export class Config {
     return this.customPages.parseFrameURL;
   }
 
-  async verifyEmailURL() {
-    const publicServerURL = await this.getPublicServerURL();
-    return `${publicServerURL}/${this.pagesEndpoint}/${this.applicationId}/verify_email`;
+  get verifyEmailURL() {
+    return `${this.publicServerURL}/${this.pagesEndpoint}/${this.applicationId}/verify_email`;
   }
 
   async loadMasterKey() {
