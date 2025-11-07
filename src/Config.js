@@ -455,7 +455,10 @@ export class Config {
   }
 
   static validatePublicServerURL({ publicServerURL, required = false }) {
-    if (!publicServerURL && required) {
+    if (!publicServerURL) {
+      if (!required) {
+        return;
+      }
       throw 'The option publicServerURL is required.';
     }
 
