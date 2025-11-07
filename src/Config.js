@@ -32,7 +32,11 @@ function removeTrailingSlash(str) {
   return str;
 }
 
+/**
+ * Config keys that need to be loaded asynchronously.
+ */
 const asyncKeys = ['publicServerURL'];
+
 export class Config {
   static get(applicationId: string, mount: string) {
     const cacheInfo = AppCache.get(applicationId);
@@ -58,8 +62,6 @@ export class Config {
   }
 
   async loadKeys() {
-    const asyncKeys = ['publicServerURL'];
-
     await Promise.all(
       asyncKeys.map(async key => {
         if (typeof this[`_${key}`] === 'function') {
@@ -68,7 +70,14 @@ export class Config {
       })
     );
 
-    AppCache.put(this.appId, this);
+    const cachedConfig = AppCache.get(this.appId);
+    if (cachedConfig) {
+      const updatedConfig = { ...cachedConfig };
+      asyncKeys.forEach(key => {
+        updatedConfig[key] = this[key];
+      });
+      AppCache.put(this.appId, updatedConfig);
+    }
   }
 
   static transformConfiguration(serverConfiguration) {
