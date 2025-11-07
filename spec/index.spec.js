@@ -735,7 +735,7 @@ describe('server', () => {
       ).toBeRejected();
     });
 
-    it('should execute publicServerURL function on every access', async () => {
+    it('executes publicServerURL function on every config access', async () => {
       let counter = 0;
       await reconfigureServer({
         publicServerURL: () => {
@@ -761,6 +761,95 @@ describe('server', () => {
       const config3 = Config.get(Parse.applicationId);
       expect(config3.publicServerURL).toEqual('https://example.com/3');
       expect(counter).toEqual(3);
+    });
+
+    it('executes publicServerURL function on every password reset email', async () => {
+      let counter = 0;
+      const emailCalls = [];
+
+      const emailAdapter = MockEmailAdapterWithOptions({
+        sendPasswordResetEmail: ({ link }) => {
+          emailCalls.push(link);
+          return Promise.resolve();
+        },
+      });
+
+      await reconfigureServer({
+        appName: 'test-app',
+        publicServerURL: () => {
+          counter++;
+          return `https://example.com/${counter}`;
+        },
+        emailAdapter,
+      });
+
+      // Create a user
+      const user = new Parse.User();
+      user.setUsername('user');
+      user.setPassword('pass');
+      user.setEmail('user@example.com');
+      await user.signUp();
+
+      // Should use first publicServerURL
+      const counterBefore1 = counter;
+      await Parse.User.requestPasswordReset('user@example.com');
+      await jasmine.timeout();
+      expect(emailCalls.length).toEqual(1);
+      expect(emailCalls[0]).toContain(`https://example.com/${counterBefore1 + 1}`);
+      expect(counter).toBeGreaterThanOrEqual(2);
+
+      // Should use updated publicServerURL
+      const counterBefore2 = counter;
+      await Parse.User.requestPasswordReset('user@example.com');
+      await jasmine.timeout();
+      expect(emailCalls.length).toEqual(2);
+      expect(emailCalls[1]).toContain(`https://example.com/${counterBefore2 + 1}`);
+      expect(counterBefore2).toBeGreaterThan(counterBefore1);
+    });
+
+    it('executes publicServerURL function on every verification email', async () => {
+      let counter = 0;
+      const emailCalls = [];
+
+      const emailAdapter = MockEmailAdapterWithOptions({
+        sendVerificationEmail: ({ link }) => {
+          emailCalls.push(link);
+          return Promise.resolve();
+        },
+      });
+
+      await reconfigureServer({
+        appName: 'test-app',
+        verifyUserEmails: true,
+        publicServerURL: () => {
+          counter++;
+          return `https://example.com/${counter}`;
+        },
+        emailAdapter,
+      });
+
+      // Should trigger verification email with first publicServerURL
+      const counterBefore1 = counter;
+      const user1 = new Parse.User();
+      user1.setUsername('user1');
+      user1.setPassword('pass1');
+      user1.setEmail('user1@example.com');
+      await user1.signUp();
+      await jasmine.timeout();
+      expect(emailCalls.length).toEqual(1);
+      expect(emailCalls[0]).toContain(`https://example.com/${counterBefore1 + 1}`);
+
+      // Should trigger verification email with updated publicServerURL
+      const counterBefore2 = counter;
+      const user2 = new Parse.User();
+      user2.setUsername('user2');
+      user2.setPassword('pass2');
+      user2.setEmail('user2@example.com');
+      await user2.signUp();
+      await jasmine.timeout();
+      expect(emailCalls.length).toEqual(2);
+      expect(emailCalls[1]).toContain(`https://example.com/${counterBefore2 + 1}`);
+      expect(counterBefore2).toBeGreaterThan(counterBefore1);
     });
   });
 });
