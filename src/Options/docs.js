@@ -240,8 +240,13 @@
 
 /**
  * @interface DatabaseOptions
+ * @property {String} appName The MongoDB driver option to specify the name of the application that created this MongoClient instance.
+ * @property {String} authMechanism The MongoDB driver option to specify the authentication mechanism that MongoDB will use to authenticate the connection.
+ * @property {Any} authMechanismProperties The MongoDB driver option to specify properties for the specified authMechanism as a comma-separated list of colon-separated key-value pairs.
+ * @property {String} authSource The MongoDB driver option to specify the database name associated with the user's credentials.
  * @property {Boolean} autoSelectFamily The MongoDB driver option to set whether the socket attempts to connect to IPv6 and IPv4 addresses until a connection is established. If available, the driver will select the first IPv6 address.
  * @property {Number} autoSelectFamilyAttemptTimeout The MongoDB driver option to specify the amount of time in milliseconds to wait for a connection attempt to finish before trying the next address when using the autoSelectFamily option. If set to a positive integer less than 10, the value 10 is used instead.
+ * @property {Union} compressors The MongoDB driver option to specify an array or comma-delimited string of compressors to enable network compression for communication between this client and a mongod/mongos instance.
  * @property {Number} connectTimeoutMS The MongoDB driver option to specify the amount of time, in milliseconds, to wait to establish a single TCP socket connection to the server before raising an error. Specifying 0 disables the connection timeout.
  * @property {Boolean} createIndexRoleName Set to `true` to automatically create a unique index on the name field of the _Role collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
  * @property {Boolean} createIndexUserEmail Set to `true` to automatically create indexes on the email field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
@@ -250,18 +255,45 @@
  * @property {Boolean} createIndexUserPasswordResetToken Set to `true` to automatically create an index on the _perishable_token field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
  * @property {Boolean} createIndexUserUsername Set to `true` to automatically create indexes on the username field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
  * @property {Boolean} createIndexUserUsernameCaseInsensitive Set to `true` to automatically create a case-insensitive index on the username field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
+ * @property {Boolean} directConnection The MongoDB driver option to force a Single topology type with a connection string containing one host.
  * @property {Boolean} disableIndexFieldValidation Set to `true` to disable validation of index fields. When disabled, indexes can be created even if the fields do not exist in the schema. This can be useful when creating indexes on fields that will be added later.
  * @property {Boolean} enableSchemaHooks Enables database real-time hooks to update single schema cache. Set to `true` if using multiple Parse Servers instances connected to the same database. Failing to do so will cause a schema change to not propagate to all instances and re-syncing will only happen when the instances restart. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required.
+ * @property {Boolean} forceServerObjectId The MongoDB driver option to force server to assign _id values instead of driver.
  * @property {Number} heartbeatFrequencyMS The MongoDB driver option to specify the frequency in milliseconds at which the driver checks the state of the MongoDB deployment.
+ * @property {Boolean} loadBalanced The MongoDB driver option to instruct the driver it is connecting to a load balancer fronting a mongos like service.
+ * @property {Number} localThresholdMS The MongoDB driver option to specify the size (in milliseconds) of the latency window for selecting among multiple suitable MongoDB instances.
+ * @property {Number} maxConnecting The MongoDB driver option to specify the maximum number of connections that may be in the process of being established concurrently by the connection pool.
  * @property {Number} maxIdleTimeMS The MongoDB driver option to specify the amount of time in milliseconds that a connection can remain idle in the connection pool before being removed and closed.
  * @property {Number} maxPoolSize The MongoDB driver option to set the maximum number of opened, cached, ready-to-use database connections maintained by the driver.
  * @property {Number} maxStalenessSeconds The MongoDB driver option to set the maximum replication lag for reads from secondary nodes.
  * @property {Number} maxTimeMS The MongoDB driver option to set a cumulative time limit in milliseconds for processing operations on a cursor.
  * @property {Number} minPoolSize The MongoDB driver option to set the minimum number of opened, cached, ready-to-use database connections maintained by the driver.
+ * @property {String} proxyHost The MongoDB driver option to configure a Socks5 proxy host used for creating TCP connections.
+ * @property {String} proxyPassword The MongoDB driver option to configure a Socks5 proxy password when the proxy requires username/password authentication.
+ * @property {Number} proxyPort The MongoDB driver option to configure a Socks5 proxy port used for creating TCP connections.
+ * @property {String} proxyUsername The MongoDB driver option to configure a Socks5 proxy username when the proxy requires username/password authentication.
+ * @property {String} readConcernLevel The MongoDB driver option to specify the level of isolation.
+ * @property {String} readPreference The MongoDB driver option to specify the read preferences for this connection.
+ * @property {Any[]} readPreferenceTags The MongoDB driver option to specify the tags document as a comma-separated list of colon-separated key-value pairs.
+ * @property {String} replicaSet The MongoDB driver option to specify the name of the replica set, if the mongod is a member of a replica set.
+ * @property {Boolean} retryReads The MongoDB driver option to enable retryable reads.
  * @property {Boolean} retryWrites The MongoDB driver option to set whether to retry failed writes.
  * @property {Number} schemaCacheTtl The duration in seconds after which the schema cache expires and will be refetched from the database. Use this option if using multiple Parse Servers instances connected to the same database. A low duration will cause the schema cache to be updated too often, causing unnecessary database reads. A high duration will cause the schema to be updated too rarely, increasing the time required until schema changes propagate to all server instances. This feature can be used as an alternative or in conjunction with the option `enableSchemaHooks`. Default is infinite which means the schema cache never expires.
+ * @property {String} serverMonitoringMode The MongoDB driver option to instruct the driver monitors to use a specific monitoring mode.
  * @property {Number} serverSelectionTimeoutMS The MongoDB driver option to specify the amount of time in milliseconds for a server to be considered suitable for selection.
  * @property {Number} socketTimeoutMS The MongoDB driver option to specify the amount of time, in milliseconds, spent attempting to send or receive on a socket before timing out. Specifying 0 means no timeout.
+ * @property {Number} srvMaxHosts The MongoDB driver option to specify the maximum number of hosts to connect to when using an srv connection string, a setting of 0 means unlimited hosts.
+ * @property {String} srvServiceName The MongoDB driver option to modify the srv URI service name.
+ * @property {Boolean} ssl The MongoDB driver option to enable or disable TLS/SSL for the connection (equivalent to tls option).
+ * @property {Boolean} tls The MongoDB driver option to enable or disable TLS/SSL for the connection.
+ * @property {Boolean} tlsAllowInvalidCertificates The MongoDB driver option to bypass validation of the certificates presented by the mongod/mongos instance.
+ * @property {Boolean} tlsAllowInvalidHostnames The MongoDB driver option to disable hostname validation of the certificate presented by the mongod/mongos instance.
+ * @property {String} tlsCAFile The MongoDB driver option to specify the location of a local .pem file that contains the root certificate chain from the Certificate Authority.
+ * @property {String} tlsCertificateKeyFile The MongoDB driver option to specify the location of a local .pem file that contains the client's TLS/SSL certificate and key.
+ * @property {String} tlsCertificateKeyFilePassword The MongoDB driver option to specify the password to decrypt the tlsCertificateKeyFile.
+ * @property {Boolean} tlsInsecure The MongoDB driver option to disable various certificate validations.
+ * @property {Number} waitQueueTimeoutMS The MongoDB driver option to specify the maximum time in milliseconds that a thread can wait for a connection to become available.
+ * @property {Number} zlibCompressionLevel The MongoDB driver option to specify the compression level if using zlib for network compression (0-9).
  */
 
 /**

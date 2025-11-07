@@ -227,20 +227,55 @@ export interface FileUploadOptions {
     enableForPublic?: boolean;
 }
 export interface DatabaseOptions {
+    // Parse Server custom options
     enableSchemaHooks?: boolean;
     schemaCacheTtl?: number;
-    retryWrites?: boolean;
-    maxTimeMS?: number;
-    maxStalenessSeconds?: number;
-    minPoolSize?: number;
-    maxPoolSize?: number;
-    serverSelectionTimeoutMS?: number;
-    maxIdleTimeMS?: number;
-    heartbeatFrequencyMS?: number;
-    connectTimeoutMS?: number;
-    socketTimeoutMS?: number;
+    
+    // MongoDB driver options
+    appName?: string;
+    authMechanism?: string;
+    authMechanismProperties?: any;
+    authSource?: string;
     autoSelectFamily?: boolean;
     autoSelectFamilyAttemptTimeout?: number;
+    compressors?: string[] | string;
+    connectTimeoutMS?: number;
+    directConnection?: boolean;
+    forceServerObjectId?: boolean;
+    heartbeatFrequencyMS?: number;
+    loadBalanced?: boolean;
+    localThresholdMS?: number;
+    maxConnecting?: number;
+    maxIdleTimeMS?: number;
+    maxPoolSize?: number;
+    maxStalenessSeconds?: number;
+    maxTimeMS?: number;
+    minPoolSize?: number;
+    proxyHost?: string;
+    proxyPassword?: string;
+    proxyPort?: number;
+    proxyUsername?: string;
+    readConcernLevel?: string;
+    readPreference?: string;
+    readPreferenceTags?: any[];
+    replicaSet?: string;
+    retryReads?: boolean;
+    retryWrites?: boolean;
+    serverMonitoringMode?: string;
+    serverSelectionTimeoutMS?: number;
+    socketTimeoutMS?: number;
+    srvMaxHosts?: number;
+    srvServiceName?: string;
+    ssl?: boolean;
+    tls?: boolean;
+    tlsAllowInvalidCertificates?: boolean;
+    tlsAllowInvalidHostnames?: boolean;
+    tlsCAFile?: string;
+    tlsCertificateKeyFile?: string;
+    tlsCertificateKeyFilePassword?: string;
+    tlsInsecure?: boolean;
+    waitQueueTimeoutMS?: number;
+    zlibCompressionLevel?: number;
 }
 export interface AuthAdapter {
     enabled?: boolean;

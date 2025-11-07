@@ -1084,6 +1084,27 @@ module.exports.FileUploadOptions = {
   },
 };
 module.exports.DatabaseOptions = {
+  appName: {
+    env: 'PARSE_SERVER_DATABASE_APP_NAME',
+    help:
+      'The MongoDB driver option to specify the name of the application that created this MongoClient instance.',
+  },
+  authMechanism: {
+    env: 'PARSE_SERVER_DATABASE_AUTH_MECHANISM',
+    help:
+      'The MongoDB driver option to specify the authentication mechanism that MongoDB will use to authenticate the connection.',
+  },
+  authMechanismProperties: {
+    env: 'PARSE_SERVER_DATABASE_AUTH_MECHANISM_PROPERTIES',
+    help:
+      'The MongoDB driver option to specify properties for the specified authMechanism as a comma-separated list of colon-separated key-value pairs.',
+    action: parsers.objectParser,
+  },
+  authSource: {
+    env: 'PARSE_SERVER_DATABASE_AUTH_SOURCE',
+    help:
+      "The MongoDB driver option to specify the database name associated with the user's credentials.",
+  },
   autoSelectFamily: {
     env: 'PARSE_SERVER_DATABASE_AUTO_SELECT_FAMILY',
     help:
@@ -1095,6 +1116,11 @@ module.exports.DatabaseOptions = {
     help:
       'The MongoDB driver option to specify the amount of time in milliseconds to wait for a connection attempt to finish before trying the next address when using the autoSelectFamily option. If set to a positive integer less than 10, the value 10 is used instead.',
     action: parsers.numberParser('autoSelectFamilyAttemptTimeout'),
+  },
+  compressors: {
+    env: 'PARSE_SERVER_DATABASE_COMPRESSORS',
+    help:
+      'The MongoDB driver option to specify an array or comma-delimited string of compressors to enable network compression for communication between this client and a mongod/mongos instance.',
   },
   connectTimeoutMS: {
     env: 'PARSE_SERVER_DATABASE_CONNECT_TIMEOUT_MS',
@@ -1151,6 +1177,12 @@ module.exports.DatabaseOptions = {
     action: parsers.booleanParser,
     default: true,
   },
+  directConnection: {
+    env: 'PARSE_SERVER_DATABASE_DIRECT_CONNECTION',
+    help:
+      'The MongoDB driver option to force a Single topology type with a connection string containing one host.',
+    action: parsers.booleanParser,
+  },
   disableIndexFieldValidation: {
     env: 'PARSE_SERVER_DATABASE_DISABLE_INDEX_FIELD_VALIDATION',
     help:
@@ -1164,11 +1196,34 @@ module.exports.DatabaseOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  forceServerObjectId: {
+    env: 'PARSE_SERVER_DATABASE_FORCE_SERVER_OBJECT_ID',
+    help: 'The MongoDB driver option to force server to assign _id values instead of driver.',
+    action: parsers.booleanParser,
+  },
   heartbeatFrequencyMS: {
     env: 'PARSE_SERVER_DATABASE_HEARTBEAT_FREQUENCY_MS',
     help:
       'The MongoDB driver option to specify the frequency in milliseconds at which the driver checks the state of the MongoDB deployment.',
     action: parsers.numberParser('heartbeatFrequencyMS'),
+  },
+  loadBalanced: {
+    env: 'PARSE_SERVER_DATABASE_LOAD_BALANCED',
+    help:
+      'The MongoDB driver option to instruct the driver it is connecting to a load balancer fronting a mongos like service.',
+    action: parsers.booleanParser,
+  },
+  localThresholdMS: {
+    env: 'PARSE_SERVER_DATABASE_LOCAL_THRESHOLD_MS',
+    help:
+      'The MongoDB driver option to specify the size (in milliseconds) of the latency window for selecting among multiple suitable MongoDB instances.',
+    action: parsers.numberParser('localThresholdMS'),
+  },
+  maxConnecting: {
+    env: 'PARSE_SERVER_DATABASE_MAX_CONNECTING',
+    help:
+      'The MongoDB driver option to specify the maximum number of connections that may be in the process of being established concurrently by the connection pool.',
+    action: parsers.numberParser('maxConnecting'),
   },
   maxIdleTimeMS: {
     env: 'PARSE_SERVER_DATABASE_MAX_IDLE_TIME_MS',
@@ -1200,6 +1255,51 @@ module.exports.DatabaseOptions = {
       'The MongoDB driver option to set the minimum number of opened, cached, ready-to-use database connections maintained by the driver.',
     action: parsers.numberParser('minPoolSize'),
   },
+  proxyHost: {
+    env: 'PARSE_SERVER_DATABASE_PROXY_HOST',
+    help:
+      'The MongoDB driver option to configure a Socks5 proxy host used for creating TCP connections.',
+  },
+  proxyPassword: {
+    env: 'PARSE_SERVER_DATABASE_PROXY_PASSWORD',
+    help:
+      'The MongoDB driver option to configure a Socks5 proxy password when the proxy requires username/password authentication.',
+  },
+  proxyPort: {
+    env: 'PARSE_SERVER_DATABASE_PROXY_PORT',
+    help:
+      'The MongoDB driver option to configure a Socks5 proxy port used for creating TCP connections.',
+    action: parsers.numberParser('proxyPort'),
+  },
+  proxyUsername: {
+    env: 'PARSE_SERVER_DATABASE_PROXY_USERNAME',
+    help:
+      'The MongoDB driver option to configure a Socks5 proxy username when the proxy requires username/password authentication.',
+  },
+  readConcernLevel: {
+    env: 'PARSE_SERVER_DATABASE_READ_CONCERN_LEVEL',
+    help: 'The MongoDB driver option to specify the level of isolation.',
+  },
+  readPreference: {
+    env: 'PARSE_SERVER_DATABASE_READ_PREFERENCE',
+    help: 'The MongoDB driver option to specify the read preferences for this connection.',
+  },
+  readPreferenceTags: {
+    env: 'PARSE_SERVER_DATABASE_READ_PREFERENCE_TAGS',
+    help:
+      'The MongoDB driver option to specify the tags document as a comma-separated list of colon-separated key-value pairs.',
+    action: parsers.arrayParser,
+  },
+  replicaSet: {
+    env: 'PARSE_SERVER_DATABASE_REPLICA_SET',
+    help:
+      'The MongoDB driver option to specify the name of the replica set, if the mongod is a member of a replica set.',
+  },
+  retryReads: {
+    env: 'PARSE_SERVER_DATABASE_RETRY_READS',
+    help: 'The MongoDB driver option to enable retryable reads.',
+    action: parsers.booleanParser,
+  },
   retryWrites: {
     env: 'PARSE_SERVER_DATABASE_RETRY_WRITES',
     help: 'The MongoDB driver option to set whether to retry failed writes.',
@@ -1210,6 +1310,11 @@ module.exports.DatabaseOptions = {
     help:
       'The duration in seconds after which the schema cache expires and will be refetched from the database. Use this option if using multiple Parse Servers instances connected to the same database. A low duration will cause the schema cache to be updated too often, causing unnecessary database reads. A high duration will cause the schema to be updated too rarely, increasing the time required until schema changes propagate to all server instances. This feature can be used as an alternative or in conjunction with the option `enableSchemaHooks`. Default is infinite which means the schema cache never expires.',
     action: parsers.numberParser('schemaCacheTtl'),
+  },
+  serverMonitoringMode: {
+    env: 'PARSE_SERVER_DATABASE_SERVER_MONITORING_MODE',
+    help:
+      'The MongoDB driver option to instruct the driver monitors to use a specific monitoring mode.',
   },
   serverSelectionTimeoutMS: {
     env: 'PARSE_SERVER_DATABASE_SERVER_SELECTION_TIMEOUT_MS',
@@ -1222,6 +1327,70 @@ module.exports.DatabaseOptions = {
     help:
       'The MongoDB driver option to specify the amount of time, in milliseconds, spent attempting to send or receive on a socket before timing out. Specifying 0 means no timeout.',
     action: parsers.numberParser('socketTimeoutMS'),
+  },
+  srvMaxHosts: {
+    env: 'PARSE_SERVER_DATABASE_SRV_MAX_HOSTS',
+    help:
+      'The MongoDB driver option to specify the maximum number of hosts to connect to when using an srv connection string, a setting of 0 means unlimited hosts.',
+    action: parsers.numberParser('srvMaxHosts'),
+  },
+  srvServiceName: {
+    env: 'PARSE_SERVER_DATABASE_SRV_SERVICE_NAME',
+    help: 'The MongoDB driver option to modify the srv URI service name.',
+  },
+  ssl: {
+    env: 'PARSE_SERVER_DATABASE_SSL',
+    help:
+      'The MongoDB driver option to enable or disable TLS/SSL for the connection (equivalent to tls option).',
+    action: parsers.booleanParser,
+  },
+  tls: {
+    env: 'PARSE_SERVER_DATABASE_TLS',
+    help: 'The MongoDB driver option to enable or disable TLS/SSL for the connection.',
+    action: parsers.booleanParser,
+  },
+  tlsAllowInvalidCertificates: {
+    env: 'PARSE_SERVER_DATABASE_TLS_ALLOW_INVALID_CERTIFICATES',
+    help:
+      'The MongoDB driver option to bypass validation of the certificates presented by the mongod/mongos instance.',
+    action: parsers.booleanParser,
+  },
+  tlsAllowInvalidHostnames: {
+    env: 'PARSE_SERVER_DATABASE_TLS_ALLOW_INVALID_HOSTNAMES',
+    help:
+      'The MongoDB driver option to disable hostname validation of the certificate presented by the mongod/mongos instance.',
+    action: parsers.booleanParser,
+  },
+  tlsCAFile: {
+    env: 'PARSE_SERVER_DATABASE_TLS_CAFILE',
+    help:
+      'The MongoDB driver option to specify the location of a local .pem file that contains the root certificate chain from the Certificate Authority.',
+  },
+  tlsCertificateKeyFile: {
+    env: 'PARSE_SERVER_DATABASE_TLS_CERTIFICATE_KEY_FILE',
+    help:
+      "The MongoDB driver option to specify the location of a local .pem file that contains the client's TLS/SSL certificate and key.",
+  },
+  tlsCertificateKeyFilePassword: {
+    env: 'PARSE_SERVER_DATABASE_TLS_CERTIFICATE_KEY_FILE_PASSWORD',
+    help: 'The MongoDB driver option to specify the password to decrypt the tlsCertificateKeyFile.',
+  },
+  tlsInsecure: {
+    env: 'PARSE_SERVER_DATABASE_TLS_INSECURE',
+    help: 'The MongoDB driver option to disable various certificate validations.',
+    action: parsers.booleanParser,
+  },
+  waitQueueTimeoutMS: {
+    env: 'PARSE_SERVER_DATABASE_WAIT_QUEUE_TIMEOUT_MS',
+    help:
+      'The MongoDB driver option to specify the maximum time in milliseconds that a thread can wait for a connection to become available.',
+    action: parsers.numberParser('waitQueueTimeoutMS'),
+  },
+  zlibCompressionLevel: {
+    env: 'PARSE_SERVER_DATABASE_ZLIB_COMPRESSION_LEVEL',
+    help:
+      'The MongoDB driver option to specify the compression level if using zlib for network compression (0-9).',
+    action: parsers.numberParser('zlibCompressionLevel'),
   },
 };
 module.exports.AuthAdapter = {
