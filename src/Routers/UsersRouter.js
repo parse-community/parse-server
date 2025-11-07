@@ -482,6 +482,7 @@ export class UsersRouter extends ClassesRouter {
     }
 
     if (userData) {
+      this._sanitizeAuthData(userData);
       // Useful to get User attached files in the trigger (photo picture for example)
       await req.config.filesController.expandFilesInObject(req.config, userData);
 
