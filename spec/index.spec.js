@@ -363,7 +363,7 @@ describe('server', () => {
 
   it('should throw when getting invalid mount', done => {
     reconfigureServer({ publicServerURL: 'blabla:/some' }).catch(error => {
-      expect(error).toEqual('publicServerURL should be a valid HTTPS URL starting with https://');
+      expect(error).toEqual('The option publicServerURL must be a valid URL starting with http:// or https://.');
       done();
     });
   });
