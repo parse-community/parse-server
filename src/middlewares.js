@@ -213,7 +213,25 @@ export async function handleParseHeaders(req, res, next) {
     });
     return;
   }
-  await config.loadKeys();
+
+  // Execute publicServerURL function if it's a function
+  if (typeof config.publicServerURL === 'function') {
+    // Store the function for next request and resolve it for this request
+    const urlFunction = config.publicServerURL;
+    const resolvedURL = await urlFunction();
+    config.publicServerURL = resolvedURL;
+    // Update the cached config with resolved value
+    const cachedConfig = AppCache.get(info.appId);
+    cachedConfig.publicServerURL = resolvedURL;
+    // But keep the function for next time
+    cachedConfig._publicServerURLFunction = urlFunction;
+  } else if (config._publicServerURLFunction) {
+    // Function was previously stored, execute it again
+    const resolvedURL = await config._publicServerURLFunction();
+    config.publicServerURL = resolvedURL;
+    const cachedConfig = AppCache.get(info.appId);
+    cachedConfig.publicServerURL = resolvedURL;
+  }
 
   info.app = AppCache.get(info.appId);
   req.config = config;
