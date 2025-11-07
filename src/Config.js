@@ -140,15 +140,7 @@ export class Config {
       throw 'extendSessionOnUse must be a boolean value';
     }
 
-    if (publicServerURL) {
-      if (
-        typeof publicServerURL !== 'function' &&
-        !publicServerURL.startsWith('http://') &&
-        !publicServerURL.startsWith('https://')
-      ) {
-        throw 'publicServerURL should be a valid HTTPS URL starting with https://';
-      }
-    }
+    this.validatePublicServerURL({ publicServerURL });
     this.validateSessionConfiguration(sessionLength, expireInactiveSessions);
     this.validateIps('masterKeyIps', masterKeyIps);
     this.validateIps('maintenanceKeyIps', maintenanceKeyIps);
@@ -462,6 +454,27 @@ export class Config {
     }
   }
 
+  static validatePublicServerURL({ publicServerURL, required = false }) {
+    if (!publicServerURL && required) {
+      throw 'The option publicServerURL is required.';
+    }
+
+    const type = typeof publicServerURL;
+
+    if (type === 'string') {
+      if (!publicServerURL.startsWith('http://') && !publicServerURL.startsWith('https://')) {
+        throw 'The option publicServerURL must be a valid URL starting with http:// or https://.';
+      }
+      return;
+    }
+
+    if (type === 'function') {
+      return;
+    }
+
+    throw `The option publicServerURL must be a string or function, but got ${type}.`;
+  }
+
   static validateEmailConfiguration({
     emailAdapter,
     appName,
@@ -475,9 +488,7 @@ export class Config {
     if (typeof appName !== 'string') {
       throw 'An app name is required for e-mail verification and password resets.';
     }
-    if (typeof publicServerURL !== 'string' && typeof publicServerURL !== 'function') {
-      throw 'A public server url is required for e-mail verification and password resets.';
-    }
+    this.validatePublicServerURL({ publicServerURL, required: true });
     if (emailVerifyTokenValidityDuration) {
       if (isNaN(emailVerifyTokenValidityDuration)) {
         throw 'Email verify token validity duration must be a valid number.';
