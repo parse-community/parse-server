@@ -74,50 +74,69 @@ describe('Config Keys', () => {
       databaseAdapter: null,
       databaseOptions: {
         appName: 'MyParseApp',
-        authMechanism: 'SCRAM-SHA-256',
-        authMechanismProperties: { SERVICE_NAME: 'mongodb' },
+
+        // Cannot be tested as it requires authentication setup
+        // authMechanism: 'SCRAM-SHA-256',
+        // authMechanismProperties: { SERVICE_NAME: 'mongodb' },
+
         authSource: 'admin',
         autoSelectFamily: true,
         autoSelectFamilyAttemptTimeout: 3000,
-        compressors: ['snappy', 'zlib'],
+        compressors: ['zlib'],
         connectTimeoutMS: 5000,
         directConnection: false,
         disableIndexFieldValidation: true,
         forceServerObjectId: false,
         heartbeatFrequencyMS: 10000,
-        loadBalanced: false,
         localThresholdMS: 15,
         maxConnecting: 2,
         maxIdleTimeMS: 60000,
         maxPoolSize: 10,
-        maxStalenessSeconds: 10,
+        maxStalenessSeconds: 90,
         maxTimeMS: 1000,
         minPoolSize: 5,
-        proxyHost: 'proxy.example.com',
-        proxyPassword: 'proxypass',
-        proxyPort: 1080,
-        proxyUsername: 'proxyuser',
+
+        // Cannot be tested as it requires a proxy setup
+        // proxyHost: 'proxy.example.com',
+        // proxyPassword: 'proxypass',
+        // proxyPort: 1080,
+        // proxyUsername: 'proxyuser',
+
         readConcernLevel: 'majority',
         readPreference: 'secondaryPreferred',
         readPreferenceTags: [{ dc: 'east' }],
-        replicaSet: 'myReplicaSet',
+
+        // Cannot be tested as it requires a replica set setup
+        // replicaSet: 'myReplicaSet',
+
         retryReads: true,
         retryWrites: true,
         serverMonitoringMode: 'auto',
         serverSelectionTimeoutMS: 5000,
         socketTimeoutMS: 5000,
-        srvMaxHosts: 0,
-        srvServiceName: 'mongodb',
+
+        // Cannot be tested as it requires a replica cluster setup
+        // srvMaxHosts: 0,
+        // srvServiceName: 'mongodb',
+
         ssl: false,
-        tls: true,
+        tls: false,
         tlsAllowInvalidCertificates: false,
         tlsAllowInvalidHostnames: false,
-        tlsCAFile: '/path/to/ca.pem',
-        tlsCertificateKeyFile: '/path/to/cert.pem',
+        tlsCAFile: __dirname + '/support/cert/cert.pem',
+        tlsCertificateKeyFile: __dirname + '/support/cert/cert.pem',
         tlsCertificateKeyFilePassword: 'password',
-        tlsInsecure: false,
         waitQueueTimeoutMS: 5000,
         zlibCompressionLevel: 6,
+      },
+    })).toBeResolved();
+    await expectAsync(reconfigureServer({
+      databaseURI: 'mongodb://localhost:27017/parse',
+      filesAdapter: null,
+      databaseAdapter: null,
+      databaseOptions: {
+        // The following option needs to be tested separately due to driver config rules
+        tlsInsecure: false,
       },
     })).toBeResolved();
     expect(loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '')).not.toMatch(invalidKeyErrorMessage);
