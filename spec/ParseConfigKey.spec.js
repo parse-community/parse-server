@@ -67,7 +67,7 @@ describe('Config Keys', () => {
     expect(loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '')).not.toMatch(invalidKeyErrorMessage);
   });
 
-  fit_only_db('mongo')('recognizes valid keys in databaseOptions (MongoDB)', async () => {
+  it_only_db('mongo')('recognizes valid keys in databaseOptions (MongoDB)', async () => {
     await expectAsync(reconfigureServer({
       databaseURI: 'mongodb://localhost:27017/parse',
       filesAdapter: null,
