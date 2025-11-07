@@ -23,7 +23,11 @@ const hasTypeIntrospection = (query) => {
       if (definition.kind === 'OperationDefinition' && definition.selectionSet) {
         for (const selection of definition.selectionSet.selections) {
           if (selection.kind === 'Field' && selection.name.value === '__type') {
-            return true;
+            // GraphQL's introspection __type field requires a 'name' argument
+            // This distinguishes it from potential user-defined __type fields
+            if (selection.arguments && selection.arguments.length > 0) {
+              return true;
+            }
           }
         }
       }
