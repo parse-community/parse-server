@@ -65,7 +65,11 @@ export class Config {
     await Promise.all(
       asyncKeys.map(async key => {
         if (typeof this[`_${key}`] === 'function') {
-          this[key] = await this[`_${key}`]();
+          try {
+            this[key] = await this[`_${key}`]();
+          } catch (error) {
+            throw new Error(`Failed to resolve async config key '${key}': ${error.message}`);
+          }
         }
       })
     );
