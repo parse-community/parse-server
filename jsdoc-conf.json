@@ -6,10 +6,10 @@
   "source": {
     "include": [
       "README.md",
-      "./src/cloud-code",
-      "./src/Options/docs.js",
-      "./src/ParseServer.js",
-      "./src/Adapters"
+      "./lib/cloud-code",
+      "./lib/Options/docs.js",
+      "./lib/ParseServer.js",
+      "./lib/Adapters"
     ],
     "excludePattern": "(^|\\/|\\\\)_"
   },

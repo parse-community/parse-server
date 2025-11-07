@@ -515,6 +515,17 @@ global.it_only_db = db => {
   }
 };
 
+global.fit_only_db = db => {
+  if (
+    process.env.PARSE_SERVER_TEST_DB === db ||
+    (!process.env.PARSE_SERVER_TEST_DB && db == 'mongo')
+  ) {
+    return fit;
+  } else {
+    return xit;
+  }
+};
+
 global.it_only_mongodb_version = version => {
   if (!semver.validRange(version)) {
     throw new Error('Invalid version range');
