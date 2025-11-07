@@ -418,7 +418,7 @@ export class UsersRouter extends ClassesRouter {
       Config.validateEmailConfiguration({
         emailAdapter: req.config.userController.adapter,
         appName: req.config.appName,
-        publicServerURL: req.config.publicServerURL,
+        publicServerURL: req.config.publicServerURL || req.config._publicServerURL,
         emailVerifyTokenValidityDuration: req.config.emailVerifyTokenValidityDuration,
         emailVerifyTokenReuseIfValid: req.config.emailVerifyTokenReuseIfValid,
       });

@@ -1,3 +1,24 @@
+# [8.5.0-alpha.3](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.2...8.5.0-alpha.3) (2025-11-07)
+
+
+### Features
+
+* Add support for more MongoDB driver options ([#9911](https://github.com/parse-community/parse-server/issues/9911)) ([cff451e](https://github.com/parse-community/parse-server/commit/cff451eabdc380affa600ed711de66f7bd1d00aa))
+
+# [8.5.0-alpha.2](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.1...8.5.0-alpha.2) (2025-11-07)
+
+
+### Features
+
+* Add support for MongoDB driver options `serverSelectionTimeoutMS`, `maxIdleTimeMS`, `heartbeatFrequencyMS` ([#9910](https://github.com/parse-community/parse-server/issues/9910)) ([1b661e9](https://github.com/parse-community/parse-server/commit/1b661e98c86a1db79e076a7297cd9199a72ae1ac))
+
+# [8.5.0-alpha.1](https://github.com/parse-community/parse-server/compare/8.4.0...8.5.0-alpha.1) (2025-11-07)
+
+
+### Features
+
+* Allow option `publicServerURL` to be set dynamically as asynchronous function ([#9803](https://github.com/parse-community/parse-server/issues/9803)) ([460a65c](https://github.com/parse-community/parse-server/commit/460a65cf612f4c86af8038cafcc7e7ffe9eb8440))
+
 # [8.4.0-alpha.2](https://github.com/parse-community/parse-server/compare/8.4.0-alpha.1...8.4.0-alpha.2) (2025-11-05)
 
 
