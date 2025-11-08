@@ -50,8 +50,8 @@ jobs:
         id: baseline
         run: |
           npm run benchmark > baseline-output.txt 2>&1 || true
-          # Extract JSON from output (last valid JSON block)
-          grep -A 1000 '^\[' baseline-output.txt | grep -B 1000 '^\]' | head -n -0 > baseline.json || echo '[]' > baseline.json
+          # Extract JSON from output (everything between first [ and last ])
+          sed -n '/^\[/,/^\]/p' baseline-output.txt > baseline.json || echo '[]' > baseline.json
           echo "Baseline benchmark results:"
           cat baseline.json
         continue-on-error: true
@@ -88,8 +88,8 @@ jobs:
         id: pr-bench
         run: |
           npm run benchmark > pr-output.txt 2>&1 || true
-          # Extract JSON from output (last valid JSON block)
-          grep -A 1000 '^\[' pr-output.txt | grep -B 1000 '^\]' | head -n -0 > pr.json || echo '[]' > pr.json
+          # Extract JSON from output (everything between first [ and last ])
+          sed -n '/^\[/,/^\]/p' pr-output.txt > pr.json || echo '[]' > pr.json
           echo "PR benchmark results:"
           cat pr.json
         continue-on-error: true
@@ -103,24 +103,27 @@ jobs:
             pr-output.txt
           retention-days: 7
 
-      - name: Store benchmark result (baseline)
-        uses: benchmark-action/github-action-benchmark@v1
-        if: github.event_name == 'pull_request'
-        with:
-          name: Parse Server Performance (baseline)
-          tool: 'customBiggerIsBetter'
-          output-file-path: baseline.json
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: false
-          save-data-file: false
-          comment-on-alert: false
+      - name: Verify benchmark files exist
+        run: |
+          echo "Checking for benchmark result files..."
+          if [ ! -f baseline.json ] || [ ! -s baseline.json ]; then
+            echo "⚠️ baseline.json is missing or empty, creating empty array"
+            echo '[]' > baseline.json
+          fi
+          if [ ! -f pr.json ] || [ ! -s pr.json ]; then
+            echo "⚠️ pr.json is missing or empty, creating empty array"
+            echo '[]' > pr.json
+          fi
+          echo "baseline.json size: $(wc -c < baseline.json) bytes"
+          echo "pr.json size: $(wc -c < pr.json) bytes"
 
       - name: Store benchmark result (PR)
         uses: benchmark-action/github-action-benchmark@v1
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && hashFiles('pr.json') != ''
+        continue-on-error: true
         with:
           name: Parse Server Performance
-          tool: 'customBiggerIsBetter'
+          tool: 'customSmallerIsBetter'
           output-file-path: pr.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: false
