@@ -1,3 +1,31 @@
+# [8.5.0-alpha.7](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.6...8.5.0-alpha.7) (2025-11-08)
+
+
+### Performance Improvements
+
+* Upgrade MongoDB driver to 6.20.0 ([#9887](https://github.com/parse-community/parse-server/issues/9887)) ([3c9af48](https://github.com/parse-community/parse-server/commit/3c9af48edd999158443b797e388e29495953799e))
+
+# [8.5.0-alpha.6](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.5...8.5.0-alpha.6) (2025-11-08)
+
+
+### Bug Fixes
+
+* `GridFSBucketAdapter` throws when using some Parse Server specific options in MongoDB database options ([#9915](https://github.com/parse-community/parse-server/issues/9915)) ([d3d4003](https://github.com/parse-community/parse-server/commit/d3d4003570b9872f2b0f5a25fc06ce4c4132860d))
+
+# [8.5.0-alpha.5](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.4...8.5.0-alpha.5) (2025-11-08)
+
+
+### Features
+
+* Add Parse Server option `allowPublicExplain` to allow `Parse.Query.explain` without master key ([#9890](https://github.com/parse-community/parse-server/issues/9890)) ([4456b02](https://github.com/parse-community/parse-server/commit/4456b02280c2d8dd58b7250e9e67f1a8647b3452))
+
+# [8.5.0-alpha.4](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.3...8.5.0-alpha.4) (2025-11-08)
+
+
+### Features
+
+* Add MongoDB client event logging via database option `logClientEvents` ([#9914](https://github.com/parse-community/parse-server/issues/9914)) ([b760733](https://github.com/parse-community/parse-server/commit/b760733b98bcfc9c09ac9780066602e1fda108fe))
+
 # [8.5.0-alpha.3](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.2...8.5.0-alpha.3) (2025-11-07)
 
 

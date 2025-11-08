@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "8.5.0-alpha.3",
+  "version": "8.5.0-alpha.7",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -47,7 +47,7 @@
     "lodash": "4.17.21",
     "lru-cache": "10.4.0",
     "mime": "4.0.7",
-    "mongodb": "6.17.0",
+    "mongodb": "6.20.0",
     "mustache": "4.2.0",
     "otpauth": "9.4.0",
     "parse": "7.0.1",
@@ -139,7 +139,10 @@
     "prettier": "prettier --write {src,spec}/{**/*,*}.js",
     "prepare": "npm run build",
     "postinstall": "node -p 'require(\"./postinstall.js\")()'",
-    "madge:circular": "node_modules/.bin/madge ./src --circular"
+    "madge:circular": "node_modules/.bin/madge ./src --circular",
+    "benchmark": "cross-env MONGODB_VERSION=8.0.4 MONGODB_TOPOLOGY=standalone mongodb-runner exec -t standalone --version 8.0.4 -- --port 27017 -- npm run benchmark:only",
+    "benchmark:only": "node benchmark/performance.js",
+    "benchmark:quick": "cross-env BENCHMARK_ITERATIONS=10 npm run benchmark:only"
   },
   "types": "types/index.d.ts",
   "engines": {
