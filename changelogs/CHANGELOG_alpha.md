@@ -1,3 +1,10 @@
+# [8.5.0-alpha.7](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.6...8.5.0-alpha.7) (2025-11-08)
+
+
+### Performance Improvements
+
+* Upgrade MongoDB driver to 6.20.0 ([#9887](https://github.com/parse-community/parse-server/issues/9887)) ([3c9af48](https://github.com/parse-community/parse-server/commit/3c9af48edd999158443b797e388e29495953799e))
+
 # [8.5.0-alpha.6](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.5...8.5.0-alpha.6) (2025-11-08)
 
 
