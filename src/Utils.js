@@ -410,6 +410,40 @@ class Utils {
       '%' + char.charCodeAt(0).toString(16).toUpperCase()
     );
   }
+
+  /**
+   * Creates a JSON replacer function that handles Map, Set, and circular references.
+   * This replacer can be used with JSON.stringify to safely serialize complex objects.
+   *
+   * @returns {Function} A replacer function for JSON.stringify that:
+   * - Converts Map instances to plain objects
+   * - Converts Set instances to arrays
+   * - Replaces circular references with '[Circular]' marker
+   *
+   * @example
+   * const obj = { name: 'test', map: new Map([['key', 'value']]) };
+   * obj.self = obj; // circular reference
+   * JSON.stringify(obj, Utils.getCircularReplacer());
+   * // Output: {"name":"test","map":{"key":"value"},"self":"[Circular]"}
+   */
+  static getCircularReplacer() {
+    const seen = new WeakSet();
+    return (key, value) => {
+      if (value instanceof Map) {
+        return Object.fromEntries(value);
+      }
+      if (value instanceof Set) {
+        return Array.from(value);
+      }
+      if (typeof value === 'object' && value !== null) {
+        if (seen.has(value)) {
+          return '[Circular]';
+        }
+        seen.add(value);
+      }
+      return value;
+    };
+  }
 }
 
 module.exports = Utils;
