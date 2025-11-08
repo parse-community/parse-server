@@ -19,7 +19,7 @@ env:
 
 jobs:
   performance-check:
-    name: Run Performance Benchmarks
+    name: Benchmarks
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
