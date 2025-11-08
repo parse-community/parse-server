@@ -825,12 +825,12 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     });
   });
 
-  describe('clientLogEvents', () => {
+  describe('logClientEvents', () => {
     it('should log MongoDB client events when configured', async () => {
       const logger = require('../lib/logger').logger;
       const logSpy = spyOn(logger, 'warn');
 
-      const clientLogEvents = [
+      const logClientEvents = [
         {
           name: 'serverDescriptionChanged',
           keys: ['address'],
@@ -840,7 +840,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
 
       const adapter = new MongoStorageAdapter({
         uri: databaseURI,
-        mongoOptions: { clientLogEvents },
+        mongoOptions: { logClientEvents },
       });
 
       // Connect to trigger event listeners setup
@@ -867,7 +867,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       const logger = require('../lib/logger').logger;
       const logSpy = spyOn(logger, 'info');
 
-      const clientLogEvents = [
+      const logClientEvents = [
         {
           name: 'connectionPoolReady',
           logLevel: 'info',
@@ -876,7 +876,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
 
       const adapter = new MongoStorageAdapter({
         uri: databaseURI,
-        mongoOptions: { clientLogEvents },
+        mongoOptions: { logClientEvents },
       });
 
       await adapter.connect();
@@ -899,7 +899,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       const logger = require('../lib/logger').logger;
       const logSpy = spyOn(logger, 'warn');
 
-      const clientLogEvents = [
+      const logClientEvents = [
         {
           name: 'topologyDescriptionChanged',
           keys: ['previousDescription.type', 'newDescription.type', 'newDescription.servers.size'],
@@ -909,7 +909,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
 
       const adapter = new MongoStorageAdapter({
         uri: databaseURI,
-        mongoOptions: { clientLogEvents },
+        mongoOptions: { logClientEvents },
       });
 
       await adapter.connect();
@@ -936,7 +936,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       const logger = require('../lib/logger').logger;
       const infoSpy = spyOn(logger, 'info');
 
-      const clientLogEvents = [
+      const logClientEvents = [
         {
           name: 'connectionPoolReady',
           keys: ['address'],
@@ -946,7 +946,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
 
       const adapter = new MongoStorageAdapter({
         uri: databaseURI,
-        mongoOptions: { clientLogEvents },
+        mongoOptions: { logClientEvents },
       });
 
       await adapter.connect();
@@ -969,7 +969,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       const logger = require('../lib/logger').logger;
       const warnSpy = spyOn(logger, 'warn');
 
-      const clientLogEvents = [
+      const logClientEvents = [
         {
           name: 'customEvent',
           logLevel: 'warn',
@@ -978,7 +978,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
 
       const adapter = new MongoStorageAdapter({
         uri: databaseURI,
-        mongoOptions: { clientLogEvents },
+        mongoOptions: { logClientEvents },
       });
 
       await adapter.connect();
@@ -1002,7 +1002,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       const logger = require('../lib/logger').logger;
       const infoSpy = spyOn(logger, 'info');
 
-      const clientLogEvents = [
+      const logClientEvents = [
         {
           name: 'testEvent',
           keys: ['nonexistent.nested.key', 'another.missing'],
@@ -1012,7 +1012,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
 
       const adapter = new MongoStorageAdapter({
         uri: databaseURI,
-        mongoOptions: { clientLogEvents },
+        mongoOptions: { logClientEvents },
       });
 
       await adapter.connect();
@@ -1035,7 +1035,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       const logger = require('../lib/logger').logger;
       const warnSpy = spyOn(logger, 'warn');
 
-      const clientLogEvents = [
+      const logClientEvents = [
         {
           name: 'circularEvent',
           logLevel: 'info',
@@ -1044,7 +1044,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
 
       const adapter = new MongoStorageAdapter({
         uri: databaseURI,
-        mongoOptions: { clientLogEvents },
+        mongoOptions: { logClientEvents },
       });
 
       await adapter.connect();

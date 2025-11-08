@@ -1,16 +1,16 @@
 // @flow
+import { format as formatUrl, parse as parseUrl } from '../../../vendor/mongodbUrl';
+import type { QueryOptions, QueryType, SchemaType, StorageClass } from '../StorageAdapter';
+import { StorageAdapter } from '../StorageAdapter';
 import MongoCollection from './MongoCollection';
 import MongoSchemaCollection from './MongoSchemaCollection';
-import { StorageAdapter } from '../StorageAdapter';
-import type { SchemaType, QueryType, StorageClass, QueryOptions } from '../StorageAdapter';
-import { parse as parseUrl, format as formatUrl } from '../../../vendor/mongodbUrl';
 import {
-  parseObjectToMongoObjectForCreate,
   mongoObjectToParseObject,
+  parseObjectToMongoObjectForCreate,
   transformKey,
-  transformWhere,
-  transformUpdate,
   transformPointerString,
+  transformUpdate,
+  transformWhere,
 } from './MongoTransform';
 // @flow-disable-next
 import Parse from 'parse/node';
@@ -132,7 +132,7 @@ export class MongoStorageAdapter implements StorageAdapter {
   _mongoOptions: Object;
   _onchange: any;
   _stream: any;
-  _clientLogEvents: ?Array<any>;
+  _logClientEvents: ?Array<any>;
   // Public
   connectionPromise: ?Promise<any>;
   database: any;
@@ -155,7 +155,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     this.enableSchemaHooks = !!mongoOptions.enableSchemaHooks;
     this.schemaCacheTtl = mongoOptions.schemaCacheTtl;
     this.disableIndexFieldValidation = !!mongoOptions.disableIndexFieldValidation;
-    this._clientLogEvents = mongoOptions.clientLogEvents;
+    this._logClientEvents = mongoOptions.logClientEvents;
     // Remove Parse Server-specific options that should not be passed to MongoDB client
     // Note: We only delete from this._mongoOptions, not from the original mongoOptions object,
     // because other components (like DatabaseController) need access to these options
@@ -164,7 +164,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       'schemaCacheTtl',
       'maxTimeMS',
       'disableIndexFieldValidation',
-      'clientLogEvents',
+      'logClientEvents',
       'createIndexUserUsername',
       'createIndexUserUsernameCaseInsensitive',
       'createIndexUserEmail',
@@ -208,8 +208,8 @@ export class MongoStorageAdapter implements StorageAdapter {
         });
 
         // Set up client event logging if configured
-        if (this._clientLogEvents && Array.isArray(this._clientLogEvents)) {
-          this._clientLogEvents.forEach(eventConfig => {
+        if (this._logClientEvents && Array.isArray(this._logClientEvents)) {
+          this._logClientEvents.forEach(eventConfig => {
             client.on(eventConfig.name, event => {
               try {
                 let logData = {};

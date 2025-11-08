@@ -1117,12 +1117,6 @@ module.exports.DatabaseOptions = {
       'The MongoDB driver option to specify the amount of time in milliseconds to wait for a connection attempt to finish before trying the next address when using the autoSelectFamily option. If set to a positive integer less than 10, the value 10 is used instead.',
     action: parsers.numberParser('autoSelectFamilyAttemptTimeout'),
   },
-  clientLogEvents: {
-    env: 'PARSE_SERVER_DATABASE_CLIENT_LOG_EVENTS',
-    help:
-      "An array of MongoDB client event configurations to enable logging of specific events. Each configuration object should contain:<br><ul><li>`name` (the event name, e.g., 'topologyDescriptionChanged', 'serverDescriptionChanged', 'connectionPoolCleared', 'connectionPoolReady')</li><li>`keys` (optional array of dot-notation paths to extract specific data from the event object; if not provided or empty, the entire event object will be logged)</li><li>`logLevel` (the log level to use for this event: 'error', 'warn', 'info', 'debug', etc.).</li></ul>",
-    action: parsers.arrayParser,
-  },
   compressors: {
     env: 'PARSE_SERVER_DATABASE_COMPRESSORS',
     help:
@@ -1224,6 +1218,12 @@ module.exports.DatabaseOptions = {
     help:
       'The MongoDB driver option to specify the size (in milliseconds) of the latency window for selecting among multiple suitable MongoDB instances.',
     action: parsers.numberParser('localThresholdMS'),
+  },
+  logClientEvents: {
+    env: 'PARSE_SERVER_DATABASE_LOG_CLIENT_EVENTS',
+    help:
+      "An array of MongoDB client event configurations to enable logging of specific events. Each configuration object should contain:<br><ul><li>`name` (the event name, e.g., 'topologyDescriptionChanged', 'serverDescriptionChanged', 'connectionPoolCleared', 'connectionPoolReady')</li><li>`keys` (optional array of dot-notation paths to extract specific data from the event object; if not provided or empty, the entire event object will be logged)</li><li>`logLevel` (the log level to use for this event: 'error', 'warn', 'info', 'debug', etc.).</li></ul>",
+    action: parsers.arrayParser,
   },
   maxConnecting: {
     env: 'PARSE_SERVER_DATABASE_MAX_CONNECTING',
