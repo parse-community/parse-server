@@ -70,13 +70,19 @@ jobs:
           cat baseline.json
         continue-on-error: true
 
+      - name: Save baseline results to temp location
+        run: |
+          mkdir -p /tmp/benchmark-results
+          cp baseline.json /tmp/benchmark-results/ || echo '[]' > /tmp/benchmark-results/baseline.json
+          cp baseline-output.txt /tmp/benchmark-results/ || echo 'No baseline output' > /tmp/benchmark-results/baseline-output.txt
+
       - name: Upload baseline results
         uses: actions/upload-artifact@v4
         with:
           name: baseline-benchmark
           path: |
-            baseline.json
-            baseline-output.txt
+            /tmp/benchmark-results/baseline.json
+            /tmp/benchmark-results/baseline-output.txt
           retention-days: 7
 
       - name: Checkout PR branch
@@ -85,6 +91,11 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
           clean: true
+
+      - name: Restore baseline results
+        run: |
+          cp /tmp/benchmark-results/baseline.json ./ || echo '[]' > baseline.json
+          cp /tmp/benchmark-results/baseline-output.txt ./ || echo 'No baseline output' > baseline-output.txt
 
       - name: Setup Node.js (PR)
         uses: actions/setup-node@v4
