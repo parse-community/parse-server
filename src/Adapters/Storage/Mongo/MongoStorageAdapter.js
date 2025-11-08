@@ -16,7 +16,7 @@ import {
 import Parse from 'parse/node';
 // @flow-disable-next
 import _ from 'lodash';
-import defaults from '../../../defaults';
+import defaults, { ParseServerDatabaseOptions } from '../../../defaults';
 import logger from '../../../logger';
 import Utils from '../../../Utils';
 
@@ -147,7 +147,6 @@ export class MongoStorageAdapter implements StorageAdapter {
   constructor({ uri = defaults.DefaultMongoURI, collectionPrefix = '', mongoOptions = {} }: any) {
     this._uri = uri;
     this._collectionPrefix = collectionPrefix;
-    this._mongoOptions = { ...mongoOptions };
     this._onchange = () => {};
 
     // MaxTimeMS is not a global MongoDB client option, it is applied per operation.
@@ -158,24 +157,12 @@ export class MongoStorageAdapter implements StorageAdapter {
     this.disableIndexFieldValidation = !!mongoOptions.disableIndexFieldValidation;
     this._logClientEvents = mongoOptions.logClientEvents;
 
-    // Remove Parse Server-specific options that should not be passed to MongoDB client
-    // Note: We only delete from this._mongoOptions, not from the original mongoOptions object,
-    // because other components (like DatabaseController) need access to these options
-    for (const key of [
-      'allowPublicExplain',
-      'enableSchemaHooks',
-      'schemaCacheTtl',
-      'maxTimeMS',
-      'disableIndexFieldValidation',
-      'logClientEvents',
-      'createIndexUserUsername',
-      'createIndexUserUsernameCaseInsensitive',
-      'createIndexUserEmail',
-      'createIndexUserEmailCaseInsensitive',
-      'createIndexUserEmailVerifyToken',
-      'createIndexUserPasswordResetToken',
-      'createIndexRoleName',
-    ]) {
+    // Create a copy of mongoOptions and remove Parse Server-specific options that should not
+    // be passed to MongoDB client. Note: We only delete from this._mongoOptions, not from the
+    // original mongoOptions object, because other components (like DatabaseController) need
+    // access to these options.
+    this._mongoOptions = { ...mongoOptions };
+    for (const key of ParseServerDatabaseOptions) {
       delete this._mongoOptions[key];
     }
   }
