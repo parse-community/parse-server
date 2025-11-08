@@ -3835,6 +3835,7 @@ describe('schemas', () => {
         .then(done.fail)
         .catch(error => {
           expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
+          expect(error.message).toEqual('A duplicate value for a field with unique values was provided Duplicate index: code_1 on collection test_UniqueIndexClass in db parseServerMongoAdapterTestDatabase')
           done();
         });
     });
