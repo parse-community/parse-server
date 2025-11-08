@@ -228,9 +228,20 @@ export interface FileUploadOptions {
 }
 export interface DatabaseOptions {
     // Parse Server custom options
-    enableSchemaHooks?: boolean;
-    schemaCacheTtl?: number;
     allowPublicExplain?: boolean;
+    createIndexRoleName?: boolean;
+    createIndexUserEmail?: boolean;
+    createIndexUserEmailCaseInsensitive?: boolean;
+    createIndexUserEmailVerifyToken?: boolean;
+    createIndexUserPasswordResetToken?: boolean;
+    createIndexUserUsername?: boolean;
+    createIndexUserUsernameCaseInsensitive?: boolean;
+    disableIndexFieldValidation?: boolean;
+    enableSchemaHooks?: boolean;
+    logClientEvents?: any[];
+    // maxTimeMS is a MongoDB option but Parse Server applies it per-operation, not as a global client option
+    maxTimeMS?: number;
+    schemaCacheTtl?: number;
 
     // MongoDB driver options
     appName?: string;
@@ -250,7 +261,6 @@ export interface DatabaseOptions {
     maxIdleTimeMS?: number;
     maxPoolSize?: number;
     maxStalenessSeconds?: number;
-    maxTimeMS?: number;
     minPoolSize?: number;
     proxyHost?: string;
     proxyPassword?: string;
