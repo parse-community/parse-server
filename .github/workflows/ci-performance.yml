@@ -15,15 +15,16 @@ env:
   NODE_VERSION: 24.11.0
   MONGODB_VERSION: 8.0.4
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   performance-check:
     name: Benchmarks
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    permissions:
-      contents: read
-      pull-requests: write
-      issues: write
 
     steps:
       - name: Checkout base branch
@@ -203,71 +204,42 @@ jobs:
           path: comparison.md
           retention-days: 30
 
+      - name: Prepare comment body
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "## Performance Impact Report" > comment.md
+          echo "" >> comment.md
+          if [ -f comparison.md ]; then
+            cat comparison.md >> comment.md
+          else
+            echo "⚠️ Could not generate performance comparison." >> comment.md
+          fi
+          echo "" >> comment.md
+          echo "<details>" >> comment.md
+          echo "<summary>📊 View detailed results</summary>" >> comment.md
+          echo "" >> comment.md
+          echo "### Baseline Results" >> comment.md
+          echo "\`\`\`json" >> comment.md
+          cat baseline.json >> comment.md
+          echo "\`\`\`" >> comment.md
+          echo "" >> comment.md
+          echo "### PR Results" >> comment.md
+          echo "\`\`\`json" >> comment.md
+          cat pr.json >> comment.md
+          echo "\`\`\`" >> comment.md
+          echo "" >> comment.md
+          echo "</details>" >> comment.md
+          echo "" >> comment.md
+          echo "*Benchmarks ran with ${BENCHMARK_ITERATIONS:-100} iterations per test on Node.js ${{ env.NODE_VERSION }}*" >> comment.md
+
       - name: Comment PR with results
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: thollander/actions-comment-pull-request@v2
         continue-on-error: true
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const fs = require('fs');
-
-            let comparisonMd = '';
-            try {
-              comparisonMd = fs.readFileSync('comparison.md', 'utf8');
-            } catch (e) {
-              comparisonMd = '⚠️ Could not generate performance comparison.';
-            }
-
-            const body = `## Performance Impact Report
-
-            ${comparisonMd}
-
-            <details>
-            <summary>📊 View detailed results</summary>
-
-            ### Baseline Results
-            \`\`\`json
-            ${fs.readFileSync('baseline.json', 'utf8')}
-            \`\`\`
-
-            ### PR Results
-            \`\`\`json
-            ${fs.readFileSync('pr.json', 'utf8')}
-            \`\`\`
-
-            </details>
-
-            *Benchmarks ran with ${process.env.BENCHMARK_ITERATIONS || '100'} iterations per test on Node.js ${process.env.NODE_VERSION}*
-            `;
-
-            // Find existing performance comment
-            const comments = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-
-            const existingComment = comments.data.find(comment =>
-              comment.user.login === 'github-actions[bot]' &&
-              comment.body.includes('Performance Impact Report')
-            );
-
-            if (existingComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existingComment.id,
-                body: body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: body,
-              });
-            }
+          filePath: comment.md
+          comment_tag: performance-benchmark
+          mode: recreate
 
       - name: Generate job summary
         if: always()
