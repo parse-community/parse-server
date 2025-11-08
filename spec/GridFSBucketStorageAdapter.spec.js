@@ -25,9 +25,11 @@ describe_only_db('mongo')('GridFSBucket', () => {
     const gfsAdapter = new GridFSBucketAdapter(databaseURI, {
       retryWrites: true,
       // these are not supported by the mongo client
+      allowPublicExplain: true,
       enableSchemaHooks: true,
       schemaCacheTtl: 5000,
       maxTimeMS: 30000,
+      logClientEvents: [{ name: 'commandStarted' }],
     });
 
     const db = await gfsAdapter._connect();
