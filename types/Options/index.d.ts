@@ -230,7 +230,8 @@ export interface DatabaseOptions {
     // Parse Server custom options
     enableSchemaHooks?: boolean;
     schemaCacheTtl?: number;
-    
+    allowPublicExplain?: boolean;
+
     // MongoDB driver options
     appName?: string;
     authMechanism?: string;
@@ -238,7 +239,6 @@ export interface DatabaseOptions {
     authSource?: string;
     autoSelectFamily?: boolean;
     autoSelectFamilyAttemptTimeout?: number;
-    allowPublicExplain?: boolean;
     compressors?: string[] | string;
     connectTimeoutMS?: number;
     directConnection?: boolean;
