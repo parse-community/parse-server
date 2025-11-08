@@ -754,6 +754,36 @@ Logs are also viewable in Parse Dashboard.
 
 **Want new line delimited JSON error logs (for consumption by CloudWatch, Google Cloud Logging, etc)?** Pass the `JSON_LOGS` environment variable when starting `parse-server`. Usage :-  `JSON_LOGS='1' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
 
+### MongoDB Client Event Logging
+
+Monitor MongoDB driver behavior by logging specific client events. This is useful for debugging connection issues, tracking topology changes, and monitoring connection pool health.
+
+```js
+const server = new ParseServer({
+  databaseOptions: {
+    logClientEvents: [
+      {
+        name: 'serverDescriptionChanged',
+        keys: ['address', 'previousDescription.type', 'newDescription.type'],
+        logLevel: 'warn'
+      },
+      {
+        name: 'connectionPoolCleared',
+        keys: ['address', 'serviceId'],
+        logLevel: 'error'
+      }
+    ]
+  }
+});
+```
+
+Each event configuration requires:
+- `name` - The MongoDB driver event (e.g., `topologyDescriptionChanged`, `connectionPoolReady`)
+- `keys` - (Optional) Dot-notation paths to extract specific data; omit to log the entire event
+- `logLevel` - Log level: `error`, `warn`, `info`, or `debug`
+
+See [MongoDB driver events documentation](https://www.mongodb.com/docs/drivers/node/current/fundamentals/monitoring/) for available events.
+
 # Deprecations
 
 See the [Deprecation Plan](https://github.com/parse-community/parse-server/blob/master/DEPRECATIONS.md) for an overview of deprecations and planned breaking changes.
