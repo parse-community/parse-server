@@ -18,6 +18,7 @@ import Parse from 'parse/node';
 import _ from 'lodash';
 import defaults from '../../../defaults';
 import logger from '../../../logger';
+import Utils from '../../../Utils';
 
 // @flow-disable-next
 const mongodb = require('mongodb');
@@ -211,35 +212,22 @@ export class MongoStorageAdapter implements StorageAdapter {
         if (this._logClientEvents && Array.isArray(this._logClientEvents)) {
           this._logClientEvents.forEach(eventConfig => {
             client.on(eventConfig.name, event => {
-              try {
-                let logData = {};
-                if (!eventConfig.keys || eventConfig.keys.length === 0) {
-                  logData = event;
-                } else {
-                  eventConfig.keys.forEach(keyPath => {
-                    logData[keyPath] = _.get(event, keyPath);
-                  });
-                }
-
-                // Validate log level exists, fallback to 'info'
-                const logLevel = typeof logger[eventConfig.logLevel] === 'function' ? eventConfig.logLevel : 'info';
-
-                // Safe JSON serialization with Map/Set support
-                const logMessage = `MongoDB client event ${eventConfig.name}: ${JSON.stringify(logData, (key, value) => {
-                  if (value instanceof Map) {
-                    return Object.fromEntries(value);
-                  }
-                  if (value instanceof Set) {
-                    return Array.from(value);
-                  }
-                  return value;
-                })}`;
-
-                logger[logLevel](logMessage);
-              } catch (error) {
-                // Fallback if serialization completely fails
-                logger.warn(`MongoDB client event ${eventConfig.name} logged with error: ${error.message}`);
+              let logData = {};
+              if (!eventConfig.keys || eventConfig.keys.length === 0) {
+                logData = event;
+              } else {
+                eventConfig.keys.forEach(keyPath => {
+                  logData[keyPath] = _.get(event, keyPath);
+                });
               }
+
+              // Validate log level exists, fallback to 'info'
+              const logLevel = typeof logger[eventConfig.logLevel] === 'function' ? eventConfig.logLevel : 'info';
+
+              // Safe JSON serialization with Map/Set and circular reference support
+              const logMessage = `MongoDB client event ${eventConfig.name}: ${JSON.stringify(logData, Utils.getCircularReplacer())}`;
+
+              logger[logLevel](logMessage);
             });
           });
         }

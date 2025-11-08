@@ -1031,9 +1031,9 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       await adapter.handleShutdown();
     });
 
-    it('should handle circular references with fallback warning', async () => {
+    it('should handle circular references gracefully', async () => {
       const logger = require('../lib/logger').logger;
-      const warnSpy = spyOn(logger, 'warn');
+      const infoSpy = spyOn(logger, 'info');
 
       const logClientEvents = [
         {
@@ -1055,9 +1055,9 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
 
       adapter.client.emit('circularEvent', mockEvent);
 
-      // Should fallback to warning when JSON.stringify fails
-      expect(warnSpy).toHaveBeenCalledWith(
-        jasmine.stringMatching(/MongoDB client event circularEvent logged with error:/)
+      // Should handle circular reference with [Circular] marker
+      expect(infoSpy).toHaveBeenCalledWith(
+        jasmine.stringMatching(/MongoDB client event circularEvent:.*\[Circular\]/)
       );
 
       await adapter.handleShutdown();
