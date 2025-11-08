@@ -1,3 +1,10 @@
+# [8.5.0-alpha.4](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.3...8.5.0-alpha.4) (2025-11-08)
+
+
+### Features
+
+* Add MongoDB client event logging via database option `logClientEvents` ([#9914](https://github.com/parse-community/parse-server/issues/9914)) ([b760733](https://github.com/parse-community/parse-server/commit/b760733b98bcfc9c09ac9780066602e1fda108fe))
+
 # [8.5.0-alpha.3](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.2...8.5.0-alpha.3) (2025-11-07)
 
 

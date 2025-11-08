@@ -1083,6 +1083,59 @@ module.exports.FileUploadOptions = {
     default: ['^(?![xXsS]?[hH][tT][mM][lL]?$)'],
   },
 };
+/* The available log levels for Parse Server logging. Valid values are:<br>- `'error'` - Error level (highest priority)<br>- `'warn'` - Warning level<br>- `'info'` - Info level (default)<br>- `'verbose'` - Verbose level<br>- `'debug'` - Debug level<br>- `'silly'` - Silly level (lowest priority) */
+module.exports.LogLevel = {
+  debug: {
+    env: 'PARSE_SERVER_LOG_LEVEL_DEBUG',
+    help: 'Debug level',
+    required: true,
+  },
+  error: {
+    env: 'PARSE_SERVER_LOG_LEVEL_ERROR',
+    help: 'Error level - highest priority',
+    required: true,
+  },
+  info: {
+    env: 'PARSE_SERVER_LOG_LEVEL_INFO',
+    help: 'Info level - default',
+    required: true,
+  },
+  silly: {
+    env: 'PARSE_SERVER_LOG_LEVEL_SILLY',
+    help: 'Silly level - lowest priority',
+    required: true,
+  },
+  verbose: {
+    env: 'PARSE_SERVER_LOG_LEVEL_VERBOSE',
+    help: 'Verbose level',
+    required: true,
+  },
+  warn: {
+    env: 'PARSE_SERVER_LOG_LEVEL_WARN',
+    help: 'Warning level',
+    required: true,
+  },
+};
+module.exports.LogClientEvent = {
+  keys: {
+    env: 'PARSE_SERVER_DATABASE_LOG_CLIENT_EVENTS_KEYS',
+    help:
+      'Optional array of dot-notation paths to extract specific data from the event object. If not provided or empty, the entire event object will be logged.',
+    action: parsers.arrayParser,
+  },
+  logLevel: {
+    env: 'PARSE_SERVER_DATABASE_LOG_CLIENT_EVENTS_LOG_LEVEL',
+    help:
+      "The log level to use for this event. See [LogLevel](LogLevel.html) for available values. Defaults to `'info'`.",
+    default: 'info',
+  },
+  name: {
+    env: 'PARSE_SERVER_DATABASE_LOG_CLIENT_EVENTS_NAME',
+    help:
+      'The MongoDB driver event name to listen for. See the [MongoDB driver events documentation](https://www.mongodb.com/docs/drivers/node/current/fundamentals/monitoring/) for available events.',
+    required: true,
+  },
+};
 module.exports.DatabaseOptions = {
   allowPublicExplain: {
     env: 'PARSE_SERVER_DATABASE_ALLOW_PUBLIC_EXPLAIN',
@@ -1225,6 +1278,12 @@ module.exports.DatabaseOptions = {
     help:
       'The MongoDB driver option to specify the size (in milliseconds) of the latency window for selecting among multiple suitable MongoDB instances.',
     action: parsers.numberParser('localThresholdMS'),
+  },
+  logClientEvents: {
+    env: 'PARSE_SERVER_DATABASE_LOG_CLIENT_EVENTS',
+    help: 'An array of MongoDB client event configurations to enable logging of specific events.',
+    action: parsers.arrayParser,
+    type: 'LogClientEvent[]',
   },
   maxConnecting: {
     env: 'PARSE_SERVER_DATABASE_MAX_CONNECTING',
@@ -1410,30 +1469,32 @@ module.exports.AuthAdapter = {
 module.exports.LogLevels = {
   cloudFunctionError: {
     env: 'PARSE_SERVER_LOG_LEVELS_CLOUD_FUNCTION_ERROR',
-    help: 'Log level used by the Cloud Code Functions on error. Default is `error`.',
+    help:
+      'Log level used by the Cloud Code Functions on error. Default is `error`. See [LogLevel](LogLevel.html) for available values.',
     default: 'error',
   },
   cloudFunctionSuccess: {
     env: 'PARSE_SERVER_LOG_LEVELS_CLOUD_FUNCTION_SUCCESS',
-    help: 'Log level used by the Cloud Code Functions on success. Default is `info`.',
+    help:
+      'Log level used by the Cloud Code Functions on success. Default is `info`. See [LogLevel](LogLevel.html) for available values.',
     default: 'info',
   },
   triggerAfter: {
     env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_AFTER',
     help:
-      'Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterFind`, `afterLogout`. Default is `info`.',
+      'Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterFind`, `afterLogout`. Default is `info`. See [LogLevel](LogLevel.html) for available values.',
     default: 'info',
   },
   triggerBeforeError: {
     env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_BEFORE_ERROR',
     help:
-      'Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on error. Default is `error`.',
+      'Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on error. Default is `error`. See [LogLevel](LogLevel.html) for available values.',
     default: 'error',
   },
   triggerBeforeSuccess: {
     env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_BEFORE_SUCCESS',
     help:
-      'Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on success. Default is `info`.',
+      'Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on success. Default is `info`. See [LogLevel](LogLevel.html) for available values.',
     default: 'info',
   },
 };

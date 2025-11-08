@@ -1,16 +1,16 @@
 // @flow
+import { format as formatUrl, parse as parseUrl } from '../../../vendor/mongodbUrl';
+import type { QueryOptions, QueryType, SchemaType, StorageClass } from '../StorageAdapter';
+import { StorageAdapter } from '../StorageAdapter';
 import MongoCollection from './MongoCollection';
 import MongoSchemaCollection from './MongoSchemaCollection';
-import { StorageAdapter } from '../StorageAdapter';
-import type { SchemaType, QueryType, StorageClass, QueryOptions } from '../StorageAdapter';
-import { parse as parseUrl, format as formatUrl } from '../../../vendor/mongodbUrl';
 import {
-  parseObjectToMongoObjectForCreate,
   mongoObjectToParseObject,
+  parseObjectToMongoObjectForCreate,
   transformKey,
-  transformWhere,
-  transformUpdate,
   transformPointerString,
+  transformUpdate,
+  transformWhere,
 } from './MongoTransform';
 // @flow-disable-next
 import Parse from 'parse/node';
@@ -18,6 +18,7 @@ import Parse from 'parse/node';
 import _ from 'lodash';
 import defaults from '../../../defaults';
 import logger from '../../../logger';
+import Utils from '../../../Utils';
 
 // @flow-disable-next
 const mongodb = require('mongodb');
@@ -132,6 +133,7 @@ export class MongoStorageAdapter implements StorageAdapter {
   _mongoOptions: Object;
   _onchange: any;
   _stream: any;
+  _logClientEvents: ?Array<any>;
   // Public
   connectionPromise: ?Promise<any>;
   database: any;
@@ -154,16 +156,18 @@ export class MongoStorageAdapter implements StorageAdapter {
     this.enableSchemaHooks = !!mongoOptions.enableSchemaHooks;
     this.schemaCacheTtl = mongoOptions.schemaCacheTtl;
     this.disableIndexFieldValidation = !!mongoOptions.disableIndexFieldValidation;
+    this._logClientEvents = mongoOptions.logClientEvents;
 
     // Remove Parse Server-specific options that should not be passed to MongoDB client
     // Note: We only delete from this._mongoOptions, not from the original mongoOptions object,
     // because other components (like DatabaseController) need access to these options
     for (const key of [
+      'allowPublicExplain',
       'enableSchemaHooks',
       'schemaCacheTtl',
       'maxTimeMS',
       'disableIndexFieldValidation',
-      'allowPublicExplain',
+      'logClientEvents',
       'createIndexUserUsername',
       'createIndexUserUsernameCaseInsensitive',
       'createIndexUserEmail',
@@ -205,6 +209,31 @@ export class MongoStorageAdapter implements StorageAdapter {
         client.on('close', () => {
           delete this.connectionPromise;
         });
+
+        // Set up client event logging if configured
+        if (this._logClientEvents && Array.isArray(this._logClientEvents)) {
+          this._logClientEvents.forEach(eventConfig => {
+            client.on(eventConfig.name, event => {
+              let logData = {};
+              if (!eventConfig.keys || eventConfig.keys.length === 0) {
+                logData = event;
+              } else {
+                eventConfig.keys.forEach(keyPath => {
+                  logData[keyPath] = _.get(event, keyPath);
+                });
+              }
+
+              // Validate log level exists, fallback to 'info'
+              const logLevel = typeof logger[eventConfig.logLevel] === 'function' ? eventConfig.logLevel : 'info';
+
+              // Safe JSON serialization with Map/Set and circular reference support
+              const logMessage = `MongoDB client event ${eventConfig.name}: ${JSON.stringify(logData, Utils.getCircularReplacer())}`;
+
+              logger[logLevel](logMessage);
+            });
+          });
+        }
+
         this.client = client;
         this.database = database;
       })
