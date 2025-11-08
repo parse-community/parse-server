@@ -132,6 +132,8 @@ export class Config {
     databaseOptions,
     extendSessionOnUse,
     allowClientClassCreation,
+    maxQueryComplexity,
+    maxGraphQLQueryComplexity,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -173,6 +175,7 @@ export class Config {
     this.validateDatabaseOptions(databaseOptions);
     this.validateCustomPages(customPages);
     this.validateAllowClientClassCreation(allowClientClassCreation);
+    this.validateQueryComplexityOptions(maxQueryComplexity, maxGraphQLQueryComplexity);
   }
 
   static validateCustomPages(customPages) {
@@ -227,6 +230,17 @@ export class Config {
   static validateAllowClientClassCreation(allowClientClassCreation) {
     if (typeof allowClientClassCreation !== 'boolean') {
       throw 'Parse Server option allowClientClassCreation must be a boolean.';
+    }
+  }
+
+  static validateQueryComplexityOptions(maxQueryComplexity, maxGraphQLQueryComplexity) {
+    if (maxQueryComplexity && maxGraphQLQueryComplexity) {
+      if (maxQueryComplexity.depth >= maxGraphQLQueryComplexity.depth) {
+        throw new Error('maxQueryComplexity.depth must be less than maxGraphQLQueryComplexity.depth');
+      }
+      if (maxQueryComplexity.fields >= maxGraphQLQueryComplexity.fields) {
+        throw new Error('maxQueryComplexity.fields must be less than maxGraphQLQueryComplexity.fields');
+      }
     }
   }
 

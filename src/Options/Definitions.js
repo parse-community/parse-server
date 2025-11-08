@@ -396,6 +396,12 @@ module.exports.ParseServerOptions = {
       '(Optional) The duration in seconds for which the current `masterKey` is being used before it is requested again if `masterKey` is set to a function. If `masterKey` is not set to a function, this option has no effect. Default is `0`, which means the master key is requested by invoking the  `masterKey` function every time the master key is used internally by Parse Server.',
     action: parsers.numberParser('masterKeyTtl'),
   },
+  maxGraphQLQueryComplexity: {
+    env: 'PARSE_SERVER_MAX_GRAPH_QLQUERY_COMPLEXITY',
+    help:
+      'Maximum query complexity for GraphQL queries. Controls depth and number of operations.* Format: { depth: number, fields: number }* - depth: Maximum depth of nested field selections* - fields: Maximum number of operations (queries/mutations) in a single request* If both maxQueryComplexity and maxGraphQLQueryComplexity are provided, maxQueryComplexity values* must be lower than maxGraphQLQueryComplexity values to avoid validation conflicts.',
+    action: parsers.objectParser,
+  },
   maxLimit: {
     env: 'PARSE_SERVER_MAX_LIMIT',
     help: 'Max value for limit option on queries, defaults to unlimited',
@@ -406,6 +412,12 @@ module.exports.ParseServerOptions = {
     help:
       "Maximum number of logs to keep. If not set, no logs will be removed. This can be a number of files or number of days. If using days, add 'd' as the suffix. (default: null)",
     action: parsers.numberOrStringParser('maxLogFiles'),
+  },
+  maxQueryComplexity: {
+    env: 'PARSE_SERVER_MAX_QUERY_COMPLEXITY',
+    help:
+      'Maximum query complexity for REST API includes. Controls depth and number of include fields.* Format: { depth: number, fields: number }* - depth: Maximum depth of nested includes (e.g., foo.bar.baz = depth 3)* - fields: Maximum number of include fields (e.g., foo,bar,baz = 3 fields)* If both maxQueryComplexity and maxGraphQLQueryComplexity are provided, maxQueryComplexity values* must be lower than maxGraphQLQueryComplexity values to avoid validation conflicts.',
+    action: parsers.objectParser,
   },
   maxUploadSize: {
     env: 'PARSE_SERVER_MAX_UPLOAD_SIZE',

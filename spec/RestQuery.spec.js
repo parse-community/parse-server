@@ -529,3 +529,651 @@ describe('RestQuery.each', () => {
     ]);
   });
 });
+
+describe('REST Query Complexity', () => {
+  beforeEach(async () => {
+    await reconfigureServer();
+  });
+
+  describe('maxQueryComplexity.fields', () => {
+    it('should allow queries within fields limit', async () => {
+      await reconfigureServer({
+        maxQueryComplexity: {
+          fields: 5,
+        },
+      });
+
+      // Create test objects with relationships
+      const user = new Parse.User();
+      user.setUsername('testuser');
+      user.setPassword('password');
+      await user.signUp();
+
+      const post = new Parse.Object('Post');
+      post.set('title', 'Test Post');
+      post.set('author', user);
+      await post.save();
+
+      const comment = new Parse.Object('Comment');
+      comment.set('text', 'Test Comment');
+      comment.set('post', post);
+      await comment.save();
+
+      // Query with include that's within limit (3 fields: post -> author -> (2 levels))
+      const query = new Parse.Query('Comment');
+      query.include('post');
+      query.include('post.author');
+      const results = await query.find();
+
+      expect(results.length).toBeGreaterThan(0);
+      expect(results[0].get('post')).toBeDefined();
+    });
+
+    it('should reject queries exceeding fields limit', async () => {
+      await reconfigureServer({
+        maxQueryComplexity: {
+          fields: 2,
+        },
+      });
+
+      // Create test objects with relationships
+      const user = new Parse.User();
+      user.setUsername('testuser2');
+      user.setPassword('password');
+      await user.signUp();
+
+      const post = new Parse.Object('Post');
+      post.set('title', 'Test Post');
+      post.set('author', user);
+      await post.save();
+
+      const comment = new Parse.Object('Comment');
+      comment.set('text', 'Test Comment');
+      comment.set('post', post);
+      await comment.save();
+
+      // Query with include that exceeds limit (3 fields)
+      const query = new Parse.Query('Comment');
+      query.include('post');
+      query.include('post.author');
+
+      await expectAsync(query.find()).toBeRejectedWith(
+        jasmine.objectContaining({
+          code: Parse.Error.INVALID_QUERY,
+        })
+      );
+    });
+
+    it('should allow queries with master key even when exceeding fields limit', async () => {
+      await reconfigureServer({
+        maxQueryComplexity: {
+          fields: 2,
+        },
+      });
+
+      // Create test objects with relationships
+      const user = new Parse.User();
+      user.setUsername('testuser3');
+      user.setPassword('password');
+      await user.signUp(null, { useMasterKey: true });
+
+      const post = new Parse.Object('Post');
+      post.set('title', 'Test Post');
+      post.set('author', user);
+      await post.save(null, { useMasterKey: true });
+
+      const comment = new Parse.Object('Comment');
+      comment.set('text', 'Test Comment');
+      comment.set('post', post);
+      await comment.save(null, { useMasterKey: true });
+
+      // Query with include that exceeds limit but using master key
+      const query = new Parse.Query('Comment');
+      query.include('post');
+      query.include('post.author');
+      const results = await query.find({ useMasterKey: true });
+
+      expect(results.length).toBeGreaterThan(0);
+    });
+
+    it('should allow queries with maintenance key even when exceeding fields limit', async () => {
+      await reconfigureServer({
+        maintenanceKey: 'maintenanceKey456',
+        maxQueryComplexity: {
+          fields: 2,
+        },
+      });
+
+      // Create test objects with relationships using Parse SDK
+      const user = new Parse.User();
+      user.setUsername('testuser4');
+      user.setPassword('password');
+      await user.signUp();
+
+      const post = new Parse.Object('Post');
+      post.set('title', 'Test Post');
+      post.set('author', user);
+      await post.save();
+
+      const comment = new Parse.Object('Comment');
+      comment.set('text', 'Test Comment');
+      comment.set('post', post);
+      await comment.save();
+
+      // Query with include that exceeds limit but using maintenance key via REST API
+      const headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Maintenance-Key': 'maintenanceKey456',
+      };
+      const response = await request({
+        headers,
+        url: `http://localhost:8378/1/classes/Comment?include=post,post.author`,
+        json: true,
+      });
+
+      expect(response.data.results.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('maxQueryComplexity.depth', () => {
+    it('should allow queries within depth limit', async () => {
+      await reconfigureServer({
+        maxQueryComplexity: {
+          depth: 2,
+        },
+      });
+
+      // Create test objects with relationships
+      const user = new Parse.User();
+      user.setUsername('testuser5');
+      user.setPassword('password');
+      await user.signUp();
+
+      const post = new Parse.Object('Post');
+      post.set('title', 'Test Post');
+      post.set('author', user);
+      await post.save();
+
+      const comment = new Parse.Object('Comment');
+      comment.set('text', 'Test Comment');
+      comment.set('post', post);
+      await comment.save();
+
+      // Query with include depth of 2 (post.author)
+      const query = new Parse.Query('Comment');
+      query.include('post.author');
+      const results = await query.find();
+
+      expect(results.length).toBeGreaterThan(0);
+    });
+
+    it('should reject queries exceeding depth limit', async () => {
+      await reconfigureServer({
+        maxQueryComplexity: {
+          depth: 1,
+        },
+      });
+
+      // Create test objects with relationships
+      const user = new Parse.User();
+      user.setUsername('testuser6');
+      user.setPassword('password');
+      await user.signUp();
+
+      const post = new Parse.Object('Post');
+      post.set('title', 'Test Post');
+      post.set('author', user);
+      await post.save();
+
+      const comment = new Parse.Object('Comment');
+      comment.set('text', 'Test Comment');
+      comment.set('post', post);
+      await comment.save();
+
+      // Query with include depth of 2 (exceeds limit of 1)
+      const query = new Parse.Query('Comment');
+      query.include('post.author');
+
+      await expectAsync(query.find()).toBeRejectedWith(
+        jasmine.objectContaining({
+          code: Parse.Error.INVALID_QUERY,
+        })
+      );
+    });
+
+    it('should calculate depth correctly for nested includes', async () => {
+      await reconfigureServer({
+        maxQueryComplexity: {
+          depth: 3,
+        },
+      });
+
+      // Create test objects with deep relationships
+      const user = new Parse.User();
+      user.setUsername('testuser7');
+      user.setPassword('password');
+      await user.signUp();
+
+      const category = new Parse.Object('Category');
+      category.set('name', 'Test Category');
+      await category.save();
+
+      const post = new Parse.Object('Post');
+      post.set('title', 'Test Post');
+      post.set('author', user);
+      post.set('category', category);
+      await post.save();
+
+      const comment = new Parse.Object('Comment');
+      comment.set('text', 'Test Comment');
+      comment.set('post', post);
+      await comment.save();
+
+      // Query with include depth of 2 (post.author, post.category) - should be within limit
+      const query = new Parse.Query('Comment');
+      query.include('post.author');
+      query.include('post.category');
+      const results = await query.find();
+
+      expect(results.length).toBeGreaterThan(0);
+    });
+
+    it('should allow queries with master key even when exceeding depth limit', async () => {
+      await reconfigureServer({
+        maxQueryComplexity: {
+          depth: 1,
+        },
+      });
+
+      // Create test objects with relationships
+      const user = new Parse.User();
+      user.setUsername('testuser7b');
+      user.setPassword('password');
+      await user.signUp(null, { useMasterKey: true });
+
+      const post = new Parse.Object('Post');
+      post.set('title', 'Test Post');
+      post.set('author', user);
+      await post.save(null, { useMasterKey: true });
+
+      const comment = new Parse.Object('Comment');
+      comment.set('text', 'Test Comment');
+      comment.set('post', post);
+      await comment.save(null, { useMasterKey: true });
+
+      // Query with include depth of 2 (exceeds limit of 1) but using master key
+      const query = new Parse.Query('Comment');
+      query.include('post.author');
+      const results = await query.find({ useMasterKey: true });
+
+      expect(results.length).toBeGreaterThan(0);
+    });
+
+    it('should allow queries with maintenance key even when exceeding depth limit', async () => {
+      await reconfigureServer({
+        maintenanceKey: 'maintenanceKey789',
+        maxQueryComplexity: {
+          depth: 1,
+        },
+      });
+
+      // Create test objects with relationships using Parse SDK
+      const user = new Parse.User();
+      user.setUsername('testuser7c');
+      user.setPassword('password');
+      await user.signUp();
+
+      const post = new Parse.Object('Post');
+      post.set('title', 'Test Post');
+      post.set('author', user);
+      await post.save();
+
+      const comment = new Parse.Object('Comment');
+      comment.set('text', 'Test Comment');
+      comment.set('post', post);
+      await comment.save();
+
+      // Query with include depth of 2 (exceeds limit of 1) but using maintenance key via REST API
+      const headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Maintenance-Key': 'maintenanceKey789',
+      };
+      const response = await request({
+        headers,
+        url: `http://localhost:8378/1/classes/Comment?include=post.author`,
+        json: true,
+      });
+
+      expect(response.data.results.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Combined depth and fields validation', () => {
+    it('should validate both depth and fields limits', async () => {
+      await reconfigureServer({
+        maxQueryComplexity: {
+          depth: 2,
+          fields: 3,
+        },
+      });
+
+      // Create test objects with relationships
+      const user = new Parse.User();
+      user.setUsername('testuser8');
+      user.setPassword('password');
+      await user.signUp();
+
+      const post = new Parse.Object('Post');
+      post.set('title', 'Test Post');
+      post.set('author', user);
+      await post.save();
+
+      const comment = new Parse.Object('Comment');
+      comment.set('text', 'Test Comment');
+      comment.set('post', post);
+      await comment.save();
+
+      // Query within both limits (1 field, depth 2)
+      const query = new Parse.Query('Comment');
+      query.include('post.author');
+      const results = await query.find();
+
+      expect(results.length).toBeGreaterThan(0);
+    });
+
+    it('should reject if either depth or fields exceeds limit', async () => {
+      await reconfigureServer({
+        maxQueryComplexity: {
+          depth: 10, // High depth limit
+          fields: 2,  // Low fields limit
+        },
+      });
+
+      // Create test objects with relationships
+      const user = new Parse.User();
+      user.setUsername('testuser9');
+      user.setPassword('password');
+      await user.signUp();
+
+      const category = new Parse.Object('Category');
+      category.set('name', 'Test Category');
+      await category.save();
+
+      const post = new Parse.Object('Post');
+      post.set('title', 'Test Post');
+      post.set('author', user);
+      post.set('category', category);
+      await post.save();
+
+      const comment = new Parse.Object('Comment');
+      comment.set('text', 'Test Comment');
+      comment.set('post', post);
+      await comment.save();
+
+      // Query with 3 fields (exceeds fields limit) but within depth limit
+      const query = new Parse.Query('Comment');
+      query.include('post');
+      query.include('post.author');
+      query.include('post.category');
+
+      await expectAsync(query.find()).toBeRejectedWith(
+        jasmine.objectContaining({
+          code: Parse.Error.INVALID_QUERY,
+        })
+      );
+    });
+  });
+
+  describe('includeAll blocking with query complexity limits', () => {
+    it('should block includeAll when maxQueryComplexity.depth is configured', async () => {
+      await reconfigureServer({
+        maxQueryComplexity: {
+          depth: 2,
+        },
+      });
+
+      // Create test objects with relationships
+      const user = new Parse.User();
+      user.setUsername('testuser_includeall_1');
+      user.setPassword('password');
+      await user.signUp();
+
+      const post = new Parse.Object('Post');
+      post.set('title', 'Test Post');
+      post.set('author', user);
+      await post.save();
+
+      // Query with includeAll should be blocked
+      const query = new Parse.Query('Post');
+      query.includeAll();
+
+      await expectAsync(query.find()).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.INVALID_QUERY,
+          'includeAll is not allowed when query complexity limits are configured'
+        )
+      );
+    });
+
+    it('should block includeAll when maxQueryComplexity.fields is configured', async () => {
+      await reconfigureServer({
+        maxQueryComplexity: {
+          fields: 3,
+        },
+      });
+
+      // Create test objects with relationships
+      const user = new Parse.User();
+      user.setUsername('testuser_includeall_2');
+      user.setPassword('password');
+      await user.signUp();
+
+      const post = new Parse.Object('Post');
+      post.set('title', 'Test Post');
+      post.set('author', user);
+      await post.save();
+
+      // Query with includeAll should be blocked
+      const query = new Parse.Query('Post');
+      query.includeAll();
+
+      await expectAsync(query.find()).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.INVALID_QUERY,
+          'includeAll is not allowed when query complexity limits are configured'
+        )
+      );
+    });
+
+    it('should block include("*") when maxQueryComplexity.depth is configured', async () => {
+      await reconfigureServer({
+        maxQueryComplexity: {
+          depth: 2,
+        },
+      });
+
+      // Create test objects with relationships
+      const user = new Parse.User();
+      user.setUsername('testuser_includeall_3');
+      user.setPassword('password');
+      await user.signUp();
+
+      const post = new Parse.Object('Post');
+      post.set('title', 'Test Post');
+      post.set('author', user);
+      await post.save();
+
+      // Query with include("*") should be blocked
+      const query = new Parse.Query('Post');
+      query.include('*');
+
+      await expectAsync(query.find()).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.INVALID_QUERY,
+          'includeAll is not allowed when query complexity limits are configured'
+        )
+      );
+    });
+
+    it('should block include("*") when maxQueryComplexity.fields is configured', async () => {
+      await reconfigureServer({
+        maxQueryComplexity: {
+          fields: 3,
+        },
+      });
+
+      // Create test objects with relationships
+      const user = new Parse.User();
+      user.setUsername('testuser_includeall_4');
+      user.setPassword('password');
+      await user.signUp();
+
+      const post = new Parse.Object('Post');
+      post.set('title', 'Test Post');
+      post.set('author', user);
+      await post.save();
+
+      // Query with include("*") should be blocked
+      const query = new Parse.Query('Post');
+      query.include('*');
+
+      await expectAsync(query.find()).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.INVALID_QUERY,
+          'includeAll is not allowed when query complexity limits are configured'
+        )
+      );
+    });
+
+    it('should allow includeAll for master key requests', async () => {
+      await reconfigureServer({
+        maxQueryComplexity: {
+          depth: 2,
+          fields: 3,
+        },
+      });
+
+      // Create test objects with relationships
+      const user = new Parse.User();
+      user.setUsername('testuser_includeall_5');
+      user.setPassword('password');
+      await user.signUp(null, { useMasterKey: true });
+
+      const post = new Parse.Object('Post');
+      post.set('title', 'Test Post');
+      post.set('author', user);
+      await post.save(null, { useMasterKey: true });
+
+      // Query with includeAll should work with master key
+      const query = new Parse.Query('Post');
+      query.includeAll();
+
+      const results = await query.find({ useMasterKey: true });
+      expect(results.length).toBeGreaterThan(0);
+    });
+
+    it('should allow includeAll when no complexity limits are configured', async () => {
+      await reconfigureServer({});
+
+      // Create test objects with relationships
+      const user = new Parse.User();
+      user.setUsername('testuser_includeall_6');
+      user.setPassword('password');
+      await user.signUp();
+
+      const post = new Parse.Object('Post');
+      post.set('title', 'Test Post');
+      post.set('author', user);
+      await post.save();
+
+      // Query with includeAll should work when no limits are configured
+      const query = new Parse.Query('Post');
+      query.includeAll();
+
+      const results = await query.find();
+      expect(results.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Queries without includes', () => {
+    it('should allow queries without includes regardless of complexity limits', async () => {
+      await reconfigureServer({
+        maxQueryComplexity: {
+          depth: 1,
+          paths: 1,
+        },
+      });
+
+      const simpleObject = new Parse.Object('SimpleObject');
+      simpleObject.set('name', 'Test');
+      simpleObject.set('value', 123);
+      await simpleObject.save();
+
+      // Query without includes should not be affected by complexity limits
+      const query = new Parse.Query('SimpleObject');
+      const results = await query.find();
+
+      expect(results.length).toBeGreaterThan(0);
+    });
+
+    it('should allow queries with empty includes array', async () => {
+      await reconfigureServer({
+        maxQueryComplexity: {
+          depth: 1,
+          paths: 1,
+        },
+      });
+
+      const simpleObject = new Parse.Object('SimpleObject');
+      simpleObject.set('name', 'Test');
+      simpleObject.set('value', 123);
+      await simpleObject.save();
+
+      // Query with empty includes should not be affected
+      const query = new Parse.Query('SimpleObject');
+      const results = await query.find();
+
+      expect(results.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('No complexity limits configured', () => {
+    it('should allow complex queries when no limits are set', async () => {
+      // Use default config without complexity limits
+      await reconfigureServer();
+
+      // Create test objects with deep relationships
+      const user = new Parse.User();
+      user.setUsername('testuser10');
+      user.setPassword('password');
+      await user.signUp();
+
+      const category = new Parse.Object('Category');
+      category.set('name', 'Test Category');
+      await category.save();
+
+      const post = new Parse.Object('Post');
+      post.set('title', 'Test Post');
+      post.set('author', user);
+      post.set('category', category);
+      await post.save();
+
+      const comment = new Parse.Object('Comment');
+      comment.set('text', 'Test Comment');
+      comment.set('post', post);
+      await comment.save();
+
+      // Complex query should work without limits
+      const query = new Parse.Query('Comment');
+      query.include('post');
+      query.include('post.author');
+      query.include('post.category');
+      const results = await query.find();
+
+      expect(results.length).toBeGreaterThan(0);
+    });
+  });
+});
+

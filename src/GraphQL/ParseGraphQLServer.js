@@ -11,6 +11,7 @@ import requiredParameter from '../requiredParameter';
 import defaultLogger from '../logger';
 import { ParseGraphQLSchema } from './ParseGraphQLSchema';
 import ParseGraphQLController, { ParseGraphQLConfig } from '../Controllers/ParseGraphQLController';
+import { createComplexityValidationPlugin } from './helpers/queryComplexity';
 
 
 const IntrospectionControlPlugin = (publicIntrospection) => ({
@@ -98,6 +99,16 @@ class ParseGraphQLServer {
       return this._server;
     }
     const { schema, context } = await this._getGraphQLOptions();
+    const plugins = [
+      ApolloServerPluginCacheControlDisabled(),
+      IntrospectionControlPlugin(this.config.graphQLPublicIntrospection),
+    ];
+
+    // Add complexity validation plugin if configured
+    if (this.parseServer.config.maxGraphQLQueryComplexity) {
+      plugins.push(createComplexityValidationPlugin(this.parseServer.config));
+    }
+
     const apollo = new ApolloServer({
       csrfPrevention: {
         // See https://www.apollographql.com/docs/router/configuration/csrf/
@@ -105,7 +116,7 @@ class ParseGraphQLServer {
         requestHeaders: ['X-Parse-Application-Id'],
       },
       introspection: this.config.graphQLPublicIntrospection,
-      plugins: [ApolloServerPluginCacheControlDisabled(), IntrospectionControlPlugin(this.config.graphQLPublicIntrospection)],
+      plugins,
       schema,
     });
     await apollo.start();

@@ -207,6 +207,18 @@ function _UnsafeRestQuery(
         this.doCount = true;
         break;
       case 'includeAll':
+        // Block includeAll if maxQueryComplexity is configured for non-master users
+        if (
+          !this.auth.isMaster &&
+          !this.auth.isMaintenance &&
+          this.config.maxQueryComplexity &&
+          (this.config.maxQueryComplexity.depth || this.config.maxQueryComplexity.fields)
+        ) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_QUERY,
+            'includeAll is not allowed when query complexity limits are configured'
+          );
+        }
         this.includeAll = true;
         break;
       case 'explain':
@@ -236,6 +248,18 @@ function _UnsafeRestQuery(
       case 'include': {
         const paths = restOptions.include.split(',');
         if (paths.includes('*')) {
+          // Block includeAll if maxQueryComplexity is configured for non-master users
+          if (
+            !this.auth.isMaster &&
+            !this.auth.isMaintenance &&
+            this.config.maxQueryComplexity &&
+            (this.config.maxQueryComplexity.depth || this.config.maxQueryComplexity.fields)
+          ) {
+            throw new Parse.Error(
+              Parse.Error.INVALID_QUERY,
+              'includeAll is not allowed when query complexity limits are configured'
+            );
+          }
           this.includeAll = true;
           break;
         }
@@ -268,6 +292,26 @@ function _UnsafeRestQuery(
         break;
       default:
         throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad option: ' + option);
+    }
+  }
+
+  // Validate query complexity for REST includes
+  if (!this.auth.isMaster && !this.auth.isMaintenance && this.config.maxQueryComplexity && this.include && this.include.length > 0) {
+    const fieldsCount = this.include.length;
+
+    if (this.config.maxQueryComplexity.fields && fieldsCount > this.config.maxQueryComplexity.fields) {
+      throw new Parse.Error(
+        Parse.Error.INVALID_QUERY,
+        `Number of include fields exceeds maximum allowed`
+      );
+    }
+
+    const depth = Math.max(...this.include.map(path => path.length));
+    if (this.config.maxQueryComplexity.depth && depth > this.config.maxQueryComplexity.depth) {
+      throw new Parse.Error(
+        Parse.Error.INVALID_QUERY,
+        `Include depth exceeds maximum allowed`
+      );
     }
   }
 }
