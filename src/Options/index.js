@@ -751,7 +751,7 @@ export interface DatabaseOptions {
   createIndexRoleName: ?boolean;
   /* Set to `true` to disable validation of index fields. When disabled, indexes can be created even if the fields do not exist in the schema. This can be useful when creating indexes on fields that will be added later. */
   disableIndexFieldValidation: ?boolean;
-  /* Set to `true` to allow explain queries without master key. This option is deprecated and the default will change to `false` in a future version.
+  /* Set to `true` to allow `Parse.Query.explain` without master key.<br><br>⚠️ Enabling this option may expose sensitive query performance data to unauthorized users and could potentially be exploited for malicious purposes.
   :DEFAULT: false */
   allowPublicExplain: ?boolean;
   /* An array of MongoDB client event configurations to enable logging of specific events. */

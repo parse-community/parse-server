@@ -257,7 +257,7 @@
 
 /**
  * @interface DatabaseOptions
- * @property {Boolean} allowPublicExplain Set to `true` to allow explain queries without master key. This option is deprecated and the default will change to `false` in a future version.
+ * @property {Boolean} allowPublicExplain Set to `true` to allow `Parse.Query.explain` without master key.<br><br>⚠️ Enabling this option may expose sensitive query performance data to unauthorized users and could potentially be exploited for malicious purposes.
  * @property {String} appName The MongoDB driver option to specify the name of the application that created this MongoClient instance.
  * @property {String} authMechanism The MongoDB driver option to specify the authentication mechanism that MongoDB will use to authenticate the connection.
  * @property {Any} authMechanismProperties The MongoDB driver option to specify properties for the specified authMechanism as a comma-separated list of colon-separated key-value pairs.
