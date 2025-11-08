@@ -36,15 +36,17 @@ const nestedOptionEnvPrefix = {
   IdempotencyOptions: 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_',
   LiveQueryOptions: 'PARSE_SERVER_LIVEQUERY_',
   LiveQueryServerOptions: 'PARSE_LIVE_QUERY_SERVER_',
+  LogClientEvent: 'PARSE_SERVER_DATABASE_LOG_CLIENT_EVENTS_',
+  LogLevel: 'PARSE_SERVER_LOG_LEVEL_',
+  LogLevels: 'PARSE_SERVER_LOG_LEVELS_',
   PagesCustomUrlsOptions: 'PARSE_SERVER_PAGES_CUSTOM_URL_',
   PagesOptions: 'PARSE_SERVER_PAGES_',
   PagesRoute: 'PARSE_SERVER_PAGES_ROUTE_',
   ParseServerOptions: 'PARSE_SERVER_',
   PasswordPolicyOptions: 'PARSE_SERVER_PASSWORD_POLICY_',
-  SecurityOptions: 'PARSE_SERVER_SECURITY_',
-  SchemaOptions: 'PARSE_SERVER_SCHEMA_',
-  LogLevels: 'PARSE_SERVER_LOG_LEVELS_',
   RateLimitOptions: 'PARSE_SERVER_RATE_LIMIT_',
+  SchemaOptions: 'PARSE_SERVER_SCHEMA_',
+  SecurityOptions: 'PARSE_SERVER_SECURITY_',
 };
 
 function last(array) {

@@ -9,7 +9,7 @@
 // @flow-disable-next
 import { MongoClient, GridFSBucket, Db } from 'mongodb';
 import { FilesAdapter, validateFilename } from './FilesAdapter';
-import defaults from '../../defaults';
+import defaults, { ParseServerDatabaseOptions } from '../../defaults';
 const crypto = require('crypto');
 
 export class GridFSBucketAdapter extends FilesAdapter {
@@ -34,10 +34,10 @@ export class GridFSBucketAdapter extends FilesAdapter {
           .digest('base64')
           .substring(0, 32)
         : null;
-    const defaultMongoOptions = {
-    };
+    const defaultMongoOptions = {};
     const _mongoOptions = Object.assign(defaultMongoOptions, mongoOptions);
-    for (const key of ['enableSchemaHooks', 'schemaCacheTtl', 'maxTimeMS', 'disableIndexFieldValidation']) {
+    // Remove Parse Server-specific options that should not be passed to MongoDB client
+    for (const key of ParseServerDatabaseOptions) {
       delete _mongoOptions[key];
     }
     this._mongoOptions = _mongoOptions;

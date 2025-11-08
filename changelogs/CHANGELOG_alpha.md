@@ -1,3 +1,45 @@
+# [8.5.0-alpha.6](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.5...8.5.0-alpha.6) (2025-11-08)
+
+
+### Bug Fixes
+
+* `GridFSBucketAdapter` throws when using some Parse Server specific options in MongoDB database options ([#9915](https://github.com/parse-community/parse-server/issues/9915)) ([d3d4003](https://github.com/parse-community/parse-server/commit/d3d4003570b9872f2b0f5a25fc06ce4c4132860d))
+
+# [8.5.0-alpha.5](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.4...8.5.0-alpha.5) (2025-11-08)
+
+
+### Features
+
+* Add Parse Server option `allowPublicExplain` to allow `Parse.Query.explain` without master key ([#9890](https://github.com/parse-community/parse-server/issues/9890)) ([4456b02](https://github.com/parse-community/parse-server/commit/4456b02280c2d8dd58b7250e9e67f1a8647b3452))
+
+# [8.5.0-alpha.4](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.3...8.5.0-alpha.4) (2025-11-08)
+
+
+### Features
+
+* Add MongoDB client event logging via database option `logClientEvents` ([#9914](https://github.com/parse-community/parse-server/issues/9914)) ([b760733](https://github.com/parse-community/parse-server/commit/b760733b98bcfc9c09ac9780066602e1fda108fe))
+
+# [8.5.0-alpha.3](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.2...8.5.0-alpha.3) (2025-11-07)
+
+
+### Features
+
+* Add support for more MongoDB driver options ([#9911](https://github.com/parse-community/parse-server/issues/9911)) ([cff451e](https://github.com/parse-community/parse-server/commit/cff451eabdc380affa600ed711de66f7bd1d00aa))
+
+# [8.5.0-alpha.2](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.1...8.5.0-alpha.2) (2025-11-07)
+
+
+### Features
+
+* Add support for MongoDB driver options `serverSelectionTimeoutMS`, `maxIdleTimeMS`, `heartbeatFrequencyMS` ([#9910](https://github.com/parse-community/parse-server/issues/9910)) ([1b661e9](https://github.com/parse-community/parse-server/commit/1b661e98c86a1db79e076a7297cd9199a72ae1ac))
+
+# [8.5.0-alpha.1](https://github.com/parse-community/parse-server/compare/8.4.0...8.5.0-alpha.1) (2025-11-07)
+
+
+### Features
+
+* Allow option `publicServerURL` to be set dynamically as asynchronous function ([#9803](https://github.com/parse-community/parse-server/issues/9803)) ([460a65c](https://github.com/parse-community/parse-server/commit/460a65cf612f4c86af8038cafcc7e7ffe9eb8440))
+
 # [8.4.0-alpha.2](https://github.com/parse-community/parse-server/compare/8.4.0-alpha.1...8.4.0-alpha.2) (2025-11-05)
 
 
