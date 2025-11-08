@@ -18,10 +18,5 @@
 module.exports = [
   { optionKey: 'encodeParseObjectInCloudFunction', changeNewDefault: 'true' },
   { optionKey: 'enableInsecureAuthAdapters', changeNewDefault: 'false' },
-  {
-    optionKey: 'databaseOptions.allowPublicExplain',
-    changeNewDefault: 'false',
-    solution:
-      'To prepare for the future change, set Parse Server option databaseOptions.allowPublicExplain to false and ensure explain queries are only made with master key.',
-  },
+  { optionKey: 'databaseOptions.allowPublicExplain', changeNewDefault: 'false' },
 ];
