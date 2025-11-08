@@ -1083,6 +1083,25 @@ module.exports.FileUploadOptions = {
     default: ['^(?![xXsS]?[hH][tT][mM][lL]?$)'],
   },
 };
+module.exports.LogClientEvent = {
+  keys: {
+    env: 'undefinedKEYS',
+    help:
+      'Optional array of dot-notation paths to extract specific data from the event object. If not provided or empty, the entire event object will be logged.',
+    action: parsers.arrayParser,
+  },
+  logLevel: {
+    env: 'undefinedLOG_LEVEL',
+    help: 'The log level to use for this event.',
+    required: true,
+  },
+  name: {
+    env: 'undefinedNAME',
+    help:
+      'The MongoDB driver event name to listen for. See the [MongoDB driver events documentation](https://www.mongodb.com/docs/drivers/node/current/fundamentals/monitoring/) for available events.',
+    required: true,
+  },
+};
 module.exports.DatabaseOptions = {
   appName: {
     env: 'PARSE_SERVER_DATABASE_APP_NAME',
@@ -1221,8 +1240,7 @@ module.exports.DatabaseOptions = {
   },
   logClientEvents: {
     env: 'PARSE_SERVER_DATABASE_LOG_CLIENT_EVENTS',
-    help:
-      "An array of MongoDB client event configurations to enable logging of specific events. Each configuration object should contain:<br><ul><li>`name` (the event name, e.g., 'topologyDescriptionChanged', 'serverDescriptionChanged', 'connectionPoolCleared', 'connectionPoolReady')</li><li>`keys` (optional array of dot-notation paths to extract specific data from the event object; if not provided or empty, the entire event object will be logged)</li><li>`logLevel` (the log level to use for this event: 'error', 'warn', 'info', 'debug', etc.).</li></ul>",
+    help: 'An array of MongoDB client event configurations to enable logging of specific events.',
     action: parsers.arrayParser,
   },
   maxConnecting: {

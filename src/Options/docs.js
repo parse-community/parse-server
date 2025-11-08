@@ -239,6 +239,13 @@
  */
 
 /**
+ * @interface LogClientEvent
+ * @property {String[]} keys Optional array of dot-notation paths to extract specific data from the event object. If not provided or empty, the entire event object will be logged.
+ * @property {String} logLevel The log level to use for this event.
+ * @property {String} name The MongoDB driver event name to listen for. See the [MongoDB driver events documentation](https://www.mongodb.com/docs/drivers/node/current/fundamentals/monitoring/) for available events.
+ */
+
+/**
  * @interface DatabaseOptions
  * @property {String} appName The MongoDB driver option to specify the name of the application that created this MongoClient instance.
  * @property {String} authMechanism The MongoDB driver option to specify the authentication mechanism that MongoDB will use to authenticate the connection.
@@ -262,7 +269,7 @@
  * @property {Number} heartbeatFrequencyMS The MongoDB driver option to specify the frequency in milliseconds at which the driver checks the state of the MongoDB deployment.
  * @property {Boolean} loadBalanced The MongoDB driver option to instruct the driver it is connecting to a load balancer fronting a mongos like service.
  * @property {Number} localThresholdMS The MongoDB driver option to specify the size (in milliseconds) of the latency window for selecting among multiple suitable MongoDB instances.
- * @property {LogClientEvent[]} logClientEvents An array of MongoDB client event configurations to enable logging of specific events. Each configuration object should contain:<br><ul><li>`name` (the event name, e.g., 'topologyDescriptionChanged', 'serverDescriptionChanged', 'connectionPoolCleared', 'connectionPoolReady')</li><li>`keys` (optional array of dot-notation paths to extract specific data from the event object; if not provided or empty, the entire event object will be logged)</li><li>`logLevel` (the log level to use for this event: 'error', 'warn', 'info', 'debug', etc.).</li></ul>
+ * @property {LogClientEvent[]} logClientEvents An array of MongoDB client event configurations to enable logging of specific events.
  * @property {Number} maxConnecting The MongoDB driver option to specify the maximum number of connections that may be in the process of being established concurrently by the connection pool.
  * @property {Number} maxIdleTimeMS The MongoDB driver option to specify the amount of time in milliseconds that a connection can remain idle in the connection pool before being removed and closed.
  * @property {Number} maxPoolSize The MongoDB driver option to set the maximum number of opened, cached, ready-to-use database connections maintained by the driver.
