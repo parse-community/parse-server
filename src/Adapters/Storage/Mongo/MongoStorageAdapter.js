@@ -33,7 +33,7 @@ const mongoUniqueIndexErrorFormatter = (message) => {
    * Sample error message that we are getting from mongo
    * 'Plan executor error during findAndModify :: caused by :: E11000 duplicate key error collection: parseServerMongoAdapterTestDatabase.test_UniqueIndexClass index: code_1 dup key: { code: 2 }'
    */
-  const regex = /collection:\s*([\w]+)\.([\w]+)\s+index:\s*([\w_]+)/;
+  const regex = /collection:\s*([\w-]+)\.([\w-]+)\s+index:\s*([\w-]+)/;
 
   const match = message.match(regex);
 
