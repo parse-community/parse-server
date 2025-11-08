@@ -43,12 +43,20 @@ async function initializeParseServer() {
 
   app.use('/parse', parseServer.app);
 
-  return new Promise((resolve) => {
-    const server = app.listen(1337, () => {
+  return new Promise((resolve, reject) => {
+    const server = app.listen(1337, (err) => {
+      if (err) {
+        reject(new Error(`Failed to start server: ${err.message}`));
+        return;
+      }
       Parse.initialize(APP_ID);
       Parse.masterKey = MASTER_KEY;
       Parse.serverURL = SERVER_URL;
       resolve(server);
+    });
+
+    server.on('error', (err) => {
+      reject(new Error(`Server error: ${err.message}`));
     });
   });
 }
@@ -57,16 +65,20 @@ async function initializeParseServer() {
  * Clean up database between benchmarks
  */
 async function cleanupDatabase() {
-  if (!mongoClient) {
-    mongoClient = await MongoClient.connect(MONGODB_URI);
-  }
-  const db = mongoClient.db();
-  const collections = await db.listCollections().toArray();
-
-  for (const collection of collections) {
-    if (!collection.name.startsWith('system.')) {
-      await db.collection(collection.name).deleteMany({});
+  try {
+    if (!mongoClient) {
+      mongoClient = await MongoClient.connect(MONGODB_URI);
     }
+    const db = mongoClient.db();
+    const collections = await db.listCollections().toArray();
+
+    for (const collection of collections) {
+      if (!collection.name.startsWith('system.')) {
+        await db.collection(collection.name).deleteMany({});
+      }
+    }
+  } catch (error) {
+    throw new Error(`Failed to cleanup database: ${error.message}`);
   }
 }
 
@@ -223,11 +235,11 @@ async function benchmarkUserSignup() {
   let counter = 0;
 
   return measureOperation('User Signup', async () => {
+    counter++;
     const user = new Parse.User();
     user.set('username', `benchmark_user_${Date.now()}_${counter}`);
     user.set('password', 'benchmark_password');
     user.set('email', `benchmark${counter}@example.com`);
-    counter++;
     await user.signUp();
   }, Math.floor(ITERATIONS / 10)); // Fewer iterations for user operations
 }
