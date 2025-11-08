@@ -37,7 +37,21 @@ export class GridFSBucketAdapter extends FilesAdapter {
     const defaultMongoOptions = {
     };
     const _mongoOptions = Object.assign(defaultMongoOptions, mongoOptions);
-    for (const key of ['enableSchemaHooks', 'schemaCacheTtl', 'maxTimeMS', 'disableIndexFieldValidation']) {
+    for (const key of [
+      'allowPublicExplain',
+      'enableSchemaHooks',
+      'schemaCacheTtl',
+      'maxTimeMS',
+      'disableIndexFieldValidation',
+      'logClientEvents',
+      'createIndexUserUsername',
+      'createIndexUserUsernameCaseInsensitive',
+      'createIndexUserEmail',
+      'createIndexUserEmailCaseInsensitive',
+      'createIndexUserEmailVerifyToken',
+      'createIndexUserPasswordResetToken',
+      'createIndexRoleName',
+    ]) {
       delete _mongoOptions[key];
     }
     this._mongoOptions = _mongoOptions;
