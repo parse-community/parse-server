@@ -1126,8 +1126,8 @@ module.exports.LogClientEvent = {
   logLevel: {
     env: 'undefinedLOG_LEVEL',
     help:
-      "The log level to use for this event. See [LogLevel](LogLevel.html) for available values. If an invalid level is provided, it will default to `'info'`.",
-    required: true,
+      "The log level to use for this event. See [LogLevel](LogLevel.html) for available values. Defaults to `'info'`.",
+    default: 'info',
   },
   name: {
     env: 'undefinedNAME',

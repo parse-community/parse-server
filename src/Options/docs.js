@@ -251,7 +251,7 @@
 /**
  * @interface LogClientEvent
  * @property {String[]} keys Optional array of dot-notation paths to extract specific data from the event object. If not provided or empty, the entire event object will be logged.
- * @property {String} logLevel The log level to use for this event. See [LogLevel](LogLevel.html) for available values. If an invalid level is provided, it will default to `'info'`.
+ * @property {String} logLevel The log level to use for this event. See [LogLevel](LogLevel.html) for available values. Defaults to `'info'`.
  * @property {String} name The MongoDB driver event name to listen for. See the [MongoDB driver events documentation](https://www.mongodb.com/docs/drivers/node/current/fundamentals/monitoring/) for available events.
  */
 
