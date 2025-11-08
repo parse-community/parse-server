@@ -8,6 +8,7 @@ const Parse = require('parse/node');
 const request = require('../lib/request');
 const ParseServerRESTController = require('../lib/ParseServerRESTController').ParseServerRESTController;
 const ParseServer = require('../lib/ParseServer').default;
+const Deprecator = require('../lib/Deprecator/Deprecator').default;
 
 const masterKeyHeaders = {
   'X-Parse-Application-Id': 'test',
@@ -5447,15 +5448,23 @@ describe('Parse.Query testing', () => {
     );
 
     it_id('c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f')(it_only_db('mongo'))(
-      'explain works only with master key by default',
+      'explain works with and without master key by default',
       async () => {
+        const logger = require('../lib/logger').logger;
+        const logSpy = spyOn(logger, 'warn').and.callFake(() => {});
+
         await reconfigureServer({
           databaseAdapter: undefined,
           databaseURI: 'mongodb://localhost:27017/parse',
           databaseOptions: {
-            allowPublicExplain: false,
+            allowPublicExplain: undefined,
           },
         });
+
+        // Verify deprecation warning is logged when allowPublicExplain is not explicitly set
+        expect(logSpy).toHaveBeenCalledWith(
+          jasmine.stringMatching(/DeprecationWarning.*databaseOptions\.allowPublicExplain.*false/)
+        );
 
         const obj = new TestObject({ foo: 'bar' });
         await obj.save();
@@ -5463,18 +5472,14 @@ describe('Parse.Query testing', () => {
         // Without master key
         const query = new Parse.Query(TestObject);
         query.explain();
-        await expectAsync(query.find()).toBeRejectedWith(
-          new Parse.Error(
-            Parse.Error.INVALID_QUERY,
-            'Using the explain query parameter requires the master key'
-          )
-        );
+        const resultWithoutMasterKey = await query.find();
+        expect(resultWithoutMasterKey).toBeDefined();
 
         // With master key
         const queryWithMasterKey = new Parse.Query(TestObject);
         queryWithMasterKey.explain();
-        const result = await queryWithMasterKey.find({ useMasterKey: true });
-        expect(result).toBeDefined();
+        const resultWithMasterKey = await queryWithMasterKey.find({ useMasterKey: true });
+        expect(resultWithMasterKey).toBeDefined();
       }
     );
   });
