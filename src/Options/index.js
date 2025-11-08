@@ -608,6 +608,32 @@ export interface FileUploadOptions {
   enableForPublic: ?boolean;
 }
 
+/* The available log levels for Parse Server logging. Valid values are:<br>- `'error'` - Error level (highest priority)<br>- `'warn'` - Warning level<br>- `'info'` - Info level (default)<br>- `'verbose'` - Verbose level<br>- `'debug'` - Debug level<br>- `'silly'` - Silly level (lowest priority) */
+export interface LogLevel {
+  /* Error level - highest priority */
+  error: 'error';
+  /* Warning level */
+  warn: 'warn';
+  /* Info level - default */
+  info: 'info';
+  /* Verbose level */
+  verbose: 'verbose';
+  /* Debug level */
+  debug: 'debug';
+  /* Silly level - lowest priority */
+  silly: 'silly';
+}
+
+export interface LogClientEvent {
+  /* The MongoDB driver event name to listen for. See the [MongoDB driver events documentation](https://www.mongodb.com/docs/drivers/node/current/fundamentals/monitoring/) for available events. */
+  name: string;
+  /* Optional array of dot-notation paths to extract specific data from the event object. If not provided or empty, the entire event object will be logged. */
+  keys: ?(string[]);
+  /* The log level to use for this event. See [LogLevel](LogLevel.html) for available values. Defaults to `'info'`.
+  :DEFAULT: info */
+  logLevel: ?string;
+}
+
 export interface DatabaseOptions {
   /* Enables database real-time hooks to update single schema cache. Set to `true` if using multiple Parse Servers instances connected to the same database. Failing to do so will cause a schema change to not propagate to all instances and re-syncing will only happen when the instances restart. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required.
   :DEFAULT: false */
@@ -725,6 +751,11 @@ export interface DatabaseOptions {
   createIndexRoleName: ?boolean;
   /* Set to `true` to disable validation of index fields. When disabled, indexes can be created even if the fields do not exist in the schema. This can be useful when creating indexes on fields that will be added later. */
   disableIndexFieldValidation: ?boolean;
+  /* Set to `true` to allow `Parse.Query.explain` without master key.<br><br>⚠️ Enabling this option may expose sensitive query performance data to unauthorized users and could potentially be exploited for malicious purposes.
+  :DEFAULT: true */
+  allowPublicExplain: ?boolean;
+  /* An array of MongoDB client event configurations to enable logging of specific events. */
+  logClientEvents: ?(LogClientEvent[]);
 }
 
 export interface AuthAdapter {
@@ -736,23 +767,23 @@ export interface AuthAdapter {
 }
 
 export interface LogLevels {
-  /* Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterFind`, `afterLogout`. Default is `info`.
+  /* Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterFind`, `afterLogout`. Default is `info`. See [LogLevel](LogLevel.html) for available values.
   :DEFAULT: info
   */
   triggerAfter: ?string;
-  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on success. Default is `info`.
+  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on success. Default is `info`. See [LogLevel](LogLevel.html) for available values.
   :DEFAULT: info
   */
   triggerBeforeSuccess: ?string;
-  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on error. Default is `error`.
+  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on error. Default is `error`. See [LogLevel](LogLevel.html) for available values.
   :DEFAULT: error
   */
   triggerBeforeError: ?string;
-  /* Log level used by the Cloud Code Functions on success. Default is `info`.
+  /* Log level used by the Cloud Code Functions on success. Default is `info`. See [LogLevel](LogLevel.html) for available values.
   :DEFAULT: info
   */
   cloudFunctionSuccess: ?string;
-  /* Log level used by the Cloud Code Functions on error. Default is `error`.
+  /* Log level used by the Cloud Code Functions on error. Default is `error`. See [LogLevel](LogLevel.html) for available values.
   :DEFAULT: error
   */
   cloudFunctionError: ?string;

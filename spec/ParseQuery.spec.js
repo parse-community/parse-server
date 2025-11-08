@@ -8,6 +8,7 @@ const Parse = require('parse/node');
 const request = require('../lib/request');
 const ParseServerRESTController = require('../lib/ParseServerRESTController').ParseServerRESTController;
 const ParseServer = require('../lib/ParseServer').default;
+const Deprecator = require('../lib/Deprecator/Deprecator').default;
 
 const masterKeyHeaders = {
   'X-Parse-Application-Id': 'test',
@@ -5383,5 +5384,103 @@ describe('Parse.Query testing', () => {
 
       expect(query1.length).toEqual(1);
     });
+  });
+
+  describe('allowPublicExplain', () => {
+    it_id('a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d')(it_only_db('mongo'))(
+      'explain works with and without master key when allowPublicExplain is true',
+      async () => {
+        await reconfigureServer({
+          databaseAdapter: undefined,
+          databaseURI: 'mongodb://localhost:27017/parse',
+          databaseOptions: {
+            allowPublicExplain: true,
+          },
+        });
+
+        const obj = new TestObject({ foo: 'bar' });
+        await obj.save();
+
+        // Without master key
+        const query = new Parse.Query(TestObject);
+        query.explain();
+        const resultWithoutMasterKey = await query.find();
+        expect(resultWithoutMasterKey).toBeDefined();
+
+        // With master key
+        const queryWithMasterKey = new Parse.Query(TestObject);
+        queryWithMasterKey.explain();
+        const resultWithMasterKey = await queryWithMasterKey.find({ useMasterKey: true });
+        expect(resultWithMasterKey).toBeDefined();
+      }
+    );
+
+    it_id('b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e')(it_only_db('mongo'))(
+      'explain requires master key when allowPublicExplain is false',
+      async () => {
+        await reconfigureServer({
+          databaseAdapter: undefined,
+          databaseURI: 'mongodb://localhost:27017/parse',
+          databaseOptions: {
+            allowPublicExplain: false,
+          },
+        });
+
+        const obj = new TestObject({ foo: 'bar' });
+        await obj.save();
+
+        // Without master key
+        const query = new Parse.Query(TestObject);
+        query.explain();
+        await expectAsync(query.find()).toBeRejectedWith(
+          new Parse.Error(
+            Parse.Error.INVALID_QUERY,
+            'Using the explain query parameter requires the master key'
+          )
+        );
+
+        // With master key
+        const queryWithMasterKey = new Parse.Query(TestObject);
+        queryWithMasterKey.explain();
+        const result = await queryWithMasterKey.find({ useMasterKey: true });
+        expect(result).toBeDefined();
+      }
+    );
+
+    it_id('c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f')(it_only_db('mongo'))(
+      'explain works with and without master key by default',
+      async () => {
+        const logger = require('../lib/logger').logger;
+        const logSpy = spyOn(logger, 'warn').and.callFake(() => {});
+
+        await reconfigureServer({
+          databaseAdapter: undefined,
+          databaseURI: 'mongodb://localhost:27017/parse',
+          databaseOptions: {
+            allowPublicExplain: undefined,
+          },
+        });
+
+        // Verify deprecation warning is logged when allowPublicExplain is not explicitly set
+        expect(logSpy).toHaveBeenCalledWith(
+          jasmine.stringMatching(/DeprecationWarning.*databaseOptions\.allowPublicExplain.*false/)
+        );
+
+        const obj = new TestObject({ foo: 'bar' });
+        await obj.save();
+
+        // Without master key
+        const query = new Parse.Query(TestObject);
+        query.explain();
+        const resultWithoutMasterKey = await query.find();
+        expect(resultWithoutMasterKey).toBeDefined();
+
+        // With master key
+        const queryWithMasterKey = new Parse.Query(TestObject);
+        queryWithMasterKey.explain();
+        const resultWithMasterKey = await queryWithMasterKey.find({ useMasterKey: true });
+        expect(resultWithMasterKey).toBeDefined();
+      }
+    );
   });
 });

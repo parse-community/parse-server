@@ -239,7 +239,25 @@
  */
 
 /**
+ * @interface LogLevel
+ * @property {StringLiteral} debug Debug level
+ * @property {StringLiteral} error Error level - highest priority
+ * @property {StringLiteral} info Info level - default
+ * @property {StringLiteral} silly Silly level - lowest priority
+ * @property {StringLiteral} verbose Verbose level
+ * @property {StringLiteral} warn Warning level
+ */
+
+/**
+ * @interface LogClientEvent
+ * @property {String[]} keys Optional array of dot-notation paths to extract specific data from the event object. If not provided or empty, the entire event object will be logged.
+ * @property {String} logLevel The log level to use for this event. See [LogLevel](LogLevel.html) for available values. Defaults to `'info'`.
+ * @property {String} name The MongoDB driver event name to listen for. See the [MongoDB driver events documentation](https://www.mongodb.com/docs/drivers/node/current/fundamentals/monitoring/) for available events.
+ */
+
+/**
  * @interface DatabaseOptions
+ * @property {Boolean} allowPublicExplain Set to `true` to allow `Parse.Query.explain` without master key.<br><br>⚠️ Enabling this option may expose sensitive query performance data to unauthorized users and could potentially be exploited for malicious purposes.
  * @property {String} appName The MongoDB driver option to specify the name of the application that created this MongoClient instance.
  * @property {String} authMechanism The MongoDB driver option to specify the authentication mechanism that MongoDB will use to authenticate the connection.
  * @property {Any} authMechanismProperties The MongoDB driver option to specify properties for the specified authMechanism as a comma-separated list of colon-separated key-value pairs.
@@ -262,6 +280,7 @@
  * @property {Number} heartbeatFrequencyMS The MongoDB driver option to specify the frequency in milliseconds at which the driver checks the state of the MongoDB deployment.
  * @property {Boolean} loadBalanced The MongoDB driver option to instruct the driver it is connecting to a load balancer fronting a mongos like service.
  * @property {Number} localThresholdMS The MongoDB driver option to specify the size (in milliseconds) of the latency window for selecting among multiple suitable MongoDB instances.
+ * @property {LogClientEvent[]} logClientEvents An array of MongoDB client event configurations to enable logging of specific events.
  * @property {Number} maxConnecting The MongoDB driver option to specify the maximum number of connections that may be in the process of being established concurrently by the connection pool.
  * @property {Number} maxIdleTimeMS The MongoDB driver option to specify the amount of time in milliseconds that a connection can remain idle in the connection pool before being removed and closed.
  * @property {Number} maxPoolSize The MongoDB driver option to set the maximum number of opened, cached, ready-to-use database connections maintained by the driver.
@@ -303,9 +322,9 @@
 
 /**
  * @interface LogLevels
- * @property {String} cloudFunctionError Log level used by the Cloud Code Functions on error. Default is `error`.
- * @property {String} cloudFunctionSuccess Log level used by the Cloud Code Functions on success. Default is `info`.
- * @property {String} triggerAfter Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterFind`, `afterLogout`. Default is `info`.
- * @property {String} triggerBeforeError Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on error. Default is `error`.
- * @property {String} triggerBeforeSuccess Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on success. Default is `info`.
+ * @property {String} cloudFunctionError Log level used by the Cloud Code Functions on error. Default is `error`. See [LogLevel](LogLevel.html) for available values.
+ * @property {String} cloudFunctionSuccess Log level used by the Cloud Code Functions on success. Default is `info`. See [LogLevel](LogLevel.html) for available values.
+ * @property {String} triggerAfter Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterFind`, `afterLogout`. Default is `info`. See [LogLevel](LogLevel.html) for available values.
+ * @property {String} triggerBeforeError Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on error. Default is `error`. See [LogLevel](LogLevel.html) for available values.
+ * @property {String} triggerBeforeSuccess Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on success. Default is `info`. See [LogLevel](LogLevel.html) for available values.
  */

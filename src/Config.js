@@ -659,6 +659,11 @@ export class Config {
     } else if (typeof databaseOptions.schemaCacheTtl !== 'number') {
       throw `databaseOptions.schemaCacheTtl must be a number`;
     }
+    if (databaseOptions.allowPublicExplain === undefined) {
+      databaseOptions.allowPublicExplain = DatabaseOptions.allowPublicExplain.default;
+    } else if (typeof databaseOptions.allowPublicExplain !== 'boolean') {
+      throw `Parse Server option 'databaseOptions.allowPublicExplain' must be a boolean.`;
+    }
   }
 
   static validateRateLimit(rateLimit) {

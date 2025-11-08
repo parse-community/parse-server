@@ -60,6 +60,26 @@ describe('Security Check Groups', () => {
       expect(group.checks()[4].checkState()).toBe(CheckState.fail);
       expect(group.checks()[5].checkState()).toBe(CheckState.fail);
     });
+
+    it_only_db('mongo')('checks succeed correctly (MongoDB specific)', async () => {
+      config.databaseAdapter = undefined;
+      config.databaseOptions = { allowPublicExplain: false };
+      await reconfigureServer(config);
+
+      const group = new CheckGroupServerConfig();
+      await group.run();
+      expect(group.checks()[6].checkState()).toBe(CheckState.success);
+    });
+
+    it_only_db('mongo')('checks fail correctly (MongoDB specific)', async () => {
+      config.databaseAdapter = undefined;
+      config.databaseOptions = { allowPublicExplain: true };
+      await reconfigureServer(config);
+
+      const group = new CheckGroupServerConfig();
+      await group.run();
+      expect(group.checks()[6].checkState()).toBe(CheckState.fail);
+    });
   });
 
   describe('CheckGroupDatabase', () => {

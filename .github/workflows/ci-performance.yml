@@ -1,0 +1,291 @@
+name: ci-performance
+on:
+  pull_request:
+    branches:
+      - alpha
+      - beta
+      - release
+      - 'release-[0-9]+.x.x'
+      - next-major
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+
+env:
+  NODE_VERSION: 24.11.0
+  MONGODB_VERSION: 8.0.4
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  performance-check:
+    name: Benchmarks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies (base)
+        run: npm ci
+
+      - name: Build Parse Server (base)
+        run: npm run build
+
+      - name: Run baseline benchmarks
+        id: baseline
+        run: |
+          echo "Checking if benchmark script exists..."
+          if [ ! -f "benchmark/performance.js" ]; then
+            echo "⚠️ Benchmark script not found in base branch - this is expected for new features"
+            echo "Skipping baseline benchmark"
+            echo '[]' > baseline.json
+            echo "Baseline: N/A (benchmark script not in base branch)" > baseline-output.txt
+            exit 0
+          fi
+          echo "Running baseline benchmarks..."
+          npm run benchmark > baseline-output.txt 2>&1 || true
+          echo "Benchmark command completed with exit code: $?"
+          echo "Output file size: $(wc -c < baseline-output.txt) bytes"
+          echo "--- Begin baseline-output.txt ---"
+          cat baseline-output.txt
+          echo "--- End baseline-output.txt ---"
+          # Extract JSON from output (everything between first [ and last ])
+          sed -n '/^\[/,/^\]/p' baseline-output.txt > baseline.json || echo '[]' > baseline.json
+          echo "Extracted JSON size: $(wc -c < baseline.json) bytes"
+          echo "Baseline benchmark results:"
+          cat baseline.json
+        continue-on-error: true
+
+      - name: Upload baseline results
+        uses: actions/upload-artifact@v4
+        with:
+          name: baseline-benchmark
+          path: |
+            baseline.json
+            baseline-output.txt
+          retention-days: 7
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+          clean: true
+
+      - name: Setup Node.js (PR)
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies (PR)
+        run: npm ci
+
+      - name: Build Parse Server (PR)
+        run: npm run build
+
+      - name: Run PR benchmarks
+        id: pr-bench
+        run: |
+          echo "Running PR benchmarks..."
+          npm run benchmark > pr-output.txt 2>&1 || true
+          echo "Benchmark command completed with exit code: $?"
+          echo "Output file size: $(wc -c < pr-output.txt) bytes"
+          echo "--- Begin pr-output.txt ---"
+          cat pr-output.txt
+          echo "--- End pr-output.txt ---"
+          # Extract JSON from output (everything between first [ and last ])
+          sed -n '/^\[/,/^\]/p' pr-output.txt > pr.json || echo '[]' > pr.json
+          echo "Extracted JSON size: $(wc -c < pr.json) bytes"
+          echo "PR benchmark results:"
+          cat pr.json
+        continue-on-error: true
+
+      - name: Upload PR results
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-benchmark
+          path: |
+            pr.json
+            pr-output.txt
+          retention-days: 7
+
+      - name: Verify benchmark files exist
+        run: |
+          echo "Checking for benchmark result files..."
+          if [ ! -f baseline.json ] || [ ! -s baseline.json ]; then
+            echo "⚠️ baseline.json is missing or empty, creating empty array"
+            echo '[]' > baseline.json
+          fi
+          if [ ! -f pr.json ] || [ ! -s pr.json ]; then
+            echo "⚠️ pr.json is missing or empty, creating empty array"
+            echo '[]' > pr.json
+          fi
+          echo "baseline.json size: $(wc -c < baseline.json) bytes"
+          echo "pr.json size: $(wc -c < pr.json) bytes"
+
+      - name: Store benchmark result (PR)
+        uses: benchmark-action/github-action-benchmark@v1
+        if: github.event_name == 'pull_request' && hashFiles('pr.json') != ''
+        continue-on-error: true
+        with:
+          name: Parse Server Performance
+          tool: 'customSmallerIsBetter'
+          output-file-path: pr.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: false
+          save-data-file: false
+          alert-threshold: '110%'
+          comment-on-alert: true
+          fail-on-alert: false
+          alert-comment-cc-users: '@parse-community/maintainers'
+          summary-always: true
+
+      - name: Compare benchmark results
+        id: compare
+        run: |
+          node -e "
+          const fs = require('fs');
+
+          let baseline, pr;
+          try {
+            baseline = JSON.parse(fs.readFileSync('baseline.json', 'utf8'));
+            pr = JSON.parse(fs.readFileSync('pr.json', 'utf8'));
+          } catch (e) {
+            console.log('⚠️ Could not parse benchmark results');
+            process.exit(0);
+          }
+
+          // Handle case where baseline doesn't exist (new feature)
+          if (!Array.isArray(baseline) || baseline.length === 0) {
+            if (!Array.isArray(pr) || pr.length === 0) {
+              console.log('⚠️ Benchmark results are empty or invalid');
+              process.exit(0);
+            }
+            console.log('# Performance Benchmark Results\n');
+            console.log('> ℹ️ Baseline not available - this appears to be a new feature\n');
+            console.log('| Benchmark | Value | Details |');
+            console.log('|-----------|-------|---------|');
+            pr.forEach(result => {
+              console.log(\`| \${result.name} | \${result.value.toFixed(2)} ms | \${result.extra} |\`);
+            });
+            console.log('');
+            console.log('✅ **New benchmarks established for this feature.**');
+            process.exit(0);
+          }
+
+          if (!Array.isArray(pr) || pr.length === 0) {
+            console.log('⚠️ PR benchmark results are empty or invalid');
+            process.exit(0);
+          }
+
+          console.log('# Performance Comparison\n');
+          console.log('| Benchmark | Baseline | PR | Change | Status |');
+          console.log('|-----------|----------|----|---------| ------ |');
+
+          let hasRegression = false;
+          let hasImprovement = false;
+
+          baseline.forEach(baseResult => {
+            const prResult = pr.find(p => p.name === baseResult.name);
+            if (!prResult) {
+              console.log(\`| \${baseResult.name} | \${baseResult.value.toFixed(2)} ms | N/A | - | ⚠️ Missing |\`);
+              return;
+            }
+
+            const baseValue = parseFloat(baseResult.value);
+            const prValue = parseFloat(prResult.value);
+            const change = ((prValue - baseValue) / baseValue * 100);
+            const changeStr = change > 0 ? \`+\${change.toFixed(1)}%\` : \`\${change.toFixed(1)}%\`;
+
+            let status = '✅';
+            if (change > 20) {
+              status = '❌ Much Slower';
+              hasRegression = true;
+            } else if (change > 10) {
+              status = '⚠️ Slower';
+              hasRegression = true;
+            } else if (change < -10) {
+              status = '🚀 Faster';
+              hasImprovement = true;
+            }
+
+            console.log(\`| \${baseResult.name} | \${baseValue.toFixed(2)} ms | \${prValue.toFixed(2)} ms | \${changeStr} | \${status} |\`);
+          });
+
+          console.log('');
+          if (hasRegression) {
+            console.log('⚠️ **Performance regressions detected.** Please review the changes.');
+          } else if (hasImprovement) {
+            console.log('🚀 **Performance improvements detected!** Great work!');
+          } else {
+            console.log('✅ **No significant performance changes.**');
+          }
+          " | tee comparison.md
+
+      - name: Upload comparison
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-comparison
+          path: comparison.md
+          retention-days: 30
+
+      - name: Prepare comment body
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "## Performance Impact Report" > comment.md
+          echo "" >> comment.md
+          if [ -f comparison.md ]; then
+            cat comparison.md >> comment.md
+          else
+            echo "⚠️ Could not generate performance comparison." >> comment.md
+          fi
+          echo "" >> comment.md
+          echo "<details>" >> comment.md
+          echo "<summary>📊 View detailed results</summary>" >> comment.md
+          echo "" >> comment.md
+          echo "### Baseline Results" >> comment.md
+          echo "\`\`\`json" >> comment.md
+          cat baseline.json >> comment.md
+          echo "\`\`\`" >> comment.md
+          echo "" >> comment.md
+          echo "### PR Results" >> comment.md
+          echo "\`\`\`json" >> comment.md
+          cat pr.json >> comment.md
+          echo "\`\`\`" >> comment.md
+          echo "" >> comment.md
+          echo "</details>" >> comment.md
+          echo "" >> comment.md
+          echo "*Benchmarks ran with ${BENCHMARK_ITERATIONS:-100} iterations per test on Node.js ${{ env.NODE_VERSION }}*" >> comment.md
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: thollander/actions-comment-pull-request@v2
+        continue-on-error: true
+        with:
+          filePath: comment.md
+          comment_tag: performance-benchmark
+          mode: recreate
+
+      - name: Generate job summary
+        if: always()
+        run: |
+          if [ -f comparison.md ]; then
+            cat comparison.md >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Benchmark comparison not available" >> $GITHUB_STEP_SUMMARY
+          fi

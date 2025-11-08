@@ -824,4 +824,243 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       expect(roleIndexes.find(idx => idx.name === 'name_1')).toBeDefined();
     });
   });
+
+  describe('logClientEvents', () => {
+    it('should log MongoDB client events when configured', async () => {
+      const logger = require('../lib/logger').logger;
+      const logSpy = spyOn(logger, 'warn');
+
+      const logClientEvents = [
+        {
+          name: 'serverDescriptionChanged',
+          keys: ['address'],
+          logLevel: 'warn',
+        },
+      ];
+
+      const adapter = new MongoStorageAdapter({
+        uri: databaseURI,
+        mongoOptions: { logClientEvents },
+      });
+
+      // Connect to trigger event listeners setup
+      await adapter.connect();
+
+      // Manually trigger the event to test the listener
+      const mockEvent = {
+        address: 'localhost:27017',
+        previousDescription: { type: 'Unknown' },
+        newDescription: { type: 'Standalone' },
+      };
+
+      adapter.client.emit('serverDescriptionChanged', mockEvent);
+
+      // Verify the log was called with the correct message
+      expect(logSpy).toHaveBeenCalledWith(
+        jasmine.stringMatching(/MongoDB client event serverDescriptionChanged:.*"address":"localhost:27017"/)
+      );
+
+      await adapter.handleShutdown();
+    });
+
+    it('should log entire event when keys are not specified', async () => {
+      const logger = require('../lib/logger').logger;
+      const logSpy = spyOn(logger, 'info');
+
+      const logClientEvents = [
+        {
+          name: 'connectionPoolReady',
+          logLevel: 'info',
+        },
+      ];
+
+      const adapter = new MongoStorageAdapter({
+        uri: databaseURI,
+        mongoOptions: { logClientEvents },
+      });
+
+      await adapter.connect();
+
+      const mockEvent = {
+        address: 'localhost:27017',
+        options: { maxPoolSize: 100 },
+      };
+
+      adapter.client.emit('connectionPoolReady', mockEvent);
+
+      expect(logSpy).toHaveBeenCalledWith(
+        jasmine.stringMatching(/MongoDB client event connectionPoolReady:.*"address":"localhost:27017".*"options"/)
+      );
+
+      await adapter.handleShutdown();
+    });
+
+    it('should extract nested keys using dot notation', async () => {
+      const logger = require('../lib/logger').logger;
+      const logSpy = spyOn(logger, 'warn');
+
+      const logClientEvents = [
+        {
+          name: 'topologyDescriptionChanged',
+          keys: ['previousDescription.type', 'newDescription.type', 'newDescription.servers.size'],
+          logLevel: 'warn',
+        },
+      ];
+
+      const adapter = new MongoStorageAdapter({
+        uri: databaseURI,
+        mongoOptions: { logClientEvents },
+      });
+
+      await adapter.connect();
+
+      const mockEvent = {
+        topologyId: 1,
+        previousDescription: { type: 'Unknown' },
+        newDescription: {
+          type: 'ReplicaSetWithPrimary',
+          servers: { size: 3 },
+        },
+      };
+
+      adapter.client.emit('topologyDescriptionChanged', mockEvent);
+
+      expect(logSpy).toHaveBeenCalledWith(
+        jasmine.stringMatching(/MongoDB client event topologyDescriptionChanged:.*"previousDescription.type":"Unknown".*"newDescription.type":"ReplicaSetWithPrimary".*"newDescription.servers.size":3/)
+      );
+
+      await adapter.handleShutdown();
+    });
+
+    it('should handle invalid log level gracefully', async () => {
+      const logger = require('../lib/logger').logger;
+      const infoSpy = spyOn(logger, 'info');
+
+      const logClientEvents = [
+        {
+          name: 'connectionPoolReady',
+          keys: ['address'],
+          logLevel: 'invalidLogLevel', // Invalid log level
+        },
+      ];
+
+      const adapter = new MongoStorageAdapter({
+        uri: databaseURI,
+        mongoOptions: { logClientEvents },
+      });
+
+      await adapter.connect();
+
+      const mockEvent = {
+        address: 'localhost:27017',
+      };
+
+      adapter.client.emit('connectionPoolReady', mockEvent);
+
+      // Should fallback to 'info' level
+      expect(infoSpy).toHaveBeenCalledWith(
+        jasmine.stringMatching(/MongoDB client event connectionPoolReady:.*"address":"localhost:27017"/)
+      );
+
+      await adapter.handleShutdown();
+    });
+
+    it('should handle Map and Set instances in events', async () => {
+      const logger = require('../lib/logger').logger;
+      const warnSpy = spyOn(logger, 'warn');
+
+      const logClientEvents = [
+        {
+          name: 'customEvent',
+          logLevel: 'warn',
+        },
+      ];
+
+      const adapter = new MongoStorageAdapter({
+        uri: databaseURI,
+        mongoOptions: { logClientEvents },
+      });
+
+      await adapter.connect();
+
+      const mockEvent = {
+        mapData: new Map([['key1', 'value1'], ['key2', 'value2']]),
+        setData: new Set([1, 2, 3]),
+      };
+
+      adapter.client.emit('customEvent', mockEvent);
+
+      // Should serialize Map and Set properly
+      expect(warnSpy).toHaveBeenCalledWith(
+        jasmine.stringMatching(/MongoDB client event customEvent:.*"mapData":\{"key1":"value1","key2":"value2"\}.*"setData":\[1,2,3\]/)
+      );
+
+      await adapter.handleShutdown();
+    });
+
+    it('should handle missing keys in event object', async () => {
+      const logger = require('../lib/logger').logger;
+      const infoSpy = spyOn(logger, 'info');
+
+      const logClientEvents = [
+        {
+          name: 'testEvent',
+          keys: ['nonexistent.nested.key', 'another.missing'],
+          logLevel: 'info',
+        },
+      ];
+
+      const adapter = new MongoStorageAdapter({
+        uri: databaseURI,
+        mongoOptions: { logClientEvents },
+      });
+
+      await adapter.connect();
+
+      const mockEvent = {
+        actualField: 'value',
+      };
+
+      adapter.client.emit('testEvent', mockEvent);
+
+      // Should handle missing keys gracefully with undefined values
+      expect(infoSpy).toHaveBeenCalledWith(
+        jasmine.stringMatching(/MongoDB client event testEvent:/)
+      );
+
+      await adapter.handleShutdown();
+    });
+
+    it('should handle circular references gracefully', async () => {
+      const logger = require('../lib/logger').logger;
+      const infoSpy = spyOn(logger, 'info');
+
+      const logClientEvents = [
+        {
+          name: 'circularEvent',
+          logLevel: 'info',
+        },
+      ];
+
+      const adapter = new MongoStorageAdapter({
+        uri: databaseURI,
+        mongoOptions: { logClientEvents },
+      });
+
+      await adapter.connect();
+
+      // Create circular reference
+      const mockEvent = { name: 'test' };
+      mockEvent.self = mockEvent;
+
+      adapter.client.emit('circularEvent', mockEvent);
+
+      // Should handle circular reference with [Circular] marker
+      expect(infoSpy).toHaveBeenCalledWith(
+        jasmine.stringMatching(/MongoDB client event circularEvent:.*\[Circular\]/)
+      );
+
+      await adapter.handleShutdown();
+    });
+  });
 });
