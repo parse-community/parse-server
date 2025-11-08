@@ -1,6 +1,6 @@
 name: ci-performance
 on:
-  pull_request:
+  pull_request_target:
     branches:
       - alpha
       - beta
@@ -11,7 +11,7 @@ on:
       - '**.md'
       - 'docs/**'
       - '.github/**'
-      - '!.github/workflows/performance.yml'
+      - '!.github/workflows/ci-performance.yml'
 
 env:
   NODE_VERSION: 24.11.0
@@ -23,9 +23,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
-      contents: write
+      contents: read
       pull-requests: write
-      deployments: write
+      issues: write
 
     steps:
       - name: Checkout base branch
