@@ -34,6 +34,8 @@ describe('Security Check Groups', () => {
       config.allowClientClassCreation = false;
       config.enableInsecureAuthAdapters = false;
       config.graphQLPublicIntrospection = false;
+      config.databaseAdapter = undefined;
+      config.databaseOptions = { allowPublicExplain: false };
       await reconfigureServer(config);
 
       const group = new CheckGroupServerConfig();
@@ -43,6 +45,7 @@ describe('Security Check Groups', () => {
       expect(group.checks()[2].checkState()).toBe(CheckState.success);
       expect(group.checks()[4].checkState()).toBe(CheckState.success);
       expect(group.checks()[5].checkState()).toBe(CheckState.success);
+      expect(group.checks()[6].checkState()).toBe(CheckState.success);
     });
 
     it('checks fail correctly', async () => {
@@ -50,6 +53,8 @@ describe('Security Check Groups', () => {
       config.security.enableCheckLog = true;
       config.allowClientClassCreation = true;
       config.graphQLPublicIntrospection = true;
+      config.databaseAdapter = undefined;
+      config.databaseOptions = { allowPublicExplain: true };
       await reconfigureServer(config);
 
       const group = new CheckGroupServerConfig();
@@ -59,6 +64,7 @@ describe('Security Check Groups', () => {
       expect(group.checks()[2].checkState()).toBe(CheckState.fail);
       expect(group.checks()[4].checkState()).toBe(CheckState.fail);
       expect(group.checks()[5].checkState()).toBe(CheckState.fail);
+      expect(group.checks()[6].checkState()).toBe(CheckState.fail);
     });
   });
 
