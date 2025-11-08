@@ -213,6 +213,7 @@ export async function handleParseHeaders(req, res, next) {
     });
     return;
   }
+  await config.loadKeys();
 
   info.app = AppCache.get(info.appId);
   req.config = config;
