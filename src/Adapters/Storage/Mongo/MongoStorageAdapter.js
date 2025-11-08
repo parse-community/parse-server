@@ -211,22 +211,35 @@ export class MongoStorageAdapter implements StorageAdapter {
         if (this._clientLogEvents && Array.isArray(this._clientLogEvents)) {
           this._clientLogEvents.forEach(eventConfig => {
             client.on(eventConfig.name, event => {
-              let logData = {};
-              if (!eventConfig.keys || eventConfig.keys.length === 0) {
-                logData = event;
-              } else {
-                eventConfig.keys.forEach(keyPath => {
-                  const keyParts = keyPath.split('.');
-                  let value = event;
-                  keyParts.forEach(part => {
-                    value = value ? value[part] : undefined;
+              try {
+                let logData = {};
+                if (!eventConfig.keys || eventConfig.keys.length === 0) {
+                  logData = event;
+                } else {
+                  eventConfig.keys.forEach(keyPath => {
+                    logData[keyPath] = _.get(event, keyPath);
                   });
-                  logData[keyPath] = value;
-                });
-              }
+                }
 
-              const logMessage = `MongoDB client event ${eventConfig.name}: ${JSON.stringify(logData)}`;
-              logger[eventConfig.logLevel](logMessage);
+                // Validate log level exists, fallback to 'info'
+                const logLevel = typeof logger[eventConfig.logLevel] === 'function' ? eventConfig.logLevel : 'info';
+
+                // Safe JSON serialization with Map/Set support
+                const logMessage = `MongoDB client event ${eventConfig.name}: ${JSON.stringify(logData, (key, value) => {
+                  if (value instanceof Map) {
+                    return Object.fromEntries(value);
+                  }
+                  if (value instanceof Set) {
+                    return Array.from(value);
+                  }
+                  return value;
+                })}`;
+
+                logger[logLevel](logMessage);
+              } catch (error) {
+                // Fallback if serialization completely fails
+                logger.warn(`MongoDB client event ${eventConfig.name} logged with error: ${error.message}`);
+              }
             });
           });
         }

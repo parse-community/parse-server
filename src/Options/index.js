@@ -608,6 +608,15 @@ export interface FileUploadOptions {
   enableForPublic: ?boolean;
 }
 
+export type ClientLogEvent = {
+  /* The MongoDB driver event name to listen for. */
+  name: string,
+  /* Optional array of dot-notation paths to extract specific data from the event object. If not provided or empty, the entire event object will be logged. */
+  keys?: string[],
+  /* The log level to use for this event. */
+  logLevel: string,
+};
+
 export interface DatabaseOptions {
   /* Enables database real-time hooks to update single schema cache. Set to `true` if using multiple Parse Servers instances connected to the same database. Failing to do so will cause a schema change to not propagate to all instances and re-syncing will only happen when the instances restart. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required.
   :DEFAULT: false */
@@ -726,7 +735,7 @@ export interface DatabaseOptions {
   /* Set to `true` to disable validation of index fields. When disabled, indexes can be created even if the fields do not exist in the schema. This can be useful when creating indexes on fields that will be added later. */
   disableIndexFieldValidation: ?boolean;
   /* An array of MongoDB client event configurations to enable logging of specific events. Each configuration object should contain:<br><ul><li>`name` (the event name, e.g., 'topologyDescriptionChanged', 'serverDescriptionChanged', 'connectionPoolCleared', 'connectionPoolReady')</li><li>`keys` (optional array of dot-notation paths to extract specific data from the event object; if not provided or empty, the entire event object will be logged)</li><li>`logLevel` (the log level to use for this event: 'error', 'warn', 'info', 'debug', etc.).</li></ul> */
-  clientLogEvents: ?(any[]);
+  clientLogEvents: ?(ClientLogEvent[]);
 }
 
 export interface AuthAdapter {
