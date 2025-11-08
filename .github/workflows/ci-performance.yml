@@ -10,8 +10,6 @@ on:
     paths-ignore:
       - '**.md'
       - 'docs/**'
-      - '.github/**'
-      - '!.github/workflows/ci-performance.yml'
 
 env:
   NODE_VERSION: 24.11.0
