@@ -138,7 +138,10 @@
     "prettier": "prettier --write {src,spec}/{**/*,*}.js",
     "prepare": "npm run build",
     "postinstall": "node -p 'require(\"./postinstall.js\")()'",
-    "madge:circular": "node_modules/.bin/madge ./src --circular"
+    "madge:circular": "node_modules/.bin/madge ./src --circular",
+    "benchmark": "cross-env MONGODB_VERSION=8.0.4 MONGODB_TOPOLOGY=standalone mongodb-runner exec -t standalone --version 8.0.4 -- --port 27017 -- npm run benchmark:only",
+    "benchmark:only": "node benchmark/performance.js",
+    "benchmark:quick": "cross-env BENCHMARK_ITERATIONS=10 npm run benchmark:only"
   },
   "types": "types/index.d.ts",
   "engines": {
