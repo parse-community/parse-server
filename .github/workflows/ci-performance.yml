@@ -1,4 +1,4 @@
-name: Performance Impact Check
+name: ci-performance
 on:
   pull_request:
     branches:
