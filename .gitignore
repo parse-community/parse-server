@@ -62,4 +62,5 @@ lib/
 # Redis Dump
 dump.rdb
 
-_mongodb_runner
+# AI agents
+.claude
