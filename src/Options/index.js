@@ -725,6 +725,8 @@ export interface DatabaseOptions {
   createIndexRoleName: ?boolean;
   /* Set to `true` to disable validation of index fields. When disabled, indexes can be created even if the fields do not exist in the schema. This can be useful when creating indexes on fields that will be added later. */
   disableIndexFieldValidation: ?boolean;
+  /* An array of MongoDB client event configurations to enable logging of specific events. Each configuration object should contain:<br><ul><li>`name` (the event name, e.g., 'topologyDescriptionChanged', 'serverDescriptionChanged', 'connectionPoolCleared', 'connectionPoolReady')</li><li>`keys` (optional array of dot-notation paths to extract specific data from the event object; if not provided or empty, the entire event object will be logged)</li><li>`logLevel` (the log level to use for this event: 'error', 'warn', 'info', 'debug', etc.).</li></ul> */
+  clientLogEvents: ?(any[]);
 }
 
 export interface AuthAdapter {

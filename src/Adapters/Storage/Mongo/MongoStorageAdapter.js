@@ -132,6 +132,7 @@ export class MongoStorageAdapter implements StorageAdapter {
   _mongoOptions: Object;
   _onchange: any;
   _stream: any;
+  _clientLogEvents: ?Array<any>;
   // Public
   connectionPromise: ?Promise<any>;
   database: any;
@@ -154,6 +155,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     this.enableSchemaHooks = !!mongoOptions.enableSchemaHooks;
     this.schemaCacheTtl = mongoOptions.schemaCacheTtl;
     this.disableIndexFieldValidation = !!mongoOptions.disableIndexFieldValidation;
+    this._clientLogEvents = mongoOptions.clientLogEvents;
     // Remove Parse Server-specific options that should not be passed to MongoDB client
     // Note: We only delete from this._mongoOptions, not from the original mongoOptions object,
     // because other components (like DatabaseController) need access to these options
@@ -162,6 +164,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       'schemaCacheTtl',
       'maxTimeMS',
       'disableIndexFieldValidation',
+      'clientLogEvents',
       'createIndexUserUsername',
       'createIndexUserUsernameCaseInsensitive',
       'createIndexUserEmail',
@@ -203,6 +206,31 @@ export class MongoStorageAdapter implements StorageAdapter {
         client.on('close', () => {
           delete this.connectionPromise;
         });
+
+        // Set up client event logging if configured
+        if (this._clientLogEvents && Array.isArray(this._clientLogEvents)) {
+          this._clientLogEvents.forEach(eventConfig => {
+            client.on(eventConfig.name, event => {
+              let logData = {};
+              if (!eventConfig.keys || eventConfig.keys.length === 0) {
+                logData = event;
+              } else {
+                eventConfig.keys.forEach(keyPath => {
+                  const keyParts = keyPath.split('.');
+                  let value = event;
+                  keyParts.forEach(part => {
+                    value = value ? value[part] : undefined;
+                  });
+                  logData[keyPath] = value;
+                });
+              }
+
+              const logMessage = `MongoDB client event ${eventConfig.name}: ${JSON.stringify(logData)}`;
+              logger[eventConfig.logLevel](logMessage);
+            });
+          });
+        }
+
         this.client = client;
         this.database = database;
       })
