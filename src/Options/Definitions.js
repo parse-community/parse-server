@@ -1086,51 +1086,51 @@ module.exports.FileUploadOptions = {
 /* The available log levels for Parse Server logging. Valid values are:<br>- `'error'` - Error level (highest priority)<br>- `'warn'` - Warning level<br>- `'info'` - Info level (default)<br>- `'verbose'` - Verbose level<br>- `'debug'` - Debug level<br>- `'silly'` - Silly level (lowest priority) */
 module.exports.LogLevel = {
   debug: {
-    env: 'undefinedDEBUG',
+    env: 'PARSE_SERVER_LOG_LEVEL_DEBUG',
     help: 'Debug level',
     required: true,
   },
   error: {
-    env: 'undefinedERROR',
+    env: 'PARSE_SERVER_LOG_LEVEL_ERROR',
     help: 'Error level - highest priority',
     required: true,
   },
   info: {
-    env: 'undefinedINFO',
+    env: 'PARSE_SERVER_LOG_LEVEL_INFO',
     help: 'Info level - default',
     required: true,
   },
   silly: {
-    env: 'undefinedSILLY',
+    env: 'PARSE_SERVER_LOG_LEVEL_SILLY',
     help: 'Silly level - lowest priority',
     required: true,
   },
   verbose: {
-    env: 'undefinedVERBOSE',
+    env: 'PARSE_SERVER_LOG_LEVEL_VERBOSE',
     help: 'Verbose level',
     required: true,
   },
   warn: {
-    env: 'undefinedWARN',
+    env: 'PARSE_SERVER_LOG_LEVEL_WARN',
     help: 'Warning level',
     required: true,
   },
 };
 module.exports.LogClientEvent = {
   keys: {
-    env: 'undefinedKEYS',
+    env: 'PARSE_SERVER_DATABASE_LOG_CLIENT_EVENTS_KEYS',
     help:
       'Optional array of dot-notation paths to extract specific data from the event object. If not provided or empty, the entire event object will be logged.',
     action: parsers.arrayParser,
   },
   logLevel: {
-    env: 'undefinedLOG_LEVEL',
+    env: 'PARSE_SERVER_DATABASE_LOG_CLIENT_EVENTS_LOG_LEVEL',
     help:
       "The log level to use for this event. See [LogLevel](LogLevel.html) for available values. Defaults to `'info'`.",
     default: 'info',
   },
   name: {
-    env: 'undefinedNAME',
+    env: 'PARSE_SERVER_DATABASE_LOG_CLIENT_EVENTS_NAME',
     help:
       'The MongoDB driver event name to listen for. See the [MongoDB driver events documentation](https://www.mongodb.com/docs/drivers/node/current/fundamentals/monitoring/) for available events.',
     required: true,
@@ -1276,6 +1276,7 @@ module.exports.DatabaseOptions = {
     env: 'PARSE_SERVER_DATABASE_LOG_CLIENT_EVENTS',
     help: 'An array of MongoDB client event configurations to enable logging of specific events.',
     action: parsers.arrayParser,
+    type: 'LogClientEvent[]',
   },
   maxConnecting: {
     env: 'PARSE_SERVER_DATABASE_MAX_CONNECTING',
