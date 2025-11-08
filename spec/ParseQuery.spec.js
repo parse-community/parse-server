@@ -5391,6 +5391,7 @@ describe('Parse.Query testing', () => {
       'explain works with and without master key when allowPublicExplain is true',
       async () => {
         await reconfigureServer({
+          databaseAdapter: undefined,
           databaseURI: 'mongodb://localhost:27017/parse',
           databaseOptions: {
             allowPublicExplain: true,
@@ -5418,6 +5419,7 @@ describe('Parse.Query testing', () => {
       'explain requires master key when allowPublicExplain is false',
       async () => {
         await reconfigureServer({
+          databaseAdapter: undefined,
           databaseURI: 'mongodb://localhost:27017/parse',
           databaseOptions: {
             allowPublicExplain: false,
@@ -5449,6 +5451,7 @@ describe('Parse.Query testing', () => {
       'explain works only with master key by default',
       async () => {
         await reconfigureServer({
+          databaseAdapter: undefined,
           databaseURI: 'mongodb://localhost:27017/parse',
           databaseOptions: {
             allowPublicExplain: false,
