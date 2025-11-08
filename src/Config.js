@@ -662,7 +662,7 @@ export class Config {
     if (databaseOptions.allowPublicExplain === undefined) {
       databaseOptions.allowPublicExplain = DatabaseOptions.allowPublicExplain.default;
     } else if (typeof databaseOptions.allowPublicExplain !== 'boolean') {
-      throw `databaseOptions.allowPublicExplain must be a boolean`;
+      throw `Parse Server option 'databaseOptions.allowPublicExplain' must be a boolean.`;
     }
   }
 
