@@ -608,12 +608,28 @@ export interface FileUploadOptions {
   enableForPublic: ?boolean;
 }
 
+/* The available log levels for Parse Server logging. Valid values are:<br>- `'error'` - Error level (highest priority)<br>- `'warn'` - Warning level<br>- `'info'` - Info level (default)<br>- `'verbose'` - Verbose level<br>- `'debug'` - Debug level<br>- `'silly'` - Silly level (lowest priority) */
+export interface LogLevel {
+  /* Error level - highest priority */
+  error: 'error';
+  /* Warning level */
+  warn: 'warn';
+  /* Info level - default */
+  info: 'info';
+  /* Verbose level */
+  verbose: 'verbose';
+  /* Debug level */
+  debug: 'debug';
+  /* Silly level - lowest priority */
+  silly: 'silly';
+}
+
 export interface LogClientEvent {
   /* The MongoDB driver event name to listen for. See the [MongoDB driver events documentation](https://www.mongodb.com/docs/drivers/node/current/fundamentals/monitoring/) for available events. */
   name: string;
   /* Optional array of dot-notation paths to extract specific data from the event object. If not provided or empty, the entire event object will be logged. */
   keys: ?(string[]);
-  /* The log level to use for this event. */
+  /* The log level to use for this event. See [LogLevel](LogLevel.html) for available values. If an invalid level is provided, it will default to `'info'`. */
   logLevel: string;
 }
 
@@ -747,23 +763,23 @@ export interface AuthAdapter {
 }
 
 export interface LogLevels {
-  /* Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterFind`, `afterLogout`. Default is `info`.
+  /* Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterFind`, `afterLogout`. Default is `info`. See [LogLevel](LogLevel.html) for available values.
   :DEFAULT: info
   */
   triggerAfter: ?string;
-  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on success. Default is `info`.
+  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on success. Default is `info`. See [LogLevel](LogLevel.html) for available values.
   :DEFAULT: info
   */
   triggerBeforeSuccess: ?string;
-  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on error. Default is `error`.
+  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on error. Default is `error`. See [LogLevel](LogLevel.html) for available values.
   :DEFAULT: error
   */
   triggerBeforeError: ?string;
-  /* Log level used by the Cloud Code Functions on success. Default is `info`.
+  /* Log level used by the Cloud Code Functions on success. Default is `info`. See [LogLevel](LogLevel.html) for available values.
   :DEFAULT: info
   */
   cloudFunctionSuccess: ?string;
-  /* Log level used by the Cloud Code Functions on error. Default is `error`.
+  /* Log level used by the Cloud Code Functions on error. Default is `error`. See [LogLevel](LogLevel.html) for available values.
   :DEFAULT: error
   */
   cloudFunctionError: ?string;

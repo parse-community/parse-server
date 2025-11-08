@@ -1083,6 +1083,39 @@ module.exports.FileUploadOptions = {
     default: ['^(?![xXsS]?[hH][tT][mM][lL]?$)'],
   },
 };
+/* The available log levels for Parse Server logging. Valid values are:<br>- `'error'` - Error level (highest priority)<br>- `'warn'` - Warning level<br>- `'info'` - Info level (default)<br>- `'verbose'` - Verbose level<br>- `'debug'` - Debug level<br>- `'silly'` - Silly level (lowest priority) */
+module.exports.LogLevel = {
+  debug: {
+    env: 'undefinedDEBUG',
+    help: 'Debug level',
+    required: true,
+  },
+  error: {
+    env: 'undefinedERROR',
+    help: 'Error level - highest priority',
+    required: true,
+  },
+  info: {
+    env: 'undefinedINFO',
+    help: 'Info level - default',
+    required: true,
+  },
+  silly: {
+    env: 'undefinedSILLY',
+    help: 'Silly level - lowest priority',
+    required: true,
+  },
+  verbose: {
+    env: 'undefinedVERBOSE',
+    help: 'Verbose level',
+    required: true,
+  },
+  warn: {
+    env: 'undefinedWARN',
+    help: 'Warning level',
+    required: true,
+  },
+};
 module.exports.LogClientEvent = {
   keys: {
     env: 'undefinedKEYS',
@@ -1092,7 +1125,8 @@ module.exports.LogClientEvent = {
   },
   logLevel: {
     env: 'undefinedLOG_LEVEL',
-    help: 'The log level to use for this event.',
+    help:
+      "The log level to use for this event. See [LogLevel](LogLevel.html) for available values. If an invalid level is provided, it will default to `'info'`.",
     required: true,
   },
   name: {
@@ -1427,30 +1461,32 @@ module.exports.AuthAdapter = {
 module.exports.LogLevels = {
   cloudFunctionError: {
     env: 'PARSE_SERVER_LOG_LEVELS_CLOUD_FUNCTION_ERROR',
-    help: 'Log level used by the Cloud Code Functions on error. Default is `error`.',
+    help:
+      'Log level used by the Cloud Code Functions on error. Default is `error`. See [LogLevel](LogLevel.html) for available values.',
     default: 'error',
   },
   cloudFunctionSuccess: {
     env: 'PARSE_SERVER_LOG_LEVELS_CLOUD_FUNCTION_SUCCESS',
-    help: 'Log level used by the Cloud Code Functions on success. Default is `info`.',
+    help:
+      'Log level used by the Cloud Code Functions on success. Default is `info`. See [LogLevel](LogLevel.html) for available values.',
     default: 'info',
   },
   triggerAfter: {
     env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_AFTER',
     help:
-      'Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterFind`, `afterLogout`. Default is `info`.',
+      'Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterFind`, `afterLogout`. Default is `info`. See [LogLevel](LogLevel.html) for available values.',
     default: 'info',
   },
   triggerBeforeError: {
     env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_BEFORE_ERROR',
     help:
-      'Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on error. Default is `error`.',
+      'Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on error. Default is `error`. See [LogLevel](LogLevel.html) for available values.',
     default: 'error',
   },
   triggerBeforeSuccess: {
     env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_BEFORE_SUCCESS',
     help:
-      'Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on success. Default is `info`.',
+      'Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on success. Default is `info`. See [LogLevel](LogLevel.html) for available values.',
     default: 'info',
   },
 };

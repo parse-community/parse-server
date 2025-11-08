@@ -239,9 +239,19 @@
  */
 
 /**
+ * @interface LogLevel
+ * @property {StringLiteral} debug Debug level
+ * @property {StringLiteral} error Error level - highest priority
+ * @property {StringLiteral} info Info level - default
+ * @property {StringLiteral} silly Silly level - lowest priority
+ * @property {StringLiteral} verbose Verbose level
+ * @property {StringLiteral} warn Warning level
+ */
+
+/**
  * @interface LogClientEvent
  * @property {String[]} keys Optional array of dot-notation paths to extract specific data from the event object. If not provided or empty, the entire event object will be logged.
- * @property {String} logLevel The log level to use for this event.
+ * @property {String} logLevel The log level to use for this event. See [LogLevel](LogLevel.html) for available values. If an invalid level is provided, it will default to `'info'`.
  * @property {String} name The MongoDB driver event name to listen for. See the [MongoDB driver events documentation](https://www.mongodb.com/docs/drivers/node/current/fundamentals/monitoring/) for available events.
  */
 
@@ -311,9 +321,9 @@
 
 /**
  * @interface LogLevels
- * @property {String} cloudFunctionError Log level used by the Cloud Code Functions on error. Default is `error`.
- * @property {String} cloudFunctionSuccess Log level used by the Cloud Code Functions on success. Default is `info`.
- * @property {String} triggerAfter Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterFind`, `afterLogout`. Default is `info`.
- * @property {String} triggerBeforeError Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on error. Default is `error`.
- * @property {String} triggerBeforeSuccess Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on success. Default is `info`.
+ * @property {String} cloudFunctionError Log level used by the Cloud Code Functions on error. Default is `error`. See [LogLevel](LogLevel.html) for available values.
+ * @property {String} cloudFunctionSuccess Log level used by the Cloud Code Functions on success. Default is `info`. See [LogLevel](LogLevel.html) for available values.
+ * @property {String} triggerAfter Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterFind`, `afterLogout`. Default is `info`. See [LogLevel](LogLevel.html) for available values.
+ * @property {String} triggerBeforeError Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on error. Default is `error`. See [LogLevel](LogLevel.html) for available values.
+ * @property {String} triggerBeforeSuccess Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on success. Default is `info`. See [LogLevel](LogLevel.html) for available values.
  */
