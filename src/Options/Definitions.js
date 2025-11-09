@@ -402,6 +402,12 @@ module.exports.ParseServerOptions = {
       'Maximum query complexity for GraphQL queries. Controls depth and number of operations.* Format: { depth: number, fields: number }* - depth: Maximum depth of nested field selections* - fields: Maximum number of operations (queries/mutations) in a single request* If both maxIncludeQueryComplexity and maxGraphQLQueryComplexity are provided, maxIncludeQueryComplexity values* must be lower than maxGraphQLQueryComplexity values to avoid validation conflicts.',
     action: parsers.objectParser,
   },
+  maxIncludeQueryComplexity: {
+    env: 'PARSE_SERVER_MAX_INCLUDE_QUERY_COMPLEXITY',
+    help:
+      'Maximum query complexity for REST API includes. Controls depth and number of include fields.* Format: { depth: number, count: number }* - depth: Maximum depth of nested includes (e.g., foo.bar.baz = depth 3)* - count: Maximum number of include fields (e.g., foo,bar,baz = 3 fields)* If both maxIncludeQueryComplexity and maxGraphQLQueryComplexity are provided, maxIncludeQueryComplexity values* must be lower than maxGraphQLQueryComplexity values to avoid validation conflicts.',
+    action: parsers.objectParser,
+  },
   maxLimit: {
     env: 'PARSE_SERVER_MAX_LIMIT',
     help: 'Max value for limit option on queries, defaults to unlimited',
@@ -412,12 +418,6 @@ module.exports.ParseServerOptions = {
     help:
       "Maximum number of logs to keep. If not set, no logs will be removed. This can be a number of files or number of days. If using days, add 'd' as the suffix. (default: null)",
     action: parsers.numberOrStringParser('maxLogFiles'),
-  },
-  maxIncludeQueryComplexity: {
-    env: 'PARSE_SERVER_MAX_INCLUDE_QUERY_COMPLEXITY',
-    help:
-      'Maximum query complexity for REST API includes. Controls depth and number of include fields.* Format: { depth: number, count: number }* - depth: Maximum depth of nested includes (e.g., foo.bar.baz = depth 3)* - count: Maximum number of include fields (e.g., foo,bar,baz = 3 fields)* If both maxIncludeQueryComplexity and maxGraphQLQueryComplexity are provided, maxIncludeQueryComplexity values* must be lower than maxGraphQLQueryComplexity values to avoid validation conflicts.',
-    action: parsers.objectParser,
   },
   maxUploadSize: {
     env: 'PARSE_SERVER_MAX_UPLOAD_SIZE',
