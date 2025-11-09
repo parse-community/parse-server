@@ -3,6 +3,8 @@
  * This helps make benchmark measurements more stable by simulating network conditions
  */
 
+/* eslint-disable no-console */
+
 const net = require('net');
 
 const PROXY_PORT = parseInt(process.env.PROXY_PORT || '27018', 10);
@@ -52,8 +54,7 @@ const server = net.createServer((clientSocket) => {
 });
 
 server.listen(PROXY_PORT, () => {
-  console.log(`MongoDB proxy listening on port ${PROXY_PORT}`);
-  console.log(`Forwarding to ${TARGET_HOST}:${TARGET_PORT} with ${LATENCY_MS}ms latency`);
+  console.log(`MongoDB proxy listening on port ${PROXY_PORT} forwarding to ${TARGET_PORT} with ${LATENCY_MS}ms latency`);
 });
 
 process.on('SIGTERM', () => {
