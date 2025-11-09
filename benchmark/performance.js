@@ -14,6 +14,7 @@ const core = require('@actions/core');
 const Parse = require('parse/node');
 const { performance, PerformanceObserver } = require('perf_hooks');
 const { MongoClient } = require('mongodb');
+const { wrapMongoDBWithLatency } = require('./MongoLatencyWrapper');
 
 // Configuration
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/parse_benchmark_test';
@@ -106,71 +107,87 @@ function resetParseServer() {
  * @param {Function} options.operation - Async function to measure
  * @param {number} [options.iterations=ITERATIONS] - Number of iterations to run
  * @param {boolean} [options.skipWarmup=false] - Skip warmup phase
+ * @param {number} [options.dbLatency] - Artificial DB latency in milliseconds to apply during this benchmark
  */
-async function measureOperation({ name, operation, iterations = ITERATIONS, skipWarmup = false }) {
+async function measureOperation({ name, operation, iterations = ITERATIONS, skipWarmup = false, dbLatency }) {
   const warmupCount = skipWarmup ? 0 : Math.floor(iterations * 0.2);
   const times = [];
 
-  if (warmupCount > 0) {
-    logInfo(`Starting warmup phase of ${warmupCount} iterations...`);
-    const warmupStart = performance.now();
-    for (let i = 0; i < warmupCount; i++) {
+  // Apply artificial latency if specified
+  let unwrapLatency = null;
+  if (dbLatency !== undefined && dbLatency > 0) {
+    logInfo(`Applying ${dbLatency}ms artificial DB latency for this benchmark`);
+    unwrapLatency = wrapMongoDBWithLatency(dbLatency);
+  }
+
+  try {
+    if (warmupCount > 0) {
+      logInfo(`Starting warmup phase of ${warmupCount} iterations...`);
+      const warmupStart = performance.now();
+      for (let i = 0; i < warmupCount; i++) {
+        await operation();
+      }
+      logInfo(`Warmup took: ${(performance.now() - warmupStart).toFixed(2)}ms`);
+    }
+
+    // Measurement phase
+    logInfo(`Starting measurement phase of ${iterations} iterations...`);
+    const progressInterval = Math.ceil(iterations / 10); // Log every 10%
+    const measurementStart = performance.now();
+
+    for (let i = 0; i < iterations; i++) {
+      const start = performance.now();
       await operation();
+      const end = performance.now();
+      const duration = end - start;
+      times.push(duration);
+
+      // Log progress every 10% or individual iterations if LOG_ITERATIONS is enabled
+      if (LOG_ITERATIONS) {
+        logInfo(`Iteration ${i + 1}: ${duration.toFixed(2)}ms`);
+      } else if ((i + 1) % progressInterval === 0 || i + 1 === iterations) {
+        const progress = Math.round(((i + 1) / iterations) * 100);
+        logInfo(`Progress: ${progress}%`);
+      }
     }
-    logInfo(`Warmup took: ${(performance.now() - warmupStart).toFixed(2)}ms`);
-  }
 
-  // Measurement phase
-  logInfo(`Starting measurement phase of ${iterations} iterations...`);
-  const progressInterval = Math.ceil(iterations / 10); // Log every 10%
-  const measurementStart = performance.now();
+    logInfo(`Measurement took: ${(performance.now() - measurementStart).toFixed(2)}ms`);
 
-  for (let i = 0; i < iterations; i++) {
-    const start = performance.now();
-    await operation();
-    const end = performance.now();
-    const duration = end - start;
-    times.push(duration);
+    // Sort times for percentile calculations
+    times.sort((a, b) => a - b);
 
-    // Log progress every 10% or individual iterations if LOG_ITERATIONS is enabled
-    if (LOG_ITERATIONS) {
-      logInfo(`Iteration ${i + 1}: ${duration.toFixed(2)}ms`);
-    } else if ((i + 1) % progressInterval === 0 || i + 1 === iterations) {
-      const progress = Math.round(((i + 1) / iterations) * 100);
-      logInfo(`Progress: ${progress}%`);
+    // Filter outliers using Interquartile Range (IQR) method
+    const q1Index = Math.floor(times.length * 0.25);
+    const q3Index = Math.floor(times.length * 0.75);
+    const q1 = times[q1Index];
+    const q3 = times[q3Index];
+    const iqr = q3 - q1;
+    const lowerBound = q1 - 1.5 * iqr;
+    const upperBound = q3 + 1.5 * iqr;
+
+    const filtered = times.filter(t => t >= lowerBound && t <= upperBound);
+
+    // Calculate statistics on filtered data
+    const median = filtered[Math.floor(filtered.length * 0.5)];
+    const p95 = filtered[Math.floor(filtered.length * 0.95)];
+    const p99 = filtered[Math.floor(filtered.length * 0.99)];
+    const min = filtered[0];
+    const max = filtered[filtered.length - 1];
+
+    return {
+      name,
+      value: median, // Use median (p50) as primary metric for stability in CI
+      unit: 'ms',
+      range: `${min.toFixed(2)} - ${max.toFixed(2)}`,
+      extra: `p95: ${p95.toFixed(2)}ms, p99: ${p99.toFixed(2)}ms, n=${filtered.length}/${times.length}`,
+    };
+  } finally {
+    // Remove latency wrapper if it was applied
+    if (unwrapLatency) {
+      unwrapLatency();
+      logInfo('Removed artificial DB latency');
     }
   }
-
-  logInfo(`Measurement took: ${(performance.now() - measurementStart).toFixed(2)}ms`);
-
-  // Sort times for percentile calculations
-  times.sort((a, b) => a - b);
-
-  // Filter outliers using Interquartile Range (IQR) method
-  const q1Index = Math.floor(times.length * 0.25);
-  const q3Index = Math.floor(times.length * 0.75);
-  const q1 = times[q1Index];
-  const q3 = times[q3Index];
-  const iqr = q3 - q1;
-  const lowerBound = q1 - 1.5 * iqr;
-  const upperBound = q3 + 1.5 * iqr;
-
-  const filtered = times.filter(t => t >= lowerBound && t <= upperBound);
-
-  // Calculate statistics on filtered data
-  const median = filtered[Math.floor(filtered.length * 0.5)];
-  const p95 = filtered[Math.floor(filtered.length * 0.95)];
-  const p99 = filtered[Math.floor(filtered.length * 0.99)];
-  const min = filtered[0];
-  const max = filtered[filtered.length - 1];
-
-  return {
-    name,
-    value: median, // Use median (p50) as primary metric for stability in CI
-    unit: 'ms',
-    range: `${min.toFixed(2)} - ${max.toFixed(2)}`,
-    extra: `p95: ${p95.toFixed(2)}ms, p99: ${p99.toFixed(2)}ms, n=${filtered.length}/${times.length}`,
-  };
 }
 
 /**
@@ -354,7 +371,6 @@ async function benchmarkUserLogin() {
  * Benchmark: Query with Include (Parallel Include Pointers)
  */
 async function benchmarkQueryWithInclude() {
-
   // Setup: Create nested object hierarchy
   const Level2Class = Parse.Object.extend('Level2');
   const Level1Class = Parse.Object.extend('Level1');
@@ -363,6 +379,7 @@ async function benchmarkQueryWithInclude() {
   return measureOperation({
     name: 'Query with Include (2 levels)',
     skipWarmup: true,
+    dbLatency: 100,
     operation: async () => {
       // Create 10 Level2 objects
       const level2Objects = [];
