@@ -44,12 +44,12 @@ type RequestKeywordDenylist = {
   value: any,
 };
 type GraphQLQueryComplexityOptions = {
-  depth: number,
-  fields: number,
+  depth?: number,
+  fields?: number,
 };
 type IncludeComplexityOptions = {
-  depth: number,
-  count: number,
+  depth?: number,
+  count?: number,
 };
 
 export interface ParseServerOptions {
@@ -363,10 +363,10 @@ export interface ParseServerOptions {
    * must be lower than maxGraphQLQueryComplexity values to avoid validation conflicts.
    */
   maxIncludeQueryComplexity: ?IncludeComplexityOptions;
-  /* Maximum query complexity for GraphQL queries. Controls depth and number of operations.
+  /* Maximum query complexity for GraphQL queries. Controls depth and number of field selections.
    * Format: { depth: number, fields: number }
    * - depth: Maximum depth of nested field selections
-   * - fields: Maximum number of operations (queries/mutations) in a single request
+   * - fields: Maximum number of field selections in a single request
    * If both maxIncludeQueryComplexity and maxGraphQLQueryComplexity are provided, maxIncludeQueryComplexity values
    * must be lower than maxGraphQLQueryComplexity values to avoid validation conflicts.
    */

@@ -399,7 +399,7 @@ module.exports.ParseServerOptions = {
   maxGraphQLQueryComplexity: {
     env: 'PARSE_SERVER_MAX_GRAPH_QLQUERY_COMPLEXITY',
     help:
-      'Maximum query complexity for GraphQL queries. Controls depth and number of operations.* Format: { depth: number, fields: number }* - depth: Maximum depth of nested field selections* - fields: Maximum number of operations (queries/mutations) in a single request* If both maxIncludeQueryComplexity and maxGraphQLQueryComplexity are provided, maxIncludeQueryComplexity values* must be lower than maxGraphQLQueryComplexity values to avoid validation conflicts.',
+      'Maximum query complexity for GraphQL queries. Controls depth and number of field selections.* Format: { depth: number, fields: number }* - depth: Maximum depth of nested field selections* - fields: Maximum number of field selections in a single request* If both maxIncludeQueryComplexity and maxGraphQLQueryComplexity are provided, maxIncludeQueryComplexity values* must be lower than maxGraphQLQueryComplexity values to avoid validation conflicts.',
     action: parsers.objectParser,
   },
   maxIncludeQueryComplexity: {

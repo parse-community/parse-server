@@ -27,12 +27,12 @@ type RequestKeywordDenylist = {
   value: any;
 };
 type GraphQLQueryComplexityOptions = {
-  depth: number;
-  fields: number;
+  depth?: number;
+  fields?: number;
 };
 type IncludeComplexityOptions = {
-  depth: number;
-  count: number;
+  depth?: number;
+  count?: number;
 };
 export interface ParseServerOptions {
   appId: string;
