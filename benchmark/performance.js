@@ -19,40 +19,11 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/parse_
 const SERVER_URL = 'http://localhost:1337/parse';
 const APP_ID = 'benchmark-app-id';
 const MASTER_KEY = 'benchmark-master-key';
-const ITERATIONS = parseInt(process.env.BENCHMARK_ITERATIONS || '10000', 10);
+const ITERATIONS = parseInt(process.env.BENCHMARK_ITERATIONS || '1000', 10);
 
 // Parse Server instance
 let parseServer;
 let mongoClient;
-let proxyProcess;
-let proxyServerCleanup;
-
-/**
- * Start MongoDB proxy with artificial latency
- */
-async function startProxy() {
-  const { spawn } = require('child_process');
-
-  proxyProcess = spawn('node', ['benchmark/db-proxy.js'], {
-    env: { ...process.env, PROXY_PORT: '27018', TARGET_PORT: '27017', LATENCY_MS: '10000' },
-    stdio: 'inherit',
-  });
-
-  // Wait for proxy to start
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  console.log('MongoDB proxy started on port 27018 with 10ms latency');
-}
-
-/**
- * Stop MongoDB proxy
- */
-async function stopProxy() {
-  if (proxyProcess) {
-    proxyProcess.kill();
-    await new Promise(resolve => setTimeout(resolve, 500));
-    console.log('MongoDB proxy stopped');
-  }
-}
 
 /**
  * Initialize Parse Server for benchmarking
@@ -120,59 +91,6 @@ async function cleanupDatabase() {
  */
 function resetParseServer() {
   Parse.serverURL = SERVER_URL;
-}
-
-/**
- * Start a Parse Server instance using the DB proxy for latency simulation
- * Stores cleanup function globally for later use
- */
-async function useProxyServer() {
-  const express = require('express');
-  const { default: ParseServer } = require('../lib/index.js');
-
-  // Create a new Parse Server instance using the proxy
-  const app = express();
-  const proxyParseServer = new ParseServer({
-    databaseURI: 'mongodb://localhost:27018/parse_benchmark_test',
-    appId: APP_ID,
-    masterKey: MASTER_KEY,
-    serverURL: 'http://localhost:1338/parse',
-    silent: true,
-    allowClientClassCreation: true,
-    logLevel: 'error',
-    verbose: false,
-  });
-
-  app.use('/parse', proxyParseServer.app);
-
-  const server = await new Promise((resolve, reject) => {
-    const s = app.listen(1338, (err) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(s);
-      }
-    });
-  });
-
-  // Configure Parse SDK to use the proxy server
-  Parse.serverURL = 'http://localhost:1338/parse';
-
-  // Store cleanup function globally
-  proxyServerCleanup = async () => {
-    server.close();
-    await new Promise(resolve => setTimeout(resolve, 500));
-    proxyServerCleanup = null;
-  };
-}
-
-/**
- * Clean up proxy server if it's running
- */
-async function cleanupProxyServer() {
-  if (proxyServerCleanup) {
-    await proxyServerCleanup();
-  }
 }
 
 /**
@@ -384,11 +302,8 @@ async function benchmarkUserLogin() {
 
 /**
  * Benchmark: Query with Include (Parallel Include Pointers)
- * This test uses the TCP proxy (port 27018) to simulate 10ms database latency for more realistic measurements
  */
 async function benchmarkQueryWithInclude() {
-  // Start proxy server
-  await useProxyServer();
 
   // Setup: Create nested object hierarchy
   const Level2Class = Parse.Object.extend('Level2');
@@ -444,9 +359,6 @@ async function runBenchmarks() {
   let server;
 
   try {
-    // Start MongoDB proxy
-    await startProxy();
-
     // Initialize Parse Server
     console.log('Initializing Parse Server...');
     server = await initializeParseServer();
@@ -474,7 +386,6 @@ async function runBenchmarks() {
       resetParseServer();
       await cleanupDatabase();
       results.push(await benchmark.fn());
-      await cleanupProxyServer();
     }
 
     // Output results in github-action-benchmark format (stdout)
@@ -498,9 +409,6 @@ async function runBenchmarks() {
     if (server) {
       server.close();
     }
-    await stopProxy();
-    // Give some time for cleanup
-    setTimeout(() => process.exit(0), 1000);
   }
 }
 
