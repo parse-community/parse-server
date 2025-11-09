@@ -529,5 +529,136 @@ describe('ParseGraphQL Query Complexity', () => {
       expect(result.data.users).toBeDefined();
     });
   });
+
+  describe('Multi-operation document handling (Security)', () => {
+    it('should validate the correct operation when multiple operations are in document', async () => {
+      await reconfigureServer({
+        maxGraphQLQueryComplexity: {
+          fields: 4,
+        },
+      });
+
+      // Document with two operations: one simple, one complex
+      const query = `
+        query SimpleQuery {
+          users {
+            edges {
+              node {
+                objectId
+              }
+            }
+          }
+        }
+
+        query ComplexQuery {
+          users {
+            edges {
+              node {
+                objectId
+                username
+                createdAt
+                updatedAt
+                email
+              }
+            }
+          }
+        }
+      `;
+
+      // SimpleQuery should pass (4 fields: users, edges, node, objectId)
+      const simpleResponse = await fetch('http://localhost:13378/graphql', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Javascript-Key': 'test',
+        },
+        body: JSON.stringify({
+          query,
+          operationName: 'SimpleQuery'
+        })
+      });
+      const simpleResult = await simpleResponse.json();
+      expect(simpleResult.data.users).toBeDefined();
+
+      // ComplexQuery should fail (8 fields > 4 limit)
+      const complexResponse = await fetch('http://localhost:13378/graphql', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Javascript-Key': 'test',
+        },
+        body: JSON.stringify({
+          query,
+          operationName: 'ComplexQuery'
+        })
+      });
+      const complexResult = await complexResponse.json();
+      expect(complexResult.errors).toBeDefined();
+      expect(complexResult.errors[0].message).toContain('Number of fields selected exceeds maximum allowed');
+    });
+
+    it('should block complex operation even when simple operation is first in document', async () => {
+      await reconfigureServer({
+        maxGraphQLQueryComplexity: {
+          depth: 2,
+        },
+      });
+
+      // First operation is simple (within limits), second is complex (exceeds limits)
+      const query = `
+        query ShallowQuery {
+          users {
+            count
+          }
+        }
+
+        query DeepQuery {
+          users {
+            edges {
+              node {
+                objectId
+                username
+              }
+            }
+          }
+        }
+      `;
+
+      // ShallowQuery should pass (depth 2)
+      const shallowResponse = await fetch('http://localhost:13378/graphql', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Javascript-Key': 'test',
+        },
+        body: JSON.stringify({
+          query,
+          operationName: 'ShallowQuery'
+        })
+      });
+      const shallowResult = await shallowResponse.json();
+      expect(shallowResult.data.users).toBeDefined();
+
+      // DeepQuery should fail (depth 4 > 2 limit)
+      const deepResponse = await fetch('http://localhost:13378/graphql', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Javascript-Key': 'test',
+        },
+        body: JSON.stringify({
+          query,
+          operationName: 'DeepQuery'
+        })
+      });
+      const deepResult = await deepResponse.json();
+      expect(deepResult.errors).toBeDefined();
+      expect(deepResult.errors[0].message).toContain('Query depth exceeds maximum allowed depth');
+    });
+  });
 });
 

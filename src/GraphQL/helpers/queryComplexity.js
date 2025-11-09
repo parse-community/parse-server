@@ -3,13 +3,14 @@ import { GraphQLError, getOperationAST, Kind } from 'graphql';
 /**
  * Calculate the maximum depth and fields (field count) of a GraphQL query
  * @param {DocumentNode} document - The GraphQL document AST
+ * @param {string} operationName - Optional operation name to select from multi-operation documents
  * @param {Object} maxLimits - Optional maximum limits for early exit optimization
  * @param {number} maxLimits.depth - Maximum depth allowed
  * @param {number} maxLimits.fields - Maximum fields allowed
  * @returns {{ depth: number, fields: number }} Maximum depth and total fields
  */
-function calculateQueryComplexity(document, maxLimits = {}) {
-  const operationAST = getOperationAST(document);
+function calculateQueryComplexity(document, operationName, maxLimits = {}) {
+  const operationAST = getOperationAST(document, operationName);
   if (!operationAST || !operationAST.selectionSet) {
     return { depth: 0, fields: 0 };
   }
@@ -96,7 +97,7 @@ export function createComplexityValidationPlugin(config) {
   return {
     requestDidStart: () => ({
       didResolveOperation: async (requestContext) => {
-        const { document } = requestContext;
+        const { document, operationName } = requestContext;
         const auth = requestContext.contextValue?.auth;
 
         // Skip validation for master/maintenance keys
@@ -118,7 +119,8 @@ export function createComplexityValidationPlugin(config) {
 
         // Calculate depth and fields in a single pass for performance
         // Pass max limits for early exit optimization - will throw immediately if exceeded
-        calculateQueryComplexity(document, maxGraphQLQueryComplexity);
+        // SECURITY: operationName is crucial for multi-operation documents to validate the correct operation
+        calculateQueryComplexity(document, operationName, maxGraphQLQueryComplexity);
       },
     }),
   };
