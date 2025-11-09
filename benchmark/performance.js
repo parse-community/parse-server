@@ -97,21 +97,28 @@ function resetParseServer() {
  * Measure average time for an async operation over multiple iterations
  * Uses warmup iterations, median metric, and outlier filtering for robustness
  */
-async function measureOperation(name, operation, iterations = ITERATIONS) {
-  const warmupCount = Math.floor(iterations * 0.2); // 20% warmup iterations
+async function measureOperation(name, operation, iterations = ITERATIONS, skipWarmup = false) {
+  const warmupCount = skipWarmup ? 0 : Math.floor(iterations * 0.2); // 20% warmup iterations
   const times = [];
 
-  // Warmup phase - stabilize JIT compilation and caches
-  for (let i = 0; i < warmupCount; i++) {
-    await operation();
+  if (warmupCount > 0) {
+    console.log(`Starting warmup phase (${warmupCount} iterations)...`);
+    const warmupStart = performance.now();
+    for (let i = 0; i < warmupCount; i++) {
+      await operation();
+    }
+    console.log(`Warmup took: ${(performance.now() - warmupStart).toFixed(2)}ms`);
   }
 
   // Measurement phase
+  console.log(`Starting measurement phase (${iterations} iterations)...`);
   for (let i = 0; i < iterations; i++) {
     const start = performance.now();
     await operation();
     const end = performance.now();
-    times.push(end - start);
+    const duration = end - start;
+    times.push(duration);
+    console.log(`Iteration ${i + 1}: ${duration.toFixed(2)}ms`);
   }
 
   // Sort times for percentile calculations
@@ -409,6 +416,8 @@ async function runBenchmarks() {
     if (server) {
       server.close();
     }
+    // Give some time for cleanup
+    setTimeout(() => process.exit(0), 1000);
   }
 }
 
