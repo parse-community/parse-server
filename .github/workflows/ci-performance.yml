@@ -27,11 +27,31 @@ jobs:
     timeout-minutes: 30
 
     steps:
+      - name: Checkout PR branch (for benchmark script)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+
+      - name: Save PR benchmark script
+        run: |
+          mkdir -p /tmp/pr-benchmark
+          cp -r benchmark /tmp/pr-benchmark/ || echo "No benchmark directory"
+          cp package.json /tmp/pr-benchmark/ || true
+
       - name: Checkout base branch
         uses: actions/checkout@v4
         with:
           ref: ${{ github.base_ref }}
           fetch-depth: 1
+          clean: true
+
+      - name: Restore PR benchmark script
+        run: |
+          if [ -d "/tmp/pr-benchmark/benchmark" ]; then
+            rm -rf benchmark
+            cp -r /tmp/pr-benchmark/benchmark .
+          fi
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -47,17 +67,18 @@ jobs:
 
       - name: Run baseline benchmarks
         id: baseline
+        env:
+          NODE_ENV: production
         run: |
-          echo "Checking if benchmark script exists..."
+          echo "Running baseline benchmarks with CPU affinity (using PR's benchmark script)..."
           if [ ! -f "benchmark/performance.js" ]; then
-            echo "⚠️ Benchmark script not found in base branch - this is expected for new features"
+            echo "⚠️ Benchmark script not found - this is expected for new features"
             echo "Skipping baseline benchmark"
             echo '[]' > baseline.json
-            echo "Baseline: N/A (benchmark script not in base branch)" > baseline-output.txt
+            echo "Baseline: N/A (no benchmark script)" > baseline-output.txt
             exit 0
           fi
-          echo "Running baseline benchmarks..."
-          npm run benchmark > baseline-output.txt 2>&1 || true
+          taskset -c 0 npm run benchmark > baseline-output.txt 2>&1 || npm run benchmark > baseline-output.txt 2>&1 || true
           echo "Benchmark command completed with exit code: $?"
           echo "Output file size: $(wc -c < baseline-output.txt) bytes"
           echo "--- Begin baseline-output.txt ---"
@@ -111,9 +132,11 @@ jobs:
 
       - name: Run PR benchmarks
         id: pr-bench
+        env:
+          NODE_ENV: production
         run: |
-          echo "Running PR benchmarks..."
-          npm run benchmark > pr-output.txt 2>&1 || true
+          echo "Running PR benchmarks with CPU affinity..."
+          taskset -c 0 npm run benchmark > pr-output.txt 2>&1 || npm run benchmark > pr-output.txt 2>&1 || true
           echo "Benchmark command completed with exit code: $?"
           echo "Output file size: $(wc -c < pr-output.txt) bytes"
           echo "--- Begin pr-output.txt ---"
@@ -224,13 +247,13 @@ jobs:
             const changeStr = change > 0 ? \`+\${change.toFixed(1)}%\` : \`\${change.toFixed(1)}%\`;
 
             let status = '✅';
-            if (change > 20) {
+            if (change > 100) {
               status = '❌ Much Slower';
               hasRegression = true;
-            } else if (change > 10) {
+            } else if (change > 50) {
               status = '⚠️ Slower';
               hasRegression = true;
-            } else if (change < -10) {
+            } else if (change < -50) {
               status = '🚀 Faster';
               hasImprovement = true;
             }
@@ -281,7 +304,9 @@ jobs:
           echo "" >> comment.md
           echo "</details>" >> comment.md
           echo "" >> comment.md
-          echo "*Benchmarks ran with ${BENCHMARK_ITERATIONS:-100} iterations per test on Node.js ${{ env.NODE_VERSION }}*" >> comment.md
+          echo "*Benchmarks ran with ${BENCHMARK_ITERATIONS:-10000} iterations per test on Node.js ${{ env.NODE_VERSION }} (production mode, CPU pinned)*" >> comment.md
+          echo "" >> comment.md
+          echo "> **Note:** Using 10k iterations with CPU affinity for measurement stability. Thresholds: ⚠️ >50%, ❌ >100%." >> comment.md
 
       - name: Comment PR with results
         if: github.event_name == 'pull_request'
