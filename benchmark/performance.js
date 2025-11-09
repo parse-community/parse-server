@@ -19,7 +19,7 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/parse_
 const SERVER_URL = 'http://localhost:1337/parse';
 const APP_ID = 'benchmark-app-id';
 const MASTER_KEY = 'benchmark-master-key';
-const ITERATIONS = parseInt(process.env.BENCHMARK_ITERATIONS || '1000', 10);
+const ITERATIONS = parseInt(process.env.BENCHMARK_ITERATIONS || '10000', 10);
 
 // Parse Server instance
 let parseServer;
@@ -248,7 +248,7 @@ async function benchmarkBatchSave() {
     }
 
     await Parse.Object.saveAll(objects);
-  }, Math.floor(ITERATIONS / BATCH_SIZE)); // Fewer iterations for batch operations
+  });
 }
 
 /**
@@ -264,7 +264,7 @@ async function benchmarkUserSignup() {
     user.set('password', 'benchmark_password');
     user.set('email', `benchmark${counter}@example.com`);
     await user.signUp();
-  }, Math.floor(ITERATIONS / 10)); // Fewer iterations for user operations
+  });
 }
 
 /**
@@ -290,7 +290,7 @@ async function benchmarkUserLogin() {
     const userCreds = users[counter++ % users.length];
     await Parse.User.logIn(userCreds.username, userCreds.password);
     await Parse.User.logOut();
-  }, Math.floor(ITERATIONS / 10)); // Fewer iterations for user operations
+  });
 }
 
 /**
