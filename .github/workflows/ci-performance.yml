@@ -325,3 +325,6 @@ jobs:
           else
             echo "⚠️ Benchmark comparison not available" >> $GITHUB_STEP_SUMMARY
           fi
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
