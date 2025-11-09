@@ -11,7 +11,6 @@
 /* eslint-disable no-console */
 
 const Parse = require('parse/node');
-const logger = require('../lib/Logger').logger;
 const { performance, PerformanceObserver } = require('perf_hooks');
 const { MongoClient } = require('mongodb');
 
