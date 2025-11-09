@@ -341,7 +341,7 @@ Performance benchmarks are located in [`benchmark/performance.js`](benchmark/per
 4. **Test locally**: Run the benchmarks locally to verify they work:
    ```bash
    npm run benchmark:quick  # Quick test with 10 iterations
-   npm run benchmark        # Full test with 100 iterations
+   npm run benchmark        # Full test with 10,000 iterations
    ```
 
 For new features where no baseline exists, the CI will establish new benchmarks that future PRs will be compared against.
