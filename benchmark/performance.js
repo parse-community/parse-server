@@ -129,10 +129,10 @@ async function measureOperation(name, operation, iterations = ITERATIONS) {
 
   return {
     name,
-    value: median, // Use median instead of mean for robustness
+    value: p95, // Use p95 as primary metric (industry standard)
     unit: 'ms',
     range: `${min.toFixed(2)} - ${max.toFixed(2)}`,
-    extra: `p95: ${p95.toFixed(2)}ms, p99: ${p99.toFixed(2)}ms, n=${filtered.length}/${times.length}`,
+    extra: `median: ${median.toFixed(2)}ms, p99: ${p99.toFixed(2)}ms, n=${filtered.length}/${times.length}`,
   };
 }
 
