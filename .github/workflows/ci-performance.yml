@@ -47,6 +47,8 @@ jobs:
 
       - name: Run baseline benchmarks
         id: baseline
+        env:
+          NODE_ENV: production
         run: |
           echo "Checking if benchmark script exists..."
           if [ ! -f "benchmark/performance.js" ]; then
@@ -56,8 +58,8 @@ jobs:
             echo "Baseline: N/A (benchmark script not in base branch)" > baseline-output.txt
             exit 0
           fi
-          echo "Running baseline benchmarks..."
-          npm run benchmark > baseline-output.txt 2>&1 || true
+          echo "Running baseline benchmarks with CPU affinity..."
+          taskset -c 0 npm run benchmark > baseline-output.txt 2>&1 || npm run benchmark > baseline-output.txt 2>&1 || true
           echo "Benchmark command completed with exit code: $?"
           echo "Output file size: $(wc -c < baseline-output.txt) bytes"
           echo "--- Begin baseline-output.txt ---"
@@ -111,9 +113,11 @@ jobs:
 
       - name: Run PR benchmarks
         id: pr-bench
+        env:
+          NODE_ENV: production
         run: |
-          echo "Running PR benchmarks..."
-          npm run benchmark > pr-output.txt 2>&1 || true
+          echo "Running PR benchmarks with CPU affinity..."
+          taskset -c 0 npm run benchmark > pr-output.txt 2>&1 || npm run benchmark > pr-output.txt 2>&1 || true
           echo "Benchmark command completed with exit code: $?"
           echo "Output file size: $(wc -c < pr-output.txt) bytes"
           echo "--- Begin pr-output.txt ---"
@@ -281,9 +285,9 @@ jobs:
           echo "" >> comment.md
           echo "</details>" >> comment.md
           echo "" >> comment.md
-          echo "*Benchmarks ran with ${BENCHMARK_ITERATIONS:-1000} iterations per test on Node.js ${{ env.NODE_VERSION }}*" >> comment.md
+          echo "*Benchmarks ran with ${BENCHMARK_ITERATIONS:-100000} iterations per test on Node.js ${{ env.NODE_VERSION }} (production mode, CPU pinned)*" >> comment.md
           echo "" >> comment.md
-          echo "> **Note:** Benchmarks run on shared CI infrastructure and may show ±30% variance between runs. Only regressions >50% are flagged as concerning." >> comment.md
+          echo "> **Note:** Using 100k iterations with CPU affinity for measurement stability. Thresholds: ⚠️ >50%, ❌ >100%." >> comment.md
 
       - name: Comment PR with results
         if: github.event_name == 'pull_request'
