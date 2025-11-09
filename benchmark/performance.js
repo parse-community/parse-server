@@ -8,6 +8,8 @@
  * Run with: npm run benchmark
  */
 
+/* eslint-disable no-console */
+
 const Parse = require('parse/node');
 const { performance, PerformanceObserver } = require('perf_hooks');
 const { MongoClient } = require('mongodb');
@@ -17,7 +19,7 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/parse_
 const SERVER_URL = 'http://localhost:1337/parse';
 const APP_ID = 'benchmark-app-id';
 const MASTER_KEY = 'benchmark-master-key';
-const ITERATIONS = parseInt(process.env.BENCHMARK_ITERATIONS || '100', 10);
+const ITERATIONS = parseInt(process.env.BENCHMARK_ITERATIONS || '10000', 10);
 
 // Parse Server instance
 let parseServer;
@@ -39,6 +41,8 @@ async function initializeParseServer() {
     serverURL: SERVER_URL,
     silent: true,
     allowClientClassCreation: true,
+    logLevel: 'error', // Minimal logging for performance
+    verbose: false,
   });
 
   app.use('/parse', parseServer.app);
@@ -84,10 +88,18 @@ async function cleanupDatabase() {
 
 /**
  * Measure average time for an async operation over multiple iterations
+ * Uses warmup iterations, median metric, and outlier filtering for robustness
  */
 async function measureOperation(name, operation, iterations = ITERATIONS) {
+  const warmupCount = Math.floor(iterations * 0.2); // 20% warmup iterations
   const times = [];
 
+  // Warmup phase - stabilize JIT compilation and caches
+  for (let i = 0; i < warmupCount; i++) {
+    await operation();
+  }
+
+  // Measurement phase
   for (let i = 0; i < iterations; i++) {
     const start = performance.now();
     await operation();
@@ -95,22 +107,33 @@ async function measureOperation(name, operation, iterations = ITERATIONS) {
     times.push(end - start);
   }
 
-  // Calculate statistics
+  // Sort times for percentile calculations
   times.sort((a, b) => a - b);
-  const sum = times.reduce((acc, val) => acc + val, 0);
-  const mean = sum / times.length;
-  const p50 = times[Math.floor(times.length * 0.5)];
-  const p95 = times[Math.floor(times.length * 0.95)];
-  const p99 = times[Math.floor(times.length * 0.99)];
-  const min = times[0];
-  const max = times[times.length - 1];
+
+  // Filter outliers using Interquartile Range (IQR) method
+  const q1Index = Math.floor(times.length * 0.25);
+  const q3Index = Math.floor(times.length * 0.75);
+  const q1 = times[q1Index];
+  const q3 = times[q3Index];
+  const iqr = q3 - q1;
+  const lowerBound = q1 - 1.5 * iqr;
+  const upperBound = q3 + 1.5 * iqr;
+
+  const filtered = times.filter(t => t >= lowerBound && t <= upperBound);
+
+  // Calculate statistics on filtered data
+  const median = filtered[Math.floor(filtered.length * 0.5)];
+  const p95 = filtered[Math.floor(filtered.length * 0.95)];
+  const p99 = filtered[Math.floor(filtered.length * 0.99)];
+  const min = filtered[0];
+  const max = filtered[filtered.length - 1];
 
   return {
     name,
-    value: mean,
+    value: median, // Use median (p50) as primary metric for stability in CI
     unit: 'ms',
     range: `${min.toFixed(2)} - ${max.toFixed(2)}`,
-    extra: `p50: ${p50.toFixed(2)}ms, p95: ${p95.toFixed(2)}ms, p99: ${p99.toFixed(2)}ms`,
+    extra: `p95: ${p95.toFixed(2)}ms, p99: ${p99.toFixed(2)}ms, n=${filtered.length}/${times.length}`,
   };
 }
 
@@ -274,15 +297,14 @@ async function benchmarkUserLogin() {
  * Run all benchmarks
  */
 async function runBenchmarks() {
-  console.error('Starting Parse Server Performance Benchmarks...');
-  console.error(`Iterations per benchmark: ${ITERATIONS}`);
-  console.error('');
+  console.log('Starting Parse Server Performance Benchmarks...');
+  console.log(`Iterations per benchmark: ${ITERATIONS}`);
 
   let server;
 
   try {
     // Initialize Parse Server
-    console.error('Initializing Parse Server...');
+    console.log('Initializing Parse Server...');
     server = await initializeParseServer();
 
     // Wait for server to be ready
@@ -291,43 +313,42 @@ async function runBenchmarks() {
     const results = [];
 
     // Run each benchmark with database cleanup
-    console.error('Running Object Create benchmark...');
+    console.log('Running Object Create benchmark...');
     await cleanupDatabase();
     results.push(await benchmarkObjectCreate());
 
-    console.error('Running Object Read benchmark...');
+    console.log('Running Object Read benchmark...');
     await cleanupDatabase();
     results.push(await benchmarkObjectRead());
 
-    console.error('Running Object Update benchmark...');
+    console.log('Running Object Update benchmark...');
     await cleanupDatabase();
     results.push(await benchmarkObjectUpdate());
 
-    console.error('Running Simple Query benchmark...');
+    console.log('Running Simple Query benchmark...');
     await cleanupDatabase();
     results.push(await benchmarkSimpleQuery());
 
-    console.error('Running Batch Save benchmark...');
+    console.log('Running Batch Save benchmark...');
     await cleanupDatabase();
     results.push(await benchmarkBatchSave());
 
-    console.error('Running User Signup benchmark...');
+    console.log('Running User Signup benchmark...');
     await cleanupDatabase();
     results.push(await benchmarkUserSignup());
 
-    console.error('Running User Login benchmark...');
+    console.log('Running User Login benchmark...');
     await cleanupDatabase();
     results.push(await benchmarkUserLogin());
 
-    // Output results in github-action-benchmark format
+    // Output results in github-action-benchmark format (stdout)
     console.log(JSON.stringify(results, null, 2));
 
-    console.error('');
-    console.error('Benchmarks completed successfully!');
-    console.error('');
-    console.error('Summary:');
+    // Output summary to stderr for visibility
+    console.log('Benchmarks completed successfully!');
+    console.log('Summary:');
     results.forEach(result => {
-      console.error(`  ${result.name}: ${result.value.toFixed(2)} ${result.unit} (${result.extra})`);
+      console.log(`  ${result.name}: ${result.value.toFixed(2)} ${result.unit} (${result.extra})`);
     });
 
   } catch (error) {
@@ -342,7 +363,7 @@ async function runBenchmarks() {
       server.close();
     }
     // Give some time for cleanup
-    setTimeout(() => process.exit(0), 1000);
+    setTimeout(() => process.exit(0), 10000);
   }
 }
 
