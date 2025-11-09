@@ -247,13 +247,13 @@ jobs:
             const changeStr = change > 0 ? \`+\${change.toFixed(1)}%\` : \`\${change.toFixed(1)}%\`;
 
             let status = '✅';
-            if (change > 100) {
+            if (change > 50) {
               status = '❌ Much Slower';
               hasRegression = true;
-            } else if (change > 50) {
+            } else if (change > 25) {
               status = '⚠️ Slower';
               hasRegression = true;
-            } else if (change < -50) {
+            } else if (change < -25) {
               status = '🚀 Faster';
               hasImprovement = true;
             }
@@ -304,9 +304,9 @@ jobs:
           echo "" >> comment.md
           echo "</details>" >> comment.md
           echo "" >> comment.md
-          echo "*Benchmarks ran with ${BENCHMARK_ITERATIONS:-1000} iterations per test on Node.js ${{ env.NODE_VERSION }} (production mode, CPU pinned)*" >> comment.md
+          echo "*Benchmarks ran with ${BENCHMARK_ITERATIONS:-10000} iterations per test on Node.js ${{ env.NODE_VERSION }} (production mode, CPU pinned)*" >> comment.md
           echo "" >> comment.md
-          echo "> **Note:** Using 1k iterations with CPU affinity for measurement stability. Thresholds: ⚠️ >50%, ❌ >100%." >> comment.md
+          echo "> **Note:** Using 10k iterations with CPU affinity for measurement stability. Thresholds: ⚠️ >25%, ❌ >50%." >> comment.md
 
       - name: Comment PR with results
         if: github.event_name == 'pull_request'
