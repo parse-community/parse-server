@@ -65,12 +65,31 @@ jobs:
       - name: Build Parse Server (base)
         run: npm run build
 
+      - name: Setup Toxiproxy for latency simulation (baseline)
+        run: |
+          # Download and install toxiproxy
+          wget -O toxiproxy.deb https://github.com/Shopify/toxiproxy/releases/download/v2.9.0/toxiproxy_2.9.0_amd64.deb
+          sudo dpkg -i toxiproxy.deb
+
+          # Start toxiproxy server in background
+          toxiproxy-server &
+          sleep 2
+
+          # Create a proxy for MongoDB (27017 -> 27018)
+          toxiproxy-cli create mongodb -l localhost:27018 -u localhost:27017
+
+          # Add 10ms latency to simulate network conditions
+          toxiproxy-cli toxic add mongodb -t latency -a latency=10
+
+          echo "Toxiproxy setup complete - MongoDB accessible on port 27018 with 10ms latency"
+
       - name: Run baseline benchmarks
         id: baseline
         env:
           NODE_ENV: production
+          MONGODB_URI: mongodb://localhost:27018/parse_benchmark_test
         run: |
-          echo "Running baseline benchmarks with CPU affinity (using PR's benchmark script)..."
+          echo "Running baseline benchmarks with CPU affinity and 10ms DB latency (using PR's benchmark script)..."
           if [ ! -f "benchmark/performance.js" ]; then
             echo "⚠️ Benchmark script not found - this is expected for new features"
             echo "Skipping baseline benchmark"
@@ -130,12 +149,27 @@ jobs:
       - name: Build Parse Server (PR)
         run: npm run build
 
+      - name: Restart Toxiproxy for PR benchmarks
+        run: |
+          # Restart toxiproxy server (toxiproxy-cli is already installed from baseline)
+          pkill toxiproxy-server || true
+          sleep 1
+          toxiproxy-server &
+          sleep 2
+
+          # Recreate proxy with same configuration
+          toxiproxy-cli create mongodb -l localhost:27018 -u localhost:27017
+          toxiproxy-cli toxic add mongodb -t latency -a latency=10
+
+          echo "Toxiproxy restarted with 10ms latency"
+
       - name: Run PR benchmarks
         id: pr-bench
         env:
           NODE_ENV: production
+          MONGODB_URI: mongodb://localhost:27018/parse_benchmark_test
         run: |
-          echo "Running PR benchmarks with CPU affinity..."
+          echo "Running PR benchmarks with CPU affinity and 10ms DB latency..."
           taskset -c 0 npm run benchmark > pr-output.txt 2>&1 || npm run benchmark > pr-output.txt 2>&1 || true
           echo "Benchmark command completed with exit code: $?"
           echo "Output file size: $(wc -c < pr-output.txt) bytes"
@@ -306,7 +340,7 @@ jobs:
           echo "" >> comment.md
           echo "*Benchmarks ran with ${BENCHMARK_ITERATIONS:-1000} iterations per test on Node.js ${{ env.NODE_VERSION }} (production mode, CPU pinned)*" >> comment.md
           echo "" >> comment.md
-          echo "> **Note:** Using 1k iterations with CPU affinity for measurement stability. Thresholds: ⚠️ >50%, ❌ >100%." >> comment.md
+          echo "> **Note:** Both baseline and PR benchmarks run with 10ms simulated database latency to better measure optimization impact. Using 1k iterations with CPU affinity for measurement stability. Thresholds: ⚠️ >50%, ❌ >100%." >> comment.md
 
       - name: Comment PR with results
         if: github.event_name == 'pull_request'
