@@ -18,7 +18,7 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/parse_
 const SERVER_URL = 'http://localhost:1337/parse';
 const APP_ID = 'benchmark-app-id';
 const MASTER_KEY = 'benchmark-master-key';
-const ITERATIONS = parseInt(process.env.BENCHMARK_ITERATIONS || '100', 10);
+const ITERATIONS = parseInt(process.env.BENCHMARK_ITERATIONS || '300', 10);
 
 // Parse Server instance
 let parseServer;
@@ -85,10 +85,18 @@ async function cleanupDatabase() {
 
 /**
  * Measure average time for an async operation over multiple iterations
+ * Uses warmup iterations, median metric, and outlier filtering for robustness
  */
 async function measureOperation(name, operation, iterations = ITERATIONS) {
+  const warmupCount = Math.floor(iterations * 0.2); // 20% warmup iterations
   const times = [];
 
+  // Warmup phase - stabilize JIT compilation and caches
+  for (let i = 0; i < warmupCount; i++) {
+    await operation();
+  }
+
+  // Measurement phase
   for (let i = 0; i < iterations; i++) {
     const start = performance.now();
     await operation();
@@ -96,22 +104,33 @@ async function measureOperation(name, operation, iterations = ITERATIONS) {
     times.push(end - start);
   }
 
-  // Calculate statistics
+  // Sort times for percentile calculations
   times.sort((a, b) => a - b);
-  const sum = times.reduce((acc, val) => acc + val, 0);
-  const mean = sum / times.length;
-  const p50 = times[Math.floor(times.length * 0.5)];
-  const p95 = times[Math.floor(times.length * 0.95)];
-  const p99 = times[Math.floor(times.length * 0.99)];
-  const min = times[0];
-  const max = times[times.length - 1];
+
+  // Filter outliers using Interquartile Range (IQR) method
+  const q1Index = Math.floor(times.length * 0.25);
+  const q3Index = Math.floor(times.length * 0.75);
+  const q1 = times[q1Index];
+  const q3 = times[q3Index];
+  const iqr = q3 - q1;
+  const lowerBound = q1 - 1.5 * iqr;
+  const upperBound = q3 + 1.5 * iqr;
+
+  const filtered = times.filter(t => t >= lowerBound && t <= upperBound);
+
+  // Calculate statistics on filtered data
+  const median = filtered[Math.floor(filtered.length * 0.5)];
+  const p95 = filtered[Math.floor(filtered.length * 0.95)];
+  const p99 = filtered[Math.floor(filtered.length * 0.99)];
+  const min = filtered[0];
+  const max = filtered[filtered.length - 1];
 
   return {
     name,
-    value: mean,
+    value: median, // Use median instead of mean for robustness
     unit: 'ms',
     range: `${min.toFixed(2)} - ${max.toFixed(2)}`,
-    extra: `p50: ${p50.toFixed(2)}ms, p95: ${p95.toFixed(2)}ms, p99: ${p99.toFixed(2)}ms`,
+    extra: `p95: ${p95.toFixed(2)}ms, p99: ${p99.toFixed(2)}ms, n=${filtered.length}/${times.length}`,
   };
 }
 
@@ -275,15 +294,14 @@ async function benchmarkUserLogin() {
  * Run all benchmarks
  */
 async function runBenchmarks() {
-  logger.error('Starting Parse Server Performance Benchmarks...');
-  logger.error(`Iterations per benchmark: ${ITERATIONS}`);
-  logger.error('');
+  logger.info('Starting Parse Server Performance Benchmarks...');
+  logger.info(`Iterations per benchmark: ${ITERATIONS}`);
 
   let server;
 
   try {
     // Initialize Parse Server
-    logger.error('Initializing Parse Server...');
+    logger.info('Initializing Parse Server...');
     server = await initializeParseServer();
 
     // Wait for server to be ready
@@ -292,43 +310,41 @@ async function runBenchmarks() {
     const results = [];
 
     // Run each benchmark with database cleanup
-    logger.error('Running Object Create benchmark...');
+    logger.info('Running Object Create benchmark...');
     await cleanupDatabase();
     results.push(await benchmarkObjectCreate());
 
-    logger.error('Running Object Read benchmark...');
+    logger.info('Running Object Read benchmark...');
     await cleanupDatabase();
     results.push(await benchmarkObjectRead());
 
-    logger.error('Running Object Update benchmark...');
+    logger.info('Running Object Update benchmark...');
     await cleanupDatabase();
     results.push(await benchmarkObjectUpdate());
 
-    logger.error('Running Simple Query benchmark...');
+    logger.info('Running Simple Query benchmark...');
     await cleanupDatabase();
     results.push(await benchmarkSimpleQuery());
 
-    logger.error('Running Batch Save benchmark...');
+    logger.info('Running Batch Save benchmark...');
     await cleanupDatabase();
     results.push(await benchmarkBatchSave());
 
-    logger.error('Running User Signup benchmark...');
+    logger.info('Running User Signup benchmark...');
     await cleanupDatabase();
     results.push(await benchmarkUserSignup());
 
-    logger.error('Running User Login benchmark...');
+    logger.info('Running User Login benchmark...');
     await cleanupDatabase();
     results.push(await benchmarkUserLogin());
 
     // Output results in github-action-benchmark format
     logger.log(JSON.stringify(results, null, 2));
 
-    logger.error('');
-    logger.error('Benchmarks completed successfully!');
-    logger.error('');
-    logger.error('Summary:');
+    logger.info('Benchmarks completed successfully!');
+    logger.info('Summary:');
     results.forEach(result => {
-      logger.error(`  ${result.name}: ${result.value.toFixed(2)} ${result.unit} (${result.extra})`);
+      logger.info(`  ${result.name}: ${result.value.toFixed(2)} ${result.unit} (${result.extra})`);
     });
 
   } catch (error) {
