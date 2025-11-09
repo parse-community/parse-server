@@ -294,6 +294,52 @@ async function benchmarkUserLogin() {
 }
 
 /**
+ * Benchmark: Query with Include (Parallel Include Pointers)
+ */
+async function benchmarkQueryWithInclude() {
+  // Setup: Create nested object hierarchy
+  const Level2Class = Parse.Object.extend('Level2');
+  const Level1Class = Parse.Object.extend('Level1');
+  const RootClass = Parse.Object.extend('Root');
+
+  // Create 10 Level2 objects
+  const level2Objects = [];
+  for (let i = 0; i < 10; i++) {
+    const obj = new Level2Class();
+    obj.set('name', `level2-${i}`);
+    obj.set('value', i);
+    level2Objects.push(obj);
+  }
+  await Parse.Object.saveAll(level2Objects);
+
+  // Create 10 Level1 objects, each pointing to a Level2 object
+  const level1Objects = [];
+  for (let i = 0; i < 10; i++) {
+    const obj = new Level1Class();
+    obj.set('name', `level1-${i}`);
+    obj.set('level2', level2Objects[i % level2Objects.length]);
+    level1Objects.push(obj);
+  }
+  await Parse.Object.saveAll(level1Objects);
+
+  // Create 10 Root objects, each pointing to a Level1 object
+  const rootObjects = [];
+  for (let i = 0; i < 10; i++) {
+    const obj = new RootClass();
+    obj.set('name', `root-${i}`);
+    obj.set('level1', level1Objects[i % level1Objects.length]);
+    rootObjects.push(obj);
+  }
+  await Parse.Object.saveAll(rootObjects);
+
+  return measureOperation('Query with Include (2 levels)', async () => {
+    const query = new Parse.Query('Root');
+    query.include('level1.level2');
+    await query.find();
+  }, Math.floor(ITERATIONS / 10)); // Fewer iterations for complex queries
+}
+
+/**
  * Run all benchmarks
  */
 async function runBenchmarks() {
@@ -340,6 +386,10 @@ async function runBenchmarks() {
     console.log('Running User Login benchmark...');
     await cleanupDatabase();
     results.push(await benchmarkUserLogin());
+
+    console.log('Running Query with Include benchmark...');
+    await cleanupDatabase();
+    results.push(await benchmarkQueryWithInclude());
 
     // Output results in github-action-benchmark format (stdout)
     console.log(JSON.stringify(results, null, 2));
