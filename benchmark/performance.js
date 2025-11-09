@@ -8,6 +8,8 @@
  * Run with: npm run benchmark
  */
 
+/* eslint-disable no-console */
+
 const Parse = require('parse/node');
 const logger = require('../lib/Logger').logger;
 const { performance, PerformanceObserver } = require('perf_hooks');
@@ -294,14 +296,14 @@ async function benchmarkUserLogin() {
  * Run all benchmarks
  */
 async function runBenchmarks() {
-  logger.info('Starting Parse Server Performance Benchmarks...');
-  logger.info(`Iterations per benchmark: ${ITERATIONS}`);
+  console.log('Starting Parse Server Performance Benchmarks...');
+  console.log(`Iterations per benchmark: ${ITERATIONS}`);
 
   let server;
 
   try {
     // Initialize Parse Server
-    logger.info('Initializing Parse Server...');
+    console.log('Initializing Parse Server...');
     server = await initializeParseServer();
 
     // Wait for server to be ready
@@ -310,45 +312,46 @@ async function runBenchmarks() {
     const results = [];
 
     // Run each benchmark with database cleanup
-    logger.info('Running Object Create benchmark...');
+    console.log('Running Object Create benchmark...');
     await cleanupDatabase();
     results.push(await benchmarkObjectCreate());
 
-    logger.info('Running Object Read benchmark...');
+    console.log('Running Object Read benchmark...');
     await cleanupDatabase();
     results.push(await benchmarkObjectRead());
 
-    logger.info('Running Object Update benchmark...');
+    console.log('Running Object Update benchmark...');
     await cleanupDatabase();
     results.push(await benchmarkObjectUpdate());
 
-    logger.info('Running Simple Query benchmark...');
+    console.log('Running Simple Query benchmark...');
     await cleanupDatabase();
     results.push(await benchmarkSimpleQuery());
 
-    logger.info('Running Batch Save benchmark...');
+    console.log('Running Batch Save benchmark...');
     await cleanupDatabase();
     results.push(await benchmarkBatchSave());
 
-    logger.info('Running User Signup benchmark...');
+    console.log('Running User Signup benchmark...');
     await cleanupDatabase();
     results.push(await benchmarkUserSignup());
 
-    logger.info('Running User Login benchmark...');
+    console.log('Running User Login benchmark...');
     await cleanupDatabase();
     results.push(await benchmarkUserLogin());
 
-    // Output results in github-action-benchmark format
-    logger.log(JSON.stringify(results, null, 2));
+    // Output results in github-action-benchmark format (stdout)
+    console.log(JSON.stringify(results, null, 2));
 
-    logger.info('Benchmarks completed successfully!');
-    logger.info('Summary:');
+    // Output summary to stderr for visibility
+    console.log('Benchmarks completed successfully!');
+    console.log('Summary:');
     results.forEach(result => {
-      logger.info(`  ${result.name}: ${result.value.toFixed(2)} ${result.unit} (${result.extra})`);
+      console.log(`  ${result.name}: ${result.value.toFixed(2)} ${result.unit} (${result.extra})`);
     });
 
   } catch (error) {
-    logger.error('Error running benchmarks:', error);
+    console.error('Error running benchmarks:', error);
     process.exit(1);
   } finally {
     // Cleanup
