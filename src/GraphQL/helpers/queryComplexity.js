@@ -3,9 +3,12 @@ import { GraphQLError, getOperationAST, Kind } from 'graphql';
 /**
  * Calculate the maximum depth and fields (field count) of a GraphQL query
  * @param {DocumentNode} document - The GraphQL document AST
+ * @param {Object} maxLimits - Optional maximum limits for early exit optimization
+ * @param {number} maxLimits.depth - Maximum depth allowed
+ * @param {number} maxLimits.fields - Maximum fields allowed
  * @returns {{ depth: number, fields: number }} Maximum depth and total fields
  */
-function calculateQueryComplexity(document) {
+function calculateQueryComplexity(document, maxLimits = {}) {
   const operationAST = getOperationAST(document);
   if (!operationAST || !operationAST.selectionSet) {
     return { depth: 0, fields: 0 };
@@ -33,6 +36,34 @@ function calculateQueryComplexity(document) {
       if (selection.kind === Kind.FIELD) {
         fields++;
         maxDepth = Math.max(maxDepth, depth);
+
+        // Early exit optimization: throw immediately if limits are exceeded
+        if (maxLimits.fields && fields > maxLimits.fields) {
+          throw new GraphQLError(
+            `Number of fields selected exceeds maximum allowed`,
+            {
+              extensions: {
+                http: {
+                  status: 403,
+                },
+              }
+            }
+          );
+        }
+
+        if (maxLimits.depth && maxDepth > maxLimits.depth) {
+          throw new GraphQLError(
+            `Query depth exceeds maximum allowed depth`,
+            {
+              extensions: {
+                http: {
+                  status: 403,
+                },
+              }
+            }
+          );
+        }
+
         if (selection.selectionSet) {
           visitSelectionSet(selection.selectionSet, depth + 1);
         }
@@ -86,21 +117,8 @@ export function createComplexityValidationPlugin(config) {
         const maxGraphQLQueryComplexity = config.maxGraphQLQueryComplexity;
 
         // Calculate depth and fields in a single pass for performance
-        const { depth, fields } = calculateQueryComplexity(document);
-
-        // Validate fields (field count)
-        if (maxGraphQLQueryComplexity.fields && fields > maxGraphQLQueryComplexity.fields) {
-          throw new GraphQLError(
-            `Number of fields selected exceeds maximum allowed`,
-          );
-        }
-
-        // Validate maximum depth
-        if (maxGraphQLQueryComplexity.depth && depth > maxGraphQLQueryComplexity.depth) {
-          throw new GraphQLError(
-            `Query depth exceeds maximum allowed depth`,
-          );
-        }
+        // Pass max limits for early exit optimization - will throw immediately if exceeded
+        calculateQueryComplexity(document, maxGraphQLQueryComplexity);
       },
     }),
   };

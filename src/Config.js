@@ -132,7 +132,7 @@ export class Config {
     databaseOptions,
     extendSessionOnUse,
     allowClientClassCreation,
-    maxQueryComplexity,
+    maxIncludeQueryComplexity,
     maxGraphQLQueryComplexity,
   }) {
     if (masterKey === readOnlyMasterKey) {
@@ -175,7 +175,7 @@ export class Config {
     this.validateDatabaseOptions(databaseOptions);
     this.validateCustomPages(customPages);
     this.validateAllowClientClassCreation(allowClientClassCreation);
-    this.validateQueryComplexityOptions(maxQueryComplexity, maxGraphQLQueryComplexity);
+    this.validateQueryComplexityOptions(maxIncludeQueryComplexity, maxGraphQLQueryComplexity);
   }
 
   static validateCustomPages(customPages) {
@@ -233,13 +233,13 @@ export class Config {
     }
   }
 
-  static validateQueryComplexityOptions(maxQueryComplexity, maxGraphQLQueryComplexity) {
-    if (maxQueryComplexity && maxGraphQLQueryComplexity) {
-      if (maxQueryComplexity.depth >= maxGraphQLQueryComplexity.depth) {
-        throw new Error('maxQueryComplexity.depth must be less than maxGraphQLQueryComplexity.depth');
+  static validateQueryComplexityOptions(maxIncludeQueryComplexity, maxGraphQLQueryComplexity) {
+    if (maxIncludeQueryComplexity && maxGraphQLQueryComplexity) {
+      if (maxIncludeQueryComplexity.depth >= maxGraphQLQueryComplexity.depth) {
+        throw new Error('maxIncludeQueryComplexity.depth must be less than maxGraphQLQueryComplexity.depth');
       }
-      if (maxQueryComplexity.fields >= maxGraphQLQueryComplexity.fields) {
-        throw new Error('maxQueryComplexity.fields must be less than maxGraphQLQueryComplexity.fields');
+      if (maxIncludeQueryComplexity.count >= maxGraphQLQueryComplexity.fields) {
+        throw new Error('maxIncludeQueryComplexity.count must be less than maxGraphQLQueryComplexity.fields');
       }
     }
   }

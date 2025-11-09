@@ -535,11 +535,11 @@ describe('REST Query Complexity', () => {
     await reconfigureServer();
   });
 
-  describe('maxQueryComplexity.fields', () => {
+  describe('maxIncludeQueryComplexity.count', () => {
     it('should allow queries within fields limit', async () => {
       await reconfigureServer({
-        maxQueryComplexity: {
-          fields: 5,
+        maxIncludeQueryComplexity: {
+          count: 5,
         },
       });
 
@@ -571,8 +571,8 @@ describe('REST Query Complexity', () => {
 
     it('should reject queries exceeding fields limit', async () => {
       await reconfigureServer({
-        maxQueryComplexity: {
-          fields: 2,
+        maxIncludeQueryComplexity: {
+          count: 2,
         },
       });
 
@@ -587,15 +587,21 @@ describe('REST Query Complexity', () => {
       post.set('author', user);
       await post.save();
 
+      const reply = new Parse.Object('Comment');
+      reply.set('text', 'Test Reply');
+      await reply.save();
+
       const comment = new Parse.Object('Comment');
       comment.set('text', 'Test Comment');
       comment.set('post', post);
+      comment.set('reply', reply);
       await comment.save();
 
       // Query with include that exceeds limit (3 fields)
       const query = new Parse.Query('Comment');
       query.include('post');
       query.include('post.author');
+      query.include('reply');
 
       await expectAsync(query.find()).toBeRejectedWith(
         jasmine.objectContaining({
@@ -606,8 +612,8 @@ describe('REST Query Complexity', () => {
 
     it('should allow queries with master key even when exceeding fields limit', async () => {
       await reconfigureServer({
-        maxQueryComplexity: {
-          fields: 2,
+        maxIncludeQueryComplexity: {
+          count: 2,
         },
       });
 
@@ -639,8 +645,8 @@ describe('REST Query Complexity', () => {
     it('should allow queries with maintenance key even when exceeding fields limit', async () => {
       await reconfigureServer({
         maintenanceKey: 'maintenanceKey456',
-        maxQueryComplexity: {
-          fields: 2,
+        maxIncludeQueryComplexity: {
+          count: 2,
         },
       });
 
@@ -676,10 +682,10 @@ describe('REST Query Complexity', () => {
     });
   });
 
-  describe('maxQueryComplexity.depth', () => {
+  describe('maxIncludeQueryComplexity.depth', () => {
     it('should allow queries within depth limit', async () => {
       await reconfigureServer({
-        maxQueryComplexity: {
+        maxIncludeQueryComplexity: {
           depth: 2,
         },
       });
@@ -710,7 +716,7 @@ describe('REST Query Complexity', () => {
 
     it('should reject queries exceeding depth limit', async () => {
       await reconfigureServer({
-        maxQueryComplexity: {
+        maxIncludeQueryComplexity: {
           depth: 1,
         },
       });
@@ -744,7 +750,7 @@ describe('REST Query Complexity', () => {
 
     it('should calculate depth correctly for nested includes', async () => {
       await reconfigureServer({
-        maxQueryComplexity: {
+        maxIncludeQueryComplexity: {
           depth: 3,
         },
       });
@@ -781,7 +787,7 @@ describe('REST Query Complexity', () => {
 
     it('should allow queries with master key even when exceeding depth limit', async () => {
       await reconfigureServer({
-        maxQueryComplexity: {
+        maxIncludeQueryComplexity: {
           depth: 1,
         },
       });
@@ -813,7 +819,7 @@ describe('REST Query Complexity', () => {
     it('should allow queries with maintenance key even when exceeding depth limit', async () => {
       await reconfigureServer({
         maintenanceKey: 'maintenanceKey789',
-        maxQueryComplexity: {
+        maxIncludeQueryComplexity: {
           depth: 1,
         },
       });
@@ -853,9 +859,9 @@ describe('REST Query Complexity', () => {
   describe('Combined depth and fields validation', () => {
     it('should validate both depth and fields limits', async () => {
       await reconfigureServer({
-        maxQueryComplexity: {
+        maxIncludeQueryComplexity: {
           depth: 2,
-          fields: 3,
+          count: 3,
         },
       });
 
@@ -885,9 +891,9 @@ describe('REST Query Complexity', () => {
 
     it('should reject if either depth or fields exceeds limit', async () => {
       await reconfigureServer({
-        maxQueryComplexity: {
+        maxIncludeQueryComplexity: {
           depth: 10, // High depth limit
-          fields: 2,  // Low fields limit
+          count: 2,  // Low count limit
         },
       });
 
@@ -927,9 +933,9 @@ describe('REST Query Complexity', () => {
   });
 
   describe('includeAll blocking with query complexity limits', () => {
-    it('should block includeAll when maxQueryComplexity.depth is configured', async () => {
+    it('should block includeAll when maxIncludeQueryComplexity.depth is configured', async () => {
       await reconfigureServer({
-        maxQueryComplexity: {
+        maxIncludeQueryComplexity: {
           depth: 2,
         },
       });
@@ -957,10 +963,10 @@ describe('REST Query Complexity', () => {
       );
     });
 
-    it('should block includeAll when maxQueryComplexity.fields is configured', async () => {
+    it('should block includeAll when maxIncludeQueryComplexity.count is configured', async () => {
       await reconfigureServer({
-        maxQueryComplexity: {
-          fields: 3,
+        maxIncludeQueryComplexity: {
+          count: 3,
         },
       });
 
@@ -987,9 +993,9 @@ describe('REST Query Complexity', () => {
       );
     });
 
-    it('should block include("*") when maxQueryComplexity.depth is configured', async () => {
+    it('should block include("*") when maxIncludeQueryComplexity.depth is configured', async () => {
       await reconfigureServer({
-        maxQueryComplexity: {
+        maxIncludeQueryComplexity: {
           depth: 2,
         },
       });
@@ -1017,10 +1023,10 @@ describe('REST Query Complexity', () => {
       );
     });
 
-    it('should block include("*") when maxQueryComplexity.fields is configured', async () => {
+    it('should block include("*") when maxIncludeQueryComplexity.count is configured', async () => {
       await reconfigureServer({
-        maxQueryComplexity: {
-          fields: 3,
+        maxIncludeQueryComplexity: {
+          count: 3,
         },
       });
 
@@ -1049,9 +1055,9 @@ describe('REST Query Complexity', () => {
 
     it('should allow includeAll for master key requests', async () => {
       await reconfigureServer({
-        maxQueryComplexity: {
+        maxIncludeQueryComplexity: {
           depth: 2,
-          fields: 3,
+          count: 3,
         },
       });
 
@@ -1100,7 +1106,7 @@ describe('REST Query Complexity', () => {
   describe('Queries without includes', () => {
     it('should allow queries without includes regardless of complexity limits', async () => {
       await reconfigureServer({
-        maxQueryComplexity: {
+        maxIncludeQueryComplexity: {
           depth: 1,
           paths: 1,
         },
@@ -1120,7 +1126,7 @@ describe('REST Query Complexity', () => {
 
     it('should allow queries with empty includes array', async () => {
       await reconfigureServer({
-        maxQueryComplexity: {
+        maxIncludeQueryComplexity: {
           depth: 1,
           paths: 1,
         },

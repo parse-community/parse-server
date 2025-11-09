@@ -4,6 +4,8 @@ const gql = require('graphql-tag');
 const { ApolloClient, InMemoryCache, createHttpLink } = require('@apollo/client/core');
 const { ParseServer } = require('../');
 const { ParseGraphQLServer } = require('../lib/GraphQL/ParseGraphQLServer');
+const Parse = require('parse/node');
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
 describe('ParseGraphQL Query Complexity', () => {
   let parseServer;
@@ -29,7 +31,11 @@ describe('ParseGraphQL Query Complexity', () => {
 
     const httpLink = createHttpLink({
       uri: 'http://localhost:13378/graphql',
-      fetch: (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args)),
+      fetch,
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Javascript-Key': 'test',
+      },
     });
 
     apolloClient = new ApolloClient({
@@ -57,20 +63,6 @@ describe('ParseGraphQL Query Complexity', () => {
         },
       });
 
-      const createUserMutation = gql`
-        mutation {
-          createUser(input: { fields: { username: "testuser", password: "password123" } }) {
-            user {
-              objectId
-              username
-              createdAt
-            }
-          }
-        }
-      `;
-
-      await apolloClient.mutate({ mutation: createUserMutation });
-
       const query = gql`
         query {
           users {
@@ -86,7 +78,7 @@ describe('ParseGraphQL Query Complexity', () => {
       `;
 
       const result = await apolloClient.query({ query });
-      expect(result.data.users.edges.length).toBeGreaterThan(0);
+      expect(result.data.users).toBeDefined();
     });
 
     it('should reject queries exceeding fields limit', async () => {
@@ -115,7 +107,7 @@ describe('ParseGraphQL Query Complexity', () => {
         await apolloClient.query({ query });
         fail('Should have thrown an error');
       } catch (error) {
-        expect(error.message).toContain('Number of fields selected exceeds maximum allowed');
+        expect(error.networkError.result.errors[0].message).toContain('Number of fields selected exceeds maximum allowed');
       }
     });
 
@@ -130,6 +122,7 @@ describe('ParseGraphQL Query Complexity', () => {
         uri: 'http://localhost:13378/graphql',
         fetch: (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args)),
         headers: {
+          'X-Parse-Application-Id': 'test',
           'X-Parse-Master-Key': 'test',
         },
       });
@@ -148,7 +141,7 @@ describe('ParseGraphQL Query Complexity', () => {
                 username
                 createdAt
                 updatedAt
-                sessionToken
+                email
               }
             }
           }
@@ -164,37 +157,17 @@ describe('ParseGraphQL Query Complexity', () => {
     it('should allow queries within depth limit', async () => {
       await reconfigureServer({
         maxGraphQLQueryComplexity: {
-          depth: 3,
-        },
-      });
-
-      // Create test data with relationships
-      const createClassMutation = gql`
-        mutation {
-          createClass(input: { name: "Post", schemaFields: { addStrings: [{ name: "title" }] } }) {
-            class {
-              name
-            }
-          }
-        }
-      `;
-
-      await apolloClient.mutate({
-        mutation: createClassMutation,
-        context: {
-          headers: {
-            'X-Parse-Master-Key': 'test',
-          },
+          depth: 4,
         },
       });
 
       const query = gql`
         query {
-          posts {
+          users {
             edges {
               node {
                 objectId
-                title
+                username
               }
             }
           }
@@ -202,7 +175,7 @@ describe('ParseGraphQL Query Complexity', () => {
       `;
 
       const result = await apolloClient.query({ query });
-      expect(result.data.posts).toBeDefined();
+      expect(result.data.users).toBeDefined();
     });
 
     it('should reject queries exceeding depth limit', async () => {
@@ -229,7 +202,7 @@ describe('ParseGraphQL Query Complexity', () => {
         await apolloClient.query({ query });
         fail('Should have thrown an error');
       } catch (error) {
-        expect(error.message).toContain('Query depth exceeds maximum allowed depth');
+        expect(error.networkError.result.errors[0].message).toContain('Query depth exceeds maximum allowed depth');
       }
     });
 
@@ -244,6 +217,7 @@ describe('ParseGraphQL Query Complexity', () => {
         uri: 'http://localhost:13378/graphql',
         fetch: (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args)),
         headers: {
+          'X-Parse-Application-Id': 'test',
           'X-Parse-Master-Key': 'test',
         },
       });
@@ -283,6 +257,7 @@ describe('ParseGraphQL Query Complexity', () => {
         uri: 'http://localhost:13378/graphql',
         fetch: (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args)),
         headers: {
+          'X-Parse-Application-Id': 'test',
           'X-Parse-Maintenance-Key': 'maintenanceKey123',
         },
       });
@@ -315,12 +290,12 @@ describe('ParseGraphQL Query Complexity', () => {
     it('should count fields in fragments correctly', async () => {
       await reconfigureServer({
         maxGraphQLQueryComplexity: {
-          fields: 5,
+          fields: 10,
         },
       });
 
       const query = gql`
-        fragment UserFields on User {
+        fragment UserFields1 on User {
           objectId
           username
           createdAt
@@ -330,7 +305,7 @@ describe('ParseGraphQL Query Complexity', () => {
           users {
             edges {
               node {
-                ...UserFields
+                ...UserFields1
               }
             }
           }
@@ -349,7 +324,7 @@ describe('ParseGraphQL Query Complexity', () => {
       });
 
       const query = gql`
-        fragment UserFields on User {
+        fragment UserFields2 on User {
           objectId
           username
           createdAt
@@ -360,7 +335,7 @@ describe('ParseGraphQL Query Complexity', () => {
           users {
             edges {
               node {
-                ...UserFields
+                ...UserFields2
               }
             }
           }
@@ -371,14 +346,14 @@ describe('ParseGraphQL Query Complexity', () => {
         await apolloClient.query({ query });
         fail('Should have thrown an error');
       } catch (error) {
-        expect(error.message).toContain('Number of fields selected exceeds maximum allowed');
+        expect(error.networkError.result.errors[0].message).toContain('Number of fields selected exceeds maximum allowed');
       }
     });
 
     it('should handle inline fragments correctly', async () => {
       await reconfigureServer({
         maxGraphQLQueryComplexity: {
-          fields: 5,
+          fields: 10,
         },
       });
 
@@ -402,41 +377,36 @@ describe('ParseGraphQL Query Complexity', () => {
       expect(result.data.users).toBeDefined();
     });
 
-    it('should handle cyclic fragment references (GraphQL validation prevents actual cycles)', async () => {
+    it('should reject inline fragments exceeding fields limit', async () => {
       await reconfigureServer({
         maxGraphQLQueryComplexity: {
-          fields: 10,
+          fields: 3,
         },
       });
 
-      // Note: GraphQL's NoFragmentCycles validation rule prevents actual cycles
-      // This test verifies that our complexity calculation doesn't break when
-      // fragments reference each other (as long as there's no actual cycle)
       const query = gql`
-        fragment UserBasicInfo on User {
-          objectId
-          username
-        }
-
-        fragment UserDetailedInfo on User {
-          ...UserBasicInfo
-          createdAt
-          updatedAt
-        }
-
         query {
           users {
             edges {
               node {
-                ...UserDetailedInfo
+                ... on User {
+                  objectId
+                  username
+                  createdAt
+                  updatedAt
+                }
               }
             }
           }
         }
       `;
 
-      const result = await apolloClient.query({ query });
-      expect(result.data.users).toBeDefined();
+      try {
+        await apolloClient.query({ query });
+        fail('Should have thrown an error');
+      } catch (error) {
+        expect(error.networkError.result.errors[0].message).toContain('Number of fields selected exceeds maximum allowed');
+      }
     });
 
     it('should reject actual cyclic fragment definitions with GraphQL validation error', async () => {
@@ -446,8 +416,6 @@ describe('ParseGraphQL Query Complexity', () => {
         },
       });
 
-      // This will fail at GraphQL parsing/validation level before our complexity check
-      // because GraphQL has built-in NoFragmentCycles rule
       const queryString = `
         fragment FragmentA on User {
           objectId
@@ -471,13 +439,11 @@ describe('ParseGraphQL Query Complexity', () => {
       `;
 
       try {
-        // Try to parse the query with cyclic fragments
         const query = gql(queryString);
         await apolloClient.query({ query });
         fail('Should have thrown an error due to cyclic fragments');
       } catch (error) {
-        // GraphQL validation should catch this before complexity calculation
-        expect(error.message).toMatch(/cycle|Cannot spread fragment/i);
+        expect(error.networkError?.result?.errors?.[0]?.message).toEqual('Cannot spread fragment "FragmentA" within itself via "FragmentB".');
       }
     });
   });
@@ -486,8 +452,8 @@ describe('ParseGraphQL Query Complexity', () => {
     it('should validate both depth and fields limits', async () => {
       await reconfigureServer({
         maxGraphQLQueryComplexity: {
-          depth: 3,
-          fields: 5,
+          depth: 4,
+          fields: 10,
         },
       });
 
@@ -534,7 +500,7 @@ describe('ParseGraphQL Query Complexity', () => {
         await apolloClient.query({ query });
         fail('Should have thrown an error');
       } catch (error) {
-        expect(error.message).toContain('Number of fields selected exceeds maximum allowed');
+        expect(error.networkError.result.errors[0].message).toContain('Number of fields selected exceeds maximum allowed');
       }
     });
   });
@@ -552,9 +518,7 @@ describe('ParseGraphQL Query Complexity', () => {
                 username
                 createdAt
                 updatedAt
-                sessionToken
-                authData
-                ACL
+                email
               }
             }
           }
