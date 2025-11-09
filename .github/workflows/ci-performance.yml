@@ -304,9 +304,7 @@ jobs:
           echo "" >> comment.md
           echo "</details>" >> comment.md
           echo "" >> comment.md
-          echo "*Benchmarks ran with ${BENCHMARK_ITERATIONS:-10000} iterations per test on Node.js ${{ env.NODE_VERSION }} (production mode, CPU pinned)*" >> comment.md
-          echo "" >> comment.md
-          echo "> **Note:** Using 10k iterations with CPU affinity for measurement stability. Thresholds: ⚠️ >25%, ❌ >50%." >> comment.md
+          echo "> **Note:** Thresholds: ⚠️ >25%, ❌ >50%." >> comment.md
 
       - name: Comment PR with results
         if: github.event_name == 'pull_request'
