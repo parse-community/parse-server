@@ -128,10 +128,10 @@ async function measureOperation(name, operation, iterations = ITERATIONS) {
 
   return {
     name,
-    value: p95, // Use p95 as primary metric (industry standard)
+    value: median, // Use median (p50) as primary metric for stability in CI
     unit: 'ms',
     range: `${min.toFixed(2)} - ${max.toFixed(2)}`,
-    extra: `median: ${median.toFixed(2)}ms, p99: ${p99.toFixed(2)}ms, n=${filtered.length}/${times.length}`,
+    extra: `p95: ${p95.toFixed(2)}ms, p99: ${p99.toFixed(2)}ms, n=${filtered.length}/${times.length}`,
   };
 }
 
