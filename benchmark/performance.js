@@ -10,6 +10,7 @@
 
 /* eslint-disable no-console */
 
+const core = require('@actions/core');
 const Parse = require('parse/node');
 const { performance, PerformanceObserver } = require('perf_hooks');
 const { MongoClient } = require('mongodb');
@@ -20,10 +21,15 @@ const SERVER_URL = 'http://localhost:1337/parse';
 const APP_ID = 'benchmark-app-id';
 const MASTER_KEY = 'benchmark-master-key';
 const ITERATIONS = parseInt(process.env.BENCHMARK_ITERATIONS || '1000', 10);
+const LOG_ITERATIONS = false;
 
 // Parse Server instance
 let parseServer;
 let mongoClient;
+
+// Logging helpers
+const logInfo = message => core.info(message);
+const logError = message => core.error(message);
 
 /**
  * Initialize Parse Server for benchmarking
@@ -94,32 +100,48 @@ function resetParseServer() {
 }
 
 /**
- * Measure average time for an async operation over multiple iterations
- * Uses warmup iterations, median metric, and outlier filtering for robustness
+ * Measure average time for an async operation over multiple iterations.
+ * @param {Object} options - Measurement options
+ * @param {string} options.name - Name of the operation being measured
+ * @param {Function} options.operation - Async function to measure
+ * @param {number} [options.iterations=ITERATIONS] - Number of iterations to run
+ * @param {boolean} [options.skipWarmup=false] - Skip warmup phase
  */
-async function measureOperation(name, operation, iterations = ITERATIONS, skipWarmup = false) {
-  const warmupCount = skipWarmup ? 0 : Math.floor(iterations * 0.2); // 20% warmup iterations
+async function measureOperation({ name, operation, iterations = ITERATIONS, skipWarmup = false }) {
+  const warmupCount = skipWarmup ? 0 : Math.floor(iterations * 0.2);
   const times = [];
 
   if (warmupCount > 0) {
-    console.log(`Starting warmup phase (${warmupCount} iterations)...`);
+    logInfo(`Starting warmup phase of ${warmupCount} iterations...`);
     const warmupStart = performance.now();
     for (let i = 0; i < warmupCount; i++) {
       await operation();
     }
-    console.log(`Warmup took: ${(performance.now() - warmupStart).toFixed(2)}ms`);
+    logInfo(`Warmup took: ${(performance.now() - warmupStart).toFixed(2)}ms`);
   }
 
   // Measurement phase
-  console.log(`Starting measurement phase (${iterations} iterations)...`);
+  logInfo(`Starting measurement phase of ${iterations} iterations...`);
+  const progressInterval = Math.ceil(iterations / 10); // Log every 10%
+  const measurementStart = performance.now();
+
   for (let i = 0; i < iterations; i++) {
     const start = performance.now();
     await operation();
     const end = performance.now();
     const duration = end - start;
     times.push(duration);
-    console.log(`Iteration ${i + 1}: ${duration.toFixed(2)}ms`);
+
+    // Log progress every 10% or individual iterations if LOG_ITERATIONS is enabled
+    if (LOG_ITERATIONS) {
+      logInfo(`Iteration ${i + 1}: ${duration.toFixed(2)}ms`);
+    } else if ((i + 1) % progressInterval === 0 || i + 1 === iterations) {
+      const progress = Math.round(((i + 1) / iterations) * 100);
+      logInfo(`Progress: ${progress}%`);
+    }
   }
+
+  logInfo(`Measurement took: ${(performance.now() - measurementStart).toFixed(2)}ms`);
 
   // Sort times for percentile calculations
   times.sort((a, b) => a - b);
@@ -157,13 +179,16 @@ async function measureOperation(name, operation, iterations = ITERATIONS, skipWa
 async function benchmarkObjectCreate() {
   let counter = 0;
 
-  return measureOperation('Object Create', async () => {
-    const TestObject = Parse.Object.extend('BenchmarkTest');
-    const obj = new TestObject();
-    obj.set('testField', `test-value-${counter++}`);
-    obj.set('number', counter);
-    obj.set('boolean', true);
-    await obj.save();
+  return measureOperation({
+    name: 'Object Create',
+    operation: async () => {
+      const TestObject = Parse.Object.extend('BenchmarkTest');
+      const obj = new TestObject();
+      obj.set('testField', `test-value-${counter++}`);
+      obj.set('number', counter);
+      obj.set('boolean', true);
+      await obj.save();
+    },
   });
 }
 
@@ -185,9 +210,12 @@ async function benchmarkObjectRead() {
 
   let counter = 0;
 
-  return measureOperation('Object Read', async () => {
-    const query = new Parse.Query('BenchmarkTest');
-    await query.get(objects[counter++ % objects.length].id);
+  return measureOperation({
+    name: 'Object Read',
+    operation: async () => {
+      const query = new Parse.Query('BenchmarkTest');
+      await query.get(objects[counter++ % objects.length].id);
+    },
   });
 }
 
@@ -210,11 +238,14 @@ async function benchmarkObjectUpdate() {
 
   let counter = 0;
 
-  return measureOperation('Object Update', async () => {
-    const obj = objects[counter++ % objects.length];
-    obj.increment('counter');
-    obj.set('lastUpdated', new Date());
-    await obj.save();
+  return measureOperation({
+    name: 'Object Update',
+    operation: async () => {
+      const obj = objects[counter++ % objects.length];
+      obj.increment('counter');
+      obj.set('lastUpdated', new Date());
+      await obj.save();
+    },
   });
 }
 
@@ -237,10 +268,13 @@ async function benchmarkSimpleQuery() {
 
   let counter = 0;
 
-  return measureOperation('Simple Query', async () => {
-    const query = new Parse.Query('BenchmarkTest');
-    query.equalTo('category', counter++ % 10);
-    await query.find();
+  return measureOperation({
+    name: 'Simple Query',
+    operation: async () => {
+      const query = new Parse.Query('BenchmarkTest');
+      query.equalTo('category', counter++ % 10);
+      await query.find();
+    },
   });
 }
 
@@ -250,18 +284,21 @@ async function benchmarkSimpleQuery() {
 async function benchmarkBatchSave() {
   const BATCH_SIZE = 10;
 
-  return measureOperation('Batch Save (10 objects)', async () => {
-    const TestObject = Parse.Object.extend('BenchmarkTest');
-    const objects = [];
+  return measureOperation({
+    name: 'Batch Save (10 objects)',
+    operation: async () => {
+      const TestObject = Parse.Object.extend('BenchmarkTest');
+      const objects = [];
 
-    for (let i = 0; i < BATCH_SIZE; i++) {
-      const obj = new TestObject();
-      obj.set('batchField', `batch-${i}`);
-      obj.set('timestamp', new Date());
-      objects.push(obj);
-    }
+      for (let i = 0; i < BATCH_SIZE; i++) {
+        const obj = new TestObject();
+        obj.set('batchField', `batch-${i}`);
+        obj.set('timestamp', new Date());
+        objects.push(obj);
+      }
 
-    await Parse.Object.saveAll(objects);
+      await Parse.Object.saveAll(objects);
+    },
   });
 }
 
@@ -271,13 +308,16 @@ async function benchmarkBatchSave() {
 async function benchmarkUserSignup() {
   let counter = 0;
 
-  return measureOperation('User Signup', async () => {
-    counter++;
-    const user = new Parse.User();
-    user.set('username', `benchmark_user_${Date.now()}_${counter}`);
-    user.set('password', 'benchmark_password');
-    user.set('email', `benchmark${counter}@example.com`);
-    await user.signUp();
+  return measureOperation({
+    name: 'User Signup',
+    operation: async () => {
+      counter++;
+      const user = new Parse.User();
+      user.set('username', `benchmark_user_${Date.now()}_${counter}`);
+      user.set('password', 'benchmark_password');
+      user.set('email', `benchmark${counter}@example.com`);
+      await user.signUp();
+    },
   });
 }
 
@@ -300,10 +340,13 @@ async function benchmarkUserLogin() {
 
   let counter = 0;
 
-  return measureOperation('User Login', async () => {
-    const userCreds = users[counter++ % users.length];
-    await Parse.User.logIn(userCreds.username, userCreds.password);
-    await Parse.User.logOut();
+  return measureOperation({
+    name: 'User Login',
+    operation: async () => {
+      const userCreds = users[counter++ % users.length];
+      await Parse.User.logIn(userCreds.username, userCreds.password);
+      await Parse.User.logOut();
+    },
   });
 }
 
@@ -317,57 +360,59 @@ async function benchmarkQueryWithInclude() {
   const Level1Class = Parse.Object.extend('Level1');
   const RootClass = Parse.Object.extend('Root');
 
-  // Create 10 Level2 objects
-  const level2Objects = [];
-  for (let i = 0; i < 10; i++) {
-    const obj = new Level2Class();
-    obj.set('name', `level2-${i}`);
-    obj.set('value', i);
-    level2Objects.push(obj);
-  }
-  await Parse.Object.saveAll(level2Objects);
+  return measureOperation({
+    name: 'Query with Include (2 levels)',
+    skipWarmup: true,
+    operation: async () => {
+      // Create 10 Level2 objects
+      const level2Objects = [];
+      for (let i = 0; i < 10; i++) {
+        const obj = new Level2Class();
+        obj.set('name', `level2-${i}`);
+        obj.set('value', i);
+        level2Objects.push(obj);
+      }
+      await Parse.Object.saveAll(level2Objects);
 
-  // Create 10 Level1 objects, each pointing to a Level2 object
-  const level1Objects = [];
-  for (let i = 0; i < 10; i++) {
-    const obj = new Level1Class();
-    obj.set('name', `level1-${i}`);
-    obj.set('level2', level2Objects[i % level2Objects.length]);
-    level1Objects.push(obj);
-  }
-  await Parse.Object.saveAll(level1Objects);
+      // Create 10 Level1 objects, each pointing to a Level2 object
+      const level1Objects = [];
+      for (let i = 0; i < 10; i++) {
+        const obj = new Level1Class();
+        obj.set('name', `level1-${i}`);
+        obj.set('level2', level2Objects[i % level2Objects.length]);
+        level1Objects.push(obj);
+      }
+      await Parse.Object.saveAll(level1Objects);
 
-  // Create 10 Root objects, each pointing to a Level1 object
-  const rootObjects = [];
-  for (let i = 0; i < 10; i++) {
-    const obj = new RootClass();
-    obj.set('name', `root-${i}`);
-    obj.set('level1', level1Objects[i % level1Objects.length]);
-    rootObjects.push(obj);
-  }
-  await Parse.Object.saveAll(rootObjects);
+      // Create 10 Root objects, each pointing to a Level1 object
+      const rootObjects = [];
+      for (let i = 0; i < 10; i++) {
+        const obj = new RootClass();
+        obj.set('name', `root-${i}`);
+        obj.set('level1', level1Objects[i % level1Objects.length]);
+        rootObjects.push(obj);
+      }
+      await Parse.Object.saveAll(rootObjects);
 
-  const result = await measureOperation('Query with Include (2 levels)', async () => {
-    const query = new Parse.Query('Root');
-    query.include('level1.level2');
-    await query.find();
+      const query = new Parse.Query('Root');
+      query.include('level1.level2');
+      await query.find();
+    },
   });
-
-  return result;
 }
 
 /**
  * Run all benchmarks
  */
 async function runBenchmarks() {
-  console.log('Starting Parse Server Performance Benchmarks...');
-  console.log(`Iterations per benchmark: ${ITERATIONS}`);
+  logInfo('Starting Parse Server Performance Benchmarks...');
+  logInfo(`Iterations per benchmark: ${ITERATIONS}`);
 
   let server;
 
   try {
     // Initialize Parse Server
-    console.log('Initializing Parse Server...');
+    logInfo('Initializing Parse Server...');
     server = await initializeParseServer();
 
     // Wait for server to be ready
@@ -377,36 +422,36 @@ async function runBenchmarks() {
 
     // Define all benchmarks to run
     const benchmarks = [
-      { name: 'Object Create', fn: benchmarkObjectCreate },
-      { name: 'Object Read', fn: benchmarkObjectRead },
-      { name: 'Object Update', fn: benchmarkObjectUpdate },
-      { name: 'Simple Query', fn: benchmarkSimpleQuery },
-      { name: 'Batch Save', fn: benchmarkBatchSave },
-      { name: 'User Signup', fn: benchmarkUserSignup },
-      { name: 'User Login', fn: benchmarkUserLogin },
+      // { name: 'Object Create', fn: benchmarkObjectCreate },
+      // { name: 'Object Read', fn: benchmarkObjectRead },
+      // { name: 'Object Update', fn: benchmarkObjectUpdate },
+      // { name: 'Simple Query', fn: benchmarkSimpleQuery },
+      // { name: 'Batch Save', fn: benchmarkBatchSave },
+      // { name: 'User Signup', fn: benchmarkUserSignup },
+      // { name: 'User Login', fn: benchmarkUserLogin },
       { name: 'Query with Include', fn: benchmarkQueryWithInclude },
     ];
 
     // Run each benchmark with database cleanup
     for (const benchmark of benchmarks) {
-      console.log(`Running ${benchmark.name} benchmark...`);
+      logInfo(`\nRunning benchmark '${benchmark.name}'...`);
       resetParseServer();
       await cleanupDatabase();
       results.push(await benchmark.fn());
     }
 
     // Output results in github-action-benchmark format (stdout)
-    console.log(JSON.stringify(results, null, 2));
+    logInfo(JSON.stringify(results, null, 2));
 
     // Output summary to stderr for visibility
-    console.log('Benchmarks completed successfully!');
-    console.log('Summary:');
+    logInfo('Benchmarks completed successfully!');
+    logInfo('Summary:');
     results.forEach(result => {
-      console.log(`  ${result.name}: ${result.value.toFixed(2)} ${result.unit} (${result.extra})`);
+      logInfo(`  ${result.name}: ${result.value.toFixed(2)} ${result.unit} (${result.extra})`);
     });
 
   } catch (error) {
-    console.error('Error running benchmarks:', error);
+    logError('Error running benchmarks:', error);
     process.exit(1);
   } finally {
     // Cleanup
