@@ -19,7 +19,7 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/parse_
 const SERVER_URL = 'http://localhost:1337/parse';
 const APP_ID = 'benchmark-app-id';
 const MASTER_KEY = 'benchmark-master-key';
-const ITERATIONS = parseInt(process.env.BENCHMARK_ITERATIONS || '10000', 10);
+const ITERATIONS = parseInt(process.env.BENCHMARK_ITERATIONS || '1000', 10);
 
 // Parse Server instance
 let parseServer;
