@@ -11,6 +11,7 @@ const ALLOWED_GET_QUERY_KEYS = [
   'readPreference',
   'includeReadPreference',
   'subqueryReadPreference',
+  'ignoreIncludeErrors',
 ];
 
 export class ClassesRouter extends PromiseRouter {
@@ -74,6 +75,9 @@ export class ClassesRouter extends PromiseRouter {
     }
     if (typeof body.subqueryReadPreference === 'string') {
       options.subqueryReadPreference = body.subqueryReadPreference;
+    }
+    if (body.ignoreIncludeErrors != null) {
+      options.ignoreIncludeErrors = !!body.ignoreIncludeErrors;
     }
 
     return rest
@@ -174,6 +178,7 @@ export class ClassesRouter extends PromiseRouter {
       'hint',
       'explain',
       'comment',
+      'ignoreIncludeErrors',
     ];
 
     for (const key of Object.keys(body)) {
@@ -225,6 +230,9 @@ export class ClassesRouter extends PromiseRouter {
     }
     if (body.comment && typeof body.comment === 'string') {
       options.comment = body.comment;
+    }
+    if (body.ignoreIncludeErrors) {
+      options.ignoreIncludeErrors = true;
     }
     return options;
   }

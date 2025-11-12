@@ -1189,6 +1189,7 @@ class DatabaseController {
       caseInsensitive = false,
       explain,
       comment,
+      ignoreIncludeErrors,
     }: any = {},
     auth: any = {},
     validSchemaController: SchemaController.SchemaController
@@ -1285,6 +1286,13 @@ class DatabaseController {
               }
               if (!query) {
                 if (op === 'get') {
+                  // If there's no query returned; then it didn't pass `addPointerPermissions`
+                  // permissions checks
+                  // Default is to return OBJECT_NOT_FOUND, but if we ignore include errors we can
+                  // return [] here.
+                  if (ignoreIncludeErrors) {
+                    return [];
+                  }
                   throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
                 } else {
                   return [];
