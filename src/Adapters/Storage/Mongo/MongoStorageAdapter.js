@@ -19,6 +19,7 @@ import _ from 'lodash';
 import defaults, { ParseServerDatabaseOptions } from '../../../defaults';
 import logger from '../../../logger';
 import Utils from '../../../Utils';
+import { version } from '../../../../package.json';
 
 // @flow-disable-next
 const mongodb = require('mongodb');
@@ -184,6 +185,7 @@ export class MongoStorageAdapter implements StorageAdapter {
         // Starting mongoDB 3.0, the MongoClient.connect don't return a DB anymore but a client
         // Fortunately, we can get back the options and use them to select the proper DB.
         // https://github.com/mongodb/node-mongodb-native/blob/2c35d76f08574225b8db02d7bef687123e6bb018/lib/mongo_client.js#L885
+        client.appendMetadata({ name: 'parse_server_storage', version: version });
         const options = client.s.options;
         const database = client.db(options.dbName);
         if (!database) {
