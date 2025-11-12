@@ -1,42 +1,8 @@
 const t = require('@babel/types');
+const { mapperFor } = require('../resources/buildConfigDefinitions');
 
 describe('buildConfigDefinitions', () => {
   describe('mapperFor', () => {
-    // Recreate the mapperFor function for testing
-    function mapperFor(elt, t) {
-      const p = t.identifier('parsers');
-      const wrap = identifier => t.memberExpression(p, identifier);
-
-      if (t.isNumberTypeAnnotation(elt)) {
-        return t.callExpression(wrap(t.identifier('numberParser')), [t.stringLiteral(elt.name)]);
-      } else if (t.isArrayTypeAnnotation(elt)) {
-        return wrap(t.identifier('arrayParser'));
-      } else if (t.isAnyTypeAnnotation(elt)) {
-        return wrap(t.identifier('objectParser'));
-      } else if (t.isBooleanTypeAnnotation(elt)) {
-        return wrap(t.identifier('booleanParser'));
-      } else if (t.isObjectTypeAnnotation(elt)) {
-        return wrap(t.identifier('objectParser'));
-      } else if (t.isGenericTypeAnnotation(elt)) {
-        const type = elt.typeAnnotation.id.name;
-        if (type == 'Adapter') {
-          return wrap(t.identifier('moduleOrObjectParser'));
-        }
-        if (type == 'NumberOrBoolean') {
-          return wrap(t.identifier('numberOrBooleanParser'));
-        }
-        if (type == 'NumberOrString') {
-          return t.callExpression(wrap(t.identifier('numberOrStringParser')), [
-            t.stringLiteral(elt.name),
-          ]);
-        }
-        if (type === 'StringOrStringArray') {
-          return wrap(t.identifier('arrayParser'));
-        }
-        return wrap(t.identifier('objectParser'));
-      }
-    }
-
     it('should return objectParser for ObjectTypeAnnotation', () => {
       const mockElement = {
         type: 'ObjectTypeAnnotation',

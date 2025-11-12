@@ -383,3 +383,6 @@ const res = babel.transformFileSync('./src/Options/index.js', {
 });
 require('fs').writeFileSync('./src/Options/Definitions.js', res.code + '\n');
 require('fs').writeFileSync('./src/Options/docs.js', docs);
+
+// Export mapperFor for testing
+module.exports = { mapperFor };
