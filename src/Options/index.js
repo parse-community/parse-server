@@ -226,9 +226,9 @@ export interface ParseServerOptions {
   /* If set to `true`, a `Parse.Object` that is in the payload when calling a Cloud Function will be converted to an instance of `Parse.Object`. If `false`, the object will not be converted and instead be a plain JavaScript object, which contains the raw data of a `Parse.Object` but is not an actual instance of `Parse.Object`. Default is `false`. <br><br>ℹ️ The expected behavior would be that the object is converted to an instance of `Parse.Object`, so you would normally set this option to `true`. The default is `false` because this is a temporary option that has been introduced to avoid a breaking change when fixing a bug where JavaScript objects are not converted to actual instances of `Parse.Object`.
   :DEFAULT: true */
   encodeParseObjectInCloudFunction: ?boolean;
-  /* Public URL to your parse server with http:// or https://.
+  /* Optional. The public URL to Parse Server. This URL will be used to reach Parse Server publicly for features like password reset and email verification links. The option can be set to a string or a function that can be asynchronously resolved. The returned URL string must start with `http://` or `https://`.
   :ENV: PARSE_PUBLIC_SERVER_URL */
-  publicServerURL: ?string;
+  publicServerURL: ?(string | (() => string) | (() => Promise<string>));
   /* The options for pages such as password reset and email verification.
   :DEFAULT: {} */
   pages: ?PagesOptions;
@@ -608,6 +608,32 @@ export interface FileUploadOptions {
   enableForPublic: ?boolean;
 }
 
+/* The available log levels for Parse Server logging. Valid values are:<br>- `'error'` - Error level (highest priority)<br>- `'warn'` - Warning level<br>- `'info'` - Info level (default)<br>- `'verbose'` - Verbose level<br>- `'debug'` - Debug level<br>- `'silly'` - Silly level (lowest priority) */
+export interface LogLevel {
+  /* Error level - highest priority */
+  error: 'error';
+  /* Warning level */
+  warn: 'warn';
+  /* Info level - default */
+  info: 'info';
+  /* Verbose level */
+  verbose: 'verbose';
+  /* Debug level */
+  debug: 'debug';
+  /* Silly level - lowest priority */
+  silly: 'silly';
+}
+
+export interface LogClientEvent {
+  /* The MongoDB driver event name to listen for. See the [MongoDB driver events documentation](https://www.mongodb.com/docs/drivers/node/current/fundamentals/monitoring/) for available events. */
+  name: string;
+  /* Optional array of dot-notation paths to extract specific data from the event object. If not provided or empty, the entire event object will be logged. */
+  keys: ?(string[]);
+  /* The log level to use for this event. See [LogLevel](LogLevel.html) for available values. Defaults to `'info'`.
+  :DEFAULT: info */
+  logLevel: ?string;
+}
+
 export interface DatabaseOptions {
   /* Enables database real-time hooks to update single schema cache. Set to `true` if using multiple Parse Servers instances connected to the same database. Failing to do so will cause a schema change to not propagate to all instances and re-syncing will only happen when the instances restart. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required.
   :DEFAULT: false */
@@ -624,6 +650,12 @@ export interface DatabaseOptions {
   minPoolSize: ?number;
   /* The MongoDB driver option to set the maximum number of opened, cached, ready-to-use database connections maintained by the driver. */
   maxPoolSize: ?number;
+  /* The MongoDB driver option to specify the amount of time in milliseconds for a server to be considered suitable for selection. */
+  serverSelectionTimeoutMS: ?number;
+  /* The MongoDB driver option to specify the amount of time in milliseconds that a connection can remain idle in the connection pool before being removed and closed. */
+  maxIdleTimeMS: ?number;
+  /* The MongoDB driver option to specify the frequency in milliseconds at which the driver checks the state of the MongoDB deployment. */
+  heartbeatFrequencyMS: ?number;
   /* The MongoDB driver option to specify the amount of time, in milliseconds, to wait to establish a single TCP socket connection to the server before raising an error. Specifying 0 disables the connection timeout. */
   connectTimeoutMS: ?number;
   /* The MongoDB driver option to specify the amount of time, in milliseconds, spent attempting to send or receive on a socket before timing out. Specifying 0 means no timeout. */
@@ -632,6 +664,70 @@ export interface DatabaseOptions {
   autoSelectFamily: ?boolean;
   /* The MongoDB driver option to specify the amount of time in milliseconds to wait for a connection attempt to finish before trying the next address when using the autoSelectFamily option. If set to a positive integer less than 10, the value 10 is used instead. */
   autoSelectFamilyAttemptTimeout: ?number;
+  /* The MongoDB driver option to specify the maximum number of connections that may be in the process of being established concurrently by the connection pool. */
+  maxConnecting: ?number;
+  /* The MongoDB driver option to specify the maximum time in milliseconds that a thread can wait for a connection to become available. */
+  waitQueueTimeoutMS: ?number;
+  /* The MongoDB driver option to specify the name of the replica set, if the mongod is a member of a replica set. */
+  replicaSet: ?string;
+  /* The MongoDB driver option to force a Single topology type with a connection string containing one host. */
+  directConnection: ?boolean;
+  /* The MongoDB driver option to instruct the driver it is connecting to a load balancer fronting a mongos like service. */
+  loadBalanced: ?boolean;
+  /* The MongoDB driver option to specify the size (in milliseconds) of the latency window for selecting among multiple suitable MongoDB instances. */
+  localThresholdMS: ?number;
+  /* The MongoDB driver option to specify the maximum number of hosts to connect to when using an srv connection string, a setting of 0 means unlimited hosts. */
+  srvMaxHosts: ?number;
+  /* The MongoDB driver option to modify the srv URI service name. */
+  srvServiceName: ?string;
+  /* The MongoDB driver option to enable or disable TLS/SSL for the connection. */
+  tls: ?boolean;
+  /* The MongoDB driver option to enable or disable TLS/SSL for the connection (equivalent to tls option). */
+  ssl: ?boolean;
+  /* The MongoDB driver option to specify the location of a local .pem file that contains the client's TLS/SSL certificate and key. */
+  tlsCertificateKeyFile: ?string;
+  /* The MongoDB driver option to specify the password to decrypt the tlsCertificateKeyFile. */
+  tlsCertificateKeyFilePassword: ?string;
+  /* The MongoDB driver option to specify the location of a local .pem file that contains the root certificate chain from the Certificate Authority. */
+  tlsCAFile: ?string;
+  /* The MongoDB driver option to bypass validation of the certificates presented by the mongod/mongos instance. */
+  tlsAllowInvalidCertificates: ?boolean;
+  /* The MongoDB driver option to disable hostname validation of the certificate presented by the mongod/mongos instance. */
+  tlsAllowInvalidHostnames: ?boolean;
+  /* The MongoDB driver option to disable various certificate validations. */
+  tlsInsecure: ?boolean;
+  /* The MongoDB driver option to specify an array or comma-delimited string of compressors to enable network compression for communication between this client and a mongod/mongos instance. */
+  compressors: ?(string[] | string);
+  /* The MongoDB driver option to specify the compression level if using zlib for network compression (0-9). */
+  zlibCompressionLevel: ?number;
+  /* The MongoDB driver option to specify the read preferences for this connection. */
+  readPreference: ?string;
+  /* The MongoDB driver option to specify the tags document as a comma-separated list of colon-separated key-value pairs. */
+  readPreferenceTags: ?(any[]);
+  /* The MongoDB driver option to specify the level of isolation. */
+  readConcernLevel: ?string;
+  /* The MongoDB driver option to specify the database name associated with the user's credentials. */
+  authSource: ?string;
+  /* The MongoDB driver option to specify the authentication mechanism that MongoDB will use to authenticate the connection. */
+  authMechanism: ?string;
+  /* The MongoDB driver option to specify properties for the specified authMechanism as a comma-separated list of colon-separated key-value pairs. */
+  authMechanismProperties: ?any;
+  /* The MongoDB driver option to specify the name of the application that created this MongoClient instance. */
+  appName: ?string;
+  /* The MongoDB driver option to enable retryable reads. */
+  retryReads: ?boolean;
+  /* The MongoDB driver option to force server to assign _id values instead of driver. */
+  forceServerObjectId: ?boolean;
+  /* The MongoDB driver option to instruct the driver monitors to use a specific monitoring mode. */
+  serverMonitoringMode: ?string;
+  /* The MongoDB driver option to configure a Socks5 proxy host used for creating TCP connections. */
+  proxyHost: ?string;
+  /* The MongoDB driver option to configure a Socks5 proxy port used for creating TCP connections. */
+  proxyPort: ?number;
+  /* The MongoDB driver option to configure a Socks5 proxy username when the proxy requires username/password authentication. */
+  proxyUsername: ?string;
+  /* The MongoDB driver option to configure a Socks5 proxy password when the proxy requires username/password authentication. */
+  proxyPassword: ?string;
   /* Set to `true` to automatically create indexes on the email field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
   :DEFAULT: true */
   createIndexUserEmail: ?boolean;
@@ -655,6 +751,11 @@ export interface DatabaseOptions {
   createIndexRoleName: ?boolean;
   /* Set to `true` to disable validation of index fields. When disabled, indexes can be created even if the fields do not exist in the schema. This can be useful when creating indexes on fields that will be added later. */
   disableIndexFieldValidation: ?boolean;
+  /* Set to `true` to allow `Parse.Query.explain` without master key.<br><br>⚠️ Enabling this option may expose sensitive query performance data to unauthorized users and could potentially be exploited for malicious purposes.
+  :DEFAULT: true */
+  allowPublicExplain: ?boolean;
+  /* An array of MongoDB client event configurations to enable logging of specific events. */
+  logClientEvents: ?(LogClientEvent[]);
 }
 
 export interface AuthAdapter {
@@ -666,23 +767,23 @@ export interface AuthAdapter {
 }
 
 export interface LogLevels {
-  /* Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterFind`, `afterLogout`. Default is `info`.
+  /* Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterFind`, `afterLogout`. Default is `info`. See [LogLevel](LogLevel.html) for available values.
   :DEFAULT: info
   */
   triggerAfter: ?string;
-  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on success. Default is `info`.
+  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on success. Default is `info`. See [LogLevel](LogLevel.html) for available values.
   :DEFAULT: info
   */
   triggerBeforeSuccess: ?string;
-  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on error. Default is `error`.
+  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on error. Default is `error`. See [LogLevel](LogLevel.html) for available values.
   :DEFAULT: error
   */
   triggerBeforeError: ?string;
-  /* Log level used by the Cloud Code Functions on success. Default is `info`.
+  /* Log level used by the Cloud Code Functions on success. Default is `info`. See [LogLevel](LogLevel.html) for available values.
   :DEFAULT: info
   */
   cloudFunctionSuccess: ?string;
-  /* Log level used by the Cloud Code Functions on error. Default is `error`.
+  /* Log level used by the Cloud Code Functions on error. Default is `error`. See [LogLevel](LogLevel.html) for available values.
   :DEFAULT: error
   */
   cloudFunctionError: ?string;

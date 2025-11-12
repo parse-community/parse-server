@@ -57,4 +57,69 @@ describe('Utils', () => {
       });
     });
   });
+
+  describe('getCircularReplacer', () => {
+    it('should handle Map instances', () => {
+      const obj = {
+        name: 'test',
+        mapData: new Map([
+          ['key1', 'value1'],
+          ['key2', 'value2']
+        ])
+      };
+      const result = JSON.stringify(obj, Utils.getCircularReplacer());
+      expect(result).toBe('{"name":"test","mapData":{"key1":"value1","key2":"value2"}}');
+    });
+
+    it('should handle Set instances', () => {
+      const obj = {
+        name: 'test',
+        setData: new Set([1, 2, 3])
+      };
+      const result = JSON.stringify(obj, Utils.getCircularReplacer());
+      expect(result).toBe('{"name":"test","setData":[1,2,3]}');
+    });
+
+    it('should handle circular references', () => {
+      const obj = { name: 'test', value: 123 };
+      obj.self = obj;
+      const result = JSON.stringify(obj, Utils.getCircularReplacer());
+      expect(result).toBe('{"name":"test","value":123,"self":"[Circular]"}');
+    });
+
+    it('should handle nested circular references', () => {
+      const obj = {
+        name: 'parent',
+        child: {
+          name: 'child'
+        }
+      };
+      obj.child.parent = obj;
+      const result = JSON.stringify(obj, Utils.getCircularReplacer());
+      expect(result).toBe('{"name":"parent","child":{"name":"child","parent":"[Circular]"}}');
+    });
+
+    it('should handle mixed Map, Set, and circular references', () => {
+      const obj = {
+        mapData: new Map([['key', 'value']]),
+        setData: new Set([1, 2]),
+        regular: 'data'
+      };
+      obj.circular = obj;
+      const result = JSON.stringify(obj, Utils.getCircularReplacer());
+      expect(result).toBe('{"mapData":{"key":"value"},"setData":[1,2],"regular":"data","circular":"[Circular]"}');
+    });
+
+    it('should handle normal objects without modification', () => {
+      const obj = {
+        name: 'test',
+        number: 42,
+        nested: {
+          key: 'value'
+        }
+      };
+      const result = JSON.stringify(obj, Utils.getCircularReplacer());
+      expect(result).toBe('{"name":"test","number":42,"nested":{"key":"value"}}');
+    });
+  });
 });

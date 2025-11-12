@@ -35,6 +35,17 @@ async function runFindTriggers(
 ) {
   const { isGet } = options;
 
+  if (restOptions && restOptions.explain && !auth.isMaster) {
+    const allowPublicExplain = config.databaseOptions?.allowPublicExplain ?? true;
+
+    if (!allowPublicExplain) {
+      throw new Parse.Error(
+        Parse.Error.INVALID_QUERY,
+        'Using the explain query parameter requires the master key'
+      );
+    }
+  }
+
   // Run beforeFind trigger - may modify query or return objects directly
   const result = await triggers.maybeRunQueryTrigger(
     triggers.Types.beforeFind,

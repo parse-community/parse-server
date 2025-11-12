@@ -85,7 +85,7 @@ export interface ParseServerOptions {
     cacheAdapter?: Adapter<CacheAdapter>;
     emailAdapter?: Adapter<MailAdapter>;
     encodeParseObjectInCloudFunction?: boolean;
-    publicServerURL?: string;
+    publicServerURL?: string | (() => string) | (() => Promise<string>);
     pages?: PagesOptions;
     customPages?: CustomPagesOptions;
     liveQuery?: LiveQueryOptions;
@@ -227,17 +227,66 @@ export interface FileUploadOptions {
     enableForPublic?: boolean;
 }
 export interface DatabaseOptions {
+    // Parse Server custom options
+    allowPublicExplain?: boolean;
+    createIndexRoleName?: boolean;
+    createIndexUserEmail?: boolean;
+    createIndexUserEmailCaseInsensitive?: boolean;
+    createIndexUserEmailVerifyToken?: boolean;
+    createIndexUserPasswordResetToken?: boolean;
+    createIndexUserUsername?: boolean;
+    createIndexUserUsernameCaseInsensitive?: boolean;
+    disableIndexFieldValidation?: boolean;
     enableSchemaHooks?: boolean;
-    schemaCacheTtl?: number;
-    retryWrites?: boolean;
+    logClientEvents?: any[];
+    // maxTimeMS is a MongoDB option but Parse Server applies it per-operation, not as a global client option
     maxTimeMS?: number;
-    maxStalenessSeconds?: number;
-    minPoolSize?: number;
-    maxPoolSize?: number;
-    connectTimeoutMS?: number;
-    socketTimeoutMS?: number;
+    schemaCacheTtl?: number;
+
+    // MongoDB driver options
+    appName?: string;
+    authMechanism?: string;
+    authMechanismProperties?: any;
+    authSource?: string;
     autoSelectFamily?: boolean;
     autoSelectFamilyAttemptTimeout?: number;
+    compressors?: string[] | string;
+    connectTimeoutMS?: number;
+    directConnection?: boolean;
+    forceServerObjectId?: boolean;
+    heartbeatFrequencyMS?: number;
+    loadBalanced?: boolean;
+    localThresholdMS?: number;
+    maxConnecting?: number;
+    maxIdleTimeMS?: number;
+    maxPoolSize?: number;
+    maxStalenessSeconds?: number;
+    minPoolSize?: number;
+    proxyHost?: string;
+    proxyPassword?: string;
+    proxyPort?: number;
+    proxyUsername?: string;
+    readConcernLevel?: string;
+    readPreference?: string;
+    readPreferenceTags?: any[];
+    replicaSet?: string;
+    retryReads?: boolean;
+    retryWrites?: boolean;
+    serverMonitoringMode?: string;
+    serverSelectionTimeoutMS?: number;
+    socketTimeoutMS?: number;
+    srvMaxHosts?: number;
+    srvServiceName?: string;
+    ssl?: boolean;
+    tls?: boolean;
+    tlsAllowInvalidCertificates?: boolean;
+    tlsAllowInvalidHostnames?: boolean;
+    tlsCAFile?: string;
+    tlsCertificateKeyFile?: string;
+    tlsCertificateKeyFilePassword?: string;
+    tlsInsecure?: boolean;
+    waitQueueTimeoutMS?: number;
+    zlibCompressionLevel?: number;
 }
 export interface AuthAdapter {
     enabled?: boolean;

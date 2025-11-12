@@ -32,6 +32,11 @@ function removeTrailingSlash(str) {
   return str;
 }
 
+/**
+ * Config keys that need to be loaded asynchronously.
+ */
+const asyncKeys = ['publicServerURL'];
+
 export class Config {
   static get(applicationId: string, mount: string) {
     const cacheInfo = AppCache.get(applicationId);
@@ -56,9 +61,42 @@ export class Config {
     return config;
   }
 
+  async loadKeys() {
+    await Promise.all(
+      asyncKeys.map(async key => {
+        if (typeof this[`_${key}`] === 'function') {
+          try {
+            this[key] = await this[`_${key}`]();
+          } catch (error) {
+            throw new Error(`Failed to resolve async config key '${key}': ${error.message}`);
+          }
+        }
+      })
+    );
+
+    const cachedConfig = AppCache.get(this.appId);
+    if (cachedConfig) {
+      const updatedConfig = { ...cachedConfig };
+      asyncKeys.forEach(key => {
+        updatedConfig[key] = this[key];
+      });
+      AppCache.put(this.appId, updatedConfig);
+    }
+  }
+
+  static transformConfiguration(serverConfiguration) {
+    for (const key of Object.keys(serverConfiguration)) {
+      if (asyncKeys.includes(key) && typeof serverConfiguration[key] === 'function') {
+        serverConfiguration[`_${key}`] = serverConfiguration[key];
+        delete serverConfiguration[key];
+      }
+    }
+  }
+
   static put(serverConfiguration) {
     Config.validateOptions(serverConfiguration);
     Config.validateControllers(serverConfiguration);
+    Config.transformConfiguration(serverConfiguration);
     AppCache.put(serverConfiguration.appId, serverConfiguration);
     Config.setupPasswordValidator(serverConfiguration.passwordPolicy);
     return serverConfiguration;
@@ -115,11 +153,7 @@ export class Config {
       throw 'extendSessionOnUse must be a boolean value';
     }
 
-    if (publicServerURL) {
-      if (!publicServerURL.startsWith('http://') && !publicServerURL.startsWith('https://')) {
-        throw 'publicServerURL should be a valid HTTPS URL starting with https://';
-      }
-    }
+    this.validatePublicServerURL({ publicServerURL });
     this.validateSessionConfiguration(sessionLength, expireInactiveSessions);
     this.validateIps('masterKeyIps', masterKeyIps);
     this.validateIps('maintenanceKeyIps', maintenanceKeyIps);
@@ -154,6 +188,7 @@ export class Config {
     userController,
     appName,
     publicServerURL,
+    _publicServerURL,
     emailVerifyTokenValidityDuration,
     emailVerifyTokenReuseIfValid,
   }) {
@@ -162,7 +197,7 @@ export class Config {
       this.validateEmailConfiguration({
         emailAdapter,
         appName,
-        publicServerURL,
+        publicServerURL: publicServerURL || _publicServerURL,
         emailVerifyTokenValidityDuration,
         emailVerifyTokenReuseIfValid,
       });
@@ -432,6 +467,30 @@ export class Config {
     }
   }
 
+  static validatePublicServerURL({ publicServerURL, required = false }) {
+    if (!publicServerURL) {
+      if (!required) {
+        return;
+      }
+      throw 'The option publicServerURL is required.';
+    }
+
+    const type = typeof publicServerURL;
+
+    if (type === 'string') {
+      if (!publicServerURL.startsWith('http://') && !publicServerURL.startsWith('https://')) {
+        throw 'The option publicServerURL must be a valid URL starting with http:// or https://.';
+      }
+      return;
+    }
+
+    if (type === 'function') {
+      return;
+    }
+
+    throw `The option publicServerURL must be a string or function, but got ${type}.`;
+  }
+
   static validateEmailConfiguration({
     emailAdapter,
     appName,
@@ -445,9 +504,7 @@ export class Config {
     if (typeof appName !== 'string') {
       throw 'An app name is required for e-mail verification and password resets.';
     }
-    if (typeof publicServerURL !== 'string') {
-      throw 'A public server url is required for e-mail verification and password resets.';
-    }
+    this.validatePublicServerURL({ publicServerURL, required: true });
     if (emailVerifyTokenValidityDuration) {
       if (isNaN(emailVerifyTokenValidityDuration)) {
         throw 'Email verify token validity duration must be a valid number.';
@@ -601,6 +658,11 @@ export class Config {
       databaseOptions.schemaCacheTtl = DatabaseOptions.schemaCacheTtl.default;
     } else if (typeof databaseOptions.schemaCacheTtl !== 'number') {
       throw `databaseOptions.schemaCacheTtl must be a number`;
+    }
+    if (databaseOptions.allowPublicExplain === undefined) {
+      databaseOptions.allowPublicExplain = DatabaseOptions.allowPublicExplain.default;
+    } else if (typeof databaseOptions.allowPublicExplain !== 'boolean') {
+      throw `Parse Server option 'databaseOptions.allowPublicExplain' must be a boolean.`;
     }
   }
 
@@ -756,7 +818,6 @@ export class Config {
 
     return this.masterKey;
   }
-
 
   // TODO: Remove this function once PagesRouter replaces the PublicAPIRouter;
   // the (default) endpoint has to be defined in PagesRouter only.
