@@ -44,22 +44,22 @@ function wrapMethod(methodName, latencyMs) {
       // Wrap cursor methods that actually execute the query
       const originalToArray = result.toArray.bind(result);
       result.toArray = function() {
-        return new Promise((resolve) => {
-          setTimeout(() => {
-            resolve(originalToArray());
-          }, latencyMs);
-        });
+        // Wait for the original promise to settle, then delay the result
+        return originalToArray().then(
+          value => new Promise(resolve => setTimeout(() => resolve(value), latencyMs)),
+          error => new Promise((_, reject) => setTimeout(() => reject(error), latencyMs))
+        );
       };
       return result;
     }
 
     // For promise-returning methods, wrap the promise with delay
     if (result && typeof result.then === 'function') {
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          result.then(resolve).catch(reject);
-        }, latencyMs);
-      });
+      // Wait for the original promise to settle, then delay the result
+      return result.then(
+        value => new Promise(resolve => setTimeout(() => resolve(value), latencyMs)),
+        error => new Promise((_, reject) => setTimeout(() => reject(error), latencyMs))
+      );
     }
 
     // For synchronous methods, just add delay
