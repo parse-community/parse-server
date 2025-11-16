@@ -439,13 +439,13 @@ async function runBenchmarks() {
 
     // Define all benchmarks to run
     const benchmarks = [
-      // { name: 'Object Create', fn: benchmarkObjectCreate },
-      // { name: 'Object Read', fn: benchmarkObjectRead },
-      // { name: 'Object Update', fn: benchmarkObjectUpdate },
-      // { name: 'Simple Query', fn: benchmarkSimpleQuery },
-      // { name: 'Batch Save', fn: benchmarkBatchSave },
-      // { name: 'User Signup', fn: benchmarkUserSignup },
-      // { name: 'User Login', fn: benchmarkUserLogin },
+      { name: 'Object Create', fn: benchmarkObjectCreate },
+      { name: 'Object Read', fn: benchmarkObjectRead },
+      { name: 'Object Update', fn: benchmarkObjectUpdate },
+      { name: 'Simple Query', fn: benchmarkSimpleQuery },
+      { name: 'Batch Save', fn: benchmarkBatchSave },
+      { name: 'User Signup', fn: benchmarkUserSignup },
+      { name: 'User Login', fn: benchmarkUserLogin },
       { name: 'Query with Include', fn: benchmarkQueryWithInclude },
     ];
 
