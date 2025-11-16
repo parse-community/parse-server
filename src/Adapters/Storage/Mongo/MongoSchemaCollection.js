@@ -186,8 +186,17 @@ class MongoSchemaCollection {
       .then(() => mongoSchemaToParseSchema(schema))
       .catch(error => {
         if (error.code === 11000) {
-          //Mongo's duplicate key error
-          throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'Class already exists.');
+          // Duplicate key error - the schema was likely created by a concurrent operation
+          // Fetch and return the existing schema instead of throwing an error
+          return this._collection
+            .findOne({ _id: schema._id })
+            .then(existingSchema => {
+              if (existingSchema) {
+                return mongoSchemaToParseSchema(existingSchema);
+              }
+              // If we can't find it, throw the original duplicate error
+              throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'Class already exists.');
+            });
         } else {
           throw error;
         }
@@ -195,11 +204,27 @@ class MongoSchemaCollection {
   }
 
   updateSchema(name: string, update) {
-    return this._collection.updateOne(_mongoSchemaQueryFromNameQuery(name), update);
+    return this._collection.updateOne(_mongoSchemaQueryFromNameQuery(name), update).catch(error => {
+      // Handle duplicate key errors that can occur during concurrent schema updates
+      if (error.code === 11000) {
+        // Schema already exists/updated by another concurrent operation - safe to ignore
+        return;
+      }
+      throw error;
+    });
   }
 
   upsertSchema(name: string, query: string, update) {
-    return this._collection.upsertOne(_mongoSchemaQueryFromNameQuery(name, query), update);
+    return this._collection
+      .upsertOne(_mongoSchemaQueryFromNameQuery(name, query), update)
+      .catch(error => {
+        // Handle duplicate key errors that can occur during concurrent schema upserts
+        if (error.code === 11000) {
+          // Schema already exists - safe to ignore
+          return;
+        }
+        throw error;
+      });
   }
 
   // Add a field to the schema. If database does not support the field
