@@ -379,7 +379,8 @@ async function benchmarkQueryWithInclude() {
   return measureOperation({
     name: 'Query with Include (2 levels)',
     skipWarmup: true,
-    dbLatency: 100,
+    dbLatency: 10,
+    iterations: 10,
     operation: async () => {
       // Create 10 Level2 objects
       const level2Objects = [];
