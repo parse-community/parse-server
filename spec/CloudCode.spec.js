@@ -4678,17 +4678,17 @@ describe('beforePasswordResetRequest hook', () => {
     Parse.Cloud.beforePasswordResetRequest(req => {
       hit++;
       expect(req.object).toBeDefined();
-      expect(req.object.get('email')).toEqual('test@parse.com');
+      expect(req.object.get('email')).toEqual('test@example.com');
       expect(req.object.get('username')).toEqual('testuser');
     });
 
     const user = new Parse.User();
     user.setUsername('testuser');
     user.setPassword('password');
-    user.set('email', 'test@parse.com');
+    user.set('email', 'test@example.com');
     await user.signUp();
 
-    await Parse.User.requestPasswordReset('test@parse.com');
+    await Parse.User.requestPasswordReset('test@example.com');
     expect(hit).toBe(1);
     expect(sendPasswordResetEmailCalled).toBe(true);
   });
@@ -4720,12 +4720,12 @@ describe('beforePasswordResetRequest hook', () => {
     const user = new Parse.User();
     user.setUsername('banneduser');
     user.setPassword('password');
-    user.set('email', 'banned@parse.com');
+    user.set('email', 'banned@example.com');
     await user.signUp();
     await user.save({ isBanned: true });
 
     try {
-      await Parse.User.requestPasswordReset('banned@parse.com');
+      await Parse.User.requestPasswordReset('banned@example.com');
       throw new Error('should not have sent password reset email.');
     } catch (e) {
       expect(e.message).toBe('banned account');
@@ -4761,7 +4761,7 @@ describe('beforePasswordResetRequest hook', () => {
     const user = new Parse.User();
     user.setUsername('banneduser2');
     user.setPassword('password');
-    user.set('email', 'banned2@parse.com');
+    user.set('email', 'banned2@example.com');
     await user.signUp();
     const base64 = 'V29ya2luZyBhdCBQYXJzZSBpcyBncmVhdCE=';
     const file = new Parse.File('myfile.txt', { base64 });
@@ -4769,7 +4769,7 @@ describe('beforePasswordResetRequest hook', () => {
     await user.save({ isBanned: true, file });
 
     try {
-      await Parse.User.requestPasswordReset('banned2@parse.com');
+      await Parse.User.requestPasswordReset('banned2@example.com');
       throw new Error('should not have sent password reset email.');
     } catch (e) {
       expect(e.message).toBe('banned account');
@@ -4796,7 +4796,7 @@ describe('beforePasswordResetRequest hook', () => {
     });
 
     try {
-      await Parse.User.requestPasswordReset('nonexistent@parse.com');
+      await Parse.User.requestPasswordReset('nonexistent@example.com');
     } catch (e) {
       // May or may not throw depending on passwordPolicy.resetPasswordSuccessOnInvalidEmail
     }
@@ -4829,9 +4829,9 @@ describe('beforePasswordResetRequest hook', () => {
     const user = new Parse.User();
     user.setUsername('testuser2');
     user.setPassword('password');
-    user.set('email', 'test2@parse.com');
+    user.set('email', 'test2@example.com');
     await user.signUp();
-    await Parse.User.requestPasswordReset('test2@parse.com');
+    await Parse.User.requestPasswordReset('test2@example.com');
   });
 
   it('should validate that only _User class is allowed for beforePasswordResetRequest', () => {
