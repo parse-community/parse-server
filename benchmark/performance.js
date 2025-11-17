@@ -200,11 +200,11 @@ async function measureOperation({ name, operation, iterations, skipWarmup = fals
 /**
  * Benchmark: Object Create
  */
-async function benchmarkObjectCreate() {
+async function benchmarkObjectCreate(name) {
   let counter = 0;
 
   return measureOperation({
-    name: 'Object Create',
+    name,
     iterations: 1_000,
     operation: async () => {
       const TestObject = Parse.Object.extend('BenchmarkTest');
@@ -220,7 +220,7 @@ async function benchmarkObjectCreate() {
 /**
  * Benchmark: Object Read (by ID)
  */
-async function benchmarkObjectRead() {
+async function benchmarkObjectRead(name) {
   // Setup: Create test objects
   const TestObject = Parse.Object.extend('BenchmarkTest');
   const objects = [];
@@ -236,7 +236,7 @@ async function benchmarkObjectRead() {
   let counter = 0;
 
   return measureOperation({
-    name: 'Object Read',
+    name,
     iterations: 1_000,
     operation: async () => {
       const query = new Parse.Query('BenchmarkTest');
@@ -248,7 +248,7 @@ async function benchmarkObjectRead() {
 /**
  * Benchmark: Object Update
  */
-async function benchmarkObjectUpdate() {
+async function benchmarkObjectUpdate(name) {
   // Setup: Create test objects
   const TestObject = Parse.Object.extend('BenchmarkTest');
   const objects = [];
@@ -265,7 +265,7 @@ async function benchmarkObjectUpdate() {
   let counter = 0;
 
   return measureOperation({
-    name: 'Object Update',
+    name,
     iterations: 1_000,
     operation: async () => {
       const obj = objects[counter++ % objects.length];
@@ -279,7 +279,7 @@ async function benchmarkObjectUpdate() {
 /**
  * Benchmark: Simple Query
  */
-async function benchmarkSimpleQuery() {
+async function benchmarkSimpleQuery(name) {
   // Setup: Create test data
   const TestObject = Parse.Object.extend('BenchmarkTest');
   const objects = [];
@@ -296,7 +296,7 @@ async function benchmarkSimpleQuery() {
   let counter = 0;
 
   return measureOperation({
-    name: 'Simple Query',
+    name,
     iterations: 1_000,
     operation: async () => {
       const query = new Parse.Query('BenchmarkTest');
@@ -309,11 +309,11 @@ async function benchmarkSimpleQuery() {
 /**
  * Benchmark: Batch Save (saveAll)
  */
-async function benchmarkBatchSave() {
+async function benchmarkBatchSave(name) {
   const BATCH_SIZE = 10;
 
   return measureOperation({
-    name: 'Batch Save (10 objects)',
+    name,
     iterations: 1_000,
     operation: async () => {
       const TestObject = Parse.Object.extend('BenchmarkTest');
@@ -334,11 +334,11 @@ async function benchmarkBatchSave() {
 /**
  * Benchmark: User Signup
  */
-async function benchmarkUserSignup() {
+async function benchmarkUserSignup(name) {
   let counter = 0;
 
   return measureOperation({
-    name: 'User Signup',
+    name,
     iterations: 500,
     operation: async () => {
       counter++;
@@ -354,7 +354,7 @@ async function benchmarkUserSignup() {
 /**
  * Benchmark: User Login
  */
-async function benchmarkUserLogin() {
+async function benchmarkUserLogin(name) {
   // Setup: Create test users
   const users = [];
 
@@ -371,7 +371,7 @@ async function benchmarkUserLogin() {
   let counter = 0;
 
   return measureOperation({
-    name: 'User Login',
+    name,
     iterations: 500,
     operation: async () => {
       const userCreds = users[counter++ % users.length];
@@ -382,51 +382,113 @@ async function benchmarkUserLogin() {
 }
 
 /**
- * Benchmark: Query with Include (Parallel Include Pointers)
+ * Benchmark: Query with Include (Parallel Pointers)
+ * Tests the performance improvement when fetching multiple pointers at the same level.
  */
-async function benchmarkQueryWithInclude() {
-  // Setup: Create nested object hierarchy
+async function benchmarkQueryWithIncludeParallel(name) {
+  const PointerAClass = Parse.Object.extend('PointerA');
+  const PointerBClass = Parse.Object.extend('PointerB');
+  const PointerCClass = Parse.Object.extend('PointerC');
+  const RootClass = Parse.Object.extend('Root');
+
+  // Create pointer objects
+  const pointerAObjects = [];
+  for (let i = 0; i < 10; i++) {
+    const obj = new PointerAClass();
+    obj.set('name', `pointerA-${i}`);
+    pointerAObjects.push(obj);
+  }
+  await Parse.Object.saveAll(pointerAObjects);
+
+  const pointerBObjects = [];
+  for (let i = 0; i < 10; i++) {
+    const obj = new PointerBClass();
+    obj.set('name', `pointerB-${i}`);
+    pointerBObjects.push(obj);
+  }
+  await Parse.Object.saveAll(pointerBObjects);
+
+  const pointerCObjects = [];
+  for (let i = 0; i < 10; i++) {
+    const obj = new PointerCClass();
+    obj.set('name', `pointerC-${i}`);
+    pointerCObjects.push(obj);
+  }
+  await Parse.Object.saveAll(pointerCObjects);
+
+  // Create Root objects with multiple pointers at the same level
+  const rootObjects = [];
+  for (let i = 0; i < 10; i++) {
+    const obj = new RootClass();
+    obj.set('name', `root-${i}`);
+    obj.set('pointerA', pointerAObjects[i % pointerAObjects.length]);
+    obj.set('pointerB', pointerBObjects[i % pointerBObjects.length]);
+    obj.set('pointerC', pointerCObjects[i % pointerCObjects.length]);
+    rootObjects.push(obj);
+  }
+  await Parse.Object.saveAll(rootObjects);
+
+  return measureOperation({
+    name,
+    skipWarmup: true,
+    dbLatency: 100,
+    iterations: 100,
+    operation: async () => {
+      const query = new Parse.Query('Root');
+      // Include multiple pointers at the same level - should fetch in parallel
+      query.include(['pointerA', 'pointerB', 'pointerC']);
+      await query.find();
+    },
+  });
+}
+
+/**
+ * Benchmark: Query with Include (Nested Pointers)
+ * Tests the performance of nested pointer includes (e.g., level1.level2).
+ */
+async function benchmarkQueryWithIncludeNested(name) {
   const Level2Class = Parse.Object.extend('Level2');
   const Level1Class = Parse.Object.extend('Level1');
   const RootClass = Parse.Object.extend('Root');
 
+  // Create Level2 objects
+  const level2Objects = [];
+  for (let i = 0; i < 10; i++) {
+    const obj = new Level2Class();
+    obj.set('name', `level2-${i}`);
+    obj.set('value', i);
+    level2Objects.push(obj);
+  }
+  await Parse.Object.saveAll(level2Objects);
+
+  // Create Level1 objects pointing to Level2
+  const level1Objects = [];
+  for (let i = 0; i < 10; i++) {
+    const obj = new Level1Class();
+    obj.set('name', `level1-${i}`);
+    obj.set('level2', level2Objects[i % level2Objects.length]);
+    level1Objects.push(obj);
+  }
+  await Parse.Object.saveAll(level1Objects);
+
+  // Create Root objects pointing to Level1
+  const rootObjects = [];
+  for (let i = 0; i < 10; i++) {
+    const obj = new RootClass();
+    obj.set('name', `root-${i}`);
+    obj.set('level1', level1Objects[i % level1Objects.length]);
+    rootObjects.push(obj);
+  }
+  await Parse.Object.saveAll(rootObjects);
+
   return measureOperation({
-    name: 'Query with Include (2 levels)',
+    name,
     skipWarmup: true,
-    dbLatency: 50,
+    dbLatency: 100,
     iterations: 100,
     operation: async () => {
-      // Create 10 Level2 objects
-      const level2Objects = [];
-      for (let i = 0; i < 10; i++) {
-        const obj = new Level2Class();
-        obj.set('name', `level2-${i}`);
-        obj.set('value', i);
-        level2Objects.push(obj);
-      }
-      await Parse.Object.saveAll(level2Objects);
-
-      // Create 10 Level1 objects, each pointing to a Level2 object
-      const level1Objects = [];
-      for (let i = 0; i < 10; i++) {
-        const obj = new Level1Class();
-        obj.set('name', `level1-${i}`);
-        obj.set('level2', level2Objects[i % level2Objects.length]);
-        level1Objects.push(obj);
-      }
-      await Parse.Object.saveAll(level1Objects);
-
-      // Create 10 Root objects, each pointing to a Level1 object
-      const rootObjects = [];
-      for (let i = 0; i < 10; i++) {
-        const obj = new RootClass();
-        obj.set('name', `root-${i}`);
-        obj.set('level1', level1Objects[i % level1Objects.length]);
-        rootObjects.push(obj);
-      }
-      await Parse.Object.saveAll(rootObjects);
-
       const query = new Parse.Query('Root');
+      // Include nested pointers - must be fetched sequentially
       query.include('level1.level2');
       await query.find();
     },
@@ -453,14 +515,15 @@ async function runBenchmarks() {
 
     // Define all benchmarks to run
     const benchmarks = [
-      { name: 'Object Create', fn: benchmarkObjectCreate },
-      { name: 'Object Read', fn: benchmarkObjectRead },
-      { name: 'Object Update', fn: benchmarkObjectUpdate },
-      { name: 'Simple Query', fn: benchmarkSimpleQuery },
-      { name: 'Batch Save', fn: benchmarkBatchSave },
-      { name: 'User Signup', fn: benchmarkUserSignup },
-      { name: 'User Login', fn: benchmarkUserLogin },
-      { name: 'Query with Include', fn: benchmarkQueryWithInclude },
+      { name: 'Object.save (create)', fn: benchmarkObjectCreate },
+      { name: 'Object.save (update)', fn: benchmarkObjectUpdate },
+      { name: 'Object.saveAll (batch save)', fn: benchmarkBatchSave },
+      { name: 'Query.get (by objectId)', fn: benchmarkObjectRead },
+      { name: 'Query.find (simple query)', fn: benchmarkSimpleQuery },
+      { name: 'User.signUp', fn: benchmarkUserSignup },
+      { name: 'User.login', fn: benchmarkUserLogin },
+      { name: 'Query.include (parallel pointers)', fn: benchmarkQueryWithIncludeParallel },
+      { name: 'Query.include (nested pointers)', fn: benchmarkQueryWithIncludeNested },
     ];
 
     // Run each benchmark with database cleanup
@@ -468,7 +531,7 @@ async function runBenchmarks() {
       logInfo(`\nRunning benchmark '${benchmark.name}'...`);
       resetParseServer();
       await cleanupDatabase();
-      results.push(await benchmark.fn());
+      results.push(await benchmark.fn(benchmark.name));
     }
 
     // Output results in github-action-benchmark format (stdout)
