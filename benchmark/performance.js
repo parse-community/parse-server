@@ -21,7 +21,7 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/parse_
 const SERVER_URL = 'http://localhost:1337/parse';
 const APP_ID = 'benchmark-app-id';
 const MASTER_KEY = 'benchmark-master-key';
-const ITERATIONS = parseInt(process.env.BENCHMARK_ITERATIONS || '1000', 10);
+const ITERATIONS = process.env.BENCHMARK_ITERATIONS ? parseInt(process.env.BENCHMARK_ITERATIONS, 10) : undefined;
 const LOG_ITERATIONS = false;
 
 // Parse Server instance
@@ -102,14 +102,21 @@ function resetParseServer() {
 
 /**
  * Measure average time for an async operation over multiple iterations.
- * @param {Object} options - Measurement options
- * @param {string} options.name - Name of the operation being measured
- * @param {Function} options.operation - Async function to measure
- * @param {number} [options.iterations=ITERATIONS] - Number of iterations to run
- * @param {boolean} [options.skipWarmup=false] - Skip warmup phase
- * @param {number} [options.dbLatency] - Artificial DB latency in milliseconds to apply during this benchmark
+ * @param {Object} options Measurement options.
+ * @param {string} options.name Name of the operation being measured.
+ * @param {Function} options.operation Async function to measure.
+ * @param {number} options.iterations Number of iterations to run; choose a value that is high
+ * enough to create reliable benchmark metrics with low variance but low enough to keep test
+ * duration reasonable around <=10 seconds.
+ * @param {boolean} [options.skipWarmup=false] Skip warmup phase.
+ * @param {number} [options.dbLatency] Artificial DB latency in milliseconds to apply during
+ * this benchmark.
  */
-async function measureOperation({ name, operation, iterations = ITERATIONS, skipWarmup = false, dbLatency }) {
+async function measureOperation({ name, operation, iterations, skipWarmup = false, dbLatency }) {
+  // Override iterations if global ITERATIONS is set
+  iterations = ITERATIONS || iterations;
+
+  // Determine warmup count (20% of iterations)
   const warmupCount = skipWarmup ? 0 : Math.floor(iterations * 0.2);
   const times = [];
 
@@ -198,6 +205,7 @@ async function benchmarkObjectCreate() {
 
   return measureOperation({
     name: 'Object Create',
+    iterations: 1_000,
     operation: async () => {
       const TestObject = Parse.Object.extend('BenchmarkTest');
       const obj = new TestObject();
@@ -217,7 +225,7 @@ async function benchmarkObjectRead() {
   const TestObject = Parse.Object.extend('BenchmarkTest');
   const objects = [];
 
-  for (let i = 0; i < ITERATIONS; i++) {
+  for (let i = 0; i < 1_000; i++) {
     const obj = new TestObject();
     obj.set('testField', `read-test-${i}`);
     objects.push(obj);
@@ -229,6 +237,7 @@ async function benchmarkObjectRead() {
 
   return measureOperation({
     name: 'Object Read',
+    iterations: 1_000,
     operation: async () => {
       const query = new Parse.Query('BenchmarkTest');
       await query.get(objects[counter++ % objects.length].id);
@@ -244,7 +253,7 @@ async function benchmarkObjectUpdate() {
   const TestObject = Parse.Object.extend('BenchmarkTest');
   const objects = [];
 
-  for (let i = 0; i < ITERATIONS; i++) {
+  for (let i = 0; i < 1_000; i++) {
     const obj = new TestObject();
     obj.set('testField', `update-test-${i}`);
     obj.set('counter', 0);
@@ -257,6 +266,7 @@ async function benchmarkObjectUpdate() {
 
   return measureOperation({
     name: 'Object Update',
+    iterations: 1_000,
     operation: async () => {
       const obj = objects[counter++ % objects.length];
       obj.increment('counter');
@@ -287,6 +297,7 @@ async function benchmarkSimpleQuery() {
 
   return measureOperation({
     name: 'Simple Query',
+    iterations: 1_000,
     operation: async () => {
       const query = new Parse.Query('BenchmarkTest');
       query.equalTo('category', counter++ % 10);
@@ -303,6 +314,7 @@ async function benchmarkBatchSave() {
 
   return measureOperation({
     name: 'Batch Save (10 objects)',
+    iterations: 1_000,
     operation: async () => {
       const TestObject = Parse.Object.extend('BenchmarkTest');
       const objects = [];
@@ -327,6 +339,7 @@ async function benchmarkUserSignup() {
 
   return measureOperation({
     name: 'User Signup',
+    iterations: 500,
     operation: async () => {
       counter++;
       const user = new Parse.User();
@@ -359,6 +372,7 @@ async function benchmarkUserLogin() {
 
   return measureOperation({
     name: 'User Login',
+    iterations: 500,
     operation: async () => {
       const userCreds = users[counter++ % users.length];
       await Parse.User.logIn(userCreds.username, userCreds.password);
@@ -379,8 +393,8 @@ async function benchmarkQueryWithInclude() {
   return measureOperation({
     name: 'Query with Include (2 levels)',
     skipWarmup: true,
-    dbLatency: 10,
-    iterations: 10,
+    dbLatency: 100,
+    iterations: 100,
     operation: async () => {
       // Create 10 Level2 objects
       const level2Objects = [];
@@ -424,7 +438,6 @@ async function benchmarkQueryWithInclude() {
  */
 async function runBenchmarks() {
   logInfo('Starting Parse Server Performance Benchmarks...');
-  logInfo(`Iterations per benchmark: ${ITERATIONS}`);
 
   let server;
 
