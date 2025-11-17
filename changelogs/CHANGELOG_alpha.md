@@ -1,3 +1,10 @@
+# [8.5.0-alpha.9](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.8...8.5.0-alpha.9) (2025-11-17)
+
+
+### Bug Fixes
+
+* Race condition can cause multiple Apollo server initializations under load ([#9929](https://github.com/parse-community/parse-server/issues/9929)) ([7d5e9fc](https://github.com/parse-community/parse-server/commit/7d5e9fcf3ceb0abad8ab49c75bc26f521a0f1bde))
+
 # [8.5.0-alpha.8](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.7...8.5.0-alpha.8) (2025-11-17)
 
 
