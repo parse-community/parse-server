@@ -443,20 +443,52 @@ async function benchmarkQueryWithIncludeParallel(name) {
 }
 
 /**
- * Benchmark: Query with Include (Nested Pointers)
- * Tests the performance of nested pointer includes (e.g., level1.level2).
+ * Benchmark: Query with Include (Nested Pointers with Parallel Leaf Nodes)
+ * Tests the PR's optimization for parallel fetching at each nested level.
+ * Pattern: p1.p2.p3, p1.p2.p4, p1.p2.p5
+ * After fetching p2, we know the objectIds and can fetch p3, p4, p5 in parallel.
  */
 async function benchmarkQueryWithIncludeNested(name) {
+  const Level3AClass = Parse.Object.extend('Level3A');
+  const Level3BClass = Parse.Object.extend('Level3B');
+  const Level3CClass = Parse.Object.extend('Level3C');
   const Level2Class = Parse.Object.extend('Level2');
   const Level1Class = Parse.Object.extend('Level1');
   const RootClass = Parse.Object.extend('Root');
 
-  // Create Level2 objects
+  // Create Level3 objects (leaf nodes)
+  const level3AObjects = [];
+  for (let i = 0; i < 10; i++) {
+    const obj = new Level3AClass();
+    obj.set('name', `level3A-${i}`);
+    level3AObjects.push(obj);
+  }
+  await Parse.Object.saveAll(level3AObjects);
+
+  const level3BObjects = [];
+  for (let i = 0; i < 10; i++) {
+    const obj = new Level3BClass();
+    obj.set('name', `level3B-${i}`);
+    level3BObjects.push(obj);
+  }
+  await Parse.Object.saveAll(level3BObjects);
+
+  const level3CObjects = [];
+  for (let i = 0; i < 10; i++) {
+    const obj = new Level3CClass();
+    obj.set('name', `level3C-${i}`);
+    level3CObjects.push(obj);
+  }
+  await Parse.Object.saveAll(level3CObjects);
+
+  // Create Level2 objects pointing to multiple Level3 objects
   const level2Objects = [];
   for (let i = 0; i < 10; i++) {
     const obj = new Level2Class();
     obj.set('name', `level2-${i}`);
-    obj.set('value', i);
+    obj.set('level3A', level3AObjects[i % level3AObjects.length]);
+    obj.set('level3B', level3BObjects[i % level3BObjects.length]);
+    obj.set('level3C', level3CObjects[i % level3CObjects.length]);
     level2Objects.push(obj);
   }
   await Parse.Object.saveAll(level2Objects);
@@ -488,8 +520,8 @@ async function benchmarkQueryWithIncludeNested(name) {
     iterations: 100,
     operation: async () => {
       const query = new Parse.Query('Root');
-      // Include nested pointers - must be fetched sequentially
-      query.include('level1.level2');
+      // After fetching level1.level2, the PR should fetch level3A, level3B, level3C in parallel
+      query.include(['level1.level2.level3A', 'level1.level2.level3B', 'level1.level2.level3C']);
       await query.find();
     },
   });
