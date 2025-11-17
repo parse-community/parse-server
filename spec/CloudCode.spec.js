@@ -4658,7 +4658,7 @@ describe('sendEmail', () => {
 });
 
 describe('beforePasswordResetRequest hook', () => {
-  it('should run beforePasswordResetRequest with valid user', async done => {
+  it('should run beforePasswordResetRequest with valid user', async () => {
     let hit = 0;
     let sendPasswordResetEmailCalled = false;
     const emailAdapter = {
@@ -4691,10 +4691,9 @@ describe('beforePasswordResetRequest hook', () => {
     await Parse.User.requestPasswordReset('test@parse.com');
     expect(hit).toBe(1);
     expect(sendPasswordResetEmailCalled).toBe(true);
-    done();
   });
 
-  it('should be able to block password reset request if an error is thrown', async done => {
+  it('should be able to block password reset request if an error is thrown', async () => {
     let hit = 0;
     let sendPasswordResetEmailCalled = false;
     const emailAdapter = {
@@ -4733,10 +4732,9 @@ describe('beforePasswordResetRequest hook', () => {
     }
     expect(hit).toBe(1);
     expect(sendPasswordResetEmailCalled).toBe(false);
-    done();
   });
 
-  it('should be able to block password reset request if an error is thrown even if the user has an attached file', async done => {
+  it('should be able to block password reset request if an error is thrown even if the user has an attached file', async () => {
     let hit = 0;
     let sendPasswordResetEmailCalled = false;
     const emailAdapter = {
@@ -4778,10 +4776,9 @@ describe('beforePasswordResetRequest hook', () => {
     }
     expect(hit).toBe(1);
     expect(sendPasswordResetEmailCalled).toBe(false);
-    done();
   });
 
-  it('should not run beforePasswordResetRequest if email does not exist', async done => {
+  it('should not run beforePasswordResetRequest if email does not exist', async () => {
     let hit = 0;
     const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
@@ -4804,10 +4801,9 @@ describe('beforePasswordResetRequest hook', () => {
       // May or may not throw depending on passwordPolicy.resetPasswordSuccessOnInvalidEmail
     }
     expect(hit).toBe(0);
-    done();
   });
 
-  it('should have expected data in request in beforePasswordResetRequest', async done => {
+  it('should have expected data in request in beforePasswordResetRequest', async () => {
     const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
       sendPasswordResetEmail: () => {},
@@ -4836,7 +4832,6 @@ describe('beforePasswordResetRequest hook', () => {
     user.set('email', 'test2@parse.com');
     await user.signUp();
     await Parse.User.requestPasswordReset('test2@parse.com');
-    done();
   });
 
   it('should validate that only _User class is allowed for beforePasswordResetRequest', () => {
