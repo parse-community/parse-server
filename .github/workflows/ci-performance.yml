@@ -70,7 +70,7 @@ jobs:
         env:
           NODE_ENV: production
         run: |
-          echo "Running baseline benchmarks with CPU affinity (using PR's benchmark script)..."
+          echo "Running baseline benchmarks..."
           if [ ! -f "benchmark/performance.js" ]; then
             echo "⚠️ Benchmark script not found - this is expected for new features"
             echo "Skipping baseline benchmark"
@@ -135,7 +135,7 @@ jobs:
         env:
           NODE_ENV: production
         run: |
-          echo "Running PR benchmarks with CPU affinity..."
+          echo "Running PR benchmarks..."
           taskset -c 0 npm run benchmark > pr-output.txt 2>&1 || npm run benchmark > pr-output.txt 2>&1 || true
           echo "Benchmark command completed with exit code: $?"
           echo "Output file size: $(wc -c < pr-output.txt) bytes"

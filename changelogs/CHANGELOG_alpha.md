@@ -1,3 +1,10 @@
+# [8.5.0-alpha.8](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.7...8.5.0-alpha.8) (2025-11-17)
+
+
+### Performance Improvements
+
+* `Parse.Query.include` now fetches pointers at same level in parallel ([#9861](https://github.com/parse-community/parse-server/issues/9861)) ([dafea21](https://github.com/parse-community/parse-server/commit/dafea21eb39b0fdc2b52bb8a14f7b61e3f2b8d13))
+
 # [8.5.0-alpha.7](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.6...8.5.0-alpha.7) (2025-11-08)
 
 
