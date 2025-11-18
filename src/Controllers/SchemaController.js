@@ -20,6 +20,8 @@ import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
 import SchemaCache from '../Adapters/Cache/SchemaCache';
 import DatabaseController from './DatabaseController';
 import Config from '../Config';
+import { createSanitizedError } from '../SecurityError';
+import defaultLogger from '../logger';
 // @flow-disable-next
 import deepcopy from 'deepcopy';
 import type {
@@ -1403,15 +1405,11 @@ export default class SchemaController {
     if (perms['requiresAuthentication']) {
       // If aclGroup has * (public)
       if (!aclGroup || aclGroup.length == 0) {
-        throw new Parse.Error(
-          Parse.Error.OBJECT_NOT_FOUND,
-          'Permission denied, user needs to be authenticated.'
-        );
+        const detailedError = 'Permission denied, user needs to be authenticated.';
+        throw createSanitizedError(Parse.Error.OBJECT_NOT_FOUND, detailedError, defaultLogger);
       } else if (aclGroup.indexOf('*') > -1 && aclGroup.length == 1) {
-        throw new Parse.Error(
-          Parse.Error.OBJECT_NOT_FOUND,
-          'Permission denied, user needs to be authenticated.'
-        );
+        const detailedError = 'Permission denied, user needs to be authenticated.';
+        throw createSanitizedError(Parse.Error.OBJECT_NOT_FOUND, detailedError, defaultLogger);
       }
       // requiresAuthentication passed, just move forward
       // probably would be wise at some point to rename to 'authenticatedUser'
@@ -1425,10 +1423,8 @@ export default class SchemaController {
 
     // Reject create when write lockdown
     if (permissionField == 'writeUserFields' && operation == 'create') {
-      throw new Parse.Error(
-        Parse.Error.OPERATION_FORBIDDEN,
-        `Permission denied for action ${operation} on class ${className}.`
-      );
+      const detailedError = `Permission denied for action ${operation} on class ${className}.`;
+      throw createSanitizedError(Parse.Error.OPERATION_FORBIDDEN, detailedError, defaultLogger);
     }
 
     // Process the readUserFields later
@@ -1448,10 +1444,8 @@ export default class SchemaController {
       }
     }
 
-    throw new Parse.Error(
-      Parse.Error.OPERATION_FORBIDDEN,
-      `Permission denied for action ${operation} on class ${className}.`
-    );
+    const detailedError = `Permission denied for action ${operation} on class ${className}.`;
+    throw createSanitizedError(Parse.Error.OPERATION_FORBIDDEN, detailedError, defaultLogger);
   }
 
   // Validates an operation passes class-level-permissions set in the schema

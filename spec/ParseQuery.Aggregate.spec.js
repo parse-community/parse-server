@@ -77,7 +77,7 @@ describe('Parse.Query Aggregate testing', () => {
     Parse._request('GET', `aggregate/someClass`, {}).then(
       () => {},
       error => {
-        expect(error.message).toEqual('unauthorized: master key is required');
+        expect(error.message).toEqual('Permission denied');
         done();
       }
     );

@@ -1,13 +1,17 @@
 import PromiseRouter from '../PromiseRouter';
 import * as middleware from '../middlewares';
 import Parse from 'parse/node';
+import { createSanitizedError } from '../SecurityError';
+import defaultLogger from '../logger';
 
 export class PurgeRouter extends PromiseRouter {
   handlePurge(req) {
     if (req.auth.isReadOnly) {
-      throw new Parse.Error(
+      const log = (req.config && req.config.loggerController) || defaultLogger;
+      throw createSanitizedError(
         Parse.Error.OPERATION_FORBIDDEN,
-        "read-only masterKey isn't allowed to purge a schema."
+        "read-only masterKey isn't allowed to purge a schema.",
+        log
       );
     }
     return req.config.database

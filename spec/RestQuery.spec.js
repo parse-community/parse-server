@@ -165,9 +165,7 @@ describe('rest query', () => {
       },
       err => {
         expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
-        expect(err.message).toEqual(
-          'This user is not allowed to access ' + 'non-existent class: ClientClassCreation'
-        );
+        expect(err.message).toEqual('Permission denied');
         done();
       }
     );
@@ -243,7 +241,7 @@ describe('rest query', () => {
       expectAsync(new Parse.Query('Test').exists('zip').find()).toBeRejectedWith(
         new Parse.Error(
           Parse.Error.OPERATION_FORBIDDEN,
-          'This user is not allowed to query zip on class Test'
+          'Permission denied'
         )
       ),
     ]);

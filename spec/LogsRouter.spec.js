@@ -61,7 +61,7 @@ describe_only(() => {
     }).then(fail, response => {
       const body = response.data;
       expect(response.status).toEqual(403);
-      expect(body.error).toEqual('unauthorized: master key is required');
+      expect(body.error).toEqual('Permission denied');
       done();
     });
   });

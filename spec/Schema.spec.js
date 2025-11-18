@@ -283,7 +283,7 @@ describe('SchemaController', () => {
             fail('Class permissions should have rejected this query.');
           },
           err => {
-            expect(err.message).toEqual('Permission denied for action count on class Stuff.');
+            expect(err.message).toEqual('Permission denied');
             done();
           }
         )
@@ -1462,7 +1462,7 @@ describe('Class Level Permissions for requiredAuth', () => {
           done();
         },
         e => {
-          expect(e.message).toEqual('Permission denied, user needs to be authenticated.');
+          expect(e.message).toEqual('Permission denied');
           done();
         }
       );
@@ -1561,7 +1561,7 @@ describe('Class Level Permissions for requiredAuth', () => {
           done();
         },
         e => {
-          expect(e.message).toEqual('Permission denied, user needs to be authenticated.');
+          expect(e.message).toEqual('Permission denied');
           done();
         }
       );
@@ -1649,7 +1649,7 @@ describe('Class Level Permissions for requiredAuth', () => {
           done();
         },
         e => {
-          expect(e.message).toEqual('Permission denied, user needs to be authenticated.');
+          expect(e.message).toEqual('Permission denied');
           done();
         }
       );
@@ -1694,7 +1694,7 @@ describe('Class Level Permissions for requiredAuth', () => {
           done();
         },
         e => {
-          expect(e.message).toEqual('Permission denied, user needs to be authenticated.');
+          expect(e.message).toEqual('Permission denied');
           done();
         }
       );

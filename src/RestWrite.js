@@ -17,6 +17,8 @@ import RestQuery from './RestQuery';
 import _ from 'lodash';
 import logger from './logger';
 import { requiredColumns } from './Controllers/SchemaController';
+import { createSanitizedError } from './SecurityError';
+import defaultLogger from './logger';
 
 // query and data are both provided in REST API format. So data
 // types are encoded by plain old objects.
@@ -199,9 +201,12 @@ RestWrite.prototype.validateClientClassCreation = function () {
       .then(schemaController => schemaController.hasClass(this.className))
       .then(hasClass => {
         if (hasClass !== true) {
-          throw new Parse.Error(
+          const detailedError = 'This user is not allowed to access non-existent class: ' + this.className;
+          const log = (this.config && this.config.loggerController) || defaultLogger;
+          throw createSanitizedError(
             Parse.Error.OPERATION_FORBIDDEN,
-            'This user is not allowed to access ' + 'non-existent class: ' + this.className
+            detailedError,
+            log
           );
         }
       });
@@ -660,8 +665,7 @@ RestWrite.prototype.checkRestrictedFields = async function () {
   }
 
   if (!this.auth.isMaintenance && !this.auth.isMaster && 'emailVerified' in this.data) {
-    const error = `Clients aren't allowed to manually update email verification.`;
-    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
+    throw createSanitizedError(Parse.Error.OPERATION_FORBIDDEN, 'Clients aren\'t allowed to manually update email verification.');
   }
 };
 
@@ -1450,9 +1454,12 @@ RestWrite.prototype.runDatabaseOperation = function () {
   }
 
   if (this.className === '_User' && this.query && this.auth.isUnauthenticated()) {
-    throw new Parse.Error(
+    const detailedError = `Cannot modify user ${this.query.objectId}.`;
+    const log = (this.config && this.config.loggerController) || defaultLogger;
+    throw createSanitizedError(
       Parse.Error.SESSION_MISSING,
-      `Cannot modify user ${this.query.objectId}.`
+      detailedError,
+      log
     );
   }
 

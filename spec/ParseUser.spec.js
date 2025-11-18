@@ -2661,7 +2661,7 @@ describe('Parse.User testing', () => {
           }).then(fail, response => {
             const b = response.data;
             expect(b.code).toEqual(209);
-            expect(b.error).toBe('Invalid session token');
+            expect(b.error).toBe('Permission denied');
             done();
           });
         });
@@ -3379,7 +3379,7 @@ describe('Parse.User testing', () => {
         done();
       })
       .catch(err => {
-        expect(err.message).toBe("Clients aren't allowed to manually update email verification.");
+        expect(err.message).toBe('Permission denied');
         done();
       });
   });
@@ -4393,7 +4393,7 @@ describe('login as other user', () => {
       done();
     } catch (err) {
       expect(err.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
-      expect(err.data.error).toBe('master key is required');
+      expect(err.data.error).toBe('Permission denied');
     }
 
     const sessionsQuery = new Parse.Query(Parse.Session);

@@ -6,6 +6,8 @@ import * as schemaTypes from './schemaTypes';
 import { transformToParse, transformToGraphQL } from '../transformers/schemaFields';
 import { enforceMasterKeyAccess } from '../parseGraphQLUtils';
 import { getClass } from './schemaQueries';
+import { createSanitizedError } from '../../SecurityError';
+import defaultLogger from '../../logger';
 
 const load = parseGraphQLSchema => {
   const createClassMutation = mutationWithClientMutationId({
@@ -30,12 +32,14 @@ const load = parseGraphQLSchema => {
         const { name, schemaFields } = deepcopy(args);
         const { config, auth } = context;
 
-        enforceMasterKeyAccess(auth);
+        enforceMasterKeyAccess(auth, config);
 
         if (auth.isReadOnly) {
-          throw new Parse.Error(
+          const loggerOrConfig = config || defaultLogger;
+          throw createSanitizedError(
             Parse.Error.OPERATION_FORBIDDEN,
-            "read-only masterKey isn't allowed to create a schema."
+            "read-only masterKey isn't allowed to create a schema.",
+            loggerOrConfig
           );
         }
 
@@ -79,7 +83,7 @@ const load = parseGraphQLSchema => {
         const { name, schemaFields } = deepcopy(args);
         const { config, auth } = context;
 
-        enforceMasterKeyAccess(auth);
+        enforceMasterKeyAccess(auth, config);
 
         if (auth.isReadOnly) {
           throw new Parse.Error(
@@ -130,12 +134,14 @@ const load = parseGraphQLSchema => {
         const { name } = deepcopy(args);
         const { config, auth } = context;
 
-        enforceMasterKeyAccess(auth);
+        enforceMasterKeyAccess(auth, config);
 
         if (auth.isReadOnly) {
-          throw new Parse.Error(
+          const loggerOrConfig = config || defaultLogger;
+          throw createSanitizedError(
             Parse.Error.OPERATION_FORBIDDEN,
-            "read-only masterKey isn't allowed to delete a schema."
+            "read-only masterKey isn't allowed to delete a schema.",
+            loggerOrConfig
           );
         }
 

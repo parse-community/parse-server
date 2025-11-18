@@ -269,7 +269,7 @@ describe('AudiencesRouter', () => {
     }).then(
       () => {},
       error => {
-        expect(error.message).toEqual('unauthorized: master key is required');
+        expect(error.message).toEqual('Permission denied');
         done();
       }
     );
@@ -279,7 +279,7 @@ describe('AudiencesRouter', () => {
     Parse._request('GET', 'push_audiences', {}).then(
       () => {},
       error => {
-        expect(error.message).toEqual('unauthorized: master key is required');
+        expect(error.message).toEqual('Permission denied');
         done();
       }
     );
@@ -289,7 +289,7 @@ describe('AudiencesRouter', () => {
     Parse._request('GET', `push_audiences/someId`, {}).then(
       () => {},
       error => {
-        expect(error.message).toEqual('unauthorized: master key is required');
+        expect(error.message).toEqual('Permission denied');
         done();
       }
     );
@@ -301,7 +301,7 @@ describe('AudiencesRouter', () => {
     }).then(
       () => {},
       error => {
-        expect(error.message).toEqual('unauthorized: master key is required');
+        expect(error.message).toEqual('Permission denied');
         done();
       }
     );
@@ -311,7 +311,7 @@ describe('AudiencesRouter', () => {
     Parse._request('DELETE', `push_audiences/someId`, {}).then(
       () => {},
       error => {
-        expect(error.message).toEqual('unauthorized: master key is required');
+        expect(error.message).toEqual('Permission denied');
         done();
       }
     );

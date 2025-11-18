@@ -156,7 +156,7 @@ describe('Parse.File testing', () => {
         }).then(fail, response => {
           const del_b = response.data;
           expect(response.status).toEqual(403);
-          expect(del_b.error).toMatch(/unauthorized/);
+          expect(del_b.error).toBe('Permission denied');
           // incorrect X-Parse-Master-Key header
           request({
             method: 'DELETE',
@@ -169,7 +169,7 @@ describe('Parse.File testing', () => {
           }).then(fail, response => {
             const del_b2 = response.data;
             expect(response.status).toEqual(403);
-            expect(del_b2.error).toMatch(/unauthorized/);
+            expect(del_b2.error).toBe('Permission denied');
             done();
           });
         });
@@ -760,7 +760,7 @@ describe('Parse.File testing', () => {
         url: 'http://localhost:8378/1/files/invalid-id/invalid-file.txt',
       }).catch(e => e);
       expect(res1.status).toBe(403);
-      expect(res1.data).toEqual({ code: 119, error: 'Invalid application ID.' });
+      expect(res1.data).toEqual({ code: 119, error: 'Permission denied' });
       // Ensure server did not crash
       const res2 = await request({ url: 'http://localhost:8378/1/health' });
       expect(res2.status).toEqual(200);

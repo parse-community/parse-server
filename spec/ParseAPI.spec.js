@@ -1724,7 +1724,7 @@ describe('miscellaneous', () => {
         fail('Should not succeed');
       })
       .catch(response => {
-        expect(response.data.error).toEqual('unauthorized: master key is required');
+        expect(response.data.error).toEqual('Permission denied');
         done();
       });
   });

@@ -3,6 +3,8 @@ import rest from '../rest';
 import _ from 'lodash';
 import Parse from 'parse/node';
 import { promiseEnsureIdempotency } from '../middlewares';
+import { createSanitizedError } from '../SecurityError';
+import defaultLogger from '../logger';
 
 const ALLOWED_GET_QUERY_KEYS = [
   'keys',
@@ -111,7 +113,9 @@ export class ClassesRouter extends PromiseRouter {
       typeof req.body?.objectId === 'string' &&
       req.body.objectId.startsWith('role:')
     ) {
-      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid object ID.');
+      const detailedError = 'Invalid object ID.';
+      const log = (req.config && req.config.loggerController) || defaultLogger;
+      throw createSanitizedError(Parse.Error.OPERATION_FORBIDDEN, detailedError, log);
     }
     return rest.create(
       req.config,

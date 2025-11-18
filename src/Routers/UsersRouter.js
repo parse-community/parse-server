@@ -16,6 +16,8 @@ import {
 import { promiseEnsureIdempotency } from '../middlewares';
 import RestWrite from '../RestWrite';
 import { logger } from '../logger';
+import { createSanitizedError } from '../SecurityError';
+import defaultLogger from '../logger';
 
 export class UsersRouter extends ClassesRouter {
   className() {
@@ -333,7 +335,12 @@ export class UsersRouter extends ClassesRouter {
    */
   async handleLogInAs(req) {
     if (!req.auth.isMaster) {
-      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'master key is required');
+      const log = (req.config && req.config.loggerController) || defaultLogger;
+      throw createSanitizedError(
+        Parse.Error.OPERATION_FORBIDDEN,
+        'master key is required',
+        log
+      );
     }
 
     const userId = req.body?.userId || req.query.userId;

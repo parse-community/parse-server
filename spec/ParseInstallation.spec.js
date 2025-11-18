@@ -176,7 +176,7 @@ describe('Installations', () => {
       .catch(error => {
         expect(error.code).toBe(119);
         expect(error.message).toBe(
-          "Clients aren't allowed to perform the find operation on the installation collection."
+          'Permission denied'
         );
         done();
       });

@@ -173,7 +173,7 @@ describe('schemas', () => {
       headers: restKeyHeaders,
     }).then(fail, response => {
       expect(response.status).toEqual(403);
-      expect(response.data.error).toEqual('unauthorized: master key is required');
+      expect(response.data.error).toEqual('Permission denied');
       done();
     });
   });
@@ -185,7 +185,7 @@ describe('schemas', () => {
       headers: restKeyHeaders,
     }).then(fail, response => {
       expect(response.status).toEqual(403);
-      expect(response.data.error).toEqual('unauthorized: master key is required');
+      expect(response.data.error).toEqual('Permission denied');
       done();
     });
   });
@@ -1834,7 +1834,7 @@ describe('schemas', () => {
           done();
         },
         err => {
-          expect(err.message).toEqual('Permission denied for action addField on class AClass.');
+          expect(err.message).toEqual('Permission denied');
           done();
         }
       );
@@ -2204,7 +2204,7 @@ describe('schemas', () => {
             fail('Use should hot be able to find!');
           },
           err => {
-            expect(err.message).toEqual('Permission denied for action find on class AClass.');
+            expect(err.message).toEqual('Permission denied');
             return Promise.resolve();
           }
         );
@@ -2264,7 +2264,7 @@ describe('schemas', () => {
             fail('User should not be able to find!');
           },
           err => {
-            expect(err.message).toEqual('Permission denied for action find on class AClass.');
+            expect(err.message).toEqual('Permission denied');
             return Promise.resolve();
           }
         );
@@ -2349,7 +2349,7 @@ describe('schemas', () => {
             fail('User should not be able to find!');
           },
           err => {
-            expect(err.message).toEqual('Permission denied for action find on class AClass.');
+            expect(err.message).toEqual('Permission denied');
             return Promise.resolve();
           }
         );
@@ -2425,7 +2425,7 @@ describe('schemas', () => {
             fail('User should not be able to find!');
           },
           err => {
-            expect(err.message).toEqual('Permission denied for action find on class AClass.');
+            expect(err.message).toEqual('Permission denied');
             return Promise.resolve();
           }
         );
@@ -2456,7 +2456,7 @@ describe('schemas', () => {
             fail('User should not be able to find!');
           },
           err => {
-            expect(err.message).toEqual('Permission denied for action find on class AClass.');
+            expect(err.message).toEqual('Permission denied');
             return Promise.resolve();
           }
         );
@@ -2540,7 +2540,7 @@ describe('schemas', () => {
           return Promise.resolve();
         },
         err => {
-          expect(err.message).toEqual('Permission denied for action create on class AClass.');
+          expect(err.message).toEqual('Permission denied');
           return Promise.resolve();
         }
       )
@@ -2557,7 +2557,7 @@ describe('schemas', () => {
           return Promise.resolve();
         },
         err => {
-          expect(err.message).toEqual('Permission denied for action find on class AClass.');
+          expect(err.message).toEqual('Permission denied');
           return Promise.resolve();
         }
       )

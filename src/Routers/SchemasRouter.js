@@ -5,6 +5,8 @@ var Parse = require('parse/node').Parse,
 
 import PromiseRouter from '../PromiseRouter';
 import * as middleware from '../middlewares';
+import { createSanitizedError } from '../SecurityError';
+import defaultLogger from '../logger';
 
 function classNameMismatchResponse(bodyClass, pathClass) {
   throw new Parse.Error(
@@ -72,9 +74,11 @@ export const internalUpdateSchema = async (className, body, config) => {
 async function createSchema(req) {
   checkIfDefinedSchemasIsUsed(req);
   if (req.auth.isReadOnly) {
-    throw new Parse.Error(
+    const log = (req.config && req.config.loggerController) || defaultLogger;
+    throw createSanitizedError(
       Parse.Error.OPERATION_FORBIDDEN,
-      "read-only masterKey isn't allowed to create a schema."
+      "read-only masterKey isn't allowed to create a schema.",
+      log
     );
   }
   if (req.params.className && req.body?.className) {
@@ -94,9 +98,11 @@ async function createSchema(req) {
 function modifySchema(req) {
   checkIfDefinedSchemasIsUsed(req);
   if (req.auth.isReadOnly) {
-    throw new Parse.Error(
+    const log = (req.config && req.config.loggerController) || defaultLogger;
+    throw createSanitizedError(
       Parse.Error.OPERATION_FORBIDDEN,
-      "read-only masterKey isn't allowed to update a schema."
+      "read-only masterKey isn't allowed to update a schema.",
+      log
     );
   }
   if (req.body?.className && req.body.className != req.params.className) {
@@ -109,9 +115,11 @@ function modifySchema(req) {
 
 const deleteSchema = req => {
   if (req.auth.isReadOnly) {
-    throw new Parse.Error(
+    const log = (req.config && req.config.loggerController) || defaultLogger;
+    throw createSanitizedError(
       Parse.Error.OPERATION_FORBIDDEN,
-      "read-only masterKey isn't allowed to delete a schema."
+      "read-only masterKey isn't allowed to delete a schema.",
+      log
     );
   }
   if (!SchemaController.classNameIsValid(req.params.className)) {

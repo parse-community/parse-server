@@ -32,7 +32,7 @@ describe('features', () => {
       done.fail('The serverInfo request should be rejected without the master key');
     } catch (error) {
       expect(error.status).toEqual(403);
-      expect(error.data.error).toEqual('unauthorized: master key is required');
+      expect(error.data.error).toEqual('Permission denied');
       done();
     }
   });

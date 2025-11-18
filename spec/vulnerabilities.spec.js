@@ -15,7 +15,7 @@ describe('Vulnerabilities', () => {
     it('denies user creation with poisoned object ID', async () => {
       await expectAsync(
         new Parse.User({ id: 'role:a', username: 'a', password: '123' }).save()
-      ).toBeRejectedWith(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid object ID.'));
+      ).toBeRejectedWith(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied'));
     });
 
     describe('existing sessions for users with poisoned object ID', () => {

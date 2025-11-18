@@ -324,9 +324,7 @@ describe('rest create', () => {
       },
       err => {
         expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
-        expect(err.message).toEqual(
-          'This user is not allowed to access ' + 'non-existent class: ClientClassCreation'
-        );
+        expect(err.message).toEqual('Permission denied');
         done();
       }
     );
@@ -783,7 +781,7 @@ describe('rest create', () => {
     const query = new Parse.Query('TestObject');
     query.include('pointer');
     await expectAsync(query.get(obj2.id)).toBeRejectedWithError(
-      "Clients aren't allowed to perform the get operation on the _PushStatus collection."
+      'Permission denied'
     );
   });
 
@@ -799,7 +797,7 @@ describe('rest create', () => {
     const query = new Parse.Query('TestObject');
     query.include('globalConfigPointer');
     await expectAsync(query.get(obj2.id)).toBeRejectedWithError(
-      "Clients aren't allowed to perform the get operation on the _GlobalConfig collection."
+      'Permission denied'
     );
   });
 
@@ -953,7 +951,7 @@ describe('read-only masterKey', () => {
     }).toThrow(
       new Parse.Error(
         Parse.Error.OPERATION_FORBIDDEN,
-        `read-only masterKey isn't allowed to perform the create operation.`
+        'Permission denied'
       )
     );
     expect(() => {
@@ -983,7 +981,7 @@ describe('read-only masterKey', () => {
     } catch (res) {
       expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
       expect(res.data.error).toBe(
-        "read-only masterKey isn't allowed to perform the create operation."
+        'Permission denied'
       );
     }
     await reconfigureServer();
@@ -1037,7 +1035,7 @@ describe('read-only masterKey', () => {
       .then(done.fail)
       .catch(res => {
         expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
-        expect(res.data.error).toBe("read-only masterKey isn't allowed to create a schema.");
+        expect(res.data.error).toBe('Permission denied');
         done();
       });
   });
@@ -1056,7 +1054,7 @@ describe('read-only masterKey', () => {
       .then(done.fail)
       .catch(res => {
         expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
-        expect(res.data.error).toBe("read-only masterKey isn't allowed to create a schema.");
+        expect(res.data.error).toBe('Permission denied');
         done();
       });
   });
@@ -1075,7 +1073,7 @@ describe('read-only masterKey', () => {
       .then(done.fail)
       .catch(res => {
         expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
-        expect(res.data.error).toBe("read-only masterKey isn't allowed to update a schema.");
+        expect(res.data.error).toBe('Permission denied');
         done();
       });
   });
@@ -1094,7 +1092,7 @@ describe('read-only masterKey', () => {
       .then(done.fail)
       .catch(res => {
         expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
-        expect(res.data.error).toBe("read-only masterKey isn't allowed to delete a schema.");
+        expect(res.data.error).toBe('Permission denied');
         done();
       });
   });
@@ -1113,7 +1111,7 @@ describe('read-only masterKey', () => {
       .then(done.fail)
       .catch(res => {
         expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
-        expect(res.data.error).toBe("read-only masterKey isn't allowed to update the config.");
+        expect(res.data.error).toBe('Permission denied');
         done();
       });
   });
@@ -1133,7 +1131,7 @@ describe('read-only masterKey', () => {
       .catch(res => {
         expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
         expect(res.data.error).toBe(
-          "read-only masterKey isn't allowed to send push notifications."
+          'Permission denied'
         );
         done();
       });

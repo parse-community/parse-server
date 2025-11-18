@@ -1,0 +1,57 @@
+import Parse from 'parse/node';
+import defaultLogger from './logger';
+
+/**
+ * Creates a sanitized security error that hides detailed information from clients
+ * while logging the detailed message server-side.
+ *
+ * @param {number} errorCode - The Parse.Error code (e.g., Parse.Error.OPERATION_FORBIDDEN)
+ * @param {string} detailedMessage - The detailed error message to log server-side
+ * @param {Object} loggerOrConfig - Optional logger instance or config object (from req.config.loggerController or default)
+ * @returns {Parse.Error} A Parse.Error with sanitized message
+ */
+export function createSanitizedError(errorCode, detailedMessage, loggerOrConfig = null) {
+  let log = defaultLogger;
+  if (loggerOrConfig) {
+    if (loggerOrConfig.loggerController) {
+      log = loggerOrConfig.loggerController;
+    } else if (loggerOrConfig.error) {
+      // It's a logger instance
+      log = loggerOrConfig;
+    }
+  }
+
+  // Keep log on server side
+  log.error('Security error:', detailedMessage);
+
+  return new Parse.Error(errorCode, 'Permission denied');
+}
+
+/**
+ * Creates a sanitized security error from a regular Error object
+ * Used for non-Parse.Error security errors (e.g., Express errors)
+ *
+ * @param {number} statusCode - HTTP status code (e.g., 403)
+ * @param {string} detailedMessage - The detailed error message to log server-side
+ * @param {Object} loggerOrConfig - Optional logger instance or config object
+ * @returns {Error} An Error with sanitized message
+ */
+export function createSanitizedHttpError(statusCode, detailedMessage, loggerOrConfig = null) {
+  let log = defaultLogger;
+  if (loggerOrConfig) {
+    if (loggerOrConfig.loggerController) {
+      log = loggerOrConfig.loggerController;
+    } else if (loggerOrConfig.error) {
+      log = loggerOrConfig;
+    }
+  }
+
+  // Keep log on server side
+  log.error('Security error:', detailedMessage);
+
+  const error = new Error();
+  error.status = statusCode;
+  error.message = 'Permission denied';
+  return error;
+}
+

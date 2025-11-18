@@ -3501,7 +3501,7 @@ describe('ParseGraphQLServer', () => {
             fail('should fail');
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
-            expect(e.graphQLErrors[0].message).toEqual('unauthorized: master key is required');
+            expect(e.graphQLErrors[0].message).toEqual('Permission denied');
           }
         });
 
@@ -3871,7 +3871,7 @@ describe('ParseGraphQLServer', () => {
             fail('should fail');
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
-            expect(e.graphQLErrors[0].message).toEqual('unauthorized: master key is required');
+            expect(e.graphQLErrors[0].message).toEqual('Permission denied');
           }
         });
 
@@ -4096,7 +4096,7 @@ describe('ParseGraphQLServer', () => {
             fail('should fail');
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
-            expect(e.graphQLErrors[0].message).toEqual('unauthorized: master key is required');
+            expect(e.graphQLErrors[0].message).toEqual('Permission denied');
           }
         });
 
@@ -4137,7 +4137,7 @@ describe('ParseGraphQLServer', () => {
             fail('should fail');
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
-            expect(e.graphQLErrors[0].message).toEqual('unauthorized: master key is required');
+            expect(e.graphQLErrors[0].message).toEqual('Permission denied');
           }
         });
 
@@ -4155,7 +4155,7 @@ describe('ParseGraphQLServer', () => {
             fail('should fail');
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
-            expect(e.graphQLErrors[0].message).toEqual('unauthorized: master key is required');
+            expect(e.graphQLErrors[0].message).toEqual('Permission denied');
           }
         });
       });
@@ -6081,7 +6081,7 @@ describe('ParseGraphQLServer', () => {
             }
 
             await expectAsync(createObject('GraphQLClass')).toBeRejectedWith(
-              jasmine.stringMatching('Permission denied for action create on class GraphQLClass')
+              jasmine.stringMatching('Permission denied')
             );
             await expectAsync(createObject('PublicClass')).toBeResolved();
             await expectAsync(
@@ -6115,7 +6115,7 @@ describe('ParseGraphQLServer', () => {
                 'X-Parse-Session-Token': user4.getSessionToken(),
               })
             ).toBeRejectedWith(
-              jasmine.stringMatching('Permission denied for action create on class GraphQLClass')
+              jasmine.stringMatching('Permission denied')
             );
             await expectAsync(
               createObject('PublicClass', {

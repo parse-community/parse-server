@@ -7,6 +7,8 @@ const triggers = require('./triggers');
 const { continueWhile } = require('parse/lib/node/promiseUtils');
 const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt', 'ACL'];
 const { enforceRoleSecurity } = require('./SharedRest');
+const { createSanitizedError } = require('./SecurityError');
+const defaultLogger = require('./logger').default;
 
 // restOptions can include:
 //   skip
@@ -51,7 +53,7 @@ async function RestQuery({
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'bad query type');
   }
   const isGet = method === RestQuery.Method.get;
-  enforceRoleSecurity(method, className, auth);
+  enforceRoleSecurity(method, className, auth, config);
   const result = runBeforeFind
     ? await triggers.maybeRunQueryTrigger(
       triggers.Types.beforeFind,
@@ -120,7 +122,13 @@ function _UnsafeRestQuery(
   if (!this.auth.isMaster) {
     if (this.className == '_Session') {
       if (!this.auth.user) {
-        throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+        const detailedError = 'Invalid session token';
+        const log = (this.config && this.config.loggerController) || defaultLogger;
+        throw createSanitizedError(
+          Parse.Error.INVALID_SESSION_TOKEN,
+          detailedError,
+          log
+        );
       }
       this.restWhere = {
         $and: [
@@ -421,7 +429,7 @@ _UnsafeRestQuery.prototype.validateClientClassCreation = function () {
       .then(schemaController => schemaController.hasClass(this.className))
       .then(hasClass => {
         if (hasClass !== true) {
-          throw new Parse.Error(
+          throw createSanitizedError(
             Parse.Error.OPERATION_FORBIDDEN,
             'This user is not allowed to access ' + 'non-existent class: ' + this.className
           );
@@ -800,9 +808,12 @@ _UnsafeRestQuery.prototype.denyProtectedFields = async function () {
     ) || [];
   for (const key of protectedFields) {
     if (this.restWhere[key]) {
-      throw new Parse.Error(
+      const detailedError = `This user is not allowed to query ${key} on class ${this.className}`;
+      const log = (this.config && this.config.loggerController) || defaultLogger;
+      throw createSanitizedError(
         Parse.Error.OPERATION_FORBIDDEN,
-        `This user is not allowed to query ${key} on class ${this.className}`
+        detailedError,
+        log
       );
     }
   }
