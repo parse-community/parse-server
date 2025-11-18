@@ -808,6 +808,71 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
+        it('should block __type introspection through nested fragment spreads without master key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                fragment InnerFragment on Query {
+                  __type(name: "User") {
+                    name
+                    fields {
+                      name
+                    }
+                  }
+                }
+
+                fragment OuterFragment on Query {
+                  ...InnerFragment
+                }
+
+                query NestedFragmentIntrospection {
+                  ...OuterFragment
+                }
+              `,
+            });
+
+            fail('should have thrown an error');
+          } catch (e) {
+            expect(e.message).toEqual('Response not successful: Received status code 403');
+            expect(e.networkError.result.errors[0].message).toEqual('Introspection is not allowed');
+          }
+        });
+
+        it('should block __type introspection hidden in fragment with valid field without master key', async () => {
+          try {
+            // First create a test object to query
+            const object = new Parse.Object('SomeClass');
+            await object.save();
+
+            await apolloClient.query({
+              query: gql`
+                fragment MixedFragment on Query {
+                  someClasses {
+                    edges {
+                      node {
+                        objectId
+                      }
+                    }
+                  }
+                  __type(name: "User") {
+                    name
+                    kind
+                  }
+                }
+
+                query MixedQuery {
+                  ...MixedFragment
+                }
+              `,
+            });
+
+            fail('should have thrown an error');
+          } catch (e) {
+            expect(e.message).toEqual('Response not successful: Received status code 403');
+            expect(e.networkError.result.errors[0].message).toEqual('Introspection is not allowed');
+          }
+        });
+
         it('should allow __type introspection with master key', async () => {
           const introspection = await apolloClient.query({
             query: gql`
@@ -6865,7 +6930,7 @@ describe('ParseGraphQLServer', () => {
             );
             expect(
               (await deleteObject(object4.className, object4.id)).data.delete[
-                object4.className.charAt(0).toLowerCase() + object4.className.slice(1)
+              object4.className.charAt(0).toLowerCase() + object4.className.slice(1)
               ]
             ).toEqual({ objectId: object4.id, __typename: 'PublicClass' });
             await expectAsync(object4.fetch({ useMasterKey: true })).toBeRejectedWith(
@@ -11472,25 +11537,25 @@ describe('ParseGraphQLServer', () => {
           },
         });
         const SomeClassType = new GraphQLObjectType({
-            name: 'SomeClass',
-            fields: {
-              nameUpperCase: {
-                type: new GraphQLNonNull(GraphQLString),
-                resolve: p => p.name.toUpperCase(),
-              },
-              type: { type: TypeEnum },
-              language: {
-                type: new GraphQLEnumType({
-                  name: 'LanguageEnum',
-                  values: {
-                    fr: { value: 'fr' },
-                    en: { value: 'en' },
-                  },
-                }),
-                resolve: () => 'fr',
-              },
+          name: 'SomeClass',
+          fields: {
+            nameUpperCase: {
+              type: new GraphQLNonNull(GraphQLString),
+              resolve: p => p.name.toUpperCase(),
             },
-          }),
+            type: { type: TypeEnum },
+            language: {
+              type: new GraphQLEnumType({
+                name: 'LanguageEnum',
+                values: {
+                  fr: { value: 'fr' },
+                  en: { value: 'en' },
+                },
+              }),
+              resolve: () => 'fr',
+            },
+          },
+        }),
           parseGraphQLServer = new ParseGraphQLServer(parseServer, {
             graphQLPath: '/graphql',
             graphQLCustomTypeDefs: new GraphQLSchema({
