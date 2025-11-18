@@ -455,7 +455,7 @@ export class UsersRouter extends ClassesRouter {
         _perishable_token: token,
         _perishable_token_expires_at: { $lt: Parse._encode(new Date()) },
       });
-      if(userResults?.length > 0) {
+      if (userResults?.length > 0) {
         userData = userResults[0];
         if (userData.email) {
           email = userData.email;
