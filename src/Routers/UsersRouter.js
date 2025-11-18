@@ -469,7 +469,7 @@ export class UsersRouter extends ClassesRouter {
         { limit: 1 },
         Auth.maintenance(req.config)
       );
-      if (userResults && userResults.length > 0) {
+      if (userResults?.length > 0) {
         userData = userResults[0];
       }
     }
