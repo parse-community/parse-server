@@ -444,6 +444,31 @@ class Utils {
       return value;
     };
   }
+
+  /**
+   * Gets a nested property value from an object using dot notation.
+   * @param {Object} obj The object to get the property from.
+   * @param {String} path The property path in dot notation, e.g. 'databaseOptions.allowPublicExplain'.
+   * @returns {any} The property value or undefined if not found.
+   * @example
+   * const obj = { database: { options: { enabled: true } } };
+   * Utils.getNestedProperty(obj, 'database.options.enabled');
+   * // Output: true
+   */
+  static getNestedProperty(obj, path) {
+    if (!obj || !path) {
+      return undefined;
+    }
+    const keys = path.split('.');
+    let current = obj;
+    for (const key of keys) {
+      if (current == null || typeof current !== 'object') {
+        return undefined;
+      }
+      current = current[key];
+    }
+    return current;
+  }
 }
 
 module.exports = Utils;

@@ -122,4 +122,55 @@ describe('Utils', () => {
       expect(result).toBe('{"name":"test","number":42,"nested":{"key":"value"}}');
     });
   });
+
+  describe('getNestedProperty', () => {
+    it('should get top-level property', () => {
+      const obj = { foo: 'bar' };
+      expect(Utils.getNestedProperty(obj, 'foo')).toBe('bar');
+    });
+
+    it('should get nested property with dot notation', () => {
+      const obj = { database: { options: { enabled: true } } };
+      expect(Utils.getNestedProperty(obj, 'database.options.enabled')).toBe(true);
+    });
+
+    it('should return undefined for non-existent property', () => {
+      const obj = { foo: 'bar' };
+      expect(Utils.getNestedProperty(obj, 'baz')).toBeUndefined();
+    });
+
+    it('should return undefined for non-existent nested property', () => {
+      const obj = { database: { options: {} } };
+      expect(Utils.getNestedProperty(obj, 'database.options.enabled')).toBeUndefined();
+    });
+
+    it('should return undefined when path traverses non-object', () => {
+      const obj = { database: 'string' };
+      expect(Utils.getNestedProperty(obj, 'database.options.enabled')).toBeUndefined();
+    });
+
+    it('should return undefined for null object', () => {
+      expect(Utils.getNestedProperty(null, 'foo')).toBeUndefined();
+    });
+
+    it('should return undefined for empty path', () => {
+      const obj = { foo: 'bar' };
+      expect(Utils.getNestedProperty(obj, '')).toBeUndefined();
+    });
+
+    it('should handle value of 0', () => {
+      const obj = { database: { timeout: 0 } };
+      expect(Utils.getNestedProperty(obj, 'database.timeout')).toBe(0);
+    });
+
+    it('should handle value of false', () => {
+      const obj = { database: { enabled: false } };
+      expect(Utils.getNestedProperty(obj, 'database.enabled')).toBe(false);
+    });
+
+    it('should handle value of empty string', () => {
+      const obj = { database: { name: '' } };
+      expect(Utils.getNestedProperty(obj, 'database.name')).toBe('');
+    });
+  });
 });
