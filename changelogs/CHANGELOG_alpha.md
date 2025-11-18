@@ -1,3 +1,17 @@
+# [8.5.0-alpha.11](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.10...8.5.0-alpha.11) (2025-11-17)
+
+
+### Bug Fixes
+
+* Deprecation warning logged at server launch for nested Parse Server option even if option is explicitly set ([#9934](https://github.com/parse-community/parse-server/issues/9934)) ([c22cb0a](https://github.com/parse-community/parse-server/commit/c22cb0ae58e64cd0e4597ab9610d57a1155c44a2))
+
+# [8.5.0-alpha.10](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.9...8.5.0-alpha.10) (2025-11-17)
+
+
+### Bug Fixes
+
+* Queries with object field `authData.provider.id` are incorrectly transformed to `_auth_data_provider.id` for custom classes ([#9932](https://github.com/parse-community/parse-server/issues/9932)) ([7b9fa18](https://github.com/parse-community/parse-server/commit/7b9fa18f968ec084ea0b35dad2b5ba0451d59787))
+
 # [8.5.0-alpha.9](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.8...8.5.0-alpha.9) (2025-11-17)
 
 
