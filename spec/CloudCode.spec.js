@@ -4731,48 +4731,6 @@ describe('beforePasswordResetRequest hook', () => {
     expect(sendPasswordResetEmailCalled).toBe(false);
   });
 
-  it('should be able to block password reset request if an error is thrown even if the user has an attached file', async () => {
-    let hit = 0;
-    let sendPasswordResetEmailCalled = false;
-    const emailAdapter = {
-      sendVerificationEmail: () => Promise.resolve(),
-      sendPasswordResetEmail: () => {
-        sendPasswordResetEmailCalled = true;
-      },
-      sendMail: () => {},
-    };
-
-    await reconfigureServer({
-      appName: 'test',
-      emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
-    });
-
-    Parse.Cloud.beforePasswordResetRequest(req => {
-      hit++;
-      throw new Error('password reset blocked');
-    });
-
-    const user = new Parse.User();
-    user.setUsername('testuser2');
-    user.setPassword('password');
-    user.set('email', 'test@example.com');
-    await user.signUp();
-    const base64 = 'V29ya2luZyBhdCBQYXJzZSBpcyBncmVhdCE=';
-    const file = new Parse.File('myfile.txt', { base64 });
-    await file.save();
-    await user.save({ file });
-
-    try {
-      await Parse.User.requestPasswordReset('test@example.com');
-      throw new Error('should not have sent password reset email.');
-    } catch (e) {
-      expect(e.message).toBe('password reset blocked');
-    }
-    expect(hit).toBe(1);
-    expect(sendPasswordResetEmailCalled).toBe(false);
-  });
-
   it('should not run beforePasswordResetRequest if email does not exist', async () => {
     let hit = 0;
     const emailAdapter = {
@@ -4824,6 +4782,11 @@ describe('beforePasswordResetRequest hook', () => {
     user.setPassword('password');
     user.set('email', 'test2@example.com');
     await user.signUp();
+    const base64 = 'V29ya2luZyBhdCBQYXJzZSBpcyBncmVhdCE=';
+    const file = new Parse.File('myfile.txt', { base64 });
+    await file.save();
+    await user.save({ file });
+
     await Parse.User.requestPasswordReset('test2@example.com');
   });
 
