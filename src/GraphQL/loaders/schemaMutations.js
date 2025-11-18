@@ -83,7 +83,7 @@ const load = parseGraphQLSchema => {
         enforceMasterKeyAccess(auth, config);
 
         if (auth.isReadOnly) {
-          throw new Parse.Error(
+          throw createSanitizedError(
             Parse.Error.OPERATION_FORBIDDEN,
             "read-only masterKey isn't allowed to update a schema."
           );
