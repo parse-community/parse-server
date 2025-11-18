@@ -123,11 +123,9 @@ function _UnsafeRestQuery(
     if (this.className == '_Session') {
       if (!this.auth.user) {
         const detailedError = 'Invalid session token';
-        const log = (this.config && this.config.loggerController) || defaultLogger;
         throw createSanitizedError(
           Parse.Error.INVALID_SESSION_TOKEN,
           detailedError,
-          log
         );
       }
       this.restWhere = {
@@ -809,11 +807,9 @@ _UnsafeRestQuery.prototype.denyProtectedFields = async function () {
   for (const key of protectedFields) {
     if (this.restWhere[key]) {
       const detailedError = `This user is not allowed to query ${key} on class ${this.className}`;
-      const log = (this.config && this.config.loggerController) || defaultLogger;
       throw createSanitizedError(
         Parse.Error.OPERATION_FORBIDDEN,
         detailedError,
-        log
       );
     }
   }

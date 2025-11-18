@@ -502,8 +502,7 @@ export function handleParseErrors(err, req, res, next) {
 
 export function enforceMasterKeyAccess(req, res, next) {
   if (!req.auth.isMaster) {
-    const log = (req.config && req.config.loggerController) || defaultLogger;
-    const error = createSanitizedHttpError(403, 'unauthorized: master key is required', log);
+    const error = createSanitizedHttpError(403, 'unauthorized: master key is required');
     res.status(error.status);
     res.end(`{"error":"${error.message}"}`);
     return;
@@ -513,8 +512,7 @@ export function enforceMasterKeyAccess(req, res, next) {
 
 export function promiseEnforceMasterKeyAccess(request) {
   if (!request.auth.isMaster) {
-    const log = (request.config && request.config.loggerController) || defaultLogger;
-    throw createSanitizedHttpError(403, 'unauthorized: master key is required', log);
+    throw createSanitizedHttpError(403, 'unauthorized: master key is required');
   }
   return Promise.resolve();
 }

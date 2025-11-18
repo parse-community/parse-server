@@ -9,19 +9,9 @@ import defaultLogger from './logger';
  * @param {Object} loggerOrConfig - Optional logger instance or config object (from req.config.loggerController or default)
  * @returns {Parse.Error} A Parse.Error with sanitized message
  */
-export function createSanitizedError(errorCode, detailedMessage, loggerOrConfig = null) {
-  let log = defaultLogger;
-  if (loggerOrConfig) {
-    if (loggerOrConfig.loggerController) {
-      log = loggerOrConfig.loggerController;
-    } else if (loggerOrConfig.error) {
-      // It's a logger instance
-      log = loggerOrConfig;
-    }
-  }
-
+export function createSanitizedError(errorCode, detailedMessage) {
   // Keep log on server side
-  log.error('Security error:', detailedMessage);
+  defaultLogger.error('Security error:', detailedMessage);
 
   return new Parse.Error(errorCode, 'Permission denied');
 }
@@ -35,18 +25,8 @@ export function createSanitizedError(errorCode, detailedMessage, loggerOrConfig 
  * @param {Object} loggerOrConfig - Optional logger instance or config object
  * @returns {Error} An Error with sanitized message
  */
-export function createSanitizedHttpError(statusCode, detailedMessage, loggerOrConfig = null) {
-  let log = defaultLogger;
-  if (loggerOrConfig) {
-    if (loggerOrConfig.loggerController) {
-      log = loggerOrConfig.loggerController;
-    } else if (loggerOrConfig.error) {
-      log = loggerOrConfig;
-    }
-  }
-
-  // Keep log on server side
-  log.error('Security error:', detailedMessage);
+export function createSanitizedHttpError(statusCode, detailedMessage) {
+  defaultLogger.error('Security error:', detailedMessage);
 
   const error = new Error();
   error.status = statusCode;

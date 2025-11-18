@@ -1455,11 +1455,9 @@ RestWrite.prototype.runDatabaseOperation = function () {
 
   if (this.className === '_User' && this.query && this.auth.isUnauthenticated()) {
     const detailedError = `Cannot modify user ${this.query.objectId}.`;
-    const log = (this.config && this.config.loggerController) || defaultLogger;
     throw createSanitizedError(
       Parse.Error.SESSION_MISSING,
       detailedError,
-      log
     );
   }
 

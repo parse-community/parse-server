@@ -1,15 +1,12 @@
 import Parse from 'parse/node';
 import { GraphQLError } from 'graphql';
 import { createSanitizedError } from '../SecurityError';
-import defaultLogger from '../logger';
 
-export function enforceMasterKeyAccess(auth, config = null) {
+export function enforceMasterKeyAccess(auth) {
   if (!auth.isMaster) {
-    const loggerOrConfig = config || defaultLogger;
     throw createSanitizedError(
       Parse.Error.OPERATION_FORBIDDEN,
       'unauthorized: master key is required',
-      loggerOrConfig
     );
   }
 }

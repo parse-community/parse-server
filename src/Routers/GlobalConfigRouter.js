@@ -4,7 +4,6 @@ import PromiseRouter from '../PromiseRouter';
 import * as middleware from '../middlewares';
 import * as triggers from '../triggers';
 import { createSanitizedError } from '../SecurityError';
-import defaultLogger from '../logger';
 
 const getConfigFromParams = params => {
   const config = new Parse.Config();
@@ -43,11 +42,9 @@ export class GlobalConfigRouter extends PromiseRouter {
 
   async updateGlobalConfig(req) {
     if (req.auth.isReadOnly) {
-      const log = (req.config && req.config.loggerController) || defaultLogger;
       throw createSanitizedError(
         Parse.Error.OPERATION_FORBIDDEN,
         "read-only masterKey isn't allowed to update the config.",
-        log
       );
     }
     const params = req.body.params || {};

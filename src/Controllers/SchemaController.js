@@ -1406,10 +1406,10 @@ export default class SchemaController {
       // If aclGroup has * (public)
       if (!aclGroup || aclGroup.length == 0) {
         const detailedError = 'Permission denied, user needs to be authenticated.';
-        throw createSanitizedError(Parse.Error.OBJECT_NOT_FOUND, detailedError, defaultLogger);
+        throw createSanitizedError(Parse.Error.OBJECT_NOT_FOUND, detailedError);
       } else if (aclGroup.indexOf('*') > -1 && aclGroup.length == 1) {
         const detailedError = 'Permission denied, user needs to be authenticated.';
-        throw createSanitizedError(Parse.Error.OBJECT_NOT_FOUND, detailedError, defaultLogger);
+        throw createSanitizedError(Parse.Error.OBJECT_NOT_FOUND, detailedError);
       }
       // requiresAuthentication passed, just move forward
       // probably would be wise at some point to rename to 'authenticatedUser'
@@ -1424,7 +1424,7 @@ export default class SchemaController {
     // Reject create when write lockdown
     if (permissionField == 'writeUserFields' && operation == 'create') {
       const detailedError = `Permission denied for action ${operation} on class ${className}.`;
-      throw createSanitizedError(Parse.Error.OPERATION_FORBIDDEN, detailedError, defaultLogger);
+      throw createSanitizedError(Parse.Error.OPERATION_FORBIDDEN, detailedError);
     }
 
     // Process the readUserFields later
@@ -1445,7 +1445,7 @@ export default class SchemaController {
     }
 
     const detailedError = `Permission denied for action ${operation} on class ${className}.`;
-    throw createSanitizedError(Parse.Error.OPERATION_FORBIDDEN, detailedError, defaultLogger);
+    throw createSanitizedError(Parse.Error.OPERATION_FORBIDDEN, detailedError);
   }
 
   // Validates an operation passes class-level-permissions set in the schema
