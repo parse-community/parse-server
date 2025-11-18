@@ -1,8 +1,6 @@
 // triggers.js
 import Parse from 'parse/node';
 import { logger } from './logger';
-import { createSanitizedError } from './SecurityError';
-import defaultLogger from './logger';
 
 export const Types = {
   beforeLogin: 'beforeLogin',
@@ -712,24 +710,10 @@ export function maybeRunValidator(request, functionName, auth) {
         resolve();
       })
       .catch(e => {
-        // Check if this is a security-related validation error
-        const errorMessage = typeof e === 'string' ? e : (e.message || String(e));
-        const isSecurityError = errorMessage.includes('Master key is required') || errorMessage.includes('Please login to continue');
-
-        let error;
-        if (isSecurityError) {
-          // Log detailed error server-side and sanitize for client
-          defaultLogger.error('Security validation error:', errorMessage);
-          error = resolveError(e, {
-            code: Parse.Error.VALIDATION_ERROR,
-            message: 'Permission denied',
-          });
-        } else {
-          error = resolveError(e, {
-            code: Parse.Error.VALIDATION_ERROR,
-            message: 'Validation failed.',
-          });
-        }
+        const error = resolveError(e, {
+          code: Parse.Error.VALIDATION_ERROR,
+          message: 'Validation failed.',
+        });
         reject(error);
       });
   });

@@ -1,4 +1,3 @@
-import Parse from 'parse/node';
 import defaultLogger from './logger';
 
 /**
