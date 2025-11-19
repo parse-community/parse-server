@@ -8,7 +8,7 @@ import defaultLogger from './logger';
  * @param {string} detailedMessage - The detailed error message to log server-side
  * @returns {Parse.Error} A Parse.Error with sanitized message
  */
-export function createSanitizedError(errorCode, detailedMessage) {
+function createSanitizedError(errorCode, detailedMessage) {
   // On testing we need to add a prefix to the message to allow to find the correct call in the TestUtils.js file
   if (process.env.TESTING) {
     defaultLogger.error('Sanitized error:', detailedMessage);
@@ -27,7 +27,7 @@ export function createSanitizedError(errorCode, detailedMessage) {
  * @param {string} detailedMessage - The detailed error message to log server-side
  * @returns {Error} An Error with sanitized message
  */
-export function createSanitizedHttpError(statusCode, detailedMessage) {
+function createSanitizedHttpError(statusCode, detailedMessage) {
   // On testing we need to add a prefix to the message to allow to find the correct call in the TestUtils.js file
   if (process.env.TESTING) {
     defaultLogger.error('Sanitized error:', detailedMessage);
@@ -41,3 +41,4 @@ export function createSanitizedHttpError(statusCode, detailedMessage) {
   return error;
 }
 
+export { createSanitizedError, createSanitizedHttpError };
