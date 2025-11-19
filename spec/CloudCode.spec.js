@@ -4767,9 +4767,18 @@ describe('beforePasswordResetRequest hook', () => {
       publicServerURL: 'http://localhost:8378/1',
     });
 
+    const base64 = 'V29ya2luZyBhdCBQYXJzZSBpcyBncmVhdCE=';
+    const file = new Parse.File('myfile.txt', { base64 });
+    // Test that the hook not throw "Tried to encode an unsaved file."
+    await file.save();
+
     Parse.Cloud.beforePasswordResetRequest(req => {
       expect(req.object).toBeDefined();
       expect(req.object.get('email')).toBeDefined();
+      expect(req.object.get('email')).toBe('test2@example.com');
+      expect(req.object.get('file')).toBeDefined();
+      expect(req.object.get('file')).toBeInstanceOf(Parse.File);
+      expect(req.object.get('file').name()).toContain('myfile.txt');
       expect(req.headers).toBeDefined();
       expect(req.ip).toBeDefined();
       expect(req.installationId).toBeDefined();
@@ -4782,10 +4791,6 @@ describe('beforePasswordResetRequest hook', () => {
     user.setPassword('password');
     user.set('email', 'test2@example.com');
     await user.signUp();
-    const base64 = 'V29ya2luZyBhdCBQYXJzZSBpcyBncmVhdCE=';
-    const file = new Parse.File('myfile.txt', { base64 });
-    // Test that the hook not throw "Tried to encode an unsaved file."
-    await file.save();
     await user.save({ file });
 
     await Parse.User.requestPasswordReset('test2@example.com');
