@@ -158,7 +158,7 @@ function mapperFor(elt, t) {
   } else if (t.isObjectTypeAnnotation(elt)) {
     return wrap(t.identifier('objectParser'));
   } else if (t.isGenericTypeAnnotation(elt)) {
-    const type = elt.id.name;
+    const type = elt.typeAnnotation.id.name;
     if (type == 'Adapter') {
       return wrap(t.identifier('moduleOrObjectParser'));
     }
