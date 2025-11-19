@@ -7,6 +7,7 @@ const Config = require('../lib/Config');
 const Parse = require('parse/node').Parse;
 const rest = require('../lib/rest');
 const request = require('../lib/request');
+const { getSanitizedErrorCall } = require('../lib/TestUtils');
 
 let config;
 let database;
@@ -157,6 +158,9 @@ describe('Installations', () => {
   });
 
   it('should properly fail queying installations', done => {
+    const sanitizedErrorCall = getSanitizedErrorCall();
+    const callCountBefore = sanitizedErrorCall.callCountBefore();
+
     const installId = '12345678-abcd-abcd-abcd-123456789abc';
     const device = 'android';
     const input = {
@@ -174,10 +178,11 @@ describe('Installations', () => {
         done();
       })
       .catch(error => {
-        expect(error.code).toBe(119);
+        expect(error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
         expect(error.message).toBe(
           'Permission denied'
         );
+        sanitizedErrorCall.checkMessage("Clients aren't allowed to perform the find operation on the installation collection.", callCountBefore);
         done();
       });
   });

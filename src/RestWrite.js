@@ -31,9 +31,9 @@ import defaultLogger from './logger';
 // for the _User class.
 function RestWrite(config, auth, className, query, data, originalData, clientSDK, context, action) {
   if (auth.isReadOnly) {
-    throw new Parse.Error(
+    throw createSanitizedError(
       Parse.Error.OPERATION_FORBIDDEN,
-      'Cannot perform a write operation when using readOnlyMasterKey'
+      'Cannot perform a write operation when using readOnlyMasterKey',
     );
   }
   this.config = config;

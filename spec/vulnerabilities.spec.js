@@ -1,4 +1,5 @@
 const request = require('../lib/request');
+const { getSanitizedErrorCall } = require('../lib/TestUtils');
 
 describe('Vulnerabilities', () => {
   describe('(GHSA-8xq9-g7ch-35hg) Custom object ID allows to acquire role privilege', () => {
@@ -13,9 +14,12 @@ describe('Vulnerabilities', () => {
     });
 
     it('denies user creation with poisoned object ID', async () => {
+      const sanitizedErrorCall = getSanitizedErrorCall();
+      const callCountBefore = sanitizedErrorCall.callCountBefore();
       await expectAsync(
         new Parse.User({ id: 'role:a', username: 'a', password: '123' }).save()
       ).toBeRejectedWith(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied'));
+      sanitizedErrorCall.checkMessage("Invalid object ID.", callCountBefore);
     });
 
     describe('existing sessions for users with poisoned object ID', () => {

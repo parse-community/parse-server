@@ -168,6 +168,8 @@ describe('schemas', () => {
   });
 
   it('requires the master key to get one schema', done => {
+    const sanitizedErrorCall = getSanitizedErrorCall();
+    const callCountBefore = sanitizedErrorCall.callCountBefore();
     request({
       url: 'http://localhost:8378/1/schemas/SomeSchema',
       json: true,
@@ -175,11 +177,14 @@ describe('schemas', () => {
     }).then(fail, response => {
       expect(response.status).toEqual(403);
       expect(response.data.error).toEqual('Permission denied');
+      sanitizedErrorCall.checkMessage("unauthorized: master key is required", callCountBefore);
       done();
     });
   });
 
   it('asks for the master key if you use the rest key', done => {
+    const sanitizedErrorCall = getSanitizedErrorCall();
+    const callCountBefore = sanitizedErrorCall.callCountBefore();
     request({
       url: 'http://localhost:8378/1/schemas',
       json: true,
@@ -187,6 +192,7 @@ describe('schemas', () => {
     }).then(fail, response => {
       expect(response.status).toEqual(403);
       expect(response.data.error).toEqual('Permission denied');
+      sanitizedErrorCall.checkMessage("unauthorized: master key is required", callCountBefore);
       done();
     });
   });
