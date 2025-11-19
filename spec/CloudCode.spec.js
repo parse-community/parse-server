@@ -4784,7 +4784,7 @@ describe('beforePasswordResetRequest hook', () => {
     await user.signUp();
     const base64 = 'V29ya2luZyBhdCBQYXJzZSBpcyBncmVhdCE=';
     const file = new Parse.File('myfile.txt', { base64 });
-    // Test that the hook not throw Save non encoded file
+    // Test that the hook not throw "Tried to encode an unsaved file."
     await file.save();
     await user.save({ file });
 
