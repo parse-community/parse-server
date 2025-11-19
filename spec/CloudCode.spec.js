@@ -4769,7 +4769,6 @@ describe('beforePasswordResetRequest hook', () => {
 
     const base64 = 'V29ya2luZyBhdCBQYXJzZSBpcyBncmVhdCE=';
     const file = new Parse.File('myfile.txt', { base64 });
-    // Test that the hook not throw "Tried to encode an unsaved file."
     await file.save();
 
     Parse.Cloud.beforePasswordResetRequest(req => {
