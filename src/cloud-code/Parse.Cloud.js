@@ -350,7 +350,6 @@ ParseCloud.afterLogout = function (handler) {
 };
 
 /**
- *
  * Registers the before password reset request function.
  *
  * **Available in Cloud Code only.**
@@ -359,13 +358,14 @@ ParseCloud.afterLogout = function (handler) {
  * before the reset email is sent. It is triggered after the user is found
  * by email, but before the reset token is generated and the email is sent.
  *
+ * Code example:
+ *
  * ```
- * Parse.Cloud.beforePasswordResetRequest((request) => {
- *   // Validate email or user properties
- *   if (!request.object.get('emailVerified')) {
- *     throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'Email not verified');
+ * Parse.Cloud.beforePasswordResetRequest(request => {
+ *   if (request.object.get('banned')) {
+ *     throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User is banned.');
  *   }
- * })
+ * });
  *
  * ```
  *
