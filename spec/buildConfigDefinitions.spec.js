@@ -67,10 +67,8 @@ describe('buildConfigDefinitions', () => {
     it('should return moduleOrObjectParser for Adapter GenericTypeAnnotation', () => {
       const mockElement = {
         type: 'GenericTypeAnnotation',
-        typeAnnotation: {
-          id: {
-            name: 'Adapter',
-          },
+        id: {
+          name: 'Adapter',
         },
       };
 
@@ -84,10 +82,8 @@ describe('buildConfigDefinitions', () => {
     it('should return numberOrBooleanParser for NumberOrBoolean GenericTypeAnnotation', () => {
       const mockElement = {
         type: 'GenericTypeAnnotation',
-        typeAnnotation: {
-          id: {
-            name: 'NumberOrBoolean',
-          },
+        id: {
+          name: 'NumberOrBoolean',
         },
       };
 
@@ -102,10 +98,8 @@ describe('buildConfigDefinitions', () => {
       const mockElement = {
         type: 'GenericTypeAnnotation',
         name: 'testString',
-        typeAnnotation: {
-          id: {
-            name: 'NumberOrString',
-          },
+        id: {
+          name: 'NumberOrString',
         },
       };
 
@@ -119,10 +113,8 @@ describe('buildConfigDefinitions', () => {
     it('should return arrayParser for StringOrStringArray GenericTypeAnnotation', () => {
       const mockElement = {
         type: 'GenericTypeAnnotation',
-        typeAnnotation: {
-          id: {
-            name: 'StringOrStringArray',
-          },
+        id: {
+          name: 'StringOrStringArray',
         },
       };
 
@@ -136,10 +128,8 @@ describe('buildConfigDefinitions', () => {
     it('should return objectParser for unknown GenericTypeAnnotation', () => {
       const mockElement = {
         type: 'GenericTypeAnnotation',
-        typeAnnotation: {
-          id: {
-            name: 'UnknownType',
-          },
+        id: {
+          name: 'UnknownType',
         },
       };
 
