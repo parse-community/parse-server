@@ -6,6 +6,7 @@ export const Types = {
   beforeLogin: 'beforeLogin',
   afterLogin: 'afterLogin',
   afterLogout: 'afterLogout',
+  beforePasswordResetRequest: 'beforePasswordResetRequest',
   beforeSave: 'beforeSave',
   afterSave: 'afterSave',
   beforeDelete: 'beforeDelete',
@@ -58,10 +59,10 @@ function validateClassNameForTriggers(className, type) {
     // TODO: Allow proper documented way of using nested increment ops
     throw 'Only afterSave is allowed on _PushStatus';
   }
-  if ((type === Types.beforeLogin || type === Types.afterLogin) && className !== '_User') {
+  if ((type === Types.beforeLogin || type === Types.afterLogin || type === Types.beforePasswordResetRequest) && className !== '_User') {
     // TODO: check if upstream code will handle `Error` instance rather
     // than this anti-pattern of throwing strings
-    throw 'Only the _User class is allowed for the beforeLogin and afterLogin triggers';
+    throw 'Only the _User class is allowed for the beforeLogin, afterLogin, and beforePasswordResetRequest triggers';
   }
   if (type === Types.afterLogout && className !== '_Session') {
     // TODO: check if upstream code will handle `Error` instance rather
@@ -287,6 +288,7 @@ export function getRequestObject(
     triggerType === Types.afterDelete ||
     triggerType === Types.beforeLogin ||
     triggerType === Types.afterLogin ||
+    triggerType === Types.beforePasswordResetRequest ||
     triggerType === Types.afterFind
   ) {
     // Set a copy of the context on the request object.
