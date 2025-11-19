@@ -118,6 +118,20 @@ describe('ParseGraphQLServer', () => {
       expect(server3).not.toBe(server2);
       expect(server3).toBe(server4);
     });
+
+    it('should return same server reference when called 100 times in parallel', async () => {
+      parseGraphQLServer.server = undefined;
+
+      // Call _getServer 100 times in parallel
+      const promises = Array.from({ length: 100 }, () => parseGraphQLServer._getServer());
+      const servers = await Promise.all(promises);
+
+      // All resolved servers should be the same reference
+      const firstServer = servers[0];
+      servers.forEach((server, index) => {
+        expect(server).toBe(firstServer);
+      });
+    });
   });
 
   describe('_getGraphQLOptions', () => {
