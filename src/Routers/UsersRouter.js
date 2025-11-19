@@ -12,6 +12,7 @@ import {
   Types as TriggerTypes,
   getRequestObject,
   resolveError,
+  inflate,
 } from '../triggers';
 import { promiseEnsureIdempotency } from '../middlewares';
 import RestWrite from '../RestWrite';
@@ -444,21 +445,59 @@ export class UsersRouter extends ClassesRouter {
     if (!email && !token) {
       throw new Parse.Error(Parse.Error.EMAIL_MISSING, 'you must provide an email');
     }
+
+    let userResults = null;
+    let userData = null;
+
+    // We can find the user using token
     if (token) {
-      const results = await req.config.database.find('_User', {
+      userResults = await req.config.database.find('_User', {
         _perishable_token: token,
         _perishable_token_expires_at: { $lt: Parse._encode(new Date()) },
       });
-      if (results && results[0] && results[0].email) {
-        email = results[0].email;
+      if (userResults?.length > 0) {
+        userData = userResults[0];
+        if (userData.email) {
+          email = userData.email;
+        }
+      }
+    // Or using email if no token provided
+    } else if (typeof email === 'string') {
+      userResults = await req.config.database.find(
+        '_User',
+        { $or: [{ email }, { username: email, email: { $exists: false } }] },
+        { limit: 1 },
+        Auth.maintenance(req.config)
+      );
+      if (userResults?.length > 0) {
+        userData = userResults[0];
       }
     }
+
     if (typeof email !== 'string') {
       throw new Parse.Error(
         Parse.Error.INVALID_EMAIL_ADDRESS,
         'you must provide a valid email string'
       );
     }
+
+    if (userData) {
+      this._sanitizeAuthData(userData);
+      // Get files attached to user
+      await req.config.filesController.expandFilesInObject(req.config, userData);
+
+      const user = inflate('_User', userData);
+
+      await maybeRunTrigger(
+        TriggerTypes.beforePasswordResetRequest,
+        req.auth,
+        user,
+        null,
+        req.config,
+        req.info.context
+      );
+    }
+
     const userController = req.config.userController;
     try {
       await userController.sendPasswordResetEmail(email);
