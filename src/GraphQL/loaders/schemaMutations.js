@@ -31,7 +31,7 @@ const load = parseGraphQLSchema => {
         const { name, schemaFields } = deepcopy(args);
         const { config, auth } = context;
 
-        enforceMasterKeyAccess(auth, config);
+        enforceMasterKeyAccess(auth);
 
         if (auth.isReadOnly) {
           throw createSanitizedError(
@@ -80,7 +80,7 @@ const load = parseGraphQLSchema => {
         const { name, schemaFields } = deepcopy(args);
         const { config, auth } = context;
 
-        enforceMasterKeyAccess(auth, config);
+        enforceMasterKeyAccess(auth);
 
         if (auth.isReadOnly) {
           throw createSanitizedError(
@@ -131,7 +131,7 @@ const load = parseGraphQLSchema => {
         const { name } = deepcopy(args);
         const { config, auth } = context;
 
-        enforceMasterKeyAccess(auth, config);
+        enforceMasterKeyAccess(auth);
 
         if (auth.isReadOnly) {
           throw createSanitizedError(
