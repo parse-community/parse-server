@@ -366,7 +366,6 @@ ParseCloud.afterLogout = function (handler) {
  *     throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User is banned.');
  *   }
  * });
- *
  * ```
  *
  * @method beforePasswordResetRequest
