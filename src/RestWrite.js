@@ -17,7 +17,7 @@ import RestQuery from './RestQuery';
 import _ from 'lodash';
 import logger from './logger';
 import { requiredColumns } from './Controllers/SchemaController';
-import { createSanitizedError } from './SecurityError';
+import { createSanitizedError } from './Error';
 import defaultLogger from './logger';
 
 // query and data are both provided in REST API format. So data
@@ -201,11 +201,10 @@ RestWrite.prototype.validateClientClassCreation = function () {
       .then(schemaController => schemaController.hasClass(this.className))
       .then(hasClass => {
         if (hasClass !== true) {
-          const detailedError = 'This user is not allowed to access non-existent class: ' + this.className;
           const log = (this.config && this.config.loggerController) || defaultLogger;
           throw createSanitizedError(
             Parse.Error.OPERATION_FORBIDDEN,
-            detailedError,
+            'This user is not allowed to access non-existent class: ' + this.className,
             log
           );
         }
@@ -571,7 +570,6 @@ RestWrite.prototype.handleAuthData = async function (authData) {
 
   // User found with provided authData
   if (results.length === 1) {
-
     this.storage.authProvider = Object.keys(authData).join(',');
 
     const { hasMutatedAuthData, mutatedAuthData } = Auth.hasMutatedAuthData(
@@ -665,7 +663,10 @@ RestWrite.prototype.checkRestrictedFields = async function () {
   }
 
   if (!this.auth.isMaintenance && !this.auth.isMaster && 'emailVerified' in this.data) {
-    throw createSanitizedError(Parse.Error.OPERATION_FORBIDDEN, 'Clients aren\'t allowed to manually update email verification.');
+    throw createSanitizedError(
+      Parse.Error.OPERATION_FORBIDDEN,
+      "Clients aren't allowed to manually update email verification."
+    );
   }
 };
 
@@ -1454,10 +1455,9 @@ RestWrite.prototype.runDatabaseOperation = function () {
   }
 
   if (this.className === '_User' && this.query && this.auth.isUnauthenticated()) {
-    const detailedError = `Cannot modify user ${this.query.objectId}.`;
     throw createSanitizedError(
       Parse.Error.SESSION_MISSING,
-      detailedError,
+      `Cannot modify user ${this.query.objectId}.`
     );
   }
 

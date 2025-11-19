@@ -1,32 +1,39 @@
 import defaultLogger from './logger';
 
 /**
- * Creates a sanitized security error that hides detailed information from clients
+ * Creates a sanitized error that hides detailed information from clients
  * while logging the detailed message server-side.
  *
  * @param {number} errorCode - The Parse.Error code (e.g., Parse.Error.OPERATION_FORBIDDEN)
  * @param {string} detailedMessage - The detailed error message to log server-side
- * @param {Object} loggerOrConfig - Optional logger instance or config object (from req.config.loggerController or default)
  * @returns {Parse.Error} A Parse.Error with sanitized message
  */
 export function createSanitizedError(errorCode, detailedMessage) {
-  // Keep log on server side
-  defaultLogger.error('Security error:', detailedMessage);
+  // On testing we need to add a prefix to the message to allow to find the correct call in the TestUtils.js file
+  if (process.env.TESTING) {
+    defaultLogger.error('Sanitized error:', detailedMessage);
+  } else {
+    defaultLogger.error(detailedMessage);
+  }
 
   return new Parse.Error(errorCode, 'Permission denied');
 }
 
 /**
- * Creates a sanitized security error from a regular Error object
- * Used for non-Parse.Error security errors (e.g., Express errors)
+ * Creates a sanitized error from a regular Error object
+ * Used for non-Parse.Error errors (e.g., Express errors)
  *
  * @param {number} statusCode - HTTP status code (e.g., 403)
  * @param {string} detailedMessage - The detailed error message to log server-side
- * @param {Object} loggerOrConfig - Optional logger instance or config object
  * @returns {Error} An Error with sanitized message
  */
 export function createSanitizedHttpError(statusCode, detailedMessage) {
-  defaultLogger.error('Security error:', detailedMessage);
+  // On testing we need to add a prefix to the message to allow to find the correct call in the TestUtils.js file
+  if (process.env.TESTING) {
+    defaultLogger.error('Sanitized error:', detailedMessage);
+  } else {
+    defaultLogger.error(detailedMessage);
+  }
 
   const error = new Error();
   error.status = statusCode;

@@ -6,7 +6,7 @@ import * as schemaTypes from './schemaTypes';
 import { transformToParse, transformToGraphQL } from '../transformers/schemaFields';
 import { enforceMasterKeyAccess } from '../parseGraphQLUtils';
 import { getClass } from './schemaQueries';
-import { createSanitizedError } from '../../SecurityError';
+import { createSanitizedError } from '../../Error';
 
 const load = parseGraphQLSchema => {
   const createClassMutation = mutationWithClientMutationId({

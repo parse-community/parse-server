@@ -5,6 +5,7 @@ const dd = require('deep-diff');
 const Config = require('../lib/Config');
 const request = require('../lib/request');
 const TestUtils = require('../lib/TestUtils');
+const { getSanitizedErrorCall } = require('../lib/TestUtils');
 const SchemaController = require('../lib/Controllers/SchemaController').SchemaController;
 
 let config;
@@ -1807,6 +1808,8 @@ describe('schemas', () => {
   });
 
   it('should not be able to add a field', done => {
+    const sanitizedErrorCall = getSanitizedErrorCall();
+
     request({
       method: 'POST',
       url: 'http://localhost:8378/1/schemas/AClass',
@@ -1826,6 +1829,7 @@ describe('schemas', () => {
         },
       },
     }).then(() => {
+      const callCountBefore = sanitizedErrorCall.callCountBefore();
       const object = new Parse.Object('AClass');
       object.set('hello', 'world');
       return object.save().then(
@@ -1835,6 +1839,8 @@ describe('schemas', () => {
         },
         err => {
           expect(err.message).toEqual('Permission denied');
+          expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+          sanitizedErrorCall.checkMessage('Permission denied for action addField on class AClass', callCountBefore);
           done();
         }
       );
@@ -2167,6 +2173,8 @@ describe('schemas', () => {
   }
 
   it('validate CLP 1', done => {
+    const sanitizedErrorCall = getSanitizedErrorCall();
+
     const user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
@@ -2198,6 +2206,7 @@ describe('schemas', () => {
         });
       })
       .then(() => {
+        const callCountBefore = sanitizedErrorCall.callCountBefore();
         const query = new Parse.Query('AClass');
         return query.find().then(
           () => {
@@ -2205,6 +2214,8 @@ describe('schemas', () => {
           },
           err => {
             expect(err.message).toEqual('Permission denied');
+            expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+            sanitizedErrorCall.checkMessage('Permission denied for action find on class AClass', callCountBefore);
             return Promise.resolve();
           }
         );
@@ -2227,6 +2238,9 @@ describe('schemas', () => {
   });
 
   it('validate CLP 2', done => {
+    const sanitizedErrorCall = getSanitizedErrorCall();
+    let callCountBefore = 0;
+
     const user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
@@ -2258,6 +2272,7 @@ describe('schemas', () => {
         });
       })
       .then(() => {
+        callCountBefore = sanitizedErrorCall.callCountBefore();
         const query = new Parse.Query('AClass');
         return query.find().then(
           () => {
@@ -2265,6 +2280,8 @@ describe('schemas', () => {
           },
           err => {
             expect(err.message).toEqual('Permission denied');
+            expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+            sanitizedErrorCall.checkMessage('Permission denied for action find on class AClass', callCountBefore);
             return Promise.resolve();
           }
         );
@@ -2312,6 +2329,9 @@ describe('schemas', () => {
   });
 
   it('validate CLP 3', done => {
+    const sanitizedErrorCall = getSanitizedErrorCall();
+    let callCountBefore = 0;
+
     const user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
@@ -2343,6 +2363,7 @@ describe('schemas', () => {
         });
       })
       .then(() => {
+        callCountBefore = sanitizedErrorCall.callCountBefore();
         const query = new Parse.Query('AClass');
         return query.find().then(
           () => {
@@ -2350,6 +2371,8 @@ describe('schemas', () => {
           },
           err => {
             expect(err.message).toEqual('Permission denied');
+            expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+            sanitizedErrorCall.checkMessage('Permission denied for action find on class AClass', callCountBefore);
             return Promise.resolve();
           }
         );
@@ -2388,6 +2411,9 @@ describe('schemas', () => {
   });
 
   it('validate CLP 4', done => {
+    const sanitizedErrorCall = getSanitizedErrorCall();
+    let callCountBefore = 0;
+
     const user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
@@ -2419,6 +2445,7 @@ describe('schemas', () => {
         });
       })
       .then(() => {
+        callCountBefore = sanitizedErrorCall.callCountBefore();
         const query = new Parse.Query('AClass');
         return query.find().then(
           () => {
@@ -2426,6 +2453,8 @@ describe('schemas', () => {
           },
           err => {
             expect(err.message).toEqual('Permission denied');
+            expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+            sanitizedErrorCall.checkMessage('Permission denied for action find on class AClass', callCountBefore);
             return Promise.resolve();
           }
         );
@@ -2450,6 +2479,7 @@ describe('schemas', () => {
         );
       })
       .then(() => {
+        callCountBefore = sanitizedErrorCall.callCountBefore();
         const query = new Parse.Query('AClass');
         return query.find().then(
           () => {
@@ -2457,6 +2487,8 @@ describe('schemas', () => {
           },
           err => {
             expect(err.message).toEqual('Permission denied');
+            expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+            sanitizedErrorCall.checkMessage('Permission denied for action find on class AClass', callCountBefore);
             return Promise.resolve();
           }
         );
@@ -2479,6 +2511,9 @@ describe('schemas', () => {
   });
 
   it('validate CLP 5', done => {
+    const sanitizedErrorCall = getSanitizedErrorCall();
+    let callCountBefore = 0;
+
     const user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
@@ -2531,6 +2566,7 @@ describe('schemas', () => {
         return Parse.User.logIn('admin', 'admin');
       })
       .then(() => {
+        callCountBefore = sanitizedErrorCall.callCountBefore();
         const query = new Parse.Query('AClass');
         return query.find();
       })
@@ -2541,6 +2577,8 @@ describe('schemas', () => {
         },
         err => {
           expect(err.message).toEqual('Permission denied');
+          expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+          sanitizedErrorCall.checkMessage('Permission denied for action create on class AClass', callCountBefore);
           return Promise.resolve();
         }
       )
@@ -2548,6 +2586,7 @@ describe('schemas', () => {
         return Parse.User.logIn('user2', 'user2');
       })
       .then(() => {
+        callCountBefore = sanitizedErrorCall.callCountBefore();
         const query = new Parse.Query('AClass');
         return query.find();
       })
@@ -2558,6 +2597,8 @@ describe('schemas', () => {
         },
         err => {
           expect(err.message).toEqual('Permission denied');
+          expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+          sanitizedErrorCall.checkMessage('Permission denied for action find on class AClass', callCountBefore);
           return Promise.resolve();
         }
       )

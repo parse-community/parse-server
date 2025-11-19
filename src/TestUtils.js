@@ -81,3 +81,24 @@ export class Connections {
     return this.sockets.size;
   }
 }
+
+export function getSanitizedErrorCall() {
+  const logger = require('../lib/logger').default;
+  // eslint-disable-next-line no-undef
+  const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+
+  return {
+    callCountBefore: () => loggerErrorSpy.calls.count(),
+    checkMessage: (message, callCountBefore) => {
+      // eslint-disable-next-line no-undef
+      expect(loggerErrorSpy.calls.count()).toBeGreaterThan(callCountBefore);
+      const calls = loggerErrorSpy.calls.all();
+      const recentCalls = calls.slice(callCountBefore);
+      const sanitizedErrorCall = recentCalls.find(call => call.args[0] === 'Sanitized error:');
+      // eslint-disable-next-line no-undef
+      expect(sanitizedErrorCall).toBeDefined();
+      // eslint-disable-next-line no-undef
+      expect(sanitizedErrorCall.args[1]).toContain(message);
+    },
+  };
+}

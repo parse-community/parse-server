@@ -5,7 +5,7 @@ var Parse = require('parse/node').Parse,
 
 import PromiseRouter from '../PromiseRouter';
 import * as middleware from '../middlewares';
-import { createSanitizedError } from '../SecurityError';
+import { createSanitizedError } from '../Error';
 
 function classNameMismatchResponse(bodyClass, pathClass) {
   throw new Parse.Error(

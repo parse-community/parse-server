@@ -16,7 +16,7 @@ import {
 import { promiseEnsureIdempotency } from '../middlewares';
 import RestWrite from '../RestWrite';
 import { logger } from '../logger';
-import { createSanitizedError } from '../SecurityError';
+import { createSanitizedError } from '../Error';
 
 export class UsersRouter extends ClassesRouter {
   className() {

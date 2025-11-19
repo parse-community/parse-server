@@ -1,7 +1,7 @@
 import PromiseRouter from '../PromiseRouter';
 import * as middleware from '../middlewares';
 import { Parse } from 'parse/node';
-import { createSanitizedError } from '../SecurityError';
+import { createSanitizedError } from '../Error';
 
 export class PushRouter extends PromiseRouter {
   mountRoutes() {

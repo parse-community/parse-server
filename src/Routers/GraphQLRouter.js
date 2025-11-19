@@ -1,7 +1,7 @@
 import Parse from 'parse/node';
 import PromiseRouter from '../PromiseRouter';
 import * as middleware from '../middlewares';
-import { createSanitizedError } from '../SecurityError';
+import { createSanitizedError } from '../Error';
 
 const GraphQLConfigPath = '/graphql-config';
 

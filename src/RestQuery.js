@@ -7,7 +7,7 @@ const triggers = require('./triggers');
 const { continueWhile } = require('parse/lib/node/promiseUtils');
 const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt', 'ACL'];
 const { enforceRoleSecurity } = require('./SharedRest');
-const { createSanitizedError } = require('./SecurityError');
+const { createSanitizedError } = require('./Error');
 const defaultLogger = require('./logger').default;
 
 // restOptions can include:
@@ -122,11 +122,7 @@ function _UnsafeRestQuery(
   if (!this.auth.isMaster) {
     if (this.className == '_Session') {
       if (!this.auth.user) {
-        const detailedError = 'Invalid session token';
-        throw createSanitizedError(
-          Parse.Error.INVALID_SESSION_TOKEN,
-          detailedError,
-        );
+        throw createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
       }
       this.restWhere = {
         $and: [
@@ -806,10 +802,9 @@ _UnsafeRestQuery.prototype.denyProtectedFields = async function () {
     ) || [];
   for (const key of protectedFields) {
     if (this.restWhere[key]) {
-      const detailedError = `This user is not allowed to query ${key} on class ${this.className}`;
       throw createSanitizedError(
         Parse.Error.OPERATION_FORBIDDEN,
-        detailedError,
+        `This user is not allowed to query ${key} on class ${this.className}`
       );
     }
   }

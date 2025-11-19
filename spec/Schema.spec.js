@@ -2,6 +2,7 @@
 
 const Config = require('../lib/Config');
 const SchemaController = require('../lib/Controllers/SchemaController');
+const { getSanitizedErrorCall } = require('../lib/TestUtils');
 const dd = require('deep-diff');
 
 let config;
@@ -249,6 +250,9 @@ describe('SchemaController', () => {
   });
 
   it('class-level permissions test count', done => {
+    const sanitizedErrorCall = getSanitizedErrorCall();
+    let callCountBefore = 0;
+
     let obj;
     return (
       config.database
@@ -275,6 +279,7 @@ describe('SchemaController', () => {
         })
         .then(results => {
           expect(results.length).toBe(1);
+          callCountBefore = sanitizedErrorCall.callCountBefore();
           const query = new Parse.Query('Stuff');
           return query.count();
         })
@@ -284,6 +289,8 @@ describe('SchemaController', () => {
           },
           err => {
             expect(err.message).toEqual('Permission denied');
+            expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+            sanitizedErrorCall.checkMessage('Permission denied for action count on class Stuff', callCountBefore);
             done();
           }
         )
@@ -1439,6 +1446,9 @@ describe('Class Level Permissions for requiredAuth', () => {
   }
 
   it('required auth test find', done => {
+    const sanitizedErrorCall = getSanitizedErrorCall();
+    let callCountBefore = 0;
+
     config.database
       .loadSchema()
       .then(schema => {
@@ -1453,6 +1463,7 @@ describe('Class Level Permissions for requiredAuth', () => {
         });
       })
       .then(() => {
+        callCountBefore = sanitizedErrorCall.callCountBefore();
         const query = new Parse.Query('Stuff');
         return query.find();
       })
@@ -1463,6 +1474,7 @@ describe('Class Level Permissions for requiredAuth', () => {
         },
         e => {
           expect(e.message).toEqual('Permission denied');
+          sanitizedErrorCall.checkMessage('Permission denied, user needs to be authenticated.', callCountBefore);
           done();
         }
       );
@@ -1537,6 +1549,8 @@ describe('Class Level Permissions for requiredAuth', () => {
   });
 
   it('required auth should reject create when not authenticated', done => {
+    const sanitizedErrorCall = getSanitizedErrorCall();
+    let callCountBefore = 0;
     config.database
       .loadSchema()
       .then(schema => {
@@ -1551,6 +1565,7 @@ describe('Class Level Permissions for requiredAuth', () => {
         });
       })
       .then(() => {
+        callCountBefore = sanitizedErrorCall.callCountBefore();
         const stuff = new Parse.Object('Stuff');
         stuff.set('foo', 'bar');
         return stuff.save();
@@ -1562,6 +1577,7 @@ describe('Class Level Permissions for requiredAuth', () => {
         },
         e => {
           expect(e.message).toEqual('Permission denied');
+          sanitizedErrorCall.checkMessage('Permission denied, user needs to be authenticated.', callCountBefore);
           done();
         }
       );
@@ -1619,6 +1635,9 @@ describe('Class Level Permissions for requiredAuth', () => {
   });
 
   it('required auth test get not authenticated', done => {
+    const sanitizedErrorCall = getSanitizedErrorCall();
+    let callCountBefore = 0;
+
     config.database
       .loadSchema()
       .then(schema => {
@@ -1639,6 +1658,7 @@ describe('Class Level Permissions for requiredAuth', () => {
         const stuff = new Parse.Object('Stuff');
         stuff.set('foo', 'bar');
         return stuff.save().then(() => {
+          callCountBefore = sanitizedErrorCall.callCountBefore();
           const query = new Parse.Query('Stuff');
           return query.get(stuff.id);
         });
@@ -1650,12 +1670,16 @@ describe('Class Level Permissions for requiredAuth', () => {
         },
         e => {
           expect(e.message).toEqual('Permission denied');
+          sanitizedErrorCall.checkMessage('Permission denied, user needs to be authenticated.', callCountBefore);
           done();
         }
       );
   });
 
   it('required auth test find not authenticated', done => {
+    const sanitizedErrorCall = getSanitizedErrorCall();
+    let callCountBefore = 0;
+
     config.database
       .loadSchema()
       .then(schema => {
@@ -1685,6 +1709,7 @@ describe('Class Level Permissions for requiredAuth', () => {
       })
       .then(result => {
         expect(result.get('foo')).toEqual('bar');
+        callCountBefore = sanitizedErrorCall.callCountBefore();
         const query = new Parse.Query('Stuff');
         return query.find();
       })
@@ -1695,6 +1720,7 @@ describe('Class Level Permissions for requiredAuth', () => {
         },
         e => {
           expect(e.message).toEqual('Permission denied');
+          sanitizedErrorCall.checkMessage('Permission denied, user needs to be authenticated.', callCountBefore);
           done();
         }
       );

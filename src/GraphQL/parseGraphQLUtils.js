@@ -1,6 +1,6 @@
 import Parse from 'parse/node';
 import { GraphQLError } from 'graphql';
-import { createSanitizedError } from '../SecurityError';
+import { createSanitizedError } from '../Error';
 
 export function enforceMasterKeyAccess(auth) {
   if (!auth.isMaster) {

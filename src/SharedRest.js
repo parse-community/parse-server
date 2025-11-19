@@ -6,14 +6,16 @@ const classesWithMasterOnlyAccess = [
   '_JobSchedule',
   '_Idempotency',
 ];
-const { createSanitizedError } = require('./SecurityError');
+const { createSanitizedError } = require('./Error');
 
 // Disallowing access to the _Role collection except by master key
 function enforceRoleSecurity(method, className, auth) {
   if (className === '_Installation' && !auth.isMaster && !auth.isMaintenance) {
     if (method === 'delete' || method === 'find') {
-      const detailedError = `Clients aren't allowed to perform the ${method} operation on the installation collection.`;
-      throw createSanitizedError(Parse.Error.OPERATION_FORBIDDEN, detailedError);
+      throw createSanitizedError(
+        Parse.Error.OPERATION_FORBIDDEN,
+        `Clients aren't allowed to perform the ${method} operation on the installation collection.`
+      );
     }
   }
 
@@ -23,14 +25,18 @@ function enforceRoleSecurity(method, className, auth) {
     !auth.isMaster &&
     !auth.isMaintenance
   ) {
-    const detailedError = `Clients aren't allowed to perform the ${method} operation on the ${className} collection.`;
-    throw createSanitizedError(Parse.Error.OPERATION_FORBIDDEN, detailedError);
+    throw createSanitizedError(
+      Parse.Error.OPERATION_FORBIDDEN,
+      `Clients aren't allowed to perform the ${method} operation on the ${className} collection.`
+    );
   }
 
   // readOnly masterKey is not allowed
   if (auth.isReadOnly && (method === 'delete' || method === 'create' || method === 'update')) {
-    const detailedError = `read-only masterKey isn't allowed to perform the ${method} operation.`;
-    throw createSanitizedError(Parse.Error.OPERATION_FORBIDDEN, detailedError);
+    throw createSanitizedError(
+      Parse.Error.OPERATION_FORBIDDEN,
+      `read-only masterKey isn't allowed to perform the ${method} operation.`
+    );
   }
 }
 

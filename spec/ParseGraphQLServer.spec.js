@@ -35,6 +35,7 @@ const { ParseServer } = require('../');
 const { ParseGraphQLServer } = require('../lib/GraphQL/ParseGraphQLServer');
 const { ReadPreference, Collection } = require('mongodb');
 const { v4: uuidv4 } = require('uuid');
+const { getSanitizedErrorCall } = require('../lib/TestUtils');
 
 function handleError(e) {
   if (e && e.networkError && e.networkError.result && e.networkError.result.errors) {
@@ -3488,6 +3489,9 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should require master key to create a new class', async () => {
+          const sanitizedErrorCall = getSanitizedErrorCall();
+
+          const callCountBefore = sanitizedErrorCall.callCountBefore();
           try {
             await apolloClient.mutate({
               mutation: gql`
@@ -3502,6 +3506,7 @@ describe('ParseGraphQLServer', () => {
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
             expect(e.graphQLErrors[0].message).toEqual('Permission denied');
+            sanitizedErrorCall.checkMessage('unauthorized: master key is required', callCountBefore);
           }
         });
 
@@ -3858,6 +3863,9 @@ describe('ParseGraphQLServer', () => {
             handleError(e);
           }
 
+          const sanitizedErrorCall = getSanitizedErrorCall();
+
+          const callCountBefore = sanitizedErrorCall.callCountBefore();
           try {
             await apolloClient.mutate({
               mutation: gql`
@@ -3872,6 +3880,7 @@ describe('ParseGraphQLServer', () => {
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
             expect(e.graphQLErrors[0].message).toEqual('Permission denied');
+            sanitizedErrorCall.checkMessage('unauthorized: master key is required', callCountBefore);
           }
         });
 
@@ -4083,6 +4092,10 @@ describe('ParseGraphQLServer', () => {
             handleError(e);
           }
 
+          const { getSanitizedErrorCall } = require('../lib/TestUtils');
+          const sanitizedErrorCall = getSanitizedErrorCall();
+
+          const callCountBefore = sanitizedErrorCall.callCountBefore();
           try {
             await apolloClient.mutate({
               mutation: gql`
@@ -4097,6 +4110,7 @@ describe('ParseGraphQLServer', () => {
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
             expect(e.graphQLErrors[0].message).toEqual('Permission denied');
+            sanitizedErrorCall.checkMessage('unauthorized: master key is required', callCountBefore);
           }
         });
 
@@ -4124,6 +4138,10 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should require master key to get an existing class', async () => {
+          const { getSanitizedErrorCall } = require('../lib/TestUtils');
+          const sanitizedErrorCall = getSanitizedErrorCall();
+
+          const callCountBefore = sanitizedErrorCall.callCountBefore();
           try {
             await apolloClient.query({
               query: gql`
@@ -4138,10 +4156,15 @@ describe('ParseGraphQLServer', () => {
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
             expect(e.graphQLErrors[0].message).toEqual('Permission denied');
+            sanitizedErrorCall.checkMessage('unauthorized: master key is required', callCountBefore);
           }
         });
 
         it('should require master key to find the existing classes', async () => {
+          const { getSanitizedErrorCall } = require('../lib/TestUtils');
+          const sanitizedErrorCall = getSanitizedErrorCall();
+
+          const callCountBefore = sanitizedErrorCall.callCountBefore();
           try {
             await apolloClient.query({
               query: gql`
@@ -4156,6 +4179,7 @@ describe('ParseGraphQLServer', () => {
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
             expect(e.graphQLErrors[0].message).toEqual('Permission denied');
+            sanitizedErrorCall.checkMessage('unauthorized: master key is required', callCountBefore);
           }
         });
       });

@@ -3,7 +3,7 @@ import Parse from 'parse/node';
 import PromiseRouter from '../PromiseRouter';
 import * as middleware from '../middlewares';
 import * as triggers from '../triggers';
-import { createSanitizedError } from '../SecurityError';
+import { createSanitizedError } from '../Error';
 
 const getConfigFromParams = params => {
   const config = new Parse.Config();

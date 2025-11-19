@@ -5,7 +5,7 @@ const Config = require('../lib/Config');
 const rest = require('../lib/rest');
 const RestQuery = require('../lib/RestQuery');
 const request = require('../lib/request');
-
+const { getSanitizedErrorCall } = require('../lib/TestUtils');
 const querystring = require('querystring');
 
 let config;
@@ -155,9 +155,12 @@ describe('rest query', () => {
   });
 
   it('query non-existent class when disabled client class creation', done => {
+    const sanitizedErrorCall = getSanitizedErrorCall();
+
     const customConfig = Object.assign({}, config, {
       allowClientClassCreation: false,
     });
+    const callCountBefore = sanitizedErrorCall.callCountBefore();
     rest.find(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {}).then(
       () => {
         fail('Should throw an error');
@@ -166,6 +169,7 @@ describe('rest query', () => {
       err => {
         expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
         expect(err.message).toEqual('Permission denied');
+        sanitizedErrorCall.checkMessage('This user is not allowed to access ' + 'non-existent class: ClientClassCreation', callCountBefore);
         done();
       }
     );

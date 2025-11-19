@@ -326,10 +326,9 @@ function handleSessionMissingError(error, className, auth) {
     !auth.isMaster &&
     !auth.isMaintenance
   ) {
-    const { createSanitizedError } = require('./SecurityError');
-    const detailedError = 'Insufficient auth.';
+    const { createSanitizedError } = require('./Error');
 
-    throw createSanitizedError(Parse.Error.SESSION_MISSING, detailedError);
+    throw createSanitizedError(Parse.Error.SESSION_MISSING, 'Insufficient auth.');
   }
   throw error;
 }
