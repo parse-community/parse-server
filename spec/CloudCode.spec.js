@@ -4789,8 +4789,8 @@ describe('beforePasswordResetRequest hook', () => {
     user.setUsername('testuser2');
     user.setPassword('password');
     user.set('email', 'test2@example.com');
+    user.set('file', file);
     await user.signUp();
-    await user.save({ file });
 
     await Parse.User.requestPasswordReset('test2@example.com');
   });
