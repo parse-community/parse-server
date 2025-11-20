@@ -1395,10 +1395,10 @@ describe('Parse.Object testing', () => {
       .save()
       .then(function () {
         const query = new Parse.Query(TestObject);
-        return query.find(object.id);
+        return query.get(object.id);
       })
-      .then(function (results) {
-        updatedObject = results[0];
+      .then(function (result) {
+        updatedObject = result;
         updatedObject.set('x', 11);
         return updatedObject.save();
       })
@@ -1409,7 +1409,8 @@ describe('Parse.Object testing', () => {
         equal(object.createdAt.getTime(), updatedObject.createdAt.getTime());
         equal(object.updatedAt.getTime(), updatedObject.updatedAt.getTime());
         done();
-      });
+      })
+      .catch(done.fail);
   });
 
   xit('fetchAll backbone-style callbacks', function (done) {

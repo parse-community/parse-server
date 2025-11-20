@@ -50,6 +50,7 @@ async function RestQuery({
   if (![RestQuery.Method.find, RestQuery.Method.get].includes(method)) {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'bad query type');
   }
+  const isGet = method === RestQuery.Method.get;
   enforceRoleSecurity(method, className, auth);
   const result = runBeforeFind
     ? await triggers.maybeRunQueryTrigger(
@@ -60,7 +61,7 @@ async function RestQuery({
       config,
       auth,
       context,
-      method === RestQuery.Method.get
+      isGet
     )
     : Promise.resolve({ restWhere, restOptions });
 
@@ -72,7 +73,8 @@ async function RestQuery({
     result.restOptions || restOptions,
     clientSDK,
     runAfterFind,
-    context
+    context,
+    isGet
   );
 }
 
@@ -101,7 +103,8 @@ function _UnsafeRestQuery(
   restOptions = {},
   clientSDK,
   runAfterFind = true,
-  context
+  context,
+  isGet
 ) {
   this.config = config;
   this.auth = auth;
@@ -113,6 +116,7 @@ function _UnsafeRestQuery(
   this.response = null;
   this.findOptions = {};
   this.context = context || {};
+  this.isGet = isGet;
   if (!this.auth.isMaster) {
     if (this.className == '_Session') {
       if (!this.auth.user) {
@@ -852,31 +856,54 @@ _UnsafeRestQuery.prototype.handleExcludeKeys = function () {
 };
 
 // Augments this.response with data at the paths provided in this.include.
-_UnsafeRestQuery.prototype.handleInclude = function () {
+_UnsafeRestQuery.prototype.handleInclude = async function () {
   if (this.include.length == 0) {
     return;
   }
 
-  var pathResponse = includePath(
-    this.config,
-    this.auth,
-    this.response,
-    this.include[0],
-    this.context,
-    this.restOptions
-  );
-  if (pathResponse.then) {
-    return pathResponse.then(newResponse => {
-      this.response = newResponse;
-      this.include = this.include.slice(1);
-      return this.handleInclude();
+  const indexedResults = this.response.results.reduce((indexed, result, i) => {
+    indexed[result.objectId] = i;
+    return indexed;
+  }, {});
+
+  // Build the execution tree
+  const executionTree = {}
+  this.include.forEach(path => {
+    let current = executionTree;
+    path.forEach((node) => {
+      if (!current[node]) {
+        current[node] = {
+          path,
+          children: {}
+        };
+      }
+      current = current[node].children
     });
-  } else if (this.include.length > 0) {
-    this.include = this.include.slice(1);
-    return this.handleInclude();
+  });
+
+  const recursiveExecutionTree = async (treeNode) => {
+    const { path, children } = treeNode;
+    const pathResponse = includePath(
+      this.config,
+      this.auth,
+      this.response,
+      path,
+      this.context,
+      this.restOptions,
+      this,
+    );
+    if (pathResponse.then) {
+      const newResponse = await pathResponse
+      newResponse.results.forEach(newObject => {
+        // We hydrate the root of each result with sub results
+        this.response.results[indexedResults[newObject.objectId]][path[0]] = newObject[path[0]];
+      })
+    }
+    return Promise.all(Object.values(children).map(recursiveExecutionTree));
   }
 
-  return pathResponse;
+  await Promise.all(Object.values(executionTree).map(recursiveExecutionTree));
+  this.include = []
 };
 
 //Returns a promise of a processed set of results
@@ -914,7 +941,8 @@ _UnsafeRestQuery.prototype.runAfterFindTrigger = function () {
       this.response.results,
       this.config,
       parseQuery,
-      this.context
+      this.context,
+      this.isGet
     )
     .then(results => {
       // Ensure we properly set the className back
@@ -1013,7 +1041,6 @@ function includePath(config, auth, response, path, context, restOptions = {}) {
   } else if (restOptions.readPreference) {
     includeRestOptions.readPreference = restOptions.readPreference;
   }
-
   const queryPromises = Object.keys(pointersHash).map(async className => {
     const objectIds = Array.from(pointersHash[className]);
     let where;
@@ -1052,7 +1079,6 @@ function includePath(config, auth, response, path, context, restOptions = {}) {
       }
       return replace;
     }, {});
-
     var resp = {
       results: replacePointers(response.results, path, replace),
     };

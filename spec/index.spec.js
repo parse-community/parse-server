@@ -363,7 +363,7 @@ describe('server', () => {
 
   it('should throw when getting invalid mount', done => {
     reconfigureServer({ publicServerURL: 'blabla:/some' }).catch(error => {
-      expect(error).toEqual('publicServerURL should be a valid HTTPS URL starting with https://');
+      expect(error).toEqual('The option publicServerURL must be a valid URL starting with http:// or https://.');
       done();
     });
   });
@@ -684,5 +684,172 @@ describe('server', () => {
           .then(done);
       })
       .catch(done.fail);
+  });
+
+  describe('publicServerURL', () => {
+    it('should load publicServerURL', async () => {
+      await reconfigureServer({
+        publicServerURL: () => 'https://example.com/1',
+      });
+
+      await new Parse.Object('TestObject').save();
+
+      const config = Config.get(Parse.applicationId);
+      expect(config.publicServerURL).toEqual('https://example.com/1');
+    });
+
+    it('should load publicServerURL from Promise', async () => {
+      await reconfigureServer({
+        publicServerURL: () => Promise.resolve('https://example.com/1'),
+      });
+
+      await new Parse.Object('TestObject').save();
+
+      const config = Config.get(Parse.applicationId);
+      expect(config.publicServerURL).toEqual('https://example.com/1');
+    });
+
+    it('should handle publicServerURL function throwing error', async () => {
+      const errorMessage = 'Failed to get public server URL';
+      await reconfigureServer({
+        publicServerURL: () => {
+          throw new Error(errorMessage);
+        },
+      });
+
+      // The error should occur when trying to save an object (which triggers loadKeys in middleware)
+      await expectAsync(
+        new Parse.Object('TestObject').save()
+      ).toBeRejected();
+    });
+
+    it('should handle publicServerURL Promise rejection', async () => {
+      const errorMessage = 'Async fetch of public server URL failed';
+      await reconfigureServer({
+        publicServerURL: () => Promise.reject(new Error(errorMessage)),
+      });
+
+      // The error should occur when trying to save an object (which triggers loadKeys in middleware)
+      await expectAsync(
+        new Parse.Object('TestObject').save()
+      ).toBeRejected();
+    });
+
+    it('executes publicServerURL function on every config access', async () => {
+      let counter = 0;
+      await reconfigureServer({
+        publicServerURL: () => {
+          counter++;
+          return `https://example.com/${counter}`;
+        },
+      });
+
+      // First request - should call the function
+      await new Parse.Object('TestObject').save();
+      const config1 = Config.get(Parse.applicationId);
+      expect(config1.publicServerURL).toEqual('https://example.com/1');
+      expect(counter).toEqual(1);
+
+      // Second request - should call the function again
+      await new Parse.Object('TestObject').save();
+      const config2 = Config.get(Parse.applicationId);
+      expect(config2.publicServerURL).toEqual('https://example.com/2');
+      expect(counter).toEqual(2);
+
+      // Third request - should call the function again
+      await new Parse.Object('TestObject').save();
+      const config3 = Config.get(Parse.applicationId);
+      expect(config3.publicServerURL).toEqual('https://example.com/3');
+      expect(counter).toEqual(3);
+    });
+
+    it('executes publicServerURL function on every password reset email', async () => {
+      let counter = 0;
+      const emailCalls = [];
+
+      const emailAdapter = MockEmailAdapterWithOptions({
+        sendPasswordResetEmail: ({ link }) => {
+          emailCalls.push(link);
+          return Promise.resolve();
+        },
+      });
+
+      await reconfigureServer({
+        appName: 'test-app',
+        publicServerURL: () => {
+          counter++;
+          return `https://example.com/${counter}`;
+        },
+        emailAdapter,
+      });
+
+      // Create a user
+      const user = new Parse.User();
+      user.setUsername('user');
+      user.setPassword('pass');
+      user.setEmail('user@example.com');
+      await user.signUp();
+
+      // Should use first publicServerURL
+      const counterBefore1 = counter;
+      await Parse.User.requestPasswordReset('user@example.com');
+      await jasmine.timeout();
+      expect(emailCalls.length).toEqual(1);
+      expect(emailCalls[0]).toContain(`https://example.com/${counterBefore1 + 1}`);
+      expect(counter).toBeGreaterThanOrEqual(2);
+
+      // Should use updated publicServerURL
+      const counterBefore2 = counter;
+      await Parse.User.requestPasswordReset('user@example.com');
+      await jasmine.timeout();
+      expect(emailCalls.length).toEqual(2);
+      expect(emailCalls[1]).toContain(`https://example.com/${counterBefore2 + 1}`);
+      expect(counterBefore2).toBeGreaterThan(counterBefore1);
+    });
+
+    it('executes publicServerURL function on every verification email', async () => {
+      let counter = 0;
+      const emailCalls = [];
+
+      const emailAdapter = MockEmailAdapterWithOptions({
+        sendVerificationEmail: ({ link }) => {
+          emailCalls.push(link);
+          return Promise.resolve();
+        },
+      });
+
+      await reconfigureServer({
+        appName: 'test-app',
+        verifyUserEmails: true,
+        publicServerURL: () => {
+          counter++;
+          return `https://example.com/${counter}`;
+        },
+        emailAdapter,
+      });
+
+      // Should trigger verification email with first publicServerURL
+      const counterBefore1 = counter;
+      const user1 = new Parse.User();
+      user1.setUsername('user1');
+      user1.setPassword('pass1');
+      user1.setEmail('user1@example.com');
+      await user1.signUp();
+      await jasmine.timeout();
+      expect(emailCalls.length).toEqual(1);
+      expect(emailCalls[0]).toContain(`https://example.com/${counterBefore1 + 1}`);
+
+      // Should trigger verification email with updated publicServerURL
+      const counterBefore2 = counter;
+      const user2 = new Parse.User();
+      user2.setUsername('user2');
+      user2.setPassword('pass2');
+      user2.setEmail('user2@example.com');
+      await user2.signUp();
+      await jasmine.timeout();
+      expect(emailCalls.length).toEqual(2);
+      expect(emailCalls[1]).toContain(`https://example.com/${counterBefore2 + 1}`);
+      expect(counterBefore2).toBeGreaterThan(counterBefore1);
+    });
   });
 });

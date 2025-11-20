@@ -97,21 +97,38 @@ class ParseGraphQLServer {
     if (schemaRef === newSchemaRef && this._server) {
       return this._server;
     }
-    const { schema, context } = await this._getGraphQLOptions();
-    const apollo = new ApolloServer({
-      csrfPrevention: {
-        // See https://www.apollographql.com/docs/router/configuration/csrf/
-        // needed since we use graphql upload
-        requestHeaders: ['X-Parse-Application-Id'],
-      },
-      introspection: this.config.graphQLPublicIntrospection,
-      plugins: [ApolloServerPluginCacheControlDisabled(), IntrospectionControlPlugin(this.config.graphQLPublicIntrospection)],
-      schema,
-    });
-    await apollo.start();
-    this._server = expressMiddleware(apollo, {
-      context,
-    });
+    // It means a parallel _getServer call is already in progress
+    if (this._schemaRefMutex === newSchemaRef) {
+      return this._server;
+    }
+    // Update the schema ref mutex to avoid parallel _getServer calls
+    this._schemaRefMutex = newSchemaRef;
+    const createServer = async () => {
+      try {
+        const { schema, context } = await this._getGraphQLOptions();
+        const apollo = new ApolloServer({
+          csrfPrevention: {
+            // See https://www.apollographql.com/docs/router/configuration/csrf/
+            // needed since we use graphql upload
+            requestHeaders: ['X-Parse-Application-Id'],
+          },
+          introspection: this.config.graphQLPublicIntrospection,
+          plugins: [ApolloServerPluginCacheControlDisabled(), IntrospectionControlPlugin(this.config.graphQLPublicIntrospection)],
+          schema,
+        });
+        await apollo.start();
+        return expressMiddleware(apollo, {
+          context,
+        });
+      } catch (e) {
+        // Reset all mutexes and forward the error
+        this._server = null;
+        this._schemaRefMutex = null;
+        throw e;
+      }
+    }
+    // Do not await so parallel request will wait the same promise ref
+    this._server = createServer();
     return this._server;
   }
 
@@ -128,6 +145,19 @@ class ParseGraphQLServer {
     );
   }
 
+  /**
+   * @static
+   * Allow developers to customize each request with inversion of control/dependency injection
+   */
+  applyRequestContextMiddleware(api, options) {
+    if (options.requestContextMiddleware) {
+      if (typeof options.requestContextMiddleware !== 'function') {
+        throw new Error('requestContextMiddleware must be a function');
+      }
+      api.use(this.config.graphQLPath, options.requestContextMiddleware);
+    }
+  }
+
   applyGraphQL(app) {
     if (!app || !app.use) {
       requiredParameter('You must provide an Express.js app instance!');
@@ -135,6 +165,7 @@ class ParseGraphQLServer {
     app.use(this.config.graphQLPath, corsMiddleware());
     app.use(this.config.graphQLPath, handleParseHeaders);
     app.use(this.config.graphQLPath, handleParseSession);
+    this.applyRequestContextMiddleware(app, this.parseServer.config);
     app.use(this.config.graphQLPath, handleParseErrors);
     app.use(
       this.config.graphQLPath,

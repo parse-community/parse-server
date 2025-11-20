@@ -188,6 +188,8 @@ function wrapToHTTPRequest(hook, key) {
   return req => {
     const jsonBody = {};
     for (var i in req) {
+      // Parse Server config is not serializable
+      if (i === 'config') { continue; }
       jsonBody[i] = req[i];
     }
     if (req.object) {
