@@ -13,6 +13,13 @@ for (let i = 0; i < str.length; i++) {
 }
 
 describe('Parse.File testing', () => {
+  let loggerErrorSpy;
+
+  beforeEach(() => {
+    const logger = require('../lib/logger').default;
+    loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+  });
+
   describe('creating files', () => {
     it('works with Content-Type', done => {
       const headers = {
@@ -132,9 +139,6 @@ describe('Parse.File testing', () => {
     });
 
     it('blocks file deletions with missing or incorrect master-key header', done => {
-      const logger = require('../lib/logger').default;
-      const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
-
       const headers = {
         'Content-Type': 'image/jpeg',
         'X-Parse-Application-Id': 'test',
@@ -763,8 +767,6 @@ describe('Parse.File testing', () => {
 
   describe('getting files', () => {
     it('does not crash on file request with invalid app ID', async () => {
-      const logger = require('../lib/logger').default;
-      const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
       loggerErrorSpy.calls.reset();
       const res1 = await request({
         url: 'http://localhost:8378/1/files/invalid-id/invalid-file.txt',

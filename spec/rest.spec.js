@@ -11,9 +11,14 @@ let config;
 let database;
 
 describe('rest create', () => {
+  let loggerErrorSpy;
+
   beforeEach(() => {
     config = Config.get('test');
     database = config.database;
+
+    const logger = require('../lib/logger').default;
+    loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
   });
 
   it('handles _id', done => {
@@ -314,9 +319,6 @@ describe('rest create', () => {
   });
 
   it('handles create on non-existent class when disabled client class creation', done => {
-    const logger = require('../lib/logger').default;
-    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
-
     const customConfig = Object.assign({}, config, {
       allowClientClassCreation: false,
     });
@@ -775,8 +777,6 @@ describe('rest create', () => {
   });
 
   it('cannot get object in volatileClasses if not masterKey through pointer', async () => {
-    const logger = require('../lib/logger').default;
-    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
     loggerErrorSpy.calls.reset();
     const masterKeyOnlyClassObject = new Parse.Object('_PushStatus');
     await masterKeyOnlyClassObject.save(null, { useMasterKey: true });
@@ -795,8 +795,6 @@ describe('rest create', () => {
   });
 
   it_id('3ce563bf-93aa-4d0b-9af9-c5fb246ac9fc')(it)('cannot get object in _GlobalConfig if not masterKey through pointer', async () => {
-    const logger = require('../lib/logger').default;
-    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
     loggerErrorSpy.calls.reset();
     await Parse.Config.save({ privateData: 'secret' }, { privateData: true });
     const obj2 = new Parse.Object('TestObject');
@@ -956,9 +954,15 @@ describe('rest update', () => {
 });
 
 describe('read-only masterKey', () => {
+  let loggerErrorSpy;
+  let logger;
+
+  beforeEach(() => {
+    logger = require('../lib/logger').default;
+    loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+  });
+
   it('properly throws on rest.create, rest.update and rest.del', () => {
-    const logger = require('../lib/logger').default;
-    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
     loggerErrorSpy.calls.reset();
     const config = Config.get('test');
     const readOnly = auth.readOnly(config);
@@ -983,9 +987,9 @@ describe('read-only masterKey', () => {
     await reconfigureServer({
       readOnlyMasterKey: 'yolo-read-only',
     });
-    const logger = require('../lib/logger').default;
-    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
-    loggerErrorSpy.calls.reset();
+    // Need to be re required because reconfigureServer resets the logger
+    const logger2 = require('../lib/logger').default;
+    loggerErrorSpy = spyOn(logger2, 'error').and.callThrough();
     try {
       await request({
         url: `${Parse.serverURL}/classes/MyYolo`,
@@ -1031,8 +1035,6 @@ describe('read-only masterKey', () => {
   });
 
   it('should throw when trying to create RestWrite', () => {
-    const logger = require('../lib/logger').default;
-    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
     loggerErrorSpy.calls.reset();
     const config = Config.get('test');
     expect(() => {
@@ -1044,8 +1046,6 @@ describe('read-only masterKey', () => {
   });
 
   it('should throw when trying to create schema', done => {
-    const logger = require('../lib/logger').default;
-    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
     loggerErrorSpy.calls.reset();
     request({
       method: 'POST',
@@ -1067,8 +1067,6 @@ describe('read-only masterKey', () => {
   });
 
   it('should throw when trying to create schema with a name', done => {
-    const logger = require('../lib/logger').default;
-    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
     loggerErrorSpy.calls.reset();
     request({
       url: `${Parse.serverURL}/schemas/MyClass`,
@@ -1090,8 +1088,6 @@ describe('read-only masterKey', () => {
   });
 
   it('should throw when trying to update schema', done => {
-    const logger = require('../lib/logger').default;
-    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
     loggerErrorSpy.calls.reset();
     request({
       url: `${Parse.serverURL}/schemas/MyClass`,
@@ -1113,8 +1109,6 @@ describe('read-only masterKey', () => {
   });
 
   it('should throw when trying to delete schema', done => {
-    const logger = require('../lib/logger').default;
-    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
     loggerErrorSpy.calls.reset();
     request({
       url: `${Parse.serverURL}/schemas/MyClass`,
@@ -1136,8 +1130,6 @@ describe('read-only masterKey', () => {
   });
 
   it('should throw when trying to update the global config', done => {
-    const logger = require('../lib/logger').default;
-    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
     loggerErrorSpy.calls.reset();
     request({
       url: `${Parse.serverURL}/config`,
@@ -1159,8 +1151,6 @@ describe('read-only masterKey', () => {
   });
 
   it('should throw when trying to send push', done => {
-    const logger = require('../lib/logger').default;
-    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
     loggerErrorSpy.calls.reset();
     request({
       url: `${Parse.serverURL}/push`,

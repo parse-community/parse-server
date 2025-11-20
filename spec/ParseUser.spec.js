@@ -39,6 +39,12 @@ describe('allowExpiredAuthDataToken option', () => {
 });
 
 describe('Parse.User testing', () => {
+  let loggerErrorSpy;
+  beforeEach(() => {
+    const logger = require('../lib/logger').default;
+    loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+  });
+
   it('user sign up class method', async done => {
     const user = await Parse.User.signUp('asdf', 'zxcv');
     ok(user.getSessionToken());
@@ -2633,9 +2639,6 @@ describe('Parse.User testing', () => {
   });
 
   it('cannot delete session if no sessionToken', done => {
-    const logger = require('../lib/logger').default;
-    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
-
     Promise.resolve()
       .then(() => {
         return Parse.User.signUp('test1', 'test', { foo: 'bar' });
@@ -4292,6 +4295,12 @@ describe('Security Advisory GHSA-8w3j-g983-8jh5', function () {
 });
 
 describe('login as other user', () => {
+  let loggerErrorSpy;
+  beforeEach(() => {
+    const logger = require('../lib/logger').default;
+    loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+  });
+
   it('allows creating a session for another user with the master key', async done => {
     await Parse.User.signUp('some_user', 'some_password');
     const userId = Parse.User.current().id;
@@ -4387,9 +4396,6 @@ describe('login as other user', () => {
   });
 
   it('rejects creating a session for another user without the master key', async done => {
-    const logger = require('../lib/logger').default;
-    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
-
     await Parse.User.signUp('some_user', 'some_password');
     const userId = Parse.User.current().id;
     await Parse.User.logOut();

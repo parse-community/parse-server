@@ -147,9 +147,14 @@ const masterKeyHeaders = {
 };
 
 describe('schemas', () => {
+  let loggerErrorSpy;
+
   beforeEach(async () => {
     await reconfigureServer();
     config = Config.get('test');
+
+    const logger = require('../lib/logger').default;
+    loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
   });
 
   it('requires the master key to get all schemas', done => {
@@ -167,8 +172,6 @@ describe('schemas', () => {
   });
 
   it('requires the master key to get one schema', done => {
-    const logger = require('../lib/logger').default;
-    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
     loggerErrorSpy.calls.reset();
     request({
       url: 'http://localhost:8378/1/schemas/SomeSchema',
@@ -183,8 +186,6 @@ describe('schemas', () => {
   });
 
   it('asks for the master key if you use the rest key', done => {
-    const logger = require('../lib/logger').default;
-    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
     loggerErrorSpy.calls.reset();
     request({
       url: 'http://localhost:8378/1/schemas',
@@ -1815,9 +1816,6 @@ describe('schemas', () => {
   });
 
   it('should not be able to add a field', done => {
-    const logger = require('../lib/logger').default;
-    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
-
     request({
       method: 'POST',
       url: 'http://localhost:8378/1/schemas/AClass',
@@ -2181,9 +2179,6 @@ describe('schemas', () => {
   }
 
   it('validate CLP 1', done => {
-    const logger = require('../lib/logger').default;
-    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
-
     const user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
@@ -2247,9 +2242,6 @@ describe('schemas', () => {
   });
 
   it('validate CLP 2', done => {
-    const logger = require('../lib/logger').default;
-    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
-
     const user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
@@ -2338,9 +2330,6 @@ describe('schemas', () => {
   });
 
   it('validate CLP 3', done => {
-    const logger = require('../lib/logger').default;
-    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
-
     const user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
@@ -2420,9 +2409,6 @@ describe('schemas', () => {
   });
 
   it('validate CLP 4', done => {
-    const logger = require('../lib/logger').default;
-    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
-
     const user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
@@ -2520,9 +2506,6 @@ describe('schemas', () => {
   });
 
   it('validate CLP 5', done => {
-    const logger = require('../lib/logger').default;
-    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
-
     const user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');

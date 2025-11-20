@@ -47,6 +47,8 @@ function handleError(e) {
 describe('ParseGraphQLServer', () => {
   let parseServer;
   let parseGraphQLServer;
+  let loggerErrorSpy;
+
 
   beforeEach(async () => {
     parseServer = await global.reconfigureServer({
@@ -58,6 +60,9 @@ describe('ParseGraphQLServer', () => {
       playgroundPath: '/playground',
       subscriptionsPath: '/subscriptions',
     });
+
+    const logger = require('../lib/logger').default;
+    loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
   });
 
   describe('constructor', () => {
@@ -3488,8 +3493,6 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should require master key to create a new class', async () => {
-          const logger = require('../lib/logger').default;
-          const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
           loggerErrorSpy.calls.reset();
           try {
             await apolloClient.mutate({
@@ -3862,8 +3865,6 @@ describe('ParseGraphQLServer', () => {
             handleError(e);
           }
 
-          const logger = require('../lib/logger').default;
-          const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
           loggerErrorSpy.calls.reset();
           try {
             await apolloClient.mutate({
@@ -4091,8 +4092,6 @@ describe('ParseGraphQLServer', () => {
             handleError(e);
           }
 
-          const logger = require('../lib/logger').default;
-          const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
           loggerErrorSpy.calls.reset();
           try {
             await apolloClient.mutate({
@@ -4136,8 +4135,6 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should require master key to get an existing class', async () => {
-          const logger = require('../lib/logger').default;
-          const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
           loggerErrorSpy.calls.reset();
           try {
             await apolloClient.query({
@@ -4158,8 +4155,6 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should require master key to find the existing classes', async () => {
-          const logger = require('../lib/logger').default;
-          const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
           loggerErrorSpy.calls.reset();
           try {
             await apolloClient.query({
@@ -7801,8 +7796,6 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should fail due to empty session token', async () => {
-          const logger = require('../lib/logger').default;
-          const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
           try {
             await apolloClient.query({
               query: gql`
@@ -7834,9 +7827,6 @@ describe('ParseGraphQLServer', () => {
           await car.save();
 
           await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
-
-          const logger = require('../lib/logger').default;
-          const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
 
           try {
             await apolloClient.query({

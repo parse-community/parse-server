@@ -20,8 +20,12 @@ const hasAllPODobject = () => {
 };
 
 describe('SchemaController', () => {
+  let loggerErrorSpy;
+
   beforeEach(() => {
     config = Config.get('test');
+    const logger = require('../lib/logger').default;
+    loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
   });
 
   it('can validate one object', done => {
@@ -249,9 +253,6 @@ describe('SchemaController', () => {
   });
 
   it('class-level permissions test count', done => {
-    const logger = require('../lib/logger').default;
-    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
-
     let obj;
     return (
       config.database
@@ -1433,8 +1434,12 @@ describe('SchemaController', () => {
 });
 
 describe('Class Level Permissions for requiredAuth', () => {
+  let loggerErrorSpy;
+
   beforeEach(() => {
     config = Config.get('test');
+    const logger = require('../lib/logger').default;
+    loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
   });
 
   function createUser() {
@@ -1445,9 +1450,6 @@ describe('Class Level Permissions for requiredAuth', () => {
   }
 
   it('required auth test find', done => {
-    const logger = require('../lib/logger').default;
-    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
-
     config.database
       .loadSchema()
       .then(schema => {
@@ -1548,8 +1550,6 @@ describe('Class Level Permissions for requiredAuth', () => {
   });
 
   it('required auth should reject create when not authenticated', done => {
-    const logger = require('../lib/logger').default;
-    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
     config.database
       .loadSchema()
       .then(schema => {
@@ -1634,9 +1634,6 @@ describe('Class Level Permissions for requiredAuth', () => {
   });
 
   it('required auth test get not authenticated', done => {
-    const logger = require('../lib/logger').default;
-    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
-
     config.database
       .loadSchema()
       .then(schema => {
@@ -1676,9 +1673,6 @@ describe('Class Level Permissions for requiredAuth', () => {
   });
 
   it('required auth test find not authenticated', done => {
-    const logger = require('../lib/logger').default;
-    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
-
     config.database
       .loadSchema()
       .then(schema => {
