@@ -6,7 +6,7 @@ const request = require('../lib/request');
 const Parse = require('parse/node');
 const Config = require('../lib/Config');
 const SchemaController = require('../lib/Controllers/SchemaController');
-const { getSanitizedErrorCall, destroyAllDataPermanently } = require('../lib/TestUtils');
+const { destroyAllDataPermanently } = require('../lib/TestUtils');
 
 const userSchema = SchemaController.convertSchemaToAdapterSchema({
   className: '_User',
@@ -1710,14 +1710,15 @@ describe('miscellaneous', () => {
   });
 
   it('fail on purge all objects in class without master key', done => {
-    const sanitizedErrorCall = getSanitizedErrorCall();
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
 
     const headers = {
       'Content-Type': 'application/json',
       'X-Parse-Application-Id': 'test',
       'X-Parse-REST-API-Key': 'rest',
     };
-    const callCountBefore = sanitizedErrorCall.callCountBefore();
+    loggerErrorSpy.calls.reset();
     request({
       method: 'DELETE',
       headers: headers,
@@ -1728,7 +1729,7 @@ describe('miscellaneous', () => {
       })
       .catch(response => {
         expect(response.data.error).toEqual('Permission denied');
-        sanitizedErrorCall.checkMessage('unauthorized: master key is required', callCountBefore);
+        expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('unauthorized: master key is required'));
         done();
       });
   });

@@ -35,7 +35,6 @@ const { ParseServer } = require('../');
 const { ParseGraphQLServer } = require('../lib/GraphQL/ParseGraphQLServer');
 const { ReadPreference, Collection } = require('mongodb');
 const { v4: uuidv4 } = require('uuid');
-const { getSanitizedErrorCall } = require('../lib/TestUtils');
 
 function handleError(e) {
   if (e && e.networkError && e.networkError.result && e.networkError.result.errors) {
@@ -3489,9 +3488,9 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should require master key to create a new class', async () => {
-          const sanitizedErrorCall = getSanitizedErrorCall();
-
-          const callCountBefore = sanitizedErrorCall.callCountBefore();
+          const logger = require('../lib/logger').default;
+          const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+          loggerErrorSpy.calls.reset();
           try {
             await apolloClient.mutate({
               mutation: gql`
@@ -3506,7 +3505,7 @@ describe('ParseGraphQLServer', () => {
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
             expect(e.graphQLErrors[0].message).toEqual('Permission denied');
-            sanitizedErrorCall.checkMessage('unauthorized: master key is required', callCountBefore);
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('unauthorized: master key is required'));
           }
         });
 
@@ -3863,9 +3862,9 @@ describe('ParseGraphQLServer', () => {
             handleError(e);
           }
 
-          const sanitizedErrorCall = getSanitizedErrorCall();
-
-          const callCountBefore = sanitizedErrorCall.callCountBefore();
+          const logger = require('../lib/logger').default;
+          const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+          loggerErrorSpy.calls.reset();
           try {
             await apolloClient.mutate({
               mutation: gql`
@@ -3880,7 +3879,7 @@ describe('ParseGraphQLServer', () => {
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
             expect(e.graphQLErrors[0].message).toEqual('Permission denied');
-            sanitizedErrorCall.checkMessage('unauthorized: master key is required', callCountBefore);
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('unauthorized: master key is required'));
           }
         });
 
@@ -4092,10 +4091,9 @@ describe('ParseGraphQLServer', () => {
             handleError(e);
           }
 
-          const { getSanitizedErrorCall } = require('../lib/TestUtils');
-          const sanitizedErrorCall = getSanitizedErrorCall();
-
-          const callCountBefore = sanitizedErrorCall.callCountBefore();
+          const logger = require('../lib/logger').default;
+          const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+          loggerErrorSpy.calls.reset();
           try {
             await apolloClient.mutate({
               mutation: gql`
@@ -4110,7 +4108,7 @@ describe('ParseGraphQLServer', () => {
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
             expect(e.graphQLErrors[0].message).toEqual('Permission denied');
-            sanitizedErrorCall.checkMessage('unauthorized: master key is required', callCountBefore);
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('unauthorized: master key is required'));
           }
         });
 
@@ -4138,10 +4136,9 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should require master key to get an existing class', async () => {
-          const { getSanitizedErrorCall } = require('../lib/TestUtils');
-          const sanitizedErrorCall = getSanitizedErrorCall();
-
-          const callCountBefore = sanitizedErrorCall.callCountBefore();
+          const logger = require('../lib/logger').default;
+          const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+          loggerErrorSpy.calls.reset();
           try {
             await apolloClient.query({
               query: gql`
@@ -4156,15 +4153,14 @@ describe('ParseGraphQLServer', () => {
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
             expect(e.graphQLErrors[0].message).toEqual('Permission denied');
-            sanitizedErrorCall.checkMessage('unauthorized: master key is required', callCountBefore);
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('unauthorized: master key is required'));
           }
         });
 
         it('should require master key to find the existing classes', async () => {
-          const { getSanitizedErrorCall } = require('../lib/TestUtils');
-          const sanitizedErrorCall = getSanitizedErrorCall();
-
-          const callCountBefore = sanitizedErrorCall.callCountBefore();
+          const logger = require('../lib/logger').default;
+          const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+          loggerErrorSpy.calls.reset();
           try {
             await apolloClient.query({
               query: gql`
@@ -4179,7 +4175,7 @@ describe('ParseGraphQLServer', () => {
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
             expect(e.graphQLErrors[0].message).toEqual('Permission denied');
-            sanitizedErrorCall.checkMessage('unauthorized: master key is required', callCountBefore);
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('unauthorized: master key is required'));
           }
         });
       });
@@ -7805,6 +7801,8 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should fail due to empty session token', async () => {
+          const logger = require('../lib/logger').default;
+          const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
           try {
             await apolloClient.query({
               query: gql`
@@ -7826,7 +7824,8 @@ describe('ParseGraphQLServer', () => {
           } catch (err) {
             const { graphQLErrors } = err;
             expect(graphQLErrors.length).toBe(1);
-            expect(graphQLErrors[0].message).toBe('Invalid session token');
+            expect(graphQLErrors[0].message).toBe('Permission denied');
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Invalid session token'));
           }
         });
 
@@ -7835,6 +7834,9 @@ describe('ParseGraphQLServer', () => {
           await car.save();
 
           await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+
+          const logger = require('../lib/logger').default;
+          const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
 
           try {
             await apolloClient.query({
@@ -7864,7 +7866,8 @@ describe('ParseGraphQLServer', () => {
           } catch (err) {
             const { graphQLErrors } = err;
             expect(graphQLErrors.length).toBe(1);
-            expect(graphQLErrors[0].message).toBe('Invalid session token');
+            expect(graphQLErrors[0].message).toBe('Permission denied');
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Invalid session token'));
           }
         });
       });

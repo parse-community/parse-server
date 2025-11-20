@@ -5,7 +5,6 @@
 
 const { FilesController } = require('../lib/Controllers/FilesController');
 const request = require('../lib/request');
-const { getSanitizedErrorCall } = require('../lib/TestUtils');
 
 const str = 'Hello World!';
 const data = [];
@@ -133,7 +132,8 @@ describe('Parse.File testing', () => {
     });
 
     it('blocks file deletions with missing or incorrect master-key header', done => {
-      const sanitizedErrorCall = getSanitizedErrorCall();
+      const logger = require('../lib/logger').default;
+      const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
 
       const headers = {
         'Content-Type': 'image/jpeg',
@@ -149,7 +149,7 @@ describe('Parse.File testing', () => {
         const b = response.data;
         expect(b.url).toMatch(/^http:\/\/localhost:8378\/1\/files\/test\/.*thefile.jpg$/);
         // missing X-Parse-Master-Key header
-        const callCountBefore = sanitizedErrorCall.callCountBefore();
+        loggerErrorSpy.calls.reset();
         request({
           method: 'DELETE',
           headers: {
@@ -161,9 +161,9 @@ describe('Parse.File testing', () => {
           const del_b = response.data;
           expect(response.status).toEqual(403);
           expect(del_b.error).toBe('Permission denied');
-          sanitizedErrorCall.checkMessage('unauthorized: master key is required', callCountBefore);
+          expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('unauthorized: master key is required'));
           // incorrect X-Parse-Master-Key header
-          const callCountBefore2 = sanitizedErrorCall.callCountBefore();
+          loggerErrorSpy.calls.reset();
           request({
             method: 'DELETE',
             headers: {
@@ -176,7 +176,7 @@ describe('Parse.File testing', () => {
             const del_b2 = response.data;
             expect(response.status).toEqual(403);
             expect(del_b2.error).toBe('Permission denied');
-            sanitizedErrorCall.checkMessage('unauthorized: master key is required', callCountBefore2);
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('unauthorized: master key is required'));
             done();
           });
         });
@@ -763,16 +763,15 @@ describe('Parse.File testing', () => {
 
   describe('getting files', () => {
     it('does not crash on file request with invalid app ID', async () => {
-      const { getSanitizedErrorCall } = require('../lib/TestUtils');
-      const sanitizedErrorCall = getSanitizedErrorCall();
-
-      const callCountBefore = sanitizedErrorCall.callCountBefore();
+      const logger = require('../lib/logger').default;
+      const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+      loggerErrorSpy.calls.reset();
       const res1 = await request({
         url: 'http://localhost:8378/1/files/invalid-id/invalid-file.txt',
       }).catch(e => e);
       expect(res1.status).toBe(403);
       expect(res1.data).toEqual({ code: 119, error: 'Permission denied' });
-      sanitizedErrorCall.checkMessage('Invalid application ID.', callCountBefore);
+      expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Invalid application ID.'));
       // Ensure server did not crash
       const res2 = await request({ url: 'http://localhost:8378/1/health' });
       expect(res2.status).toEqual(200);

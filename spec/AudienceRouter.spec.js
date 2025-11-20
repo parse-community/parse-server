@@ -2,7 +2,6 @@ const auth = require('../lib/Auth');
 const Config = require('../lib/Config');
 const rest = require('../lib/rest');
 const request = require('../lib/request');
-const { getSanitizedErrorCall } = require('../lib/TestUtils');
 const AudiencesRouter = require('../lib/Routers/AudiencesRouter').AudiencesRouter;
 
 describe('AudiencesRouter', () => {
@@ -264,9 +263,9 @@ describe('AudiencesRouter', () => {
   });
 
   it('should only create with master key', done => {
-    const sanitizedErrorCall = getSanitizedErrorCall();
-
-    const callCountBefore = sanitizedErrorCall.callCountBefore();
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+    loggerErrorSpy.calls.reset();
     Parse._request('POST', 'push_audiences', {
       name: 'My Audience',
       query: JSON.stringify({ deviceType: 'ios' }),
@@ -274,65 +273,65 @@ describe('AudiencesRouter', () => {
       () => {},
       error => {
         expect(error.message).toEqual('Permission denied');
-        sanitizedErrorCall.checkMessage('unauthorized: master key is required', callCountBefore);
+        expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('unauthorized: master key is required'));
         done();
       }
     );
   });
 
   it('should only find with master key', done => {
-    const sanitizedErrorCall = getSanitizedErrorCall();
-
-    const callCountBefore = sanitizedErrorCall.callCountBefore();
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+    loggerErrorSpy.calls.reset();
     Parse._request('GET', 'push_audiences', {}).then(
       () => {},
       error => {
         expect(error.message).toEqual('Permission denied');
-        sanitizedErrorCall.checkMessage('unauthorized: master key is required', callCountBefore);
+        expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('unauthorized: master key is required'));
         done();
       }
     );
   });
 
   it('should only get with master key', done => {
-    const sanitizedErrorCall = getSanitizedErrorCall();
-
-    const callCountBefore = sanitizedErrorCall.callCountBefore();
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+    loggerErrorSpy.calls.reset();
     Parse._request('GET', `push_audiences/someId`, {}).then(
       () => {},
       error => {
         expect(error.message).toEqual('Permission denied');
-        sanitizedErrorCall.checkMessage('unauthorized: master key is required', callCountBefore);
+        expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('unauthorized: master key is required'));
         done();
       }
     );
   });
 
   it('should only update with master key', done => {
-    const sanitizedErrorCall = getSanitizedErrorCall();
-
-    const callCountBefore = sanitizedErrorCall.callCountBefore();
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+    loggerErrorSpy.calls.reset();
     Parse._request('PUT', `push_audiences/someId`, {
       name: 'My Audience 2',
     }).then(
       () => {},
       error => {
         expect(error.message).toEqual('Permission denied');
-        sanitizedErrorCall.checkMessage('unauthorized: master key is required', callCountBefore);
+        expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('unauthorized: master key is required'));
         done();
       }
     );
   });
 
   it('should only delete with master key', done => {
-    const sanitizedErrorCall = getSanitizedErrorCall();
-
-    const callCountBefore = sanitizedErrorCall.callCountBefore();
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+    loggerErrorSpy.calls.reset();
     Parse._request('DELETE', `push_audiences/someId`, {}).then(
       () => {},
       error => {
         expect(error.message).toEqual('Permission denied');
-        sanitizedErrorCall.checkMessage('unauthorized: master key is required', callCountBefore);
+        expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('unauthorized: master key is required'));
         done();
       }
     );

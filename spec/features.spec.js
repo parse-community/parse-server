@@ -1,7 +1,6 @@
 'use strict';
 
 const request = require('../lib/request');
-const { getSanitizedErrorCall } = require('../lib/TestUtils');
 
 describe('features', () => {
   it('should return the serverInfo', async () => {
@@ -21,9 +20,9 @@ describe('features', () => {
   });
 
   it('requires the master key to get features', async done => {
-    const sanitizedErrorCall = getSanitizedErrorCall();
-
-    const callCountBefore = sanitizedErrorCall.callCountBefore();
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+    loggerErrorSpy.calls.reset();
     try {
       await request({
         url: 'http://localhost:8378/1/serverInfo',
@@ -37,7 +36,7 @@ describe('features', () => {
     } catch (error) {
       expect(error.status).toEqual(403);
       expect(error.data.error).toEqual('Permission denied');
-      sanitizedErrorCall.checkMessage('unauthorized: master key is required', callCountBefore);
+      expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('unauthorized: master key is required'));
       done();
     }
   });

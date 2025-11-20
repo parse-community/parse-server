@@ -5,7 +5,6 @@ const dd = require('deep-diff');
 const Config = require('../lib/Config');
 const request = require('../lib/request');
 const TestUtils = require('../lib/TestUtils');
-const { getSanitizedErrorCall } = require('../lib/TestUtils');
 const SchemaController = require('../lib/Controllers/SchemaController').SchemaController;
 
 let config;
@@ -168,8 +167,9 @@ describe('schemas', () => {
   });
 
   it('requires the master key to get one schema', done => {
-    const sanitizedErrorCall = getSanitizedErrorCall();
-    const callCountBefore = sanitizedErrorCall.callCountBefore();
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+    loggerErrorSpy.calls.reset();
     request({
       url: 'http://localhost:8378/1/schemas/SomeSchema',
       json: true,
@@ -177,14 +177,15 @@ describe('schemas', () => {
     }).then(fail, response => {
       expect(response.status).toEqual(403);
       expect(response.data.error).toEqual('Permission denied');
-      sanitizedErrorCall.checkMessage("unauthorized: master key is required", callCountBefore);
+      expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining("unauthorized: master key is required"));
       done();
     });
   });
 
   it('asks for the master key if you use the rest key', done => {
-    const sanitizedErrorCall = getSanitizedErrorCall();
-    const callCountBefore = sanitizedErrorCall.callCountBefore();
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+    loggerErrorSpy.calls.reset();
     request({
       url: 'http://localhost:8378/1/schemas',
       json: true,
@@ -192,7 +193,7 @@ describe('schemas', () => {
     }).then(fail, response => {
       expect(response.status).toEqual(403);
       expect(response.data.error).toEqual('Permission denied');
-      sanitizedErrorCall.checkMessage("unauthorized: master key is required", callCountBefore);
+      expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining("unauthorized: master key is required"));
       done();
     });
   });
@@ -1814,7 +1815,8 @@ describe('schemas', () => {
   });
 
   it('should not be able to add a field', done => {
-    const sanitizedErrorCall = getSanitizedErrorCall();
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
 
     request({
       method: 'POST',
@@ -1835,7 +1837,7 @@ describe('schemas', () => {
         },
       },
     }).then(() => {
-      const callCountBefore = sanitizedErrorCall.callCountBefore();
+      loggerErrorSpy.calls.reset();
       const object = new Parse.Object('AClass');
       object.set('hello', 'world');
       return object.save().then(
@@ -1846,7 +1848,7 @@ describe('schemas', () => {
         err => {
           expect(err.message).toEqual('Permission denied');
           expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
-          sanitizedErrorCall.checkMessage('Permission denied for action addField on class AClass', callCountBefore);
+          expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Permission denied for action addField on class AClass'));
           done();
         }
       );
@@ -2179,7 +2181,8 @@ describe('schemas', () => {
   }
 
   it('validate CLP 1', done => {
-    const sanitizedErrorCall = getSanitizedErrorCall();
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
 
     const user = new Parse.User();
     user.setUsername('user');
@@ -2212,7 +2215,7 @@ describe('schemas', () => {
         });
       })
       .then(() => {
-        const callCountBefore = sanitizedErrorCall.callCountBefore();
+        loggerErrorSpy.calls.reset();
         const query = new Parse.Query('AClass');
         return query.find().then(
           () => {
@@ -2221,7 +2224,7 @@ describe('schemas', () => {
           err => {
             expect(err.message).toEqual('Permission denied');
             expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
-            sanitizedErrorCall.checkMessage('Permission denied for action find on class AClass', callCountBefore);
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Permission denied for action find on class AClass'));
             return Promise.resolve();
           }
         );
@@ -2244,8 +2247,8 @@ describe('schemas', () => {
   });
 
   it('validate CLP 2', done => {
-    const sanitizedErrorCall = getSanitizedErrorCall();
-    let callCountBefore = 0;
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
 
     const user = new Parse.User();
     user.setUsername('user');
@@ -2278,7 +2281,7 @@ describe('schemas', () => {
         });
       })
       .then(() => {
-        callCountBefore = sanitizedErrorCall.callCountBefore();
+        loggerErrorSpy.calls.reset();
         const query = new Parse.Query('AClass');
         return query.find().then(
           () => {
@@ -2287,7 +2290,7 @@ describe('schemas', () => {
           err => {
             expect(err.message).toEqual('Permission denied');
             expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
-            sanitizedErrorCall.checkMessage('Permission denied for action find on class AClass', callCountBefore);
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Permission denied for action find on class AClass'));
             return Promise.resolve();
           }
         );
@@ -2335,8 +2338,8 @@ describe('schemas', () => {
   });
 
   it('validate CLP 3', done => {
-    const sanitizedErrorCall = getSanitizedErrorCall();
-    let callCountBefore = 0;
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
 
     const user = new Parse.User();
     user.setUsername('user');
@@ -2369,7 +2372,7 @@ describe('schemas', () => {
         });
       })
       .then(() => {
-        callCountBefore = sanitizedErrorCall.callCountBefore();
+        loggerErrorSpy.calls.reset();
         const query = new Parse.Query('AClass');
         return query.find().then(
           () => {
@@ -2378,7 +2381,7 @@ describe('schemas', () => {
           err => {
             expect(err.message).toEqual('Permission denied');
             expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
-            sanitizedErrorCall.checkMessage('Permission denied for action find on class AClass', callCountBefore);
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Permission denied for action find on class AClass'));
             return Promise.resolve();
           }
         );
@@ -2417,8 +2420,8 @@ describe('schemas', () => {
   });
 
   it('validate CLP 4', done => {
-    const sanitizedErrorCall = getSanitizedErrorCall();
-    let callCountBefore = 0;
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
 
     const user = new Parse.User();
     user.setUsername('user');
@@ -2451,7 +2454,7 @@ describe('schemas', () => {
         });
       })
       .then(() => {
-        callCountBefore = sanitizedErrorCall.callCountBefore();
+        loggerErrorSpy.calls.reset();
         const query = new Parse.Query('AClass');
         return query.find().then(
           () => {
@@ -2460,7 +2463,7 @@ describe('schemas', () => {
           err => {
             expect(err.message).toEqual('Permission denied');
             expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
-            sanitizedErrorCall.checkMessage('Permission denied for action find on class AClass', callCountBefore);
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Permission denied for action find on class AClass'));
             return Promise.resolve();
           }
         );
@@ -2485,7 +2488,7 @@ describe('schemas', () => {
         );
       })
       .then(() => {
-        callCountBefore = sanitizedErrorCall.callCountBefore();
+        loggerErrorSpy.calls.reset();
         const query = new Parse.Query('AClass');
         return query.find().then(
           () => {
@@ -2494,7 +2497,7 @@ describe('schemas', () => {
           err => {
             expect(err.message).toEqual('Permission denied');
             expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
-            sanitizedErrorCall.checkMessage('Permission denied for action find on class AClass', callCountBefore);
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Permission denied for action find on class AClass'));
             return Promise.resolve();
           }
         );
@@ -2517,8 +2520,8 @@ describe('schemas', () => {
   });
 
   it('validate CLP 5', done => {
-    const sanitizedErrorCall = getSanitizedErrorCall();
-    let callCountBefore = 0;
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
 
     const user = new Parse.User();
     user.setUsername('user');
@@ -2572,7 +2575,7 @@ describe('schemas', () => {
         return Parse.User.logIn('admin', 'admin');
       })
       .then(() => {
-        callCountBefore = sanitizedErrorCall.callCountBefore();
+        loggerErrorSpy.calls.reset();
         const query = new Parse.Query('AClass');
         return query.find();
       })
@@ -2584,7 +2587,7 @@ describe('schemas', () => {
         err => {
           expect(err.message).toEqual('Permission denied');
           expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
-          sanitizedErrorCall.checkMessage('Permission denied for action create on class AClass', callCountBefore);
+          expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Permission denied for action create on class AClass'));
           return Promise.resolve();
         }
       )
@@ -2592,7 +2595,7 @@ describe('schemas', () => {
         return Parse.User.logIn('user2', 'user2');
       })
       .then(() => {
-        callCountBefore = sanitizedErrorCall.callCountBefore();
+        loggerErrorSpy.calls.reset();
         const query = new Parse.Query('AClass');
         return query.find();
       })
@@ -2604,7 +2607,7 @@ describe('schemas', () => {
         err => {
           expect(err.message).toEqual('Permission denied');
           expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
-          sanitizedErrorCall.checkMessage('Permission denied for action find on class AClass', callCountBefore);
+          expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Permission denied for action find on class AClass'));
           return Promise.resolve();
         }
       )

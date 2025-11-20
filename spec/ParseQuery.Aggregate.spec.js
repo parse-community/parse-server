@@ -2,7 +2,6 @@
 const Parse = require('parse/node');
 const request = require('../lib/request');
 const Config = require('../lib/Config');
-const { getSanitizedErrorCall } = require('../lib/TestUtils');
 
 const masterKeyHeaders = {
   'X-Parse-Application-Id': 'test',
@@ -75,14 +74,14 @@ describe('Parse.Query Aggregate testing', () => {
   });
 
   it('should only query aggregate with master key', done => {
-    const sanitizedErrorCall = getSanitizedErrorCall();
-
-    const callCountBefore = sanitizedErrorCall.callCountBefore();
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+    loggerErrorSpy.calls.reset();
     Parse._request('GET', `aggregate/someClass`, {}).then(
       () => {},
       error => {
         expect(error.message).toEqual('Permission denied');
-        sanitizedErrorCall.checkMessage('unauthorized: master key is required', callCountBefore);
+        expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('unauthorized: master key is required'));
         done();
       }
     );

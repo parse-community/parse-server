@@ -12,7 +12,10 @@ const request = require('../lib/request');
 const passwordCrypto = require('../lib/password');
 const Config = require('../lib/Config');
 const cryptoUtils = require('../lib/cryptoUtils');
-const { getSanitizedErrorCall } = require('../lib/TestUtils');
+
+
+
+
 
 describe('allowExpiredAuthDataToken option', () => {
   it('should accept true value', async () => {
@@ -2633,8 +2636,9 @@ describe('Parse.User testing', () => {
   });
 
   it('cannot delete session if no sessionToken', done => {
-    const sanitizedErrorCall = getSanitizedErrorCall();
-    let callCountBefore = 0;
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+
     Promise.resolve()
       .then(() => {
         return Parse.User.signUp('test1', 'test', { foo: 'bar' });
@@ -2654,7 +2658,7 @@ describe('Parse.User testing', () => {
           const b = response.data;
           expect(b.results.length).toEqual(1);
           const objId = b.results[0].objectId;
-          callCountBefore = sanitizedErrorCall.callCountBefore();
+          loggerErrorSpy.calls.reset();
           request({
             method: 'DELETE',
             headers: {
@@ -2666,7 +2670,8 @@ describe('Parse.User testing', () => {
             const b = response.data;
             expect(b.code).toEqual(209);
             expect(b.error).toBe('Permission denied');
-            sanitizedErrorCall.checkMessage('Invalid session token', callCountBefore);
+
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Invalid session token'));
             done();
           });
         });
@@ -3360,8 +3365,8 @@ describe('Parse.User testing', () => {
       sendMail: () => Promise.resolve(),
     };
 
-    let sanitizedErrorCall;
-    let callCountBefore = 0;
+    let logger;
+    let loggerErrorSpy;
 
     const user = new Parse.User();
     user.set({
@@ -3377,11 +3382,12 @@ describe('Parse.User testing', () => {
       publicServerURL: 'http://localhost:8378/1',
     })
       .then(() => {
-        sanitizedErrorCall = getSanitizedErrorCall();
+        logger = require('../lib/logger').default;
+        loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
         return user.signUp();
       })
       .then(() => {
-        callCountBefore = sanitizedErrorCall.callCountBefore();
+        loggerErrorSpy.calls.reset();
         return Parse.User.current().set('emailVerified', true).save();
       })
       .then(() => {
@@ -3390,7 +3396,7 @@ describe('Parse.User testing', () => {
       })
       .catch(err => {
         expect(err.message).toBe('Permission denied');
-        sanitizedErrorCall.checkMessage("Clients aren't allowed to manually update email verification.", callCountBefore);
+        expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining("Clients aren't allowed to manually update email verification."));
 
         done();
       });
@@ -4384,13 +4390,14 @@ describe('login as other user', () => {
   });
 
   it('rejects creating a session for another user without the master key', async done => {
-    const sanitizedErrorCall = getSanitizedErrorCall();
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
 
     await Parse.User.signUp('some_user', 'some_password');
     const userId = Parse.User.current().id;
     await Parse.User.logOut();
 
-    const callCountBefore = sanitizedErrorCall.callCountBefore();
+    loggerErrorSpy.calls.reset();
     try {
       await request({
         method: 'POST',
@@ -4409,7 +4416,7 @@ describe('login as other user', () => {
     } catch (err) {
       expect(err.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
       expect(err.data.error).toBe('Permission denied');
-      sanitizedErrorCall.checkMessage('master key is required', callCountBefore);
+      expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('master key is required'));
     }
 
     const sessionsQuery = new Parse.Query(Parse.Session);

@@ -7,7 +7,6 @@ const Config = require('../lib/Config');
 const Parse = require('parse/node').Parse;
 const rest = require('../lib/rest');
 const request = require('../lib/request');
-const { getSanitizedErrorCall } = require('../lib/TestUtils');
 
 let config;
 let database;
@@ -158,8 +157,8 @@ describe('Installations', () => {
   });
 
   it('should properly fail queying installations', done => {
-    const sanitizedErrorCall = getSanitizedErrorCall();
-    const callCountBefore = sanitizedErrorCall.callCountBefore();
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
 
     const installId = '12345678-abcd-abcd-abcd-123456789abc';
     const device = 'android';
@@ -170,6 +169,7 @@ describe('Installations', () => {
     rest
       .create(config, auth.nobody(config), '_Installation', input)
       .then(() => {
+        loggerErrorSpy.calls.reset();
         const query = new Parse.Query(Parse.Installation);
         return query.find();
       })
@@ -182,7 +182,7 @@ describe('Installations', () => {
         expect(error.message).toBe(
           'Permission denied'
         );
-        sanitizedErrorCall.checkMessage("Clients aren't allowed to perform the find operation on the installation collection.", callCountBefore);
+        expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining("Clients aren't allowed to perform the find operation on the installation collection."));
         done();
       });
   });
