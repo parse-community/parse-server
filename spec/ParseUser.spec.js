@@ -14,9 +14,6 @@ const Config = require('../lib/Config');
 const cryptoUtils = require('../lib/cryptoUtils');
 
 
-
-
-
 describe('allowExpiredAuthDataToken option', () => {
   it('should accept true value', async () => {
     await reconfigureServer({ allowExpiredAuthDataToken: true });
