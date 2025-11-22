@@ -154,36 +154,24 @@ describe('ParseLiveQueryServer', function () {
   });
 
   it('properly passes the CLP to afterSave/afterDelete hook', function (done) {
-    function setPermissionsOnClass(className, permissions, doPut) {
-      const request = require('request');
-      let op = request.post;
-      if (doPut) {
-        op = request.put;
-      }
-      return new Promise((resolve, reject) => {
-        op(
-          {
-            url: Parse.serverURL + '/schemas/' + className,
-            headers: {
-              'X-Parse-Application-Id': Parse.applicationId,
-              'X-Parse-Master-Key': Parse.masterKey,
-            },
-            json: true,
-            body: {
-              classLevelPermissions: permissions,
-            },
-          },
-          (error, response, body) => {
-            if (error) {
-              return reject(error);
-            }
-            if (body.error) {
-              return reject(body);
-            }
-            return resolve(body);
-          }
-        );
+    async function setPermissionsOnClass(className, permissions, doPut) {
+      const method = doPut ? 'PUT' : 'POST';
+      const response = await fetch(Parse.serverURL + '/schemas/' + className, {
+        method,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': Parse.masterKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          classLevelPermissions: permissions,
+        }),
       });
+      const body = await response.json();
+      if (body.error) {
+        throw body;
+      }
+      return body;
     }
 
     let saveSpy;
@@ -641,7 +629,7 @@ describe('ParseLiveQueryServer', function () {
 
   it('can forward event to cloud code', function () {
     const cloudCodeHandler = {
-      handler: () => {},
+      handler: () => { },
     };
     const spy = spyOn(cloudCodeHandler, 'handler').and.callThrough();
     Parse.Cloud.onLiveQueryEvent(cloudCodeHandler.handler);
@@ -1932,36 +1920,24 @@ describe('ParseLiveQueryServer', function () {
 
 describe('LiveQueryController', () => {
   it('properly passes the CLP to afterSave/afterDelete hook', function (done) {
-    function setPermissionsOnClass(className, permissions, doPut) {
-      const request = require('request');
-      let op = request.post;
-      if (doPut) {
-        op = request.put;
-      }
-      return new Promise((resolve, reject) => {
-        op(
-          {
-            url: Parse.serverURL + '/schemas/' + className,
-            headers: {
-              'X-Parse-Application-Id': Parse.applicationId,
-              'X-Parse-Master-Key': Parse.masterKey,
-            },
-            json: true,
-            body: {
-              classLevelPermissions: permissions,
-            },
-          },
-          (error, response, body) => {
-            if (error) {
-              return reject(error);
-            }
-            if (body.error) {
-              return reject(body);
-            }
-            return resolve(body);
-          }
-        );
+    async function setPermissionsOnClass(className, permissions, doPut) {
+      const method = doPut ? 'PUT' : 'POST';
+      const response = await fetch(Parse.serverURL + '/schemas/' + className, {
+        method,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': Parse.masterKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          classLevelPermissions: permissions,
+        }),
       });
+      const body = await response.json();
+      if (body.error) {
+        throw body;
+      }
+      return body;
     }
 
     let saveSpy;

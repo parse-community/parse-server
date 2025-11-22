@@ -8,7 +8,7 @@
 // * getValidPushTypes()
 // * send(devices, installations, pushStatus)
 //
-// Default is ParsePushAdapter, which uses GCM for
+// Default is ParsePushAdapter, which uses FCM for
 // android push and APNS for ios push.
 
 /**
