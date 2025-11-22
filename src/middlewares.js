@@ -80,7 +80,7 @@ export async function handleParseHeaders(req, res, next) {
       if (Object.prototype.toString.call(context) !== '[object Object]') {
         throw 'Context is not an object';
       }
-    } catch (e) {
+    } catch {
       return malformedContext(req, res);
     }
   }
@@ -127,7 +127,7 @@ export async function handleParseHeaders(req, res, next) {
       // to provide x-parse-app-id in header and parse a binary file will fail
       try {
         req.body = JSON.parse(req.body);
-      } catch (e) {
+      } catch {
         return invalidRequest(req, res);
       }
       fileViaJSON = true;
@@ -174,7 +174,7 @@ export async function handleParseHeaders(req, res, next) {
             if (Object.prototype.toString.call(info.context) !== '[object Object]') {
               throw 'Context is not an object';
             }
-          } catch (e) {
+          } catch {
             return malformedContext(req, res);
           }
         }
