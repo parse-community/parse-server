@@ -3307,19 +3307,19 @@ describe('afterFind hooks', () => {
     }).not.toThrow('Only the _User class is allowed for the beforeLogin and afterLogin triggers');
     expect(() => {
       Parse.Cloud.beforeLogin('SomeClass', () => { });
-    }).toThrow('Only the _User class is allowed for the beforeLogin and afterLogin triggers');
+    }).toThrow('Only the _User class is allowed for the beforeLogin, afterLogin, and beforePasswordResetRequest triggers');
     expect(() => {
       Parse.Cloud.afterLogin(() => { });
-    }).not.toThrow('Only the _User class is allowed for the beforeLogin and afterLogin triggers');
+    }).not.toThrow('Only the _User class is allowed for the beforeLogin, afterLogin, and beforePasswordResetRequest triggers');
     expect(() => {
       Parse.Cloud.afterLogin('_User', () => { });
-    }).not.toThrow('Only the _User class is allowed for the beforeLogin and afterLogin triggers');
+    }).not.toThrow('Only the _User class is allowed for the beforeLogin, afterLogin, and beforePasswordResetRequest triggers');
     expect(() => {
       Parse.Cloud.afterLogin(Parse.User, () => { });
-    }).not.toThrow('Only the _User class is allowed for the beforeLogin and afterLogin triggers');
+    }).not.toThrow('Only the _User class is allowed for the beforeLogin, afterLogin, and beforePasswordResetRequest triggers');
     expect(() => {
       Parse.Cloud.afterLogin('SomeClass', () => { });
-    }).toThrow('Only the _User class is allowed for the beforeLogin and afterLogin triggers');
+    }).toThrow('Only the _User class is allowed for the beforeLogin, afterLogin, and beforePasswordResetRequest triggers');
     expect(() => {
       Parse.Cloud.afterLogout(() => { });
     }).not.toThrow();
@@ -4654,5 +4654,159 @@ describe('sendEmail', () => {
     expect(logger.error).toHaveBeenCalledWith(
       'Failed to send email because no mail adapter is configured for Parse Server.'
     );
+  });
+});
+
+describe('beforePasswordResetRequest hook', () => {
+  it('should run beforePasswordResetRequest with valid user', async () => {
+    let hit = 0;
+    let sendPasswordResetEmailCalled = false;
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: () => {
+        sendPasswordResetEmailCalled = true;
+      },
+      sendMail: () => {},
+    };
+
+    await reconfigureServer({
+      appName: 'test',
+      emailAdapter: emailAdapter,
+      publicServerURL: 'http://localhost:8378/1',
+    });
+
+    Parse.Cloud.beforePasswordResetRequest(req => {
+      hit++;
+      expect(req.object).toBeDefined();
+      expect(req.object.get('email')).toEqual('test@example.com');
+      expect(req.object.get('username')).toEqual('testuser');
+    });
+
+    const user = new Parse.User();
+    user.setUsername('testuser');
+    user.setPassword('password');
+    user.set('email', 'test@example.com');
+    await user.signUp();
+
+    await Parse.User.requestPasswordReset('test@example.com');
+    expect(hit).toBe(1);
+    expect(sendPasswordResetEmailCalled).toBe(true);
+  });
+
+  it('should be able to block password reset request if an error is thrown', async () => {
+    let hit = 0;
+    let sendPasswordResetEmailCalled = false;
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: () => {
+        sendPasswordResetEmailCalled = true;
+      },
+      sendMail: () => {},
+    };
+
+    await reconfigureServer({
+      appName: 'test',
+      emailAdapter: emailAdapter,
+      publicServerURL: 'http://localhost:8378/1',
+    });
+
+    Parse.Cloud.beforePasswordResetRequest(req => {
+      hit++;
+      throw new Error('password reset blocked');
+    });
+
+    const user = new Parse.User();
+    user.setUsername('testuser');
+    user.setPassword('password');
+    user.set('email', 'test@example.com');
+    await user.signUp();
+
+    try {
+      await Parse.User.requestPasswordReset('test@example.com');
+      throw new Error('should not have sent password reset email.');
+    } catch (e) {
+      expect(e.message).toBe('password reset blocked');
+    }
+    expect(hit).toBe(1);
+    expect(sendPasswordResetEmailCalled).toBe(false);
+  });
+
+  it('should not run beforePasswordResetRequest if email does not exist', async () => {
+    let hit = 0;
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: () => {},
+      sendMail: () => {},
+    };
+
+    await reconfigureServer({
+      appName: 'test',
+      emailAdapter: emailAdapter,
+      publicServerURL: 'http://localhost:8378/1',
+    });
+
+    Parse.Cloud.beforePasswordResetRequest(req => {
+      hit++;
+    });
+
+    await Parse.User.requestPasswordReset('nonexistent@example.com');
+
+    expect(hit).toBe(0);
+  });
+
+  it('should have expected data in request in beforePasswordResetRequest', async () => {
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: () => {},
+      sendMail: () => {},
+    };
+
+    await reconfigureServer({
+      appName: 'test',
+      emailAdapter: emailAdapter,
+      publicServerURL: 'http://localhost:8378/1',
+    });
+
+    const base64 = 'V29ya2luZyBhdCBQYXJzZSBpcyBncmVhdCE=';
+    const file = new Parse.File('myfile.txt', { base64 });
+    await file.save();
+
+    Parse.Cloud.beforePasswordResetRequest(req => {
+      expect(req.object).toBeDefined();
+      expect(req.object.get('email')).toBeDefined();
+      expect(req.object.get('email')).toBe('test2@example.com');
+      expect(req.object.get('file')).toBeDefined();
+      expect(req.object.get('file')).toBeInstanceOf(Parse.File);
+      expect(req.object.get('file').name()).toContain('myfile.txt');
+      expect(req.headers).toBeDefined();
+      expect(req.ip).toBeDefined();
+      expect(req.installationId).toBeDefined();
+      expect(req.context).toBeDefined();
+      expect(req.config).toBeDefined();
+    });
+
+    const user = new Parse.User();
+    user.setUsername('testuser2');
+    user.setPassword('password');
+    user.set('email', 'test2@example.com');
+    user.set('file', file);
+    await user.signUp();
+
+    await Parse.User.requestPasswordReset('test2@example.com');
+  });
+
+  it('should validate that only _User class is allowed for beforePasswordResetRequest', () => {
+    expect(() => {
+      Parse.Cloud.beforePasswordResetRequest('SomeClass', () => { });
+    }).toThrow('Only the _User class is allowed for the beforeLogin, afterLogin, and beforePasswordResetRequest triggers');
+    expect(() => {
+      Parse.Cloud.beforePasswordResetRequest(() => { });
+    }).not.toThrow();
+    expect(() => {
+      Parse.Cloud.beforePasswordResetRequest('_User', () => { });
+    }).not.toThrow();
+    expect(() => {
+      Parse.Cloud.beforePasswordResetRequest(Parse.User, () => { });
+    }).not.toThrow();
   });
 });

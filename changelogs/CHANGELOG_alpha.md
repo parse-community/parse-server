@@ -1,3 +1,10 @@
+# [8.5.0-alpha.12](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.11...8.5.0-alpha.12) (2025-11-19)
+
+
+### Features
+
+* Add `beforePasswordResetRequest` hook ([#9906](https://github.com/parse-community/parse-server/issues/9906)) ([94cee5b](https://github.com/parse-community/parse-server/commit/94cee5bfafca10c914c73cf17fcdb627a9f0837b))
+
 # [8.5.0-alpha.11](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.10...8.5.0-alpha.11) (2025-11-17)
 
 
