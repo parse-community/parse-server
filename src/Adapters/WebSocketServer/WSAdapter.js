@@ -13,7 +13,7 @@ export class WSAdapter extends WSSAdapter {
 
   onListen() {}
   onConnection(ws) {}
-  onError(eror) {}
+  onError(error) {}
   start() {
     const wss = new WebSocketServer({ server: this.options.server });
     wss.on('listening', this.onListen);
