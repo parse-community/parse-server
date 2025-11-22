@@ -350,6 +350,48 @@ ParseCloud.afterLogout = function (handler) {
 };
 
 /**
+ * Registers the before password reset request function.
+ *
+ * **Available in Cloud Code only.**
+ *
+ * This function provides control in validating a password reset request
+ * before the reset email is sent. It is triggered after the user is found
+ * by email, but before the reset token is generated and the email is sent.
+ *
+ * Code example:
+ *
+ * ```
+ * Parse.Cloud.beforePasswordResetRequest(request => {
+ *   if (request.object.get('banned')) {
+ *     throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User is banned.');
+ *   }
+ * });
+ * ```
+ *
+ * @method beforePasswordResetRequest
+ * @name Parse.Cloud.beforePasswordResetRequest
+ * @param {Function} func The function to run before a password reset request. This function can be async and should take one parameter a {@link Parse.Cloud.TriggerRequest};
+ */
+ParseCloud.beforePasswordResetRequest = function (handler, validationHandler) {
+  let className = '_User';
+  if (typeof handler === 'string' || isParseObjectConstructor(handler)) {
+    // validation will occur downstream, this is to maintain internal
+    // code consistency with the other hook types.
+    className = triggers.getClassName(handler);
+    handler = arguments[1];
+    validationHandler = arguments.length >= 2 ? arguments[2] : null;
+  }
+  triggers.addTrigger(triggers.Types.beforePasswordResetRequest, className, handler, Parse.applicationId);
+  if (validationHandler && validationHandler.rateLimit) {
+    addRateLimit(
+      { requestPath: `/requestPasswordReset`, requestMethods: 'POST', ...validationHandler.rateLimit },
+      Parse.applicationId,
+      true
+    );
+  }
+};
+
+/**
  * Registers an after save function.
  *
  * **Available in Cloud Code only.**

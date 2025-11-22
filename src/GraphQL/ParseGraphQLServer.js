@@ -98,31 +98,48 @@ class ParseGraphQLServer {
     if (schemaRef === newSchemaRef && this._server) {
       return this._server;
     }
-    const { schema, context } = await this._getGraphQLOptions();
-    const plugins = [
-      ApolloServerPluginCacheControlDisabled(),
-      IntrospectionControlPlugin(this.config.graphQLPublicIntrospection),
-    ];
-
-    // Add complexity validation plugin if configured
-    if (this.parseServer.config.maxGraphQLQueryComplexity) {
-      plugins.push(createComplexityValidationPlugin(this.parseServer.config));
+    // It means a parallel _getServer call is already in progress
+    if (this._schemaRefMutex === newSchemaRef) {
+      return this._server;
     }
+    // Update the schema ref mutex to avoid parallel _getServer calls
+    this._schemaRefMutex = newSchemaRef;
+    const createServer = async () => {
+      try {
+        const { schema, context } = await this._getGraphQLOptions();
+        const plugins = [
+          ApolloServerPluginCacheControlDisabled(),
+          IntrospectionControlPlugin(this.config.graphQLPublicIntrospection),
+        ];
 
-    const apollo = new ApolloServer({
-      csrfPrevention: {
-        // See https://www.apollographql.com/docs/router/configuration/csrf/
-        // needed since we use graphql upload
-        requestHeaders: ['X-Parse-Application-Id'],
-      },
-      introspection: this.config.graphQLPublicIntrospection,
-      plugins,
-      schema,
-    });
-    await apollo.start();
-    this._server = expressMiddleware(apollo, {
-      context,
-    });
+        // Add complexity validation plugin if configured
+        if (this.parseServer.config.maxGraphQLQueryComplexity) {
+          plugins.push(createComplexityValidationPlugin(this.parseServer.config));
+        }
+
+        const apollo = new ApolloServer({
+          csrfPrevention: {
+            // See https://www.apollographql.com/docs/router/configuration/csrf/
+            // needed since we use graphql upload
+            requestHeaders: ['X-Parse-Application-Id'],
+          },
+          introspection: this.config.graphQLPublicIntrospection,
+          plugins,
+          schema,
+        });
+        await apollo.start();
+        return expressMiddleware(apollo, {
+          context,
+        });
+      } catch (e) {
+        // Reset all mutexes and forward the error
+        this._server = null;
+        this._schemaRefMutex = null;
+        throw e;
+      }
+    }
+    // Do not await so parallel request will wait the same promise ref
+    this._server = createServer();
     return this._server;
   }
 
