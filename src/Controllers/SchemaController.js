@@ -21,7 +21,6 @@ import SchemaCache from '../Adapters/Cache/SchemaCache';
 import DatabaseController from './DatabaseController';
 import Config from '../Config';
 import { createSanitizedError } from '../Error';
-import defaultLogger from '../logger';
 // @flow-disable-next
 import deepcopy from 'deepcopy';
 import type {

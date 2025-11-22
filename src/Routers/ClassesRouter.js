@@ -4,7 +4,6 @@ import _ from 'lodash';
 import Parse from 'parse/node';
 import { promiseEnsureIdempotency } from '../middlewares';
 import { createSanitizedError } from '../Error';
-import defaultLogger from '../logger';
 
 const ALLOWED_GET_QUERY_KEYS = [
   'keys',
