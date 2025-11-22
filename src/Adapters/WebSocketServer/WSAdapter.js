@@ -1,4 +1,4 @@
-/*eslint no-unused-vars: "off"*/
+/* eslint-disable unused-imports/no-unused-vars */
 import { WSSAdapter } from './WSSAdapter';
 const WebSocketServer = require('ws').Server;
 
@@ -13,7 +13,7 @@ export class WSAdapter extends WSSAdapter {
 
   onListen() {}
   onConnection(ws) {}
-  onError(error) {}
+  onError(eror) {}
   start() {
     const wss = new WebSocketServer({ server: this.options.server });
     wss.on('listening', this.onListen);

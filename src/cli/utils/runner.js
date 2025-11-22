@@ -20,7 +20,7 @@ function logStartupOptions(options) {
     if (typeof value === 'object') {
       try {
         value = JSON.stringify(value);
-      } catch (e) {
+      } catch {
         if (value && value.constructor && value.constructor.name) {
           value = value.constructor.name;
         }

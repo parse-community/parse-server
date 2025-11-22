@@ -310,7 +310,7 @@ export class FilesRouter {
       const data = await filesController.getMetadata(filename);
       res.status(200);
       res.json(data);
-    } catch (e) {
+    } catch {
       res.status(200);
       res.json({});
     }
