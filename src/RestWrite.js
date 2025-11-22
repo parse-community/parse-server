@@ -18,7 +18,6 @@ import _ from 'lodash';
 import logger from './logger';
 import { requiredColumns } from './Controllers/SchemaController';
 import { createSanitizedError } from './Error';
-import defaultLogger from './logger';
 
 // query and data are both provided in REST API format. So data
 // types are encoded by plain old objects.
@@ -201,11 +200,9 @@ RestWrite.prototype.validateClientClassCreation = function () {
       .then(schemaController => schemaController.hasClass(this.className))
       .then(hasClass => {
         if (hasClass !== true) {
-          const log = (this.config && this.config.loggerController) || defaultLogger;
           throw createSanitizedError(
             Parse.Error.OPERATION_FORBIDDEN,
             'This user is not allowed to access non-existent class: ' + this.className,
-            log
           );
         }
       });

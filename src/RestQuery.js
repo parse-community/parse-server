@@ -8,7 +8,6 @@ const { continueWhile } = require('parse/lib/node/promiseUtils');
 const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt', 'ACL'];
 const { enforceRoleSecurity } = require('./SharedRest');
 const { createSanitizedError } = require('./Error');
-const defaultLogger = require('./logger').default;
 
 // restOptions can include:
 //   skip
