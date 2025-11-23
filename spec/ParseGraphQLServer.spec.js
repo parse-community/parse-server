@@ -7080,6 +7080,33 @@ describe('ParseGraphQLServer', () => {
         });
       });
 
+      describe("Config Queries", () => {
+        fit("should return the config value for a specific parameter", async () => {
+          const query = gql`
+            query ConfigValue($paramName: String!) {
+              configValue(paramName: $paramName) {
+                value
+                source
+              }
+            }
+          `;
+
+          const result = await apolloClient.query({
+            query,
+            variables: { paramName: 'publicParam' },
+            context: {
+              headers: {
+                'X-Parse-Master-Key': 'test',
+              },
+            },
+          });
+
+          expect(result.errors).toBeUndefined();
+          expect(result.data.configValue.value).toEqual('publicValue');
+          expect(result.data.configValue.source).toEqual('params');
+        })
+      })
+
       describe('Users Queries', () => {
         it('should return current logged user', async () => {
           const userName = 'user1',
