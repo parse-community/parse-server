@@ -678,7 +678,7 @@ module.exports.RateLimitOptions = {
   requestPath: {
     env: 'PARSE_SERVER_RATE_LIMIT_REQUEST_PATH',
     help:
-      'The path of the API route to be rate limited. Route paths, in combination with a request method, define the endpoints at which requests can be made. Route paths can be strings, string patterns, or regular expression. See: https://expressjs.com/en/guide/routing.html',
+      'The path of the API route to be rate limited. Route paths, in combination with a request method, define the endpoints at which requests can be made. Route paths can be strings or string patterns following path-to-regexp v8 syntax. Wildcards must be named (e.g., `/*path` instead of `/*`). Examples: `/functions/*path`, `/classes/MyClass/*path`, `/*path`. See: https://github.com/pillarjs/path-to-regexp',
     required: true,
   },
   requestTimeWindow: {
