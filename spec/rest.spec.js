@@ -11,9 +11,14 @@ let config;
 let database;
 
 describe('rest create', () => {
+  let loggerErrorSpy;
+
   beforeEach(() => {
     config = Config.get('test');
     database = config.database;
+
+    const logger = require('../lib/logger').default;
+    loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
   });
 
   it('handles _id', done => {
@@ -317,6 +322,7 @@ describe('rest create', () => {
     const customConfig = Object.assign({}, config, {
       allowClientClassCreation: false,
     });
+    loggerErrorSpy.calls.reset();
     rest.create(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {}).then(
       () => {
         fail('Should throw an error');
@@ -324,9 +330,8 @@ describe('rest create', () => {
       },
       err => {
         expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
-        expect(err.message).toEqual(
-          'This user is not allowed to access ' + 'non-existent class: ClientClassCreation'
-        );
+        expect(err.message).toEqual('Permission denied');
+        expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('This user is not allowed to access ' + 'non-existent class: ClientClassCreation'));
         done();
       }
     );
@@ -772,6 +777,7 @@ describe('rest create', () => {
   });
 
   it('cannot get object in volatileClasses if not masterKey through pointer', async () => {
+    loggerErrorSpy.calls.reset();
     const masterKeyOnlyClassObject = new Parse.Object('_PushStatus');
     await masterKeyOnlyClassObject.save(null, { useMasterKey: true });
     const obj2 = new Parse.Object('TestObject');
@@ -783,11 +789,13 @@ describe('rest create', () => {
     const query = new Parse.Query('TestObject');
     query.include('pointer');
     await expectAsync(query.get(obj2.id)).toBeRejectedWithError(
-      "Clients aren't allowed to perform the get operation on the _PushStatus collection."
+      'Permission denied'
     );
+    expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining("Clients aren't allowed to perform the get operation on the _PushStatus collection."));
   });
 
   it_id('3ce563bf-93aa-4d0b-9af9-c5fb246ac9fc')(it)('cannot get object in _GlobalConfig if not masterKey through pointer', async () => {
+    loggerErrorSpy.calls.reset();
     await Parse.Config.save({ privateData: 'secret' }, { privateData: true });
     const obj2 = new Parse.Object('TestObject');
     obj2.set('globalConfigPointer', {
@@ -799,8 +807,9 @@ describe('rest create', () => {
     const query = new Parse.Query('TestObject');
     query.include('globalConfigPointer');
     await expectAsync(query.get(obj2.id)).toBeRejectedWithError(
-      "Clients aren't allowed to perform the get operation on the _GlobalConfig collection."
+      'Permission denied'
     );
+    expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining("Clients aren't allowed to perform the get operation on the _GlobalConfig collection."));
   });
 
   it('locks down session', done => {
@@ -945,7 +954,16 @@ describe('rest update', () => {
 });
 
 describe('read-only masterKey', () => {
+  let loggerErrorSpy;
+  let logger;
+
+  beforeEach(() => {
+    logger = require('../lib/logger').default;
+    loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+  });
+
   it('properly throws on rest.create, rest.update and rest.del', () => {
+    loggerErrorSpy.calls.reset();
     const config = Config.get('test');
     const readOnly = auth.readOnly(config);
     expect(() => {
@@ -953,9 +971,10 @@ describe('read-only masterKey', () => {
     }).toThrow(
       new Parse.Error(
         Parse.Error.OPERATION_FORBIDDEN,
-        `read-only masterKey isn't allowed to perform the create operation.`
+        'Permission denied'
       )
     );
+    expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining("read-only masterKey isn't allowed to perform the create operation."));
     expect(() => {
       rest.update(config, readOnly, 'AnObject', {});
     }).toThrow();
@@ -968,6 +987,9 @@ describe('read-only masterKey', () => {
     await reconfigureServer({
       readOnlyMasterKey: 'yolo-read-only',
     });
+    // Need to be re required because reconfigureServer resets the logger
+    const logger2 = require('../lib/logger').default;
+    loggerErrorSpy = spyOn(logger2, 'error').and.callThrough();
     try {
       await request({
         url: `${Parse.serverURL}/classes/MyYolo`,
@@ -983,8 +1005,9 @@ describe('read-only masterKey', () => {
     } catch (res) {
       expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
       expect(res.data.error).toBe(
-        "read-only masterKey isn't allowed to perform the create operation."
+        'Permission denied'
       );
+      expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining("read-only masterKey isn't allowed to perform the create operation."));
     }
     await reconfigureServer();
   });
@@ -1012,18 +1035,18 @@ describe('read-only masterKey', () => {
   });
 
   it('should throw when trying to create RestWrite', () => {
+    loggerErrorSpy.calls.reset();
     const config = Config.get('test');
     expect(() => {
       new RestWrite(config, auth.readOnly(config));
     }).toThrow(
-      new Parse.Error(
-        Parse.Error.OPERATION_FORBIDDEN,
-        'Cannot perform a write operation when using readOnlyMasterKey'
-      )
+      new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
     );
+    expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining("Cannot perform a write operation when using readOnlyMasterKey"));
   });
 
   it('should throw when trying to create schema', done => {
+    loggerErrorSpy.calls.reset();
     request({
       method: 'POST',
       url: `${Parse.serverURL}/schemas`,
@@ -1037,12 +1060,14 @@ describe('read-only masterKey', () => {
       .then(done.fail)
       .catch(res => {
         expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
-        expect(res.data.error).toBe("read-only masterKey isn't allowed to create a schema.");
+        expect(res.data.error).toBe('Permission denied');
+        expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining("read-only masterKey isn't allowed to create a schema."));
         done();
       });
   });
 
   it('should throw when trying to create schema with a name', done => {
+    loggerErrorSpy.calls.reset();
     request({
       url: `${Parse.serverURL}/schemas/MyClass`,
       method: 'POST',
@@ -1056,12 +1081,14 @@ describe('read-only masterKey', () => {
       .then(done.fail)
       .catch(res => {
         expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
-        expect(res.data.error).toBe("read-only masterKey isn't allowed to create a schema.");
+        expect(res.data.error).toBe('Permission denied');
+        expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining("read-only masterKey isn't allowed to create a schema."));
         done();
       });
   });
 
   it('should throw when trying to update schema', done => {
+    loggerErrorSpy.calls.reset();
     request({
       url: `${Parse.serverURL}/schemas/MyClass`,
       method: 'PUT',
@@ -1075,12 +1102,14 @@ describe('read-only masterKey', () => {
       .then(done.fail)
       .catch(res => {
         expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
-        expect(res.data.error).toBe("read-only masterKey isn't allowed to update a schema.");
+        expect(res.data.error).toBe('Permission denied');
+        expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining("read-only masterKey isn't allowed to update a schema."));
         done();
       });
   });
 
   it('should throw when trying to delete schema', done => {
+    loggerErrorSpy.calls.reset();
     request({
       url: `${Parse.serverURL}/schemas/MyClass`,
       method: 'DELETE',
@@ -1094,12 +1123,14 @@ describe('read-only masterKey', () => {
       .then(done.fail)
       .catch(res => {
         expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
-        expect(res.data.error).toBe("read-only masterKey isn't allowed to delete a schema.");
+        expect(res.data.error).toBe('Permission denied');
+        expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining("read-only masterKey isn't allowed to delete a schema."));
         done();
       });
   });
 
   it('should throw when trying to update the global config', done => {
+    loggerErrorSpy.calls.reset();
     request({
       url: `${Parse.serverURL}/config`,
       method: 'PUT',
@@ -1113,12 +1144,14 @@ describe('read-only masterKey', () => {
       .then(done.fail)
       .catch(res => {
         expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
-        expect(res.data.error).toBe("read-only masterKey isn't allowed to update the config.");
+        expect(res.data.error).toBe('Permission denied');
+        expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining("read-only masterKey isn't allowed to update the config."));
         done();
       });
   });
 
   it('should throw when trying to send push', done => {
+    loggerErrorSpy.calls.reset();
     request({
       url: `${Parse.serverURL}/push`,
       method: 'POST',
@@ -1133,8 +1166,9 @@ describe('read-only masterKey', () => {
       .catch(res => {
         expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
         expect(res.data.error).toBe(
-          "read-only masterKey isn't allowed to send push notifications."
+          'Permission denied'
         );
+        expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining("read-only masterKey isn't allowed to send push notifications."));
         done();
       });
   });

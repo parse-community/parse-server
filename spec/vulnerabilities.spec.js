@@ -13,9 +13,13 @@ describe('Vulnerabilities', () => {
     });
 
     it('denies user creation with poisoned object ID', async () => {
+      const logger = require('../lib/logger').default;
+      const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+      loggerErrorSpy.calls.reset();
       await expectAsync(
         new Parse.User({ id: 'role:a', username: 'a', password: '123' }).save()
-      ).toBeRejectedWith(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid object ID.'));
+      ).toBeRejectedWith(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied'));
+      expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining("Invalid object ID."));
     });
 
     describe('existing sessions for users with poisoned object ID', () => {

@@ -13,6 +13,7 @@ var RestQuery = require('./RestQuery');
 var RestWrite = require('./RestWrite');
 var triggers = require('./triggers');
 const { enforceRoleSecurity } = require('./SharedRest');
+const { createSanitizedError } = require('./Error');
 
 function checkTriggers(className, config, types) {
   return types.some(triggerType => {
@@ -195,7 +196,7 @@ function del(config, auth, className, objectId, context) {
             firstResult.className = className;
             if (className === '_Session' && !auth.isMaster && !auth.isMaintenance) {
               if (!auth.user || firstResult.user.objectId !== auth.user.id) {
-                throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+                throw createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
               }
             }
             var cacheAdapter = config.cacheController;
@@ -326,7 +327,7 @@ function handleSessionMissingError(error, className, auth) {
     !auth.isMaster &&
     !auth.isMaintenance
   ) {
-    throw new Parse.Error(Parse.Error.SESSION_MISSING, 'Insufficient auth.');
+    throw createSanitizedError(Parse.Error.SESSION_MISSING, 'Insufficient auth.');
   }
   throw error;
 }

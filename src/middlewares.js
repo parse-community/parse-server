@@ -13,6 +13,7 @@ import { pathToRegexp } from 'path-to-regexp';
 import RedisStore from 'rate-limit-redis';
 import { createClient } from 'redis';
 import { BlockList, isIPv4 } from 'net';
+import { createSanitizedHttpError } from './Error';
 
 export const DEFAULT_ALLOWED_HEADERS =
   'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, X-Parse-Request-Id, Content-Type, Pragma, Cache-Control';
@@ -501,8 +502,9 @@ export function handleParseErrors(err, req, res, next) {
 
 export function enforceMasterKeyAccess(req, res, next) {
   if (!req.auth.isMaster) {
-    res.status(403);
-    res.end('{"error":"unauthorized: master key is required"}');
+    const error = createSanitizedHttpError(403, 'unauthorized: master key is required');
+    res.status(error.status);
+    res.end(`{"error":"${error.message}"}`);
     return;
   }
   next();
@@ -510,10 +512,7 @@ export function enforceMasterKeyAccess(req, res, next) {
 
 export function promiseEnforceMasterKeyAccess(request) {
   if (!request.auth.isMaster) {
-    const error = new Error();
-    error.status = 403;
-    error.message = 'unauthorized: master key is required';
-    throw error;
+    throw createSanitizedHttpError(403, 'unauthorized: master key is required');
   }
   return Promise.resolve();
 }
