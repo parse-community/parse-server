@@ -1,3 +1,10 @@
+# [8.5.0-alpha.13](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.12...8.5.0-alpha.13) (2025-11-23)
+
+
+### Bug Fixes
+
+* Server internal error details leaking in error messages returned to clients ([#9937](https://github.com/parse-community/parse-server/issues/9937)) ([50edb5a](https://github.com/parse-community/parse-server/commit/50edb5ab4bb4a6ce474bfb7cf159d918933753b8))
+
 # [8.5.0-alpha.12](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.11...8.5.0-alpha.12) (2025-11-19)
 
 
