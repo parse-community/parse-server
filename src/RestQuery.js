@@ -52,7 +52,7 @@ async function RestQuery({
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'bad query type');
   }
   const isGet = method === RestQuery.Method.get;
-  enforceRoleSecurity(method, className, auth, config);
+  enforceRoleSecurity(method, className, auth);
   const result = runBeforeFind
     ? await triggers.maybeRunQueryTrigger(
       triggers.Types.beforeFind,
