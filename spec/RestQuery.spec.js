@@ -5,7 +5,6 @@ const Config = require('../lib/Config');
 const rest = require('../lib/rest');
 const RestQuery = require('../lib/RestQuery');
 const request = require('../lib/request');
-
 const querystring = require('querystring');
 
 let config;
@@ -155,9 +154,13 @@ describe('rest query', () => {
   });
 
   it('query non-existent class when disabled client class creation', done => {
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+
     const customConfig = Object.assign({}, config, {
       allowClientClassCreation: false,
     });
+    loggerErrorSpy.calls.reset();
     rest.find(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {}).then(
       () => {
         fail('Should throw an error');
@@ -165,9 +168,8 @@ describe('rest query', () => {
       },
       err => {
         expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
-        expect(err.message).toEqual(
-          'This user is not allowed to access ' + 'non-existent class: ClientClassCreation'
-        );
+        expect(err.message).toEqual('Permission denied');
+        expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('This user is not allowed to access ' + 'non-existent class: ClientClassCreation'));
         done();
       }
     );
@@ -243,7 +245,7 @@ describe('rest query', () => {
       expectAsync(new Parse.Query('Test').exists('zip').find()).toBeRejectedWith(
         new Parse.Error(
           Parse.Error.OPERATION_FORBIDDEN,
-          'This user is not allowed to query zip on class Test'
+          'Permission denied'
         )
       ),
     ]);

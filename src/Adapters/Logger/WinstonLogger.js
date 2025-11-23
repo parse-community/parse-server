@@ -42,7 +42,7 @@ function configureTransports(options) {
         parseServerError.name = 'parse-server-error';
         transports.push(parseServerError);
       }
-    } catch (e) {
+    } catch {
       /* */
     }
 
@@ -86,7 +86,7 @@ export function configureLogger({
     }
     try {
       fs.mkdirSync(logsFolder);
-    } catch (e) {
+    } catch {
       /* */
     }
   }

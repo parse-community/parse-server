@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "8.5.0-alpha.12",
+  "version": "8.5.0-alpha.14",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -87,6 +87,7 @@
     "deep-diff": "1.0.2",
     "eslint": "9.27.0",
     "eslint-plugin-expect-type": "0.6.2",
+    "eslint-plugin-unused-imports": "4.3.0",
     "form-data": "4.0.4",
     "globals": "16.2.0",
     "graphql-tag": "2.12.6",

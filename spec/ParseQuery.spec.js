@@ -4670,6 +4670,91 @@ describe('Parse.Query testing', () => {
       .catch(done.fail);
   });
 
+  it('includeAll handles circular pointer references', async () => {
+    // Create two objects that reference each other
+    const objA = new TestObject();
+    const objB = new TestObject();
+
+    objA.set('name', 'Object A');
+    objB.set('name', 'Object B');
+
+    // Save them first
+    await Parse.Object.saveAll([objA, objB]);
+
+    // Create circular references: A -> B -> A
+    objA.set('ref', objB);
+    objB.set('ref', objA);
+
+    await Parse.Object.saveAll([objA, objB]);
+
+    // Query with includeAll
+    const query = new Parse.Query('TestObject');
+    query.equalTo('objectId', objA.id);
+    query.includeAll();
+
+    const results = await query.find();
+
+    // Verify the object is returned
+    expect(results.length).toBe(1);
+    const resultA = results[0];
+    expect(resultA.get('name')).toBe('Object A');
+
+    // Verify the immediate reference is included (1 level deep)
+    const refB = resultA.get('ref');
+    expect(refB).toBeDefined();
+    expect(refB.get('name')).toBe('Object B');
+
+    // Verify that includeAll only includes 1 level deep
+    // B's pointer back to A should exist as an object but without full data
+    const refBackToA = refB.get('ref');
+    expect(refBackToA).toBeDefined();
+    expect(refBackToA.id).toBe(objA.id);
+
+    // The circular reference exists but is NOT fully populated
+    // (name field is undefined because it's not included at this depth)
+    expect(refBackToA.get('name')).toBeUndefined();
+
+    // Verify using toJSON that it's stored as a pointer
+    const refBackToAJSON = refB.toJSON().ref;
+    expect(refBackToAJSON).toBeDefined();
+    expect(refBackToAJSON.__type).toBe('Pointer');
+    expect(refBackToAJSON.className).toBe('TestObject');
+    expect(refBackToAJSON.objectId).toBe(objA.id);
+  });
+
+  it('includeAll handles self-referencing pointer', async () => {
+    // Create an object that points to itself
+    const selfRef = new TestObject();
+    selfRef.set('name', 'Self-Referencing');
+
+    await selfRef.save();
+
+    // Make it point to itself
+    selfRef.set('ref', selfRef);
+    await selfRef.save();
+
+    // Query with includeAll
+    const query = new Parse.Query('TestObject');
+    query.equalTo('objectId', selfRef.id);
+    query.includeAll();
+
+    const results = await query.find();
+
+    // Verify the object is returned
+    expect(results.length).toBe(1);
+    const result = results[0];
+    expect(result.get('name')).toBe('Self-Referencing');
+
+    // Verify the self-reference is included (since it's at the first level)
+    const ref = result.get('ref');
+    expect(ref).toBeDefined();
+    expect(ref.id).toBe(selfRef.id);
+
+    // The self-reference should be fully populated at the first level
+    // because includeAll includes all pointer fields at the immediate level
+    expect(ref.get('name')).toBe('Self-Referencing');
+  });
+
   it('select nested keys 2 level without include (issue #3185)', function (done) {
     const Foobar = new Parse.Object('Foobar');
     const BarBaz = new Parse.Object('Barbaz');

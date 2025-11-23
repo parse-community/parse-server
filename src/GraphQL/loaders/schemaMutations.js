@@ -6,6 +6,7 @@ import * as schemaTypes from './schemaTypes';
 import { transformToParse, transformToGraphQL } from '../transformers/schemaFields';
 import { enforceMasterKeyAccess } from '../parseGraphQLUtils';
 import { getClass } from './schemaQueries';
+import { createSanitizedError } from '../../Error';
 
 const load = parseGraphQLSchema => {
   const createClassMutation = mutationWithClientMutationId({
@@ -33,9 +34,9 @@ const load = parseGraphQLSchema => {
         enforceMasterKeyAccess(auth);
 
         if (auth.isReadOnly) {
-          throw new Parse.Error(
+          throw createSanitizedError(
             Parse.Error.OPERATION_FORBIDDEN,
-            "read-only masterKey isn't allowed to create a schema."
+            "read-only masterKey isn't allowed to create a schema.",
           );
         }
 
@@ -82,7 +83,7 @@ const load = parseGraphQLSchema => {
         enforceMasterKeyAccess(auth);
 
         if (auth.isReadOnly) {
-          throw new Parse.Error(
+          throw createSanitizedError(
             Parse.Error.OPERATION_FORBIDDEN,
             "read-only masterKey isn't allowed to update a schema."
           );
@@ -133,9 +134,9 @@ const load = parseGraphQLSchema => {
         enforceMasterKeyAccess(auth);
 
         if (auth.isReadOnly) {
-          throw new Parse.Error(
+          throw createSanitizedError(
             Parse.Error.OPERATION_FORBIDDEN,
-            "read-only masterKey isn't allowed to delete a schema."
+            "read-only masterKey isn't allowed to delete a schema.",
           );
         }
 
