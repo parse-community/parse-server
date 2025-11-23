@@ -699,7 +699,7 @@ export class Config {
               `  Old: "/functions/*" → New: "/functions/*path"\n` +
               `  Old: "/classes/*" → New: "/classes/*path"\n` +
               `  Old: "*" → New: "*path"\n` +
-              `See: https://github.com/pillarjs/path-to-regexp#usage`;
+              `See parameter name on the express migration guide.`;
       }
 
       // Validate that the path is valid path-to-regexp syntax
