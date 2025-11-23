@@ -149,7 +149,7 @@ export class ClassesRouter extends PromiseRouter {
     for (const [key, value] of _.entries(query)) {
       try {
         json[key] = JSON.parse(value);
-      } catch (e) {
+      } catch {
         json[key] = value;
       }
     }

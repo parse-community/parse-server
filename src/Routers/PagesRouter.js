@@ -432,7 +432,7 @@ export class PagesRouter extends PromiseRouter {
     let data;
     try {
       data = await this.readFile(path);
-    } catch (e) {
+    } catch {
       return this.notFound();
     }
 
@@ -474,7 +474,7 @@ export class PagesRouter extends PromiseRouter {
     let data;
     try {
       data = await this.readFile(path);
-    } catch (e) {
+    } catch {
       return this.notFound();
     }
 
@@ -517,7 +517,7 @@ export class PagesRouter extends PromiseRouter {
     try {
       const json = require(path.resolve('./', this.pagesConfig.localizationJsonPath));
       this.jsonParameters = json;
-    } catch (e) {
+    } catch {
       throw errors.jsonFailedFileLoading;
     }
   }

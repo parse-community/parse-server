@@ -8,7 +8,7 @@ try {
     hash: _bcrypt.hash,
     compare: _bcrypt.verify,
   };
-} catch (e) {
+} catch {
   /* */
 }
 
