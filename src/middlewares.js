@@ -321,7 +321,7 @@ const handleRateLimit = async (req, res, next) => {
   try {
     await Promise.all(
       rateLimits.map(async limit => {
-        const pathExp = new RegExp(limit.path);
+        const pathExp = limit.path.regexp || limit.path;
         if (pathExp.test(req.url)) {
           await limit.handler(req, res, err => {
             if (err) {
@@ -561,10 +561,33 @@ export const addRateLimit = (route, config, cloud) => {
       },
     });
   }
-  let transformPath = route.requestPath.split('/*').join('/(.*)');
-  if (transformPath === '*') {
-    transformPath = '(.*)';
-  }
+  // Transform wildcards to named parameters for path-to-regexp v8
+  // Only transform standalone * (not those already in named params like :id* or *id)
+  let transformPath = route.requestPath;
+  // Replace * that are not part of named parameter syntax
+  // Use a function to check if * is part of a named parameter
+  transformPath = transformPath.replace(/\*/g, (match, offset, string) => {
+    // Check if this * is part of a named parameter (e.g., :id*)
+    // Look backwards to find if there's a : before this * (without a / in between)
+    let isNamedParam = false;
+    for (let i = offset - 1; i >= 0; i--) {
+      if (string[i] === '/') {
+        break; // Found a /, so this * is not part of a named param
+      }
+      if (string[i] === ':') {
+        isNamedParam = true; // Found :, so this * is part of a named param
+        break;
+      }
+    }
+    // Check if * is followed by an identifier (like *id) - this is already a named wildcard
+    const nextChar = offset + 1 < string.length ? string[offset + 1] : null;
+    const isNamedWildcard = nextChar && /[a-zA-Z_$]/.test(nextChar);
+    // Only transform if it's not part of a named parameter and not already a named wildcard
+    if (!isNamedParam && !isNamedWildcard) {
+      return '*path';
+    }
+    return match; // Keep * if it's part of :param* or *id
+  });
   config.rateLimits.push({
     path: pathToRegexp(transformPath),
     handler: rateLimit({
