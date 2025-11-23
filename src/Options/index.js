@@ -377,6 +377,7 @@ export interface RateLimitOptions {
   <li>`user`: rate limit based on the user ID of the request</li>
   <li>`session`: rate limit based on the session token of the request</li>
   </ul>
+  Default is `ip`.
   :DEFAULT: ip */
   zone: ?string;
 }
