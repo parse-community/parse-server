@@ -9,12 +9,13 @@ const classesWithMasterOnlyAccess = [
 const { createSanitizedError } = require('./Error');
 
 // Disallowing access to the _Role collection except by master key
-function enforceRoleSecurity(method, className, auth) {
+function enforceRoleSecurity(method, className, auth, config) {
   if (className === '_Installation' && !auth.isMaster && !auth.isMaintenance) {
     if (method === 'delete' || method === 'find') {
       throw createSanitizedError(
         Parse.Error.OPERATION_FORBIDDEN,
-        `Clients aren't allowed to perform the ${method} operation on the installation collection.`
+        `Clients aren't allowed to perform the ${method} operation on the installation collection.`,
+        config
       );
     }
   }
@@ -27,7 +28,8 @@ function enforceRoleSecurity(method, className, auth) {
   ) {
     throw createSanitizedError(
       Parse.Error.OPERATION_FORBIDDEN,
-      `Clients aren't allowed to perform the ${method} operation on the ${className} collection.`
+      `Clients aren't allowed to perform the ${method} operation on the ${className} collection.`,
+      config
     );
   }
 
@@ -35,7 +37,8 @@ function enforceRoleSecurity(method, className, auth) {
   if (auth.isReadOnly && (method === 'delete' || method === 'create' || method === 'update')) {
     throw createSanitizedError(
       Parse.Error.OPERATION_FORBIDDEN,
-      `read-only masterKey isn't allowed to perform the ${method} operation.`
+      `read-only masterKey isn't allowed to perform the ${method} operation.`,
+      config
     );
   }
 }

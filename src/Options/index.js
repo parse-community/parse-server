@@ -347,6 +347,9 @@ export interface ParseServerOptions {
   rateLimit: ?(RateLimitOptions[]);
   /* Options to customize the request context using inversion of control/dependency injection.*/
   requestContextMiddleware: ?(req: any, res: any, next: any) => void;
+  /* If true, disables sanitizing errors and returns the detailed message instead of "Permission denied".
+  :DEFAULT: false */
+  disableSanitizeError: ?boolean;
 }
 
 export interface RateLimitOptions {

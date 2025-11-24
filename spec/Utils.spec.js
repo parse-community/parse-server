@@ -1,4 +1,5 @@
-const Utils = require('../src/Utils');
+const Utils = require('../lib/Utils');
+const { createSanitizedError, createSanitizedHttpError } = require("../lib/Error")
 
 describe('Utils', () => {
   describe('encodeForUrl', () => {
@@ -171,6 +172,34 @@ describe('Utils', () => {
     it('should handle value of empty string', () => {
       const obj = { database: { name: '' } };
       expect(Utils.getNestedProperty(obj, 'database.name')).toBe('');
+    });
+  });
+
+  describe('createSanitizedError', () => {
+    it('should return "Permission denied" when disableSanitizeError is false or undefined', () => {
+      const config = { disableSanitizeError: false };
+      const error = createSanitizedError(Parse.Error.OPERATION_FORBIDDEN, 'Detailed error message', config);
+      expect(error.message).toBe('Permission denied');
+    });
+
+    it('should return the detailed message when disableSanitizeError is true', () => {
+      const config = { disableSanitizeError: true };
+      const error = createSanitizedError(Parse.Error.OPERATION_FORBIDDEN, 'Detailed error message', config);
+      expect(error.message).toBe('Detailed error message');
+    });
+  });
+
+  describe('createSanitizedHttpError', () => {
+    it('should return "Permission denied" when disableSanitizeError is false or undefined', () => {
+      const config = { disableSanitizeError: false };
+      const error = createSanitizedHttpError(403, 'Detailed error message', config);
+      expect(error.message).toBe('Permission denied');
+    });
+
+    it('should return the detailed message when disableSanitizeError is true', () => {
+      const config = { disableSanitizeError: true };
+      const error = createSanitizedHttpError(403, 'Detailed error message', config);
+      expect(error.message).toBe('Detailed error message');
     });
   });
 });

@@ -9,7 +9,7 @@ import { createSanitizedError } from '../../Error';
 const getUserFromSessionToken = async (context, queryInfo, keysPrefix, userId) => {
   const { info, config } = context;
   if (!info || !info.sessionToken) {
-    throw  createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+    throw  createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token', config);
   }
   const sessionToken = info.sessionToken;
   const selectedFields = getFieldNames(queryInfo)
@@ -63,7 +63,7 @@ const getUserFromSessionToken = async (context, queryInfo, keysPrefix, userId) =
     info.context
   );
   if (!response.results || response.results.length == 0) {
-    throw createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+    throw createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token', config);
   } else {
     const user = response.results[0];
     return {

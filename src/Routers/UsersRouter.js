@@ -172,7 +172,7 @@ export class UsersRouter extends ClassesRouter {
 
   handleMe(req) {
     if (!req.info || !req.info.sessionToken) {
-      throw createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+      throw createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token', req.config);
     }
     const sessionToken = req.info.sessionToken;
     return rest
@@ -187,7 +187,7 @@ export class UsersRouter extends ClassesRouter {
       )
       .then(response => {
         if (!response.results || response.results.length == 0 || !response.results[0].user) {
-          throw createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+          throw createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token', req.config);
         } else {
           const user = response.results[0].user;
           // Send token back on the login, because SDKs expect that.
@@ -338,6 +338,7 @@ export class UsersRouter extends ClassesRouter {
       throw createSanitizedError(
         Parse.Error.OPERATION_FORBIDDEN,
         'master key is required',
+        req.config
       );
     }
 

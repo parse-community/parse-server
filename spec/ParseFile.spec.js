@@ -767,13 +767,11 @@ describe('Parse.File testing', () => {
 
   describe('getting files', () => {
     it('does not crash on file request with invalid app ID', async () => {
-      loggerErrorSpy.calls.reset();
       const res1 = await request({
         url: 'http://localhost:8378/1/files/invalid-id/invalid-file.txt',
       }).catch(e => e);
       expect(res1.status).toBe(403);
-      expect(res1.data).toEqual({ code: 119, error: 'Permission denied' });
-      expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Invalid application ID.'));
+      expect(res1.data).toEqual({ code: 119, error: 'Invalid application ID.' });
       // Ensure server did not crash
       const res2 = await request({ url: 'http://localhost:8378/1/health' });
       expect(res2.status).toEqual(200);

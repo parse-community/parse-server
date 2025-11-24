@@ -76,6 +76,7 @@ async function createSchema(req) {
     throw createSanitizedError(
       Parse.Error.OPERATION_FORBIDDEN,
       "read-only masterKey isn't allowed to create a schema.",
+      req.config
     );
   }
   if (req.params.className && req.body?.className) {
@@ -98,6 +99,7 @@ function modifySchema(req) {
     throw createSanitizedError(
       Parse.Error.OPERATION_FORBIDDEN,
       "read-only masterKey isn't allowed to update a schema.",
+      req.config
     );
   }
   if (req.body?.className && req.body.className != req.params.className) {
@@ -113,6 +115,7 @@ const deleteSchema = req => {
     throw createSanitizedError(
       Parse.Error.OPERATION_FORBIDDEN,
       "read-only masterKey isn't allowed to delete a schema.",
+      req.config
     );
   }
   if (!SchemaController.classNameIsValid(req.params.className)) {

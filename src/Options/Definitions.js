@@ -199,6 +199,13 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: true,
   },
+  disableSanitizeError: {
+    env: 'PARSE_SERVER_DISABLE_SANITIZE_ERROR',
+    help:
+      'If true, disables sanitizing errors and returns the detailed message instead of "Permission denied".',
+    action: parsers.booleanParser,
+    default: false,
+  },
   dotNetKey: {
     env: 'PARSE_SERVER_DOT_NET_KEY',
     help: 'Key for Unity and .Net SDK',
