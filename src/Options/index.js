@@ -370,16 +370,15 @@ export interface RateLimitOptions {
   /* Optional, the URL of the Redis server to store rate limit data. This allows to rate limit requests for multiple servers by calculating the sum of all requests across all servers. This is useful if multiple servers are processing requests behind a load balancer. For example, the limit of 10 requests is reached if each of 2 servers processed 5 requests.
    */
   redisUrl: ?string;
-  /*
-  The type of rate limit to apply. The following types are supported:
-  <br><br>
-  - `global`: rate limit based on the number of requests made by all users <br>
-  - `ip`: rate limit based on the IP address of the request <br>
-  - `user`: rate limit based on the user ID of the request <br>
-  - `session`: rate limit based on the session token of the request <br>
-  <br><br>
-  :default: 'ip'
-  */
+  /* The type of rate limit to apply. The following types are supported:
+  <ul>
+  <li>`global`: rate limit based on the number of requests made by all users</li>
+  <li>`ip`: rate limit based on the IP address of the request</li>
+  <li>`user`: rate limit based on the user ID of the request</li>
+  <li>`session`: rate limit based on the session token of the request</li>
+  </ul>
+  Default is `ip`.
+  :DEFAULT: ip */
   zone: ?string;
 }
 

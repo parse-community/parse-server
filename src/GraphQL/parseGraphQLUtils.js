@@ -1,9 +1,13 @@
 import Parse from 'parse/node';
 import { GraphQLError } from 'graphql';
+import { createSanitizedError } from '../Error';
 
 export function enforceMasterKeyAccess(auth) {
   if (!auth.isMaster) {
-    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'unauthorized: master key is required');
+    throw createSanitizedError(
+      Parse.Error.OPERATION_FORBIDDEN,
+      'unauthorized: master key is required',
+    );
   }
 }
 
