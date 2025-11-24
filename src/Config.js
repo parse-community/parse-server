@@ -689,19 +689,6 @@ export class Config {
         throw `rateLimit.requestPath must be a string`;
       }
 
-      // Validate path-to-regexp v8 syntax
-      // Check for common old syntax patterns
-      const oldWildcardPattern = /(?:^|\/)\*(?:\/|$)/;  // Matches /* or * at start/end
-      const nakedWildcard = /^[\s]*\*[\s]*$/;  // Matches bare *
-      if (oldWildcardPattern.test(option.requestPath) || nakedWildcard.test(option.requestPath)) {
-        throw `rateLimit.requestPath "${option.requestPath}" uses deprecated wildcard syntax. ` +
-              `Please update to path-to-regexp v8 syntax. Examples:\n` +
-              `  Old: "/functions/*" → New: "/functions/*path"\n` +
-              `  Old: "/classes/*" → New: "/classes/*path"\n` +
-              `  Old: "*" → New: "*path"\n` +
-              `See parameter name on the express migration guide.`;
-      }
-
       // Validate that the path is valid path-to-regexp syntax
       try {
         pathToRegexp(option.requestPath);

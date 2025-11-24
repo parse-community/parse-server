@@ -481,14 +481,6 @@ describe('rate limit', () => {
     expect(() =>
       validateRateLimit({ rateLimit: [{ requestTimeWindow: 3, requestCount: 'abc' }] })
     ).toThrow('rateLimit.requestPath must be defined');
-    expect(() =>
-      validateRateLimit({ rateLimit: [{ requestPath: '/*' }] })
-    ).toThrow(`rateLimit.requestPath "/*" uses deprecated wildcard syntax. ` +
-      `Please update to path-to-regexp v8 syntax. Examples:\n` +
-      `  Old: "/functions/*" → New: "/functions/*path"\n` +
-      `  Old: "/classes/*" → New: "/classes/*path"\n` +
-      `  Old: "*" → New: "*path"\n` +
-      `See parameter name on the express migration guide.`);
     await expectAsync(
       reconfigureServer({
         rateLimit: [{ requestTimeWindow: 3, requestCount: 1, path: 'abc', requestPath: 'a' }],
