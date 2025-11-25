@@ -182,6 +182,11 @@ describe('Utils', () => {
       expect(error.message).toBe('Permission denied');
     });
 
+    it('should not crash with config undefined', () => {
+      const error = createSanitizedError(Parse.Error.OPERATION_FORBIDDEN, 'Detailed error message', undefined);
+      expect(error.message).toBe('Permission denied');
+    });
+
     it('should return the detailed message when disableSanitizeError is true', () => {
       const config = { disableSanitizeError: true };
       const error = createSanitizedError(Parse.Error.OPERATION_FORBIDDEN, 'Detailed error message', config);
@@ -193,6 +198,11 @@ describe('Utils', () => {
     it('should return "Permission denied" when disableSanitizeError is false or undefined', () => {
       const config = { disableSanitizeError: false };
       const error = createSanitizedHttpError(403, 'Detailed error message', config);
+      expect(error.message).toBe('Permission denied');
+    });
+
+    it('should not crash with config undefined', () => {
+      const error = createSanitizedHttpError(403, 'Detailed error message', undefined);
       expect(error.message).toBe('Permission denied');
     });
 

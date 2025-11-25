@@ -16,7 +16,7 @@ function createSanitizedError(errorCode, detailedMessage, config) {
     defaultLogger.error(detailedMessage);
   }
 
-  return new Parse.Error(errorCode, config.disableSanitizeError ? detailedMessage : 'Permission denied');
+  return new Parse.Error(errorCode, config?.disableSanitizeError ? detailedMessage : 'Permission denied');
 }
 
 /**
@@ -37,7 +37,7 @@ function createSanitizedHttpError(statusCode, detailedMessage, config) {
 
   const error = new Error();
   error.status = statusCode;
-  error.message = config.disableSanitizeError ? detailedMessage : 'Permission denied';
+  error.message = config?.disableSanitizeError ? detailedMessage : 'Permission denied';
   return error;
 }
 
