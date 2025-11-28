@@ -17,6 +17,7 @@ import {
 import { promiseEnsureIdempotency } from '../middlewares';
 import RestWrite from '../RestWrite';
 import { logger } from '../logger';
+import { createSanitizedError } from '../Error';
 
 export class UsersRouter extends ClassesRouter {
   className() {
@@ -171,7 +172,7 @@ export class UsersRouter extends ClassesRouter {
 
   handleMe(req) {
     if (!req.info || !req.info.sessionToken) {
-      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+      throw createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
     }
     const sessionToken = req.info.sessionToken;
     return rest
@@ -186,7 +187,7 @@ export class UsersRouter extends ClassesRouter {
       )
       .then(response => {
         if (!response.results || response.results.length == 0 || !response.results[0].user) {
-          throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+          throw createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
         } else {
           const user = response.results[0].user;
           // Send token back on the login, because SDKs expect that.
@@ -334,7 +335,10 @@ export class UsersRouter extends ClassesRouter {
    */
   async handleLogInAs(req) {
     if (!req.auth.isMaster) {
-      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'master key is required');
+      throw createSanitizedError(
+        Parse.Error.OPERATION_FORBIDDEN,
+        'master key is required',
+      );
     }
 
     const userId = req.body?.userId || req.query.userId;

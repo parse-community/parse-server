@@ -38,7 +38,7 @@ const handleUpload = async (upload, config) => {
           res.on('end', () => {
             try {
               resolve(JSON.parse(data));
-            } catch (e) {
+            } catch {
               reject(new Parse.Error(Parse.error, data));
             }
           });

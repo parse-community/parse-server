@@ -55,7 +55,7 @@ function moduleOrObjectParser(opt) {
   }
   try {
     return JSON.parse(opt);
-  } catch (e) {
+  } catch {
     /* */
   }
   return opt;

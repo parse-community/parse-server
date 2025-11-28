@@ -20,6 +20,7 @@ import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
 import SchemaCache from '../Adapters/Cache/SchemaCache';
 import DatabaseController from './DatabaseController';
 import Config from '../Config';
+import { createSanitizedError } from '../Error';
 // @flow-disable-next
 import deepcopy from 'deepcopy';
 import type {
@@ -1403,12 +1404,12 @@ export default class SchemaController {
     if (perms['requiresAuthentication']) {
       // If aclGroup has * (public)
       if (!aclGroup || aclGroup.length == 0) {
-        throw new Parse.Error(
+        throw createSanitizedError(
           Parse.Error.OBJECT_NOT_FOUND,
           'Permission denied, user needs to be authenticated.'
         );
       } else if (aclGroup.indexOf('*') > -1 && aclGroup.length == 1) {
-        throw new Parse.Error(
+        throw createSanitizedError(
           Parse.Error.OBJECT_NOT_FOUND,
           'Permission denied, user needs to be authenticated.'
         );
@@ -1425,7 +1426,7 @@ export default class SchemaController {
 
     // Reject create when write lockdown
     if (permissionField == 'writeUserFields' && operation == 'create') {
-      throw new Parse.Error(
+      throw createSanitizedError(
         Parse.Error.OPERATION_FORBIDDEN,
         `Permission denied for action ${operation} on class ${className}.`
       );
@@ -1448,7 +1449,7 @@ export default class SchemaController {
       }
     }
 
-    throw new Parse.Error(
+    throw createSanitizedError(
       Parse.Error.OPERATION_FORBIDDEN,
       `Permission denied for action ${operation} on class ${className}.`
     );

@@ -122,7 +122,7 @@ const getFacebookKeyByKeyId = async (keyId, cacheMaxEntries, cacheMaxAge) => {
   let key;
   try {
     key = await authUtils.getSigningKey(client, keyId);
-  } catch (error) {
+  } catch {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
       `Unable to find matching key for Key ID: ${keyId}`

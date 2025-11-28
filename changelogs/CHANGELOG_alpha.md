@@ -1,3 +1,24 @@
+# [8.5.0-alpha.15](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.14...8.5.0-alpha.15) (2025-11-23)
+
+
+### Performance Improvements
+
+* Remove unused dependencies ([#9943](https://github.com/parse-community/parse-server/issues/9943)) ([d4c6de0](https://github.com/parse-community/parse-server/commit/d4c6de0096b3ac95289c6bddfe25eb397d790e41))
+
+# [8.5.0-alpha.14](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.13...8.5.0-alpha.14) (2025-11-23)
+
+
+### Bug Fixes
+
+* Parse Server option `rateLimit.zone` does not use default value `ip` ([#9941](https://github.com/parse-community/parse-server/issues/9941)) ([12beb8f](https://github.com/parse-community/parse-server/commit/12beb8f6ee5d3002fec017bb4525eb3f1375f806))
+
+# [8.5.0-alpha.13](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.12...8.5.0-alpha.13) (2025-11-23)
+
+
+### Bug Fixes
+
+* Server internal error details leaking in error messages returned to clients ([#9937](https://github.com/parse-community/parse-server/issues/9937)) ([50edb5a](https://github.com/parse-community/parse-server/commit/50edb5ab4bb4a6ce474bfb7cf159d918933753b8))
+
 # [8.5.0-alpha.12](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.11...8.5.0-alpha.12) (2025-11-19)
 
 

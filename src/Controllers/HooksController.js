@@ -225,7 +225,7 @@ function wrapToHTTPRequest(hook, key) {
         if (typeof body === 'string') {
           try {
             body = JSON.parse(body);
-          } catch (e) {
+          } catch {
             err = {
               error: 'Malformed response',
               code: -1,
