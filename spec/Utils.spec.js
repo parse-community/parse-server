@@ -176,8 +176,8 @@ describe('Utils', () => {
   });
 
   describe('createSanitizedError', () => {
-    it('should return "Permission denied" when disableSanitizeError is false or undefined', () => {
-      const config = { disableSanitizeError: false };
+    it('should return "Permission denied" when enableSanitizedErrorResponse is false or undefined', () => {
+      const config = { enableSanitizedErrorResponse: true };
       const error = createSanitizedError(Parse.Error.OPERATION_FORBIDDEN, 'Detailed error message', config);
       expect(error.message).toBe('Permission denied');
     });
@@ -187,16 +187,16 @@ describe('Utils', () => {
       expect(error.message).toBe('Permission denied');
     });
 
-    it('should return the detailed message when disableSanitizeError is true', () => {
-      const config = { disableSanitizeError: true };
+    it('should return the detailed message when enableSanitizedErrorResponse is true', () => {
+      const config = { enableSanitizedErrorResponse: false };
       const error = createSanitizedError(Parse.Error.OPERATION_FORBIDDEN, 'Detailed error message', config);
       expect(error.message).toBe('Detailed error message');
     });
   });
 
   describe('createSanitizedHttpError', () => {
-    it('should return "Permission denied" when disableSanitizeError is false or undefined', () => {
-      const config = { disableSanitizeError: false };
+    it('should return "Permission denied" when enableSanitizedErrorResponse is false or undefined', () => {
+      const config = { enableSanitizedErrorResponse: true };
       const error = createSanitizedHttpError(403, 'Detailed error message', config);
       expect(error.message).toBe('Permission denied');
     });
@@ -206,8 +206,8 @@ describe('Utils', () => {
       expect(error.message).toBe('Permission denied');
     });
 
-    it('should return the detailed message when disableSanitizeError is true', () => {
-      const config = { disableSanitizeError: true };
+    it('should return the detailed message when enableSanitizedErrorResponse is true', () => {
+      const config = { enableSanitizedErrorResponse: false };
       const error = createSanitizedHttpError(403, 'Detailed error message', config);
       expect(error.message).toBe('Detailed error message');
     });

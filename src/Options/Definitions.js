@@ -199,13 +199,6 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: true,
   },
-  disableSanitizeError: {
-    env: 'PARSE_SERVER_DISABLE_SANITIZE_ERROR',
-    help:
-      'If true, disables sanitizing errors and returns the detailed message instead of "Permission denied".',
-    action: parsers.booleanParser,
-    default: false,
-  },
   dotNetKey: {
     env: 'PARSE_SERVER_DOT_NET_KEY',
     help: 'Key for Unity and .Net SDK',
@@ -251,6 +244,13 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_ENABLE_INSECURE_AUTH_ADAPTERS',
     help:
       'Enable (or disable) insecure auth adapters, defaults to true. Insecure auth adapters are deprecated and it is recommended to disable them.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  enableSanitizedErrorResponse: {
+    env: 'PARSE_SERVER_ENABLE_SANITIZED_ERROR_RESPONSE',
+    help:
+      'If set to `true`, error details are removed from error messages in responses to client requests, and instead a generic error message is sent. Default is `true`.',
     action: parsers.booleanParser,
     default: true,
   },
