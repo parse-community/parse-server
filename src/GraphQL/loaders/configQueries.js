@@ -1,9 +1,8 @@
-import { GraphQLNonNull, GraphQLString } from 'graphql';
+import { GraphQLNonNull, GraphQLString, GraphQLBoolean, GraphQLObjectType } from 'graphql';
 import Parse from 'parse/node';
 import { createSanitizedError } from '../../Error';
-import { GlobalConfigRouter } from '../../Routers/GlobalConfigRouter';
 
-const getConfigValue = async (context, paramName) => {
+const configValue = async (context, paramName) => {
   const { config, auth } = context;
 
   if (!auth.isMaster) {
@@ -13,23 +12,36 @@ const getConfigValue = async (context, paramName) => {
     );
   }
 
-  const globalConfig = await GlobalConfigRouter.getGlobalConfig(config, auth);
-  const { params, masterKeyOnly } = globalConfig;
+  const results = await config.database.find('_GlobalConfig', { objectId: '1' }, { limit: 1 });
 
-  // Vérifie si le paramètre existe dans params ou masterKeyOnly
-  if (params && params[paramName] !== undefined) {
-    return { value: params[paramName], source: 'params' };
-  } else if (masterKeyOnly && masterKeyOnly[paramName] !== undefined) {
-    return { value: masterKeyOnly[paramName], source: 'masterKeyOnly' };
-  } else {
-    throw createSanitizedError(
-      Parse.Error.INVALID_QUERY,
-      `Parameter "${paramName}" not found in GlobalConfig.`
-    );
+  if (results.length !== 1) {
+    return { value: null, isMasterKeyOnly: null };
   }
+
+  const globalConfig = results[0];
+  const params = globalConfig.params || {};
+  const masterKeyOnly = globalConfig.masterKeyOnly || {};
+
+  if (params && params[paramName] !== undefined && masterKeyOnly && masterKeyOnly[paramName] !== undefined) {
+    return { value: params[paramName], isMasterKeyOnly: masterKeyOnly[paramName] };
+  }
+
+  return { value: null, isMasterKeyOnly: null };
 };
 
 const load = (parseGraphQLSchema) => {
+  if (!parseGraphQLSchema.configValueType) {
+    const configValueType = new GraphQLObjectType({
+      name: 'ConfigValue',
+      fields: {
+        value: { type: GraphQLString },
+        isMasterKeyOnly: { type: GraphQLBoolean },
+      },
+    });
+    parseGraphQLSchema.addGraphQLType(configValueType, true, true);
+    parseGraphQLSchema.configValueType = configValueType;
+  }
+
   parseGraphQLSchema.addGraphQLQuery('configValue', {
     description: 'Returns the value of a specific parameter from GlobalConfig.',
     args: {
@@ -38,12 +50,12 @@ const load = (parseGraphQLSchema) => {
     type: new GraphQLNonNull(parseGraphQLSchema.configValueType),
     async resolve(_source, args, context) {
       try {
-        return getConfigValue(context, args.paramName);
+        return configValue(context, args.paramName);
       } catch (e) {
         parseGraphQLSchema.handleError(e);
       }
     },
-  });
+  }, false, true);
 };
 
-export { load, getConfig, getConfigValue };
+export { load, configValue };

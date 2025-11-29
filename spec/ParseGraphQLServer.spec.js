@@ -7081,12 +7081,21 @@ describe('ParseGraphQLServer', () => {
       });
 
       describe("Config Queries", () => {
-        fit("should return the config value for a specific parameter", async () => {
+        beforeEach(async () => {
+          // Setup initial config data
+          await Parse.Config.save(
+            { publicParam: 'publicValue', privateParam: 'privateValue' },
+            { privateParam: true },
+            { useMasterKey: true }
+          );
+        });
+
+        it("should return the config value for a specific parameter", async () => {
           const query = gql`
-            query ConfigValue($paramName: String!) {
+            query configValue($paramName: String!) {
               configValue(paramName: $paramName) {
                 value
-                source
+                isMasterKeyOnly
               }
             }
           `;
@@ -7103,8 +7112,250 @@ describe('ParseGraphQLServer', () => {
 
           expect(result.errors).toBeUndefined();
           expect(result.data.configValue.value).toEqual('publicValue');
-          expect(result.data.configValue.source).toEqual('params');
-        })
+          expect(result.data.configValue.isMasterKeyOnly).toEqual(false);
+        });
+
+        it("should return null for non-existent parameter", async () => {
+          const query = gql`
+            query configValue($paramName: String!) {
+              configValue(paramName: $paramName) {
+                value
+                isMasterKeyOnly
+              }
+            }
+          `;
+
+          const result = await apolloClient.query({
+            query,
+            variables: { paramName: 'nonExistentParam' },
+            context: {
+              headers: {
+                'X-Parse-Master-Key': 'test',
+              },
+            },
+          });
+
+          expect(result.errors).toBeUndefined();
+          expect(result.data.configValue.value).toBeNull();
+          expect(result.data.configValue.isMasterKeyOnly).toBeNull();
+        });
+      });
+
+      describe("Config Mutations", () => {
+        it("should update a config value using mutation and retrieve it with query", async () => {
+          const mutation = gql`
+            mutation updateConfigValue($input: UpdateConfigValueInput!) {
+              updateConfigValue(input: $input) {
+                clientMutationId
+                configValue {
+                  value
+                  isMasterKeyOnly
+                }
+              }
+            }
+          `;
+
+          const query = gql`
+            query configValue($paramName: String!) {
+              configValue(paramName: $paramName) {
+                value
+                isMasterKeyOnly
+              }
+            }
+          `;
+
+          const mutationResult = await apolloClient.mutate({
+            mutation,
+            variables: {
+              input: {
+                clientMutationId: 'test-mutation-id',
+                paramName: 'testParam',
+                value: 'testValue',
+                isMasterKeyOnly: false,
+              },
+            },
+            context: {
+              headers: {
+                'X-Parse-Master-Key': 'test',
+              },
+            },
+          });
+
+          expect(mutationResult.errors).toBeUndefined();
+          expect(mutationResult.data.updateConfigValue.configValue.value).toEqual('testValue');
+          expect(mutationResult.data.updateConfigValue.configValue.isMasterKeyOnly).toEqual(false);
+
+          const queryResult = await apolloClient.query({
+            query,
+            variables: { paramName: 'testParam' },
+            context: {
+              headers: {
+                'X-Parse-Master-Key': 'test',
+              },
+            },
+          });
+
+          expect(queryResult.errors).toBeUndefined();
+          expect(queryResult.data.configValue.value).toEqual('testValue');
+          expect(queryResult.data.configValue.isMasterKeyOnly).toEqual(false);
+        });
+
+        it("should update a config value with isMasterKeyOnly set to true", async () => {
+          const mutation = gql`
+            mutation updateConfigValue($input: UpdateConfigValueInput!) {
+              updateConfigValue(input: $input) {
+                clientMutationId
+                configValue {
+                  value
+                  isMasterKeyOnly
+                }
+              }
+            }
+          `;
+
+          const query = gql`
+            query configValue($paramName: String!) {
+              configValue(paramName: $paramName) {
+                value
+                isMasterKeyOnly
+              }
+            }
+          `;
+
+          const mutationResult = await apolloClient.mutate({
+            mutation,
+            variables: {
+              input: {
+                clientMutationId: 'test-mutation-id-2',
+                paramName: 'privateTestParam',
+                value: 'privateValue',
+                isMasterKeyOnly: true,
+              },
+            },
+            context: {
+              headers: {
+                'X-Parse-Master-Key': 'test',
+              },
+            },
+          });
+
+          expect(mutationResult.errors).toBeUndefined();
+          expect(mutationResult.data.updateConfigValue.configValue.value).toEqual('privateValue');
+          expect(mutationResult.data.updateConfigValue.configValue.isMasterKeyOnly).toEqual(true);
+
+          const queryResult = await apolloClient.query({
+            query,
+            variables: { paramName: 'privateTestParam' },
+            context: {
+              headers: {
+                'X-Parse-Master-Key': 'test',
+              },
+            },
+          });
+
+          expect(queryResult.errors).toBeUndefined();
+          expect(queryResult.data.configValue.value).toEqual('privateValue');
+          expect(queryResult.data.configValue.isMasterKeyOnly).toEqual(true);
+        });
+
+        it("should update an existing config value", async () => {
+          await Parse.Config.save(
+            { existingParam: 'initialValue' },
+            {},
+            { useMasterKey: true }
+          );
+
+          const mutation = gql`
+            mutation updateConfigValue($input: UpdateConfigValueInput!) {
+              updateConfigValue(input: $input) {
+                clientMutationId
+                configValue {
+                  value
+                  isMasterKeyOnly
+                }
+              }
+            }
+          `;
+
+          const query = gql`
+            query configValue($paramName: String!) {
+              configValue(paramName: $paramName) {
+                value
+                isMasterKeyOnly
+              }
+            }
+          `;
+
+          const mutationResult = await apolloClient.mutate({
+            mutation,
+            variables: {
+              input: {
+                clientMutationId: 'test-mutation-id-3',
+                paramName: 'existingParam',
+                value: 'updatedValue',
+                isMasterKeyOnly: false,
+              },
+            },
+            context: {
+              headers: {
+                'X-Parse-Master-Key': 'test',
+              },
+            },
+          });
+
+          expect(mutationResult.errors).toBeUndefined();
+          expect(mutationResult.data.updateConfigValue.configValue.value).toEqual('updatedValue');
+
+          const queryResult = await apolloClient.query({
+            query,
+            variables: { paramName: 'existingParam' },
+            context: {
+              headers: {
+                'X-Parse-Master-Key': 'test',
+              },
+            },
+          });
+
+          expect(queryResult.errors).toBeUndefined();
+          expect(queryResult.data.configValue.value).toEqual('updatedValue');
+        });
+
+        it("should require master key to update config", async () => {
+          const mutation = gql`
+            mutation updateConfigValue($input: UpdateConfigValueInput!) {
+              updateConfigValue(input: $input) {
+                clientMutationId
+                configValue {
+                  value
+                  isMasterKeyOnly
+                }
+              }
+            }
+          `;
+
+          try {
+            await apolloClient.mutate({
+              mutation,
+              variables: {
+                input: {
+                  clientMutationId: 'test-mutation-id-4',
+                  paramName: 'testParam',
+                  value: 'testValue',
+                  isMasterKeyOnly: false,
+                },
+              },
+              context: {
+                headers: {
+                  'X-Parse-Application-Id': 'test',
+                },
+              },
+            });
+            fail('Should have thrown an error');
+          } catch (error) {
+            expect(error.graphQLErrors).toBeDefined();
+            expect(error.graphQLErrors[0].message).toContain('Permission denied');
+          }
+        });
       })
 
       describe('Users Queries', () => {
