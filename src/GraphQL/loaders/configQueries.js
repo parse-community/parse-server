@@ -22,8 +22,8 @@ const configValue = async (context, paramName) => {
   const params = globalConfig.params || {};
   const masterKeyOnly = globalConfig.masterKeyOnly || {};
 
-  if (params && params[paramName] !== undefined && masterKeyOnly && masterKeyOnly[paramName] !== undefined) {
-    return { value: params[paramName], isMasterKeyOnly: masterKeyOnly[paramName] };
+  if (params[paramName] !== undefined) {
+    return { value: params[paramName], isMasterKeyOnly: masterKeyOnly[paramName] ?? null };
   }
 
   return { value: null, isMasterKeyOnly: null };
@@ -50,7 +50,7 @@ const load = (parseGraphQLSchema) => {
     type: new GraphQLNonNull(parseGraphQLSchema.configValueType),
     async resolve(_source, args, context) {
       try {
-        return configValue(context, args.paramName);
+        return await configValue(context, args.paramName);
       } catch (e) {
         parseGraphQLSchema.handleError(e);
       }
