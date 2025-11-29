@@ -31,12 +31,13 @@ const load = parseGraphQLSchema => {
         const { name, schemaFields } = deepcopy(args);
         const { config, auth } = context;
 
-        enforceMasterKeyAccess(auth);
+        enforceMasterKeyAccess(auth, config);
 
         if (auth.isReadOnly) {
           throw createSanitizedError(
             Parse.Error.OPERATION_FORBIDDEN,
             "read-only masterKey isn't allowed to create a schema.",
+            config
           );
         }
 
@@ -80,12 +81,13 @@ const load = parseGraphQLSchema => {
         const { name, schemaFields } = deepcopy(args);
         const { config, auth } = context;
 
-        enforceMasterKeyAccess(auth);
+        enforceMasterKeyAccess(auth, config);
 
         if (auth.isReadOnly) {
           throw createSanitizedError(
             Parse.Error.OPERATION_FORBIDDEN,
-            "read-only masterKey isn't allowed to update a schema."
+            "read-only masterKey isn't allowed to update a schema.",
+            config
           );
         }
 
@@ -131,12 +133,13 @@ const load = parseGraphQLSchema => {
         const { name } = deepcopy(args);
         const { config, auth } = context;
 
-        enforceMasterKeyAccess(auth);
+        enforceMasterKeyAccess(auth, config);
 
         if (auth.isReadOnly) {
           throw createSanitizedError(
             Parse.Error.OPERATION_FORBIDDEN,
             "read-only masterKey isn't allowed to delete a schema.",
+            config
           );
         }
 

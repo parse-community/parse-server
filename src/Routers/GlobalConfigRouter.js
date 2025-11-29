@@ -45,6 +45,7 @@ export class GlobalConfigRouter extends PromiseRouter {
       throw createSanitizedError(
         Parse.Error.OPERATION_FORBIDDEN,
         "read-only masterKey isn't allowed to update the config.",
+        req.config
       );
     }
     const params = req.body.params || {};

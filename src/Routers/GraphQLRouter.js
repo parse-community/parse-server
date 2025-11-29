@@ -18,6 +18,7 @@ export class GraphQLRouter extends PromiseRouter {
       throw createSanitizedError(
         Parse.Error.OPERATION_FORBIDDEN,
         "read-only masterKey isn't allowed to update the GraphQL config.",
+        req.config
       );
     }
     const data = await req.config.parseGraphQLController.updateGraphQLConfig(req.body?.params || {});

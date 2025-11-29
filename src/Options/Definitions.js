@@ -247,6 +247,13 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: true,
   },
+  enableSanitizedErrorResponse: {
+    env: 'PARSE_SERVER_ENABLE_SANITIZED_ERROR_RESPONSE',
+    help:
+      'If set to `true`, error details are removed from error messages in responses to client requests, and instead a generic error message is sent. Default is `true`.',
+    action: parsers.booleanParser,
+    default: true,
+  },
   encodeParseObjectInCloudFunction: {
     env: 'PARSE_SERVER_ENCODE_PARSE_OBJECT_IN_CLOUD_FUNCTION',
     help:

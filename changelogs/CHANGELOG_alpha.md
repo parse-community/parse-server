@@ -1,3 +1,17 @@
+# [8.5.0-alpha.16](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.15...8.5.0-alpha.16) (2025-11-28)
+
+
+### Features
+
+* Add Parse Server option `enableSanitizedErrorResponse` to remove detailed error messages from responses sent to clients ([#9944](https://github.com/parse-community/parse-server/issues/9944)) ([4752197](https://github.com/parse-community/parse-server/commit/47521974aeafcf41102be62f19612a4ab0a4837f))
+
+# [8.5.0-alpha.15](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.14...8.5.0-alpha.15) (2025-11-23)
+
+
+### Performance Improvements
+
+* Remove unused dependencies ([#9943](https://github.com/parse-community/parse-server/issues/9943)) ([d4c6de0](https://github.com/parse-community/parse-server/commit/d4c6de0096b3ac95289c6bddfe25eb397d790e41))
+
 # [8.5.0-alpha.14](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.13...8.5.0-alpha.14) (2025-11-23)
 
 

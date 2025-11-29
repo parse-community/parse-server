@@ -135,7 +135,7 @@ async function runFindTriggers(
 
 // Returns a promise for an object with optional keys 'results' and 'count'.
 const find = async (config, auth, className, restWhere, restOptions, clientSDK, context) => {
-  enforceRoleSecurity('find', className, auth);
+  enforceRoleSecurity('find', className, auth, config);
   return runFindTriggers(
     config,
     auth,
@@ -150,7 +150,7 @@ const find = async (config, auth, className, restWhere, restOptions, clientSDK, 
 
 // get is just like find but only queries an objectId.
 const get = async (config, auth, className, objectId, restOptions, clientSDK, context) => {
-  enforceRoleSecurity('get', className, auth);
+  enforceRoleSecurity('get', className, auth, config);
   return runFindTriggers(
     config,
     auth,
@@ -173,7 +173,7 @@ function del(config, auth, className, objectId, context) {
     throw new Parse.Error(Parse.Error.SESSION_MISSING, 'Insufficient auth to delete user');
   }
 
-  enforceRoleSecurity('delete', className, auth);
+  enforceRoleSecurity('delete', className, auth, config);
 
   let inflatedObject;
   let schemaController;
@@ -196,7 +196,7 @@ function del(config, auth, className, objectId, context) {
             firstResult.className = className;
             if (className === '_Session' && !auth.isMaster && !auth.isMaintenance) {
               if (!auth.user || firstResult.user.objectId !== auth.user.id) {
-                throw createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+                throw createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token', config);
               }
             }
             var cacheAdapter = config.cacheController;
@@ -258,13 +258,13 @@ function del(config, auth, className, objectId, context) {
       );
     })
     .catch(error => {
-      handleSessionMissingError(error, className, auth);
+      handleSessionMissingError(error, className, auth, config);
     });
 }
 
 // Returns a promise for a {response, status, location} object.
 function create(config, auth, className, restObject, clientSDK, context) {
-  enforceRoleSecurity('create', className, auth);
+  enforceRoleSecurity('create', className, auth, config);
   var write = new RestWrite(config, auth, className, null, restObject, null, clientSDK, context);
   return write.execute();
 }
@@ -273,7 +273,7 @@ function create(config, auth, className, restObject, clientSDK, context) {
 // REST API is supposed to return.
 // Usually, this is just updatedAt.
 function update(config, auth, className, restWhere, restObject, clientSDK, context) {
-  enforceRoleSecurity('update', className, auth);
+  enforceRoleSecurity('update', className, auth, config);
 
   return Promise.resolve()
     .then(async () => {
@@ -315,11 +315,11 @@ function update(config, auth, className, restWhere, restObject, clientSDK, conte
       ).execute();
     })
     .catch(error => {
-      handleSessionMissingError(error, className, auth);
+      handleSessionMissingError(error, className, auth, config);
     });
 }
 
-function handleSessionMissingError(error, className, auth) {
+function handleSessionMissingError(error, className, auth, config) {
   // If we're trying to update a user without / with bad session token
   if (
     className === '_User' &&
@@ -327,7 +327,7 @@ function handleSessionMissingError(error, className, auth) {
     !auth.isMaster &&
     !auth.isMaintenance
   ) {
-    throw createSanitizedError(Parse.Error.SESSION_MISSING, 'Insufficient auth.');
+    throw createSanitizedError(Parse.Error.SESSION_MISSING, 'Insufficient auth.', config);
   }
   throw error;
 }

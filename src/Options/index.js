@@ -347,6 +347,9 @@ export interface ParseServerOptions {
   rateLimit: ?(RateLimitOptions[]);
   /* Options to customize the request context using inversion of control/dependency injection.*/
   requestContextMiddleware: ?(req: any, res: any, next: any) => void;
+  /* If set to `true`, error details are removed from error messages in responses to client requests, and instead a generic error message is sent. Default is `true`.
+  :DEFAULT: true */
+  enableSanitizedErrorResponse: ?boolean;
 }
 
 export interface RateLimitOptions {

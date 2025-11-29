@@ -5,7 +5,6 @@ import Config from '../Config';
 import logger from '../logger';
 const triggers = require('../triggers');
 const Utils = require('../Utils');
-import { createSanitizedError } from '../Error';
 
 export class FilesRouter {
   expressRouter({ maxUploadSize = '20Mb' } = {}) {
@@ -44,8 +43,7 @@ export class FilesRouter {
     const config = Config.get(req.params.appId);
     if (!config) {
       res.status(403);
-      const err = createSanitizedError(Parse.Error.OPERATION_FORBIDDEN, 'Invalid application ID.');
-      res.json({ code: err.code, error: err.message });
+      res.json({ code: Parse.Error.OPERATION_FORBIDDEN, error: 'Invalid application ID.' });
       return;
     }
 
