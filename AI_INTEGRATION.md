@@ -112,9 +112,9 @@ The MCP server is designed with safety in mind:
 
 ### Links
 
-- **GitHub**: https://github.com/R3D347HR4Y/parse-mcp
-- **Docker Hub**: https://hub.docker.com/r/purpleshow/parse-mcp-server
-- **npm**: https://www.npmjs.com/package/parse-mcp-server
+- **GitHub**: <https://github.com/R3D347HR4Y/parse-mcp>
+- **Docker Hub**: <https://hub.docker.com/r/purpleshow/parse-mcp-server>
+- **npm**: <https://www.npmjs.com/package/parse-mcp-server>
 
 ## For AI Agents
 
