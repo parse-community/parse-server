@@ -128,12 +128,4 @@ If you are an AI agent exploring this repository:
 
 ### Recommended Workflow
 
-```
-1. check_connection       → Verify Parse Server is accessible
-2. get_all_schemas        → Understand database structure
-3. get_sample_objects     → See real data examples for each class
-4. query_class            → Query with appropriate filters
-5. [ask permission]       → Before any write operations
-6. create/update/delete   → Modify data with user consent
-```
 
