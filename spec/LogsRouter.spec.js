@@ -52,6 +52,9 @@ describe_only(() => {
   });
 
   it('can check invalid master key of request', done => {
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+    loggerErrorSpy.calls.reset();
     request({
       url: 'http://localhost:8378/1/scriptlog',
       headers: {
@@ -61,7 +64,8 @@ describe_only(() => {
     }).then(fail, response => {
       const body = response.data;
       expect(response.status).toEqual(403);
-      expect(body.error).toEqual('unauthorized: master key is required');
+      expect(body.error).toEqual('Permission denied');
+      expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('unauthorized: master key is required'));
       done();
     });
   });

@@ -8,11 +8,9 @@
  * Run with: npm run benchmark
  */
 
-/* eslint-disable no-console */
-
 const core = require('@actions/core');
 const Parse = require('parse/node');
-const { performance, PerformanceObserver } = require('perf_hooks');
+const { performance } = require('node:perf_hooks');
 const { MongoClient } = require('mongodb');
 const { wrapMongoDBWithLatency } = require('./MongoLatencyWrapper');
 

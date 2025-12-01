@@ -247,6 +247,13 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: true,
   },
+  enableSanitizedErrorResponse: {
+    env: 'PARSE_SERVER_ENABLE_SANITIZED_ERROR_RESPONSE',
+    help:
+      'If set to `true`, error details are removed from error messages in responses to client requests, and instead a generic error message is sent. Default is `true`.',
+    action: parsers.booleanParser,
+    default: true,
+  },
   encodeParseObjectInCloudFunction: {
     env: 'PARSE_SERVER_ENCODE_PARSE_OBJECT_IN_CLOUD_FUNCTION',
     help:
@@ -690,7 +697,8 @@ module.exports.RateLimitOptions = {
   zone: {
     env: 'PARSE_SERVER_RATE_LIMIT_ZONE',
     help:
-      "The type of rate limit to apply. The following types are supported:<br><br>- `global`: rate limit based on the number of requests made by all users <br>- `ip`: rate limit based on the IP address of the request <br>- `user`: rate limit based on the user ID of the request <br>- `session`: rate limit based on the session token of the request <br><br><br>:default: 'ip'",
+      'The type of rate limit to apply. The following types are supported:<ul><li>`global`: rate limit based on the number of requests made by all users</li><li>`ip`: rate limit based on the IP address of the request</li><li>`user`: rate limit based on the user ID of the request</li><li>`session`: rate limit based on the session token of the request</li></ul>Default is `ip`.',
+    default: 'ip',
   },
 };
 module.exports.SecurityOptions = {

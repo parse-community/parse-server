@@ -171,7 +171,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
         fileNamesNotRotated = fileNamesNotRotated.filter(function (value) {
           return value !== fileName;
         });
-      } catch (err) {
+      } catch {
         continue;
       }
     }

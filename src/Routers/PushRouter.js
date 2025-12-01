@@ -1,6 +1,7 @@
 import PromiseRouter from '../PromiseRouter';
 import * as middleware from '../middlewares';
 import { Parse } from 'parse/node';
+import { createSanitizedError } from '../Error';
 
 export class PushRouter extends PromiseRouter {
   mountRoutes() {
@@ -9,9 +10,10 @@ export class PushRouter extends PromiseRouter {
 
   static handlePOST(req) {
     if (req.auth.isReadOnly) {
-      throw new Parse.Error(
+      throw createSanitizedError(
         Parse.Error.OPERATION_FORBIDDEN,
-        "read-only masterKey isn't allowed to send push notifications."
+        "read-only masterKey isn't allowed to send push notifications.",
+        req.config
       );
     }
     const pushController = req.config.pushController;

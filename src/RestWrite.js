@@ -17,6 +17,7 @@ import RestQuery from './RestQuery';
 import _ from 'lodash';
 import logger from './logger';
 import { requiredColumns } from './Controllers/SchemaController';
+import { createSanitizedError } from './Error';
 
 // query and data are both provided in REST API format. So data
 // types are encoded by plain old objects.
@@ -29,9 +30,10 @@ import { requiredColumns } from './Controllers/SchemaController';
 // for the _User class.
 function RestWrite(config, auth, className, query, data, originalData, clientSDK, context, action) {
   if (auth.isReadOnly) {
-    throw new Parse.Error(
+    throw createSanitizedError(
       Parse.Error.OPERATION_FORBIDDEN,
-      'Cannot perform a write operation when using readOnlyMasterKey'
+      'Cannot perform a write operation when using readOnlyMasterKey',
+      config
     );
   }
   this.config = config;
@@ -199,9 +201,10 @@ RestWrite.prototype.validateClientClassCreation = function () {
       .then(schemaController => schemaController.hasClass(this.className))
       .then(hasClass => {
         if (hasClass !== true) {
-          throw new Parse.Error(
+          throw createSanitizedError(
             Parse.Error.OPERATION_FORBIDDEN,
-            'This user is not allowed to access ' + 'non-existent class: ' + this.className
+            'This user is not allowed to access non-existent class: ' + this.className,
+            this.config
           );
         }
       });
@@ -566,7 +569,6 @@ RestWrite.prototype.handleAuthData = async function (authData) {
 
   // User found with provided authData
   if (results.length === 1) {
-
     this.storage.authProvider = Object.keys(authData).join(',');
 
     const { hasMutatedAuthData, mutatedAuthData } = Auth.hasMutatedAuthData(
@@ -660,8 +662,11 @@ RestWrite.prototype.checkRestrictedFields = async function () {
   }
 
   if (!this.auth.isMaintenance && !this.auth.isMaster && 'emailVerified' in this.data) {
-    const error = `Clients aren't allowed to manually update email verification.`;
-    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
+    throw createSanitizedError(
+      Parse.Error.OPERATION_FORBIDDEN,
+      "Clients aren't allowed to manually update email verification.",
+      this.config
+    );
   }
 };
 
@@ -1450,9 +1455,10 @@ RestWrite.prototype.runDatabaseOperation = function () {
   }
 
   if (this.className === '_User' && this.query && this.auth.isUnauthenticated()) {
-    throw new Parse.Error(
+    throw createSanitizedError(
       Parse.Error.SESSION_MISSING,
-      `Cannot modify user ${this.query.objectId}.`
+      `Cannot modify user ${this.query.objectId}.`,
+      this.config
     );
   }
 
