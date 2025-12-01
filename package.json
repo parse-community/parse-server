@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "8.5.0-alpha.16",
+  "version": "8.5.0",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -47,7 +47,7 @@
     "mongodb": "6.20.0",
     "mustache": "4.2.0",
     "otpauth": "9.4.0",
-    "parse": "7.0.1",
+    "parse": "7.1.2",
     "path-to-regexp": "6.3.0",
     "pg-monitor": "3.0.0",
     "pg-promise": "12.2.0",
@@ -64,11 +64,11 @@
     "ws": "8.18.2"
   },
   "devDependencies": {
-    "@babel/eslint-parser": "7.28.0",
     "@actions/core": "1.11.1",
     "@apollo/client": "3.13.8",
     "@babel/cli": "7.27.0",
     "@babel/core": "7.27.4",
+    "@babel/eslint-parser": "7.28.0",
     "@babel/plugin-proposal-object-rest-spread": "7.20.7",
     "@babel/plugin-transform-flow-strip-types": "7.26.5",
     "@babel/preset-env": "7.27.2",
