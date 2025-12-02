@@ -779,6 +779,12 @@ module.exports.PagesOptions = {
     action: parsers.objectParser,
     default: {},
   },
+  headers: {
+  env: 'PARSE_SERVER_PAGES_HEADERS',
+  help: 'Global headers applied to all PagesRouter responses.',
+  action: parsers.objectParser,
+  default: {},
+},
 };
 module.exports.PagesRoute = {
   handler: {
@@ -796,6 +802,12 @@ module.exports.PagesRoute = {
     help: 'The route path.',
     required: true,
   },
+  headers: {
+  env: 'PARSE_SERVER_PAGES_ROUTE_HEADERS',
+  help: 'Headers applied only to this specific page route.',
+  action: parsers.objectParser,
+  default: {},
+},
 };
 module.exports.PagesCustomUrlsOptions = {
   emailVerificationLinkExpired: {

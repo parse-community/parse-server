@@ -68,6 +68,8 @@ export class PagesRouter extends PromiseRouter {
    */
   constructor(pages = {}) {
     super();
+    this._pagesOptions = pages;
+    this.globalHeaders = pages.headers || {};
 
     // Set instance properties
     this.pagesConfig = pages;
@@ -255,7 +257,7 @@ export class PagesRouter extends PromiseRouter {
    * - POST request -> redirect response (PRG pattern)
    * @returns {Promise<Object>} The PromiseRouter response.
    */
-  goToPage(req, page, params = {}, responseType) {
+  goToPage(req, page, params = {}, responseType, routeHeaders = {}) {
     const config = req.config;
 
     // Determine redirect either by force, response setting or request method
@@ -307,8 +309,8 @@ export class PagesRouter extends PromiseRouter {
       );
     } else {
       return redirect
-        ? this.redirectResponse(defaultUrl, params)
-        : this.pageResponse(defaultPath, params, placeholders);
+        ? this.redirectResponse(defaultUrl, params, routeHeaders)
+        : this.pageResponse(defaultPath, params, placeholders, routeHeaders);
     }
   }
 
@@ -427,7 +429,7 @@ export class PagesRouter extends PromiseRouter {
    * These will not be included in the response header.
    * @returns {Object} The Promise Router response.
    */
-  async pageResponse(path, params = {}, placeholders = {}) {
+  async pageResponse(path, params = {}, placeholders = {}, routeHeaders = {}) {
     // Get file content
     let data;
     try {
@@ -454,14 +456,20 @@ export class PagesRouter extends PromiseRouter {
 
     // Add placeholders in header to allow parsing for programmatic use
     // of response, instead of having to parse the HTML content.
-    const headers = Object.entries(params).reduce((m, p) => {
+    const paramHeaders = Object.entries(params).reduce((m, p) => {
       if (p[1] !== undefined) {
         m[`${pageParamHeaderPrefix}${p[0].toLowerCase()}`] = p[1];
       }
       return m;
     }, {});
 
-    return { text: data, headers: headers };
+    const headers = {
+    ...this.globalHeaders,
+    ...routeHeaders,
+    ...paramHeaders,
+  };
+
+    return { text: data, headers };
   }
 
   /**
@@ -469,7 +477,7 @@ export class PagesRouter extends PromiseRouter {
    * @param {String} path The path of the file to return.
    * @returns {Object} The PromiseRouter response.
    */
-  async fileResponse(path) {
+  async fileResponse(path, routeHeaders = {}) {
     // Get file content
     let data;
     try {
@@ -478,7 +486,12 @@ export class PagesRouter extends PromiseRouter {
       return this.notFound();
     }
 
-    return { text: data };
+    const headers = {
+    ...this.globalHeaders,
+    ...routeHeaders,
+    };
+
+    return { text: data, headers };
   }
 
   /**
@@ -560,7 +573,7 @@ export class PagesRouter extends PromiseRouter {
    * @param {Object} params The query parameters to include.
    * @returns {Object} The Promise Router response.
    */
-  async redirectResponse(url, params) {
+  async redirectResponse(url, params, routeHeaders = {}) {
     // Remove any parameters with undefined value
     params = Object.entries(params).reduce((m, p) => {
       if (p[1] !== undefined) {
@@ -576,17 +589,23 @@ export class PagesRouter extends PromiseRouter {
 
     // Add parameters to header to allow parsing for programmatic use
     // of response, instead of having to parse the HTML content.
-    const headers = Object.entries(params).reduce((m, p) => {
+    const paramHeaders = Object.entries(params).reduce((m, p) => {
       if (p[1] !== undefined) {
         m[`${pageParamHeaderPrefix}${p[0].toLowerCase()}`] = p[1];
       }
       return m;
     }, {});
 
+    const headers = {
+    ...this.globalHeaders,
+    ...routeHeaders,
+    ...paramHeaders,
+    };
+
     return {
       status: 303,
       location: locationString,
-      headers: headers,
+      headers,
     };
   }
 
@@ -698,7 +717,7 @@ export class PagesRouter extends PromiseRouter {
           this.setConfig(req);
         },
         async req => {
-          const { file, query = {} } = (await route.handler(req)) || {};
+          const { file, query = {}, headers: routeHeaders = {} } = (await route.handler(req)) || {};
 
           // If route handler did not return a page send 404 response
           if (!file) {
@@ -707,7 +726,7 @@ export class PagesRouter extends PromiseRouter {
 
           // Send page response
           const page = new Page({ id: file, defaultFile: file });
-          return this.goToPage(req, page, query, false);
+          return this.goToPage(req, page, query, false, routeHeaders);
         }
       );
     }
@@ -728,9 +747,32 @@ export class PagesRouter extends PromiseRouter {
 
   expressRouter() {
     const router = express.Router();
-    router.use('/', super.expressRouter());
-    return router;
-  }
+    router.use((req, res, next) => {
+    const options = this._pagesOptions || {};
+
+    const enableSecureHeaders = options.secureHeaders !== false;
+
+    if (enableSecureHeaders) {
+      if (!res.get('X-Frame-Options')) {
+        res.set('X-Frame-Options', 'DENY');
+      }
+      if (!res.get('Content-Security-Policy')) {
+        res.set('Content-Security-Policy', "frame-ancestors 'none'");
+      }
+    }
+
+    if (options.customHeaders) {
+      Object.entries(options.customHeaders).forEach(([key, value]) => {
+        res.set(key, value);
+      });
+    }
+
+    next();
+  });
+
+  router.use('/', super.expressRouter());
+  return router;
+}
 }
 
 export default PagesRouter;
