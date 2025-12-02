@@ -2,7 +2,7 @@ import { GraphQLNonNull, GraphQLString, GraphQLBoolean, GraphQLObjectType } from
 import Parse from 'parse/node';
 import { createSanitizedError } from '../../Error';
 
-const configValue = async (context, paramName) => {
+const cloudConfig = async (context, paramName) => {
   const { config, auth } = context;
 
   if (!auth.isMaster) {
@@ -30,27 +30,27 @@ const configValue = async (context, paramName) => {
 };
 
 const load = (parseGraphQLSchema) => {
-  if (!parseGraphQLSchema.configValueType) {
-    const configValueType = new GraphQLObjectType({
+  if (!parseGraphQLSchema.cloudConfigType) {
+    const cloudConfigType = new GraphQLObjectType({
       name: 'ConfigValue',
       fields: {
         value: { type: GraphQLString },
         isMasterKeyOnly: { type: GraphQLBoolean },
       },
     });
-    parseGraphQLSchema.addGraphQLType(configValueType, true, true);
-    parseGraphQLSchema.configValueType = configValueType;
+    parseGraphQLSchema.addGraphQLType(cloudConfigType, true, true);
+    parseGraphQLSchema.cloudConfigType = cloudConfigType;
   }
 
-  parseGraphQLSchema.addGraphQLQuery('configValue', {
+  parseGraphQLSchema.addGraphQLQuery('cloudConfig', {
     description: 'Returns the value of a specific parameter from GlobalConfig.',
     args: {
       paramName: { type: new GraphQLNonNull(GraphQLString) },
     },
-    type: new GraphQLNonNull(parseGraphQLSchema.configValueType),
+    type: new GraphQLNonNull(parseGraphQLSchema.cloudConfigType),
     async resolve(_source, args, context) {
       try {
-        return await configValue(context, args.paramName);
+        return await cloudConfig(context, args.paramName);
       } catch (e) {
         parseGraphQLSchema.handleError(e);
       }
@@ -58,4 +58,4 @@ const load = (parseGraphQLSchema) => {
   }, false, true);
 };
 
-export { load, configValue };
+export { load, cloudConfig };

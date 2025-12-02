@@ -7092,8 +7092,8 @@ describe('ParseGraphQLServer', () => {
 
         it("should return the config value for a specific parameter", async () => {
           const query = gql`
-            query configValue($paramName: String!) {
-              configValue(paramName: $paramName) {
+            query cloudConfig($paramName: String!) {
+              cloudConfig(paramName: $paramName) {
                 value
                 isMasterKeyOnly
               }
@@ -7111,14 +7111,14 @@ describe('ParseGraphQLServer', () => {
           });
 
           expect(result.errors).toBeUndefined();
-          expect(result.data.configValue.value).toEqual('publicValue');
-          expect(result.data.configValue.isMasterKeyOnly).toEqual(false);
+          expect(result.data.cloudConfig.value).toEqual('publicValue');
+          expect(result.data.cloudConfig.isMasterKeyOnly).toEqual(false);
         });
 
         it("should return null for non-existent parameter", async () => {
           const query = gql`
-            query configValue($paramName: String!) {
-              configValue(paramName: $paramName) {
+            query cloudConfig($paramName: String!) {
+              cloudConfig(paramName: $paramName) {
                 value
                 isMasterKeyOnly
               }
@@ -7136,18 +7136,18 @@ describe('ParseGraphQLServer', () => {
           });
 
           expect(result.errors).toBeUndefined();
-          expect(result.data.configValue.value).toBeNull();
-          expect(result.data.configValue.isMasterKeyOnly).toBeNull();
+          expect(result.data.cloudConfig.value).toBeNull();
+          expect(result.data.cloudConfig.isMasterKeyOnly).toBeNull();
         });
       });
 
       describe("Config Mutations", () => {
         it("should update a config value using mutation and retrieve it with query", async () => {
           const mutation = gql`
-            mutation updateConfigValue($input: UpdateConfigValueInput!) {
-              updateConfigValue(input: $input) {
+            mutation updateCloudConfig($input: UpdateCloudConfigInput!) {
+              updateCloudConfig(input: $input) {
                 clientMutationId
-                configValue {
+                cloudConfig {
                   value
                   isMasterKeyOnly
                 }
@@ -7156,8 +7156,8 @@ describe('ParseGraphQLServer', () => {
           `;
 
           const query = gql`
-            query configValue($paramName: String!) {
-              configValue(paramName: $paramName) {
+            query cloudConfig($paramName: String!) {
+              cloudConfig(paramName: $paramName) {
                 value
                 isMasterKeyOnly
               }
@@ -7182,8 +7182,8 @@ describe('ParseGraphQLServer', () => {
           });
 
           expect(mutationResult.errors).toBeUndefined();
-          expect(mutationResult.data.updateConfigValue.configValue.value).toEqual('testValue');
-          expect(mutationResult.data.updateConfigValue.configValue.isMasterKeyOnly).toEqual(false);
+          expect(mutationResult.data.updateCloudConfig.cloudConfig.value).toEqual('testValue');
+          expect(mutationResult.data.updateCloudConfig.cloudConfig.isMasterKeyOnly).toEqual(false);
 
           const queryResult = await apolloClient.query({
             query,
@@ -7196,16 +7196,16 @@ describe('ParseGraphQLServer', () => {
           });
 
           expect(queryResult.errors).toBeUndefined();
-          expect(queryResult.data.configValue.value).toEqual('testValue');
-          expect(queryResult.data.configValue.isMasterKeyOnly).toEqual(false);
+          expect(queryResult.data.cloudConfig.value).toEqual('testValue');
+          expect(queryResult.data.cloudConfig.isMasterKeyOnly).toEqual(false);
         });
 
         it("should update a config value with isMasterKeyOnly set to true", async () => {
           const mutation = gql`
-            mutation updateConfigValue($input: UpdateConfigValueInput!) {
-              updateConfigValue(input: $input) {
+            mutation updateCloudConfig($input: UpdateCloudConfigInput!) {
+              updateCloudConfig(input: $input) {
                 clientMutationId
-                configValue {
+                cloudConfig {
                   value
                   isMasterKeyOnly
                 }
@@ -7214,8 +7214,8 @@ describe('ParseGraphQLServer', () => {
           `;
 
           const query = gql`
-            query configValue($paramName: String!) {
-              configValue(paramName: $paramName) {
+            query cloudConfig($paramName: String!) {
+              cloudConfig(paramName: $paramName) {
                 value
                 isMasterKeyOnly
               }
@@ -7240,8 +7240,8 @@ describe('ParseGraphQLServer', () => {
           });
 
           expect(mutationResult.errors).toBeUndefined();
-          expect(mutationResult.data.updateConfigValue.configValue.value).toEqual('privateValue');
-          expect(mutationResult.data.updateConfigValue.configValue.isMasterKeyOnly).toEqual(true);
+          expect(mutationResult.data.updateCloudConfig.cloudConfig.value).toEqual('privateValue');
+          expect(mutationResult.data.updateCloudConfig.cloudConfig.isMasterKeyOnly).toEqual(true);
 
           const queryResult = await apolloClient.query({
             query,
@@ -7254,8 +7254,8 @@ describe('ParseGraphQLServer', () => {
           });
 
           expect(queryResult.errors).toBeUndefined();
-          expect(queryResult.data.configValue.value).toEqual('privateValue');
-          expect(queryResult.data.configValue.isMasterKeyOnly).toEqual(true);
+          expect(queryResult.data.cloudConfig.value).toEqual('privateValue');
+          expect(queryResult.data.cloudConfig.isMasterKeyOnly).toEqual(true);
         });
 
         it("should update an existing config value", async () => {
@@ -7266,10 +7266,10 @@ describe('ParseGraphQLServer', () => {
           );
 
           const mutation = gql`
-            mutation updateConfigValue($input: UpdateConfigValueInput!) {
-              updateConfigValue(input: $input) {
+            mutation updateCloudConfig($input: UpdateCloudConfigInput!) {
+              updateCloudConfig(input: $input) {
                 clientMutationId
-                configValue {
+                cloudConfig {
                   value
                   isMasterKeyOnly
                 }
@@ -7278,8 +7278,8 @@ describe('ParseGraphQLServer', () => {
           `;
 
           const query = gql`
-            query configValue($paramName: String!) {
-              configValue(paramName: $paramName) {
+            query cloudConfig($paramName: String!) {
+              cloudConfig(paramName: $paramName) {
                 value
                 isMasterKeyOnly
               }
@@ -7304,7 +7304,7 @@ describe('ParseGraphQLServer', () => {
           });
 
           expect(mutationResult.errors).toBeUndefined();
-          expect(mutationResult.data.updateConfigValue.configValue.value).toEqual('updatedValue');
+          expect(mutationResult.data.updateCloudConfig.cloudConfig.value).toEqual('updatedValue');
 
           const queryResult = await apolloClient.query({
             query,
@@ -7317,15 +7317,15 @@ describe('ParseGraphQLServer', () => {
           });
 
           expect(queryResult.errors).toBeUndefined();
-          expect(queryResult.data.configValue.value).toEqual('updatedValue');
+          expect(queryResult.data.cloudConfig.value).toEqual('updatedValue');
         });
 
         it("should require master key to update config", async () => {
           const mutation = gql`
-            mutation updateConfigValue($input: UpdateConfigValueInput!) {
-              updateConfigValue(input: $input) {
+            mutation updateCloudConfig($input: UpdateCloudConfigInput!) {
+              updateCloudConfig(input: $input) {
                 clientMutationId
-                configValue {
+                cloudConfig {
                   value
                   isMasterKeyOnly
                 }

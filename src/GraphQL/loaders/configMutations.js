@@ -6,7 +6,7 @@ import GlobalConfigRouter from '../../Routers/GlobalConfigRouter';
 
 const globalConfigRouter = new GlobalConfigRouter();
 
-const updateConfigValue = async (context, paramName, value, isMasterKeyOnly = false) => {
+const updateCloudConfig = async (context, paramName, value, isMasterKeyOnly = false) => {
   const { config, auth } = context;
 
   if (!auth.isMaster) {
@@ -30,8 +30,8 @@ const updateConfigValue = async (context, paramName, value, isMasterKeyOnly = fa
 };
 
 const load = parseGraphQLSchema => {
-  const updateConfigValueMutation = mutationWithClientMutationId({
-    name: 'UpdateConfigValue',
+  const updateCloudConfigMutation = mutationWithClientMutationId({
+    name: 'UpdateCloudConfig',
     description: 'Updates the value of a specific parameter in GlobalConfig.',
     inputFields: {
       paramName: {
@@ -49,17 +49,17 @@ const load = parseGraphQLSchema => {
       },
     },
     outputFields: {
-      configValue: {
+      cloudConfig: {
         description: 'The updated config value.',
-        type: new GraphQLNonNull(parseGraphQLSchema.configValueType),
+        type: new GraphQLNonNull(parseGraphQLSchema.cloudConfigType),
       },
     },
     mutateAndGetPayload: async (args, context) => {
       try {
         const { paramName, value, isMasterKeyOnly } = args;
-        const result = await updateConfigValue(context, paramName, value, isMasterKeyOnly);
+        const result = await updateCloudConfig(context, paramName, value, isMasterKeyOnly);
         return {
-          configValue: result,
+          cloudConfig: result,
         };
       } catch (e) {
         parseGraphQLSchema.handleError(e);
@@ -67,10 +67,10 @@ const load = parseGraphQLSchema => {
     },
   });
 
-  parseGraphQLSchema.addGraphQLType(updateConfigValueMutation.args.input.type.ofType, true, true);
-  parseGraphQLSchema.addGraphQLType(updateConfigValueMutation.type, true, true);
-  parseGraphQLSchema.addGraphQLMutation('updateConfigValue', updateConfigValueMutation, true, true);
+  parseGraphQLSchema.addGraphQLType(updateCloudConfigMutation.args.input.type.ofType, true, true);
+  parseGraphQLSchema.addGraphQLType(updateCloudConfigMutation.type, true, true);
+  parseGraphQLSchema.addGraphQLMutation('updateCloudConfig', updateCloudConfigMutation, true, true);
 };
 
-export { load, updateConfigValue };
+export { load, updateCloudConfig };
 
