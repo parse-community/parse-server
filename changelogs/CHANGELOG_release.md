@@ -1,3 +1,33 @@
+# [8.5.0](https://github.com/parse-community/parse-server/compare/8.4.0...8.5.0) (2025-12-01)
+
+
+### Bug Fixes
+
+* `GridFSBucketAdapter` throws when using some Parse Server specific options in MongoDB database options ([#9915](https://github.com/parse-community/parse-server/issues/9915)) ([d3d4003](https://github.com/parse-community/parse-server/commit/d3d4003570b9872f2b0f5a25fc06ce4c4132860d))
+* Deprecation warning logged at server launch for nested Parse Server option even if option is explicitly set ([#9934](https://github.com/parse-community/parse-server/issues/9934)) ([c22cb0a](https://github.com/parse-community/parse-server/commit/c22cb0ae58e64cd0e4597ab9610d57a1155c44a2))
+* Parse Server option `rateLimit.zone` does not use default value `ip` ([#9941](https://github.com/parse-community/parse-server/issues/9941)) ([12beb8f](https://github.com/parse-community/parse-server/commit/12beb8f6ee5d3002fec017bb4525eb3f1375f806))
+* Queries with object field `authData.provider.id` are incorrectly transformed to `_auth_data_provider.id` for custom classes ([#9932](https://github.com/parse-community/parse-server/issues/9932)) ([7b9fa18](https://github.com/parse-community/parse-server/commit/7b9fa18f968ec084ea0b35dad2b5ba0451d59787))
+* Race condition can cause multiple Apollo server initializations under load ([#9929](https://github.com/parse-community/parse-server/issues/9929)) ([7d5e9fc](https://github.com/parse-community/parse-server/commit/7d5e9fcf3ceb0abad8ab49c75bc26f521a0f1bde))
+* Server internal error details leaking in error messages returned to clients ([#9937](https://github.com/parse-community/parse-server/issues/9937)) ([50edb5a](https://github.com/parse-community/parse-server/commit/50edb5ab4bb4a6ce474bfb7cf159d918933753b8))
+
+### Features
+
+* Add `beforePasswordResetRequest` hook ([#9906](https://github.com/parse-community/parse-server/issues/9906)) ([94cee5b](https://github.com/parse-community/parse-server/commit/94cee5bfafca10c914c73cf17fcdb627a9f0837b))
+* Add MongoDB client event logging via database option `logClientEvents` ([#9914](https://github.com/parse-community/parse-server/issues/9914)) ([b760733](https://github.com/parse-community/parse-server/commit/b760733b98bcfc9c09ac9780066602e1fda108fe))
+* Add Parse Server option `allowPublicExplain` to allow `Parse.Query.explain` without master key ([#9890](https://github.com/parse-community/parse-server/issues/9890)) ([4456b02](https://github.com/parse-community/parse-server/commit/4456b02280c2d8dd58b7250e9e67f1a8647b3452))
+* Add Parse Server option `enableSanitizedErrorResponse` to remove detailed error messages from responses sent to clients ([#9944](https://github.com/parse-community/parse-server/issues/9944)) ([4752197](https://github.com/parse-community/parse-server/commit/47521974aeafcf41102be62f19612a4ab0a4837f))
+* Add support for MongoDB driver options `serverSelectionTimeoutMS`, `maxIdleTimeMS`, `heartbeatFrequencyMS` ([#9910](https://github.com/parse-community/parse-server/issues/9910)) ([1b661e9](https://github.com/parse-community/parse-server/commit/1b661e98c86a1db79e076a7297cd9199a72ae1ac))
+* Add support for more MongoDB driver options ([#9911](https://github.com/parse-community/parse-server/issues/9911)) ([cff451e](https://github.com/parse-community/parse-server/commit/cff451eabdc380affa600ed711de66f7bd1d00aa))
+* Allow option `publicServerURL` to be set dynamically as asynchronous function ([#9803](https://github.com/parse-community/parse-server/issues/9803)) ([460a65c](https://github.com/parse-community/parse-server/commit/460a65cf612f4c86af8038cafcc7e7ffe9eb8440))
+* Upgrade to parse 7.1.1 ([#9954](https://github.com/parse-community/parse-server/issues/9954)) ([fa57d69](https://github.com/parse-community/parse-server/commit/fa57d69cbec525189da98d7136c1c0e9eaf74338))
+* Upgrade to parse 7.1.2 ([#9955](https://github.com/parse-community/parse-server/issues/9955)) ([5c644a5](https://github.com/parse-community/parse-server/commit/5c644a55ac25986f214b68ba4bcbe7a62ad6d6d1))
+
+### Performance Improvements
+
+* `Parse.Query.include` now fetches pointers at same level in parallel ([#9861](https://github.com/parse-community/parse-server/issues/9861)) ([dafea21](https://github.com/parse-community/parse-server/commit/dafea21eb39b0fdc2b52bb8a14f7b61e3f2b8d13))
+* Remove unused dependencies ([#9943](https://github.com/parse-community/parse-server/issues/9943)) ([d4c6de0](https://github.com/parse-community/parse-server/commit/d4c6de0096b3ac95289c6bddfe25eb397d790e41))
+* Upgrade MongoDB driver to 6.20.0 ([#9887](https://github.com/parse-community/parse-server/issues/9887)) ([3c9af48](https://github.com/parse-community/parse-server/commit/3c9af48edd999158443b797e388e29495953799e))
+
 # [8.4.0](https://github.com/parse-community/parse-server/compare/8.3.0...8.4.0) (2025-11-05)
 
 
