@@ -52,7 +52,7 @@ async function RestQuery({
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'bad query type');
   }
   const isGet = method === RestQuery.Method.get;
-  enforceRoleSecurity(method, className, auth);
+  enforceRoleSecurity(method, className, auth, config);
   const result = runBeforeFind
     ? await triggers.maybeRunQueryTrigger(
       triggers.Types.beforeFind,
@@ -121,7 +121,7 @@ function _UnsafeRestQuery(
   if (!this.auth.isMaster) {
     if (this.className == '_Session') {
       if (!this.auth.user) {
-        throw createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+        throw createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token', config);
       }
       this.restWhere = {
         $and: [
@@ -424,7 +424,8 @@ _UnsafeRestQuery.prototype.validateClientClassCreation = function () {
         if (hasClass !== true) {
           throw createSanitizedError(
             Parse.Error.OPERATION_FORBIDDEN,
-            'This user is not allowed to access ' + 'non-existent class: ' + this.className
+            'This user is not allowed to access ' + 'non-existent class: ' + this.className,
+            this.config
           );
         }
       });
@@ -803,7 +804,8 @@ _UnsafeRestQuery.prototype.denyProtectedFields = async function () {
     if (this.restWhere[key]) {
       throw createSanitizedError(
         Parse.Error.OPERATION_FORBIDDEN,
-        `This user is not allowed to query ${key} on class ${this.className}`
+        `This user is not allowed to query ${key} on class ${this.className}`,
+        this.config
       );
     }
   }

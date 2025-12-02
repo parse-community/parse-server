@@ -1,3 +1,24 @@
+# [8.5.0-alpha.18](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.17...8.5.0-alpha.18) (2025-12-01)
+
+
+### Features
+
+* Upgrade to parse 7.1.2 ([#9955](https://github.com/parse-community/parse-server/issues/9955)) ([5c644a5](https://github.com/parse-community/parse-server/commit/5c644a55ac25986f214b68ba4bcbe7a62ad6d6d1))
+
+# [8.5.0-alpha.17](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.16...8.5.0-alpha.17) (2025-12-01)
+
+
+### Features
+
+* Upgrade to parse 7.1.1 ([#9954](https://github.com/parse-community/parse-server/issues/9954)) ([fa57d69](https://github.com/parse-community/parse-server/commit/fa57d69cbec525189da98d7136c1c0e9eaf74338))
+
+# [8.5.0-alpha.16](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.15...8.5.0-alpha.16) (2025-11-28)
+
+
+### Features
+
+* Add Parse Server option `enableSanitizedErrorResponse` to remove detailed error messages from responses sent to clients ([#9944](https://github.com/parse-community/parse-server/issues/9944)) ([4752197](https://github.com/parse-community/parse-server/commit/47521974aeafcf41102be62f19612a4ab0a4837f))
+
 # [8.5.0-alpha.15](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.14...8.5.0-alpha.15) (2025-11-23)
 
 
