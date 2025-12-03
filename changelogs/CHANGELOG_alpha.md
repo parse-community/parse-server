@@ -1,3 +1,10 @@
+# [8.6.0-alpha.1](https://github.com/parse-community/parse-server/compare/8.5.0...8.6.0-alpha.1) (2025-12-03)
+
+
+### Features
+
+* Add GraphQL query `cloudConfig` to retrieve and mutation `updateCloudConfig` to update Cloud Config ([#9947](https://github.com/parse-community/parse-server/issues/9947)) ([3ca85cd](https://github.com/parse-community/parse-server/commit/3ca85cd4a632f234c9d3d731331c0524dfe54075))
+
 # [8.5.0-alpha.18](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.17...8.5.0-alpha.18) (2025-12-01)
 
 
