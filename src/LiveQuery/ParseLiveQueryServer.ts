@@ -24,7 +24,6 @@ import { LRUCache as LRU } from 'lru-cache';
 import UserRouter from '../Routers/UsersRouter';
 import DatabaseController from '../Controllers/DatabaseController';
 import { isDeepStrictEqual } from 'util';
-import deepcopy from 'deepcopy';
 
 class ParseLiveQueryServer {
   server: any;
@@ -256,7 +255,7 @@ class ParseLiveQueryServer {
             Client.pushError(client.parseWebSocket, error.code, error.message, false, requestId);
             logger.error(
               `Failed running afterLiveQueryEvent on class ${className} for event ${res.event} with session ${res.sessionToken} with:\n Error: ` +
-                JSON.stringify(error)
+              JSON.stringify(error)
             );
           }
         });
@@ -417,7 +416,7 @@ class ParseLiveQueryServer {
             Client.pushError(client.parseWebSocket, error.code, error.message, false, requestId);
             logger.error(
               `Failed running afterLiveQueryEvent on class ${className} for event ${res.event} with session ${res.sessionToken} with:\n Error: ` +
-                JSON.stringify(error)
+              JSON.stringify(error)
             );
           }
         });
@@ -524,7 +523,7 @@ class ParseLiveQueryServer {
     if (!parseObject) {
       return false;
     }
-    return matchesQuery(deepcopy(parseObject), subscription.query);
+    return matchesQuery(structuredClone(parseObject), subscription.query);
   }
 
   async _clearCachedRoles(userId: string) {
@@ -821,7 +820,7 @@ class ParseLiveQueryServer {
       Client.pushError(parseWebsocket, error.code, error.message, false);
       logger.error(
         `Failed running beforeConnect for session ${request.sessionToken} with:\n Error: ` +
-          JSON.stringify(error)
+        JSON.stringify(error)
       );
     }
   }
@@ -964,7 +963,7 @@ class ParseLiveQueryServer {
       Client.pushError(parseWebsocket, error.code, error.message, false, request.requestId);
       logger.error(
         `Failed running beforeSubscribe on ${className} for session ${request.sessionToken} with:\n Error: ` +
-          JSON.stringify(error)
+        JSON.stringify(error)
       );
     }
   }
@@ -994,8 +993,8 @@ class ParseLiveQueryServer {
         parseWebsocket,
         2,
         'Cannot find client with clientId ' +
-          parseWebsocket.clientId +
-          '. Make sure you connect to live query server before unsubscribing.'
+        parseWebsocket.clientId +
+        '. Make sure you connect to live query server before unsubscribing.'
       );
       logger.error('Can not find this client ' + parseWebsocket.clientId);
       return;
@@ -1007,16 +1006,16 @@ class ParseLiveQueryServer {
         parseWebsocket,
         2,
         'Cannot find subscription with clientId ' +
-          parseWebsocket.clientId +
-          ' subscriptionId ' +
-          requestId +
-          '. Make sure you subscribe to live query server before unsubscribing.'
+        parseWebsocket.clientId +
+        ' subscriptionId ' +
+        requestId +
+        '. Make sure you subscribe to live query server before unsubscribing.'
       );
       logger.error(
         'Can not find subscription with clientId ' +
-          parseWebsocket.clientId +
-          ' subscriptionId ' +
-          requestId
+        parseWebsocket.clientId +
+        ' subscriptionId ' +
+        requestId
       );
       return;
     }

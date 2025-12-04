@@ -1,6 +1,5 @@
 import { GraphQLNonNull, GraphQLString, GraphQLBoolean, GraphQLInputObjectType } from 'graphql';
 import { mutationWithClientMutationId } from 'graphql-relay';
-import deepcopy from 'deepcopy';
 import UsersRouter from '../../Routers/UsersRouter';
 import * as objectsMutations from '../helpers/objectsMutations';
 import { OBJECT } from './defaultGraphQLTypes';
@@ -32,7 +31,7 @@ const load = parseGraphQLSchema => {
     },
     mutateAndGetPayload: async (args, context, mutationInfo) => {
       try {
-        const { fields } = deepcopy(args);
+        const { fields } = structuredClone(args);
         const { config, auth, info } = context;
 
         const parseFields = await transformTypes('create', fields, {
@@ -109,7 +108,7 @@ const load = parseGraphQLSchema => {
     },
     mutateAndGetPayload: async (args, context, mutationInfo) => {
       try {
-        const { fields, authData } = deepcopy(args);
+        const { fields, authData } = structuredClone(args);
         const { config, auth, info } = context;
 
         const parseFields = await transformTypes('create', fields, {
@@ -173,7 +172,7 @@ const load = parseGraphQLSchema => {
     },
     mutateAndGetPayload: async (args, context, mutationInfo) => {
       try {
-        const { username, password, authData } = deepcopy(args);
+        const { username, password, authData } = structuredClone(args);
         const { config, auth, info } = context;
 
         const { sessionToken, objectId, authDataResponse } = (

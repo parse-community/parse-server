@@ -1,7 +1,6 @@
 import { GraphQLNonNull } from 'graphql';
 import { fromGlobalId, mutationWithClientMutationId } from 'graphql-relay';
 import getFieldNames from 'graphql-list-fields';
-import deepcopy from 'deepcopy';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import { extractKeysAndInclude, getParseClassMutationConfig } from '../parseGraphQLUtils';
 import * as objectsMutations from '../helpers/objectsMutations';
@@ -75,7 +74,7 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
       },
       mutateAndGetPayload: async (args, context, mutationInfo) => {
         try {
-          let { fields } = deepcopy(args);
+          let { fields } = structuredClone(args);
           if (!fields) { fields = {}; }
           const { config, auth, info } = context;
 
@@ -178,7 +177,7 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
       },
       mutateAndGetPayload: async (args, context, mutationInfo) => {
         try {
-          let { id, fields } = deepcopy(args);
+          let { id, fields } = structuredClone(args);
           if (!fields) { fields = {}; }
           const { config, auth, info } = context;
 
@@ -284,7 +283,7 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
       },
       mutateAndGetPayload: async (args, context, mutationInfo) => {
         try {
-          let { id } = deepcopy(args);
+          let { id } = structuredClone(args);
           const { config, auth, info } = context;
 
           const globalIdObject = fromGlobalId(id);

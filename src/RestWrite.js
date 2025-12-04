@@ -3,7 +3,7 @@
 // This could be either a "create" or an "update".
 
 var SchemaController = require('./Controllers/SchemaController');
-var deepcopy = require('deepcopy');
+
 
 const Auth = require('./Auth');
 const Utils = require('./Utils');
@@ -75,8 +75,8 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
 
   // Processing this operation may mutate our data, so we operate on a
   // copy
-  this.query = deepcopy(query);
-  this.data = deepcopy(data);
+  this.query = structuredClone(query);
+  this.data = structuredClone(data);
   // We never change originalData, so we do not need a deep copy
   this.originalData = originalData;
 
@@ -375,12 +375,12 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function () {
         schema?.classLevelPermissions?.ACL &&
         !this.data.ACL &&
         JSON.stringify(schema.classLevelPermissions.ACL) !==
-          JSON.stringify({ '*': { read: true, write: true } })
+        JSON.stringify({ '*': { read: true, write: true } })
       ) {
-        const acl = deepcopy(schema.classLevelPermissions.ACL);
+        const acl = structuredClone(schema.classLevelPermissions.ACL);
         if (acl.currentUser) {
           if (this.auth.user?.id) {
-            acl[this.auth.user?.id] = deepcopy(acl.currentUser);
+            acl[this.auth.user?.id] = structuredClone(acl.currentUser);
           }
           delete acl.currentUser;
         }
@@ -599,7 +599,7 @@ RestWrite.prototype.handleAuthData = async function (authData) {
         // Run beforeLogin hook before storing any updates
         // to authData on the db; changes to userResult
         // will be ignored.
-        await this.runBeforeLoginTrigger(deepcopy(userResult));
+        await this.runBeforeLoginTrigger(structuredClone(userResult));
 
         // If we are in login operation via authData
         // we need to be sure that the user has provided
@@ -867,18 +867,18 @@ RestWrite.prototype._validatePasswordRequirements = function () {
   if (this.config.passwordPolicy.doNotAllowUsername === true) {
     if (this.data.username) {
       // username is not passed during password reset
-      if (this.data.password.indexOf(this.data.username) >= 0)
-      { return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, containsUsernameError)); }
+      if (this.data.password.indexOf(this.data.username) >= 0) { return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, containsUsernameError)); }
     } else {
       // retrieve the User object using objectId during password reset
       return this.config.database.find('_User', { objectId: this.objectId() }).then(results => {
         if (results.length != 1) {
           throw undefined;
         }
-        if (this.data.password.indexOf(results[0].username) >= 0)
-        { return Promise.reject(
-          new Parse.Error(Parse.Error.VALIDATION_ERROR, containsUsernameError)
-        ); }
+        if (this.data.password.indexOf(results[0].username) >= 0) {
+          return Promise.reject(
+            new Parse.Error(Parse.Error.VALIDATION_ERROR, containsUsernameError)
+          );
+        }
         return Promise.resolve();
       });
     }
@@ -902,11 +902,12 @@ RestWrite.prototype._validatePasswordHistory = function () {
         }
         const user = results[0];
         let oldPasswords = [];
-        if (user._password_history)
-        { oldPasswords = _.take(
-          user._password_history,
-          this.config.passwordPolicy.maxPasswordHistory - 1
-        ); }
+        if (user._password_history) {
+          oldPasswords = _.take(
+            user._password_history,
+            this.config.passwordPolicy.maxPasswordHistory - 1
+          );
+        }
         oldPasswords.push(user.password);
         const newPassword = this.data.password;
         // compare the new password hash with all old password hashes
@@ -926,12 +927,14 @@ RestWrite.prototype._validatePasswordHistory = function () {
           .catch(err => {
             if (err === 'REPEAT_PASSWORD')
             // a match was found
-            { return Promise.reject(
-              new Parse.Error(
-                Parse.Error.VALIDATION_ERROR,
-                `New password should not be the same as last ${this.config.passwordPolicy.maxPasswordHistory} passwords.`
-              )
-            ); }
+            {
+              return Promise.reject(
+                new Parse.Error(
+                  Parse.Error.VALIDATION_ERROR,
+                  `New password should not be the same as last ${this.config.passwordPolicy.maxPasswordHistory} passwords.`
+                )
+              );
+            }
             throw err;
           });
       });
@@ -1331,7 +1334,7 @@ RestWrite.prototype.handleInstallation = function () {
           throw new Parse.Error(
             132,
             'Must specify installationId when deviceToken ' +
-              'matches multiple Installation objects'
+            'matches multiple Installation objects'
           );
         } else {
           // Multiple device token matches and we specified an installation ID,
@@ -1733,7 +1736,7 @@ RestWrite.prototype.sanitizedData = function () {
       delete data[key];
     }
     return data;
-  }, deepcopy(this.data));
+  }, structuredClone(this.data));
   return Parse._decode(undefined, data);
 };
 
@@ -1783,7 +1786,7 @@ RestWrite.prototype.buildParseObjects = function () {
       delete data[key];
     }
     return data;
-  }, deepcopy(this.data));
+  }, structuredClone(this.data));
 
   const sanitized = this.sanitizedData();
   for (const attribute of readOnlyAttributes) {

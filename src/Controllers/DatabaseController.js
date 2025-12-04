@@ -9,7 +9,6 @@ import _ from 'lodash';
 // @flow-disable-next
 import intersect from 'intersect';
 // @flow-disable-next
-import deepcopy from 'deepcopy';
 import logger from '../logger';
 import Utils from '../Utils';
 import * as SchemaController from './SchemaController';
@@ -502,7 +501,7 @@ class DatabaseController {
     const originalQuery = query;
     const originalUpdate = update;
     // Make a copy of the object, so we don't mutate the incoming data.
-    update = deepcopy(update);
+    update = structuredClone(update);
     var relationUpdates = [];
     var isMaster = acl === undefined;
     var aclGroup = acl || [];
@@ -1092,7 +1091,7 @@ class DatabaseController {
           this.addInObjectIdsIds(ids, query);
           return this.reduceRelationKeys(className, query, queryOptions);
         })
-        .then(() => {});
+        .then(() => { });
     }
   }
 
@@ -1543,8 +1542,8 @@ class DatabaseController {
         const fieldDescriptor = schema.getExpectedType(className, key);
         const fieldType =
           fieldDescriptor &&
-          typeof fieldDescriptor === 'object' &&
-          Object.prototype.hasOwnProperty.call(fieldDescriptor, 'type')
+            typeof fieldDescriptor === 'object' &&
+            Object.prototype.hasOwnProperty.call(fieldDescriptor, 'type')
             ? fieldDescriptor.type
             : null;
 
