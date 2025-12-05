@@ -62,6 +62,40 @@ export class UsersRouter extends ClassesRouter {
   }
 
   /**
+   * Resolve email verification flags; supports boolean or async function options.
+   * @param {Object} req The request
+   * @param {Object} userObj The user object to pass into config callbacks
+   * @returns {Promise<{verifyUserEmails: boolean, preventLoginWithUnverifiedEmail: boolean, preventSignupWithUnverifiedEmail: boolean}>}
+   * @private
+   */
+  async _resolveEmailVerificationFlags(req, userObj) {
+    const request = {
+      master: req.auth.isMaster,
+      ip: req.config.ip,
+      installationId: req.auth.installationId,
+      object: Parse.User.fromJSON(Object.assign({ className: '_User' }, userObj)),
+    };
+    const verifyUserEmails =
+      req.config.verifyUserEmails === true ||
+      (typeof req.config.verifyUserEmails === 'function' &&
+        (await Promise.resolve(req.config.verifyUserEmails(request))) === true);
+    const preventLoginWithUnverifiedEmail =
+      req.config.preventLoginWithUnverifiedEmail === true ||
+      (typeof req.config.preventLoginWithUnverifiedEmail === 'function' &&
+        (await Promise.resolve(req.config.preventLoginWithUnverifiedEmail(request))) === true);
+    const preventSignupWithUnverifiedEmail =
+      req.config.preventSignupWithUnverifiedEmail === true ||
+      (typeof req.config.preventSignupWithUnverifiedEmail === 'function' &&
+        (await Promise.resolve(req.config.preventSignupWithUnverifiedEmail(request))) === true);
+
+    return {
+      verifyUserEmails,
+      preventLoginWithUnverifiedEmail,
+      preventSignupWithUnverifiedEmail,
+    };
+  }
+
+  /**
    * Extract and validate login payload from request
    * @param {Object} req The request
    * @returns {{ username: string | void, email: string | void, password: string, ignoreEmailVerification: boolean | void }}
@@ -148,23 +182,14 @@ export class UsersRouter extends ClassesRouter {
           if (!req.auth.isMaster && user.ACL && Object.keys(user.ACL).length == 0) {
             throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
           }
-          // Create request object for verification functions
-          const request = {
-            master: req.auth.isMaster,
-            ip: req.config.ip,
-            installationId: req.auth.installationId,
-            object: Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
-          };
 
           // If request doesn't use master or maintenance key with ignoring email verification
           if (!((req.auth.isMaster || req.auth.isMaintenance) && ignoreEmailVerification)) {
-
-            // Get verification conditions which can be booleans or functions; the purpose of this async/await
-            // structure is to avoid unnecessarily executing subsequent functions if previous ones fail in the
-            // conditional statement below, as a developer may decide to execute expensive operations in them
-            const verifyUserEmails = async () => req.config.verifyUserEmails === true || (typeof req.config.verifyUserEmails === 'function' && await Promise.resolve(req.config.verifyUserEmails(request)) === true);
-            const preventLoginWithUnverifiedEmail = async () => req.config.preventLoginWithUnverifiedEmail === true || (typeof req.config.preventLoginWithUnverifiedEmail === 'function' && await Promise.resolve(req.config.preventLoginWithUnverifiedEmail(request)) === true);
-            if (await verifyUserEmails() && await preventLoginWithUnverifiedEmail() && !user.emailVerified) {
+            const {
+              verifyUserEmails,
+              preventLoginWithUnverifiedEmail,
+            } = await this._resolveEmailVerificationFlags(req, user);
+            if (verifyUserEmails && preventLoginWithUnverifiedEmail && !user.emailVerified) {
               throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
             }
           }
@@ -215,17 +240,23 @@ export class UsersRouter extends ClassesRouter {
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
     }
 
-    if (
-      req.config.verifyUserEmails &&
-      req.config.preventLoginWithUnverifiedEmail &&
-      createdUser.email &&
-      createdUser.emailVerified !== true
-    ) {
+    const {
+      verifyUserEmails,
+      preventLoginWithUnverifiedEmail,
+      preventSignupWithUnverifiedEmail,
+    } = await this._resolveEmailVerificationFlags(req, createdUser);
+
+    if (verifyUserEmails && preventLoginWithUnverifiedEmail && createdUser.email && createdUser.emailVerified !== true) {
+      throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
+    }
+
+    // Enforce preventSignupWithUnverifiedEmail by cleaning up the session and failing the login
+    if (verifyUserEmails && preventSignupWithUnverifiedEmail && createdUser.email && createdUser.emailVerified !== true) {
       // Best-effort session cleanup to avoid leaving an orphaned token
-      if (createdUser.sessionToken) {
+      if (response.sessionToken) {
         await req.config.database.destroy(
           '_Session',
-          { sessionToken: createdUser.sessionToken },
+          { sessionToken: response.sessionToken },
           { acl: undefined }
         );
       }

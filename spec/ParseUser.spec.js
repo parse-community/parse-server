@@ -310,6 +310,12 @@ describe('Parse.User testing', () => {
         .first({ useMasterKey: true });
       expect(stored).toBeTruthy();
       expect(stored.get('emailVerified')).toBe(false);
+
+      // Ensure no session persists for the rejected login
+      const sessions = await new Parse.Query('_Session')
+        .equalTo('user', stored)
+        .find({ useMasterKey: true });
+      expect(sessions.length).toBe(0);
     });
   });
 
