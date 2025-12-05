@@ -62,37 +62,46 @@ export class UsersRouter extends ClassesRouter {
   }
 
   /**
+   * Extract and validate login payload from request
+   * @param {Object} req The request
+   * @returns {{ username: string | void, email: string | void, password: string, ignoreEmailVerification: boolean | void }}
+   * @private
+   */
+  _getLoginPayload(req) {
+    let payload = req.body || {};
+    if (
+      (!payload.username && req.query && req.query.username) ||
+      (!payload.email && req.query && req.query.email)
+    ) {
+      payload = req.query;
+    }
+    const { username, email, password, ignoreEmailVerification } = payload;
+
+    if (!username && !email) {
+      throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'username/email is required.');
+    }
+    if (!password) {
+      throw new Parse.Error(Parse.Error.PASSWORD_MISSING, 'password is required.');
+    }
+    if (
+      typeof password !== 'string' ||
+      (email && typeof email !== 'string') ||
+      (username && typeof username !== 'string')
+    ) {
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+    }
+
+    return { username, email, password, ignoreEmailVerification };
+  }
+
+  /**
    * Validates a password request in login and verifyPassword
    * @param {Object} req The request
    * @returns {Object} User object
-   * @private
    */
   _authenticateUserFromRequest(req) {
     return new Promise((resolve, reject) => {
-      // Use query parameters instead if provided in url
-      let payload = req.body || {};
-      if (
-        (!payload.username && req.query && req.query.username) ||
-        (!payload.email && req.query && req.query.email)
-      ) {
-        payload = req.query;
-      }
-      const { username, email, password, ignoreEmailVerification } = payload;
-
-      // TODO: use the right error codes / descriptions.
-      if (!username && !email) {
-        throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'username/email is required.');
-      }
-      if (!password) {
-        throw new Parse.Error(Parse.Error.PASSWORD_MISSING, 'password is required.');
-      }
-      if (
-        typeof password !== 'string' ||
-        (email && typeof email !== 'string') ||
-        (username && typeof username !== 'string')
-      ) {
-        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
-      }
+      const { username, email, password, ignoreEmailVerification } = this._getLoginPayload(req);
 
       let user;
       let isValidPassword = false;
@@ -170,6 +179,58 @@ export class UsersRouter extends ClassesRouter {
     });
   }
 
+  /**
+   * Auto sign-up when login misses existing user and option is enabled
+   * @param {Object} req The request
+   * @returns {{ user: Object, authDataResponse: any }}
+   */
+  async _autoSignupOnLogin(req) {
+    const { username, email, password } = this._getLoginPayload(req);
+    const inferredUsername = username || email;
+    const data = { username: inferredUsername, password };
+    if (email) {
+      data.email = email;
+    }
+
+    const { response } = await new RestWrite(
+      req.config,
+      req.auth,
+      '_User',
+      null,
+      data,
+      null,
+      req.info.clientSDK,
+      req.info.context
+    ).execute();
+
+    // Fetch fresh user object to return a login-like response with username/email
+    const createdUserResults = await req.config.database.find(
+      '_User',
+      { objectId: response.objectId },
+      {},
+      Auth.master(req.config)
+    );
+    const createdUser = createdUserResults[0];
+    if (!createdUser) {
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+    }
+    createdUser.sessionToken = response.sessionToken;
+
+    if (
+      req.config.verifyUserEmails &&
+      req.config.preventLoginWithUnverifiedEmail &&
+      createdUser.email &&
+      createdUser.emailVerified !== true
+    ) {
+      throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
+    }
+
+    UsersRouter.removeHiddenProperties(createdUser);
+    await req.config.filesController.expandFilesInObject(req.config, createdUser);
+
+    return { user: createdUser, authDataResponse: response.authDataResponse };
+  }
+
   handleMe(req) {
     if (!req.info || !req.info.sessionToken) {
       throw createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token', req.config);
@@ -201,8 +262,28 @@ export class UsersRouter extends ClassesRouter {
   }
 
   async handleLogIn(req) {
-    const user = await this._authenticateUserFromRequest(req);
+    let user;
+    let authDataResponse;
+    let validatedAuthData;
+
+    try {
+      user = await this._authenticateUserFromRequest(req);
+    } catch (error) {
+      if (
+        req.config.autoSignupOnLogin &&
+        error &&
+        error.code === Parse.Error.OBJECT_NOT_FOUND
+      ) {
+        const autoSignup = await this._autoSignupOnLogin(req);
+        user = autoSignup.user;
+        authDataResponse = autoSignup.authDataResponse;
+      } else {
+        throw error;
+      }
+    }
+
     const authData = req.body && req.body.authData;
+
     // Check if user has provided their required auth providers
     Auth.checkIfUserHasProvidedConfiguredProvidersForLogin(
       req,
@@ -211,8 +292,6 @@ export class UsersRouter extends ClassesRouter {
       req.config
     );
 
-    let authDataResponse;
-    let validatedAuthData;
     if (authData) {
       const res = await Auth.handleAuthDataValidation(
         authData,

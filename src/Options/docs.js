@@ -22,6 +22,7 @@
  * @property {String} appId Your Parse Application ID
  * @property {String} appName Sets the app name
  * @property {Object} auth Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication
+ * @property {Boolean} autoSignupOnLogin Set to `true` to allow the login endpoint to automatically create a user with the provided username/email and password when no existing user is found. Default is `false`.
  * @property {Adapter<CacheAdapter>} cacheAdapter Adapter module for the cache
  * @property {Number} cacheMaxSize Sets the maximum size for the in memory cache, defaults to 10000
  * @property {Number} cacheTTL Sets the TTL for the in memory cache (in ms), defaults to 5000 (5 seconds)

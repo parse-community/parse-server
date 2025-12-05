@@ -113,6 +113,13 @@ module.exports.ParseServerOptions = {
       'Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication',
     action: parsers.objectParser,
   },
+  autoSignupOnLogin: {
+    env: 'PARSE_SERVER_AUTO_SIGNUP_ON_LOGIN',
+    help:
+      'Set to `true` to allow the login endpoint to automatically create a user with the provided username/email and password when no existing user is found. Default is `false`.',
+    action: parsers.booleanParser,
+    default: false,
+  },
   cacheAdapter: {
     env: 'PARSE_SERVER_CACHE_ADAPTER',
     help: 'Adapter module for the cache',
