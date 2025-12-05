@@ -188,6 +188,8 @@ function wrapToHTTPRequest(hook, key) {
   return req => {
     const jsonBody = {};
     for (var i in req) {
+      // Parse Server config is not serializable
+      if (i === 'config') { continue; }
       jsonBody[i] = req[i];
     }
     if (req.object) {
@@ -223,7 +225,7 @@ function wrapToHTTPRequest(hook, key) {
         if (typeof body === 'string') {
           try {
             body = JSON.parse(body);
-          } catch (e) {
+          } catch {
             err = {
               error: 'Malformed response',
               code: -1,

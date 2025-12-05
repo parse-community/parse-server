@@ -4,33 +4,7 @@ import Parse from 'parse/node';
 import Config from '../Config';
 import logger from '../logger';
 const triggers = require('../triggers');
-const http = require('http');
 const Utils = require('../Utils');
-
-const downloadFileFromURI = uri => {
-  return new Promise((res, rej) => {
-    http
-      .get(uri, response => {
-        response.setDefaultEncoding('base64');
-        let body = `data:${response.headers['content-type']};base64,`;
-        response.on('data', data => (body += data));
-        response.on('end', () => res(body));
-      })
-      .on('error', e => {
-        rej(`Error downloading file from ${uri}: ${e.message}`);
-      });
-  });
-};
-
-const addFileDataIfNeeded = async file => {
-  if (file._source.format === 'uri') {
-    const base64 = await downloadFileFromURI(file._source.uri);
-    file._previousSave = file;
-    file._data = base64;
-    file._requestTask = null;
-  }
-  return file;
-};
 
 export class FilesRouter {
   expressRouter({ maxUploadSize = '20Mb' } = {}) {
@@ -69,8 +43,7 @@ export class FilesRouter {
     const config = Config.get(req.params.appId);
     if (!config) {
       res.status(403);
-      const err = new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid application ID.');
-      res.json({ code: err.code, error: err.message });
+      res.json({ code: Parse.Error.OPERATION_FORBIDDEN, error: 'Invalid application ID.' });
       return;
     }
 
@@ -247,8 +220,6 @@ export class FilesRouter {
       }
       // if the file returned by the trigger has already been saved skip saving anything
       if (!saveResult) {
-        // if the ParseFile returned is type uri, download the file before saving it
-        await addFileDataIfNeeded(fileObject.file);
         // update fileSize
         const bufferData = Buffer.from(fileObject.file._data, 'base64');
         fileObject.fileSize = Buffer.byteLength(bufferData);
@@ -338,7 +309,7 @@ export class FilesRouter {
       const data = await filesController.getMetadata(filename);
       res.status(200);
       res.json(data);
-    } catch (e) {
+    } catch {
       res.status(200);
       res.json({});
     }

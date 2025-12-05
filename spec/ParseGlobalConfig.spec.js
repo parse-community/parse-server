@@ -220,6 +220,9 @@ describe('a GlobalConfig', () => {
   });
 
   it('fail to update if master key is missing', done => {
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+    loggerErrorSpy.calls.reset();
     request({
       method: 'PUT',
       url: 'http://localhost:8378/1/config',
@@ -233,7 +236,8 @@ describe('a GlobalConfig', () => {
     }).then(fail, response => {
       const body = response.data;
       expect(response.status).toEqual(403);
-      expect(body.error).toEqual('unauthorized: master key is required');
+      expect(body.error).toEqual('Permission denied');
+      expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('unauthorized: master key is required'));
       done();
     });
   });

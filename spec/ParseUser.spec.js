@@ -13,6 +13,7 @@ const passwordCrypto = require('../lib/password');
 const Config = require('../lib/Config');
 const cryptoUtils = require('../lib/cryptoUtils');
 
+
 describe('allowExpiredAuthDataToken option', () => {
   it('should accept true value', async () => {
     await reconfigureServer({ allowExpiredAuthDataToken: true });
@@ -38,6 +39,12 @@ describe('allowExpiredAuthDataToken option', () => {
 });
 
 describe('Parse.User testing', () => {
+  let loggerErrorSpy;
+  beforeEach(() => {
+    const logger = require('../lib/logger').default;
+    loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+  });
+
   it('user sign up class method', async done => {
     const user = await Parse.User.signUp('asdf', 'zxcv');
     ok(user.getSessionToken());
@@ -2677,6 +2684,7 @@ describe('Parse.User testing', () => {
           const b = response.data;
           expect(b.results.length).toEqual(1);
           const objId = b.results[0].objectId;
+          loggerErrorSpy.calls.reset();
           request({
             method: 'DELETE',
             headers: {
@@ -2687,7 +2695,9 @@ describe('Parse.User testing', () => {
           }).then(fail, response => {
             const b = response.data;
             expect(b.code).toEqual(209);
-            expect(b.error).toBe('Invalid session token');
+            expect(b.error).toBe('Permission denied');
+
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Invalid session token'));
             done();
           });
         });
@@ -3381,6 +3391,9 @@ describe('Parse.User testing', () => {
       sendMail: () => Promise.resolve(),
     };
 
+    let logger;
+    let loggerErrorSpy;
+
     const user = new Parse.User();
     user.set({
       username: 'hello',
@@ -3395,9 +3408,12 @@ describe('Parse.User testing', () => {
       publicServerURL: 'http://localhost:8378/1',
     })
       .then(() => {
+        logger = require('../lib/logger').default;
+        loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
         return user.signUp();
       })
       .then(() => {
+        loggerErrorSpy.calls.reset();
         return Parse.User.current().set('emailVerified', true).save();
       })
       .then(() => {
@@ -3405,7 +3421,9 @@ describe('Parse.User testing', () => {
         done();
       })
       .catch(err => {
-        expect(err.message).toBe("Clients aren't allowed to manually update email verification.");
+        expect(err.message).toBe('Permission denied');
+        expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining("Clients aren't allowed to manually update email verification."));
+
         done();
       });
   });
@@ -4303,6 +4321,12 @@ describe('Security Advisory GHSA-8w3j-g983-8jh5', function () {
 });
 
 describe('login as other user', () => {
+  let loggerErrorSpy;
+  beforeEach(() => {
+    const logger = require('../lib/logger').default;
+    loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+  });
+
   it('allows creating a session for another user with the master key', async done => {
     await Parse.User.signUp('some_user', 'some_password');
     const userId = Parse.User.current().id;
@@ -4402,6 +4426,7 @@ describe('login as other user', () => {
     const userId = Parse.User.current().id;
     await Parse.User.logOut();
 
+    loggerErrorSpy.calls.reset();
     try {
       await request({
         method: 'POST',
@@ -4419,7 +4444,8 @@ describe('login as other user', () => {
       done();
     } catch (err) {
       expect(err.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
-      expect(err.data.error).toBe('master key is required');
+      expect(err.data.error).toBe('Permission denied');
+      expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('master key is required'));
     }
 
     const sessionsQuery = new Parse.Query(Parse.Session);

@@ -28,6 +28,11 @@ declare class ParseServer {
     handleShutdown(): Promise<void>;
     /**
      * @static
+     * Allow developers to customize each request with inversion of control/dependency injection
+     */
+    static applyRequestContextMiddleware(api: any, options: any): void;
+    /**
+     * @static
      * Create an express app for the parse server
      * @param {Object} options let you specify the maxUploadSize when creating the express app  */
     static app(options: any): any;

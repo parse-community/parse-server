@@ -517,7 +517,7 @@ describe('Parse.Relation testing', () => {
 
         // Parent object is un-fetched, so this will call /1/classes/Car instead
         // of /1/classes/Wheel and pass { "redirectClassNameForKey":"wheels" }.
-        return query.find(origWheel.id);
+        return query.find();
       })
       .then(function (results) {
         // Make sure this is Wheel and not Car.

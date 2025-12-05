@@ -8,6 +8,7 @@ const Parse = require('parse/node');
 const request = require('../lib/request');
 const ParseServerRESTController = require('../lib/ParseServerRESTController').ParseServerRESTController;
 const ParseServer = require('../lib/ParseServer').default;
+const Deprecator = require('../lib/Deprecator/Deprecator').default;
 
 const masterKeyHeaders = {
   'X-Parse-Application-Id': 'test',
@@ -4669,6 +4670,91 @@ describe('Parse.Query testing', () => {
       .catch(done.fail);
   });
 
+  it('includeAll handles circular pointer references', async () => {
+    // Create two objects that reference each other
+    const objA = new TestObject();
+    const objB = new TestObject();
+
+    objA.set('name', 'Object A');
+    objB.set('name', 'Object B');
+
+    // Save them first
+    await Parse.Object.saveAll([objA, objB]);
+
+    // Create circular references: A -> B -> A
+    objA.set('ref', objB);
+    objB.set('ref', objA);
+
+    await Parse.Object.saveAll([objA, objB]);
+
+    // Query with includeAll
+    const query = new Parse.Query('TestObject');
+    query.equalTo('objectId', objA.id);
+    query.includeAll();
+
+    const results = await query.find();
+
+    // Verify the object is returned
+    expect(results.length).toBe(1);
+    const resultA = results[0];
+    expect(resultA.get('name')).toBe('Object A');
+
+    // Verify the immediate reference is included (1 level deep)
+    const refB = resultA.get('ref');
+    expect(refB).toBeDefined();
+    expect(refB.get('name')).toBe('Object B');
+
+    // Verify that includeAll only includes 1 level deep
+    // B's pointer back to A should exist as an object but without full data
+    const refBackToA = refB.get('ref');
+    expect(refBackToA).toBeDefined();
+    expect(refBackToA.id).toBe(objA.id);
+
+    // The circular reference exists but is NOT fully populated
+    // (name field is undefined because it's not included at this depth)
+    expect(refBackToA.get('name')).toBeUndefined();
+
+    // Verify using toJSON that it's stored as a pointer
+    const refBackToAJSON = refB.toJSON().ref;
+    expect(refBackToAJSON).toBeDefined();
+    expect(refBackToAJSON.__type).toBe('Pointer');
+    expect(refBackToAJSON.className).toBe('TestObject');
+    expect(refBackToAJSON.objectId).toBe(objA.id);
+  });
+
+  it('includeAll handles self-referencing pointer', async () => {
+    // Create an object that points to itself
+    const selfRef = new TestObject();
+    selfRef.set('name', 'Self-Referencing');
+
+    await selfRef.save();
+
+    // Make it point to itself
+    selfRef.set('ref', selfRef);
+    await selfRef.save();
+
+    // Query with includeAll
+    const query = new Parse.Query('TestObject');
+    query.equalTo('objectId', selfRef.id);
+    query.includeAll();
+
+    const results = await query.find();
+
+    // Verify the object is returned
+    expect(results.length).toBe(1);
+    const result = results[0];
+    expect(result.get('name')).toBe('Self-Referencing');
+
+    // Verify the self-reference is included (since it's at the first level)
+    const ref = result.get('ref');
+    expect(ref).toBeDefined();
+    expect(ref.id).toBe(selfRef.id);
+
+    // The self-reference should be fully populated at the first level
+    // because includeAll includes all pointer fields at the immediate level
+    expect(ref.get('name')).toBe('Self-Referencing');
+  });
+
   it('select nested keys 2 level without include (issue #3185)', function (done) {
     const Foobar = new Parse.Object('Foobar');
     const BarBaz = new Parse.Object('Barbaz');
@@ -5383,5 +5469,103 @@ describe('Parse.Query testing', () => {
 
       expect(query1.length).toEqual(1);
     });
+  });
+
+  describe('allowPublicExplain', () => {
+    it_id('a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d')(it_only_db('mongo'))(
+      'explain works with and without master key when allowPublicExplain is true',
+      async () => {
+        await reconfigureServer({
+          databaseAdapter: undefined,
+          databaseURI: 'mongodb://localhost:27017/parse',
+          databaseOptions: {
+            allowPublicExplain: true,
+          },
+        });
+
+        const obj = new TestObject({ foo: 'bar' });
+        await obj.save();
+
+        // Without master key
+        const query = new Parse.Query(TestObject);
+        query.explain();
+        const resultWithoutMasterKey = await query.find();
+        expect(resultWithoutMasterKey).toBeDefined();
+
+        // With master key
+        const queryWithMasterKey = new Parse.Query(TestObject);
+        queryWithMasterKey.explain();
+        const resultWithMasterKey = await queryWithMasterKey.find({ useMasterKey: true });
+        expect(resultWithMasterKey).toBeDefined();
+      }
+    );
+
+    it_id('b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e')(it_only_db('mongo'))(
+      'explain requires master key when allowPublicExplain is false',
+      async () => {
+        await reconfigureServer({
+          databaseAdapter: undefined,
+          databaseURI: 'mongodb://localhost:27017/parse',
+          databaseOptions: {
+            allowPublicExplain: false,
+          },
+        });
+
+        const obj = new TestObject({ foo: 'bar' });
+        await obj.save();
+
+        // Without master key
+        const query = new Parse.Query(TestObject);
+        query.explain();
+        await expectAsync(query.find()).toBeRejectedWith(
+          new Parse.Error(
+            Parse.Error.INVALID_QUERY,
+            'Using the explain query parameter requires the master key'
+          )
+        );
+
+        // With master key
+        const queryWithMasterKey = new Parse.Query(TestObject);
+        queryWithMasterKey.explain();
+        const result = await queryWithMasterKey.find({ useMasterKey: true });
+        expect(result).toBeDefined();
+      }
+    );
+
+    it_id('c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f')(it_only_db('mongo'))(
+      'explain works with and without master key by default',
+      async () => {
+        const logger = require('../lib/logger').logger;
+        const logSpy = spyOn(logger, 'warn').and.callFake(() => {});
+
+        await reconfigureServer({
+          databaseAdapter: undefined,
+          databaseURI: 'mongodb://localhost:27017/parse',
+          databaseOptions: {
+            allowPublicExplain: undefined,
+          },
+        });
+
+        // Verify deprecation warning is logged when allowPublicExplain is not explicitly set
+        expect(logSpy).toHaveBeenCalledWith(
+          jasmine.stringMatching(/DeprecationWarning.*databaseOptions\.allowPublicExplain.*false/)
+        );
+
+        const obj = new TestObject({ foo: 'bar' });
+        await obj.save();
+
+        // Without master key
+        const query = new Parse.Query(TestObject);
+        query.explain();
+        const resultWithoutMasterKey = await query.find();
+        expect(resultWithoutMasterKey).toBeDefined();
+
+        // With master key
+        const queryWithMasterKey = new Parse.Query(TestObject);
+        queryWithMasterKey.explain();
+        const resultWithMasterKey = await queryWithMasterKey.find({ useMasterKey: true });
+        expect(resultWithMasterKey).toBeDefined();
+      }
+    );
   });
 });

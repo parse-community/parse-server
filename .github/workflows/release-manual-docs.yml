@@ -1,0 +1,44 @@
+# Trigger this workflow only to manually create a docs release; this should only be used
+# in extraordinary circumstances, as docs releases are normally created automatically as
+# part of the automated release workflow.
+
+name: release-manual-docs
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        default: ''
+        description: 'Reference (tag / SHA):'
+        required: true
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref }}
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18.20.4
+      - name: Cache Node.js modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+              ${{ runner.os }}-node-
+      - name: Generate Docs
+        run: |
+          echo $SOURCE_TAG
+          npm ci
+          ./release_docs.sh
+        env:
+          SOURCE_TAG: ${{ github.event.inputs.ref }}
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3.7.3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
