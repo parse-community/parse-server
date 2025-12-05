@@ -240,19 +240,7 @@ export class UsersRouter extends ClassesRouter {
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
     }
 
-    const {
-      verifyUserEmails,
-      preventLoginWithUnverifiedEmail,
-      preventSignupWithUnverifiedEmail,
-    } = await this._resolveEmailVerificationFlags(req, createdUser);
-
-    if (verifyUserEmails && preventLoginWithUnverifiedEmail && createdUser.email && createdUser.emailVerified !== true) {
-      throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
-    }
-
-    // Enforce preventSignupWithUnverifiedEmail by cleaning up the session and failing the login
-    if (verifyUserEmails && preventSignupWithUnverifiedEmail && createdUser.email && createdUser.emailVerified !== true) {
-      // Best-effort session cleanup to avoid leaving an orphaned token
+    const cleanupAutoSignup = async () => {
       if (response.sessionToken) {
         await req.config.database.destroy(
           '_Session',
@@ -260,7 +248,27 @@ export class UsersRouter extends ClassesRouter {
           { acl: undefined }
         );
       }
+      await req.config.database.destroy(
+        '_User',
+        { objectId: response.objectId },
+        { acl: undefined }
+      );
+    };
 
+    const {
+      verifyUserEmails,
+      preventLoginWithUnverifiedEmail,
+      preventSignupWithUnverifiedEmail,
+    } = await this._resolveEmailVerificationFlags(req, createdUser);
+
+    if (verifyUserEmails && preventLoginWithUnverifiedEmail && createdUser.email && createdUser.emailVerified !== true) {
+      await cleanupAutoSignup();
+      throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
+    }
+
+    // Enforce preventSignupWithUnverifiedEmail by cleaning up the session and failing the login
+    if (verifyUserEmails && preventSignupWithUnverifiedEmail && createdUser.email && createdUser.emailVerified !== true) {
+      await cleanupAutoSignup();
       throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
     }
 

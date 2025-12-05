@@ -305,15 +305,13 @@ describe('Parse.User testing', () => {
           data: jasmine.objectContaining({ code: Parse.Error.EMAIL_NOT_FOUND }),
         })
       );
-      const stored = await new Parse.Query(Parse.User)
+      const storedCount = await new Parse.Query(Parse.User)
         .equalTo('email', email)
-        .first({ useMasterKey: true });
-      expect(stored).toBeTruthy();
-      expect(stored.get('emailVerified')).toBe(false);
+        .count({ useMasterKey: true });
+      expect(storedCount).toBe(0);
 
       // Ensure no session persists for the rejected login
       const sessions = await new Parse.Query('_Session')
-        .equalTo('user', stored)
         .find({ useMasterKey: true });
       expect(sessions.length).toBe(0);
     });
