@@ -214,7 +214,6 @@ export class UsersRouter extends ClassesRouter {
     if (!createdUser) {
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
     }
-    createdUser.sessionToken = response.sessionToken;
 
     if (
       req.config.verifyUserEmails &&
@@ -222,13 +221,28 @@ export class UsersRouter extends ClassesRouter {
       createdUser.email &&
       createdUser.emailVerified !== true
     ) {
+      // Best-effort session cleanup to avoid leaving an orphaned token
+      if (createdUser.sessionToken) {
+        await req.config.database.destroy(
+          '_Session',
+          { sessionToken: createdUser.sessionToken },
+          { acl: undefined }
+        );
+      }
+
       throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
     }
 
     UsersRouter.removeHiddenProperties(createdUser);
     await req.config.filesController.expandFilesInObject(req.config, createdUser);
 
-    return { user: createdUser, authDataResponse: response.authDataResponse };
+    // Attach the session token created during signup; tell caller to skip creating another session
+    return {
+      user: createdUser,
+      authDataResponse: response.authDataResponse,
+      sessionToken: response.sessionToken,
+      skipSessionCreation: true,
+    };
   }
 
   handleMe(req) {
@@ -265,6 +279,7 @@ export class UsersRouter extends ClassesRouter {
     let user;
     let authDataResponse;
     let validatedAuthData;
+    let autoSignupResult;
 
     try {
       user = await this._authenticateUserFromRequest(req);
@@ -274,9 +289,12 @@ export class UsersRouter extends ClassesRouter {
         error &&
         error.code === Parse.Error.OBJECT_NOT_FOUND
       ) {
-        const autoSignup = await this._autoSignupOnLogin(req);
-        user = autoSignup.user;
-        authDataResponse = autoSignup.authDataResponse;
+        autoSignupResult = await this._autoSignupOnLogin(req);
+        user = autoSignupResult.user;
+        authDataResponse = autoSignupResult.authDataResponse;
+        if (autoSignupResult.sessionToken) {
+          user.sessionToken = autoSignupResult.sessionToken;
+        }
       } else {
         throw error;
       }
@@ -367,18 +385,20 @@ export class UsersRouter extends ClassesRouter {
       );
     }
 
-    const { sessionData, createSession } = RestWrite.createSession(req.config, {
-      userId: user.objectId,
-      createdWith: {
-        action: 'login',
-        authProvider: 'password',
-      },
-      installationId: req.info.installationId,
-    });
+    // Create a session only if not already created by auto-signup
+    if (!autoSignupResult || !autoSignupResult.skipSessionCreation) {
+      const { sessionData, createSession } = RestWrite.createSession(req.config, {
+        userId: user.objectId,
+        createdWith: {
+          action: 'login',
+          authProvider: 'password',
+        },
+        installationId: req.info.installationId,
+      });
 
-    user.sessionToken = sessionData.sessionToken;
-
-    await createSession();
+      user.sessionToken = sessionData.sessionToken;
+      await createSession();
+    }
 
     const afterLoginUser = Parse.User.fromJSON(Object.assign({ className: '_User' }, user));
     await maybeRunTrigger(
