@@ -352,6 +352,13 @@ module.exports.ParseServerOptions = {
     action: parsers.objectParser,
     type: 'LiveQueryServerOptions',
   },
+  logEvents: {
+    env: 'PARSE_SERVER_LOG_EVENTS',
+    help: '(Optional) Overrides the log levels used by specific log events.',
+    action: parsers.objectParser,
+    type: 'LogEvents',
+    default: {},
+  },
   loggerAdapter: {
     env: 'PARSE_SERVER_LOGGER_ADAPTER',
     help: 'Adapter module for the logging sub-system',
@@ -1505,5 +1512,13 @@ module.exports.LogLevels = {
     help:
       'Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on success. Default is `info`. See [LogLevel](LogLevel.html) for available values.',
     default: 'info',
+  },
+};
+module.exports.LogEvents = {
+  usernameAlreadyExists: {
+    env: 'PARSE_SERVER_LOG_EVENTS_USERNAME_ALREADY_EXISTS',
+    help:
+      'Log level used when a sign-up fails because the username already exists. Default is `error`. See [LogLevel](LogLevel.html) for available values.',
+    default: 'error',
   },
 };

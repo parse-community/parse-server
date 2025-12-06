@@ -98,6 +98,9 @@ export interface ParseServerOptions {
   /* (Optional) Overrides the log levels used internally by Parse Server to log events.
   :DEFAULT: {} */
   logLevels: ?LogLevels;
+  /* (Optional) Overrides the log levels used by specific log events.
+  :DEFAULT: {} */
+  logEvents: ?LogEvents;
   /* Maximum number of logs to keep. If not set, no logs will be removed. This can be a number of files or number of days. If using days, add 'd' as the suffix. (default: null) */
   maxLogFiles: ?NumberOrString;
   /* Disables console output
@@ -789,4 +792,11 @@ export interface LogLevels {
   :DEFAULT: error
   */
   cloudFunctionError: ?string;
+}
+
+export interface LogEvents {
+  /* Log level used when a sign-up fails because the username already exists. Default is `error`. See [LogLevel](LogLevel.html) for available values.
+  :DEFAULT: error
+  */
+  usernameAlreadyExists: ?string;
 }

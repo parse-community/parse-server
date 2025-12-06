@@ -466,6 +466,7 @@ export function handleParseErrors(err, req, res, next) {
     if (req.config && req.config.enableExpressErrorHandler) {
       return next(err);
     }
+    const usernameAlreadyExistsLevel = req.config?.logEvents?.usernameAlreadyExists || 'error';
     let httpStatus;
     // TODO: fill out this mapping
     switch (err.code) {
@@ -480,7 +481,17 @@ export function handleParseErrors(err, req, res, next) {
     }
     res.status(httpStatus);
     res.json({ code: err.code, error: err.message });
-    log.error('Parse error: ', err);
+    if (err.code === Parse.Error.USERNAME_TAKEN) {
+      if (usernameAlreadyExistsLevel !== 'silent') {
+        const loggerMethod =
+          typeof log[usernameAlreadyExistsLevel] === 'function'
+            ? log[usernameAlreadyExistsLevel].bind(log)
+            : log.error.bind(log);
+        loggerMethod('Parse error: ', err);
+      }
+    } else {
+      log.error('Parse error: ', err);
+    }
   } else if (err.status && err.message) {
     res.status(err.status);
     res.json({ error: err.message });

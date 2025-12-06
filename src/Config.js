@@ -14,6 +14,7 @@ import {
   FileUploadOptions,
   IdempotencyOptions,
   LogLevels,
+  LogEvents,
   PagesOptions,
   ParseServerOptions,
   SchemaOptions,
@@ -128,6 +129,7 @@ export class Config {
     requestKeywordDenylist,
     allowExpiredAuthDataToken,
     logLevels,
+    logEvents,
     rateLimit,
     databaseOptions,
     extendSessionOnUse,
@@ -170,6 +172,7 @@ export class Config {
     this.validateRequestKeywordDenylist(requestKeywordDenylist);
     this.validateRateLimit(rateLimit);
     this.validateLogLevels(logLevels);
+    this.validateLogEvents(logEvents);
     this.validateDatabaseOptions(databaseOptions);
     this.validateCustomPages(customPages);
     this.validateAllowClientClassCreation(allowClientClassCreation);
@@ -637,6 +640,19 @@ export class Config {
         }
       } else {
         logLevels[key] = LogLevels[key].default;
+      }
+    }
+  }
+
+  static validateLogEvents(logEvents) {
+    for (const key of Object.keys(LogEvents)) {
+      if (logEvents[key]) {
+        // We validate that each configured event uses a valid log *level* (same list as logLevels).
+        if (validLogLevels.indexOf(logEvents[key]) === -1) {
+          throw `'${key}' must be one of ${JSON.stringify(validLogLevels)}`;
+        }
+      } else {
+        logEvents[key] = LogEvents[key].default;
       }
     }
   }
