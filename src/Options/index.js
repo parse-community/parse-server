@@ -43,6 +43,18 @@ type RequestKeywordDenylist = {
   key: string | any,
   value: any,
 };
+type EmailVerificationRequest = {
+  original?: any,
+  object: any,
+  master?: boolean,
+  ip?: string,
+  installationId?: string,
+  createdWith?: {
+    action: 'login' | 'signup',
+    authProvider: string,
+  },
+  resendRequest?: boolean,
+};
 
 export interface ParseServerOptions {
   /* Your Parse Application ID
@@ -174,18 +186,21 @@ export interface ParseServerOptions {
   /* Max file size for uploads, defaults to 20mb
   :DEFAULT: 20mb */
   maxUploadSize: ?string;
-  /* Set to `true` to require users to verify their email address to complete the sign-up process. Supports a function with a return value of `true` or `false` for conditional verification.
+  /* Set to `true` to require users to verify their email address to complete the sign-up process. Supports a function with a return value of `true` or `false` for conditional verification. The function receives a request object that includes `createdWith` to indicate whether the invocation is for `signup` or `login` and the used auth provider.
   <br><br>
   Default is `false`.
   :DEFAULT: false */
-  verifyUserEmails: ?(boolean | void);
+  verifyUserEmails: ?(boolean | (EmailVerificationRequest => boolean | Promise<boolean>));
   /* Set to `true` to prevent a user from logging in if the email has not yet been verified and email verification is required.
   <br><br>
   Default is `false`.
   <br>
   Requires option `verifyUserEmails: true`.
   :DEFAULT: false */
-  preventLoginWithUnverifiedEmail: ?boolean;
+  preventLoginWithUnverifiedEmail: ?(
+    | boolean
+    | (EmailVerificationRequest => boolean | Promise<boolean>)
+  );
   /* If set to `true` it prevents a user from signing up if the email has not yet been verified and email verification is required. In that case the server responds to the sign-up with HTTP status 400 and a Parse Error 205 `EMAIL_NOT_FOUND`. If set to `false` the server responds with HTTP status 200, and client SDKs return an unauthenticated Parse User without session token. In that case subsequent requests fail until the user's email address is verified.
   <br><br>
   Default is `false`.

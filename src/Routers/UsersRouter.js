@@ -140,11 +140,20 @@ export class UsersRouter extends ClassesRouter {
             throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
           }
           // Create request object for verification functions
+          const authProvider =
+            req.body &&
+            req.body.authData &&
+            Object.keys(req.body.authData).length &&
+            Object.keys(req.body.authData).join(',');
           const request = {
             master: req.auth.isMaster,
             ip: req.config.ip,
             installationId: req.auth.installationId,
             object: Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
+            createdWith: {
+              action: 'login',
+              authProvider: authProvider || 'password',
+            },
           };
 
           // If request doesn't use master or maintenance key with ignoring email verification

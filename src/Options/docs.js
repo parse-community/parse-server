@@ -109,7 +109,7 @@
  * @property {String[]} userSensitiveFields Personally identifiable information fields in the user table the should be removed for non-authorized users. Deprecated @see protectedFields
  * @property {Boolean} verbose Set the logging to verbose
  * @property {Boolean} verifyServerUrl Parse Server makes a HTTP request to the URL set in `serverURL` at the end of its launch routine to verify that the launch succeeded. If this option is set to `false`, the verification will be skipped. This can be useful in environments where the server URL is not accessible from the server itself, such as when running behind a firewall or in certain containerized environments.<br><br>⚠️ Server URL verification requires Parse Server to be able to call itself by making requests to the URL set in `serverURL`.<br><br>Default is `true`.
- * @property {Boolean} verifyUserEmails Set to `true` to require users to verify their email address to complete the sign-up process. Supports a function with a return value of `true` or `false` for conditional verification.<br><br>Default is `false`.
+ * @property {Boolean} verifyUserEmails Set to `true` to require users to verify their email address to complete the sign-up process. Supports a function with a return value of `true` or `false` for conditional verification. The function receives a request object that includes `createdWith` to indicate whether the invocation is for `signup` or `login` and the used auth provider.<br><br>Default is `false`.
  * @property {String} webhookKey Key sent with outgoing webhook calls
  */
 

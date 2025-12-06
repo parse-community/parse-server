@@ -771,6 +771,28 @@ RestWrite.prototype._validateUserName = function () {
     });
 };
 
+RestWrite.prototype.getCreatedWith = function () {
+  if (this.storage.createdWith) {
+    return this.storage.createdWith;
+  }
+  const isCreateOperation = !this.query;
+  // Determine authProvider: from stored authProvider or authData keys (e.g., anonymous, facebook).
+  // Default to 'password' on signup with no authData so createdWith aligns with legacy expectations/tests.
+  const authProvider =
+    this.storage.authProvider ||
+    (this.data &&
+      this.data.authData &&
+      Object.keys(this.data.authData).length &&
+      Object.keys(this.data.authData).join(','));
+  const action = authProvider ? 'login' : isCreateOperation ? 'signup' : undefined;
+  if (!action) {
+    return;
+  }
+  const resolvedAuthProvider = authProvider || (action === 'signup' ? 'password' : undefined);
+  this.storage.createdWith = { action, authProvider: resolvedAuthProvider };
+  return this.storage.createdWith;
+};
+
 /*
   As with usernames, Parse should not allow case insensitive collisions of email.
   unlike with usernames (which can have case insensitive collisions in the case of
@@ -826,6 +848,7 @@ RestWrite.prototype._validateEmail = function () {
           master: this.auth.isMaster,
           ip: this.config.ip,
           installationId: this.auth.installationId,
+          createdWith: this.getCreatedWith(),
         };
         return this.config.userController.setEmailVerifyToken(this.data, request, this.storage);
       }
@@ -961,6 +984,7 @@ RestWrite.prototype.createSessionTokenIfNeeded = async function () {
       master: this.auth.isMaster,
       ip: this.config.ip,
       installationId: this.auth.installationId,
+      createdWith: this.getCreatedWith(),
     };
     // Get verification conditions which can be booleans or functions; the purpose of this async/await
     // structure is to avoid unnecessarily executing subsequent functions if previous ones fail in the
@@ -987,12 +1011,14 @@ RestWrite.prototype.createSessionToken = async function () {
     this.storage.authProvider = Object.keys(this.data.authData).join(',');
   }
 
-  const { sessionData, createSession } = RestWrite.createSession(this.config, {
-    userId: this.objectId(),
-    createdWith: {
+  const createdWith =
+    this.getCreatedWith() || {
       action: this.storage.authProvider ? 'login' : 'signup',
       authProvider: this.storage.authProvider || 'password',
-    },
+    };
+  const { sessionData, createSession } = RestWrite.createSession(this.config, {
+    userId: this.objectId(),
+    createdWith,
     installationId: this.auth.installationId,
   });
 

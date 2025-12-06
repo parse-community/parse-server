@@ -298,7 +298,15 @@ describe('Email Verification Token Expiration:', () => {
     };
     const verifyUserEmails = {
       method(req) {
-        expect(Object.keys(req)).toEqual(['original', 'object', 'master', 'ip', 'installationId']);
+        expect(Object.keys(req)).toEqual([
+          'original',
+          'object',
+          'master',
+          'ip',
+          'installationId',
+          'createdWith',
+        ]);
+        expect(req.createdWith).toEqual({ action: 'signup', authProvider: 'password' });
         return false;
       },
     };
@@ -359,7 +367,15 @@ describe('Email Verification Token Expiration:', () => {
     };
     const verifyUserEmails = {
       method(req) {
-        expect(Object.keys(req)).toEqual(['original', 'object', 'master', 'ip', 'installationId']);
+        expect(Object.keys(req)).toEqual([
+          'original',
+          'object',
+          'master',
+          'ip',
+          'installationId',
+          'createdWith',
+        ]);
+        expect(req.createdWith).toEqual({ action: 'signup', authProvider: 'password' });
         if (req.object.get('username') === 'no_email') {
           return false;
         }
@@ -392,6 +408,71 @@ describe('Email Verification Token Expiration:', () => {
     expect(user2.getSessionToken()).toBeUndefined();
     expect(sendEmailOptions).toBeDefined();
     expect(verifySpy).toHaveBeenCalledTimes(5);
+  });
+
+  it('provides createdWith on signup when verification blocks session creation', async () => {
+    const verifyUserEmails = {
+      method: params => {
+        expect(params.object).toBeInstanceOf(Parse.User);
+        expect(params.createdWith).toEqual({ action: 'signup', authProvider: 'password' });
+        return true;
+      },
+    };
+    const verifySpy = spyOn(verifyUserEmails, 'method').and.callThrough();
+    await reconfigureServer({
+      appName: 'emailVerifyToken',
+      verifyUserEmails: verifyUserEmails.method,
+      preventLoginWithUnverifiedEmail: true,
+      preventSignupWithUnverifiedEmail: true,
+      emailAdapter: MockEmailAdapterWithOptions({
+        fromAddress: 'parse@example.com',
+        apiKey: 'k',
+        domain: 'd',
+      }),
+      publicServerURL: 'http://localhost:8378/1',
+    });
+
+    const user = new Parse.User();
+    user.setUsername('signup_created_with');
+    user.setPassword('pass');
+    user.setEmail('signup@example.com');
+    const res = await user.signUp().catch(e => e);
+    expect(res.message).toBe('User email is not verified.');
+    expect(user.getSessionToken()).toBeUndefined();
+    expect(verifySpy).toHaveBeenCalledTimes(2); // before signup completion and on preventLoginWithUnverifiedEmail
+  });
+
+  it('provides createdWith with auth provider on login verification', async () => {
+    const user = new Parse.User();
+    user.setUsername('user_created_with_login');
+    user.setPassword('pass');
+    user.set('email', 'login@example.com');
+    await user.signUp();
+
+    const verifyUserEmails = {
+      method: async params => {
+        expect(params.object).toBeInstanceOf(Parse.User);
+        expect(params.createdWith).toEqual({ action: 'login', authProvider: 'password' });
+        return true;
+      },
+    };
+    const verifyUserEmailsSpy = spyOn(verifyUserEmails, 'method').and.callThrough();
+    await reconfigureServer({
+      appName: 'emailVerifyToken',
+      publicServerURL: 'http://localhost:8378/1',
+      verifyUserEmails: verifyUserEmails.method,
+      preventLoginWithUnverifiedEmail: verifyUserEmails.method,
+      preventSignupWithUnverifiedEmail: true,
+      emailAdapter: MockEmailAdapterWithOptions({
+        fromAddress: 'parse@example.com',
+        apiKey: 'k',
+        domain: 'd',
+      }),
+    });
+
+    const res = await Parse.User.logIn('user_created_with_login', 'pass').catch(e => e);
+    expect(res.code).toBe(205);
+    expect(verifyUserEmailsSpy).toHaveBeenCalledTimes(2); // before login completion and on preventLoginWithUnverifiedEmail
   });
 
   it_id('d812de87-33d1-495e-a6e8-3485f6dc3589')(it)('can conditionally send user email verification', async () => {
@@ -797,6 +878,7 @@ describe('Email Verification Token Expiration:', () => {
         expect(params.master).toBeDefined();
         expect(params.installationId).toBeDefined();
         expect(params.resendRequest).toBeTrue();
+        expect(params.createdWith).toBeUndefined();
         return true;
       },
     };

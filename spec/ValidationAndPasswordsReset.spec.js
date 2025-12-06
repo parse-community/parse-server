@@ -284,6 +284,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         expect(params.ip).toBeDefined();
         expect(params.master).toBeDefined();
         expect(params.installationId).toBeDefined();
+        expect(params.createdWith).toEqual({ action: 'login', authProvider: 'password' });
         return true;
       },
     };
