@@ -466,7 +466,8 @@ export function handleParseErrors(err, req, res, next) {
     if (req.config && req.config.enableExpressErrorHandler) {
       return next(err);
     }
-    const usernameAlreadyExistsLevel = req.config?.logEvents?.usernameAlreadyExists || 'error';
+    const usernameAlreadyExistsLevel =
+      req.config?.logEvents?.usernameAlreadyExists || 'info';
     let httpStatus;
     // TODO: fill out this mapping
     switch (err.code) {

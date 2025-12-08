@@ -47,7 +47,7 @@ export interface ParseServerOptions {
     verbose?: boolean;
     logLevel?: string;
     logLevels?: LogLevels;
-    logEvents?: LogEvents;
+    logEvents?: LogLevels;
     maxLogFiles?: NumberOrString;
     silent?: boolean;
     databaseURI: string;
@@ -298,8 +298,6 @@ export interface LogLevels {
     triggerBeforeError?: string;
     cloudFunctionSuccess?: string;
     cloudFunctionError?: string;
-}
-export interface LogEvents {
     usernameAlreadyExists?: string;
 }
 export {};

@@ -40,7 +40,6 @@ const nestedOptionEnvPrefix = {
   LogClientEvent: 'PARSE_SERVER_DATABASE_LOG_CLIENT_EVENTS_',
   LogLevel: 'PARSE_SERVER_LOG_LEVEL_',
   LogLevels: 'PARSE_SERVER_LOG_LEVELS_',
-  LogEvents: 'PARSE_SERVER_LOG_EVENTS_',
   PagesCustomUrlsOptions: 'PARSE_SERVER_PAGES_CUSTOM_URL_',
   PagesOptions: 'PARSE_SERVER_PAGES_',
   PagesRoute: 'PARSE_SERVER_PAGES_ROUTE_',
