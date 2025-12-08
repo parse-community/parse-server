@@ -25,7 +25,6 @@ const nestedOptionTypes = [
   'SecurityOptions',
   'SchemaOptions',
   'LogLevels',
-  'LogEvents',
 ];
 
 /** The prefix of environment variables for nested options. */
