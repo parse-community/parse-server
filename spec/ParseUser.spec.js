@@ -82,7 +82,7 @@ describe('Parse.User testing', () => {
   });
 
   it('logs username taken with configured log level', async () => {
-    await reconfigureServer({ logLevels: { usernameAlreadyExists: 'warn' } });
+    await reconfigureServer({ logLevels: { signupUsernameTaken: 'warn' } });
     const logger = require('../lib/logger').default;
     loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
     const loggerWarnSpy = spyOn(logger, 'warn').and.callThrough();
@@ -110,7 +110,7 @@ describe('Parse.User testing', () => {
   });
 
   it('can silence username taken log event', async () => {
-    await reconfigureServer({ logLevels: { usernameAlreadyExists: 'silent' } });
+    await reconfigureServer({ logLevels: { signupUsernameTaken: 'silent' } });
     const logger = require('../lib/logger').default;
     loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
     const loggerWarnSpy = spyOn(logger, 'warn').and.callThrough();

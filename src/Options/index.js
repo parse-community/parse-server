@@ -792,5 +792,5 @@ export interface LogLevels {
   /* Log level used when a sign-up fails because the username already exists. Default is `error`. See [LogLevel](LogLevel.html) for available values.
   :DEFAULT: error
   */
-  usernameAlreadyExists: ?string;
+  signupUsernameTaken: ?string;
 }

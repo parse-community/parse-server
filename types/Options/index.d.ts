@@ -297,6 +297,6 @@ export interface LogLevels {
     triggerBeforeError?: string;
     cloudFunctionSuccess?: string;
     cloudFunctionError?: string;
-    usernameAlreadyExists?: string;
+    signupUsernameTaken?: string;
 }
 export {};
