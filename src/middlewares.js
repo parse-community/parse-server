@@ -467,7 +467,7 @@ export function handleParseErrors(err, req, res, next) {
       return next(err);
     }
     const usernameAlreadyExistsLevel =
-      req.config?.logEvents?.usernameAlreadyExists || 'info';
+      req.config?.logLevels?.usernameAlreadyExists || 'info';
     let httpStatus;
     // TODO: fill out this mapping
     switch (err.code) {

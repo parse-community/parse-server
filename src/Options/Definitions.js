@@ -352,13 +352,6 @@ module.exports.ParseServerOptions = {
     action: parsers.objectParser,
     type: 'LiveQueryServerOptions',
   },
-  logEvents: {
-    env: 'PARSE_SERVER_LOG_EVENTS',
-    help: '(Optional) Overrides the log levels used by specific log events.',
-    action: parsers.objectParser,
-    type: 'LogLevels',
-    default: {},
-  },
   loggerAdapter: {
     env: 'PARSE_SERVER_LOGGER_ADAPTER',
     help: 'Adapter module for the logging sub-system',

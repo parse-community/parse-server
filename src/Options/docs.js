@@ -63,7 +63,6 @@
  * @property {Boolean} jsonLogs Log as structured JSON objects
  * @property {LiveQueryOptions} liveQuery parse-server's LiveQuery configuration object
  * @property {LiveQueryServerOptions} liveQueryServerOptions Live query server configuration options (will start the liveQuery server)
- * @property {LogLevels} logEvents (Optional) Overrides the log levels used by specific log events.
  * @property {Adapter<LoggerAdapter>} loggerAdapter Adapter module for the logging sub-system
  * @property {String} logLevel Sets the level for logs
  * @property {LogLevels} logLevels (Optional) Overrides the log levels used internally by Parse Server to log events.
