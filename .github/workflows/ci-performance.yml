@@ -1,11 +1,4 @@
 name: ci-performance
-# SECURITY: This workflow runs performance benchmarks on PRs.
-# To prevent malicious code execution:
-# 1. Uses 'pull_request' trigger (read-only permissions, no secrets exposed)
-# 2. Always uses benchmark script from BASE branch (trusted code only)
-# 3. Tests the trusted benchmark script against both base and PR implementations
-# This means: If a PR modifies the benchmark script, those changes won't be
-# tested until AFTER the PR is merged (security over convenience).
 on:
   pull_request:
     branches:
@@ -32,11 +25,31 @@ jobs:
     timeout-minutes: 30
 
     steps:
+      - name: Checkout PR branch (for benchmark script)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+
+      - name: Save PR benchmark script
+        run: |
+          mkdir -p /tmp/pr-benchmark
+          cp -r benchmark /tmp/pr-benchmark/ || echo "No benchmark directory"
+          cp package.json /tmp/pr-benchmark/ || true
+
       - name: Checkout base branch
         uses: actions/checkout@v4
         with:
           ref: ${{ github.base_ref }}
           fetch-depth: 1
+          clean: true
+
+      - name: Restore PR benchmark script
+        run: |
+          if [ -d "/tmp/pr-benchmark/benchmark" ]; then
+            rm -rf benchmark
+            cp -r /tmp/pr-benchmark/benchmark .
+          fi
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
