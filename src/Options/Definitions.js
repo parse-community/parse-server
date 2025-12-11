@@ -1488,6 +1488,12 @@ module.exports.LogLevels = {
       'Log level used by the Cloud Code Functions on success. Default is `info`. See [LogLevel](LogLevel.html) for available values.',
     default: 'info',
   },
+  signupUsernameTaken: {
+    env: 'PARSE_SERVER_LOG_LEVELS_SIGNUP_USERNAME_TAKEN',
+    help:
+      'Log level used when a sign-up fails because the username already exists. Default is `error`. See [LogLevel](LogLevel.html) for available values.',
+    default: 'error',
+  },
   triggerAfter: {
     env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_AFTER',
     help:
@@ -1505,11 +1511,5 @@ module.exports.LogLevels = {
     help:
       'Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on success. Default is `info`. See [LogLevel](LogLevel.html) for available values.',
     default: 'info',
-  },
-  signupUsernameTaken: {
-    env: 'PARSE_SERVER_LOG_LEVELS_USERNAME_ALREADY_EXISTS',
-    help:
-      'Log level used when a sign-up fails because the username already exists. Default is `error`. See [LogLevel](LogLevel.html) for available values.',
-    default: 'error',
   },
 };
