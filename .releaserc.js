@@ -34,7 +34,7 @@ async function config() {
   console.log(`Running on branch: ${branch}`);
 
   // Set changelog file
-  const changelogFile = `./changelogs/CHANGELOG_${branch}.md`;
+  const changelogFile = `./changelogs/CHANGELOG_release.md`;
   // eslint-disable-next-line no-console
   console.log(`Changelog file output to: ${changelogFile}`);
 
@@ -46,9 +46,8 @@ async function config() {
       'release',
       { name: 'alpha', prerelease: true },
       // { name: 'beta', prerelease: true },
-      'next-major',
       // Long-Term-Support branch
-      'release-8.x.x',
+      { name: 'release-8.x.x', range: '8.x.x', channel: '8.x.x' },
     ],
     dryRun: false,
     debug: true,
