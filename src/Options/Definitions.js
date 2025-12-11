@@ -1491,8 +1491,8 @@ module.exports.LogLevels = {
   signupUsernameTaken: {
     env: 'PARSE_SERVER_LOG_LEVELS_SIGNUP_USERNAME_TAKEN',
     help:
-      'Log level used when a sign-up fails because the username already exists. Default is `error`. See [LogLevel](LogLevel.html) for available values.',
-    default: 'error',
+      'Log level used when a sign-up fails because the username already exists. Default is `info`. See [LogLevel](LogLevel.html) for available values.',
+    default: 'info',
   },
   triggerAfter: {
     env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_AFTER',
