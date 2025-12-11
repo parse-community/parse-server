@@ -1,3 +1,10 @@
+# [8.6.0-alpha.2](https://github.com/parse-community/parse-server/compare/8.6.0-alpha.1...8.6.0-alpha.2) (2025-12-10)
+
+
+### Bug Fixes
+
+* Remove elevated permissions in GitHub CI performance benchmark ([#9966](https://github.com/parse-community/parse-server/issues/9966)) ([6b9f896](https://github.com/parse-community/parse-server/commit/6b9f8963cc3debf59cd9c5dfc5422aff9404ce9d))
+
 # [8.6.0-alpha.1](https://github.com/parse-community/parse-server/compare/8.5.0...8.6.0-alpha.1) (2025-12-03)
 
 

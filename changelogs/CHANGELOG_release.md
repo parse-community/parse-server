@@ -1,3 +1,14 @@
+# [8.6.0](https://github.com/parse-community/parse-server/compare/8.5.0...8.6.0) (2025-12-10)
+
+
+### Bug Fixes
+
+* Remove elevated permissions in GitHub CI performance benchmark ([#9966](https://github.com/parse-community/parse-server/issues/9966)) ([6b9f896](https://github.com/parse-community/parse-server/commit/6b9f8963cc3debf59cd9c5dfc5422aff9404ce9d))
+
+### Features
+
+* Add GraphQL query `cloudConfig` to retrieve and mutation `updateCloudConfig` to update Cloud Config ([#9947](https://github.com/parse-community/parse-server/issues/9947)) ([3ca85cd](https://github.com/parse-community/parse-server/commit/3ca85cd4a632f234c9d3d731331c0524dfe54075))
+
 # [8.5.0](https://github.com/parse-community/parse-server/compare/8.4.0...8.5.0) (2025-12-01)
 
 
