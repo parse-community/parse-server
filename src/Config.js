@@ -235,10 +235,19 @@ export class Config {
 
   static validateQueryComplexityOptions(maxIncludeQueryComplexity, maxGraphQLQueryComplexity) {
     if (maxIncludeQueryComplexity && maxGraphQLQueryComplexity) {
-      if (maxIncludeQueryComplexity.depth >= maxGraphQLQueryComplexity.depth) {
+      // Skip validation if either value is -1 (skip validation flag)
+      const includeDepth = maxIncludeQueryComplexity.depth;
+      const graphQLDepth = maxGraphQLQueryComplexity.depth;
+      const includeCount = maxIncludeQueryComplexity.count;
+      const graphQLFields = maxGraphQLQueryComplexity.fields;
+
+      // Validate depth only if neither is -1
+      if (includeDepth !== -1 && graphQLDepth !== -1 && includeDepth >= graphQLDepth) {
         throw new Error('maxIncludeQueryComplexity.depth must be less than maxGraphQLQueryComplexity.depth');
       }
-      if (maxIncludeQueryComplexity.count >= maxGraphQLQueryComplexity.fields) {
+
+      // Validate count/fields only if neither is -1
+      if (includeCount !== -1 && graphQLFields !== -1 && includeCount >= graphQLFields) {
         throw new Error('maxIncludeQueryComplexity.count must be less than maxGraphQLQueryComplexity.fields');
       }
     }

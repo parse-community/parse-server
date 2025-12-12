@@ -407,13 +407,13 @@ module.exports.ParseServerOptions = {
   maxGraphQLQueryComplexity: {
     env: 'PARSE_SERVER_MAX_GRAPH_QLQUERY_COMPLEXITY',
     help:
-      'Maximum query complexity for GraphQL queries. Controls depth and number of field selections.<br><br>Format: `{ depth: number, fields: number }`<ul><li>`depth`: Maximum depth of nested field selections</li><li>`fields`: Maximum number of field selections in a single request</li></ul>If both `maxIncludeQueryComplexity` and `maxGraphQLQueryComplexity` are provided, `maxIncludeQueryComplexity` values must be lower than `maxGraphQLQueryComplexity` values to avoid validation conflicts.',
+      'Maximum query complexity for GraphQL queries. Controls depth and number of field selections.<br><br>Format: `{ depth: number, fields: number }`<ul><li>`depth`: Maximum depth of nested field selections. Set to `-1` to skip depth validation.</li><li>`fields`: Maximum number of field selections in a single request. Set to `-1` to skip fields validation.</li></ul>If both `maxIncludeQueryComplexity` and `maxGraphQLQueryComplexity` are provided, `maxIncludeQueryComplexity` values must be lower than `maxGraphQLQueryComplexity` values to avoid validation conflicts.',
     action: parsers.objectParser,
   },
   maxIncludeQueryComplexity: {
     env: 'PARSE_SERVER_MAX_INCLUDE_QUERY_COMPLEXITY',
     help:
-      'Maximum query complexity for REST API includes. Controls depth and number of include fields.<br><br>Format: `{ depth: number, count: number }`<ul><li>`depth`: Maximum depth of nested includes (e.g., foo.bar.baz = depth 3)</li><li>`count`: Maximum number of include fields (e.g., foo,bar,baz = 3 fields)</li></ul>If both `maxIncludeQueryComplexity` and `maxGraphQLQueryComplexity` are provided, `maxIncludeQueryComplexity` values must be lower than `maxGraphQLQueryComplexity` values to avoid validation conflicts.',
+      'Maximum query complexity for REST API includes. Controls depth and number of include fields.<br><br>Format: `{ depth: number, count: number }`<ul><li>`depth`: Maximum depth of nested includes (e.g., foo.bar.baz = depth 3). Set to `-1` to skip depth validation.</li><li>`count`: Maximum number of include fields (e.g., foo,bar,baz = 3 fields). Set to `-1` to skip count validation.</li></ul>If both `maxIncludeQueryComplexity` and `maxGraphQLQueryComplexity` are provided, `maxIncludeQueryComplexity` values must be lower than `maxGraphQLQueryComplexity` values to avoid validation conflicts.<br><br>Note: when this option is active, the `includeAll` method is not allowed.',
     action: parsers.objectParser,
   },
   maxLimit: {

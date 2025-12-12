@@ -1265,5 +1265,353 @@ describe('REST Query Complexity', () => {
       expect(results.length).toBeGreaterThan(0);
     });
   });
+
+  describe('Skipping validation with -1', () => {
+    it('should skip depth validation when depth is -1', async () => {
+      await reconfigureServer({
+        maxIncludeQueryComplexity: {
+          depth: -1,
+          count: 2,
+        },
+      });
+
+      // Create test objects with deep relationships
+      const user = new Parse.User();
+      user.setUsername('testuser_skip_depth');
+      user.setPassword('password');
+      await user.signUp();
+
+      const category = new Parse.Object('Category');
+      category.set('name', 'Test Category');
+      await category.save();
+
+      const post = new Parse.Object('Post');
+      post.set('title', 'Test Post');
+      post.set('author', user);
+      post.set('category', category);
+      await post.save();
+
+      const comment = new Parse.Object('Comment');
+      comment.set('text', 'Test Comment');
+      comment.set('post', post);
+      await comment.save();
+
+      // Deep query should work because depth is -1
+      const query = new Parse.Query('Comment');
+      query.include('post.author');
+      query.include('post.category');
+      const results = await query.find();
+
+      expect(results.length).toBeGreaterThan(0);
+    });
+
+    it('should skip count validation when count is -1', async () => {
+      await reconfigureServer({
+        maxIncludeQueryComplexity: {
+          depth: 1,
+          count: -1,
+        },
+      });
+
+      // Create test objects with relationships
+      const user = new Parse.User();
+      user.setUsername('testuser_skip_count');
+      user.setPassword('password');
+      await user.signUp();
+
+      const category = new Parse.Object('Category');
+      category.set('name', 'Test Category');
+      await category.save();
+
+      const post = new Parse.Object('Post');
+      post.set('title', 'Test Post');
+      post.set('author', user);
+      post.set('category', category);
+      await post.save();
+
+      const comment = new Parse.Object('Comment');
+      comment.set('text', 'Test Comment');
+      comment.set('post', post);
+      await comment.save();
+
+      // Many includes should work because count is -1
+      const query = new Parse.Query('Comment');
+      query.include('post');
+      query.include('post.author');
+      query.include('post.category');
+      const results = await query.find();
+
+      expect(results.length).toBeGreaterThan(0);
+    });
+
+    it('should skip both validations when both are -1', async () => {
+      await reconfigureServer({
+        maxIncludeQueryComplexity: {
+          depth: -1,
+          count: -1,
+        },
+      });
+
+      // Create test objects with very deep relationships
+      const user = new Parse.User();
+      user.setUsername('testuser_skip_both');
+      user.setPassword('password');
+      await user.signUp();
+
+      const category = new Parse.Object('Category');
+      category.set('name', 'Test Category');
+      await category.save();
+
+      const post = new Parse.Object('Post');
+      post.set('title', 'Test Post');
+      post.set('author', user);
+      post.set('category', category);
+      await post.save();
+
+      const comment = new Parse.Object('Comment');
+      comment.set('text', 'Test Comment');
+      comment.set('post', post);
+      await comment.save();
+
+      // Very complex query should work
+      const query = new Parse.Query('Comment');
+      query.include('post');
+      query.include('post.author');
+      query.include('post.category');
+      const results = await query.find();
+
+      expect(results.length).toBeGreaterThan(0);
+    });
+
+    it('should allow includeAll when depth is -1', async () => {
+      await reconfigureServer({
+        maxIncludeQueryComplexity: {
+          depth: -1,
+          count: 5,
+        },
+      });
+
+      // Create test objects with relationships
+      const user = new Parse.User();
+      user.setUsername('testuser_includeall_depth_skip');
+      user.setPassword('password');
+      await user.signUp();
+
+      const post = new Parse.Object('Post');
+      post.set('title', 'Test Post');
+      post.set('author', user);
+      await post.save();
+
+      // includeAll should work because depth is -1
+      const query = new Parse.Query('Post');
+      query.includeAll();
+
+      const results = await query.find();
+      expect(results.length).toBeGreaterThan(0);
+    });
+
+    it('should allow includeAll when count is -1', async () => {
+      await reconfigureServer({
+        maxIncludeQueryComplexity: {
+          depth: 5,
+          count: -1,
+        },
+      });
+
+      // Create test objects with relationships
+      const user = new Parse.User();
+      user.setUsername('testuser_includeall_count_skip');
+      user.setPassword('password');
+      await user.signUp();
+
+      const post = new Parse.Object('Post');
+      post.set('title', 'Test Post');
+      post.set('author', user);
+      await post.save();
+
+      // includeAll should work because count is -1
+      const query = new Parse.Query('Post');
+      query.includeAll();
+
+      const results = await query.find();
+      expect(results.length).toBeGreaterThan(0);
+    });
+
+    it('should enforce count limit when depth is -1', async () => {
+      await reconfigureServer({
+        maxIncludeQueryComplexity: {
+          depth: -1,
+          count: 1,
+        },
+      });
+
+      // Create test objects with relationships
+      const user = new Parse.User();
+      user.setUsername('testuser_enforce_count');
+      user.setPassword('password');
+      await user.signUp();
+
+      const category = new Parse.Object('Category');
+      category.set('name', 'Test Category');
+      await category.save();
+
+      const post = new Parse.Object('Post');
+      post.set('title', 'Test Post');
+      post.set('author', user);
+      post.set('category', category);
+      await post.save();
+
+      // Query with 2 includes should fail (count limit is 1)
+      const query = new Parse.Query('Post');
+      query.include('author');
+      query.include('category');
+
+      await expectAsync(query.find()).toBeRejectedWith(
+        jasmine.objectContaining({
+          code: Parse.Error.INVALID_QUERY,
+        })
+      );
+    });
+  });
+
+  describe('Restricting with depth 0 and count 0', () => {
+    it('should reject all includes when depth is 0', async () => {
+      await reconfigureServer({
+        maxIncludeQueryComplexity: {
+          depth: 0,
+        },
+      });
+
+      // Create test objects with relationships
+      const user = new Parse.User();
+      user.setUsername('testuser_depth_zero');
+      user.setPassword('password');
+      await user.signUp();
+
+      const post = new Parse.Object('Post');
+      post.set('title', 'Test Post');
+      post.set('author', user);
+      await post.save();
+
+      // Even simple include should be rejected
+      const query = new Parse.Query('Post');
+      query.include('author');
+
+      await expectAsync(query.find()).toBeRejectedWith(
+        jasmine.objectContaining({
+          code: Parse.Error.INVALID_QUERY,
+        })
+      );
+    });
+
+    it('should reject all includes when count is 0', async () => {
+      await reconfigureServer({
+        maxIncludeQueryComplexity: {
+          count: 0,
+        },
+      });
+
+      // Create test objects with relationships
+      const user = new Parse.User();
+      user.setUsername('testuser_count_zero');
+      user.setPassword('password');
+      await user.signUp();
+
+      const post = new Parse.Object('Post');
+      post.set('title', 'Test Post');
+      post.set('author', user);
+      await post.save();
+
+      // Even single include should be rejected
+      const query = new Parse.Query('Post');
+      query.include('author');
+
+      await expectAsync(query.find()).toBeRejectedWith(
+        jasmine.objectContaining({
+          code: Parse.Error.INVALID_QUERY,
+        })
+      );
+    });
+
+    it('should allow queries with depth 0 when no includes are present', async () => {
+      await reconfigureServer({
+        maxIncludeQueryComplexity: {
+          depth: 0,
+        },
+      });
+
+      // Create simple objects without includes
+      const obj = new Parse.Object('SimpleObject');
+      obj.set('name', 'Test');
+      await obj.save();
+
+      // Query without includes should work
+      const query = new Parse.Query('SimpleObject');
+      const results = await query.find();
+
+      expect(results.length).toBeGreaterThan(0);
+    });
+
+    it('should allow master key even with depth 0', async () => {
+      await reconfigureServer({
+        maxIncludeQueryComplexity: {
+          depth: 0,
+        },
+      });
+
+      // Create test objects with relationships
+      const user = new Parse.User();
+      user.setUsername('testuser_depth_zero_master');
+      user.setPassword('password');
+      await user.signUp(null, { useMasterKey: true });
+
+      const post = new Parse.Object('Post');
+      post.set('title', 'Test Post');
+      post.set('author', user);
+      await post.save(null, { useMasterKey: true });
+
+      // Master key should bypass depth 0 restriction
+      const query = new Parse.Query('Post');
+      query.include('author');
+
+      const results = await query.find({ useMasterKey: true });
+      expect(results.length).toBeGreaterThan(0);
+    });
+
+    it('should allow maintenance key even with count 0', async () => {
+      await reconfigureServer({
+        maintenanceKey: 'maintenanceKeyZero',
+        maxIncludeQueryComplexity: {
+          count: 0,
+        },
+      });
+
+      // Create test objects with relationships using Parse SDK
+      const user = new Parse.User();
+      user.setUsername('testuser_count_zero_maint');
+      user.setPassword('password');
+      await user.signUp();
+
+      const post = new Parse.Object('Post');
+      post.set('title', 'Test Post');
+      post.set('author', user);
+      await post.save();
+
+      // Maintenance key should bypass count 0 restriction
+      const headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Maintenance-Key': 'maintenanceKeyZero',
+        'Content-Type': 'application/json',
+      };
+
+      const response = await request({
+        headers,
+        url: `http://localhost:8378/1/classes/Post?include=author`,
+        json: true,
+      });
+
+      expect(response.data.results.length).toBeGreaterThan(0);
+    });
+  });
 });
 

@@ -151,6 +151,48 @@ describe('ParseGraphQL Query Complexity', () => {
       const result = await masterClient.query({ query });
       expect(result.data.users).toBeDefined();
     });
+
+    it('should allow queries with maintenance key even when exceeding fields limit', async () => {
+      await reconfigureServer({
+        maintenanceKey: 'maintenanceKey123',
+        maxGraphQLQueryComplexity: {
+          fields: 3,
+        },
+      });
+
+      const httpLinkWithMaintenance = createHttpLink({
+        uri: 'http://localhost:13378/graphql',
+        fetch: (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args)),
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Maintenance-Key': 'maintenanceKey123',
+        },
+      });
+
+      const maintenanceClient = new ApolloClient({
+        link: httpLinkWithMaintenance,
+        cache: new InMemoryCache(),
+      });
+
+      const query = gql`
+        query {
+          users {
+            edges {
+              node {
+                objectId
+                username
+                createdAt
+                updatedAt
+                email
+              }
+            }
+          }
+        }
+      `;
+
+      const result = await maintenanceClient.query({ query });
+      expect(result.data.users).toBeDefined();
+    });
   });
 
   describe('maxGraphQLQueryComplexity.depth', () => {
@@ -658,6 +700,336 @@ describe('ParseGraphQL Query Complexity', () => {
       const deepResult = await deepResponse.json();
       expect(deepResult.errors).toBeDefined();
       expect(deepResult.errors[0].message).toContain('Query depth exceeds maximum allowed depth');
+    });
+  });
+
+  describe('Skipping validation with -1', () => {
+    it('should skip depth validation when depth is -1', async () => {
+      await reconfigureServer({
+        maxGraphQLQueryComplexity: {
+          depth: -1,
+          fields: 50,
+        },
+      });
+
+      // Very deep query that would normally fail
+      const query = gql`
+        query {
+          users {
+            edges {
+              node {
+                objectId
+                username
+                createdAt
+                updatedAt
+                email
+                emailVerified
+                username
+              }
+            }
+          }
+        }
+      `;
+
+      const result = await apolloClient.query({ query });
+      expect(result.data.users).toBeDefined();
+    });
+
+    it('should skip fields validation when fields is -1', async () => {
+      await reconfigureServer({
+        maxGraphQLQueryComplexity: {
+          depth: 10,
+          fields: -1,
+        },
+      });
+
+      // Many fields query that would normally fail
+      const query = gql`
+        query {
+          users {
+            edges {
+              node {
+                objectId
+                username
+                createdAt
+                updatedAt
+                email
+                emailVerified
+              }
+            }
+          }
+        }
+      `;
+
+      const result = await apolloClient.query({ query });
+      expect(result.data.users).toBeDefined();
+    });
+
+    it('should skip both validations when both are -1', async () => {
+      await reconfigureServer({
+        maxGraphQLQueryComplexity: {
+          depth: -1,
+          fields: -1,
+        },
+      });
+
+      // Very complex query
+      const query = gql`
+        query {
+          users {
+            edges {
+              node {
+                objectId
+                username
+                createdAt
+                updatedAt
+                email
+                emailVerified
+              }
+            }
+          }
+        }
+      `;
+
+      const result = await apolloClient.query({ query });
+      expect(result.data.users).toBeDefined();
+    });
+
+    it('should enforce fields limit when depth is -1', async () => {
+      await reconfigureServer({
+        maxGraphQLQueryComplexity: {
+          depth: -1,
+          fields: 3,
+        },
+      });
+
+      const query = gql`
+        query {
+          users {
+            edges {
+              node {
+                objectId
+                username
+                createdAt
+                updatedAt
+              }
+            }
+          }
+        }
+      `;
+
+      try {
+        await apolloClient.query({ query });
+        fail('Should have thrown an error');
+      } catch (error) {
+        expect(error.networkError.result.errors[0].message).toContain('Number of fields selected exceeds maximum allowed');
+      }
+    });
+  });
+
+  describe('Restricting with depth 0', () => {
+    it('should reject all queries when depth is 0', async () => {
+      await reconfigureServer({
+        maxGraphQLQueryComplexity: {
+          depth: 0,
+        },
+      });
+
+      const query = gql`
+        query {
+          users {
+            edges {
+              node {
+                objectId
+              }
+            }
+          }
+        }
+      `;
+
+      try {
+        await apolloClient.query({ query });
+        fail('Should have thrown an error');
+      } catch (error) {
+        expect(error.networkError.result.errors[0].message).toContain('Query depth exceeds maximum allowed depth');
+      }
+    });
+
+    it('should reject all queries when fields is 0', async () => {
+      await reconfigureServer({
+        maxGraphQLQueryComplexity: {
+          fields: 0,
+        },
+      });
+
+      const query = gql`
+        query {
+          users {
+            edges {
+              node {
+                objectId
+              }
+            }
+          }
+        }
+      `;
+
+      try {
+        await apolloClient.query({ query });
+        fail('Should have thrown an error');
+      } catch (error) {
+        expect(error.networkError.result.errors[0].message).toContain('Number of fields selected exceeds maximum allowed');
+      }
+    });
+
+    it('should allow master key even with depth 0', async () => {
+      await reconfigureServer({
+        maxGraphQLQueryComplexity: {
+          depth: 0,
+        },
+      });
+
+      const httpLinkWithMaster = createHttpLink({
+        uri: 'http://localhost:13378/graphql',
+        fetch: (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args)),
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+        },
+      });
+
+      const masterClient = new ApolloClient({
+        link: httpLinkWithMaster,
+        cache: new InMemoryCache(),
+      });
+
+      const query = gql`
+        query {
+          users {
+            edges {
+              node {
+                objectId
+              }
+            }
+          }
+        }
+      `;
+
+      const result = await masterClient.query({ query });
+      expect(result.data.users).toBeDefined();
+    });
+
+    it('should allow master key even with fields 0', async () => {
+      await reconfigureServer({
+        maxGraphQLQueryComplexity: {
+          fields: 0,
+        },
+      });
+
+      const httpLinkWithMaster = createHttpLink({
+        uri: 'http://localhost:13378/graphql',
+        fetch: (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args)),
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+        },
+      });
+
+      const masterClient = new ApolloClient({
+        link: httpLinkWithMaster,
+        cache: new InMemoryCache(),
+      });
+
+      const query = gql`
+        query {
+          users {
+            edges {
+              node {
+                objectId
+              }
+            }
+          }
+        }
+      `;
+
+      const result = await masterClient.query({ query });
+      expect(result.data.users).toBeDefined();
+    });
+
+    it('should allow maintenance key even with depth 0', async () => {
+      await reconfigureServer({
+        maintenanceKey: 'maintenanceKey123',
+        maxGraphQLQueryComplexity: {
+          depth: 0,
+        },
+      });
+
+      const httpLinkWithMaintenance = createHttpLink({
+        uri: 'http://localhost:13378/graphql',
+        fetch: (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args)),
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Maintenance-Key': 'maintenanceKey123',
+        },
+      });
+
+      const maintenanceClient = new ApolloClient({
+        link: httpLinkWithMaintenance,
+        cache: new InMemoryCache(),
+      });
+
+      const query = gql`
+        query {
+          users {
+            edges {
+              node {
+                objectId
+              }
+            }
+          }
+        }
+      `;
+
+      const result = await maintenanceClient.query({ query });
+      expect(result.data.users).toBeDefined();
+    });
+
+    it('should allow maintenance key even with fields 0', async () => {
+      await reconfigureServer({
+        maintenanceKey: 'maintenanceKey123',
+        maxGraphQLQueryComplexity: {
+          fields: 0,
+        },
+      });
+
+      const httpLinkWithMaintenance = createHttpLink({
+        uri: 'http://localhost:13378/graphql',
+        fetch: (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args)),
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Maintenance-Key': 'maintenanceKey123',
+        },
+      });
+
+      const maintenanceClient = new ApolloClient({
+        link: httpLinkWithMaintenance,
+        cache: new InMemoryCache(),
+      });
+
+      const query = gql`
+        query {
+          users {
+            edges {
+              node {
+                objectId
+              }
+            }
+          }
+        }
+      `;
+
+      const result = await maintenanceClient.query({ query });
+      expect(result.data.users).toBeDefined();
     });
   });
 });

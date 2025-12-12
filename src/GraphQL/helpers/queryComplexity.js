@@ -117,10 +117,24 @@ export function createComplexityValidationPlugin(config) {
 
         const maxGraphQLQueryComplexity = config.maxGraphQLQueryComplexity;
 
+        // Filter out -1 values (skip validation flag)
+        const maxLimits = {};
+        if (maxGraphQLQueryComplexity.depth !== -1 && maxGraphQLQueryComplexity.depth !== undefined) {
+          maxLimits.depth = maxGraphQLQueryComplexity.depth;
+        }
+        if (maxGraphQLQueryComplexity.fields !== -1 && maxGraphQLQueryComplexity.fields !== undefined) {
+          maxLimits.fields = maxGraphQLQueryComplexity.fields;
+        }
+
+        // Skip validation if all limits are -1
+        if (Object.keys(maxLimits).length === 0) {
+          return;
+        }
+
         // Calculate depth and fields in a single pass for performance
         // Pass max limits for early exit optimization - will throw immediately if exceeded
         // SECURITY: operationName is crucial for multi-operation documents to validate the correct operation
-        calculateQueryComplexity(document, operationName, maxGraphQLQueryComplexity);
+        calculateQueryComplexity(document, operationName, maxLimits);
       },
     }),
   };

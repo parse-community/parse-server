@@ -209,11 +209,12 @@ function _UnsafeRestQuery(
         break;
       case 'includeAll':
         // Block includeAll if maxIncludeQueryComplexity is configured for non-master users
+        // Skip blocking if both limits are -1 (disabled)
         if (
           !this.auth.isMaster &&
           !this.auth.isMaintenance &&
           this.config.maxIncludeQueryComplexity &&
-          (this.config.maxIncludeQueryComplexity.depth || this.config.maxIncludeQueryComplexity.count)
+          (this.config.maxIncludeQueryComplexity.depth > -1 || this.config.maxIncludeQueryComplexity.count > -1)
         ) {
           throw new Parse.Error(
             Parse.Error.INVALID_QUERY,
@@ -250,11 +251,12 @@ function _UnsafeRestQuery(
         const paths = restOptions.include.split(',');
         if (paths.includes('*')) {
           // Block includeAll if maxIncludeQueryComplexity is configured for non-master users
+          // Skip blocking if both limits are -1 (disabled)
           if (
             !this.auth.isMaster &&
             !this.auth.isMaintenance &&
             this.config.maxIncludeQueryComplexity &&
-            (this.config.maxIncludeQueryComplexity.depth || this.config.maxIncludeQueryComplexity.count)
+            (this.config.maxIncludeQueryComplexity.depth > -1 || this.config.maxIncludeQueryComplexity.count > -1)
           ) {
             throw new Parse.Error(
               Parse.Error.INVALID_QUERY,
@@ -300,7 +302,8 @@ function _UnsafeRestQuery(
   if (!this.auth.isMaster && !this.auth.isMaintenance && this.config.maxIncludeQueryComplexity && this.include && this.include.length > 0) {
     const includeCount = this.include.length;
 
-    if (this.config.maxIncludeQueryComplexity.count && includeCount > this.config.maxIncludeQueryComplexity.count) {
+    // Skip count validation if set to -1
+    if (this.config.maxIncludeQueryComplexity.count !== -1 && this.config.maxIncludeQueryComplexity.count && includeCount > this.config.maxIncludeQueryComplexity.count) {
       throw new Parse.Error(
         Parse.Error.INVALID_QUERY,
         `Number of include fields exceeds maximum allowed`
@@ -308,7 +311,8 @@ function _UnsafeRestQuery(
     }
 
     const depth = Math.max(...this.include.map(path => path.length));
-    if (this.config.maxIncludeQueryComplexity.depth && depth > this.config.maxIncludeQueryComplexity.depth) {
+    // Skip depth validation if set to -1
+    if (this.config.maxIncludeQueryComplexity.depth !== -1 && this.config.maxIncludeQueryComplexity.depth && depth > this.config.maxIncludeQueryComplexity.depth) {
       throw new Parse.Error(
         Parse.Error.INVALID_QUERY,
         `Include depth exceeds maximum allowed`
