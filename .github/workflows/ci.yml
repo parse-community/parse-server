@@ -174,10 +174,6 @@ jobs:
             MONGODB_VERSION: 8.0.4
             MONGODB_TOPOLOGY: standalone
             NODE_VERSION: 20.18.0
-          - name: Node 18
-            MONGODB_VERSION: 8.0.4
-            MONGODB_TOPOLOGY: standalone
-            NODE_VERSION: 18.20.4
           - name: Node 22
             MONGODB_VERSION: 8.0.4
             MONGODB_TOPOLOGY: standalone
