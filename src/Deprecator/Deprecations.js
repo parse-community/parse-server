@@ -18,5 +18,4 @@
 module.exports = [
   { optionKey: 'encodeParseObjectInCloudFunction', changeNewDefault: 'true' },
   { optionKey: 'enableInsecureAuthAdapters', changeNewDefault: 'false' },
-  { optionKey: 'databaseOptions.allowPublicExplain', changeNewDefault: 'false' },
 ];
