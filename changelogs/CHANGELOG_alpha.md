@@ -1,3 +1,39 @@
+# [9.0.0-alpha.5](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.4...9.0.0-alpha.5) (2025-12-12)
+
+
+### Features
+
+* Update route patterns to use path-to-regexp v8 syntax ([#9942](https://github.com/parse-community/parse-server/issues/9942)) ([fa8723b](https://github.com/parse-community/parse-server/commit/fa8723b3d1e895602d1187540818bbdb446259ba))
+
+
+### BREAKING CHANGES
+
+* Route pattern syntax across cloud routes and rate-limiting now use the new path-to-regexp v8 syntax; see the [migration guide](https://github.com/parse-community/parse-server/blob/alpha/9.0.0.md) for more details. ([fa8723b](fa8723b))
+
+# [9.0.0-alpha.4](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.3...9.0.0-alpha.4) (2025-12-12)
+
+
+### Features
+
+* Increase required minimum MongoDB version to `7.0.16` ([#9971](https://github.com/parse-community/parse-server/issues/9971)) ([7bb548b](https://github.com/parse-community/parse-server/commit/7bb548bf81b3cebc9ec92ef9e5e6faf8f9edbd3b))
+
+
+### BREAKING CHANGES
+
+* This releases increases the required minimum MongoDB version to `7.0.16`. ([7bb548b](7bb548b))
+
+# [9.0.0-alpha.3](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.2...9.0.0-alpha.3) (2025-12-12)
+
+
+### Bug Fixes
+
+* Upgrade to GraphQL Apollo Server 5 and restrict GraphQL introspection ([#9888](https://github.com/parse-community/parse-server/issues/9888)) ([87c7f07](https://github.com/parse-community/parse-server/commit/87c7f076eb84c9540f79f06c27fe13e102dc6295))
+
+
+### BREAKING CHANGES
+
+* Upgrade to Apollo Server 5 and GraphQL express 5 integration; GraphQL introspection now requires using `masterKey` or setting `graphQLPublicIntrospection: true`. ([87c7f07](87c7f07))
+
 # [9.0.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.1...9.0.0-alpha.2) (2025-12-12)
 
 
