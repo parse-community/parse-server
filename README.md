@@ -128,7 +128,7 @@ Parse Server is continuously tested with the most recent releases of Node.js to 
 | Version    | Minimum Version | End-of-Life | Parse Server Support |
 |------------|-----------------|-------------|----------------------|
 | Node.js 18 | 18.20.4         | April 2025  | <= 8.x (2025)        |
-| Node.js 20 | 20.18.0         | April 2026  | <= 9.x (2026)        |
+| Node.js 20 | 20.19.0         | April 2026  | <= 9.x (2026)        |
 | Node.js 22 | 22.12.0         | April 2027  | <= 10.x (2027)       |
 | Node.js 24 | 24.11.0         | April 2028  | <= 11.x (2028)       |
 
