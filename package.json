@@ -64,6 +64,9 @@
     "winston-daily-rotate-file": "5.0.0",
     "ws": "8.18.2"
   },
+  "overrides": {
+    "parse": "8.0.0"
+  },
   "devDependencies": {
     "@actions/core": "1.11.1",
     "@apollo/client": "3.13.8",
