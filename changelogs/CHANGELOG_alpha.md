@@ -1,3 +1,15 @@
+# [9.0.0-alpha.6](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.5...9.0.0-alpha.6) (2025-12-12)
+
+
+### Features
+
+* Increase required minimum version to Postgres `16`, PostGIS `3.5` ([#9972](https://github.com/parse-community/parse-server/issues/9972)) ([7483add](https://github.com/parse-community/parse-server/commit/7483add73934e7d16098ccfb672cc45b3f7c7fbe))
+
+
+### BREAKING CHANGES
+
+* This releases increases the required minimum version to Postgres `16`, PostGIS `3.5`. ([7483add](7483add))
+
 # [9.0.0-alpha.5](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.4...9.0.0-alpha.5) (2025-12-12)
 
 

@@ -219,15 +219,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: PostgreSQL 15, PostGIS 3.3
-            POSTGRES_IMAGE: postgis/postgis:15-3.3
-            NODE_VERSION: 24.11.0
-          - name: PostgreSQL 15, PostGIS 3.4
-            POSTGRES_IMAGE: postgis/postgis:15-3.4
-            NODE_VERSION: 24.11.0
-          - name: PostgreSQL 15, PostGIS 3.5
-            POSTGRES_IMAGE: postgis/postgis:15-3.5
-            NODE_VERSION: 24.11.0
           - name: PostgreSQL 16, PostGIS 3.5
             POSTGRES_IMAGE: postgis/postgis:16-3.5
             NODE_VERSION: 24.11.0

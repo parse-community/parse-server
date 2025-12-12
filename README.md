@@ -10,7 +10,7 @@
 
 [![Node Version](https://img.shields.io/badge/nodejs-20,_22,_24-green.svg?logo=node.js&style=flat)](https://nodejs.org)
 [![MongoDB Version](https://img.shields.io/badge/mongodb-7,_8-green.svg?logo=mongodb&style=flat)](https://www.mongodb.com)
-[![Postgres Version](https://img.shields.io/badge/postgresql-13,_14,_15,_16,_17,_18-green.svg?logo=postgresql&style=flat)](https://www.postgresql.org)
+[![Postgres Version](https://img.shields.io/badge/postgresql-16,_17,_18-green.svg?logo=postgresql&style=flat)](https://www.postgresql.org)
 
 [![npm latest version](https://img.shields.io/npm/v/parse-server/latest.svg)](https://www.npmjs.com/package/parse-server)
 [![npm alpha version](https://img.shields.io/npm/v/parse-server/alpha.svg)](https://www.npmjs.com/package/parse-server)
