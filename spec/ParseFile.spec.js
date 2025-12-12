@@ -13,6 +13,13 @@ for (let i = 0; i < str.length; i++) {
 }
 
 describe('Parse.File testing', () => {
+  let loggerErrorSpy;
+
+  beforeEach(() => {
+    const logger = require('../lib/logger').default;
+    loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+  });
+
   describe('creating files', () => {
     it('works with Content-Type', done => {
       const headers = {
@@ -146,6 +153,7 @@ describe('Parse.File testing', () => {
         const b = response.data;
         expect(b.url).toMatch(/^http:\/\/localhost:8378\/1\/files\/test\/.*thefile.jpg$/);
         // missing X-Parse-Master-Key header
+        loggerErrorSpy.calls.reset();
         request({
           method: 'DELETE',
           headers: {
@@ -156,8 +164,10 @@ describe('Parse.File testing', () => {
         }).then(fail, response => {
           const del_b = response.data;
           expect(response.status).toEqual(403);
-          expect(del_b.error).toMatch(/unauthorized/);
+          expect(del_b.error).toBe('Permission denied');
+          expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('unauthorized: master key is required'));
           // incorrect X-Parse-Master-Key header
+          loggerErrorSpy.calls.reset();
           request({
             method: 'DELETE',
             headers: {
@@ -169,7 +179,8 @@ describe('Parse.File testing', () => {
           }).then(fail, response => {
             const del_b2 = response.data;
             expect(response.status).toEqual(403);
-            expect(del_b2.error).toMatch(/unauthorized/);
+            expect(del_b2.error).toBe('Permission denied');
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('unauthorized: master key is required'));
             done();
           });
         });

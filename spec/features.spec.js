@@ -20,6 +20,9 @@ describe('features', () => {
   });
 
   it('requires the master key to get features', async done => {
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+    loggerErrorSpy.calls.reset();
     try {
       await request({
         url: 'http://localhost:8378/1/serverInfo',
@@ -32,7 +35,8 @@ describe('features', () => {
       done.fail('The serverInfo request should be rejected without the master key');
     } catch (error) {
       expect(error.status).toEqual(403);
-      expect(error.data.error).toEqual('unauthorized: master key is required');
+      expect(error.data.error).toEqual('Permission denied');
+      expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('unauthorized: master key is required'));
       done();
     }
   });

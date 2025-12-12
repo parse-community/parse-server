@@ -1,3 +1,66 @@
+# [8.6.0-alpha.2](https://github.com/parse-community/parse-server/compare/8.6.0-alpha.1...8.6.0-alpha.2) (2025-12-10)
+
+
+### Bug Fixes
+
+* Remove elevated permissions in GitHub CI performance benchmark ([#9966](https://github.com/parse-community/parse-server/issues/9966)) ([6b9f896](https://github.com/parse-community/parse-server/commit/6b9f8963cc3debf59cd9c5dfc5422aff9404ce9d))
+
+# [8.6.0-alpha.1](https://github.com/parse-community/parse-server/compare/8.5.0...8.6.0-alpha.1) (2025-12-03)
+
+
+### Features
+
+* Add GraphQL query `cloudConfig` to retrieve and mutation `updateCloudConfig` to update Cloud Config ([#9947](https://github.com/parse-community/parse-server/issues/9947)) ([3ca85cd](https://github.com/parse-community/parse-server/commit/3ca85cd4a632f234c9d3d731331c0524dfe54075))
+
+# [8.5.0-alpha.18](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.17...8.5.0-alpha.18) (2025-12-01)
+
+
+### Features
+
+* Upgrade to parse 7.1.2 ([#9955](https://github.com/parse-community/parse-server/issues/9955)) ([5c644a5](https://github.com/parse-community/parse-server/commit/5c644a55ac25986f214b68ba4bcbe7a62ad6d6d1))
+
+# [8.5.0-alpha.17](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.16...8.5.0-alpha.17) (2025-12-01)
+
+
+### Features
+
+* Upgrade to parse 7.1.1 ([#9954](https://github.com/parse-community/parse-server/issues/9954)) ([fa57d69](https://github.com/parse-community/parse-server/commit/fa57d69cbec525189da98d7136c1c0e9eaf74338))
+
+# [8.5.0-alpha.16](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.15...8.5.0-alpha.16) (2025-11-28)
+
+
+### Features
+
+* Add Parse Server option `enableSanitizedErrorResponse` to remove detailed error messages from responses sent to clients ([#9944](https://github.com/parse-community/parse-server/issues/9944)) ([4752197](https://github.com/parse-community/parse-server/commit/47521974aeafcf41102be62f19612a4ab0a4837f))
+
+# [8.5.0-alpha.15](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.14...8.5.0-alpha.15) (2025-11-23)
+
+
+### Performance Improvements
+
+* Remove unused dependencies ([#9943](https://github.com/parse-community/parse-server/issues/9943)) ([d4c6de0](https://github.com/parse-community/parse-server/commit/d4c6de0096b3ac95289c6bddfe25eb397d790e41))
+
+# [8.5.0-alpha.14](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.13...8.5.0-alpha.14) (2025-11-23)
+
+
+### Bug Fixes
+
+* Parse Server option `rateLimit.zone` does not use default value `ip` ([#9941](https://github.com/parse-community/parse-server/issues/9941)) ([12beb8f](https://github.com/parse-community/parse-server/commit/12beb8f6ee5d3002fec017bb4525eb3f1375f806))
+
+# [8.5.0-alpha.13](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.12...8.5.0-alpha.13) (2025-11-23)
+
+
+### Bug Fixes
+
+* Server internal error details leaking in error messages returned to clients ([#9937](https://github.com/parse-community/parse-server/issues/9937)) ([50edb5a](https://github.com/parse-community/parse-server/commit/50edb5ab4bb4a6ce474bfb7cf159d918933753b8))
+
+# [8.5.0-alpha.12](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.11...8.5.0-alpha.12) (2025-11-19)
+
+
+### Features
+
+* Add `beforePasswordResetRequest` hook ([#9906](https://github.com/parse-community/parse-server/issues/9906)) ([94cee5b](https://github.com/parse-community/parse-server/commit/94cee5bfafca10c914c73cf17fcdb627a9f0837b))
+
 # [8.5.0-alpha.11](https://github.com/parse-community/parse-server/compare/8.5.0-alpha.10...8.5.0-alpha.11) (2025-11-17)
 
 

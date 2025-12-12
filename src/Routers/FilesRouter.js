@@ -43,8 +43,7 @@ export class FilesRouter {
     const config = Config.get(req.params.appId);
     if (!config) {
       res.status(403);
-      const err = new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid application ID.');
-      res.json({ code: err.code, error: err.message });
+      res.json({ code: Parse.Error.OPERATION_FORBIDDEN, error: 'Invalid application ID.' });
       return;
     }
 
@@ -310,7 +309,7 @@ export class FilesRouter {
       const data = await filesController.getMetadata(filename);
       res.status(200);
       res.json(data);
-    } catch (e) {
+    } catch {
       res.status(200);
       res.json({});
     }

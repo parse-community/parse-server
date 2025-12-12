@@ -7,6 +7,7 @@ const triggers = require('./triggers');
 const { continueWhile } = require('parse/lib/node/promiseUtils');
 const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt', 'ACL'];
 const { enforceRoleSecurity } = require('./SharedRest');
+const { createSanitizedError } = require('./Error');
 
 // restOptions can include:
 //   skip
@@ -51,7 +52,7 @@ async function RestQuery({
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'bad query type');
   }
   const isGet = method === RestQuery.Method.get;
-  enforceRoleSecurity(method, className, auth);
+  enforceRoleSecurity(method, className, auth, config);
   const result = runBeforeFind
     ? await triggers.maybeRunQueryTrigger(
       triggers.Types.beforeFind,
@@ -120,7 +121,7 @@ function _UnsafeRestQuery(
   if (!this.auth.isMaster) {
     if (this.className == '_Session') {
       if (!this.auth.user) {
-        throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+        throw createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token', config);
       }
       this.restWhere = {
         $and: [
@@ -421,9 +422,10 @@ _UnsafeRestQuery.prototype.validateClientClassCreation = function () {
       .then(schemaController => schemaController.hasClass(this.className))
       .then(hasClass => {
         if (hasClass !== true) {
-          throw new Parse.Error(
+          throw createSanitizedError(
             Parse.Error.OPERATION_FORBIDDEN,
-            'This user is not allowed to access ' + 'non-existent class: ' + this.className
+            'This user is not allowed to access ' + 'non-existent class: ' + this.className,
+            this.config
           );
         }
       });
@@ -800,9 +802,10 @@ _UnsafeRestQuery.prototype.denyProtectedFields = async function () {
     ) || [];
   for (const key of protectedFields) {
     if (this.restWhere[key]) {
-      throw new Parse.Error(
+      throw createSanitizedError(
         Parse.Error.OPERATION_FORBIDDEN,
-        `This user is not allowed to query ${key} on class ${this.className}`
+        `This user is not allowed to query ${key} on class ${this.className}`,
+        this.config
       );
     }
   }

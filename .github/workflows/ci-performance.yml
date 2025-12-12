@@ -1,6 +1,6 @@
 name: ci-performance
 on:
-  pull_request_target:
+  pull_request:
     branches:
       - alpha
       - beta
@@ -17,8 +17,6 @@ env:
 
 permissions:
   contents: read
-  pull-requests: write
-  issues: write
 
 jobs:
   performance-check:
@@ -172,23 +170,6 @@ jobs:
           echo "baseline.json size: $(wc -c < baseline.json) bytes"
           echo "pr.json size: $(wc -c < pr.json) bytes"
 
-      - name: Store benchmark result (PR)
-        uses: benchmark-action/github-action-benchmark@v1
-        if: github.event_name == 'pull_request' && hashFiles('pr.json') != ''
-        continue-on-error: true
-        with:
-          name: Parse Server Performance
-          tool: 'customSmallerIsBetter'
-          output-file-path: pr.json
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: false
-          save-data-file: false
-          alert-threshold: '110%'
-          comment-on-alert: true
-          fail-on-alert: false
-          alert-comment-cc-users: '@parse-community/maintainers'
-          summary-always: true
-
       - name: Compare benchmark results
         id: compare
         run: |
@@ -277,43 +258,6 @@ jobs:
           name: benchmark-comparison
           path: comparison.md
           retention-days: 30
-
-      - name: Prepare comment body
-        if: github.event_name == 'pull_request'
-        run: |
-          echo "## Performance Impact Report" > comment.md
-          echo "" >> comment.md
-          if [ -f comparison.md ]; then
-            cat comparison.md >> comment.md
-          else
-            echo "⚠️ Could not generate performance comparison." >> comment.md
-          fi
-          echo "" >> comment.md
-          echo "<details>" >> comment.md
-          echo "<summary>📊 View detailed results</summary>" >> comment.md
-          echo "" >> comment.md
-          echo "### Baseline Results" >> comment.md
-          echo "\`\`\`json" >> comment.md
-          cat baseline.json >> comment.md
-          echo "\`\`\`" >> comment.md
-          echo "" >> comment.md
-          echo "### PR Results" >> comment.md
-          echo "\`\`\`json" >> comment.md
-          cat pr.json >> comment.md
-          echo "\`\`\`" >> comment.md
-          echo "" >> comment.md
-          echo "</details>" >> comment.md
-          echo "" >> comment.md
-          echo "> **Note:** Thresholds: ⚠️ >25%, ❌ >50%." >> comment.md
-
-      - name: Comment PR with results
-        if: github.event_name == 'pull_request'
-        uses: thollander/actions-comment-pull-request@v2
-        continue-on-error: true
-        with:
-          filePath: comment.md
-          comment_tag: performance-benchmark
-          mode: recreate
 
       - name: Generate job summary
         if: always()

@@ -74,10 +74,14 @@ describe('Parse.Query Aggregate testing', () => {
   });
 
   it('should only query aggregate with master key', done => {
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+    loggerErrorSpy.calls.reset();
     Parse._request('GET', `aggregate/someClass`, {}).then(
       () => {},
       error => {
-        expect(error.message).toEqual('unauthorized: master key is required');
+        expect(error.message).toEqual('Permission denied');
+        expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('unauthorized: master key is required'));
         done();
       }
     );
