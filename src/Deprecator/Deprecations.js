@@ -16,7 +16,6 @@
  * If there are no deprecations, this must return an empty array.
  */
 module.exports = [
-  { optionKey: 'encodeParseObjectInCloudFunction', changeNewDefault: 'true' },
   { optionKey: 'enableInsecureAuthAdapters', changeNewDefault: 'false' },
   { optionKey: 'databaseOptions.allowPublicExplain', changeNewDefault: 'false' },
 ];

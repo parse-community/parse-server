@@ -322,7 +322,7 @@ const handleRateLimit = async (req, res, next) => {
   try {
     await Promise.all(
       rateLimits.map(async limit => {
-        const pathExp = new RegExp(limit.path);
+        const pathExp = limit.path.regexp || limit.path;
         if (pathExp.test(req.url)) {
           await limit.handler(req, res, err => {
             if (err) {
@@ -560,12 +560,8 @@ export const addRateLimit = (route, config, cloud) => {
       },
     });
   }
-  let transformPath = route.requestPath.split('/*').join('/(.*)');
-  if (transformPath === '*') {
-    transformPath = '(.*)';
-  }
   config.rateLimits.push({
-    path: pathToRegexp(transformPath),
+    path: pathToRegexp(route.requestPath),
     handler: rateLimit({
       windowMs: route.requestTimeWindow,
       max: route.requestCount,
