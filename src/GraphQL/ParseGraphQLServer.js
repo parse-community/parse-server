@@ -33,7 +33,7 @@ const hasTypeIntrospection = (query) => {
       }
     }
     return false;
-  } catch (e) {
+  } catch {
     // If parsing fails, we assume it's not a valid query and let Apollo handle it
     return false;
   }
