@@ -1,3 +1,10 @@
+# [9.0.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.1...9.0.0-alpha.2) (2025-12-12)
+
+
+### Features
+
+* Upgrade to parse 8.0.0 ([#9976](https://github.com/parse-community/parse-server/issues/9976)) ([f9970d4](https://github.com/parse-community/parse-server/commit/f9970d4bb253494392fb4cc366f222119927f082))
+
 # [9.0.0-alpha.1](https://github.com/parse-community/parse-server/compare/8.6.0...9.0.0-alpha.1) (2025-12-12)
 
 
