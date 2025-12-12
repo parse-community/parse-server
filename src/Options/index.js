@@ -223,9 +223,6 @@ export interface ParseServerOptions {
   cacheAdapter: ?Adapter<CacheAdapter>;
   /* Adapter module for email sending */
   emailAdapter: ?Adapter<MailAdapter>;
-  /* If set to `true`, a `Parse.Object` that is in the payload when calling a Cloud Function will be converted to an instance of `Parse.Object`. If `false`, the object will not be converted and instead be a plain JavaScript object, which contains the raw data of a `Parse.Object` but is not an actual instance of `Parse.Object`. Default is `false`. <br><br>ℹ️ The expected behavior would be that the object is converted to an instance of `Parse.Object`, so you would normally set this option to `true`. The default is `false` because this is a temporary option that has been introduced to avoid a breaking change when fixing a bug where JavaScript objects are not converted to actual instances of `Parse.Object`.
-  :DEFAULT: true */
-  encodeParseObjectInCloudFunction: ?boolean;
   /* Optional. The public URL to Parse Server. This URL will be used to reach Parse Server publicly for features like password reset and email verification links. The option can be set to a string or a function that can be asynchronously resolved. The returned URL string must start with `http://` or `https://`.
   :ENV: PARSE_PUBLIC_SERVER_URL */
   publicServerURL: ?(string | (() => string) | (() => Promise<string>));

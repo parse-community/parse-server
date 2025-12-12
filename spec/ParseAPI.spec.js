@@ -1266,7 +1266,6 @@ describe('miscellaneous', () => {
   });
 
   it('test cloud function query parameters with array of pointers', async () => {
-    await reconfigureServer({ encodeParseObjectInCloudFunction: false });
     Parse.Cloud.define('echoParams', req => {
       return req.params;
     });
