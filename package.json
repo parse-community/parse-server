@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "9.0.0-alpha.2",
+  "version": "9.0.0-alpha.3",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -20,7 +20,8 @@
   ],
   "license": "Apache-2.0",
   "dependencies": {
-    "@apollo/server": "4.12.1",
+    "@apollo/server": "5.0.0",
+    "@as-integrations/express5": "1.1.2",
     "@graphql-tools/merge": "9.0.24",
     "@graphql-tools/schema": "10.0.23",
     "@graphql-tools/utils": "10.8.6",

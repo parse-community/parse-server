@@ -1,3 +1,15 @@
+# [9.0.0-alpha.3](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.2...9.0.0-alpha.3) (2025-12-12)
+
+
+### Bug Fixes
+
+* Upgrade to GraphQL Apollo Server 5 and restrict GraphQL introspection ([#9888](https://github.com/parse-community/parse-server/issues/9888)) ([87c7f07](https://github.com/parse-community/parse-server/commit/87c7f076eb84c9540f79f06c27fe13e102dc6295))
+
+
+### BREAKING CHANGES
+
+* Upgrade to Apollo Server 5 and GraphQL express 5 integration; GraphQL introspection now requires using `masterKey` or setting `graphQLPublicIntrospection: true`. ([87c7f07](87c7f07))
+
 # [9.0.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.1...9.0.0-alpha.2) (2025-12-12)
 
 
