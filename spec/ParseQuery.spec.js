@@ -5369,7 +5369,7 @@ describe('Parse.Query testing', () => {
     const query = new Parse.Query('_User');
     query.equalTo('objectId', user.id);
     query.explain();
-    const result = await query.find();
+    const result = await query.find({ useMasterKey: true });
     // Validate
     expect(result.executionStats).not.toBeUndefined();
   });
