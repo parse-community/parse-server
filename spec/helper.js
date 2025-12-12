@@ -150,7 +150,6 @@ const defaultConfiguration = {
     shortLivedAuth: mockShortLivedAuth(),
   },
   allowClientClassCreation: true,
-  encodeParseObjectInCloudFunction: true,
 };
 
 if (silent) {

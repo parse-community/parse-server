@@ -1,10 +1,10 @@
 import corsMiddleware from 'cors';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.js';
 import { ApolloServer } from '@apollo/server';
-import { expressMiddleware } from '@apollo/server/express4';
+import { expressMiddleware } from '@as-integrations/express5';
 import { ApolloServerPluginCacheControlDisabled } from '@apollo/server/plugin/disabled';
 import express from 'express';
-import { execute, subscribe, GraphQLError } from 'graphql';
+import { execute, subscribe, GraphQLError, parse } from 'graphql';
 import { SubscriptionServer } from 'subscriptions-transport-ws';
 import { handleParseErrors, handleParseHeaders, handleParseSession } from '../middlewares';
 import requiredParameter from '../requiredParameter';
@@ -12,6 +12,42 @@ import defaultLogger from '../logger';
 import { ParseGraphQLSchema } from './ParseGraphQLSchema';
 import ParseGraphQLController, { ParseGraphQLConfig } from '../Controllers/ParseGraphQLController';
 
+
+const hasTypeIntrospection = (query) => {
+  try {
+    const ast = parse(query);
+    // Check only root-level fields in the query
+    // Note: selection.name.value is the actual field name, so this correctly handles
+    // aliases like "myAlias: __type(...)" where name.value === "__type"
+    for (const definition of ast.definitions) {
+      if ((definition.kind === 'OperationDefinition' || definition.kind === 'FragmentDefinition') && definition.selectionSet) {
+        for (const selection of definition.selectionSet.selections) {
+          if (selection.kind === 'Field' && selection.name.value === '__type') {
+            // GraphQL's introspection __type field requires a 'name' argument
+            // This distinguishes it from potential user-defined __type fields
+            if (selection.arguments && selection.arguments.length > 0) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+    return false;
+  } catch {
+    // If parsing fails, we assume it's not a valid query and let Apollo handle it
+    return false;
+  }
+};
+
+const throwIntrospectionError = () => {
+  throw new GraphQLError('Introspection is not allowed', {
+    extensions: {
+      http: {
+        status: 403,
+      },
+    }
+  });
+};
 
 const IntrospectionControlPlugin = (publicIntrospection) => ({
 
@@ -29,21 +65,20 @@ const IntrospectionControlPlugin = (publicIntrospection) => ({
         return;
       }
 
-      // Now we check if the query is an introspection query
-      // this check strategy should work in 99.99% cases
-      // we can have an issue if a user name a field or class __schemaSomething
-      // we want to avoid a full AST check
-      const isIntrospectionQuery =
-        requestContext.request.query?.includes('__schema')
+      const query = requestContext.request.query;
 
-      if (isIntrospectionQuery) {
-        throw new GraphQLError('Introspection is not allowed', {
-          extensions: {
-            http: {
-              status: 403,
-            },
-          }
-        });
+
+      // Fast path: simple string check for __schema
+      // This avoids parsing the query in most cases
+      if (query?.includes('__schema')) {
+        return throwIntrospectionError();
+      }
+
+      // Smart check for __type: only parse if the string is present
+      // This avoids false positives (e.g., "__type" in strings or comments)
+      // while still being efficient for the common case
+      if (query?.includes('__type') && hasTypeIntrospection(query)) {
+        return throwIntrospectionError();
       }
     },
 
