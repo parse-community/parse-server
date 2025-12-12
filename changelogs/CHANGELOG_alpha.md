@@ -1,3 +1,22 @@
+# [9.0.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.1...9.0.0-alpha.2) (2025-12-12)
+
+
+### Features
+
+* Upgrade to parse 8.0.0 ([#9976](https://github.com/parse-community/parse-server/issues/9976)) ([f9970d4](https://github.com/parse-community/parse-server/commit/f9970d4bb253494392fb4cc366f222119927f082))
+
+# [9.0.0-alpha.1](https://github.com/parse-community/parse-server/compare/8.6.0...9.0.0-alpha.1) (2025-12-12)
+
+
+### Features
+
+* Increase required minimum Node version to `20.19.0` ([#9970](https://github.com/parse-community/parse-server/issues/9970)) ([633964d](https://github.com/parse-community/parse-server/commit/633964d32e249d8cc16c58de7ddd9b7637c69fb1))
+
+
+### BREAKING CHANGES
+
+* This releases increases the required minimum Node version to `20.19.0`. ([633964d](633964d))
+
 # [8.6.0-alpha.2](https://github.com/parse-community/parse-server/compare/8.6.0-alpha.1...8.6.0-alpha.2) (2025-12-10)
 
 
