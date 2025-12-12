@@ -1,5 +1,4 @@
 import { GraphQLNonNull, GraphQLEnumType } from 'graphql';
-import deepcopy from 'deepcopy';
 import { mutationWithClientMutationId } from 'graphql-relay';
 import { FunctionsRouter } from '../../Routers/FunctionsRouter';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
@@ -44,7 +43,7 @@ const load = parseGraphQLSchema => {
       },
       mutateAndGetPayload: async (args, context) => {
         try {
-          const { functionName, params } = deepcopy(args);
+          const { functionName, params } = structuredClone(args);
           const { config, auth, info } = context;
 
           return {

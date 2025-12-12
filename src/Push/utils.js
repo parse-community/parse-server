@@ -1,5 +1,4 @@
 import Parse from 'parse/node';
-import deepcopy from 'deepcopy';
 
 export function isPushIncrementing(body) {
   if (!body.data || !body.data.badge) {
@@ -45,7 +44,7 @@ export function transformPushBodyForLocale(body, locale) {
   if (!data) {
     return body;
   }
-  body = deepcopy(body);
+  body = structuredClone(body);
   localizableKeys.forEach(key => {
     const localeValue = body.data[`${key}-${locale}`];
     if (localeValue) {
@@ -128,7 +127,7 @@ export function validatePushType(where = {}, validPushTypes = []) {
 }
 
 export function applyDeviceTokenExists(where) {
-  where = deepcopy(where);
+  where = structuredClone(where);
   if (!Object.prototype.hasOwnProperty.call(where, 'deviceToken')) {
     where['deviceToken'] = { $exists: true };
   }

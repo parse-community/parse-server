@@ -1,7 +1,6 @@
 import { GraphQLNonNull } from 'graphql';
 import { fromGlobalId } from 'graphql-relay';
 import getFieldNames from 'graphql-list-fields';
-import deepcopy from 'deepcopy';
 import pluralize from 'pluralize';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import * as objectsQueries from '../helpers/objectsQueries';
@@ -75,7 +74,7 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
           return await getQuery(
             parseClass,
             _source,
-            deepcopy(args),
+            structuredClone(args),
             context,
             queryInfo,
             parseGraphQLSchema.parseClasses
@@ -99,7 +98,7 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
       async resolve(_source, args, context, queryInfo) {
         try {
           // Deep copy args to avoid internal re assign issue
-          const { where, order, skip, first, after, last, before, options } = deepcopy(args);
+          const { where, order, skip, first, after, last, before, options } = structuredClone(args);
           const { readPreference, includeReadPreference, subqueryReadPreference } = options || {};
           const { config, auth, info } = context;
           const selectedFields = getFieldNames(queryInfo);
