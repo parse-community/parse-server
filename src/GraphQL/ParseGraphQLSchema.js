@@ -49,7 +49,7 @@ const RESERVED_GRAPHQL_TYPE_NAMES = [
   'DeleteClassPayload',
   'PageInfo',
 ];
-const RESERVED_GRAPHQL_QUERY_NAMES = ['health', 'viewer', 'class', 'classes'];
+const RESERVED_GRAPHQL_QUERY_NAMES = ['health', 'viewer', 'class', 'classes', 'cloudConfig'];
 const RESERVED_GRAPHQL_MUTATION_NAMES = [
   'signUp',
   'logIn',
@@ -59,6 +59,7 @@ const RESERVED_GRAPHQL_MUTATION_NAMES = [
   'createClass',
   'updateClass',
   'deleteClass',
+  'updateCloudConfig',
 ];
 
 class ParseGraphQLSchema {
@@ -118,6 +119,7 @@ class ParseGraphQLSchema {
     this.functionNamesString = functionNamesString;
     this.parseClassTypes = {};
     this.viewerType = null;
+    this.cloudConfigType = null;
     this.graphQLAutoSchema = null;
     this.graphQLSchema = null;
     this.graphQLTypes = [];

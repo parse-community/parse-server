@@ -9,6 +9,7 @@ export class PurgeRouter extends PromiseRouter {
       throw createSanitizedError(
         Parse.Error.OPERATION_FORBIDDEN,
         "read-only masterKey isn't allowed to purge a schema.",
+        req.config
       );
     }
     return req.config.database

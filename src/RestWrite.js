@@ -33,6 +33,7 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
     throw createSanitizedError(
       Parse.Error.OPERATION_FORBIDDEN,
       'Cannot perform a write operation when using readOnlyMasterKey',
+      config
     );
   }
   this.config = config;
@@ -203,6 +204,7 @@ RestWrite.prototype.validateClientClassCreation = function () {
           throw createSanitizedError(
             Parse.Error.OPERATION_FORBIDDEN,
             'This user is not allowed to access non-existent class: ' + this.className,
+            this.config
           );
         }
       });
@@ -662,7 +664,8 @@ RestWrite.prototype.checkRestrictedFields = async function () {
   if (!this.auth.isMaintenance && !this.auth.isMaster && 'emailVerified' in this.data) {
     throw createSanitizedError(
       Parse.Error.OPERATION_FORBIDDEN,
-      "Clients aren't allowed to manually update email verification."
+      "Clients aren't allowed to manually update email verification.",
+      this.config
     );
   }
 };
@@ -1454,7 +1457,8 @@ RestWrite.prototype.runDatabaseOperation = function () {
   if (this.className === '_User' && this.query && this.auth.isUnauthenticated()) {
     throw createSanitizedError(
       Parse.Error.SESSION_MISSING,
-      `Cannot modify user ${this.query.objectId}.`
+      `Cannot modify user ${this.query.objectId}.`,
+      this.config
     );
   }
 
