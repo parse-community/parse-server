@@ -26,7 +26,7 @@
     "@graphql-tools/schema": "10.0.23",
     "@graphql-tools/utils": "10.8.6",
     "@parse/fs-files-adapter": "3.0.0",
-    "@parse/push-adapter": "8.0.2",
+    "@parse/push-adapter": "8.1.0",
     "bcryptjs": "3.0.2",
     "commander": "13.1.0",
     "cors": "2.8.5",
@@ -48,8 +48,8 @@
     "mongodb": "6.20.0",
     "mustache": "4.2.0",
     "otpauth": "9.4.0",
-    "path-to-regexp": "8.3.0",
     "parse": "8.0.0",
+    "path-to-regexp": "8.3.0",
     "pg-monitor": "3.0.0",
     "pg-promise": "12.2.0",
     "pluralize": "8.0.0",
@@ -63,9 +63,6 @@
     "winston": "3.17.0",
     "winston-daily-rotate-file": "5.0.0",
     "ws": "8.18.2"
-  },
-  "overrides": {
-    "parse": "8.0.0"
   },
   "devDependencies": {
     "@actions/core": "1.11.1",
