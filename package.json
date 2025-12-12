@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "8.6.0",
+  "version": "9.0.0-alpha.2",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -48,7 +48,7 @@
     "mongodb": "6.20.0",
     "mustache": "4.2.0",
     "otpauth": "9.4.0",
-    "parse": "7.1.2",
+    "parse": "8.0.0",
     "path-to-regexp": "6.3.0",
     "pg-monitor": "3.0.0",
     "pg-promise": "12.2.0",
@@ -143,7 +143,7 @@
   },
   "types": "types/index.d.ts",
   "engines": {
-    "node": ">=18.20.4 <19.0.0 || >=20.18.0 <21.0.0 || >=22.12.0 <23.0.0 || >=24.11.0 <25.0.0"
+    "node": ">=20.19.0 <21.0.0 || >=22.12.0 <23.0.0 || >=24.11.0 <25.0.0"
   },
   "bin": {
     "parse-server": "bin/parse-server"
