@@ -1278,7 +1278,7 @@ describe('miscellaneous', () => {
       method: 'POST',
       headers: headers,
       url: 'http://localhost:8378/1/functions/echoParams',
-      body: '{"arr": [{ "__type": "Pointer", "className": "PointerTest" }]}',
+      body: '{"arr": [{ "__type": "Pointer", "className": "PointerTest", "objectId": "test123" }]}',
     });
     const res = response.data.result;
     expect(res.arr.length).toEqual(1);
