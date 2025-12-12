@@ -27,7 +27,6 @@ import { InstallationsRouter } from './Routers/InstallationsRouter';
 import { LogsRouter } from './Routers/LogsRouter';
 import { ParseLiveQueryServer } from './LiveQuery/ParseLiveQueryServer';
 import { PagesRouter } from './Routers/PagesRouter';
-import { PublicAPIRouter } from './Routers/PublicAPIRouter';
 import { PushRouter } from './Routers/PushRouter';
 import { CloudCodeRouter } from './Routers/CloudCodeRouter';
 import { RolesRouter } from './Routers/RolesRouter';
@@ -330,9 +329,7 @@ class ParseServer {
     api.use(
       '/',
       express.urlencoded({ extended: false }),
-      pages.enableRouter
-        ? new PagesRouter(pages).expressRouter()
-        : new PublicAPIRouter().expressRouter()
+      new PagesRouter(pages).expressRouter()
     );
 
     api.use(express.json({ type: '*/*', limit: maxUploadSize }));

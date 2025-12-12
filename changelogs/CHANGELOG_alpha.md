@@ -1,3 +1,39 @@
+# [9.0.0-alpha.9](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.8...9.0.0-alpha.9) (2025-12-12)
+
+
+### Features
+
+* Deprecation DEPPS12: Database option `allowPublicExplain` defaults to `false` ([#9975](https://github.com/parse-community/parse-server/issues/9975)) ([c1c7e69](https://github.com/parse-community/parse-server/commit/c1c7e6976d868ccbc7dff325edce78ddfa999bb9))
+
+
+### BREAKING CHANGES
+
+* This release changes the MongoDB database option `allowPublicExplain` default to `false` (Deprecation DEPPS12). ([c1c7e69](c1c7e69))
+
+# [9.0.0-alpha.8](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.7...9.0.0-alpha.8) (2025-12-12)
+
+
+### Features
+
+* Deprecation DEPPS11: Replace `PublicAPIRouter` with `PagesRouter` ([#9974](https://github.com/parse-community/parse-server/issues/9974)) ([8f877d4](https://github.com/parse-community/parse-server/commit/8f877d42c02a6492b97c61e75ab77a896878f866))
+
+
+### BREAKING CHANGES
+
+* This release replaces `PublicAPIRouter` with `PagesRouter` (Deprecation DEPPS11). ([8f877d4](8f877d4))
+
+# [9.0.0-alpha.7](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.6...9.0.0-alpha.7) (2025-12-12)
+
+
+### Features
+
+* Deprecation DEPPS10: Encode `Parse.Object` in Cloud Function and remove option `encodeParseObjectInCloudFunction` ([#9973](https://github.com/parse-community/parse-server/issues/9973)) ([a2d3dbe](https://github.com/parse-community/parse-server/commit/a2d3dbe972e2e02ac599bfffe1ae6cd9768b02ca))
+
+
+### BREAKING CHANGES
+
+* This release encodes `Parse.Object` in Cloud Function and removes option `encodeParseObjectInCloudFunction` (Deprecation DEPPS10). ([a2d3dbe](a2d3dbe))
+
 # [9.0.0-alpha.6](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.5...9.0.0-alpha.6) (2025-12-12)
 
 

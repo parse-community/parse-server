@@ -828,10 +828,8 @@ export class Config {
     return this.masterKey;
   }
 
-  // TODO: Remove this function once PagesRouter replaces the PublicAPIRouter;
-  // the (default) endpoint has to be defined in PagesRouter only.
   get pagesEndpoint() {
-    return this.pages && this.pages.enableRouter && this.pages.pagesEndpoint
+    return this.pages && this.pages.pagesEndpoint
       ? this.pages.pagesEndpoint
       : 'apps';
   }

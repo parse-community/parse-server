@@ -40,12 +40,8 @@ describe('Email Verification Token Expiration:', () => {
       url: sendEmailOptions.link,
       followRedirects: false,
     });
-    expect(response.status).toEqual(302);
-    const url = new URL(sendEmailOptions.link);
-    const token = url.searchParams.get('token');
-    expect(response.text).toEqual(
-      `Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test&token=${token}`
-    );
+    expect(response.status).toEqual(200);
+    expect(response.text).toContain('Invalid verification link!');
   });
 
   it('emailVerified should set to false, if the user does not verify their email before the email verify token expires', async () => {
@@ -81,7 +77,7 @@ describe('Email Verification Token Expiration:', () => {
       url: sendEmailOptions.link,
       followRedirects: false,
     });
-    expect(response.status).toEqual(302);
+    expect(response.status).toEqual(200);
     await user.fetch();
     expect(user.get('emailVerified')).toEqual(false);
   });
@@ -114,10 +110,8 @@ describe('Email Verification Token Expiration:', () => {
       url: sendEmailOptions.link,
       followRedirects: false,
     });
-    expect(response.status).toEqual(302);
-    expect(response.text).toEqual(
-      'Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html'
-    );
+    expect(response.status).toEqual(200);
+    expect(response.text).toContain('Email verified!');
   });
 
   it_id('94956799-c85e-4297-b879-e2d1f985394c')(it)('if user clicks on the email verify link before email verification token expiration then emailVerified should be true', async () => {
@@ -148,7 +142,7 @@ describe('Email Verification Token Expiration:', () => {
       url: sendEmailOptions.link,
       followRedirects: false,
     });
-    expect(response.status).toEqual(302);
+    expect(response.status).toEqual(200);
     await user.fetch();
     expect(user.get('emailVerified')).toEqual(true);
   });
@@ -181,7 +175,7 @@ describe('Email Verification Token Expiration:', () => {
       url: sendEmailOptions.link,
       followRedirects: false,
     });
-    expect(response.status).toEqual(302);
+    expect(response.status).toEqual(200);
     const verifiedUser = await Parse.User.logIn('testEmailVerifyTokenValidity', 'expiringToken');
     expect(typeof verifiedUser).toBe('object');
     expect(verifiedUser.get('emailVerified')).toBe(true);
@@ -268,9 +262,7 @@ describe('Email Verification Token Expiration:', () => {
       url: `http://localhost:8378/1/apps/test/verify_email?token=${token}`,
       method: 'GET',
     });
-    expect(res.text).toEqual(
-      `Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test&token=${token}`
-    );
+    expect(res.text).toContain('Invalid verification link!');
 
     const formUrl = `http://localhost:8378/1/apps/test/resend_verification_email`;
     const formResponse = await request({
@@ -282,9 +274,7 @@ describe('Email Verification Token Expiration:', () => {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       followRedirects: false,
     });
-    expect(formResponse.text).toEqual(
-      `Found. Redirecting to http://localhost:8378/1/apps/link_send_success.html`
-    );
+    expect(formResponse.text).toContain('email_verification_send_success.html');
   });
 
   it_id('9365c53c-b8b4-41f7-a3c1-77882f76a89c')(it)('can conditionally send emails', async () => {
@@ -493,7 +483,7 @@ describe('Email Verification Token Expiration:', () => {
       url: sendEmailOptions.link,
       followRedirects: false,
     });
-    expect(response.status).toEqual(302);
+    expect(response.status).toEqual(200);
     const config = Config.get('test');
     const results = await config.database.find('_User', {
       username: 'unsets_email_verify_token_expires_at',
@@ -536,7 +526,7 @@ describe('Email Verification Token Expiration:', () => {
       url: sendEmailOptions.link,
       followRedirects: false,
     });
-    expect(response.status).toEqual(302);
+    expect(response.status).toEqual(200);
     const config = Config.get('test');
     const results = await config.database.find('_User', {
       username: 'unsets_email_verify_token_expires_at',
@@ -580,7 +570,7 @@ describe('Email Verification Token Expiration:', () => {
       url: sendEmailOptions.link,
       followRedirects: false,
     });
-    expect(response.status).toEqual(302);
+    expect(response.status).toEqual(200);
     await user.fetch();
     expect(user.get('emailVerified')).toEqual(true);
     // RECONFIGURE the server i.e., ENABLE the expire email verify token flag
@@ -591,12 +581,8 @@ describe('Email Verification Token Expiration:', () => {
       url: sendEmailOptions.link,
       followRedirects: false,
     });
-    expect(response.status).toEqual(302);
-    const url = new URL(sendEmailOptions.link);
-    const token = url.searchParams.get('token');
-    expect(response.text).toEqual(
-      `Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test&token=${token}`
-    );
+    expect(response.status).toEqual(200);
+    expect(response.text).toContain('Invalid verification link!');
   });
 
   it('clicking on the email verify link by an email UNVERIFIED user that was setup before enabling the expire email verify token should show invalid verficiation link page', async () => {
@@ -637,12 +623,8 @@ describe('Email Verification Token Expiration:', () => {
       url: sendEmailOptions.link,
       followRedirects: false,
     });
-    expect(response.status).toEqual(302);
-    const url = new URL(sendEmailOptions.link);
-    const token = url.searchParams.get('token');
-    expect(response.text).toEqual(
-      `Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test&token=${token}`
-    );
+    expect(response.status).toEqual(200);
+    expect(response.text).toContain('Invalid verification link!');
   });
 
   it_id('b6c87f35-d887-477d-bc86-a9217a424f53')(it)('setting the email on the user should set a new email verification token and new expiration date for the token when expire email verify token flag is set', async () => {
@@ -958,7 +940,7 @@ describe('Email Verification Token Expiration:', () => {
       url: sendEmailOptions.link,
       followRedirects: false,
     });
-    expect(response.status).toEqual(302);
+    expect(response.status).toEqual(200);
     expect(sendVerificationEmailCallCount).toBe(1);
 
     response = await request({
@@ -1143,7 +1125,7 @@ describe('Email Verification Token Expiration:', () => {
       url: sendEmailOptions.link,
       followRedirects: false,
     });
-    expect(response.status).toEqual(302);
+    expect(response.status).toEqual(200);
     user = await Parse.User.logIn('testEmailVerifyTokenValidity', 'expiringToken');
     expect(typeof user).toBe('object');
     expect(user.get('emailVerified')).toBe(true);
@@ -1159,6 +1141,6 @@ describe('Email Verification Token Expiration:', () => {
       url: sendEmailOptions.link,
       followRedirects: false,
     });
-    expect(response.status).toEqual(302);
+    expect(response.status).toEqual(200);
   });
 });
