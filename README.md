@@ -9,7 +9,7 @@
 [![auto-release](https://img.shields.io/badge/%F0%9F%9A%80-auto--release-9e34eb.svg)](https://github.com/parse-community/parse-dashboard/releases)
 
 [![Node Version](https://img.shields.io/badge/nodejs-20,_22,_24-green.svg?logo=node.js&style=flat)](https://nodejs.org)
-[![MongoDB Version](https://img.shields.io/badge/mongodb-6,_7,_8-green.svg?logo=mongodb&style=flat)](https://www.mongodb.com)
+[![MongoDB Version](https://img.shields.io/badge/mongodb-7,_8-green.svg?logo=mongodb&style=flat)](https://www.mongodb.com)
 [![Postgres Version](https://img.shields.io/badge/postgresql-13,_14,_15,_16,_17,_18-green.svg?logo=postgresql&style=flat)](https://www.postgresql.org)
 
 [![npm latest version](https://img.shields.io/npm/v/parse-server/latest.svg)](https://www.npmjs.com/package/parse-server)

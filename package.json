@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "9.0.0-alpha.3",
+  "version": "9.0.0-alpha.4",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -123,7 +123,6 @@
     "build:types": "tsc",
     "watch": "babel --watch src/ -d lib/ --copy-files",
     "watch:ts": "tsc --watch",
-    "test:mongodb:6.0.19": "MONGODB_VERSION=6.0.19 npm run test",
     "test:mongodb:7.0.16": "MONGODB_VERSION=7.0.16 npm run test",
     "test:mongodb:8.0.4": "MONGODB_VERSION=8.0.4 npm run test",
     "test:postgres:testonly": "cross-env PARSE_SERVER_TEST_DB=postgres PARSE_SERVER_TEST_DATABASE_URI=postgres://postgres:password@localhost:5432/parse_server_postgres_adapter_test_database npm run testonly",

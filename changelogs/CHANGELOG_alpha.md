@@ -1,3 +1,15 @@
+# [9.0.0-alpha.4](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.3...9.0.0-alpha.4) (2025-12-12)
+
+
+### Features
+
+* Increase required minimum MongoDB version to `7.0.16` ([#9971](https://github.com/parse-community/parse-server/issues/9971)) ([7bb548b](https://github.com/parse-community/parse-server/commit/7bb548bf81b3cebc9ec92ef9e5e6faf8f9edbd3b))
+
+
+### BREAKING CHANGES
+
+* This releases increases the required minimum MongoDB version to `7.0.16`. ([7bb548b](7bb548b))
+
 # [9.0.0-alpha.3](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.2...9.0.0-alpha.3) (2025-12-12)
 
 
