@@ -112,7 +112,7 @@ export class ClassesRouter extends PromiseRouter {
       typeof req.body?.objectId === 'string' &&
       req.body.objectId.startsWith('role:')
     ) {
-      throw createSanitizedError(Parse.Error.OPERATION_FORBIDDEN, 'Invalid object ID.');
+      throw createSanitizedError(Parse.Error.OPERATION_FORBIDDEN, 'Invalid object ID.', req.config);
     }
     return rest.create(
       req.config,

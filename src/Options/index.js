@@ -355,6 +355,9 @@ export interface ParseServerOptions {
   rateLimit: ?(RateLimitOptions[]);
   /* Options to customize the request context using inversion of control/dependency injection.*/
   requestContextMiddleware: ?(req: any, res: any, next: any) => void;
+  /* If set to `true`, error details are removed from error messages in responses to client requests, and instead a generic error message is sent. Default is `true`.
+  :DEFAULT: true */
+  enableSanitizedErrorResponse: ?boolean;
   /* Maximum query complexity for REST API includes. Controls depth and number of include fields.
   <br><br>
   Format: `{ depth: number, count: number }`

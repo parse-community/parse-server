@@ -1399,6 +1399,7 @@ export default class SchemaController {
       return true;
     }
     const perms = classPermissions[operation];
+    const config = Config.get(Parse.applicationId)
     // If only for authenticated users
     // make sure we have an aclGroup
     if (perms['requiresAuthentication']) {
@@ -1406,12 +1407,14 @@ export default class SchemaController {
       if (!aclGroup || aclGroup.length == 0) {
         throw createSanitizedError(
           Parse.Error.OBJECT_NOT_FOUND,
-          'Permission denied, user needs to be authenticated.'
+          'Permission denied, user needs to be authenticated.',
+          config
         );
       } else if (aclGroup.indexOf('*') > -1 && aclGroup.length == 1) {
         throw createSanitizedError(
           Parse.Error.OBJECT_NOT_FOUND,
-          'Permission denied, user needs to be authenticated.'
+          'Permission denied, user needs to be authenticated.',
+          config
         );
       }
       // requiresAuthentication passed, just move forward
@@ -1428,7 +1431,8 @@ export default class SchemaController {
     if (permissionField == 'writeUserFields' && operation == 'create') {
       throw createSanitizedError(
         Parse.Error.OPERATION_FORBIDDEN,
-        `Permission denied for action ${operation} on class ${className}.`
+        `Permission denied for action ${operation} on class ${className}.`,
+        config
       );
     }
 
@@ -1451,7 +1455,8 @@ export default class SchemaController {
 
     throw createSanitizedError(
       Parse.Error.OPERATION_FORBIDDEN,
-      `Permission denied for action ${operation} on class ${className}.`
+      `Permission denied for action ${operation} on class ${className}.`,
+      config
     );
   }
 

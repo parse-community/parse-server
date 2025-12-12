@@ -13,6 +13,7 @@ export class PushRouter extends PromiseRouter {
       throw createSanitizedError(
         Parse.Error.OPERATION_FORBIDDEN,
         "read-only masterKey isn't allowed to send push notifications.",
+        req.config
       );
     }
     const pushController = req.config.pushController;
