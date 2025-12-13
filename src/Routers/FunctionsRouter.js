@@ -103,20 +103,30 @@ export class FunctionsRouter extends PromiseRouter {
     });
   }
 
-  static createResponseObject(resolve, reject) {
-    return {
+  static createResponseObject(resolve, reject, statusCode = null) {
+    let httpStatusCode = statusCode;
+    const responseObject = {
       success: function (result) {
-        resolve({
+        const response = {
           response: {
             result: Parse._encode(result),
           },
-        });
+        };
+        if (httpStatusCode !== null) {
+          response.status = httpStatusCode;
+        }
+        resolve(response);
       },
       error: function (message) {
         const error = triggers.resolveError(message);
         reject(error);
       },
+      status: function (code) {
+        httpStatusCode = code;
+        return responseObject;
+      },
     };
+    return responseObject;
   }
   static handleCloudFunction(req) {
     const functionName = req.params.functionName;
@@ -143,7 +153,7 @@ export class FunctionsRouter extends PromiseRouter {
 
     return new Promise(function (resolve, reject) {
       const userString = req.auth && req.auth.user ? req.auth.user.id : undefined;
-      const { success, error } = FunctionsRouter.createResponseObject(
+      const responseObject = FunctionsRouter.createResponseObject(
         result => {
           try {
             if (req.config.logLevels.cloudFunctionSuccess !== 'silent') {
@@ -184,14 +194,27 @@ export class FunctionsRouter extends PromiseRouter {
           }
         }
       );
+      const { success, error } = responseObject;
+      
       return Promise.resolve()
         .then(() => {
           return triggers.maybeRunValidator(request, functionName, req.auth);
         })
         .then(() => {
-          return theFunction(request);
+          // Check if function expects 2 parameters (req, res) - Express style
+          if (theFunction.length >= 2) {
+            return theFunction(request, responseObject);
+          } else {
+            // Traditional style - single parameter
+            return theFunction(request);
+          }
         })
-        .then(success, error);
+        .then(result => {
+          // If result is returned (not using response object), use traditional success
+          if (result !== undefined) {
+            success(result);
+          }
+        }, error);
     });
   }
 }
