@@ -119,6 +119,10 @@ export class FunctionsRouter extends PromiseRouter {
       },
       error: function (message) {
         const error = triggers.resolveError(message);
+        // If a custom status code was set, attach it to the error
+        if (httpStatusCode !== null) {
+          error.status = httpStatusCode;
+        }
         reject(error);
       },
       status: function (code) {
