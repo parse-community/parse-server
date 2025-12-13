@@ -131,7 +131,7 @@ var ParseCloud = {};
  *
  * Parse.Cloud.define('unauthorizedFunction', (request, response) => {
  *   if (!request.user) {
- *     response.status(401).success({ error: 'Unauthorized' });
+ *     response.status(401).error('Unauthorized');
  *   } else {
  *     response.success({ data: 'OK' });
  *   }

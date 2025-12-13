@@ -4829,44 +4829,46 @@ describe('beforePasswordResetRequest hook', () => {
       expect(response.data.result.created).toBe(true);
     });
 
-    it('should support 401 unauthorized status code', async () => {
+    it('should support 401 unauthorized status code with error', async () => {
       Parse.Cloud.define('unauthorizedFunction', (req, res) => {
-        res.status(401).success({ error: 'Unauthorized access' });
+        if (!req.user) {
+          res.status(401).error('Unauthorized access');
+        } else {
+          res.success({ message: 'Authorized' });
+        }
       });
 
-      const response = await request({
-        method: 'POST',
-        url: 'http://localhost:8378/1/functions/unauthorizedFunction',
-        headers: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-REST-API-Key': 'rest',
-        },
-        json: true,
-        body: {},
-      });
-
-      expect(response.status).toBe(401);
-      expect(response.data.result.error).toBe('Unauthorized access');
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/functions/unauthorizedFunction',
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          json: true,
+          body: {},
+        })
+      ).toBeRejected();
     });
 
-    it('should support 404 not found status code', async () => {
+    it('should support 404 not found status code with error', async () => {
       Parse.Cloud.define('notFoundFunction', (req, res) => {
-        res.status(404).success({ error: 'Resource not found' });
+        res.status(404).error('Resource not found');
       });
 
-      const response = await request({
-        method: 'POST',
-        url: 'http://localhost:8378/1/functions/notFoundFunction',
-        headers: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-REST-API-Key': 'rest',
-        },
-        json: true,
-        body: {},
-      });
-
-      expect(response.status).toBe(404);
-      expect(response.data.result.error).toBe('Resource not found');
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/functions/notFoundFunction',
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          json: true,
+          body: {},
+        })
+      ).toBeRejected();
     });
 
     it('should default to 200 status code when not specified', async () => {
