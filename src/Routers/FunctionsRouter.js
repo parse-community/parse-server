@@ -105,8 +105,13 @@ export class FunctionsRouter extends PromiseRouter {
 
   static createResponseObject(resolve, reject, statusCode = null) {
     let httpStatusCode = statusCode;
+    let responseSent = false;
     const responseObject = {
       success: function (result) {
+        if (responseSent) {
+          throw new Error('Response already sent');
+        }
+        responseSent = true;
         const response = {
           response: {
             result: Parse._encode(result),
@@ -118,6 +123,10 @@ export class FunctionsRouter extends PromiseRouter {
         resolve(response);
       },
       error: function (message) {
+        if (responseSent) {
+          throw new Error('Response already sent');
+        }
+        responseSent = true;
         const error = triggers.resolveError(message);
         // If a custom status code was set, attach it to the error
         if (httpStatusCode !== null) {
@@ -129,6 +138,7 @@ export class FunctionsRouter extends PromiseRouter {
         httpStatusCode = code;
         return responseObject;
       },
+      _isResponseSent: () => responseSent,
     };
     return responseObject;
   }
@@ -199,7 +209,7 @@ export class FunctionsRouter extends PromiseRouter {
         }
       );
       const { success, error } = responseObject;
-      
+
       return Promise.resolve()
         .then(() => {
           return triggers.maybeRunValidator(request, functionName, req.auth);
@@ -214,8 +224,8 @@ export class FunctionsRouter extends PromiseRouter {
           }
         })
         .then(result => {
-          // If result is returned (not using response object), use traditional success
-          if (result !== undefined) {
+          // If result is returned and response wasn't already sent via res.success/res.error
+          if (result !== undefined && !responseObject._isResponseSent()) {
             success(result);
           }
         }, error);
