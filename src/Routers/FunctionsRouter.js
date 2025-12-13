@@ -109,7 +109,7 @@ export class FunctionsRouter extends PromiseRouter {
     const responseObject = {
       success: function (result) {
         if (responseSent) {
-          throw new Error('Response already sent');
+          throw new Error('Cannot call success() after response has already been sent. Make sure to call success() or error() only once per cloud function execution.');
         }
         responseSent = true;
         const response = {
@@ -124,7 +124,7 @@ export class FunctionsRouter extends PromiseRouter {
       },
       error: function (message) {
         if (responseSent) {
-          throw new Error('Response already sent');
+          throw new Error('Cannot call error() after response has already been sent. Make sure to call success() or error() only once per cloud function execution.');
         }
         responseSent = true;
         const error = triggers.resolveError(message);
