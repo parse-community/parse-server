@@ -106,11 +106,26 @@ export class FunctionsRouter extends PromiseRouter {
   static createResponseObject(resolve, reject) {
     return {
       success: function (result) {
-        resolve({
-          response: {
-            result: Parse._encode(result),
-          },
-        });
+        if (result && typeof result === 'object' && result.__httpResponse === true) {
+          const response = {
+            response: {
+              result: Parse._encode(result.result),
+            },
+          };
+          if (typeof result.status === 'number') {
+            response.status = result.status;
+          }
+          if (result.headers && typeof result.headers === 'object') {
+            response.headers = result.headers;
+          }
+          resolve(response);
+        } else {
+          resolve({
+            response: {
+              result: Parse._encode(result),
+            },
+          });
+        }
       },
       error: function (message) {
         const error = triggers.resolveError(message);

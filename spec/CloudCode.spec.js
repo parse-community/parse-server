@@ -93,6 +93,111 @@ describe('Cloud Code', () => {
     });
   });
 
+  it('can return custom HTTP status code', async () => {
+    Parse.Cloud.define('customStatus', () => {
+      return {
+        __httpResponse: true,
+        status: 201,
+        result: { message: 'Created' },
+      };
+    });
+
+    const response = await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/functions/customStatus',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+      body: {},
+    });
+
+    expect(response.status).toEqual(201);
+    expect(response.data.result.message).toEqual('Created');
+  });
+
+  it('can return custom HTTP headers', async () => {
+    Parse.Cloud.define('customHeaders', () => {
+      return {
+        __httpResponse: true,
+        headers: {
+          'X-Custom-Header': 'custom-value',
+          'X-Another-Header': 'another-value',
+        },
+        result: { success: true },
+      };
+    });
+
+    const response = await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/functions/customHeaders',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+      body: {},
+    });
+
+    expect(response.status).toEqual(200);
+    expect(response.headers['x-custom-header']).toEqual('custom-value');
+    expect(response.headers['x-another-header']).toEqual('another-value');
+    expect(response.data.result.success).toEqual(true);
+  });
+
+  it('can return custom HTTP status code and headers together', async () => {
+    Parse.Cloud.define('customStatusAndHeaders', () => {
+      return {
+        __httpResponse: true,
+        status: 401,
+        headers: {
+          'WWW-Authenticate': 'Bearer realm="api"',
+        },
+        result: { error: 'Authentication required' },
+      };
+    });
+
+    try {
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/customStatusAndHeaders',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+        body: {},
+      });
+      fail('Expected request to reject with 401');
+    } catch (response) {
+      expect(response.status).toEqual(401);
+      expect(response.headers['www-authenticate']).toEqual('Bearer realm="api"');
+      expect(response.data.result.error).toEqual('Authentication required');
+    }
+  });
+
+  it('returns normal response when __httpResponse is not set', async () => {
+    Parse.Cloud.define('normalResponse', () => {
+      return { status: 201, result: 'this should be the result' };
+    });
+
+    const response = await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/functions/normalResponse',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+      body: {},
+    });
+
+    expect(response.status).toEqual(200);
+    expect(response.data.result.status).toEqual(201);
+    expect(response.data.result.result).toEqual('this should be the result');
+  });
+
   it('can get config', () => {
     const config = Parse.Server;
     let currentConfig = Config.get('test');
