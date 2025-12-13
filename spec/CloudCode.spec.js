@@ -228,7 +228,7 @@ describe('Cloud Code', () => {
     expect(response.headers['x-custom-header']).toEqual('third');
   });
 
-  it('res.status() throws error for non-number status code', async () => {
+  it('res.status() throws error for non-integer status code', async () => {
     Parse.Cloud.define('invalidStatusType', (req, res) => {
       res.status('200');
       return { message: 'ok' };
@@ -238,6 +238,29 @@ describe('Cloud Code', () => {
       await request({
         method: 'POST',
         url: 'http://localhost:8378/1/functions/invalidStatusType',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+        body: {},
+      });
+      fail('Expected request to fail');
+    } catch (response) {
+      expect(response.status).toEqual(400);
+    }
+  });
+
+  it('res.status() throws error for NaN status code', async () => {
+    Parse.Cloud.define('nanStatus', (req, res) => {
+      res.status(NaN);
+      return { message: 'ok' };
+    });
+
+    try {
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/nanStatus',
         headers: {
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest',
@@ -307,6 +330,75 @@ describe('Cloud Code', () => {
       await request({
         method: 'POST',
         url: 'http://localhost:8378/1/functions/undefinedHeaderValue',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+        body: {},
+      });
+      fail('Expected request to fail');
+    } catch (response) {
+      expect(response.status).toEqual(400);
+    }
+  });
+
+  it('res.set() throws error for empty header name', async () => {
+    Parse.Cloud.define('emptyHeaderName', (req, res) => {
+      res.set('   ', 'value');
+      return { message: 'ok' };
+    });
+
+    try {
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/emptyHeaderName',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+        body: {},
+      });
+      fail('Expected request to fail');
+    } catch (response) {
+      expect(response.status).toEqual(400);
+    }
+  });
+
+  it('res.set() throws error for prototype pollution header names', async () => {
+    Parse.Cloud.define('protoHeaderName', (req, res) => {
+      res.set('__proto__', 'value');
+      return { message: 'ok' };
+    });
+
+    try {
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/protoHeaderName',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+        body: {},
+      });
+      fail('Expected request to fail');
+    } catch (response) {
+      expect(response.status).toEqual(400);
+    }
+  });
+
+  it('res.set() throws error for CRLF in header value', async () => {
+    Parse.Cloud.define('crlfHeaderValue', (req, res) => {
+      res.set('X-Custom-Header', 'value\r\nX-Injected: bad');
+      return { message: 'ok' };
+    });
+
+    try {
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/crlfHeaderValue',
         headers: {
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest',

@@ -12,12 +12,12 @@ import { logger } from '../logger';
 class CloudResponse {
   constructor() {
     this._status = null;
-    this._headers = {};
+    this._headers = Object.create(null);
   }
 
   status(code) {
-    if (typeof code !== 'number') {
-      throw new Error('Status code must be a number');
+    if (!Number.isInteger(code)) {
+      throw new Error('Status code must be an integer');
     }
     if (code < 100 || code > 599) {
       throw new Error('Status code must be between 100 and 599');
@@ -30,10 +30,22 @@ class CloudResponse {
     if (typeof name !== 'string') {
       throw new Error('Header name must be a string');
     }
+    const headerName = name.trim();
+    if (!headerName) {
+      throw new Error('Header name must not be empty');
+    }
+    if (headerName === '__proto__' || headerName === 'constructor' || headerName === 'prototype') {
+      throw new Error('Invalid header name');
+    }
     if (value === undefined || value === null) {
       throw new Error('Header value must be defined');
     }
-    this._headers[name] = value;
+    const headerValue = Array.isArray(value) ? value.map(v => String(v)) : String(value);
+    const values = Array.isArray(headerValue) ? headerValue : [headerValue];
+    if (values.some(v => /[\r\n]/.test(v))) {
+      throw new Error('Header value must not contain CRLF');
+    }
+    this._headers[headerName] = headerValue;
     return this;
   }
 

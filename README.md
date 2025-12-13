@@ -77,6 +77,7 @@ A big _thank you_ 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
       - [Reserved Keys](#reserved-keys)
       - [Parameters](#parameters-1)
   - [Logging](#logging)
+  - [Cloud Function Custom HTTP Response](#cloud-functions-http-response)
 - [Deprecations](#deprecations)
 - [Live Query](#live-query)
 - [GraphQL](#graphql)
