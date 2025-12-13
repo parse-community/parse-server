@@ -224,8 +224,18 @@ export class FunctionsRouter extends PromiseRouter {
           }
         })
         .then(result => {
-          // If result is returned and response hasn't already been sent via res.success/res.error
-          if (result !== undefined && !responseObject._isResponseSent()) {
+          // For Express-style functions, only send response if not already sent
+          if (theFunction.length >= 2) {
+            if (!responseObject._isResponseSent()) {
+              // If Express-style function returns a value without calling res.success/error
+              if (result !== undefined) {
+                success(result);
+              }
+              // If no response sent and no value returned, this is an error in user code
+              // but we don't handle it here to maintain backward compatibility
+            }
+          } else {
+            // For traditional functions, always call success with the result (even if undefined)
             success(result);
           }
         }, error);
