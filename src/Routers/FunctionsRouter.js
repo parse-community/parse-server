@@ -9,6 +9,41 @@ import { jobStatusHandler } from '../StatusHandler';
 import _ from 'lodash';
 import { logger } from '../logger';
 
+class CloudResponse {
+  constructor() {
+    this._status = null;
+    this._headers = {};
+  }
+
+  status(code) {
+    if (typeof code !== 'number') {
+      throw new Error('Status code must be a number');
+    }
+    this._status = code;
+    return this;
+  }
+
+  set(name, value) {
+    if (typeof name !== 'string') {
+      throw new Error('Header name must be a string');
+    }
+    this._headers[name] = value;
+    return this;
+  }
+
+  hasCustomResponse() {
+    return this._status !== null || Object.keys(this._headers).length > 0;
+  }
+
+  getStatus() {
+    return this._status;
+  }
+
+  getHeaders() {
+    return this._headers;
+  }
+}
+
 function parseObject(obj, config) {
   if (Array.isArray(obj)) {
     return obj.map(item => {
@@ -103,29 +138,25 @@ export class FunctionsRouter extends PromiseRouter {
     });
   }
 
-  static createResponseObject(resolve, reject) {
+  static createResponseObject(resolve, reject, cloudResponse) {
     return {
       success: function (result) {
-        if (result && typeof result === 'object' && result.__httpResponse === true) {
-          const response = {
-            response: {
-              result: Parse._encode(result.result),
-            },
-          };
-          if (typeof result.status === 'number') {
-            response.status = result.status;
+        const response = {
+          response: {
+            result: Parse._encode(result),
+          },
+        };
+        if (cloudResponse && cloudResponse.hasCustomResponse()) {
+          const status = cloudResponse.getStatus();
+          const headers = cloudResponse.getHeaders();
+          if (status !== null) {
+            response.status = status;
           }
-          if (result.headers && typeof result.headers === 'object') {
-            response.headers = result.headers;
+          if (Object.keys(headers).length > 0) {
+            response.headers = headers;
           }
-          resolve(response);
-        } else {
-          resolve({
-            response: {
-              result: Parse._encode(result),
-            },
-          });
         }
+        resolve(response);
       },
       error: function (message) {
         const error = triggers.resolveError(message);
@@ -143,6 +174,7 @@ export class FunctionsRouter extends PromiseRouter {
     }
     let params = Object.assign({}, req.body, req.query);
     params = parseParams(params, req.config);
+    const cloudResponse = new CloudResponse();
     const request = {
       params: params,
       config: req.config,
@@ -197,14 +229,15 @@ export class FunctionsRouter extends PromiseRouter {
           } catch (e) {
             reject(e);
           }
-        }
+        },
+        cloudResponse
       );
       return Promise.resolve()
         .then(() => {
           return triggers.maybeRunValidator(request, functionName, req.auth);
         })
         .then(() => {
-          return theFunction(request);
+          return theFunction(request, cloudResponse);
         })
         .then(success, error);
     });

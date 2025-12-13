@@ -94,12 +94,9 @@ describe('Cloud Code', () => {
   });
 
   it('can return custom HTTP status code', async () => {
-    Parse.Cloud.define('customStatus', () => {
-      return {
-        __httpResponse: true,
-        status: 201,
-        result: { message: 'Created' },
-      };
+    Parse.Cloud.define('customStatus', (req, res) => {
+      res.status(201);
+      return { message: 'Created' };
     });
 
     const response = await request({
@@ -118,15 +115,10 @@ describe('Cloud Code', () => {
   });
 
   it('can return custom HTTP headers', async () => {
-    Parse.Cloud.define('customHeaders', () => {
-      return {
-        __httpResponse: true,
-        headers: {
-          'X-Custom-Header': 'custom-value',
-          'X-Another-Header': 'another-value',
-        },
-        result: { success: true },
-      };
+    Parse.Cloud.define('customHeaders', (req, res) => {
+      res.set('X-Custom-Header', 'custom-value');
+      res.set('X-Another-Header', 'another-value');
+      return { success: true };
     });
 
     const response = await request({
@@ -147,15 +139,9 @@ describe('Cloud Code', () => {
   });
 
   it('can return custom HTTP status code and headers together', async () => {
-    Parse.Cloud.define('customStatusAndHeaders', () => {
-      return {
-        __httpResponse: true,
-        status: 401,
-        headers: {
-          'WWW-Authenticate': 'Bearer realm="api"',
-        },
-        result: { error: 'Authentication required' },
-      };
+    Parse.Cloud.define('customStatusAndHeaders', (req, res) => {
+      res.status(401).set('WWW-Authenticate', 'Bearer realm="api"');
+      return { error: 'Authentication required' };
     });
 
     try {
@@ -177,7 +163,7 @@ describe('Cloud Code', () => {
     }
   });
 
-  it('returns normal response when __httpResponse is not set', async () => {
+  it('returns normal response when response object is not used', async () => {
     Parse.Cloud.define('normalResponse', () => {
       return { status: 201, result: 'this should be the result' };
     });
