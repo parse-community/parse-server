@@ -224,7 +224,7 @@ export class FunctionsRouter extends PromiseRouter {
           }
         })
         .then(result => {
-          // If result is returned and response wasn't already sent via res.success/res.error
+          // If result is returned and response hasn't already been sent via res.success/res.error
           if (result !== undefined && !responseObject._isResponseSent()) {
             success(result);
           }

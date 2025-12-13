@@ -4943,7 +4943,7 @@ describe('beforePasswordResetRequest hook', () => {
 
       const result = await Parse.Cloud.run('expressWithUser', {});
       expect(result.username).toEqual('testuser');
-      
+
       await Parse.User.logOut();
     });
   });
