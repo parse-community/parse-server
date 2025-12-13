@@ -19,6 +19,9 @@ class CloudResponse {
     if (typeof code !== 'number') {
       throw new Error('Status code must be a number');
     }
+    if (code < 100 || code > 599) {
+      throw new Error('Status code must be between 100 and 599');
+    }
     this._status = code;
     return this;
   }
@@ -26,6 +29,9 @@ class CloudResponse {
   set(name, value) {
     if (typeof name !== 'string') {
       throw new Error('Header name must be a string');
+    }
+    if (value === undefined || value === null) {
+      throw new Error('Header value must be defined');
     }
     this._headers[name] = value;
     return this;
@@ -153,7 +159,7 @@ export class FunctionsRouter extends PromiseRouter {
             response.status = status;
           }
           if (Object.keys(headers).length > 0) {
-            response.headers = headers;
+            response.headers = { ...headers };
           }
         }
         resolve(response);

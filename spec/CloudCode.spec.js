@@ -184,6 +184,142 @@ describe('Cloud Code', () => {
     expect(response.data.result.result).toEqual('this should be the result');
   });
 
+  it('res.status() called multiple times uses last value', async () => {
+    Parse.Cloud.define('multipleStatus', (req, res) => {
+      res.status(201);
+      res.status(202);
+      res.status(203);
+      return { message: 'ok' };
+    });
+
+    const response = await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/functions/multipleStatus',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+      body: {},
+    });
+
+    expect(response.status).toEqual(203);
+  });
+
+  it('res.set() called multiple times for same header uses last value', async () => {
+    Parse.Cloud.define('multipleHeaders', (req, res) => {
+      res.set('X-Custom-Header', 'first');
+      res.set('X-Custom-Header', 'second');
+      res.set('X-Custom-Header', 'third');
+      return { message: 'ok' };
+    });
+
+    const response = await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/functions/multipleHeaders',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+      body: {},
+    });
+
+    expect(response.headers['x-custom-header']).toEqual('third');
+  });
+
+  it('res.status() throws error for non-number status code', async () => {
+    Parse.Cloud.define('invalidStatusType', (req, res) => {
+      res.status('200');
+      return { message: 'ok' };
+    });
+
+    try {
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/invalidStatusType',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+        body: {},
+      });
+      fail('Expected request to fail');
+    } catch (response) {
+      expect(response.status).toEqual(400);
+    }
+  });
+
+  it('res.set() throws error for non-string header name', async () => {
+    Parse.Cloud.define('invalidHeaderName', (req, res) => {
+      res.set(123, 'value');
+      return { message: 'ok' };
+    });
+
+    try {
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/invalidHeaderName',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+        body: {},
+      });
+      fail('Expected request to fail');
+    } catch (response) {
+      expect(response.status).toEqual(400);
+    }
+  });
+
+  it('res.status() throws error for out of range status code', async () => {
+    Parse.Cloud.define('outOfRangeStatus', (req, res) => {
+      res.status(50);
+      return { message: 'ok' };
+    });
+
+    try {
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/outOfRangeStatus',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+        body: {},
+      });
+      fail('Expected request to fail');
+    } catch (response) {
+      expect(response.status).toEqual(400);
+    }
+  });
+
+  it('res.set() throws error for undefined header value', async () => {
+    Parse.Cloud.define('undefinedHeaderValue', (req, res) => {
+      res.set('X-Custom-Header', undefined);
+      return { message: 'ok' };
+    });
+
+    try {
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/undefinedHeaderValue',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+        body: {},
+      });
+      fail('Expected request to fail');
+    } catch (response) {
+      expect(response.status).toEqual(400);
+    }
+  });
+
   it('can get config', () => {
     const config = Parse.Server;
     let currentConfig = Config.get('test');

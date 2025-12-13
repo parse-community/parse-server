@@ -771,6 +771,55 @@ Logs are also viewable in Parse Dashboard.
 
 **Want new line delimited JSON error logs (for consumption by CloudWatch, Google Cloud Logging, etc)?** Pass the `JSON_LOGS` environment variable when starting `parse-server`. Usage :- `JSON_LOGS='1' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
 
+## Cloud Functions HTTP Response
+
+Cloud functions support an Express-like `(req, res)` pattern to customize HTTP response status codes and headers.
+
+### Basic Usage
+
+```js
+// Set custom status code
+Parse.Cloud.define('createItem', (req, res) => {
+  res.status(201);
+  return { id: 'abc123', message: 'Created' };
+});
+
+// Set custom headers
+Parse.Cloud.define('apiEndpoint', (req, res) => {
+  res.set('X-Request-Id', 'req-123');
+  res.set('Cache-Control', 'no-cache');
+  return { success: true };
+});
+
+// Chain methods
+Parse.Cloud.define('authenticate', (req, res) => {
+  if (!isValid(req.params.token)) {
+    res.status(401).set('WWW-Authenticate', 'Bearer');
+    return { error: 'Unauthorized' };
+  }
+  return { user: 'john' };
+});
+```
+
+### Response Methods
+
+| Method | Description |
+|--------|-------------|
+| `res.status(code)` | Set HTTP status code (e.g., 201, 400, 404). Returns `res` for chaining. |
+| `res.set(name, value)` | Set HTTP header. Returns `res` for chaining. |
+
+### Backwards Compatibility
+
+The `res` argument is optional. Existing cloud functions using only `(req) => {}` continue to work unchanged.
+
+### Security Considerations
+
+The `set()` method allows setting arbitrary HTTP headers. Be cautious when setting security-sensitive headers such as:
+- CORS headers (`Access-Control-Allow-Origin`, `Access-Control-Allow-Credentials`)
+- `Set-Cookie`
+- `Location` (redirects)
+- Authentication headers (`WWW-Authenticate`)
+
 # Deprecations
 
 See the [Deprecation Plan](https://github.com/parse-community/parse-server/blob/master/DEPRECATIONS.md) for an overview of deprecations and planned breaking changes.
