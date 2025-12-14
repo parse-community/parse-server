@@ -27,29 +27,6 @@ const ReadPreference = mongodb.ReadPreference;
 
 const MongoSchemaCollectionName = '_SCHEMA';
 
-
-// If we get a unique index error from mongo, try to parse it. If successful, return it.
-const mongoUniqueIndexErrorFormatter = (message) => {
-  /**
-   * Sample error message that we are getting from mongo
-   * 'Plan executor error during findAndModify :: caused by :: E11000 duplicate key error collection: parseServerMongoAdapterTestDatabase.test_UniqueIndexClass index: code_1 dup key: { code: 2 }'
-   */
-  const regex = /collection:\s*([\w-]+)\.([\w-]+)\s+index:\s*([\w-]+)/;
-
-  const match = message.match(regex);
-
-  if (match) {
-    const dbName = match[1];
-    const collectionName = match[2];
-    const indexName = match[3];
-    // Adding extra starting space to make it more readable.
-    return ` Duplicate index: ${indexName} on collection ${collectionName} in db ${dbName}`;
-  }
-
-  // Return nothing
-  return '';
-}
-
 const storageAdapterAllCollections = mongoAdapter => {
   return mongoAdapter
     .connect()
@@ -542,10 +519,10 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(() => ({ ops: [mongoObject] }))
       .catch(error => {
         if (error.code === 11000) {
-          // Duplicate value
+          logger.error('Duplicate key error:', error.message);
           const err = new Parse.Error(
             Parse.Error.DUPLICATE_VALUE,
-            `A duplicate value for a field with unique values was provided.${mongoUniqueIndexErrorFormatter(error.message)}`
+            'A duplicate value for a field with unique values was provided'
           );
           err.underlyingError = error;
           if (error.message) {
@@ -628,9 +605,10 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(result => mongoObjectToParseObject(className, result, schema))
       .catch(error => {
         if (error.code === 11000) {
+          logger.error('Duplicate key error:', error.message);
           throw new Parse.Error(
             Parse.Error.DUPLICATE_VALUE,
-            `A duplicate value for a field with unique values was provided.${mongoUniqueIndexErrorFormatter(error.message)}`
+            'A duplicate value for a field with unique values was provided'
           );
         }
         throw error;
