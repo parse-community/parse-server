@@ -137,6 +137,10 @@ var ParseCloud = {};
  *   }
  * });
  *
+ * Parse.Cloud.define('withCustomHeaders', (request, response) => {
+ *   response.header('X-Custom-Header', 'value').success({ data: 'OK' });
+ * });
+ *
  * Parse.Cloud.define('errorFunction', (request, response) => {
  *   response.error('Something went wrong');
  * });
@@ -824,6 +828,7 @@ module.exports = ParseCloud;
  * @property {function} success Call this function to return a successful response with an optional result. Usage: `response.success(result)`
  * @property {function} error Call this function to return an error response with an error message. Usage: `response.error(message)`
  * @property {function} status Call this function to set a custom HTTP status code for the response. Returns the response object for chaining. Usage: `response.status(code).success(result)` or `response.status(code).error(message)`
+ * @property {function} header Call this function to set a custom HTTP header for the response. Returns the response object for chaining. Usage: `response.header('X-Custom-Header', 'value').success(result)`
  */
 
 /**

@@ -4946,5 +4946,73 @@ describe('beforePasswordResetRequest hook', () => {
 
       await Parse.User.logOut();
     });
+
+    it('should support setting custom headers with res.header()', async () => {
+      Parse.Cloud.define('customHeaderFunction', (req, res) => {
+        res.header('X-Custom-Header', 'custom-value').success({ message: 'OK' });
+      });
+
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/customHeaderFunction',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: true,
+        body: {},
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.headers['x-custom-header']).toBe('custom-value');
+      expect(response.data.result.message).toBe('OK');
+    });
+
+    it('should support setting multiple custom headers', async () => {
+      Parse.Cloud.define('multipleHeadersFunction', (req, res) => {
+        res.header('X-Header-One', 'value1')
+           .header('X-Header-Two', 'value2')
+           .success({ message: 'Multiple headers' });
+      });
+
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/multipleHeadersFunction',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: true,
+        body: {},
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.headers['x-header-one']).toBe('value1');
+      expect(response.headers['x-header-two']).toBe('value2');
+      expect(response.data.result.message).toBe('Multiple headers');
+    });
+
+    it('should support combining status code and custom headers', async () => {
+      Parse.Cloud.define('statusAndHeaderFunction', (req, res) => {
+        res.status(201)
+           .header('X-Resource-Id', '12345')
+           .success({ created: true });
+      });
+
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/statusAndHeaderFunction',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: true,
+        body: {},
+      });
+
+      expect(response.status).toBe(201);
+      expect(response.headers['x-resource-id']).toBe('12345');
+      expect(response.data.result.created).toBe(true);
+    });
   });
 });
