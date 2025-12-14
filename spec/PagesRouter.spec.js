@@ -1180,4 +1180,72 @@ describe('Pages Router', () => {
       });
     });
   });
+
+  describe('XSS Protection', () => {
+    beforeEach(async () => {
+      await reconfigureServer({
+        appId: 'test',
+        appName: 'exampleAppname',
+        publicServerURL: 'http://localhost:8378/1',
+        pages: { enableRouter: true },
+      });
+    });
+
+    it('should escape XSS payloads in token parameter', async () => {
+      const xssPayload = '"><script>alert("XSS")</script>';
+      const response = await request({
+        url: `http://localhost:8378/1/apps/choose_password?token=${encodeURIComponent(xssPayload)}&username=test&appId=test`,
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.text).not.toContain('<script>alert("XSS")</script>');
+      expect(response.text).toContain('&quot;&gt;&lt;script&gt;');
+    });
+
+    it('should escape XSS in username parameter', async () => {
+      const xssUsername = '<img src=x onerror=alert(1)>';
+      const response = await request({
+        url: `http://localhost:8378/1/apps/choose_password?username=${encodeURIComponent(xssUsername)}&appId=test`,
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.text).not.toContain('<img src=x onerror=alert(1)>');
+      expect(response.text).toContain('&lt;img');
+    });
+
+    it('should escape XSS in locale parameter', async () => {
+      const xssLocale = '"><svg/onload=alert(1)>';
+      const response = await request({
+        url: `http://localhost:8378/1/apps/choose_password?locale=${encodeURIComponent(xssLocale)}&appId=test`,
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.text).not.toContain('<svg/onload=alert(1)>');
+      expect(response.text).toContain('&quot;&gt;&lt;svg');
+    });
+
+    it('should handle legitimate usernames with quotes correctly', async () => {
+      const username = "O'Brien";
+      const response = await request({
+        url: `http://localhost:8378/1/apps/choose_password?username=${encodeURIComponent(username)}&appId=test`,
+      });
+
+      expect(response.status).toBe(200);
+      // Should be properly escaped as HTML entity
+      expect(response.text).toContain('O&#39;Brien');
+      // Should NOT contain unescaped quote that breaks HTML
+      expect(response.text).not.toContain('value="O\'Brien"');
+    });
+
+    it('should handle legitimate usernames with ampersands correctly', async () => {
+      const username = 'Smith & Co';
+      const response = await request({
+        url: `http://localhost:8378/1/apps/choose_password?username=${encodeURIComponent(username)}&appId=test`,
+      });
+
+      expect(response.status).toBe(200);
+      // Should be properly escaped
+      expect(response.text).toContain('Smith &amp; Co');
+    });
+  });
 });
