@@ -1,3 +1,10 @@
+# [9.1.0-alpha.1](https://github.com/parse-community/parse-server/compare/9.0.0...9.1.0-alpha.1) (2025-12-14)
+
+
+### Features
+
+* Add option `logLevels.signupUsernameTaken` to change log level of username already exists sign-up rejection ([#9962](https://github.com/parse-community/parse-server/issues/9962)) ([f18f307](https://github.com/parse-community/parse-server/commit/f18f3073d70a292bc70b5d572ef58e4845de89ca))
+
 # [9.0.0-alpha.11](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.10...9.0.0-alpha.11) (2025-12-14)
 
 
