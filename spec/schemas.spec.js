@@ -3842,8 +3842,7 @@ describe('schemas', () => {
     });
 
     it_id('cbd5d897-b938-43a4-8f5a-5d02dd2be9be')(it_exclude_dbs(['postgres']))('cannot update to duplicate value on unique index', done => {
-      const logger = require('../lib/logger').default;
-      const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+      loggerErrorSpy.calls.reset();
       const index = {
         code: 1,
       };
