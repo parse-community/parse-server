@@ -244,9 +244,9 @@ module.exports.ParseServerOptions = {
   enableInsecureAuthAdapters: {
     env: 'PARSE_SERVER_ENABLE_INSECURE_AUTH_ADAPTERS',
     help:
-      'Enable (or disable) insecure auth adapters, defaults to true. Insecure auth adapters are deprecated and it is recommended to disable them.',
+      'Optional. Enables insecure authentication adapters. Insecure auth adapters are deprecated and will be removed in a future version. Defaults to `false`.',
     action: parsers.booleanParser,
-    default: true,
+    default: false,
   },
   enableSanitizedErrorResponse: {
     env: 'PARSE_SERVER_ENABLE_SANITIZED_ERROR_RESPONSE',

@@ -16,6 +16,7 @@ The following is a list of deprecations, according to the [Deprecation Policy](h
 | DEPPS10 | Encode `Parse.Object` in Cloud Function and remove option `encodeParseObjectInCloudFunction` | [#8634](https://github.com/parse-community/parse-server/issues/8634) | 6.2.0 (2023)                    | 9.0.0 (2026)                    | removed               | -     |
 | DEPPS11 | Replace `PublicAPIRouter` with `PagesRouter`                                                 | [#7625](https://github.com/parse-community/parse-server/issues/7625) | 8.0.0 (2025)                    | 9.0.0 (2026)                    | removed               | -     |
 | DEPPS12 | Database option `allowPublicExplain` defaults to `false`                                     | [#7519](https://github.com/parse-community/parse-server/issues/7519) | 8.5.0 (2025)                    | 9.0.0 (2026)                    | removed               | -     |
+| DEPPS13 | Config option `enableInsecureAuthAdapters` defaults to `false`                               | [#9667](https://github.com/parse-community/parse-server/pull/9667)   | 8.0.0 (2025)                    | 9.0.0 (2026)                    | removed               | -     |
 
 [i_deprecation]: ## "The version and date of the deprecation."
 [i_removal]: ## "The version and date of the planned removal."

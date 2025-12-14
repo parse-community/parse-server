@@ -15,6 +15,4 @@
  *
  * If there are no deprecations, this must return an empty array.
  */
-module.exports = [
-  { optionKey: 'enableInsecureAuthAdapters', changeNewDefault: 'false' },
-];
+module.exports = [];
