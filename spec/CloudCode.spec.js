@@ -1702,28 +1702,7 @@ describe('Cloud Code', () => {
       });
   });
 
-  it('should not encode Parse Objects', async () => {
-    await reconfigureServer({ encodeParseObjectInCloudFunction: false });
-    const user = new Parse.User();
-    user.setUsername('username');
-    user.setPassword('password');
-    user.set('deleted', false);
-    await user.signUp();
-    Parse.Cloud.define(
-      'deleteAccount',
-      async req => {
-        expect(req.params.object instanceof Parse.Object).not.toBeTrue();
-        return 'Object deleted';
-      },
-      {
-        requireMaster: true,
-      }
-    );
-    await Parse.Cloud.run('deleteAccount', { object: user.toPointer() }, { useMasterKey: true });
-  });
-
-  it('allow cloud to encode Parse Objects', async () => {
-    await reconfigureServer({ encodeParseObjectInCloudFunction: true });
+  it('should encode Parse Objects in cloud functions', async () => {
     const user = new Parse.User();
     user.setUsername('username');
     user.setPassword('password');

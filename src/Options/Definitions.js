@@ -244,21 +244,14 @@ module.exports.ParseServerOptions = {
   enableInsecureAuthAdapters: {
     env: 'PARSE_SERVER_ENABLE_INSECURE_AUTH_ADAPTERS',
     help:
-      'Enable (or disable) insecure auth adapters, defaults to true. Insecure auth adapters are deprecated and it is recommended to disable them.',
+      'Optional. Enables insecure authentication adapters. Insecure auth adapters are deprecated and will be removed in a future version. Defaults to `false`.',
     action: parsers.booleanParser,
-    default: true,
+    default: false,
   },
   enableSanitizedErrorResponse: {
     env: 'PARSE_SERVER_ENABLE_SANITIZED_ERROR_RESPONSE',
     help:
       'If set to `true`, error details are removed from error messages in responses to client requests, and instead a generic error message is sent. Default is `true`.',
-    action: parsers.booleanParser,
-    default: true,
-  },
-  encodeParseObjectInCloudFunction: {
-    env: 'PARSE_SERVER_ENCODE_PARSE_OBJECT_IN_CLOUD_FUNCTION',
-    help:
-      'If set to `true`, a `Parse.Object` that is in the payload when calling a Cloud Function will be converted to an instance of `Parse.Object`. If `false`, the object will not be converted and instead be a plain JavaScript object, which contains the raw data of a `Parse.Object` but is not an actual instance of `Parse.Object`. Default is `false`. <br><br>\u2139\uFE0F The expected behavior would be that the object is converted to an instance of `Parse.Object`, so you would normally set this option to `true`. The default is `false` because this is a temporary option that has been introduced to avoid a breaking change when fixing a bug where JavaScript objects are not converted to actual instances of `Parse.Object`.',
     action: parsers.booleanParser,
     default: true,
   },
@@ -686,7 +679,7 @@ module.exports.RateLimitOptions = {
   requestPath: {
     env: 'PARSE_SERVER_RATE_LIMIT_REQUEST_PATH',
     help:
-      'The path of the API route to be rate limited. Route paths, in combination with a request method, define the endpoints at which requests can be made. Route paths can be strings, string patterns, or regular expression. See: https://expressjs.com/en/guide/routing.html',
+      'The path of the API route to be rate limited. Route paths, in combination with a request method, define the endpoints at which requests can be made. Route paths can be strings or string patterns following <a href="https://github.com/pillarjs/path-to-regexp">path-to-regexp v8</a> syntax.',
     required: true,
   },
   requestTimeWindow: {
@@ -1151,7 +1144,7 @@ module.exports.DatabaseOptions = {
     help:
       'Set to `true` to allow `Parse.Query.explain` without master key.<br><br>\u26A0\uFE0F Enabling this option may expose sensitive query performance data to unauthorized users and could potentially be exploited for malicious purposes.',
     action: parsers.booleanParser,
-    default: true,
+    default: false,
   },
   appName: {
     env: 'PARSE_SERVER_DATABASE_APP_NAME',

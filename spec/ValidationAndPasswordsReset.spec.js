@@ -333,10 +333,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       url: sendEmailOptions.link,
       followRedirects: false,
     });
-    expect(response.status).toEqual(302);
-    expect(response.text).toEqual(
-      'Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html'
-    );
+    expect(response.status).toEqual(200);
+    expect(response.text).toContain('Email verified!');
     user = await new Parse.Query(Parse.User).first({ useMasterKey: true });
     expect(user.get('emailVerified')).toEqual(true);
     user = await Parse.User.logIn('user', 'other-password');
@@ -674,10 +672,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           url: sendEmailOptions.link,
           followRedirects: false,
         }).then(response => {
-          expect(response.status).toEqual(302);
-          expect(response.text).toEqual(
-            'Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html'
-          );
+          expect(response.status).toEqual(200);
+          expect(response.text).toContain('Email verified!');
           user
             .fetch()
             .then(
@@ -714,10 +710,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         url: 'http://localhost:8378/1/apps/test/verify_email',
         followRedirects: false,
       }).then(response => {
-        expect(response.status).toEqual(302);
-        expect(response.text).toEqual(
-          'Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html'
-        );
+        expect(response.status).toEqual(200);
+        expect(response.text).toContain('Invalid verification link!');
         done();
       });
     });
@@ -738,10 +732,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         url: 'http://localhost:8378/1/apps/test/verify_email?token=asdfasdf',
         followRedirects: false,
       }).then(response => {
-        expect(response.status).toEqual(302);
-        expect(response.text).toEqual(
-          'Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test&token=asdfasdf'
-        );
+        expect(response.status).toEqual(200);
+        expect(response.text).toContain('Invalid verification link!');
         done();
       });
     });
@@ -766,10 +758,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           username: 'sadfasga',
         },
       }).then(response => {
-        expect(response.status).toEqual(302);
-        expect(response.text).toEqual(
-          'Found. Redirecting to http://localhost:8378/1/apps/link_send_fail.html'
-        );
+        expect(response.status).toEqual(303);
+        expect(response.text).toContain('email_verification_send_fail.html');
         done();
       });
     });
@@ -783,10 +773,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           url: 'http://localhost:8378/1/apps/test/verify_email?token=invalid',
           followRedirects: false,
         }).then(response => {
-          expect(response.status).toEqual(302);
-          expect(response.text).toEqual(
-            'Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test&token=invalid'
-          );
+          expect(response.status).toEqual(200);
+          expect(response.text).toContain('Invalid verification link!');
           user.fetch().then(() => {
             expect(user.get('emailVerified')).toEqual(false);
             done();
@@ -824,8 +812,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           url: options.link,
           followRedirects: false,
         }).then(response => {
-          expect(response.status).toEqual(302);
-          const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=[a-zA-Z0-9]+\&id=test\&/;
+          expect(response.status).toEqual(200);
+          const re = /name="token"[^>]*value="([^"]+)"/;
           expect(response.text.match(re)).not.toBe(null);
           done();
         });
@@ -868,10 +856,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         url: 'http://localhost:8378/1/apps/test/request_password_reset?token=asdfasdf',
         followRedirects: false,
       }).then(response => {
-        expect(response.status).toEqual(302);
-        expect(response.text).toEqual(
-          'Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html'
-        );
+        expect(response.status).toEqual(200);
+        expect(response.text).toContain('Invalid password reset link!');
         done();
       });
     });
@@ -886,8 +872,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           url: options.link,
           followRedirects: false,
         }).then(response => {
-          expect(response.status).toEqual(302);
-          const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&/;
+          expect(response.status).toEqual(200);
+          const re = /name="token"[^>]*value="([^"]+)"/;
           const match = response.text.match(re);
           if (!match) {
             fail('should have a token');
@@ -905,10 +891,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
             },
             followRedirects: false,
           }).then(response => {
-            expect(response.status).toEqual(302);
-            expect(response.text).toEqual(
-              'Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html'
-            );
+            expect(response.status).toEqual(200);
+            expect(response.text).toContain('Success!');
 
             Parse.User.logIn('zxcv', 'hello').then(
               function () {
@@ -963,8 +947,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           url: options.link,
           followRedirects: false,
         }).then(response => {
-          expect(response.status).toEqual(302);
-          const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&/;
+          expect(response.status).toEqual(200);
+          const re = /name="token"[^>]*value="([^"]+)"/;
           const match = response.text.match(re);
           if (!match) {
             fail('should have a token');
@@ -982,10 +966,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
             },
             followRedirects: false,
           }).then(response => {
-            expect(response.status).toEqual(302);
-            expect(response.text).toEqual(
-              'Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html'
-            );
+            expect(response.status).toEqual(200);
+            expect(response.text).toContain('Success!');
             done();
           });
         });
@@ -1022,8 +1004,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           url: options.link,
           followRedirects: false,
         });
-        expect(response.status).toEqual(302);
-        const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&/;
+        expect(response.status).toEqual(200);
+        const re = /name="token"[^>]*value="([^"]+)"/;
         const match = response.text.match(re);
         if (!match) {
           fail('should have a token');
@@ -1197,9 +1179,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         new_password: 'newpassword',
       },
     });
-    expect(res.text).toEqual(
-      `Found. Redirecting to http://localhost:8378/1/apps/choose_password?id=test&error=The%20password%20reset%20link%20has%20expired&app=emailVerifyToken&token=${token}`
-    );
+    expect(res.text).toContain('The password reset link has expired');
 
     await request({
       url: `http://localhost:8378/1/requestPasswordReset`,

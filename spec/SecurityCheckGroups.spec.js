@@ -49,6 +49,7 @@ describe('Security Check Groups', () => {
       config.masterKey = 'insecure';
       config.security.enableCheckLog = true;
       config.allowClientClassCreation = true;
+      config.enableInsecureAuthAdapters = true;
       config.graphQLPublicIntrospection = true;
       await reconfigureServer(config);
 

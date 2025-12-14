@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "8.6.0",
+  "version": "9.0.0-alpha.11",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -20,12 +20,13 @@
   ],
   "license": "Apache-2.0",
   "dependencies": {
-    "@apollo/server": "4.12.1",
+    "@apollo/server": "5.0.0",
+    "@as-integrations/express5": "1.1.2",
     "@graphql-tools/merge": "9.0.24",
     "@graphql-tools/schema": "10.0.23",
     "@graphql-tools/utils": "10.8.6",
     "@parse/fs-files-adapter": "3.0.0",
-    "@parse/push-adapter": "6.11.0",
+    "@parse/push-adapter": "8.1.0",
     "bcryptjs": "3.0.2",
     "commander": "13.1.0",
     "cors": "2.8.5",
@@ -47,8 +48,8 @@
     "mongodb": "6.20.0",
     "mustache": "4.2.0",
     "otpauth": "9.4.0",
-    "parse": "7.1.2",
-    "path-to-regexp": "6.3.0",
+    "parse": "8.0.0",
+    "path-to-regexp": "8.3.0",
     "pg-monitor": "3.0.0",
     "pg-promise": "12.2.0",
     "pluralize": "8.0.0",
@@ -88,7 +89,7 @@
     "eslint": "9.27.0",
     "eslint-plugin-expect-type": "0.6.2",
     "eslint-plugin-unused-imports": "4.3.0",
-    "form-data": "4.0.4",
+    "form-data": "4.0.5",
     "globals": "16.2.0",
     "graphql-tag": "2.12.6",
     "jasmine": "5.7.1",
@@ -122,7 +123,6 @@
     "build:types": "tsc",
     "watch": "babel --watch src/ -d lib/ --copy-files",
     "watch:ts": "tsc --watch",
-    "test:mongodb:6.0.19": "MONGODB_VERSION=6.0.19 npm run test",
     "test:mongodb:7.0.16": "MONGODB_VERSION=7.0.16 npm run test",
     "test:mongodb:8.0.4": "MONGODB_VERSION=8.0.4 npm run test",
     "test:postgres:testonly": "cross-env PARSE_SERVER_TEST_DB=postgres PARSE_SERVER_TEST_DATABASE_URI=postgres://postgres:password@localhost:5432/parse_server_postgres_adapter_test_database npm run testonly",
@@ -142,7 +142,7 @@
   },
   "types": "types/index.d.ts",
   "engines": {
-    "node": ">=18.20.4 <19.0.0 || >=20.18.0 <21.0.0 || >=22.12.0 <23.0.0 || >=24.11.0 <25.0.0"
+    "node": ">=20.19.0 <21.0.0 || >=22.12.0 <23.0.0 || >=24.11.0 <25.0.0"
   },
   "bin": {
     "parse-server": "bin/parse-server"

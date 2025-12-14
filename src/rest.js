@@ -37,7 +37,7 @@ async function runFindTriggers(
   const { isGet } = options;
 
   if (restOptions && restOptions.explain && !auth.isMaster) {
-    const allowPublicExplain = config.databaseOptions?.allowPublicExplain ?? true;
+    const allowPublicExplain = config.databaseOptions?.allowPublicExplain ?? false;
 
     if (!allowPublicExplain) {
       throw new Parse.Error(
