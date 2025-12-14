@@ -1,3 +1,15 @@
+# [9.0.0-alpha.11](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.10...9.0.0-alpha.11) (2025-12-14)
+
+
+### Features
+
+* Deprecation DEPPS113: Config option `enableInsecureAuthAdapters` defaults to `false` ([#9982](https://github.com/parse-community/parse-server/issues/9982)) ([22d4622](https://github.com/parse-community/parse-server/commit/22d4622230b74839ed408a02bfcabb7b37b85aba))
+
+
+### BREAKING CHANGES
+
+* This release changes the config option `enableInsecureAuthAdapters` default to `false` (Deprecation DEPPS13). ([22d4622](22d4622))
+
 # [9.0.0-alpha.10](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.9...9.0.0-alpha.10) (2025-12-12)
 
 

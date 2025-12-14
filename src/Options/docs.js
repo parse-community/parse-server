@@ -44,7 +44,7 @@
  * @property {Boolean} enableAnonymousUsers Enable (or disable) anonymous users, defaults to true
  * @property {Boolean} enableCollationCaseComparison Optional. If set to `true`, the collation rule of case comparison for queries and indexes is enabled. Enable this option to run Parse Server with MongoDB Atlas Serverless or AWS Amazon DocumentDB. If `false`, the collation rule of case comparison is disabled. Default is `false`.
  * @property {Boolean} enableExpressErrorHandler Enables the default express error handler for all errors
- * @property {Boolean} enableInsecureAuthAdapters Enable (or disable) insecure auth adapters, defaults to true. Insecure auth adapters are deprecated and it is recommended to disable them.
+ * @property {Boolean} enableInsecureAuthAdapters Optional. Enables insecure authentication adapters. Insecure auth adapters are deprecated and will be removed in a future version. Defaults to `false`.
  * @property {Boolean} enableSanitizedErrorResponse If set to `true`, error details are removed from error messages in responses to client requests, and instead a generic error message is sent. Default is `true`.
  * @property {String} encryptionKey Key for encrypting your files
  * @property {Boolean} enforcePrivateUsers Set to true if new users should be created without public read and write access.

@@ -167,9 +167,9 @@ export interface ParseServerOptions {
   /* Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication
   :ENV: PARSE_SERVER_AUTH_PROVIDERS */
   auth: ?{ [string]: AuthAdapter };
-  /* Enable (or disable) insecure auth adapters, defaults to true. Insecure auth adapters are deprecated and it is recommended to disable them.
+  /* Optional. Enables insecure authentication adapters. Insecure auth adapters are deprecated and will be removed in a future version. Defaults to `false`.
   :ENV: PARSE_SERVER_ENABLE_INSECURE_AUTH_ADAPTERS
-  :DEFAULT: true */
+  :DEFAULT: false */
   enableInsecureAuthAdapters: ?boolean;
   /* Max file size for uploads, defaults to 20mb
   :DEFAULT: 20mb */
