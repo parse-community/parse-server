@@ -105,7 +105,7 @@ export class FunctionsRouter extends PromiseRouter {
 
   static createResponseObject(resolve, reject, statusCode = null) {
     let httpStatusCode = statusCode;
-    let customHeaders = {};
+    const customHeaders = {};
     let responseSent = false;
     const responseObject = {
       success: function (result) {

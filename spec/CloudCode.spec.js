@@ -4971,8 +4971,8 @@ describe('beforePasswordResetRequest hook', () => {
     it('should support setting multiple custom headers', async () => {
       Parse.Cloud.define('multipleHeadersFunction', (req, res) => {
         res.header('X-Header-One', 'value1')
-           .header('X-Header-Two', 'value2')
-           .success({ message: 'Multiple headers' });
+          .header('X-Header-Two', 'value2')
+          .success({ message: 'Multiple headers' });
       });
 
       const response = await request({
@@ -4995,8 +4995,8 @@ describe('beforePasswordResetRequest hook', () => {
     it('should support combining status code and custom headers', async () => {
       Parse.Cloud.define('statusAndHeaderFunction', (req, res) => {
         res.status(201)
-           .header('X-Resource-Id', '12345')
-           .success({ created: true });
+          .header('X-Resource-Id', '12345')
+          .success({ created: true });
       });
 
       const response = await request({
