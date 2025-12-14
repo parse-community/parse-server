@@ -96,7 +96,6 @@ export interface ParseServerOptions {
     passwordPolicy?: PasswordPolicyOptions;
     cacheAdapter?: Adapter<CacheAdapter>;
     emailAdapter?: Adapter<MailAdapter>;
-    encodeParseObjectInCloudFunction?: boolean;
     publicServerURL?: string | (() => string) | (() => Promise<string>);
     pages?: PagesOptions;
     customPages?: CustomPagesOptions;
@@ -309,5 +308,6 @@ export interface LogLevels {
     triggerBeforeError?: string;
     cloudFunctionSuccess?: string;
     cloudFunctionError?: string;
+    signupUsernameTaken?: string;
 }
 export {};

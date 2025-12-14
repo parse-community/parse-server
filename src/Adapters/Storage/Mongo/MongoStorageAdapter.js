@@ -519,7 +519,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(() => ({ ops: [mongoObject] }))
       .catch(error => {
         if (error.code === 11000) {
-          // Duplicate value
+          logger.error('Duplicate key error:', error.message);
           const err = new Parse.Error(
             Parse.Error.DUPLICATE_VALUE,
             'A duplicate value for a field with unique values was provided'
@@ -605,6 +605,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(result => mongoObjectToParseObject(className, result, schema))
       .catch(error => {
         if (error.code === 11000) {
+          logger.error('Duplicate key error:', error.message);
           throw new Parse.Error(
             Parse.Error.DUPLICATE_VALUE,
             'A duplicate value for a field with unique values was provided'

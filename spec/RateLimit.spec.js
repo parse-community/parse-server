@@ -5,7 +5,7 @@ describe('rate limit', () => {
     await reconfigureServer({
       rateLimit: [
         {
-          requestPath: '/functions/*',
+          requestPath: '/functions/*path',
           requestTimeWindow: 10000,
           requestCount: 1,
           errorResponseMessage: 'Too many requests',
@@ -26,7 +26,7 @@ describe('rate limit', () => {
     await reconfigureServer({
       rateLimit: [
         {
-          requestPath: '/functions/*',
+          requestPath: '/functions/*path',
           requestTimeWindow: 10000,
           requestCount: 1,
           errorResponseMessage: 'Too many requests',
@@ -45,7 +45,7 @@ describe('rate limit', () => {
     Parse.Cloud.define('test', () => 'Abc');
     await reconfigureServer({
       rateLimit: {
-        requestPath: '*',
+        requestPath: '/*path',
         requestTimeWindow: 10000,
         requestCount: 1,
         errorResponseMessage: 'Too many requests',
@@ -83,7 +83,7 @@ describe('rate limit', () => {
     await reconfigureServer({
       rateLimit: [
         {
-          requestPath: '/functions/*',
+          requestPath: '/functions/*path',
           requestTimeWindow: 10000,
           requestCount: 1,
           errorResponseMessage: 'Too many requests',
@@ -102,7 +102,7 @@ describe('rate limit', () => {
     await reconfigureServer({
       rateLimit: [
         {
-          requestPath: '/functions/*',
+          requestPath: '/functions/*path',
           requestTimeWindow: 10000,
           requestCount: 1,
           includeMasterKey: true,
@@ -122,7 +122,7 @@ describe('rate limit', () => {
     await reconfigureServer({
       rateLimit: [
         {
-          requestPath: '/classes/*',
+          requestPath: '/classes/*path',
           requestTimeWindow: 10000,
           requestCount: 1,
           errorResponseMessage: 'Too many requests',
@@ -141,7 +141,7 @@ describe('rate limit', () => {
     await reconfigureServer({
       rateLimit: [
         {
-          requestPath: '/classes/*',
+          requestPath: '/classes/*path',
           requestTimeWindow: 10000,
           requestCount: 1,
           requestMethods: 'POST',
@@ -240,7 +240,7 @@ describe('rate limit', () => {
     await reconfigureServer({
       rateLimit: [
         {
-          requestPath: '/classes/Test/*',
+          requestPath: '/classes/Test/*path',
           requestTimeWindow: 10000,
           requestCount: 1,
           requestMethods: 'DELETE',
@@ -294,7 +294,7 @@ describe('rate limit', () => {
     await reconfigureServer({
       rateLimit: [
         {
-          requestPath: '/functions/*',
+          requestPath: '/functions/*path',
           requestTimeWindow: 10000,
           requestCount: 100,
           errorResponseMessage: 'Too many requests',
@@ -320,7 +320,7 @@ describe('rate limit', () => {
     await reconfigureServer({
       rateLimit: [
         {
-          requestPath: '/functions/*',
+          requestPath: '/functions/*path',
           requestTimeWindow: 10000,
           requestCount: 1,
           errorResponseMessage: 'Too many requests',
@@ -340,7 +340,7 @@ describe('rate limit', () => {
     it('can use global zone', async () => {
       await reconfigureServer({
         rateLimit: {
-          requestPath: '*',
+          requestPath: '*path',
           requestTimeWindow: 10000,
           requestCount: 1,
           errorResponseMessage: 'Too many requests',
@@ -373,7 +373,7 @@ describe('rate limit', () => {
       });
       fakeRes.json = jasmine.createSpy('json').and.callFake(resolvingPromise);
       middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
-        throw 'Should not call next';
+        throw new Error('Should not call next');
       });
       await promise;
       expect(fakeRes.status).toHaveBeenCalledWith(429);
@@ -386,7 +386,7 @@ describe('rate limit', () => {
     it('can use session zone', async () => {
       await reconfigureServer({
         rateLimit: {
-          requestPath: '/functions/*',
+          requestPath: '/functions/*path',
           requestTimeWindow: 10000,
           requestCount: 1,
           errorResponseMessage: 'Too many requests',
@@ -407,7 +407,7 @@ describe('rate limit', () => {
     it('can use user zone', async () => {
       await reconfigureServer({
         rateLimit: {
-          requestPath: '/functions/*',
+          requestPath: '/functions/*path',
           requestTimeWindow: 10000,
           requestCount: 1,
           errorResponseMessage: 'Too many requests',
@@ -494,7 +494,7 @@ describe('rate limit', () => {
       await reconfigureServer({
         rateLimit: [
           {
-            requestPath: '/classes/*',
+            requestPath: '/classes/*path',
             requestTimeWindow: 10000,
             requestCount: 1,
             errorResponseMessage: 'Too many requests',

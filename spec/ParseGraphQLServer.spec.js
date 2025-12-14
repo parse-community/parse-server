@@ -748,10 +748,223 @@ describe('ParseGraphQLServer', () => {
             })
           expect(introspection.data).toBeDefined();
         });
+
+        it('should block __type introspection without master key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                query TypeIntrospection {
+                  __type(name: "User") {
+                    name
+                    kind
+                  }
+                }
+              `,
+            });
+
+            fail('should have thrown an error');
+          } catch (e) {
+            expect(e.message).toEqual('Response not successful: Received status code 403');
+            expect(e.networkError.result.errors[0].message).toEqual('Introspection is not allowed');
+          }
+        });
+
+        it('should block aliased __type introspection without master key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                query AliasedTypeIntrospection {
+                  myAlias: __type(name: "User") {
+                    name
+                    kind
+                  }
+                }
+              `,
+            });
+
+            fail('should have thrown an error');
+          } catch (e) {
+            expect(e.message).toEqual('Response not successful: Received status code 403');
+            expect(e.networkError.result.errors[0].message).toEqual('Introspection is not allowed');
+          }
+        });
+
+        it('should block __type introspection in fragments without master key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                fragment TypeIntrospectionFields on Query {
+                  typeInfo: __type(name: "User") {
+                    name
+                    kind
+                  }
+                }
+                
+                query FragmentTypeIntrospection {
+                  ...TypeIntrospectionFields
+                }
+              `,
+            });
+
+            fail('should have thrown an error');
+          } catch (e) {
+            expect(e.message).toEqual('Response not successful: Received status code 403');
+            expect(e.networkError.result.errors[0].message).toEqual('Introspection is not allowed');
+          }
+        });
+
+        it('should block __type introspection through nested fragment spreads without master key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                fragment InnerFragment on Query {
+                  __type(name: "User") {
+                    name
+                    fields {
+                      name
+                    }
+                  }
+                }
+
+                fragment OuterFragment on Query {
+                  ...InnerFragment
+                }
+
+                query NestedFragmentIntrospection {
+                  ...OuterFragment
+                }
+              `,
+            });
+
+            fail('should have thrown an error');
+          } catch (e) {
+            expect(e.message).toEqual('Response not successful: Received status code 403');
+            expect(e.networkError.result.errors[0].message).toEqual('Introspection is not allowed');
+          }
+        });
+
+        it('should block __type introspection hidden in fragment with valid field without master key', async () => {
+          try {
+            // First create a test object to query
+            const object = new Parse.Object('SomeClass');
+            await object.save();
+
+            await apolloClient.query({
+              query: gql`
+                fragment MixedFragment on Query {
+                  someClasses {
+                    edges {
+                      node {
+                        objectId
+                      }
+                    }
+                  }
+                  __type(name: "User") {
+                    name
+                    kind
+                  }
+                }
+
+                query MixedQuery {
+                  ...MixedFragment
+                }
+              `,
+            });
+
+            fail('should have thrown an error');
+          } catch (e) {
+            expect(e.message).toEqual('Response not successful: Received status code 403');
+            expect(e.networkError.result.errors[0].message).toEqual('Introspection is not allowed');
+          }
+        });
+
+        it('should allow __type introspection with master key', async () => {
+          const introspection = await apolloClient.query({
+            query: gql`
+              query TypeIntrospection {
+                __type(name: "User") {
+                  name
+                  kind
+                }
+              }
+            `,
+            context: {
+              headers: {
+                'X-Parse-Master-Key': 'test',
+              },
+            },
+          });
+          expect(introspection.data).toBeDefined();
+          expect(introspection.data.__type).toBeDefined();
+          expect(introspection.errors).not.toBeDefined();
+        });
+
+        it('should allow aliased __type introspection with master key', async () => {
+          const introspection = await apolloClient.query({
+            query: gql`
+              query AliasedTypeIntrospection {
+                myAlias: __type(name: "User") {
+                  name
+                  kind
+                }
+              }
+            `,
+            context: {
+              headers: {
+                'X-Parse-Master-Key': 'test',
+              },
+            },
+          });
+          expect(introspection.data).toBeDefined();
+          expect(introspection.data.myAlias).toBeDefined();
+          expect(introspection.errors).not.toBeDefined();
+        });
+
+        it('should allow __type introspection with maintenance key', async () => {
+          const introspection = await apolloClient.query({
+            query: gql`
+              query TypeIntrospection {
+                __type(name: "User") {
+                  name
+                  kind
+                }
+              }
+            `,
+            context: {
+              headers: {
+                'X-Parse-Maintenance-Key': 'test2',
+              },
+            },
+          });
+          expect(introspection.data).toBeDefined();
+          expect(introspection.data.__type).toBeDefined();
+          expect(introspection.errors).not.toBeDefined();
+        });
+
+        it('should allow __type introspection when public introspection is enabled', async () => {
+          const parseServer = await reconfigureServer();
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
+
+          const introspection = await apolloClient.query({
+            query: gql`
+              query TypeIntrospection {
+                __type(name: "User") {
+                  name
+                  kind
+                }
+              }
+            `,
+          });
+          expect(introspection.data).toBeDefined();
+          expect(introspection.data.__type).toBeDefined();
+        });
       });
 
 
       describe('Default Types', () => {
+        beforeEach(async () => {
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
+        });
         it('should have Object scalar type', async () => {
           const objectType = (
             await apolloClient.query({
@@ -911,6 +1124,10 @@ describe('ParseGraphQLServer', () => {
       });
 
       describe('Relay Specific Types', () => {
+        beforeEach(async () => {
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
+        });
+
         let clearCache;
         beforeEach(async () => {
           if (!clearCache) {
@@ -1454,6 +1671,9 @@ describe('ParseGraphQLServer', () => {
       });
 
       describe('Parse Class Types', () => {
+        beforeEach(async () => {
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
+        });
         it('should have all expected types', async () => {
           await parseServer.config.databaseController.loadSchema();
 
@@ -1565,6 +1785,7 @@ describe('ParseGraphQLServer', () => {
         beforeEach(async () => {
           await parseGraphQLServer.setGraphQLConfig({});
           await resetGraphQLCache();
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
         });
 
         it_id('d6a23a2f-ca18-4b15-bc73-3e636f99e6bc')(it)('should only include types in the enabledForClasses list', async () => {
@@ -8141,6 +8362,9 @@ describe('ParseGraphQLServer', () => {
       });
 
       describe('Functions Mutations', () => {
+        beforeEach(async () => {
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
+        });
         it('can be called', async () => {
           try {
             const clientMutationId = uuidv4();
