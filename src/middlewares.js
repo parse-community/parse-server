@@ -466,6 +466,8 @@ export function handleParseErrors(err, req, res, next) {
     if (req.config && req.config.enableExpressErrorHandler) {
       return next(err);
     }
+    const signupUsernameTakenLevel =
+      req.config?.logLevels?.signupUsernameTaken || 'info';
     let httpStatus;
     // TODO: fill out this mapping
     switch (err.code) {
@@ -480,7 +482,17 @@ export function handleParseErrors(err, req, res, next) {
     }
     res.status(httpStatus);
     res.json({ code: err.code, error: err.message });
-    log.error('Parse error: ', err);
+    if (err.code === Parse.Error.USERNAME_TAKEN) {
+      if (signupUsernameTakenLevel !== 'silent') {
+        const loggerMethod =
+          typeof log[signupUsernameTakenLevel] === 'function'
+            ? log[signupUsernameTakenLevel].bind(log)
+            : log.error.bind(log);
+        loggerMethod('Parse error: ', err);
+      }
+    } else {
+      log.error('Parse error: ', err);
+    }
   } else if (err.status && err.message) {
     res.status(err.status);
     res.json({ error: err.message });

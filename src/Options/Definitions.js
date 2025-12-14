@@ -1481,6 +1481,12 @@ module.exports.LogLevels = {
       'Log level used by the Cloud Code Functions on success. Default is `info`. See [LogLevel](LogLevel.html) for available values.',
     default: 'info',
   },
+  signupUsernameTaken: {
+    env: 'PARSE_SERVER_LOG_LEVELS_SIGNUP_USERNAME_TAKEN',
+    help:
+      'Log level used when a sign-up fails because the username already exists. Default is `info`. See [LogLevel](LogLevel.html) for available values.',
+    default: 'info',
+  },
   triggerAfter: {
     env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_AFTER',
     help:
