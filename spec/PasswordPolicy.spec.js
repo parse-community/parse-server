@@ -46,10 +46,8 @@ describe('Password Policy: ', () => {
             resolveWithFullResponse: true,
           })
             .then(response => {
-              expect(response.status).toEqual(302);
-              expect(response.text).toEqual(
-                'Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html'
-              );
+              expect(response.status).toEqual(200);
+              expect(response.text).toContain('Invalid password reset link!');
               done();
             })
             .catch(error => {
@@ -106,9 +104,8 @@ describe('Password Policy: ', () => {
             followRedirects: false,
           })
             .then(response => {
-              expect(response.status).toEqual(302);
-              const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=[a-zA-Z0-9]+\&id=test\&/;
-              expect(response.text.match(re)).not.toBe(null);
+              expect(response.status).toEqual(200);
+              expect(response.text).toContain('password');
               done();
             })
             .catch(error => {
@@ -621,8 +618,8 @@ describe('Password Policy: ', () => {
           resolveWithFullResponse: true,
         })
           .then(response => {
-            expect(response.status).toEqual(302);
-            const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&/;
+            expect(response.status).toEqual(200);
+            const re = /name="token"[^>]*value="([^"]+)"/;
             const match = response.text.match(re);
             if (!match) {
               fail('should have a token');
@@ -643,10 +640,8 @@ describe('Password Policy: ', () => {
               resolveWithFullResponse: true,
             })
               .then(response => {
-                expect(response.status).toEqual(302);
-                expect(response.text).toEqual(
-                  'Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html'
-                );
+                expect(response.status).toEqual(200);
+                expect(response.text).toContain('Success!');
 
                 Parse.User.logIn('user1', 'has2init')
                   .then(function () {
@@ -713,8 +708,8 @@ describe('Password Policy: ', () => {
           resolveWithFullResponse: true,
         })
           .then(response => {
-            expect(response.status).toEqual(302);
-            const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&/;
+            expect(response.status).toEqual(200);
+            const re = /name="token"[^>]*value="([^"]+)"/;
             const match = response.text.match(re);
             if (!match) {
               fail('should have a token');
@@ -735,10 +730,8 @@ describe('Password Policy: ', () => {
               resolveWithFullResponse: true,
             })
               .then(response => {
-                expect(response.status).toEqual(302);
-                expect(response.text).toEqual(
-                  `Found. Redirecting to http://localhost:8378/1/apps/choose_password?token=${token}&id=test&error=Password%20should%20contain%20at%20least%20one%20digit.&app=passwordPolicy`
-                );
+                expect(response.status).toEqual(200);
+                expect(response.text).toContain('Password should contain at least one digit.');
 
                 Parse.User.logIn('user1', 'has 1 digit')
                   .then(function () {
@@ -899,8 +892,8 @@ describe('Password Policy: ', () => {
           resolveWithFullResponse: true,
         })
           .then(response => {
-            expect(response.status).toEqual(302);
-            const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&/;
+            expect(response.status).toEqual(200);
+            const re = /name="token"[^>]*value="([^"]+)"/;
             const match = response.text.match(re);
             if (!match) {
               fail('should have a token');
@@ -921,10 +914,8 @@ describe('Password Policy: ', () => {
               resolveWithFullResponse: true,
             })
               .then(response => {
-                expect(response.status).toEqual(302);
-                expect(response.text).toEqual(
-                  `Found. Redirecting to http://localhost:8378/1/apps/choose_password?token=${token}&id=test&error=Password%20cannot%20contain%20your%20username.&app=passwordPolicy`
-                );
+                expect(response.status).toEqual(200);
+                expect(response.text).toContain('Password cannot contain your username.');
 
                 Parse.User.logIn('user1', 'r@nd0m')
                   .then(function () {
@@ -990,8 +981,8 @@ describe('Password Policy: ', () => {
           simple: false,
           resolveWithFullResponse: true,
         });
-        expect(response.status).toEqual(302);
-        const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&/;
+        expect(response.status).toEqual(200);
+        const re = /name="token"[^>]*value="([^"]+)"/;
         const match = response.text.match(re);
         if (!match) {
           fail('should have a token');
@@ -1050,8 +1041,8 @@ describe('Password Policy: ', () => {
           resolveWithFullResponse: true,
         })
           .then(response => {
-            expect(response.status).toEqual(302);
-            const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&/;
+            expect(response.status).toEqual(200);
+            const re = /name="token"[^>]*value="([^"]+)"/;
             const match = response.text.match(re);
             if (!match) {
               fail('should have a token');
@@ -1072,10 +1063,8 @@ describe('Password Policy: ', () => {
               resolveWithFullResponse: true,
             })
               .then(response => {
-                expect(response.status).toEqual(302);
-                expect(response.text).toEqual(
-                  'Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html'
-                );
+                expect(response.status).toEqual(200);
+                expect(response.text).toContain('Success!');
 
                 Parse.User.logIn('user1', 'uuser11')
                   .then(function () {
@@ -1316,8 +1305,8 @@ describe('Password Policy: ', () => {
           resolveWithFullResponse: true,
         })
           .then(response => {
-            expect(response.status).toEqual(302);
-            const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&/;
+            expect(response.status).toEqual(200);
+            const re = /name="token"[^>]*value="([^"]+)"/;
             const match = response.text.match(re);
             if (!match) {
               fail('should have a token');
@@ -1338,10 +1327,8 @@ describe('Password Policy: ', () => {
               resolveWithFullResponse: true,
             })
               .then(response => {
-                expect(response.status).toEqual(302);
-                expect(response.text).toEqual(
-                  'Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html'
-                );
+                expect(response.status).toEqual(200);
+                expect(response.text).toContain('Success!');
 
                 Parse.User.logIn('user1', 'uuser11')
                   .then(function () {
@@ -1471,8 +1458,8 @@ describe('Password Policy: ', () => {
           followRedirects: false,
         })
           .then(response => {
-            expect(response.status).toEqual(302);
-            const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&/;
+            expect(response.status).toEqual(200);
+            const re = /name="token"[^>]*value="([^"]+)"/;
             const match = response.text.match(re);
             if (!match) {
               fail('should have a token');
@@ -1498,10 +1485,8 @@ describe('Password Policy: ', () => {
           .then(data => {
             const response = data[0];
             const token = data[1];
-            expect(response.status).toEqual(302);
-            expect(response.text).toEqual(
-              `Found. Redirecting to http://localhost:8378/1/apps/choose_password?token=${token}&id=test&error=New%20password%20should%20not%20be%20the%20same%20as%20last%201%20passwords.&app=passwordPolicy`
-            );
+            expect(response.status).toEqual(200);
+            expect(response.text).toContain('New password should not be the same as last 1 passwords.');
             done();
             return Promise.resolve();
           })

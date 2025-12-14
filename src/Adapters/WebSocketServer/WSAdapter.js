@@ -1,4 +1,4 @@
-/*eslint no-unused-vars: "off"*/
+/* eslint-disable unused-imports/no-unused-vars */
 import { WSSAdapter } from './WSSAdapter';
 const WebSocketServer = require('ws').Server;
 

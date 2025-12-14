@@ -21,9 +21,13 @@
   - [Good to Know](#good-to-know)
   - [Troubleshooting](#troubleshooting)
   - [Please Do's](#please-dos)
-  - [TypeScript Tests](#typescript-tests)
+    - [TypeScript Tests](#typescript-tests)
   - [Test against Postgres](#test-against-postgres)
     - [Postgres with Docker](#postgres-with-docker)
+  - [Performance Testing](#performance-testing)
+    - [Adding Tests](#adding-tests)
+    - [Adding Benchmarks](#adding-benchmarks)
+    - [Benchmark Guidelines](#benchmark-guidelines)
 - [Breaking Changes](#breaking-changes)
   - [Deprecation Policy](#deprecation-policy)
 - [Feature Considerations](#feature-considerations)
@@ -297,6 +301,58 @@ RUN chmod +x /docker-entrypoint-initdb.d/setup-dbs.sh
 ```
 
 Note that the script above will ONLY be executed during initialization of the container with no data in the database, see the official [Postgres image](https://hub.docker.com/_/postgres) for details. If you want to use the script to run again be sure there is no data in the /var/lib/postgresql/data of the container.
+
+### Performance Testing
+
+Parse Server includes an automated performance benchmarking system that runs on every pull request to detect performance regressions and track improvements over time.
+
+#### Adding Tests
+
+You should consider adding performance benchmarks if your contribution:
+
+- **Introduces a performance-critical feature**: Features that will be frequently used in production environments, such as new query operations, authentication methods, or data processing functions.
+- **Modifies existing critical paths**: Changes to core functionality like object CRUD operations, query execution, user authentication, file operations, or Cloud Code execution.
+- **Has potential performance impact**: Any change that affects database operations, network requests, data parsing, caching mechanisms, or algorithmic complexity.
+- **Optimizes performance**: If your PR specifically aims to improve performance, adding benchmarks helps verify the improvement and prevents future regressions.
+
+#### Adding Benchmarks
+
+Performance benchmarks are located in [`benchmark/performance.js`](benchmark/performance.js). To add a new benchmark:
+
+1. **Identify the operation to benchmark**: Determine the specific operation you want to measure (e.g., a new query type, a new API endpoint).
+
+2. **Create a benchmark function**: Follow the existing patterns in `benchmark/performance.js`:
+   ```javascript
+   async function benchmarkNewFeature() {
+     return measureOperation('Feature Name', async () => {
+       // Your operation to benchmark
+       const result = await someOperation();
+     }, ITERATIONS);
+   }
+   ```
+
+3. **Add to benchmark suite**: Register your benchmark in the `runBenchmarks()` function:
+   ```javascript
+   console.error('Running New Feature benchmark...');
+   await cleanupDatabase();
+   results.push(await benchmarkNewFeature());
+   ```
+
+4. **Test locally**: Run the benchmarks locally to verify they work:
+   ```bash
+   npm run benchmark:quick  # Quick test with 10 iterations
+   npm run benchmark        # Full test with 10,000 iterations
+   ```
+
+For new features where no baseline exists, the CI will establish new benchmarks that future PRs will be compared against.
+
+#### Benchmark Guidelines
+
+- **Keep benchmarks focused**: Each benchmark should test a single, well-defined operation.
+- **Use realistic data**: Test with data that reflects real-world usage patterns.
+- **Clean up between runs**: Use `cleanupDatabase()` to ensure consistent test conditions.
+- **Consider iteration count**: Use fewer iterations for expensive operations (see `ITERATIONS` environment variable).
+- **Document what you're testing**: Add clear comments explaining what the benchmark measures and why it's important.
 
 ## Breaking Changes
 

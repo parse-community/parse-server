@@ -24,10 +24,20 @@ describe_only_db('mongo')('GridFSBucket', () => {
     const databaseURI = 'mongodb://localhost:27017/parse';
     const gfsAdapter = new GridFSBucketAdapter(databaseURI, {
       retryWrites: true,
-      // these are not supported by the mongo client
+      // Parse Server-specific options that should be filtered out before passing to MongoDB client
+      allowPublicExplain: true,
       enableSchemaHooks: true,
       schemaCacheTtl: 5000,
       maxTimeMS: 30000,
+      disableIndexFieldValidation: true,
+      logClientEvents: [{ name: 'commandStarted' }],
+      createIndexUserUsername: true,
+      createIndexUserUsernameCaseInsensitive: true,
+      createIndexUserEmail: true,
+      createIndexUserEmailCaseInsensitive: true,
+      createIndexUserEmailVerifyToken: true,
+      createIndexUserPasswordResetToken: true,
+      createIndexRoleName: true,
     });
 
     const db = await gfsAdapter._connect();

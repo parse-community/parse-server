@@ -23,7 +23,8 @@ describe('WeChatAdapter', function () {
       const user = await adapter.getUserFromAccessToken('validToken', { id: 'validOpenId' });
 
       expect(global.fetch).toHaveBeenCalledWith(
-        'https://api.weixin.qq.com/sns/auth?access_token=validToken&openid=validOpenId'
+        'https://api.weixin.qq.com/sns/auth?access_token=validToken&openid=validOpenId',
+        jasmine.any(Object)
       );
       expect(user).toEqual({ errcode: 0, id: 'validUserId' });
     });
@@ -64,7 +65,8 @@ describe('WeChatAdapter', function () {
       const token = await adapter.getAccessTokenFromCode(authData);
 
       expect(global.fetch).toHaveBeenCalledWith(
-        'https://api.weixin.qq.com/sns/oauth2/access_token?appid=validAppId&secret=validAppSecret&code=validCode&grant_type=authorization_code'
+        'https://api.weixin.qq.com/sns/oauth2/access_token?appid=validAppId&secret=validAppSecret&code=validCode&grant_type=authorization_code',
+        jasmine.any(Object)
       );
       expect(token).toEqual('validToken');
     });
