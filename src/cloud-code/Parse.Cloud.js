@@ -107,22 +107,49 @@ var ParseCloud = {};
  *
  * **Available in Cloud Code only.**
  *
+ * **Traditional Style:**
  * ```
  * Parse.Cloud.define('functionName', (request) => {
  *   // code here
+ *   return result;
  * }, (request) => {
  *   // validation code here
  * });
  *
  * Parse.Cloud.define('functionName', (request) => {
  *   // code here
+ *   return result;
  * }, { ...validationObject });
+ * ```
+ *
+ * **Express Style with Custom HTTP Status Codes:**
+ * ```
+ * Parse.Cloud.define('functionName', (request, response) => {
+ *   // Set custom HTTP status code and send response
+ *   response.status(201).success({ message: 'Created' });
+ * });
+ *
+ * Parse.Cloud.define('unauthorizedFunction', (request, response) => {
+ *   if (!request.user) {
+ *     response.status(401).error('Unauthorized');
+ *   } else {
+ *     response.success({ data: 'OK' });
+ *   }
+ * });
+ *
+ * Parse.Cloud.define('withCustomHeaders', (request, response) => {
+ *   response.header('X-Custom-Header', 'value').success({ data: 'OK' });
+ * });
+ *
+ * Parse.Cloud.define('errorFunction', (request, response) => {
+ *   response.error('Something went wrong');
+ * });
  * ```
  *
  * @static
  * @memberof Parse.Cloud
  * @param {String} name The name of the Cloud Function
- * @param {Function} data The Cloud Function to register. This function can be an async function and should take one parameter a {@link Parse.Cloud.FunctionRequest}.
+ * @param {Function} data The Cloud Function to register. This function can be an async function and should take one parameter a {@link Parse.Cloud.FunctionRequest}, or two parameters (request, response) for Express-style functions where response is a {@link Parse.Cloud.FunctionResponse}.
  * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FunctionRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.define = function (functionName, handler, validationHandler) {
@@ -788,7 +815,20 @@ module.exports = ParseCloud;
  * @property {Boolean} master If true, means the master key was used.
  * @property {Parse.User} user If set, the user that made the request.
  * @property {Object} params The params passed to the cloud function.
+ * @property {String} ip The IP address of the client making the request.
+ * @property {Object} headers The original HTTP headers for the request.
+ * @property {Object} log The current logger inside Parse Server.
+ * @property {String} functionName The name of the cloud function.
+ * @property {Object} context The context of the cloud function call.
  * @property {Object} config The Parse Server config.
+ */
+
+/**
+ * @interface Parse.Cloud.FunctionResponse
+ * @property {function} success Call this function to return a successful response with an optional result. Usage: `response.success(result)`
+ * @property {function} error Call this function to return an error response with an error message. Usage: `response.error(message)`
+ * @property {function} status Call this function to set a custom HTTP status code for the response. Returns the response object for chaining. Usage: `response.status(code).success(result)` or `response.status(code).error(message)`
+ * @property {function} header Call this function to set a custom HTTP header for the response. Returns the response object for chaining. Usage: `response.header('X-Custom-Header', 'value').success(result)`
  */
 
 /**

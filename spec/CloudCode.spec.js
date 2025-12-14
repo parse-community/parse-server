@@ -4788,4 +4788,231 @@ describe('beforePasswordResetRequest hook', () => {
       Parse.Cloud.beforePasswordResetRequest(Parse.User, () => { });
     }).not.toThrow();
   });
+
+  describe('Express-style cloud functions with (req, res) parameters', () => {
+    it('should support express-style cloud function with res.success()', async () => {
+      Parse.Cloud.define('expressStyleFunction', (req, res) => {
+        res.success({ message: 'Hello from express style!' });
+      });
+
+      const result = await Parse.Cloud.run('expressStyleFunction', {});
+      expect(result.message).toEqual('Hello from express style!');
+    });
+
+    it('should support express-style cloud function with res.error()', async () => {
+      Parse.Cloud.define('expressStyleError', (req, res) => {
+        res.error('Custom error message');
+      });
+
+      await expectAsync(Parse.Cloud.run('expressStyleError', {})).toBeRejectedWith(
+        new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Custom error message')
+      );
+    });
+
+    it('should support setting custom HTTP status code with res.status().success()', async () => {
+      Parse.Cloud.define('customStatusCode', (req, res) => {
+        res.status(201).success({ created: true });
+      });
+
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/customStatusCode',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: true,
+        body: {},
+      });
+
+      expect(response.status).toBe(201);
+      expect(response.data.result.created).toBe(true);
+    });
+
+    it('should support 401 unauthorized status code with error', async () => {
+      Parse.Cloud.define('unauthorizedFunction', (req, res) => {
+        if (!req.user) {
+          res.status(401).error('Unauthorized access');
+        } else {
+          res.success({ message: 'Authorized' });
+        }
+      });
+
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/functions/unauthorizedFunction',
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          json: true,
+          body: {},
+        })
+      ).toBeRejected();
+    });
+
+    it('should support 404 not found status code with error', async () => {
+      Parse.Cloud.define('notFoundFunction', (req, res) => {
+        res.status(404).error('Resource not found');
+      });
+
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/functions/notFoundFunction',
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          json: true,
+          body: {},
+        })
+      ).toBeRejected();
+    });
+
+    it('should default to 200 status code when not specified', async () => {
+      Parse.Cloud.define('defaultStatusCode', (req, res) => {
+        res.success({ message: 'Default status' });
+      });
+
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/defaultStatusCode',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: true,
+        body: {},
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.data.result.message).toBe('Default status');
+    });
+
+    it('should maintain backward compatibility with single-parameter functions', async () => {
+      Parse.Cloud.define('traditionalFunction', (req) => {
+        return { message: 'Traditional style works!' };
+      });
+
+      const result = await Parse.Cloud.run('traditionalFunction', {});
+      expect(result.message).toEqual('Traditional style works!');
+    });
+
+    it('should maintain backward compatibility with implicit return functions', async () => {
+      Parse.Cloud.define('implicitReturnFunction', () => 'Implicit return works!');
+
+      const result = await Parse.Cloud.run('implicitReturnFunction', {});
+      expect(result).toEqual('Implicit return works!');
+    });
+
+    it('should support async express-style functions', async () => {
+      Parse.Cloud.define('asyncExpressStyle', async (req, res) => {
+        await new Promise(resolve => setTimeout(resolve, 10));
+        res.success({ async: true });
+      });
+
+      const result = await Parse.Cloud.run('asyncExpressStyle', {});
+      expect(result.async).toBe(true);
+    });
+
+    it('should access request parameters in express-style functions', async () => {
+      Parse.Cloud.define('expressWithParams', (req, res) => {
+        const { name } = req.params;
+        res.success({ greeting: `Hello, ${name}!` });
+      });
+
+      const result = await Parse.Cloud.run('expressWithParams', { name: 'World' });
+      expect(result.greeting).toEqual('Hello, World!');
+    });
+
+    it('should access user in express-style functions', async () => {
+      const user = new Parse.User();
+      user.set('username', 'testuser');
+      user.set('password', 'testpass');
+      await user.signUp();
+
+      Parse.Cloud.define('expressWithUser', (req, res) => {
+        if (req.user) {
+          res.success({ username: req.user.get('username') });
+        } else {
+          res.status(401).error('Not authenticated');
+        }
+      });
+
+      const result = await Parse.Cloud.run('expressWithUser', {});
+      expect(result.username).toEqual('testuser');
+
+      await Parse.User.logOut();
+    });
+
+    it('should support setting custom headers with res.header()', async () => {
+      Parse.Cloud.define('customHeaderFunction', (req, res) => {
+        res.header('X-Custom-Header', 'custom-value').success({ message: 'OK' });
+      });
+
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/customHeaderFunction',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: true,
+        body: {},
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.headers['x-custom-header']).toBe('custom-value');
+      expect(response.data.result.message).toBe('OK');
+    });
+
+    it('should support setting multiple custom headers', async () => {
+      Parse.Cloud.define('multipleHeadersFunction', (req, res) => {
+        res.header('X-Header-One', 'value1')
+          .header('X-Header-Two', 'value2')
+          .success({ message: 'Multiple headers' });
+      });
+
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/multipleHeadersFunction',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: true,
+        body: {},
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.headers['x-header-one']).toBe('value1');
+      expect(response.headers['x-header-two']).toBe('value2');
+      expect(response.data.result.message).toBe('Multiple headers');
+    });
+
+    it('should support combining status code and custom headers', async () => {
+      Parse.Cloud.define('statusAndHeaderFunction', (req, res) => {
+        res.status(201)
+          .header('X-Resource-Id', '12345')
+          .success({ created: true });
+      });
+
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/statusAndHeaderFunction',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: true,
+        body: {},
+      });
+
+      expect(response.status).toBe(201);
+      expect(response.headers['x-resource-id']).toBe('12345');
+      expect(response.data.result.created).toBe(true);
+    });
+  });
 });

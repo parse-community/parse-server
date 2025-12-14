@@ -786,4 +786,8 @@ export interface LogLevels {
   :DEFAULT: error
   */
   cloudFunctionError: ?string;
+  /* Log level used when a sign-up fails because the username already exists. Default is `info`. See [LogLevel](LogLevel.html) for available values.
+  :DEFAULT: info
+  */
+  signupUsernameTaken: ?string;
 }

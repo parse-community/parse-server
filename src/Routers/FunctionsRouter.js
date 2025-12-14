@@ -103,20 +103,52 @@ export class FunctionsRouter extends PromiseRouter {
     });
   }
 
-  static createResponseObject(resolve, reject) {
-    return {
+  static createResponseObject(resolve, reject, statusCode = null) {
+    let httpStatusCode = statusCode;
+    const customHeaders = {};
+    let responseSent = false;
+    const responseObject = {
       success: function (result) {
-        resolve({
+        if (responseSent) {
+          throw new Error('Cannot call success() after response has already been sent. Make sure to call success() or error() only once per cloud function execution.');
+        }
+        responseSent = true;
+        const response = {
           response: {
             result: Parse._encode(result),
           },
-        });
+        };
+        if (httpStatusCode !== null) {
+          response.status = httpStatusCode;
+        }
+        if (Object.keys(customHeaders).length > 0) {
+          response.headers = customHeaders;
+        }
+        resolve(response);
       },
       error: function (message) {
+        if (responseSent) {
+          throw new Error('Cannot call error() after response has already been sent. Make sure to call success() or error() only once per cloud function execution.');
+        }
+        responseSent = true;
         const error = triggers.resolveError(message);
+        // If a custom status code was set, attach it to the error
+        if (httpStatusCode !== null) {
+          error.status = httpStatusCode;
+        }
         reject(error);
       },
+      status: function (code) {
+        httpStatusCode = code;
+        return responseObject;
+      },
+      header: function (key, value) {
+        customHeaders[key] = value;
+        return responseObject;
+      },
+      _isResponseSent: () => responseSent,
     };
+    return responseObject;
   }
   static handleCloudFunction(req) {
     const functionName = req.params.functionName;
@@ -143,7 +175,7 @@ export class FunctionsRouter extends PromiseRouter {
 
     return new Promise(function (resolve, reject) {
       const userString = req.auth && req.auth.user ? req.auth.user.id : undefined;
-      const { success, error } = FunctionsRouter.createResponseObject(
+      const responseObject = FunctionsRouter.createResponseObject(
         result => {
           try {
             if (req.config.logLevels.cloudFunctionSuccess !== 'silent') {
@@ -184,14 +216,37 @@ export class FunctionsRouter extends PromiseRouter {
           }
         }
       );
+      const { success, error } = responseObject;
+
       return Promise.resolve()
         .then(() => {
           return triggers.maybeRunValidator(request, functionName, req.auth);
         })
         .then(() => {
-          return theFunction(request);
+          // Check if function expects 2 parameters (req, res) - Express style
+          if (theFunction.length >= 2) {
+            return theFunction(request, responseObject);
+          } else {
+            // Traditional style - single parameter
+            return theFunction(request);
+          }
         })
-        .then(success, error);
+        .then(result => {
+          // For Express-style functions, only send response if not already sent
+          if (theFunction.length >= 2) {
+            if (!responseObject._isResponseSent()) {
+              // If Express-style function returns a value without calling res.success/error
+              if (result !== undefined) {
+                success(result);
+              }
+              // If no response sent and no value returned, this is an error in user code
+              // but we don't handle it here to maintain backward compatibility
+            }
+          } else {
+            // For traditional functions, always call success with the result (even if undefined)
+            success(result);
+          }
+        }, error);
     });
   }
 }

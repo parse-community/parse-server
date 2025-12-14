@@ -1,3 +1,17 @@
+# [9.1.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.1.0-alpha.1...9.1.0-alpha.2) (2025-12-14)
+
+
+### Features
+
+* Add support for custom HTTP status code and headers to Cloud Function response with Express-style syntax ([#9980](https://github.com/parse-community/parse-server/issues/9980)) ([8eeab8d](https://github.com/parse-community/parse-server/commit/8eeab8dc57edef3751aa188d8247f296a270b083))
+
+# [9.1.0-alpha.1](https://github.com/parse-community/parse-server/compare/9.0.0...9.1.0-alpha.1) (2025-12-14)
+
+
+### Features
+
+* Add option `logLevels.signupUsernameTaken` to change log level of username already exists sign-up rejection ([#9962](https://github.com/parse-community/parse-server/issues/9962)) ([f18f307](https://github.com/parse-community/parse-server/commit/f18f3073d70a292bc70b5d572ef58e4845de89ca))
+
 # [9.0.0-alpha.11](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.10...9.0.0-alpha.11) (2025-12-14)
 
 
