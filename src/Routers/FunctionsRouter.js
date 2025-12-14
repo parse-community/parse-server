@@ -18,7 +18,7 @@ function parseObject(obj, config) {
     return Object.assign(new Date(obj.iso), obj);
   } else if (obj && obj.__type == 'File') {
     return Parse.File.fromJSON(obj);
-  } else if (obj && obj.__type == 'Pointer' && config.encodeParseObjectInCloudFunction) {
+  } else if (obj && obj.__type == 'Pointer') {
     return Parse.Object.fromJSON({
       __type: 'Pointer',
       className: obj.className,

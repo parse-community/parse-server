@@ -1,3 +1,125 @@
+# [9.0.0-alpha.11](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.10...9.0.0-alpha.11) (2025-12-14)
+
+
+### Features
+
+* Deprecation DEPPS113: Config option `enableInsecureAuthAdapters` defaults to `false` ([#9982](https://github.com/parse-community/parse-server/issues/9982)) ([22d4622](https://github.com/parse-community/parse-server/commit/22d4622230b74839ed408a02bfcabb7b37b85aba))
+
+
+### BREAKING CHANGES
+
+* This release changes the config option `enableInsecureAuthAdapters` default to `false` (Deprecation DEPPS13). ([22d4622](22d4622))
+
+# [9.0.0-alpha.10](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.9...9.0.0-alpha.10) (2025-12-12)
+
+
+### Features
+
+* Upgrade to @parse/push-adapter 8.1.0 ([#9938](https://github.com/parse-community/parse-server/issues/9938)) ([d5e76b0](https://github.com/parse-community/parse-server/commit/d5e76b01db2b4eeb22a0bb5a04347a89209aa822))
+
+# [9.0.0-alpha.9](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.8...9.0.0-alpha.9) (2025-12-12)
+
+
+### Features
+
+* Deprecation DEPPS12: Database option `allowPublicExplain` defaults to `false` ([#9975](https://github.com/parse-community/parse-server/issues/9975)) ([c1c7e69](https://github.com/parse-community/parse-server/commit/c1c7e6976d868ccbc7dff325edce78ddfa999bb9))
+
+
+### BREAKING CHANGES
+
+* This release changes the MongoDB database option `allowPublicExplain` default to `false` (Deprecation DEPPS12). ([c1c7e69](c1c7e69))
+
+# [9.0.0-alpha.8](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.7...9.0.0-alpha.8) (2025-12-12)
+
+
+### Features
+
+* Deprecation DEPPS11: Replace `PublicAPIRouter` with `PagesRouter` ([#9974](https://github.com/parse-community/parse-server/issues/9974)) ([8f877d4](https://github.com/parse-community/parse-server/commit/8f877d42c02a6492b97c61e75ab77a896878f866))
+
+
+### BREAKING CHANGES
+
+* This release replaces `PublicAPIRouter` with `PagesRouter` (Deprecation DEPPS11). ([8f877d4](8f877d4))
+
+# [9.0.0-alpha.7](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.6...9.0.0-alpha.7) (2025-12-12)
+
+
+### Features
+
+* Deprecation DEPPS10: Encode `Parse.Object` in Cloud Function and remove option `encodeParseObjectInCloudFunction` ([#9973](https://github.com/parse-community/parse-server/issues/9973)) ([a2d3dbe](https://github.com/parse-community/parse-server/commit/a2d3dbe972e2e02ac599bfffe1ae6cd9768b02ca))
+
+
+### BREAKING CHANGES
+
+* This release encodes `Parse.Object` in Cloud Function and removes option `encodeParseObjectInCloudFunction` (Deprecation DEPPS10). ([a2d3dbe](a2d3dbe))
+
+# [9.0.0-alpha.6](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.5...9.0.0-alpha.6) (2025-12-12)
+
+
+### Features
+
+* Increase required minimum version to Postgres `16`, PostGIS `3.5` ([#9972](https://github.com/parse-community/parse-server/issues/9972)) ([7483add](https://github.com/parse-community/parse-server/commit/7483add73934e7d16098ccfb672cc45b3f7c7fbe))
+
+
+### BREAKING CHANGES
+
+* This releases increases the required minimum version to Postgres `16`, PostGIS `3.5`. ([7483add](7483add))
+
+# [9.0.0-alpha.5](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.4...9.0.0-alpha.5) (2025-12-12)
+
+
+### Features
+
+* Update route patterns to use path-to-regexp v8 syntax ([#9942](https://github.com/parse-community/parse-server/issues/9942)) ([fa8723b](https://github.com/parse-community/parse-server/commit/fa8723b3d1e895602d1187540818bbdb446259ba))
+
+
+### BREAKING CHANGES
+
+* Route pattern syntax across cloud routes and rate-limiting now use the new path-to-regexp v8 syntax; see the [migration guide](https://github.com/parse-community/parse-server/blob/alpha/9.0.0.md) for more details. ([fa8723b](fa8723b))
+
+# [9.0.0-alpha.4](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.3...9.0.0-alpha.4) (2025-12-12)
+
+
+### Features
+
+* Increase required minimum MongoDB version to `7.0.16` ([#9971](https://github.com/parse-community/parse-server/issues/9971)) ([7bb548b](https://github.com/parse-community/parse-server/commit/7bb548bf81b3cebc9ec92ef9e5e6faf8f9edbd3b))
+
+
+### BREAKING CHANGES
+
+* This releases increases the required minimum MongoDB version to `7.0.16`. ([7bb548b](7bb548b))
+
+# [9.0.0-alpha.3](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.2...9.0.0-alpha.3) (2025-12-12)
+
+
+### Bug Fixes
+
+* Upgrade to GraphQL Apollo Server 5 and restrict GraphQL introspection ([#9888](https://github.com/parse-community/parse-server/issues/9888)) ([87c7f07](https://github.com/parse-community/parse-server/commit/87c7f076eb84c9540f79f06c27fe13e102dc6295))
+
+
+### BREAKING CHANGES
+
+* Upgrade to Apollo Server 5 and GraphQL express 5 integration; GraphQL introspection now requires using `masterKey` or setting `graphQLPublicIntrospection: true`. ([87c7f07](87c7f07))
+
+# [9.0.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.1...9.0.0-alpha.2) (2025-12-12)
+
+
+### Features
+
+* Upgrade to parse 8.0.0 ([#9976](https://github.com/parse-community/parse-server/issues/9976)) ([f9970d4](https://github.com/parse-community/parse-server/commit/f9970d4bb253494392fb4cc366f222119927f082))
+
+# [9.0.0-alpha.1](https://github.com/parse-community/parse-server/compare/8.6.0...9.0.0-alpha.1) (2025-12-12)
+
+
+### Features
+
+* Increase required minimum Node version to `20.19.0` ([#9970](https://github.com/parse-community/parse-server/issues/9970)) ([633964d](https://github.com/parse-community/parse-server/commit/633964d32e249d8cc16c58de7ddd9b7637c69fb1))
+
+
+### BREAKING CHANGES
+
+* This releases increases the required minimum Node version to `20.19.0`. ([633964d](633964d))
+
 # [8.6.0-alpha.2](https://github.com/parse-community/parse-server/compare/8.6.0-alpha.1...8.6.0-alpha.2) (2025-12-10)
 
 

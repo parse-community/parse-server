@@ -167,9 +167,9 @@ export interface ParseServerOptions {
   /* Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication
   :ENV: PARSE_SERVER_AUTH_PROVIDERS */
   auth: ?{ [string]: AuthAdapter };
-  /* Enable (or disable) insecure auth adapters, defaults to true. Insecure auth adapters are deprecated and it is recommended to disable them.
+  /* Optional. Enables insecure authentication adapters. Insecure auth adapters are deprecated and will be removed in a future version. Defaults to `false`.
   :ENV: PARSE_SERVER_ENABLE_INSECURE_AUTH_ADAPTERS
-  :DEFAULT: true */
+  :DEFAULT: false */
   enableInsecureAuthAdapters: ?boolean;
   /* Max file size for uploads, defaults to 20mb
   :DEFAULT: 20mb */
@@ -223,9 +223,6 @@ export interface ParseServerOptions {
   cacheAdapter: ?Adapter<CacheAdapter>;
   /* Adapter module for email sending */
   emailAdapter: ?Adapter<MailAdapter>;
-  /* If set to `true`, a `Parse.Object` that is in the payload when calling a Cloud Function will be converted to an instance of `Parse.Object`. If `false`, the object will not be converted and instead be a plain JavaScript object, which contains the raw data of a `Parse.Object` but is not an actual instance of `Parse.Object`. Default is `false`. <br><br>ℹ️ The expected behavior would be that the object is converted to an instance of `Parse.Object`, so you would normally set this option to `true`. The default is `false` because this is a temporary option that has been introduced to avoid a breaking change when fixing a bug where JavaScript objects are not converted to actual instances of `Parse.Object`.
-  :DEFAULT: true */
-  encodeParseObjectInCloudFunction: ?boolean;
   /* Optional. The public URL to Parse Server. This URL will be used to reach Parse Server publicly for features like password reset and email verification links. The option can be set to a string or a function that can be asynchronously resolved. The returned URL string must start with `http://` or `https://`.
   :ENV: PARSE_PUBLIC_SERVER_URL */
   publicServerURL: ?(string | (() => string) | (() => Promise<string>));
@@ -353,7 +350,7 @@ export interface ParseServerOptions {
 }
 
 export interface RateLimitOptions {
-  /* The path of the API route to be rate limited. Route paths, in combination with a request method, define the endpoints at which requests can be made. Route paths can be strings, string patterns, or regular expression. See: https://expressjs.com/en/guide/routing.html */
+  /* The path of the API route to be rate limited. Route paths, in combination with a request method, define the endpoints at which requests can be made. Route paths can be strings or string patterns following <a href="https://github.com/pillarjs/path-to-regexp">path-to-regexp v8</a> syntax. */
   requestPath: string;
   /* The window of time in milliseconds within which the number of requests set in `requestCount` can be made before the rate limit is applied. */
   requestTimeWindow: ?number;
@@ -754,7 +751,7 @@ export interface DatabaseOptions {
   /* Set to `true` to disable validation of index fields. When disabled, indexes can be created even if the fields do not exist in the schema. This can be useful when creating indexes on fields that will be added later. */
   disableIndexFieldValidation: ?boolean;
   /* Set to `true` to allow `Parse.Query.explain` without master key.<br><br>⚠️ Enabling this option may expose sensitive query performance data to unauthorized users and could potentially be exploited for malicious purposes.
-  :DEFAULT: true */
+  :DEFAULT: false */
   allowPublicExplain: ?boolean;
   /* An array of MongoDB client event configurations to enable logging of specific events. */
   logClientEvents: ?(LogClientEvent[]);
