@@ -1,3 +1,16 @@
+# [9.1.0](https://github.com/parse-community/parse-server/compare/9.0.0...9.1.0) (2025-12-14)
+
+
+### Bug Fixes
+
+* Cross-Site Scripting (XSS) via HTML pages for password reset and email verification [GHSA-jhgf-2h8h-ggxv](https://github.com/parse-community/parse-server/security/advisories/GHSA-jhgf-2h8h-ggxv) ([#9985](https://github.com/parse-community/parse-server/issues/9985)) ([3074eb7](https://github.com/parse-community/parse-server/commit/3074eb70f5b58bf72b528ae7b7804ed2d90455ce))
+
+### Features
+
+* Add option `logLevels.signupUsernameTaken` to change log level of username already exists sign-up rejection ([#9962](https://github.com/parse-community/parse-server/issues/9962)) ([f18f307](https://github.com/parse-community/parse-server/commit/f18f3073d70a292bc70b5d572ef58e4845de89ca))
+* Add support for custom HTTP status code and headers to Cloud Function response with Express-style syntax ([#9980](https://github.com/parse-community/parse-server/issues/9980)) ([8eeab8d](https://github.com/parse-community/parse-server/commit/8eeab8dc57edef3751aa188d8247f296a270b083))
+* Log more debug info when failing to set duplicate value for field with unique values ([#9919](https://github.com/parse-community/parse-server/issues/9919)) ([a23b192](https://github.com/parse-community/parse-server/commit/a23b1924668920f3c92fec0566b57091d0e8aae8))
+
 # [9.0.0](https://github.com/parse-community/parse-server/compare/8.6.0...9.0.0) (2025-12-14)
 
 
