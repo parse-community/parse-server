@@ -1,3 +1,10 @@
+## [9.1.1-alpha.1](https://github.com/parse-community/parse-server/compare/9.1.0...9.1.1-alpha.1) (2025-12-16)
+
+
+### Bug Fixes
+
+* Server-Side Request Forgery (SSRF) in Instagram auth adapter [GHSA-3f5f-xgrj-97pf](https://github.com/parse-community/parse-server/security/advisories/GHSA-3f5f-xgrj-97pf) ([#9988](https://github.com/parse-community/parse-server/issues/9988)) ([fbcc938](https://github.com/parse-community/parse-server/commit/fbcc938b5ade5ff4c30598ac51272ef7ecef0616))
+
 # [9.1.0-alpha.4](https://github.com/parse-community/parse-server/compare/9.1.0-alpha.3...9.1.0-alpha.4) (2025-12-14)
 
 
