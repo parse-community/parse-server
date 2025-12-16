@@ -101,6 +101,31 @@ describe('InstagramAdapter', function () {
         'Instagram auth is invalid for this user.'
       );
     });
+
+    it('should ignore client-provided apiURL and use hardcoded endpoint', async () => {
+      const accessToken = 'mockAccessToken';
+      const authData = {
+        id: 'mockUserId',
+        apiURL: 'https://example.com/',
+      };
+
+      mockFetch([
+        {
+          url: 'https://graph.instagram.com/me?fields=id&access_token=mockAccessToken',
+          method: 'GET',
+          response: {
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                id: 'mockUserId',
+              }),
+          },
+        },
+      ]);
+
+      const user = await adapter.getUserFromAccessToken(accessToken, authData);
+      expect(user).toEqual({ id: 'mockUserId' });
+    });
   });
 
   describe('InstagramAdapter E2E Test', function () {
