@@ -24,10 +24,20 @@ describe_only_db('mongo')('GridFSBucket', () => {
     const databaseURI = 'mongodb://localhost:27017/parse';
     const gfsAdapter = new GridFSBucketAdapter(databaseURI, {
       retryWrites: true,
-      // these are not supported by the mongo client
+      // Parse Server-specific options that should be filtered out before passing to MongoDB client
+      allowPublicExplain: true,
       enableSchemaHooks: true,
       schemaCacheTtl: 5000,
       maxTimeMS: 30000,
+      disableIndexFieldValidation: true,
+      logClientEvents: [{ name: 'commandStarted' }],
+      createIndexUserUsername: true,
+      createIndexUserUsernameCaseInsensitive: true,
+      createIndexUserEmail: true,
+      createIndexUserEmailCaseInsensitive: true,
+      createIndexUserEmailVerifyToken: true,
+      createIndexUserPasswordResetToken: true,
+      createIndexRoleName: true,
     });
 
     const db = await gfsAdapter._connect();
@@ -415,6 +425,14 @@ describe_only_db('mongo')('GridFSBucket', () => {
 
   it('properly fetches a large file from GridFS', async () => {
     const gfsAdapter = new GridFSBucketAdapter(databaseURI);
+    const twoMegabytesFile = randomString(2048 * 1024);
+    await gfsAdapter.createFile('myFileName', twoMegabytesFile);
+    const gfsResult = await gfsAdapter.getFileData('myFileName');
+    expect(gfsResult.toString('utf8')).toBe(twoMegabytesFile);
+  });
+
+  it('properly upload a file when disableIndexFieldValidation exist in databaseOptions', async () => {
+    const gfsAdapter = new GridFSBucketAdapter(databaseURI, { disableIndexFieldValidation: true });
     const twoMegabytesFile = randomString(2048 * 1024);
     await gfsAdapter.createFile('myFileName', twoMegabytesFile);
     const gfsResult = await gfsAdapter.getFileData('myFileName');

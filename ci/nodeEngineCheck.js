@@ -86,7 +86,7 @@ class NodeEngineCheck {
           file: file,
           nodeVersion: version
         });
-      } catch(e) {
+      } catch {
         // eslint-disable-next-line no-console
         console.log(`Ignoring file because it is not valid JSON: ${file}`);
         core.warning(`Ignoring file because it is not valid JSON: ${file}`);

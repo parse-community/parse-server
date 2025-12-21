@@ -89,12 +89,16 @@ describe('LinkedInAdapter', function () {
 
   describe('Test getUserFromAccessToken', function () {
     it('should fetch user successfully', async function () {
-      global.fetch = jasmine.createSpy().and.returnValue(
-        Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({ id: 'validUserId' }),
-        })
-      );
+      mockFetch([
+        {
+          url: 'https://api.linkedin.com/v2/me',
+          method: 'GET',
+          response: {
+            ok: true,
+            json: () => Promise.resolve({ id: 'validUserId' }),
+          },
+        },
+      ]);
 
       const user = await adapter.getUserFromAccessToken('validToken', false);
 
@@ -104,14 +108,21 @@ describe('LinkedInAdapter', function () {
           'x-li-format': 'json',
           'x-li-src': undefined,
         },
+        method: 'GET',
       });
       expect(user).toEqual({ id: 'validUserId' });
     });
 
     it('should throw error for invalid response', async function () {
-      global.fetch = jasmine.createSpy().and.returnValue(
-        Promise.resolve({ ok: false })
-      );
+      mockFetch([
+        {
+          url: 'https://api.linkedin.com/v2/me',
+          method: 'GET',
+          response: {
+            ok: false,
+          },
+        },
+      ]);
 
       await expectAsync(adapter.getUserFromAccessToken('invalidToken', false)).toBeRejectedWith(
         new Error('LinkedIn API request failed.')
@@ -121,12 +132,16 @@ describe('LinkedInAdapter', function () {
 
   describe('Test getAccessTokenFromCode', function () {
     it('should fetch token successfully', async function () {
-      global.fetch = jasmine.createSpy().and.returnValue(
-        Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({ access_token: 'validToken' }),
-        })
-      );
+      mockFetch([
+        {
+          url: 'https://www.linkedin.com/oauth/v2/accessToken',
+          method: 'POST',
+          response: {
+            ok: true,
+            json: () => Promise.resolve({ access_token: 'validToken' }),
+          },
+        },
+      ]);
 
       const tokenResponse = await adapter.getAccessTokenFromCode('validCode', 'http://example.com');
 
@@ -139,9 +154,15 @@ describe('LinkedInAdapter', function () {
     });
 
     it('should throw error for invalid response', async function () {
-      global.fetch = jasmine.createSpy().and.returnValue(
-        Promise.resolve({ ok: false })
-      );
+      mockFetch([
+        {
+          url: 'https://www.linkedin.com/oauth/v2/accessToken',
+          method: 'POST',
+          response: {
+            ok: false,
+          },
+        },
+      ]);
 
       await expectAsync(
         adapter.getAccessTokenFromCode('invalidCode', 'http://example.com')

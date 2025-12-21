@@ -80,6 +80,31 @@ class CheckGroupServerConfig extends CheckGroup {
           }
         },
       }),
+      new Check({
+        title: 'GraphQL public introspection disabled',
+        warning: 'GraphQL public introspection is enabled, which allows anyone to access the GraphQL schema.',
+        solution: "Change Parse Server configuration to 'graphQLPublicIntrospection: false'. You will need to use master key or maintenance key to access the GraphQL schema.",
+        check: () => {
+          if (config.graphQLPublicIntrospection !== false) {
+            throw 1;
+          }
+        },
+      }),
+      new Check({
+        title: 'Public database explain disabled',
+        warning:
+          'Database explain queries are publicly accessible, which may expose sensitive database performance information and schema details.',
+        solution:
+          "Change Parse Server configuration to 'databaseOptions.allowPublicExplain: false'. You will need to use master key to run explain queries.",
+        check: () => {
+          if (
+            config.databaseOptions?.allowPublicExplain === true ||
+            config.databaseOptions?.allowPublicExplain == null
+          ) {
+            throw 1;
+          }
+        },
+      }),
     ];
   }
 }

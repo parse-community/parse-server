@@ -521,6 +521,23 @@ describe('parseObjectToMongoObjectForCreate', () => {
     expect(output.authData).toBe('random');
     done();
   });
+
+  it('should only transform authData.provider.id for _User class', () => {
+    // Test that for _User class, authData.facebook.id is transformed
+    const userInput = {
+      'authData.facebook.id': '10000000000000001',
+    };
+    const userOutput = transform.transformWhere('_User', userInput, { fields: {} });
+    expect(userOutput['_auth_data_facebook.id']).toBe('10000000000000001');
+
+    // Test that for non-User classes, authData.facebook.id is NOT transformed
+    const customInput = {
+      'authData.facebook.id': '10000000000000001',
+    };
+    const customOutput = transform.transformWhere('SpamAlerts', customInput, { fields: {} });
+    expect(customOutput['authData.facebook.id']).toBe('10000000000000001');
+    expect(customOutput['_auth_data_facebook.id']).toBeUndefined();
+  });
 });
 
 it('cannot have a custom field name beginning with underscore', done => {

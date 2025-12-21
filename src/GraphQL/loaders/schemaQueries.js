@@ -31,7 +31,7 @@ const load = parseGraphQLSchema => {
           const { name } = deepcopy(args);
           const { config, auth } = context;
 
-          enforceMasterKeyAccess(auth);
+          enforceMasterKeyAccess(auth, config);
 
           const schema = await config.database.loadSchema({ clearCache: true });
           const parseClass = await getClass(name, schema);
@@ -57,7 +57,7 @@ const load = parseGraphQLSchema => {
         try {
           const { config, auth } = context;
 
-          enforceMasterKeyAccess(auth);
+          enforceMasterKeyAccess(auth, config);
 
           const schema = await config.database.loadSchema({ clearCache: true });
           return (await schema.getAllClasses(true)).map(parseClass => ({

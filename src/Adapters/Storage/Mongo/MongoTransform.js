@@ -305,7 +305,7 @@ function transformQueryKeyValue(className, key, value, schema, count = false) {
     default: {
       // Other auth data
       const authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
-      if (authDataMatch) {
+      if (authDataMatch && className === '_User') {
         const provider = authDataMatch[1];
         // Special-case auth data.
         return { key: `_auth_data_${provider}.id`, value };

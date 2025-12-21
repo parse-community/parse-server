@@ -25,7 +25,7 @@ describe('Cloud Code Logger', () => {
     })
       .then(() => {
         return Parse.User.signUp('tester', 'abc')
-          .catch(() => {})
+          .catch(() => { })
           .then(loggedInUser => (user = loggedInUser))
           .then(() => Parse.User.logIn(user.get('username'), 'abc'));
       })
@@ -139,7 +139,7 @@ describe('Cloud Code Logger', () => {
   });
 
   it_id('9857e15d-bb18-478d-8a67-fdaad3e89565')(it)('should log an afterSave', done => {
-    Parse.Cloud.afterSave('MyObject', () => {});
+    Parse.Cloud.afterSave('MyObject', () => { });
     new Parse.Object('MyObject')
       .save()
       .then(() => {
@@ -189,7 +189,7 @@ describe('Cloud Code Logger', () => {
     });
   });
 
-  it_id('8088de8a-7cba-4035-8b05-4a903307e674')(it)('should log cloud function execution using the custom log level', async done => {
+  it_id('8088de8a-7cba-4035-8b05-4a903307e674')(it)('should log cloud function execution using the custom log level', async () => {
     Parse.Cloud.define('aFunction', () => {
       return 'it worked!';
     });
@@ -203,12 +203,17 @@ describe('Cloud Code Logger', () => {
       expect(log).toEqual('info');
     });
 
+    Parse.Cloud._removeAllHooks();
     await reconfigureServer({
       silent: true,
       logLevels: {
         cloudFunctionSuccess: 'warn',
         cloudFunctionError: 'info',
       },
+    });
+
+    Parse.Cloud.define('bFunction', () => {
+      throw new Error('Failed');
     });
 
     spy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
@@ -221,15 +226,12 @@ describe('Cloud Code Logger', () => {
         .allArgs()
         .find(log => log[1].startsWith('Failed running cloud function bFunction for '))?.[0];
       expect(log).toEqual('info');
-      done();
     }
   });
 
   it('should log cloud function triggers using the custom log level', async () => {
-    Parse.Cloud.beforeSave('TestClass', () => {});
-    Parse.Cloud.afterSave('TestClass', () => {});
-
     const execTest = async (logLevel, triggerBeforeSuccess, triggerAfter) => {
+      Parse.Cloud._removeAllHooks();
       await reconfigureServer({
         silent: true,
         logLevel,
@@ -238,6 +240,9 @@ describe('Cloud Code Logger', () => {
           triggerBeforeSuccess,
         },
       });
+
+      Parse.Cloud.beforeSave('TestClass', () => { });
+      Parse.Cloud.afterSave('TestClass', () => { });
 
       spy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
       const obj = new Parse.Object('TestClass');
@@ -266,7 +271,7 @@ describe('Cloud Code Logger', () => {
     });
 
     Parse.Cloud.run('aFunction', { foo: 'bar' })
-      .catch(() => {})
+      .catch(() => { })
       .then(() => {
         const logs = spy.calls.all().reverse();
         expect(logs[0].args[1]).toBe('Parse error: ');
@@ -344,6 +349,7 @@ describe('Cloud Code Logger', () => {
   });
 
   it('should log cloud function execution using the silent log level', async () => {
+    Parse.Cloud._removeAllHooks();
     await reconfigureServer({
       logLevels: {
         cloudFunctionSuccess: 'silent',
@@ -367,6 +373,7 @@ describe('Cloud Code Logger', () => {
   });
 
   it('should log cloud function triggers using the silent log level', async () => {
+    Parse.Cloud._removeAllHooks();
     await reconfigureServer({
       logLevels: {
         triggerAfter: 'silent',
@@ -377,8 +384,8 @@ describe('Cloud Code Logger', () => {
     Parse.Cloud.beforeSave('TestClassError', () => {
       throw new Error('Failed');
     });
-    Parse.Cloud.beforeSave('TestClass', () => {});
-    Parse.Cloud.afterSave('TestClass', () => {});
+    Parse.Cloud.beforeSave('TestClass', () => { });
+    Parse.Cloud.afterSave('TestClass', () => { });
 
     spy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
 

@@ -349,7 +349,10 @@ export class DefinedSchemas {
       Object.keys(cloudSchema.indexes).forEach(indexName => {
         if (!this.isProtectedIndex(localSchema.className, indexName)) {
           if (!localSchema.indexes || !localSchema.indexes[indexName]) {
-            newLocalSchema.deleteIndex(indexName);
+            // If keepUnknownIndex is falsy, then delete all unknown indexes from the db.
+            if(!this.schemaOptions.keepUnknownIndexes){
+              newLocalSchema.deleteIndex(indexName);
+            }
           } else if (
             !this.paramsAreEquals(localSchema.indexes[indexName], cloudSchema.indexes[indexName])
           ) {
