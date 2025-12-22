@@ -6,6 +6,7 @@ export const Types = {
   beforeLogin: 'beforeLogin',
   afterLogin: 'afterLogin',
   afterLogout: 'afterLogout',
+  beforePasswordResetRequest: 'beforePasswordResetRequest',
   beforeSave: 'beforeSave',
   afterSave: 'afterSave',
   beforeDelete: 'beforeDelete',
@@ -58,10 +59,10 @@ function validateClassNameForTriggers(className, type) {
     // TODO: Allow proper documented way of using nested increment ops
     throw 'Only afterSave is allowed on _PushStatus';
   }
-  if ((type === Types.beforeLogin || type === Types.afterLogin) && className !== '_User') {
+  if ((type === Types.beforeLogin || type === Types.afterLogin || type === Types.beforePasswordResetRequest) && className !== '_User') {
     // TODO: check if upstream code will handle `Error` instance rather
     // than this anti-pattern of throwing strings
-    throw 'Only the _User class is allowed for the beforeLogin and afterLogin triggers';
+    throw 'Only the _User class is allowed for the beforeLogin, afterLogin, and beforePasswordResetRequest triggers';
   }
   if (type === Types.afterLogout && className !== '_Session') {
     // TODO: check if upstream code will handle `Error` instance rather
@@ -182,8 +183,11 @@ export function toJSONwithObjects(object, className) {
     }
     toJSON[key] = val._toFullJSON();
   }
+  // Preserve original object's className if no override className is provided
   if (className) {
     toJSON.className = className;
+  } else if (object.className && !toJSON.className) {
+    toJSON.className = object.className;
   }
   return toJSON;
 }
@@ -257,7 +261,8 @@ export function getRequestObject(
   parseObject,
   originalParseObject,
   config,
-  context
+  context,
+  isGet
 ) {
   const request = {
     triggerName: triggerType,
@@ -266,7 +271,12 @@ export function getRequestObject(
     log: config.loggerController,
     headers: config.headers,
     ip: config.ip,
+    config,
   };
+
+  if (isGet !== undefined) {
+    request.isGet = !!isGet;
+  }
 
   if (originalParseObject) {
     request.original = originalParseObject;
@@ -278,6 +288,7 @@ export function getRequestObject(
     triggerType === Types.afterDelete ||
     triggerType === Types.beforeLogin ||
     triggerType === Types.afterLogin ||
+    triggerType === Types.beforePasswordResetRequest ||
     triggerType === Types.afterFind
   ) {
     // Set a copy of the context on the request object.
@@ -312,6 +323,7 @@ export function getRequestQueryObject(triggerType, auth, query, count, config, c
     headers: config.headers,
     ip: config.ip,
     context: context || {},
+    config,
   };
 
   if (!auth) {
@@ -437,69 +449,93 @@ function logTriggerErrorBeforeHook(triggerType, className, input, auth, error, l
 export function maybeRunAfterFindTrigger(
   triggerType,
   auth,
-  className,
-  objects,
+  classNameQuery,
+  objectsInput,
   config,
   query,
-  context
+  context,
+  isGet
 ) {
   return new Promise((resolve, reject) => {
-    const trigger = getTrigger(className, triggerType, config.applicationId);
+    const trigger = getTrigger(classNameQuery, triggerType, config.applicationId);
+
     if (!trigger) {
-      return resolve();
+      if (objectsInput && objectsInput.length > 0 && objectsInput[0] instanceof Parse.Object) {
+        return resolve(objectsInput.map(obj => toJSONwithObjects(obj)));
+      }
+      return resolve(objectsInput || []);
     }
-    const request = getRequestObject(triggerType, auth, null, null, config, context);
-    if (query) {
+
+    const request = getRequestObject(triggerType, auth, null, null, config, context, isGet);
+    // Convert query parameter to Parse.Query instance
+    if (query instanceof Parse.Query) {
       request.query = query;
+    } else if (typeof query === 'object' && query !== null) {
+      const parseQueryInstance = new Parse.Query(classNameQuery);
+      if (query.where) {
+        parseQueryInstance.withJSON(query);
+      }
+      request.query = parseQueryInstance;
+    } else {
+      request.query = new Parse.Query(classNameQuery);
     }
+
     const { success, error } = getResponseObject(
       request,
-      object => {
-        resolve(object);
+      processedObjectsJSON => {
+        resolve(processedObjectsJSON);
       },
-      error => {
-        reject(error);
+      errorData => {
+        reject(errorData);
       }
     );
     logTriggerSuccessBeforeHook(
       triggerType,
-      className,
-      'AfterFind',
-      JSON.stringify(objects),
+      classNameQuery,
+      'AfterFind Input (Pre-Transform)',
+      JSON.stringify(
+        objectsInput.map(o => (o instanceof Parse.Object ? o.id + ':' + o.className : o))
+      ),
       auth,
       config.logLevels.triggerBeforeSuccess
     );
-    request.objects = objects.map(object => {
-      //setting the class name to transform into parse object
-      object.className = className;
-      return Parse.Object.fromJSON(object);
+
+    // Convert plain objects to Parse.Object instances for trigger
+    request.objects = objectsInput.map(currentObject => {
+      if (currentObject instanceof Parse.Object) {
+        return currentObject;
+      }
+      // Preserve the original className if it exists, otherwise use the query className
+      const originalClassName = currentObject.className || classNameQuery;
+      const tempObjectWithClassName = { ...currentObject, className: originalClassName };
+      return Parse.Object.fromJSON(tempObjectWithClassName);
     });
     return Promise.resolve()
       .then(() => {
-        return maybeRunValidator(request, `${triggerType}.${className}`, auth);
+        return maybeRunValidator(request, `${triggerType}.${classNameQuery}`, auth);
       })
       .then(() => {
         if (request.skipWithMasterKey) {
           return request.objects;
         }
-        const response = trigger(request);
-        if (response && typeof response.then === 'function') {
-          return response.then(results => {
+        const responseFromTrigger = trigger(request);
+        if (responseFromTrigger && typeof responseFromTrigger.then === 'function') {
+          return responseFromTrigger.then(results => {
             return results;
           });
         }
-        return response;
+        return responseFromTrigger;
       })
       .then(success, error);
-  }).then(results => {
+  }).then(resultsAsJSON => {
     logTriggerAfterHook(
       triggerType,
-      className,
-      JSON.stringify(results),
+      classNameQuery,
+      JSON.stringify(resultsAsJSON),
       auth,
       config.logLevels.triggerAfter
     );
-    return results;
+    return resultsAsJSON;
   });
 }
 
@@ -607,9 +643,19 @@ export function maybeRunQueryTrigger(
           restOptions = restOptions || {};
           restOptions.subqueryReadPreference = requestObject.subqueryReadPreference;
         }
+        let objects = undefined;
+        if (result instanceof Parse.Object) {
+          objects = [result];
+        } else if (
+          Array.isArray(result) &&
+          (!result.length || result.every(obj => obj instanceof Parse.Object))
+        ) {
+          objects = result;
+        }
         return {
           restWhere,
           restOptions,
+          objects,
         };
       },
       err => {
@@ -976,6 +1022,7 @@ export function getRequestFileObject(triggerType, auth, fileObject, config) {
     log: config.loggerController,
     headers: config.headers,
     ip: config.ip,
+    config,
   };
 
   if (!auth) {

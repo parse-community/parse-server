@@ -147,9 +147,14 @@ const masterKeyHeaders = {
 };
 
 describe('schemas', () => {
+  let loggerErrorSpy;
+
   beforeEach(async () => {
     await reconfigureServer();
     config = Config.get('test');
+
+    const logger = require('../lib/logger').default;
+    loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
   });
 
   it('requires the master key to get all schemas', done => {
@@ -167,25 +172,29 @@ describe('schemas', () => {
   });
 
   it('requires the master key to get one schema', done => {
+    loggerErrorSpy.calls.reset();
     request({
       url: 'http://localhost:8378/1/schemas/SomeSchema',
       json: true,
       headers: restKeyHeaders,
     }).then(fail, response => {
       expect(response.status).toEqual(403);
-      expect(response.data.error).toEqual('unauthorized: master key is required');
+      expect(response.data.error).toEqual('Permission denied');
+      expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining("unauthorized: master key is required"));
       done();
     });
   });
 
   it('asks for the master key if you use the rest key', done => {
+    loggerErrorSpy.calls.reset();
     request({
       url: 'http://localhost:8378/1/schemas',
       json: true,
       headers: restKeyHeaders,
     }).then(fail, response => {
       expect(response.status).toEqual(403);
-      expect(response.data.error).toEqual('unauthorized: master key is required');
+      expect(response.data.error).toEqual('Permission denied');
+      expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining("unauthorized: master key is required"));
       done();
     });
   });
@@ -1826,6 +1835,7 @@ describe('schemas', () => {
         },
       },
     }).then(() => {
+      loggerErrorSpy.calls.reset();
       const object = new Parse.Object('AClass');
       object.set('hello', 'world');
       return object.save().then(
@@ -1834,7 +1844,9 @@ describe('schemas', () => {
           done();
         },
         err => {
-          expect(err.message).toEqual('Permission denied for action addField on class AClass.');
+          expect(err.message).toEqual('Permission denied');
+          expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+          expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Permission denied for action addField on class AClass'));
           done();
         }
       );
@@ -2198,13 +2210,16 @@ describe('schemas', () => {
         });
       })
       .then(() => {
+        loggerErrorSpy.calls.reset();
         const query = new Parse.Query('AClass');
         return query.find().then(
           () => {
             fail('Use should hot be able to find!');
           },
           err => {
-            expect(err.message).toEqual('Permission denied for action find on class AClass.');
+            expect(err.message).toEqual('Permission denied');
+            expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Permission denied for action find on class AClass'));
             return Promise.resolve();
           }
         );
@@ -2258,13 +2273,16 @@ describe('schemas', () => {
         });
       })
       .then(() => {
+        loggerErrorSpy.calls.reset();
         const query = new Parse.Query('AClass');
         return query.find().then(
           () => {
             fail('User should not be able to find!');
           },
           err => {
-            expect(err.message).toEqual('Permission denied for action find on class AClass.');
+            expect(err.message).toEqual('Permission denied');
+            expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Permission denied for action find on class AClass'));
             return Promise.resolve();
           }
         );
@@ -2343,13 +2361,16 @@ describe('schemas', () => {
         });
       })
       .then(() => {
+        loggerErrorSpy.calls.reset();
         const query = new Parse.Query('AClass');
         return query.find().then(
           () => {
             fail('User should not be able to find!');
           },
           err => {
-            expect(err.message).toEqual('Permission denied for action find on class AClass.');
+            expect(err.message).toEqual('Permission denied');
+            expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Permission denied for action find on class AClass'));
             return Promise.resolve();
           }
         );
@@ -2419,13 +2440,16 @@ describe('schemas', () => {
         });
       })
       .then(() => {
+        loggerErrorSpy.calls.reset();
         const query = new Parse.Query('AClass');
         return query.find().then(
           () => {
             fail('User should not be able to find!');
           },
           err => {
-            expect(err.message).toEqual('Permission denied for action find on class AClass.');
+            expect(err.message).toEqual('Permission denied');
+            expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Permission denied for action find on class AClass'));
             return Promise.resolve();
           }
         );
@@ -2450,13 +2474,16 @@ describe('schemas', () => {
         );
       })
       .then(() => {
+        loggerErrorSpy.calls.reset();
         const query = new Parse.Query('AClass');
         return query.find().then(
           () => {
             fail('User should not be able to find!');
           },
           err => {
-            expect(err.message).toEqual('Permission denied for action find on class AClass.');
+            expect(err.message).toEqual('Permission denied');
+            expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Permission denied for action find on class AClass'));
             return Promise.resolve();
           }
         );
@@ -2531,6 +2558,7 @@ describe('schemas', () => {
         return Parse.User.logIn('admin', 'admin');
       })
       .then(() => {
+        loggerErrorSpy.calls.reset();
         const query = new Parse.Query('AClass');
         return query.find();
       })
@@ -2540,7 +2568,9 @@ describe('schemas', () => {
           return Promise.resolve();
         },
         err => {
-          expect(err.message).toEqual('Permission denied for action create on class AClass.');
+          expect(err.message).toEqual('Permission denied');
+          expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+          expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Permission denied for action create on class AClass'));
           return Promise.resolve();
         }
       )
@@ -2548,6 +2578,7 @@ describe('schemas', () => {
         return Parse.User.logIn('user2', 'user2');
       })
       .then(() => {
+        loggerErrorSpy.calls.reset();
         const query = new Parse.Query('AClass');
         return query.find();
       })
@@ -2557,7 +2588,9 @@ describe('schemas', () => {
           return Promise.resolve();
         },
         err => {
-          expect(err.message).toEqual('Permission denied for action find on class AClass.');
+          expect(err.message).toEqual('Permission denied');
+          expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+          expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Permission denied for action find on class AClass'));
           return Promise.resolve();
         }
       )
@@ -3008,6 +3041,7 @@ describe('schemas', () => {
     beforeEach(async () => {
       await TestUtils.destroyAllDataPermanently(false);
       await config.database.adapter.performInitialization({ VolatileClassesSchemas: [] });
+      databaseAdapter.disableIndexFieldValidation = false;
     });
 
     it('cannot create index if field does not exist', done => {
@@ -3034,6 +3068,29 @@ describe('schemas', () => {
           done();
         });
       });
+    });
+
+    it('can create index if field does not exist with disableIndexFieldValidation true ', async () => {
+      databaseAdapter.disableIndexFieldValidation = true;
+      await request({
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        method: 'POST',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {},
+      });
+      const response = await request({
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        method: 'PUT',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          indexes: {
+            name1: { aString: 1 },
+          },
+        },
+      });
+      expect(response.data.indexes.name1).toEqual({ aString: 1 });
     });
 
     it('can create index on default field', done => {
@@ -3785,6 +3842,7 @@ describe('schemas', () => {
     });
 
     it_id('cbd5d897-b938-43a4-8f5a-5d02dd2be9be')(it_exclude_dbs(['postgres']))('cannot update to duplicate value on unique index', done => {
+      loggerErrorSpy.calls.reset();
       const index = {
         code: 1,
       };
@@ -3811,6 +3869,12 @@ describe('schemas', () => {
         .then(done.fail)
         .catch(error => {
           expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
+          // Client should only see generic message (no schema info exposed)
+          expect(error.message).toEqual('A duplicate value for a field with unique values was provided');
+          // Server logs should contain full MongoDB error message with detailed information
+          expect(loggerErrorSpy).toHaveBeenCalledWith('Duplicate key error:', jasmine.stringContaining('E11000 duplicate key error'));
+          expect(loggerErrorSpy).toHaveBeenCalledWith('Duplicate key error:', jasmine.stringContaining('test_UniqueIndexClass'));
+          expect(loggerErrorSpy).toHaveBeenCalledWith('Duplicate key error:', jasmine.stringContaining('code_1'));
           done();
         });
     });

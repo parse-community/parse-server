@@ -28,6 +28,13 @@ module.exports.SchemaOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  keepUnknownIndexes: {
+    env: 'PARSE_SERVER_SCHEMA_KEEP_UNKNOWN_INDEXES',
+    help:
+      "(Optional) Keep indexes that are present in the database but not defined in the schema. Set this to `true` if you are adding indexes manually, so that they won't be removed when running schema migration. Default is `false`.",
+    action: parsers.booleanParser,
+    default: false,
+  },
   lockSchemas: {
     env: 'PARSE_SERVER_SCHEMA_LOCK_SCHEMAS',
     help:
@@ -104,6 +111,7 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_AUTH_PROVIDERS',
     help:
       'Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication',
+    action: parsers.objectParser,
   },
   cacheAdapter: {
     env: 'PARSE_SERVER_CACHE_ADAPTER',
@@ -236,14 +244,14 @@ module.exports.ParseServerOptions = {
   enableInsecureAuthAdapters: {
     env: 'PARSE_SERVER_ENABLE_INSECURE_AUTH_ADAPTERS',
     help:
-      'Enable (or disable) insecure auth adapters, defaults to true. Insecure auth adapters are deprecated and it is recommended to disable them.',
+      'Optional. Enables insecure authentication adapters. Insecure auth adapters are deprecated and will be removed in a future version. Defaults to `false`.',
     action: parsers.booleanParser,
-    default: true,
+    default: false,
   },
-  encodeParseObjectInCloudFunction: {
-    env: 'PARSE_SERVER_ENCODE_PARSE_OBJECT_IN_CLOUD_FUNCTION',
+  enableSanitizedErrorResponse: {
+    env: 'PARSE_SERVER_ENABLE_SANITIZED_ERROR_RESPONSE',
     help:
-      'If set to `true`, a `Parse.Object` that is in the payload when calling a Cloud Function will be converted to an instance of `Parse.Object`. If `false`, the object will not be converted and instead be a plain JavaScript object, which contains the raw data of a `Parse.Object` but is not an actual instance of `Parse.Object`. Default is `false`. <br><br>\u2139\uFE0F The expected behavior would be that the object is converted to an instance of `Parse.Object`, so you would normally set this option to `true`. The default is `false` because this is a temporary option that has been introduced to avoid a breaking change when fixing a bug where JavaScript objects are not converted to actual instances of `Parse.Object`.',
+      'If set to `true`, error details are removed from error messages in responses to client requests, and instead a generic error message is sent. Default is `true`.',
     action: parsers.booleanParser,
     default: true,
   },
@@ -289,7 +297,8 @@ module.exports.ParseServerOptions = {
   },
   graphQLPath: {
     env: 'PARSE_SERVER_GRAPHQL_PATH',
-    help: 'Mount path for the GraphQL endpoint, defaults to /graphql',
+    help:
+      'The mount path for the GraphQL endpoint<br><br>\u26A0\uFE0F File upload inside the GraphQL mutation system requires Parse Server to be able to call itself by making requests to the URL set in `serverURL`.<br><br>Defaults is `/graphql`.',
     default: '/graphql',
   },
   graphQLPublicIntrospection: {
@@ -487,7 +496,8 @@ module.exports.ParseServerOptions = {
   },
   publicServerURL: {
     env: 'PARSE_PUBLIC_SERVER_URL',
-    help: 'Public URL to your parse server with http:// or https://.',
+    help:
+      'Optional. The public URL to Parse Server. This URL will be used to reach Parse Server publicly for features like password reset and email verification links. The option can be set to a string or a function that can be asynchronously resolved. The returned URL string must start with `http://` or `https://`.',
   },
   push: {
     env: 'PARSE_SERVER_PUSH',
@@ -506,6 +516,11 @@ module.exports.ParseServerOptions = {
   readOnlyMasterKey: {
     env: 'PARSE_SERVER_READ_ONLY_MASTER_KEY',
     help: 'Read-only key, which has the same capabilities as MasterKey without writes',
+  },
+  requestContextMiddleware: {
+    env: 'PARSE_SERVER_REQUEST_CONTEXT_MIDDLEWARE',
+    help:
+      'Options to customize the request context using inversion of control/dependency injection.',
   },
   requestKeywordDenylist: {
     env: 'PARSE_SERVER_REQUEST_KEYWORD_DENYLIST',
@@ -567,7 +582,8 @@ module.exports.ParseServerOptions = {
   },
   serverURL: {
     env: 'PARSE_SERVER_URL',
-    help: 'URL to your parse server with http:// or https://.',
+    help:
+      'The URL to Parse Server.<br><br>\u26A0\uFE0F Certain server features or adapters may require Parse Server to be able to call itself by making requests to the URL set in `serverURL`. If a feature requires this, it is mentioned in the documentation. In that case ensure that the URL is accessible from the server itself.',
     required: true,
   },
   sessionLength: {
@@ -603,6 +619,13 @@ module.exports.ParseServerOptions = {
     env: 'VERBOSE',
     help: 'Set the logging to verbose',
     action: parsers.booleanParser,
+  },
+  verifyServerUrl: {
+    env: 'PARSE_SERVER_VERIFY_SERVER_URL',
+    help:
+      'Parse Server makes a HTTP request to the URL set in `serverURL` at the end of its launch routine to verify that the launch succeeded. If this option is set to `false`, the verification will be skipped. This can be useful in environments where the server URL is not accessible from the server itself, such as when running behind a firewall or in certain containerized environments.<br><br>\u26A0\uFE0F Server URL verification requires Parse Server to be able to call itself by making requests to the URL set in `serverURL`.<br><br>Default is `true`.',
+    action: parsers.booleanParser,
+    default: true,
   },
   verifyUserEmails: {
     env: 'PARSE_SERVER_VERIFY_USER_EMAILS',
@@ -656,7 +679,7 @@ module.exports.RateLimitOptions = {
   requestPath: {
     env: 'PARSE_SERVER_RATE_LIMIT_REQUEST_PATH',
     help:
-      'The path of the API route to be rate limited. Route paths, in combination with a request method, define the endpoints at which requests can be made. Route paths can be strings, string patterns, or regular expression. See: https://expressjs.com/en/guide/routing.html',
+      'The path of the API route to be rate limited. Route paths, in combination with a request method, define the endpoints at which requests can be made. Route paths can be strings or string patterns following <a href="https://github.com/pillarjs/path-to-regexp">path-to-regexp v8</a> syntax.',
     required: true,
   },
   requestTimeWindow: {
@@ -668,7 +691,8 @@ module.exports.RateLimitOptions = {
   zone: {
     env: 'PARSE_SERVER_RATE_LIMIT_ZONE',
     help:
-      "The type of rate limit to apply. The following types are supported:<br><br>- `global`: rate limit based on the number of requests made by all users <br>- `ip`: rate limit based on the IP address of the request <br>- `user`: rate limit based on the user ID of the request <br>- `session`: rate limit based on the session token of the request <br><br><br>:default: 'ip'",
+      'The type of rate limit to apply. The following types are supported:<ul><li>`global`: rate limit based on the number of requests made by all users</li><li>`ip`: rate limit based on the IP address of the request</li><li>`user`: rate limit based on the user ID of the request</li><li>`session`: rate limit based on the session token of the request</li></ul>Default is `ip`.',
+    default: 'ip',
   },
 };
 module.exports.SecurityOptions = {
@@ -1056,12 +1080,93 @@ module.exports.FileUploadOptions = {
   fileExtensions: {
     env: 'PARSE_SERVER_FILE_UPLOAD_FILE_EXTENSIONS',
     help:
-      "Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML files are especially problematic as they may be used by an attacker who uploads a HTML form to look legitimate under your app's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^(?!(h|H)(t|T)(m|M)(l|L)?$)` which allows any file extension except HTML files.",
+      "Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML files are especially problematic as they may be used by an attacker who uploads a HTML form to look legitimate under your app's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^(?![xXsS]?[hH][tT][mM][lL]?$)` which allows any file extension except those MIME types that are mapped to `text/html` and are rendered as website by a web browser.",
     action: parsers.arrayParser,
-    default: ['^(?!(h|H)(t|T)(m|M)(l|L)?$)'],
+    default: ['^(?![xXsS]?[hH][tT][mM][lL]?$)'],
+  },
+};
+/* The available log levels for Parse Server logging. Valid values are:<br>- `'error'` - Error level (highest priority)<br>- `'warn'` - Warning level<br>- `'info'` - Info level (default)<br>- `'verbose'` - Verbose level<br>- `'debug'` - Debug level<br>- `'silly'` - Silly level (lowest priority) */
+module.exports.LogLevel = {
+  debug: {
+    env: 'PARSE_SERVER_LOG_LEVEL_DEBUG',
+    help: 'Debug level',
+    required: true,
+  },
+  error: {
+    env: 'PARSE_SERVER_LOG_LEVEL_ERROR',
+    help: 'Error level - highest priority',
+    required: true,
+  },
+  info: {
+    env: 'PARSE_SERVER_LOG_LEVEL_INFO',
+    help: 'Info level - default',
+    required: true,
+  },
+  silly: {
+    env: 'PARSE_SERVER_LOG_LEVEL_SILLY',
+    help: 'Silly level - lowest priority',
+    required: true,
+  },
+  verbose: {
+    env: 'PARSE_SERVER_LOG_LEVEL_VERBOSE',
+    help: 'Verbose level',
+    required: true,
+  },
+  warn: {
+    env: 'PARSE_SERVER_LOG_LEVEL_WARN',
+    help: 'Warning level',
+    required: true,
+  },
+};
+module.exports.LogClientEvent = {
+  keys: {
+    env: 'PARSE_SERVER_DATABASE_LOG_CLIENT_EVENTS_KEYS',
+    help:
+      'Optional array of dot-notation paths to extract specific data from the event object. If not provided or empty, the entire event object will be logged.',
+    action: parsers.arrayParser,
+  },
+  logLevel: {
+    env: 'PARSE_SERVER_DATABASE_LOG_CLIENT_EVENTS_LOG_LEVEL',
+    help:
+      "The log level to use for this event. See [LogLevel](LogLevel.html) for available values. Defaults to `'info'`.",
+    default: 'info',
+  },
+  name: {
+    env: 'PARSE_SERVER_DATABASE_LOG_CLIENT_EVENTS_NAME',
+    help:
+      'The MongoDB driver event name to listen for. See the [MongoDB driver events documentation](https://www.mongodb.com/docs/drivers/node/current/fundamentals/monitoring/) for available events.',
+    required: true,
   },
 };
 module.exports.DatabaseOptions = {
+  allowPublicExplain: {
+    env: 'PARSE_SERVER_DATABASE_ALLOW_PUBLIC_EXPLAIN',
+    help:
+      'Set to `true` to allow `Parse.Query.explain` without master key.<br><br>\u26A0\uFE0F Enabling this option may expose sensitive query performance data to unauthorized users and could potentially be exploited for malicious purposes.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  appName: {
+    env: 'PARSE_SERVER_DATABASE_APP_NAME',
+    help:
+      'The MongoDB driver option to specify the name of the application that created this MongoClient instance.',
+  },
+  authMechanism: {
+    env: 'PARSE_SERVER_DATABASE_AUTH_MECHANISM',
+    help:
+      'The MongoDB driver option to specify the authentication mechanism that MongoDB will use to authenticate the connection.',
+  },
+  authMechanismProperties: {
+    env: 'PARSE_SERVER_DATABASE_AUTH_MECHANISM_PROPERTIES',
+    help:
+      'The MongoDB driver option to specify properties for the specified authMechanism as a comma-separated list of colon-separated key-value pairs.',
+    action: parsers.objectParser,
+  },
+  authSource: {
+    env: 'PARSE_SERVER_DATABASE_AUTH_SOURCE',
+    help:
+      "The MongoDB driver option to specify the database name associated with the user's credentials.",
+  },
   autoSelectFamily: {
     env: 'PARSE_SERVER_DATABASE_AUTO_SELECT_FAMILY',
     help:
@@ -1074,11 +1179,77 @@ module.exports.DatabaseOptions = {
       'The MongoDB driver option to specify the amount of time in milliseconds to wait for a connection attempt to finish before trying the next address when using the autoSelectFamily option. If set to a positive integer less than 10, the value 10 is used instead.',
     action: parsers.numberParser('autoSelectFamilyAttemptTimeout'),
   },
+  compressors: {
+    env: 'PARSE_SERVER_DATABASE_COMPRESSORS',
+    help:
+      'The MongoDB driver option to specify an array or comma-delimited string of compressors to enable network compression for communication between this client and a mongod/mongos instance.',
+  },
   connectTimeoutMS: {
     env: 'PARSE_SERVER_DATABASE_CONNECT_TIMEOUT_MS',
     help:
       'The MongoDB driver option to specify the amount of time, in milliseconds, to wait to establish a single TCP socket connection to the server before raising an error. Specifying 0 disables the connection timeout.',
     action: parsers.numberParser('connectTimeoutMS'),
+  },
+  createIndexRoleName: {
+    env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_ROLE_NAME',
+    help:
+      'Set to `true` to automatically create a unique index on the name field of the _Role collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  createIndexUserEmail: {
+    env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_USER_EMAIL',
+    help:
+      'Set to `true` to automatically create indexes on the email field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  createIndexUserEmailCaseInsensitive: {
+    env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_USER_EMAIL_CASE_INSENSITIVE',
+    help:
+      'Set to `true` to automatically create a case-insensitive index on the email field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  createIndexUserEmailVerifyToken: {
+    env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_USER_EMAIL_VERIFY_TOKEN',
+    help:
+      'Set to `true` to automatically create an index on the _email_verify_token field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  createIndexUserPasswordResetToken: {
+    env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_USER_PASSWORD_RESET_TOKEN',
+    help:
+      'Set to `true` to automatically create an index on the _perishable_token field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  createIndexUserUsername: {
+    env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_USER_USERNAME',
+    help:
+      'Set to `true` to automatically create indexes on the username field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  createIndexUserUsernameCaseInsensitive: {
+    env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_USER_USERNAME_CASE_INSENSITIVE',
+    help:
+      'Set to `true` to automatically create a case-insensitive index on the username field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  directConnection: {
+    env: 'PARSE_SERVER_DATABASE_DIRECT_CONNECTION',
+    help:
+      'The MongoDB driver option to force a Single topology type with a connection string containing one host.',
+    action: parsers.booleanParser,
+  },
+  disableIndexFieldValidation: {
+    env: 'PARSE_SERVER_DATABASE_DISABLE_INDEX_FIELD_VALIDATION',
+    help:
+      'Set to `true` to disable validation of index fields. When disabled, indexes can be created even if the fields do not exist in the schema. This can be useful when creating indexes on fields that will be added later.',
+    action: parsers.booleanParser,
   },
   enableSchemaHooks: {
     env: 'PARSE_SERVER_DATABASE_ENABLE_SCHEMA_HOOKS',
@@ -1086,6 +1257,47 @@ module.exports.DatabaseOptions = {
       'Enables database real-time hooks to update single schema cache. Set to `true` if using multiple Parse Servers instances connected to the same database. Failing to do so will cause a schema change to not propagate to all instances and re-syncing will only happen when the instances restart. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required.',
     action: parsers.booleanParser,
     default: false,
+  },
+  forceServerObjectId: {
+    env: 'PARSE_SERVER_DATABASE_FORCE_SERVER_OBJECT_ID',
+    help: 'The MongoDB driver option to force server to assign _id values instead of driver.',
+    action: parsers.booleanParser,
+  },
+  heartbeatFrequencyMS: {
+    env: 'PARSE_SERVER_DATABASE_HEARTBEAT_FREQUENCY_MS',
+    help:
+      'The MongoDB driver option to specify the frequency in milliseconds at which the driver checks the state of the MongoDB deployment.',
+    action: parsers.numberParser('heartbeatFrequencyMS'),
+  },
+  loadBalanced: {
+    env: 'PARSE_SERVER_DATABASE_LOAD_BALANCED',
+    help:
+      'The MongoDB driver option to instruct the driver it is connecting to a load balancer fronting a mongos like service.',
+    action: parsers.booleanParser,
+  },
+  localThresholdMS: {
+    env: 'PARSE_SERVER_DATABASE_LOCAL_THRESHOLD_MS',
+    help:
+      'The MongoDB driver option to specify the size (in milliseconds) of the latency window for selecting among multiple suitable MongoDB instances.',
+    action: parsers.numberParser('localThresholdMS'),
+  },
+  logClientEvents: {
+    env: 'PARSE_SERVER_DATABASE_LOG_CLIENT_EVENTS',
+    help: 'An array of MongoDB client event configurations to enable logging of specific events.',
+    action: parsers.arrayParser,
+    type: 'LogClientEvent[]',
+  },
+  maxConnecting: {
+    env: 'PARSE_SERVER_DATABASE_MAX_CONNECTING',
+    help:
+      'The MongoDB driver option to specify the maximum number of connections that may be in the process of being established concurrently by the connection pool.',
+    action: parsers.numberParser('maxConnecting'),
+  },
+  maxIdleTimeMS: {
+    env: 'PARSE_SERVER_DATABASE_MAX_IDLE_TIME_MS',
+    help:
+      'The MongoDB driver option to specify the amount of time in milliseconds that a connection can remain idle in the connection pool before being removed and closed.',
+    action: parsers.numberParser('maxIdleTimeMS'),
   },
   maxPoolSize: {
     env: 'PARSE_SERVER_DATABASE_MAX_POOL_SIZE',
@@ -1111,6 +1323,51 @@ module.exports.DatabaseOptions = {
       'The MongoDB driver option to set the minimum number of opened, cached, ready-to-use database connections maintained by the driver.',
     action: parsers.numberParser('minPoolSize'),
   },
+  proxyHost: {
+    env: 'PARSE_SERVER_DATABASE_PROXY_HOST',
+    help:
+      'The MongoDB driver option to configure a Socks5 proxy host used for creating TCP connections.',
+  },
+  proxyPassword: {
+    env: 'PARSE_SERVER_DATABASE_PROXY_PASSWORD',
+    help:
+      'The MongoDB driver option to configure a Socks5 proxy password when the proxy requires username/password authentication.',
+  },
+  proxyPort: {
+    env: 'PARSE_SERVER_DATABASE_PROXY_PORT',
+    help:
+      'The MongoDB driver option to configure a Socks5 proxy port used for creating TCP connections.',
+    action: parsers.numberParser('proxyPort'),
+  },
+  proxyUsername: {
+    env: 'PARSE_SERVER_DATABASE_PROXY_USERNAME',
+    help:
+      'The MongoDB driver option to configure a Socks5 proxy username when the proxy requires username/password authentication.',
+  },
+  readConcernLevel: {
+    env: 'PARSE_SERVER_DATABASE_READ_CONCERN_LEVEL',
+    help: 'The MongoDB driver option to specify the level of isolation.',
+  },
+  readPreference: {
+    env: 'PARSE_SERVER_DATABASE_READ_PREFERENCE',
+    help: 'The MongoDB driver option to specify the read preferences for this connection.',
+  },
+  readPreferenceTags: {
+    env: 'PARSE_SERVER_DATABASE_READ_PREFERENCE_TAGS',
+    help:
+      'The MongoDB driver option to specify the tags document as a comma-separated list of colon-separated key-value pairs.',
+    action: parsers.arrayParser,
+  },
+  replicaSet: {
+    env: 'PARSE_SERVER_DATABASE_REPLICA_SET',
+    help:
+      'The MongoDB driver option to specify the name of the replica set, if the mongod is a member of a replica set.',
+  },
+  retryReads: {
+    env: 'PARSE_SERVER_DATABASE_RETRY_READS',
+    help: 'The MongoDB driver option to enable retryable reads.',
+    action: parsers.booleanParser,
+  },
   retryWrites: {
     env: 'PARSE_SERVER_DATABASE_RETRY_WRITES',
     help: 'The MongoDB driver option to set whether to retry failed writes.',
@@ -1122,11 +1379,86 @@ module.exports.DatabaseOptions = {
       'The duration in seconds after which the schema cache expires and will be refetched from the database. Use this option if using multiple Parse Servers instances connected to the same database. A low duration will cause the schema cache to be updated too often, causing unnecessary database reads. A high duration will cause the schema to be updated too rarely, increasing the time required until schema changes propagate to all server instances. This feature can be used as an alternative or in conjunction with the option `enableSchemaHooks`. Default is infinite which means the schema cache never expires.',
     action: parsers.numberParser('schemaCacheTtl'),
   },
+  serverMonitoringMode: {
+    env: 'PARSE_SERVER_DATABASE_SERVER_MONITORING_MODE',
+    help:
+      'The MongoDB driver option to instruct the driver monitors to use a specific monitoring mode.',
+  },
+  serverSelectionTimeoutMS: {
+    env: 'PARSE_SERVER_DATABASE_SERVER_SELECTION_TIMEOUT_MS',
+    help:
+      'The MongoDB driver option to specify the amount of time in milliseconds for a server to be considered suitable for selection.',
+    action: parsers.numberParser('serverSelectionTimeoutMS'),
+  },
   socketTimeoutMS: {
     env: 'PARSE_SERVER_DATABASE_SOCKET_TIMEOUT_MS',
     help:
       'The MongoDB driver option to specify the amount of time, in milliseconds, spent attempting to send or receive on a socket before timing out. Specifying 0 means no timeout.',
     action: parsers.numberParser('socketTimeoutMS'),
+  },
+  srvMaxHosts: {
+    env: 'PARSE_SERVER_DATABASE_SRV_MAX_HOSTS',
+    help:
+      'The MongoDB driver option to specify the maximum number of hosts to connect to when using an srv connection string, a setting of 0 means unlimited hosts.',
+    action: parsers.numberParser('srvMaxHosts'),
+  },
+  srvServiceName: {
+    env: 'PARSE_SERVER_DATABASE_SRV_SERVICE_NAME',
+    help: 'The MongoDB driver option to modify the srv URI service name.',
+  },
+  ssl: {
+    env: 'PARSE_SERVER_DATABASE_SSL',
+    help:
+      'The MongoDB driver option to enable or disable TLS/SSL for the connection (equivalent to tls option).',
+    action: parsers.booleanParser,
+  },
+  tls: {
+    env: 'PARSE_SERVER_DATABASE_TLS',
+    help: 'The MongoDB driver option to enable or disable TLS/SSL for the connection.',
+    action: parsers.booleanParser,
+  },
+  tlsAllowInvalidCertificates: {
+    env: 'PARSE_SERVER_DATABASE_TLS_ALLOW_INVALID_CERTIFICATES',
+    help:
+      'The MongoDB driver option to bypass validation of the certificates presented by the mongod/mongos instance.',
+    action: parsers.booleanParser,
+  },
+  tlsAllowInvalidHostnames: {
+    env: 'PARSE_SERVER_DATABASE_TLS_ALLOW_INVALID_HOSTNAMES',
+    help:
+      'The MongoDB driver option to disable hostname validation of the certificate presented by the mongod/mongos instance.',
+    action: parsers.booleanParser,
+  },
+  tlsCAFile: {
+    env: 'PARSE_SERVER_DATABASE_TLS_CAFILE',
+    help:
+      'The MongoDB driver option to specify the location of a local .pem file that contains the root certificate chain from the Certificate Authority.',
+  },
+  tlsCertificateKeyFile: {
+    env: 'PARSE_SERVER_DATABASE_TLS_CERTIFICATE_KEY_FILE',
+    help:
+      "The MongoDB driver option to specify the location of a local .pem file that contains the client's TLS/SSL certificate and key.",
+  },
+  tlsCertificateKeyFilePassword: {
+    env: 'PARSE_SERVER_DATABASE_TLS_CERTIFICATE_KEY_FILE_PASSWORD',
+    help: 'The MongoDB driver option to specify the password to decrypt the tlsCertificateKeyFile.',
+  },
+  tlsInsecure: {
+    env: 'PARSE_SERVER_DATABASE_TLS_INSECURE',
+    help: 'The MongoDB driver option to disable various certificate validations.',
+    action: parsers.booleanParser,
+  },
+  waitQueueTimeoutMS: {
+    env: 'PARSE_SERVER_DATABASE_WAIT_QUEUE_TIMEOUT_MS',
+    help:
+      'The MongoDB driver option to specify the maximum time in milliseconds that a thread can wait for a connection to become available.',
+    action: parsers.numberParser('waitQueueTimeoutMS'),
+  },
+  zlibCompressionLevel: {
+    env: 'PARSE_SERVER_DATABASE_ZLIB_COMPRESSION_LEVEL',
+    help:
+      'The MongoDB driver option to specify the compression level if using zlib for network compression (0-9).',
+    action: parsers.numberParser('zlibCompressionLevel'),
   },
 };
 module.exports.AuthAdapter = {
@@ -1139,30 +1471,38 @@ module.exports.AuthAdapter = {
 module.exports.LogLevels = {
   cloudFunctionError: {
     env: 'PARSE_SERVER_LOG_LEVELS_CLOUD_FUNCTION_ERROR',
-    help: 'Log level used by the Cloud Code Functions on error. Default is `error`.',
+    help:
+      'Log level used by the Cloud Code Functions on error. Default is `error`. See [LogLevel](LogLevel.html) for available values.',
     default: 'error',
   },
   cloudFunctionSuccess: {
     env: 'PARSE_SERVER_LOG_LEVELS_CLOUD_FUNCTION_SUCCESS',
-    help: 'Log level used by the Cloud Code Functions on success. Default is `info`.',
+    help:
+      'Log level used by the Cloud Code Functions on success. Default is `info`. See [LogLevel](LogLevel.html) for available values.',
+    default: 'info',
+  },
+  signupUsernameTaken: {
+    env: 'PARSE_SERVER_LOG_LEVELS_SIGNUP_USERNAME_TAKEN',
+    help:
+      'Log level used when a sign-up fails because the username already exists. Default is `info`. See [LogLevel](LogLevel.html) for available values.',
     default: 'info',
   },
   triggerAfter: {
     env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_AFTER',
     help:
-      'Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterFind`, `afterLogout`. Default is `info`.',
+      'Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterFind`, `afterLogout`. Default is `info`. See [LogLevel](LogLevel.html) for available values.',
     default: 'info',
   },
   triggerBeforeError: {
     env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_BEFORE_ERROR',
     help:
-      'Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on error. Default is `error`.',
+      'Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on error. Default is `error`. See [LogLevel](LogLevel.html) for available values.',
     default: 'error',
   },
   triggerBeforeSuccess: {
     env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_BEFORE_SUCCESS',
     help:
-      'Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on success. Default is `info`.',
+      'Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on success. Default is `info`. See [LogLevel](LogLevel.html) for available values.',
     default: 'info',
   },
 };

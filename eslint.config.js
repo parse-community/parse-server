@@ -1,6 +1,8 @@
 const js = require("@eslint/js");
 const babelParser = require("@babel/eslint-parser");
 const globals = require("globals");
+const unusedImports = require("eslint-plugin-unused-imports");
+
 module.exports = [
   {
     ignores: ["**/lib/**", "**/coverage/**", "**/out/**", "**/types/**"],
@@ -19,8 +21,13 @@ module.exports = [
         requireConfigFile: false,
       },
     },
+    plugins: {
+      "unused-imports": unusedImports,
+    },
     rules: {
       indent: ["error", 2, { SwitchCase: 1 }],
+      "unused-imports/no-unused-imports": "error",
+      "unused-imports/no-unused-vars": "error",
       "linebreak-style": ["error", "unix"],
       "no-trailing-spaces": "error",
       "eol-last": "error",

@@ -1,23 +1,24 @@
 // @flow
+import { format as formatUrl, parse as parseUrl } from '../../../vendor/mongodbUrl';
+import type { QueryOptions, QueryType, SchemaType, StorageClass } from '../StorageAdapter';
+import { StorageAdapter } from '../StorageAdapter';
 import MongoCollection from './MongoCollection';
 import MongoSchemaCollection from './MongoSchemaCollection';
-import { StorageAdapter } from '../StorageAdapter';
-import type { SchemaType, QueryType, StorageClass, QueryOptions } from '../StorageAdapter';
-import { parse as parseUrl, format as formatUrl } from '../../../vendor/mongodbUrl';
 import {
-  parseObjectToMongoObjectForCreate,
   mongoObjectToParseObject,
+  parseObjectToMongoObjectForCreate,
   transformKey,
-  transformWhere,
-  transformUpdate,
   transformPointerString,
+  transformUpdate,
+  transformWhere,
 } from './MongoTransform';
 // @flow-disable-next
 import Parse from 'parse/node';
 // @flow-disable-next
 import _ from 'lodash';
-import defaults from '../../../defaults';
+import defaults, { ParseServerDatabaseOptions } from '../../../defaults';
 import logger from '../../../logger';
+import Utils from '../../../Utils';
 
 // @flow-disable-next
 const mongodb = require('mongodb');
@@ -132,6 +133,7 @@ export class MongoStorageAdapter implements StorageAdapter {
   _mongoOptions: Object;
   _onchange: any;
   _stream: any;
+  _logClientEvents: ?Array<any>;
   // Public
   connectionPromise: ?Promise<any>;
   database: any;
@@ -140,20 +142,27 @@ export class MongoStorageAdapter implements StorageAdapter {
   canSortOnJoinTables: boolean;
   enableSchemaHooks: boolean;
   schemaCacheTtl: ?number;
+  disableIndexFieldValidation: boolean;
 
   constructor({ uri = defaults.DefaultMongoURI, collectionPrefix = '', mongoOptions = {} }: any) {
     this._uri = uri;
     this._collectionPrefix = collectionPrefix;
-    this._mongoOptions = { ...mongoOptions };
-    this._onchange = () => { };
+    this._onchange = () => {};
 
     // MaxTimeMS is not a global MongoDB client option, it is applied per operation.
     this._maxTimeMS = mongoOptions.maxTimeMS;
     this.canSortOnJoinTables = true;
     this.enableSchemaHooks = !!mongoOptions.enableSchemaHooks;
     this.schemaCacheTtl = mongoOptions.schemaCacheTtl;
-    for (const key of ['enableSchemaHooks', 'schemaCacheTtl', 'maxTimeMS']) {
-      delete mongoOptions[key];
+    this.disableIndexFieldValidation = !!mongoOptions.disableIndexFieldValidation;
+    this._logClientEvents = mongoOptions.logClientEvents;
+
+    // Create a copy of mongoOptions and remove Parse Server-specific options that should not
+    // be passed to MongoDB client. Note: We only delete from this._mongoOptions, not from the
+    // original mongoOptions object, because other components (like DatabaseController) need
+    // access to these options.
+    this._mongoOptions = { ...mongoOptions };
+    for (const key of ParseServerDatabaseOptions) {
       delete this._mongoOptions[key];
     }
   }
@@ -187,6 +196,31 @@ export class MongoStorageAdapter implements StorageAdapter {
         client.on('close', () => {
           delete this.connectionPromise;
         });
+
+        // Set up client event logging if configured
+        if (this._logClientEvents && Array.isArray(this._logClientEvents)) {
+          this._logClientEvents.forEach(eventConfig => {
+            client.on(eventConfig.name, event => {
+              let logData = {};
+              if (!eventConfig.keys || eventConfig.keys.length === 0) {
+                logData = event;
+              } else {
+                eventConfig.keys.forEach(keyPath => {
+                  logData[keyPath] = _.get(event, keyPath);
+                });
+              }
+
+              // Validate log level exists, fallback to 'info'
+              const logLevel = typeof logger[eventConfig.logLevel] === 'function' ? eventConfig.logLevel : 'info';
+
+              // Safe JSON serialization with Map/Set and circular reference support
+              const logMessage = `MongoDB client event ${eventConfig.name}: ${JSON.stringify(logData, Utils.getCircularReplacer())}`;
+
+              logger[logLevel](logMessage);
+            });
+          });
+        }
+
         this.client = client;
         this.database = database;
       })
@@ -289,6 +323,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       } else {
         Object.keys(field).forEach(key => {
           if (
+            !this.disableIndexFieldValidation &&
             !Object.prototype.hasOwnProperty.call(
               fields,
               key.indexOf('_p_') === 0 ? key.replace('_p_', '') : key
@@ -484,7 +519,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(() => ({ ops: [mongoObject] }))
       .catch(error => {
         if (error.code === 11000) {
-          // Duplicate value
+          logger.error('Duplicate key error:', error.message);
           const err = new Parse.Error(
             Parse.Error.DUPLICATE_VALUE,
             'A duplicate value for a field with unique values was provided'
@@ -570,6 +605,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(result => mongoObjectToParseObject(className, result, schema))
       .catch(error => {
         if (error.code === 11000) {
+          logger.error('Duplicate key error:', error.message);
           throw new Parse.Error(
             Parse.Error.DUPLICATE_VALUE,
             'A duplicate value for a field with unique values was provided'
@@ -684,6 +720,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     const defaultOptions: Object = { background: true, sparse: true };
     const indexNameOptions: Object = indexName ? { name: indexName } : {};
     const ttlOptions: Object = options.ttl !== undefined ? { expireAfterSeconds: options.ttl } : {};
+    const sparseOptions: Object = options.sparse !== undefined ? { sparse: options.sparse } : {};
     const caseInsensitiveOptions: Object = caseInsensitive
       ? { collation: MongoCollection.caseInsensitiveCollation() }
       : {};
@@ -692,6 +729,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       ...caseInsensitiveOptions,
       ...indexNameOptions,
       ...ttlOptions,
+      ...sparseOptions,
     };
 
     return this._adaptiveCollection(className)

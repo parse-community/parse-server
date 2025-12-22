@@ -33,3 +33,21 @@ const computedDefaults = {
 
 export default Object.assign({}, DefinitionDefaults, computedDefaults);
 export const DefaultMongoURI = DefinitionDefaults.databaseURI;
+
+// Parse Server-specific database options that should be filtered out
+// before passing to MongoDB client
+export const ParseServerDatabaseOptions = [
+  'allowPublicExplain',
+  'createIndexRoleName',
+  'createIndexUserEmail',
+  'createIndexUserEmailCaseInsensitive',
+  'createIndexUserEmailVerifyToken',
+  'createIndexUserPasswordResetToken',
+  'createIndexUserUsername',
+  'createIndexUserUsernameCaseInsensitive',
+  'disableIndexFieldValidation',
+  'enableSchemaHooks',
+  'logClientEvents',
+  'maxTimeMS',
+  'schemaCacheTtl',
+];

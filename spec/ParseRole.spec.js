@@ -601,4 +601,78 @@ describe('Parse Role testing', () => {
       });
     });
   });
+
+  it('should trigger afterSave hook when using Parse.Role', async () => {
+    const afterSavePromise = new Promise(resolve => {
+      Parse.Cloud.afterSave(Parse.Role, req => {
+        expect(req.object).toBeDefined();
+        expect(req.object.get('name')).toBe('AnotherTestRole');
+        resolve();
+      });
+    });
+
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    const role = new Parse.Role('AnotherTestRole', acl);
+
+    const savedRole = await role.save({}, { useMasterKey: true });
+    expect(savedRole.id).toBeDefined();
+
+    await afterSavePromise;
+  });
+
+  it('should trigger beforeSave hook and allow modifying role in beforeSave', async () => {
+    Parse.Cloud.beforeSave(Parse.Role, req => {
+      // Add a custom field in beforeSave
+      req.object.set('customField', 'addedInBeforeSave');
+    });
+
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    const role = new Parse.Role('ModifiedRole', acl);
+
+    const savedRole = await role.save({}, { useMasterKey: true });
+    expect(savedRole.id).toBeDefined();
+    expect(savedRole.get('customField')).toBe('addedInBeforeSave');
+  });
+
+  it('should trigger beforeSave hook using Parse.Role', async () => {
+    let beforeSaveCalled = false;
+
+    Parse.Cloud.beforeSave(Parse.Role, req => {
+      beforeSaveCalled = true;
+      expect(req.object).toBeDefined();
+      expect(req.object.get('name')).toBe('BeforeSaveWithClassRef');
+    });
+
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    const role = new Parse.Role('BeforeSaveWithClassRef', acl);
+
+    const savedRole = await role.save({}, { useMasterKey: true });
+    expect(savedRole.id).toBeDefined();
+    expect(beforeSaveCalled).toBe(true);
+  });
+
+  it('should allow modifying role name in beforeSave hook', async () => {
+    Parse.Cloud.beforeSave(Parse.Role, req => {
+      // Modify the role name in beforeSave
+      if (req.object.get('name') === 'OriginalName') {
+        req.object.set('name', 'ModifiedName');
+      }
+    });
+
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    const role = new Parse.Role('OriginalName', acl);
+
+    const savedRole = await role.save({}, { useMasterKey: true });
+    expect(savedRole.id).toBeDefined();
+    expect(savedRole.get('name')).toBe('ModifiedName');
+
+    // Verify the name was actually saved to the database
+    const query = new Parse.Query(Parse.Role);
+    const fetchedRole = await query.get(savedRole.id, { useMasterKey: true });
+    expect(fetchedRole.get('name')).toBe('ModifiedName');
+  });
 });

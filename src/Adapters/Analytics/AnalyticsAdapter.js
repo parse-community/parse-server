@@ -1,4 +1,4 @@
-/*eslint no-unused-vars: "off"*/
+/* eslint-disable unused-imports/no-unused-vars */
 /**
  * @interface AnalyticsAdapter
  * @module Adapters
