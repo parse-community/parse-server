@@ -44,7 +44,22 @@ export default class BaseAuthCodeAdapter extends AuthAdapter {
     }
 
     if (!authData?.code) {
-      throw new Parse.Error(Parse.Error.VALIDATION_ERROR, `${this.adapterName} code is required.`);
+      // If insecure auth is not enabled, always require code, even if id is provided
+      if (!this.enableInsecureAuth) {
+        throw new Parse.Error(
+          Parse.Error.VALIDATION_ERROR,
+          `${this.adapterName} code is required.`
+        );
+      }
+      // If insecure auth is enabled but no code and no access_token, throw error
+      if (!authData?.access_token) {
+        throw new Parse.Error(
+          Parse.Error.VALIDATION_ERROR,
+          `${this.adapterName} code is required.`
+        );
+      }
+      // If insecure auth is enabled and access_token is provided, continue with insecure flow
+      return;
     }
 
     const access_token = await this.getAccessTokenFromCode(authData);

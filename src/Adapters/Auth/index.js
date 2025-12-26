@@ -106,7 +106,10 @@ function authDataValidator(provider, adapter, appIds, options) {
       (req.auth.user && user && req.auth.user.id === user.id) || (user && req.auth.isMaster);
     let hasAuthDataConfigured = false;
 
-    if (user && user.get('authData') && user.get('authData')[provider]) {
+    // Check if authData is configured on the user, using requestObject.original for login scenarios
+    // or when user is not loaded with latest data (e.g., update via sessionToken)
+    const userAuthData = requestObject.original?.get('authData') || user?.get('authData');
+    if (userAuthData && userAuthData[provider]) {
       hasAuthDataConfigured = true;
     }
 

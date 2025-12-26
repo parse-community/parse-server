@@ -12,6 +12,7 @@ var Parse = require('parse/node').Parse;
 var RestQuery = require('./RestQuery');
 var RestWrite = require('./RestWrite');
 var triggers = require('./triggers');
+const Auth = require('./Auth');
 const { enforceRoleSecurity } = require('./SharedRest');
 const { createSanitizedError } = require('./Error');
 
@@ -279,7 +280,9 @@ function update(config, auth, className, restWhere, restObject, clientSDK, conte
     .then(async () => {
       const hasTriggers = checkTriggers(className, config, ['beforeSave', 'afterSave']);
       const hasLiveQuery = checkLiveQuery(className, config);
-      if (hasTriggers || hasLiveQuery) {
+      // Always fetch originalData for _User to support authData delta operations
+      const needsOriginalData = hasTriggers || hasLiveQuery || className === '_User';
+      if (needsOriginalData) {
         // Do not use find, as it runs the before finds
         const query = await RestQuery({
           method: RestQuery.Method.get,

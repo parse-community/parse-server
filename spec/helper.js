@@ -441,7 +441,21 @@ function mockFetch(mockResponses) {
     );
 
     if (mockResponse) {
-      return Promise.resolve(mockResponse.response);
+      if (typeof mockResponse.response === 'function') {
+        return Promise.resolve(mockResponse.response(options));
+      }
+
+      // If response is an object with json method, wrap it to pass options
+      const response = mockResponse.response;
+      if (response && typeof response.json === 'function') {
+        const originalJson = response.json;
+        return Promise.resolve({
+          ...response,
+          json: () => originalJson(options),
+        });
+      }
+
+      return Promise.resolve(response);
     }
 
     return Promise.resolve({

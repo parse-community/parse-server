@@ -34,7 +34,12 @@ describe('RestWrite.handleAuthData', () => {
         gpgames: {
           clientId: 'validClientId',
           clientSecret: 'validClientSecret',
-        }
+        },
+        instagram: {
+          clientId: 'validClientId',
+          clientSecret: 'validClientSecret',
+          redirectUri: 'https://example.com/callback',
+        },
       },
     });
   };
@@ -51,17 +56,54 @@ describe('RestWrite.handleAuthData', () => {
     const sessionToken = user.getSessionToken();
 
     await user.fetch({ sessionToken });
-    const currentAuthData = user.get('authData') || {};
+    const currentAuthData = user.get('authData');
+    expect(currentAuthData).toBeDefined();
+
+    // Add another provider to ensure gpgames removal doesn't delete all authData
+    mockFetch([
+      {
+        url: 'https://api.instagram.com/oauth/access_token',
+        method: 'POST',
+        response: {
+          ok: true,
+          json: () => Promise.resolve({ access_token: 'ig_token' }),
+        },
+      },
+      {
+        url: 'https://graph.instagram.com/me?fields=id&access_token=ig_token',
+        method: 'GET',
+        response: {
+          ok: true,
+          json: () => Promise.resolve({ id: 'I1' }),
+        },
+      },
+    ]);
 
     user.set('authData', {
       ...currentAuthData,
+      instagram: { id: 'I1', code: 'IC1' },
+    });
+    await user.save(null, { sessionToken });
+
+    await user.fetch({ sessionToken });
+    const authDataWithInstagram = user.get('authData');
+    expect(authDataWithInstagram).toBeDefined();
+    expect(authDataWithInstagram.gpgames).toBeDefined();
+    expect(authDataWithInstagram.instagram).toBeDefined();
+
+    // Now unlink gpgames
+    user.set('authData', {
+      ...authDataWithInstagram,
       gpgames: null,
     });
     await user.save(null, { sessionToken });
 
     const updatedUser = await new Parse.Query(Parse.User).get(user.id, { useMasterKey: true });
-    const finalAuthData = updatedUser.get('authData') || {};
+    const finalAuthData = updatedUser.get('authData');
 
+    expect(finalAuthData).toBeDefined();
     expect(finalAuthData.gpgames).toBeUndefined();
+    expect(finalAuthData.instagram).toBeDefined();
+    expect(finalAuthData.instagram.id).toBe('I1');
   });
 });

@@ -803,6 +803,7 @@ describe('Auth Adapter features', () => {
     const user = new Parse.User();
 
     const payload = { someData: true };
+    const payload2 = { someData: false };
 
     await user.save({
       username: 'test',
@@ -829,10 +830,10 @@ describe('Auth Adapter features', () => {
     expect(firstCall[2].user.id).toEqual(user.id);
     expect(firstCall.length).toEqual(3);
 
-    await user.save({ authData: { baseAdapter2: payload } }, { useMasterKey: true });
+    await user.save({ authData: { baseAdapter2: payload2 } }, { useMasterKey: true });
 
     const secondCall = baseAdapter2.validateAuthData.calls.argsFor(1);
-    expect(secondCall[0]).toEqual(payload);
+    expect(secondCall[0]).toEqual(payload2);
     expect(secondCall[1]).toEqual(baseAdapter2);
     expect(secondCall[2].isChallenge).toBeUndefined();
     expect(secondCall[2].master).toEqual(true);

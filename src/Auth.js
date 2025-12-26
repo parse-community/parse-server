@@ -1,5 +1,6 @@
 const Parse = require('parse/node');
 import { isDeepStrictEqual } from 'util';
+import _ from 'lodash';
 import { getRequestObject, resolveError } from './triggers';
 import { logger } from './logger';
 import { LRUCache as LRU } from 'lru-cache';
@@ -417,16 +418,58 @@ Auth.prototype._getAllRolesNamesForRoleIds = function (roleIDs, names = [], quer
     });
 };
 
+async function getFinalOriginalObject(req, originalObject, user, isUpdateOp, foundUser) {
+  let finalOriginalObject = originalObject;
+
+  if (foundUser && !finalOriginalObject && !isUpdateOp) {
+    finalOriginalObject = Parse.User.fromJSON({ className: '_User', ...foundUser });
+  }
+
+  if (isUpdateOp && user && user.id) {
+    try {
+      const query = await RestQuery({
+        method: RestQuery.Method.get,
+        config: req.config,
+        auth: Auth.master(req.config),
+        className: '_User',
+        restWhere: { objectId: user.id },
+        runBeforeFind: false,
+        runAfterFind: false,
+      });
+      const result = await query.execute();
+      if (result.results && result.results.length > 0) {
+        const userObj = Parse.User.fromJSON({ className: '_User', ...result.results[0] });
+        finalOriginalObject = userObj;
+      } else {
+        await user.fetch({ useMasterKey: true });
+        finalOriginalObject = user;
+      }
+    } catch (e) {
+      await user.fetch({ useMasterKey: true });
+      finalOriginalObject = user;
+    }
+  } else if (isUpdateOp && !finalOriginalObject && user) {
+    finalOriginalObject = user;
+  }
+
+  return finalOriginalObject;
+}
+
 const findUsersWithAuthData = async (config, authData, beforeFind) => {
   const providers = Object.keys(authData);
 
   const queries = await Promise.all(
     providers.map(async provider => {
       const providerAuthData = authData[provider];
+      if (!providerAuthData) {
+        return null;
+      }
 
-      const adapter = config.authDataManager.getValidatorForProvider(provider)?.adapter;
-      if (beforeFind && typeof adapter?.beforeFind === 'function') {
-        await adapter.beforeFind(providerAuthData);
+      if (beforeFind) {
+        const adapter = config.authDataManager.getValidatorForProvider(provider)?.adapter;
+        if (typeof adapter?.beforeFind === 'function') {
+         await adapter.beforeFind(providerAuthData);
+       }
       }
 
       if (!providerAuthData?.id) {
@@ -520,23 +563,26 @@ const checkIfUserHasProvidedConfiguredProvidersForLogin = (
 // Validate each authData step-by-step and return the provider responses
 const handleAuthDataValidation = async (authData, req, foundUser) => {
   let user;
+  const isUpdateOp = (req.query && req.query.objectId) ||
+    (req.auth && req.auth.user && !foundUser);
+
   if (foundUser) {
     user = Parse.User.fromJSON({ className: '_User', ...foundUser });
-    // Find user by session and current objectId; only pass user if it's the current user or master key is provided
-  } else if (
-    (req.auth &&
-      req.auth.user &&
-      typeof req.getUserId === 'function' &&
-      req.getUserId() === req.auth.user.id) ||
-    (req.auth && req.auth.isMaster && typeof req.getUserId === 'function' && req.getUserId())
-  ) {
+  } else if (req.auth && req.auth.user) {
     user = new Parse.User();
-    user.id = req.auth.isMaster ? req.getUserId() : req.auth.user.id;
-    await user.fetch({ useMasterKey: true });
+    user.id = req.auth.user.id;
+  } else if (req.auth && req.auth.isMaster && typeof req.getUserId === 'function' && req.getUserId()) {
+    user = new Parse.User();
+    user.id = req.getUserId();
   }
 
-  const { updatedObject } = req.buildParseObjects();
-  const requestObject = getRequestObject(undefined, req.auth, updatedObject, user, req.config);
+  const { originalObject, updatedObject } = req.buildParseObjects();
+  const finalOriginalObject = await getFinalOriginalObject(req, originalObject, user, isUpdateOp, foundUser);
+
+  const requestObject = getRequestObject(undefined, req.auth, updatedObject, finalOriginalObject, req.config);
+  if (user && isUpdateOp && req.auth && req.auth.user && !req.auth.isMaster) {
+    requestObject.user = user;
+  }
   // Perform validation as step-by-step pipeline for better error consistency
   // and also to avoid to trigger a provider (like OTP SMS) if another one fails
   const acc = { authData: {}, authDataResponse: {} };
@@ -601,6 +647,129 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
   return acc;
 };
 
+const hasOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+
+const toRecord = (v) => {
+  const out = Object.create(null);
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return out;
+  for (const k of Object.keys(v)) {
+    out[k] = v[k];
+  }
+  return out;
+};
+
+const assertSafeProviderKey = (p) => {
+  if (p === '__proto__' || p === 'constructor' || p === 'prototype') {
+    throw new Parse.Error(
+      Parse.Error.INVALID_KEY_NAME,
+      `Invalid provider name: ${p}. Provider names cannot be reserved JavaScript properties.`
+    );
+  }
+  if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(p)) {
+    throw new Parse.Error(
+      Parse.Error.INVALID_KEY_NAME,
+      `Invalid provider name: ${p}. Provider names must start with a letter and contain only alphanumeric characters and underscores.`
+    );
+  }
+};
+
+const assertProviderData = (x) => {
+  if (x === null || typeof x === 'undefined') return;
+  if (!x || typeof x !== 'object' || Array.isArray(x)) {
+    throw new Parse.Error(
+      Parse.Error.VALIDATION_ERROR,
+      'Invalid provider data.'
+    );
+  }
+  if (Object.keys(x).length > 32) {
+    throw new Parse.Error(
+      Parse.Error.VALIDATION_ERROR,
+      'Provider data too large.'
+    );
+  }
+  if (typeof x.id !== 'undefined' && (typeof x.id !== 'string' || x.id.length > 256)) {
+    throw new Parse.Error(
+      Parse.Error.VALIDATION_ERROR,
+      'Invalid provider id.'
+    );
+  }
+};
+
+const shallowStableEqual = (a, b) => {
+  if (a === b) return true;
+  if (!a || !b || typeof a !== 'object' || typeof b !== 'object' || Array.isArray(a) || Array.isArray(b)) {
+    return false;
+  }
+  const ak = Object.keys(a);
+  const bk = Object.keys(b);
+  if (ak.length !== bk.length) return false;
+  for (const k of ak) {
+    if (!hasOwn(b, k)) return false;
+    if (a[k] !== b[k]) return false;
+  }
+  return true;
+};
+
+const diffAuthData = (current = {}, incoming = {}) => {
+  // Convert to safe records (null-prototype) for internal processing
+  const cur = toRecord(current);
+  const inc = toRecord(incoming);
+
+  // Use null-prototype objects internally to prevent prototype pollution
+  const changed = Object.create(null);
+  const unlink = Object.create(null);
+  const unchanged = Object.create(null);
+
+  const providers = _.union(Object.keys(cur), Object.keys(inc));
+
+  if (providers.length > 32) {
+    throw new Parse.Error(
+      Parse.Error.VALIDATION_ERROR,
+      'Too many providers. Maximum 32 providers allowed.'
+    );
+  }
+
+  for (const p of providers) {
+    assertSafeProviderKey(p);
+
+    const prev = hasOwn(cur, p) ? cur[p] : undefined;
+    const next = hasOwn(inc, p) ? inc[p] : undefined;
+
+    if (next === null) {
+      unlink[p] = true;
+      continue;
+    }
+
+    if (_.isUndefined(next)) {
+      if (!_.isUndefined(prev)) unchanged[p] = prev;
+      continue;
+    }
+
+    assertProviderData(next);
+
+    if (_.isUndefined(prev)) {
+      changed[p] = next;
+      continue;
+    }
+
+    const prevId = prev?.id;
+    const nextId = next?.id;
+    if (prevId && nextId && prevId === nextId) {
+      unchanged[p] = prev;
+      continue;
+    }
+
+    if (shallowStableEqual(prev, next) || isDeepStrictEqual(prev, next)) {
+      unchanged[p] = prev;
+    } else {
+      changed[p] = next;
+    }
+  }
+  // Return null-prototype objects to maintain protection against prototype pollution
+  // Object.keys() works perfectly with null-prototype objects
+  return { changed, unlink, unchanged };
+};
+
 module.exports = {
   Auth,
   master,
@@ -614,4 +783,5 @@ module.exports = {
   hasMutatedAuthData,
   checkIfUserHasProvidedConfiguredProvidersForLogin,
   handleAuthDataValidation,
+  diffAuthData
 };
