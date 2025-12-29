@@ -10,6 +10,7 @@
 import { MongoClient, GridFSBucket, Db } from 'mongodb';
 import { FilesAdapter, validateFilename } from './FilesAdapter';
 import defaults, { ParseServerDatabaseOptions } from '../../defaults';
+import pkg from '../../../package.json';
 const crypto = require('crypto');
 
 export class GridFSBucketAdapter extends FilesAdapter {
@@ -47,6 +48,10 @@ export class GridFSBucketAdapter extends FilesAdapter {
     if (!this._connectionPromise) {
       this._connectionPromise = MongoClient.connect(this._databaseURI, this._mongoOptions).then(
         client => {
+          client.appendMetadata?.({
+            name: 'Parse Server',
+            version: pkg.version,
+          });
           this._client = client;
           return client.db(client.s.options.dbName);
         }

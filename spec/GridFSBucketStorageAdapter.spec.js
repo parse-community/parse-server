@@ -1,6 +1,7 @@
 const GridFSBucketAdapter = require('../lib/Adapters/Files/GridFSBucketAdapter')
   .GridFSBucketAdapter;
 const { randomString } = require('../lib/cryptoUtils');
+const { MongoClient } = require('mongodb');
 const databaseURI = 'mongodb://localhost:27017/parse';
 const request = require('../lib/request');
 
@@ -474,5 +475,17 @@ describe_only_db('mongo')('GridFSBucket', () => {
     } catch (e) {
       expect(e.message).toEqual('Client must be connected before running operations');
     }
+  });
+
+  it('pass metadata to MongoClient', async () => {
+    const pkg = require('../package.json');
+    spyOn(MongoClient.prototype, 'appendMetadata').and.callThrough();
+
+    const gfsAdapter = new GridFSBucketAdapter(databaseURI);
+    await gfsAdapter._connect();
+    expect(MongoClient.prototype.appendMetadata).toHaveBeenCalledWith({
+      name: 'Parse Server',
+      version: pkg.version,
+    });
   });
 });
