@@ -22,6 +22,7 @@ import { InMemoryCacheAdapter } from '../Adapters/Cache/InMemoryCacheAdapter';
 import { AnalyticsAdapter } from '../Adapters/Analytics/AnalyticsAdapter';
 import MongoStorageAdapter from '../Adapters/Storage/Mongo/MongoStorageAdapter';
 import PostgresStorageAdapter from '../Adapters/Storage/Postgres/PostgresStorageAdapter';
+import OracleStorageAdapter from '../Adapters/Storage/Oracle/OracleStorageAdapter';
 import ParseGraphQLController from './ParseGraphQLController';
 import SchemaCache from '../Adapters/Cache/SchemaCache';
 
@@ -224,6 +225,12 @@ export function getDatabaseAdapter(databaseURI, collectionPrefix, databaseOption
     case 'postgres:':
     case 'postgresql:':
       return new PostgresStorageAdapter({
+        uri: databaseURI,
+        collectionPrefix,
+        databaseOptions,
+      });
+    case 'oracle:':
+      return new OracleStorageAdapter({
         uri: databaseURI,
         collectionPrefix,
         databaseOptions,

@@ -1129,7 +1129,7 @@ export class OracleStorageAdapter implements StorageAdapter {
     conn = conn || this._client;
     // Oracle doesn't support IF NOT EXISTS in CREATE TABLE, need to check first
     const tableExists = await conn.one(
-      "SELECT COUNT(*) as cnt FROM user_tables WHERE table_name = '"_SCHEMA"'",
+      "SELECT CASE WHEN EXISTS (SELECT 1 FROM user_tables WHERE table_name = '_SCHEMA') THEN 1 ELSE 0 END as cnt FROM DUAL",
       [],
       a => a.cnt > 0
     ).catch(() => false);
@@ -1148,9 +1148,1551 @@ export class OracleStorageAdapter implements StorageAdapter {
 
   async classExists(name: string) {
     return this._client.one(
-      "SELECT COUNT(*) as cnt FROM user_tables WHERE table_name = :1",
+      "SELECT CASE WHEN EXISTS (SELECT 1 FROM user_tables WHERE table_name = :1) THEN 1 ELSE 0 END as cnt FROM DUAL",
       [name.toUpperCase()],
       a => a.cnt > 0
     );
   }
+
+  async setClassLevelPermissions(className: string, CLPs: any) {
+    await this._client.task('set-class-level-permissions', async t => {
+      const values = [className, 'schema', 'classLevelPermissions', JSON.stringify(CLPs)];
+      await t.none(
+        `UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3, $4) WHERE "className" = $1`,
+        values
+      );
+    });
+    this._notifySchemaChange();
+  }
+
+  async setIndexesWithSchemaFormat(
+    className: string,
+    submittedIndexes: any,
+    existingIndexes: any = {},
+    fields: any,
+    conn: ?any
+  ): Promise<void> {
+    conn = conn || this._client;
+    const self = this;
+    if (submittedIndexes === undefined) {
+      return Promise.resolve();
+    }
+    if (Object.keys(existingIndexes).length === 0) {
+      existingIndexes = { _id_: { _id: 1 } };
+    }
+    const deletedIndexes = [];
+    const insertedIndexes = [];
+    Object.keys(submittedIndexes).forEach(name => {
+      const field = submittedIndexes[name];
+      if (existingIndexes[name] && field.__op !== 'Delete') {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Index ${name} exists, cannot update.`);
+      }
+      if (!existingIndexes[name] && field.__op === 'Delete') {
+        throw new Parse.Error(
+          Parse.Error.INVALID_QUERY,
+          `Index ${name} does not exist, cannot delete.`
+        );
+      }
+      if (field.__op === 'Delete') {
+        deletedIndexes.push(name);
+        delete existingIndexes[name];
+      } else {
+        Object.keys(field).forEach(key => {
+          if (
+            !this.disableIndexFieldValidation &&
+            !Object.prototype.hasOwnProperty.call(fields, key)
+          ) {
+            throw new Parse.Error(
+              Parse.Error.INVALID_QUERY,
+              `Field ${key} does not exist, cannot add index.`
+            );
+          }
+        });
+        existingIndexes[name] = field;
+        insertedIndexes.push({
+          key: field,
+          name,
+        });
+      }
+    });
+    await conn.tx('set-indexes-with-schema-format', async t => {
+      try {
+        if (insertedIndexes.length > 0) {
+          await self.createIndexes(className, insertedIndexes, t);
+        }
+      } catch (e) {
+        const columnDoesNotExistError = isOracleError(e, OracleMissingColumnError);
+        if (columnDoesNotExistError) {
+          if (!this.disableIndexFieldValidation) {
+            throw e;
+          }
+        } else {
+          throw e;
+        }
+      }
+      if (deletedIndexes.length > 0) {
+        await self.dropIndexes(className, deletedIndexes, t);
+      }
+      await t.none(
+        'UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3, $4) WHERE "className" = $1',
+        [className, 'schema', 'indexes', JSON.stringify(existingIndexes)]
+      );
+    });
+    this._notifySchemaChange();
+  }
+
+  async createClass(className: string, schema: SchemaType, conn: ?any) {
+    conn = conn || this._client;
+    const parseSchema = await conn
+      .tx('create-class', async t => {
+        await this.createTable(className, schema, t);
+        await t.none(
+          'INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($1, $2, 1)',
+          [className, JSON.stringify(schema)]
+        );
+        await this.setIndexesWithSchemaFormat(className, schema.indexes, {}, schema.fields, t);
+        return toParseSchema(schema);
+      })
+      .catch(err => {
+        if (isOracleError(err, OracleUniqueIndexViolationError) && err.message && err.message.includes(className)) {
+          throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, `Class ${className} already exists.`);
+        }
+        throw err;
+      });
+    this._notifySchemaChange();
+    return parseSchema;
+  }
+
+  // Just create a table, do not insert in schema
+  async createTable(className: string, schema: SchemaType, conn: any) {
+    conn = conn || this._client;
+    debug('createTable');
+    const valuesArray = [];
+    const patternsArray = [];
+    const fields = Object.assign({}, schema.fields);
+    if (className === '_User') {
+      fields._email_verify_token_expires_at = { type: 'Date' };
+      fields._email_verify_token = { type: 'String' };
+      fields._account_lockout_expires_at = { type: 'Date' };
+      fields._failed_login_count = { type: 'Number' };
+      fields._perishable_token = { type: 'String' };
+      fields._perishable_token_expires_at = { type: 'Date' };
+      fields._password_changed_at = { type: 'Date' };
+      fields._password_history = { type: 'Array' };
+    }
+    let index = 2;
+    const relations = [];
+    Object.keys(fields).forEach(fieldName => {
+      const parseType = fields[fieldName];
+      // Skip when it's a relation
+      if (parseType.type === 'Relation') {
+        relations.push(fieldName);
+        return;
+      }
+      if (['_rperm', '_wperm'].indexOf(fieldName) >= 0) {
+        parseType.contents = { type: 'String' };
+      }
+      valuesArray.push(fieldName);
+      valuesArray.push(parseTypeToOracleType(parseType));
+      patternsArray.push(`$${index}:name $${index + 1}:raw`);
+      if (fieldName === 'objectId') {
+        patternsArray.push(`PRIMARY KEY ($${index}:name)`);
+      }
+      index = index + 2;
+    });
+    
+    // Oracle doesn't support IF NOT EXISTS in CREATE TABLE, need to check first
+    const tableExists = await conn.one(
+      "SELECT CASE WHEN EXISTS (SELECT 1 FROM user_tables WHERE table_name = :1) THEN 1 ELSE 0 END as cnt FROM DUAL",
+      [className.toUpperCase()],
+      a => a.cnt > 0
+    ).catch(() => false);
+
+    if (!tableExists) {
+      const qs = `CREATE TABLE $1:name (${patternsArray.join()})`;
+      const values = [className, ...valuesArray];
+
+      return conn.task('create-table', async t => {
+        try {
+          await t.none(qs, values);
+        } catch (error) {
+          if (!isOracleError(error, OracleDuplicateRelationError)) {
+            throw error;
+          }
+          // Table already exists, must have been created by a different request. Ignore the error.
+        }
+        await t.tx('create-table-tx', tx => {
+          return tx.batch(
+            relations.map(fieldName => {
+              const joinTable = `_Join:${fieldName}:${className}`;
+              return tx.one(
+                "SELECT COUNT(*) as cnt FROM user_tables WHERE table_name = :1",
+                [joinTable.toUpperCase()],
+                a => a.cnt > 0
+              ).then(exists => {
+                if (!exists) {
+                  return tx.none(
+                    'CREATE TABLE $1:name ("relatedId" VARCHAR2(120), "owningId" VARCHAR2(120), PRIMARY KEY("relatedId", "owningId") )',
+                    [joinTable]
+                  );
+                }
+              });
+            })
+          );
+        });
+      });
+    }
+  }
+
+  async schemaUpgrade(className: string, schema: SchemaType, conn: any) {
+    debug('schemaUpgrade');
+    conn = conn || this._client;
+    const self = this;
+
+    await conn.task('schema-upgrade', async t => {
+      const columns = await t.map(
+        "SELECT column_name FROM user_tab_columns WHERE table_name = :1",
+        [className.toUpperCase()],
+        a => a.column_name.toLowerCase()
+      );
+      const newColumns = Object.keys(schema.fields)
+        .filter(item => columns.indexOf(item.toLowerCase()) === -1)
+        .map(fieldName => self.addFieldIfNotExists(className, fieldName, schema.fields[fieldName]));
+
+      await t.batch(newColumns);
+    });
+  }
+
+  async addFieldIfNotExists(className: string, fieldName: string, type: any) {
+    debug('addFieldIfNotExists');
+    const self = this;
+    await this._client.tx('add-field-if-not-exists', async t => {
+      if (type.type !== 'Relation') {
+        try {
+          // Check if column exists first
+          const columnExists = await t.one(
+            "SELECT CASE WHEN EXISTS (SELECT 1 FROM user_tab_columns WHERE table_name = :1 AND column_name = :2) THEN 1 ELSE 0 END as cnt FROM DUAL",
+            [className.toUpperCase(), fieldName.toUpperCase()],
+            a => a.cnt > 0
+          ).catch(() => false);
+
+          if (!columnExists) {
+            await t.none(
+              'ALTER TABLE $1:name ADD $2:name $3:raw',
+              {
+                className,
+                fieldName,
+                oracleType: parseTypeToOracleType(type),
+              }
+            );
+          }
+        } catch (error) {
+          if (isOracleError(error, OracleRelationDoesNotExistError)) {
+            return self.createClass(className, { fields: { [fieldName]: type } }, t);
+          }
+          if (!isOracleError(error, OracleDuplicateColumnError)) {
+            throw error;
+          }
+          // Column already exists, created by other request. Carry on.
+        }
+      } else {
+        const joinTable = `_Join:${fieldName}:${className}`;
+        const tableExists = await t.one(
+          "SELECT CASE WHEN EXISTS (SELECT 1 FROM user_tables WHERE table_name = :1) THEN 1 ELSE 0 END as cnt FROM DUAL",
+          [joinTable.toUpperCase()],
+          a => a.cnt > 0
+        ).catch(() => false);
+
+        if (!tableExists) {
+          await t.none(
+            'CREATE TABLE $1:name ("relatedId" VARCHAR2(120), "owningId" VARCHAR2(120), PRIMARY KEY("relatedId", "owningId") )',
+            [joinTable]
+          );
+        }
+      }
+
+      const result = await t.any(
+        'SELECT "schema" FROM "_SCHEMA" WHERE "className" = $1 AND JSON_EXISTS("schema", \'$.fields.$2\') = 1',
+        [className, fieldName]
+      );
+
+      if (result[0]) {
+        throw 'Attempted to add a field that already exists';
+      } else {
+        await t.none(
+          'UPDATE "_SCHEMA" SET "schema" = JSON_MERGEPATCH("schema", $1) WHERE "className" = $2',
+          [JSON.stringify({ fields: { [fieldName]: type } }), className]
+        );
+      }
+    });
+    this._notifySchemaChange();
+  }
+
+  async updateFieldOptions(className: string, fieldName: string, type: any) {
+    await this._client.tx('update-schema-field-options', async t => {
+      await t.none(
+        'UPDATE "_SCHEMA" SET "schema" = JSON_MERGEPATCH("schema", $1) WHERE "className" = $2',
+        [JSON.stringify({ fields: { [fieldName]: type } }), className]
+      );
+    });
+  }
+
+  async deleteClass(className: string) {
+    const operations = [
+      { query: `BEGIN EXECUTE IMMEDIATE 'DROP TABLE $1:name'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`, values: [className] },
+      {
+        query: `DELETE FROM "_SCHEMA" WHERE "className" = $1`,
+        values: [className],
+      },
+    ];
+    const response = await this._client
+      .tx(t => {
+        return t.batch(operations.map(op => t.none(op.query, op.values)));
+      })
+      .then(() => className.indexOf('_Join:') != 0);
+
+    this._notifySchemaChange();
+    return response;
+  }
+
+  async deleteAllClasses() {
+    const now = new Date().getTime();
+    debug('deleteAllClasses');
+    if (this._client?.$pool.ended) {
+      return;
+    }
+    await this._client
+      .task('delete-all-classes', async t => {
+        try {
+          const results = await t.any('SELECT * FROM "_SCHEMA"');
+          const joins = results.reduce((list: Array<string>, schema: any) => {
+            return list.concat(joinTablesForSchema(schema.schema));
+          }, []);
+          const classes = [
+            '_SCHEMA',
+            '_PushStatus',
+            '_JobStatus',
+            '_JobSchedule',
+            '_Hooks',
+            '_GlobalConfig',
+            '_GraphQLConfig',
+            '_Audience',
+            '_Idempotency',
+            ...results.map(result => result.className),
+            ...joins,
+          ];
+          const queries = classes.map(className => ({
+            query: "BEGIN EXECUTE IMMEDIATE 'DROP TABLE \"' || :1 || '\"'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;",
+            values: [className],
+          }));
+          await t.tx(tx => {
+            return tx.batch(queries.map(q => tx.none(q.query, q.values)));
+          });
+        } catch (error) {
+          if (!isOracleError(error, OracleRelationDoesNotExistError)) {
+            throw error;
+          }
+          // No _SCHEMA collection. Don't delete anything.
+        }
+      })
+      .then(() => {
+        debug(`deleteAllClasses done in ${new Date().getTime() - now}`);
+      });
+  }
+
+  async deleteFields(className: string, schema: SchemaType, fieldNames: string[]): Promise<void> {
+    debug('deleteFields');
+    fieldNames = fieldNames.reduce((list: Array<string>, fieldName: string) => {
+      const field = schema.fields[fieldName];
+      if (field.type !== 'Relation') {
+        list.push(fieldName);
+      }
+      delete schema.fields[fieldName];
+      return list;
+    }, []);
+
+    await this._client.tx('delete-fields', async t => {
+      await t.none('UPDATE "_SCHEMA" SET "schema" = $1 WHERE "className" = $2', {
+        schema: JSON.stringify(schema),
+        className,
+      });
+      if (fieldNames.length > 0) {
+        // Oracle ALTER TABLE DROP COLUMN syntax
+        const columns = fieldNames.map(name => `"${name}"`).join(', ');
+        await t.none(`ALTER TABLE $1:name DROP (${columns})`, [className]);
+      }
+    });
+    this._notifySchemaChange();
+  }
+
+  async getAllClasses() {
+    return this._client.task('get-all-classes', async t => {
+      return await t.map('SELECT * FROM "_SCHEMA"', null, row =>
+        toParseSchema({ className: row.className, ...JSON.parse(row.schema) })
+      );
+    });
+  }
+
+  async getClass(className: string) {
+    debug('getClass');
+    return this._client
+      .any('SELECT * FROM "_SCHEMA" WHERE "className" = $1', [className])
+      .then(result => {
+        if (result.length !== 1) {
+          throw undefined;
+        }
+        return JSON.parse(result[0].schema);
+      })
+      .then(toParseSchema);
+  }
+
+  async createObject(
+    className: string,
+    schema: SchemaType,
+    object: any,
+    transactionalSession: ?any
+  ) {
+    debug('createObject');
+    let columnsArray = [];
+    const valuesArray = [];
+    schema = toOracleSchema(schema);
+    const geoPoints = {};
+
+    object = handleDotFields(object);
+    validateKeys(object);
+
+    Object.keys(object).forEach(fieldName => {
+      if (object[fieldName] === null) {
+        return;
+      }
+      var authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
+      const authDataAlreadyExists = !!object.authData;
+      if (authDataMatch) {
+        var provider = authDataMatch[1];
+        object['authData'] = object['authData'] || {};
+        object['authData'][provider] = object[fieldName];
+        delete object[fieldName];
+        fieldName = 'authData';
+        if (authDataAlreadyExists) {
+          return;
+        }
+      }
+
+      columnsArray.push(fieldName);
+      if (!schema.fields[fieldName] && className === '_User') {
+        if (
+          fieldName === '_email_verify_token' ||
+          fieldName === '_failed_login_count' ||
+          fieldName === '_perishable_token' ||
+          fieldName === '_password_history'
+        ) {
+          valuesArray.push(object[fieldName]);
+        }
+
+        if (fieldName === '_email_verify_token_expires_at') {
+          if (object[fieldName]) {
+            valuesArray.push(object[fieldName].iso);
+          } else {
+            valuesArray.push(null);
+          }
+        }
+
+        if (
+          fieldName === '_account_lockout_expires_at' ||
+          fieldName === '_perishable_token_expires_at' ||
+          fieldName === '_password_changed_at'
+        ) {
+          if (object[fieldName]) {
+            valuesArray.push(object[fieldName].iso);
+          } else {
+            valuesArray.push(null);
+          }
+        }
+        return;
+      }
+      switch (schema.fields[fieldName].type) {
+        case 'Date':
+          if (object[fieldName]) {
+            valuesArray.push(object[fieldName].iso);
+          } else {
+            valuesArray.push(null);
+          }
+          break;
+        case 'Pointer':
+          valuesArray.push(object[fieldName].objectId);
+          break;
+        case 'Array':
+          if (['_rperm', '_wperm'].indexOf(fieldName) >= 0) {
+            valuesArray.push(JSON.stringify(object[fieldName]));
+          } else {
+            valuesArray.push(JSON.stringify(object[fieldName]));
+          }
+          break;
+        case 'Object':
+        case 'Bytes':
+          valuesArray.push(JSON.stringify(object[fieldName]));
+          break;
+        case 'String':
+        case 'Number':
+          valuesArray.push(object[fieldName]);
+          break;
+        case 'Boolean':
+          valuesArray.push(object[fieldName] ? 1 : 0);
+          break;
+        case 'File':
+          valuesArray.push(object[fieldName].name);
+          break;
+        case 'Polygon': {
+          const value = convertPolygonToSQL(object[fieldName].coordinates);
+          // Oracle Spatial polygon - simplified for now
+          valuesArray.push(value);
+          break;
+        }
+        case 'GeoPoint':
+          geoPoints[fieldName] = object[fieldName];
+          columnsArray.pop();
+          break;
+        default:
+          throw `Type ${schema.fields[fieldName].type} not supported yet`;
+      }
+    });
+
+    columnsArray = columnsArray.concat(Object.keys(geoPoints));
+    const initialValues = valuesArray.map((val, index) => {
+      const fieldName = columnsArray[index];
+      if (schema.fields[fieldName] && schema.fields[fieldName].type === 'Array') {
+        return `$${index + 2 + columnsArray.length}`;
+      } else if (schema.fields[fieldName] && schema.fields[fieldName].type === 'Object') {
+        return `$${index + 2 + columnsArray.length}`;
+      }
+      return `$${index + 2 + columnsArray.length}`;
+    });
+    const geoPointsInjects = Object.keys(geoPoints).map(key => {
+      const value = geoPoints[key];
+      valuesArray.push(value.longitude, value.latitude);
+      const l = valuesArray.length + columnsArray.length;
+      // Oracle Spatial point
+      return `SDO_GEOMETRY(2001, 4326, SDO_POINT_TYPE($${l}, $${l + 1}, NULL), NULL, NULL)`;
+    });
+
+    const columnsPattern = columnsArray.map((col, index) => `$${index + 2}:name`).join();
+    const valuesPattern = initialValues.concat(geoPointsInjects).join();
+
+    const qs = `INSERT INTO $1:name (${columnsPattern}) VALUES (${valuesPattern})`;
+    const values = [className, ...columnsArray, ...valuesArray];
+    const promise = (transactionalSession ? transactionalSession.t : this._client)
+      .none(qs, values)
+      .then(() => ({ ops: [object] }))
+      .catch(error => {
+        if (isOracleError(error, OracleUniqueIndexViolationError)) {
+          const err = new Parse.Error(
+            Parse.Error.DUPLICATE_VALUE,
+            'A duplicate value for a field with unique values was provided'
+          );
+          err.underlyingError = error;
+          if (error.constraint) {
+            const matches = error.constraint.match(/unique_([a-zA-Z]+)/);
+            if (matches && Array.isArray(matches)) {
+              err.userInfo = { duplicated_field: matches[1] };
+            }
+          }
+          error = err;
+        }
+        throw error;
+      });
+    if (transactionalSession) {
+      transactionalSession.batch.push(promise);
+    }
+    return promise;
+  }
+
+  async deleteObjectsByQuery(
+    className: string,
+    schema: SchemaType,
+    query: QueryType,
+    transactionalSession: ?any
+  ) {
+    debug('deleteObjectsByQuery');
+    const values = [className];
+    const index = 2;
+    const where = buildWhereClause({
+      schema,
+      index,
+      query,
+      caseInsensitive: false,
+    });
+    values.push(...where.values);
+    if (Object.keys(query).length === 0) {
+      where.pattern = '1=1';
+    }
+    // First get count, then delete
+    const countValues = [...values];
+    const countQs = `SELECT COUNT(*) as cnt FROM $1:name WHERE ${where.pattern}`;
+    const promise = (transactionalSession ? transactionalSession.t : this._client)
+      .one(countQs, countValues, a => +a.cnt)
+      .then(count => {
+        if (count === 0) {
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+        }
+        // Now delete
+        const deleteQs = `DELETE FROM $1:name WHERE ${where.pattern}`;
+        return (transactionalSession ? transactionalSession.t : this._client)
+          .none(deleteQs, values)
+          .then(() => count);
+      })
+      .catch(error => {
+        if (!isOracleError(error, OracleRelationDoesNotExistError)) {
+          throw error;
+        }
+        // Don't delete anything if doesn't exist
+        return 0;
+      });
+    if (transactionalSession) {
+      transactionalSession.batch.push(promise);
+    }
+    return promise;
+  }
+
+  async findOneAndUpdate(
+    className: string,
+    schema: SchemaType,
+    query: QueryType,
+    update: any,
+    transactionalSession: ?any
+  ): Promise<any> {
+    debug('findOneAndUpdate');
+    return this.updateObjectsByQuery(className, schema, query, update, transactionalSession).then(
+      val => val[0]
+    );
+  }
+
+  async updateObjectsByQuery(
+    className: string,
+    schema: SchemaType,
+    query: QueryType,
+    update: any,
+    transactionalSession: ?any
+  ): Promise<[any]> {
+    debug('updateObjectsByQuery');
+    const updatePatterns = [];
+    const values = [className];
+    let index = 2;
+    schema = toOracleSchema(schema);
+
+    const originalUpdate = { ...update };
+    const dotNotationOptions = {};
+    Object.keys(update).forEach(fieldName => {
+      if (fieldName.indexOf('.') > -1) {
+        const components = fieldName.split('.');
+        const first = components.shift();
+        dotNotationOptions[first] = true;
+      } else {
+        dotNotationOptions[fieldName] = false;
+      }
+    });
+    update = handleDotFields(update);
+
+    for (const fieldName in update) {
+      const authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
+      if (authDataMatch) {
+        var provider = authDataMatch[1];
+        const value = update[fieldName];
+        delete update[fieldName];
+        update['authData'] = update['authData'] || {};
+        update['authData'][provider] = value;
+      }
+    }
+
+    for (const fieldName in update) {
+      const fieldValue = update[fieldName];
+      if (typeof fieldValue === 'undefined') {
+        delete update[fieldName];
+      } else if (fieldValue === null) {
+        updatePatterns.push(`$${index}:name = NULL`);
+        values.push(fieldName);
+        index += 1;
+      } else if (fieldName == 'authData') {
+        // Oracle JSON merge
+        updatePatterns.push(`$${index}:name = JSON_MERGEPATCH(COALESCE($${index}:name, '{}'), $${index + 1})`);
+        values.push(fieldName, JSON.stringify(fieldValue));
+        index += 2;
+      } else if (fieldValue.__op === 'Increment') {
+        updatePatterns.push(`$${index}:name = NVL($${index}:name, 0) + $${index + 1}`);
+        values.push(fieldName, fieldValue.amount);
+        index += 2;
+      } else if (fieldValue.__op === 'Add') {
+        updatePatterns.push(
+          `$${index}:name = array_add(COALESCE($${index}:name, '[]'), $${index + 1})`
+        );
+        values.push(fieldName, JSON.stringify(fieldValue.objects));
+        index += 2;
+      } else if (fieldValue.__op === 'Delete') {
+        updatePatterns.push(`$${index}:name = $${index + 1}`);
+        values.push(fieldName, null);
+        index += 2;
+      } else if (fieldValue.__op === 'Remove') {
+        updatePatterns.push(
+          `$${index}:name = array_remove(COALESCE($${index}:name, '[]'), $${index + 1})`
+        );
+        values.push(fieldName, JSON.stringify(fieldValue.objects));
+        index += 2;
+      } else if (fieldValue.__op === 'AddUnique') {
+        updatePatterns.push(
+          `$${index}:name = array_add_unique(COALESCE($${index}:name, '[]'), $${index + 1})`
+        );
+        values.push(fieldName, JSON.stringify(fieldValue.objects));
+        index += 2;
+      } else if (fieldName === 'updatedAt') {
+        updatePatterns.push(`$${index}:name = TO_TIMESTAMP_TZ($${index + 1}, 'YYYY-MM-DD"T"HH24:MI:SS.FFTZH:TZM')`);
+        values.push(fieldName, fieldValue);
+        index += 2;
+      } else if (typeof fieldValue === 'string') {
+        updatePatterns.push(`$${index}:name = $${index + 1}`);
+        values.push(fieldName, fieldValue);
+        index += 2;
+      } else if (typeof fieldValue === 'boolean') {
+        updatePatterns.push(`$${index}:name = $${index + 1}`);
+        values.push(fieldName, fieldValue ? 1 : 0);
+        index += 2;
+      } else if (fieldValue.__type === 'Pointer') {
+        updatePatterns.push(`$${index}:name = $${index + 1}`);
+        values.push(fieldName, fieldValue.objectId);
+        index += 2;
+      } else if (fieldValue.__type === 'Date') {
+        updatePatterns.push(`$${index}:name = TO_TIMESTAMP_TZ($${index + 1}, 'YYYY-MM-DD"T"HH24:MI:SS.FFTZH:TZM')`);
+        values.push(fieldName, toOracleValue(fieldValue));
+        index += 2;
+      } else if (fieldValue instanceof Date) {
+        updatePatterns.push(`$${index}:name = TO_TIMESTAMP_TZ($${index + 1}, 'YYYY-MM-DD"T"HH24:MI:SS.FFTZH:TZM')`);
+        values.push(fieldName, fieldValue.toISOString());
+        index += 2;
+      } else if (fieldValue.__type === 'File') {
+        updatePatterns.push(`$${index}:name = $${index + 1}`);
+        values.push(fieldName, toOracleValue(fieldValue));
+        index += 2;
+      } else if (fieldValue.__type === 'GeoPoint') {
+        updatePatterns.push(`$${index}:name = SDO_GEOMETRY(2001, 4326, SDO_POINT_TYPE($${index + 1}, $${index + 2}, NULL), NULL, NULL)`);
+        values.push(fieldName, fieldValue.longitude, fieldValue.latitude);
+        index += 3;
+      } else if (fieldValue.__type === 'Polygon') {
+        const value = convertPolygonToSQL(fieldValue.coordinates);
+        // Oracle Spatial polygon update
+        updatePatterns.push(`$${index}:name = $${index + 1}`);
+        values.push(fieldName, value);
+        index += 2;
+      } else if (fieldValue.__type === 'Relation') {
+        // noop
+      } else if (typeof fieldValue === 'number') {
+        updatePatterns.push(`$${index}:name = $${index + 1}`);
+        values.push(fieldName, fieldValue);
+        index += 2;
+      } else if (
+        typeof fieldValue === 'object' &&
+        schema.fields[fieldName] &&
+        schema.fields[fieldName].type === 'Object'
+      ) {
+        // Oracle JSON merge for objects
+        updatePatterns.push(
+          `$${index}:name = JSON_MERGEPATCH(COALESCE($${index}:name, '{}'), $${index + 1})`
+        );
+        values.push(fieldName, JSON.stringify(fieldValue));
+        index += 2;
+      } else if (
+        Array.isArray(fieldValue) &&
+        schema.fields[fieldName] &&
+        schema.fields[fieldName].type === 'Array'
+      ) {
+        updatePatterns.push(`$${index}:name = $${index + 1}`);
+        values.push(fieldName, JSON.stringify(fieldValue));
+        index += 2;
+      } else {
+        debug('Not supported update', { fieldName, fieldValue });
+        return Promise.reject(
+          new Parse.Error(
+            Parse.Error.OPERATION_FORBIDDEN,
+            `Oracle doesn't support update ${JSON.stringify(fieldValue)} yet`
+          )
+        );
+      }
+    }
+
+    const where = buildWhereClause({
+      schema,
+      index,
+      query,
+      caseInsensitive: false,
+    });
+    values.push(...where.values);
+
+    const whereClause = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
+    // Oracle UPDATE - need to fetch rows separately since RETURNING works differently
+    const qs = `UPDATE $1:name SET ${updatePatterns.join()} ${whereClause}`;
+    const promise = (transactionalSession ? transactionalSession.t : this._client)
+      .none(qs, values)
+      .then(() => {
+        // Fetch updated rows after update
+        const selectQs = `SELECT * FROM $1:name ${whereClause}`;
+        return (transactionalSession ? transactionalSession.t : this._client).any(selectQs, values);
+      });
+    if (transactionalSession) {
+      transactionalSession.batch.push(promise);
+    }
+    return promise;
+  }
+
+  upsertOneObject(
+    className: string,
+    schema: SchemaType,
+    query: QueryType,
+    update: any,
+    transactionalSession: ?any
+  ) {
+    debug('upsertOneObject');
+    const createValue = Object.assign({}, query, update);
+    return this.createObject(className, schema, createValue, transactionalSession).catch(error => {
+      if (error.code !== Parse.Error.DUPLICATE_VALUE) {
+        throw error;
+      }
+      return this.findOneAndUpdate(className, schema, query, update, transactionalSession);
+    });
+  }
+
+  find(
+    className: string,
+    schema: SchemaType,
+    query: QueryType,
+    { skip, limit, sort, keys, caseInsensitive, explain }: QueryOptions
+  ) {
+    debug('find');
+    const hasLimit = limit !== undefined;
+    const hasSkip = skip !== undefined;
+    let values = [className];
+    const where = buildWhereClause({
+      schema,
+      query,
+      index: 2,
+      caseInsensitive,
+    });
+    values.push(...where.values);
+    const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
+    const limitPattern = hasLimit ? `FETCH FIRST $${values.length + 1} ROWS ONLY` : '';
+    if (hasLimit) {
+      values.push(limit);
+    }
+    const skipPattern = hasSkip ? `OFFSET $${values.length + 1}` : '';
+    if (hasSkip) {
+      values.push(skip);
+    }
+
+    let sortPattern = '';
+    if (sort) {
+      const sortCopy: any = sort;
+      const sorting = Object.keys(sort)
+        .map(key => {
+          const transformKey = transformDotFieldToComponents(key).join('.');
+          if (sortCopy[key] === 1) {
+            return `${transformKey} ASC`;
+          }
+          return `${transformKey} DESC`;
+        })
+        .join();
+      sortPattern = sort !== undefined && Object.keys(sort).length > 0 ? `ORDER BY ${sorting}` : '';
+    }
+    if (where.sorts && Object.keys((where.sorts: any)).length > 0) {
+      sortPattern = `ORDER BY ${where.sorts.join()}`;
+    }
+
+    let columns = '*';
+    if (keys) {
+      keys = keys.reduce((memo, key) => {
+        if (key === 'ACL') {
+          memo.push('_rperm');
+          memo.push('_wperm');
+        } else if (
+          key.length > 0 &&
+          ((schema.fields[key] && schema.fields[key].type !== 'Relation') || key === '$score')
+        ) {
+          memo.push(key);
+        }
+        return memo;
+      }, []);
+      columns = keys
+        .map((key, index) => {
+          if (key === '$score') {
+            // Oracle text search ranking - simplified
+            return `1 as score`;
+          }
+          return `$${index + values.length + 1}:name`;
+        })
+        .join();
+      values = values.concat(keys);
+    }
+
+    const originalQuery = `SELECT ${columns} FROM $1:name ${wherePattern} ${sortPattern} ${skipPattern} ${limitPattern}`;
+    const qs = explain ? this.createExplainableQuery(originalQuery) : originalQuery;
+    return this._client
+      .any(qs, values)
+      .catch(error => {
+        if (!isOracleError(error, OracleRelationDoesNotExistError)) {
+          throw error;
+        }
+        return [];
+      })
+      .then(results => {
+        if (explain) {
+          return results;
+        }
+        return results.map(object => this.oracleObjectToParseObject(className, object, schema));
+      });
+  }
+
+  oracleObjectToParseObject(className: string, object: any, schema: any) {
+    Object.keys(schema.fields).forEach(fieldName => {
+      if (schema.fields[fieldName].type === 'Pointer' && object[fieldName]) {
+        object[fieldName] = {
+          objectId: object[fieldName],
+          __type: 'Pointer',
+          className: schema.fields[fieldName].targetClass,
+        };
+      }
+      if (schema.fields[fieldName].type === 'Relation') {
+        object[fieldName] = {
+          __type: 'Relation',
+          className: schema.fields[fieldName].targetClass,
+        };
+      }
+      if (object[fieldName] && schema.fields[fieldName].type === 'GeoPoint') {
+        // Oracle Spatial to Parse GeoPoint
+        object[fieldName] = {
+          __type: 'GeoPoint',
+          latitude: object[fieldName].SDO_POINT.Y,
+          longitude: object[fieldName].SDO_POINT.X,
+        };
+      }
+      if (object[fieldName] && schema.fields[fieldName].type === 'Polygon') {
+        // Oracle Spatial polygon to Parse Polygon
+        // Simplified - would need proper conversion
+        object[fieldName] = {
+          __type: 'Polygon',
+          coordinates: [],
+        };
+      }
+      if (object[fieldName] && schema.fields[fieldName].type === 'File') {
+        object[fieldName] = {
+          __type: 'File',
+          name: object[fieldName],
+        };
+      }
+      if (object[fieldName] && schema.fields[fieldName].type === 'Array') {
+        if (typeof object[fieldName] === 'string') {
+          object[fieldName] = JSON.parse(object[fieldName]);
+        }
+      }
+      if (object[fieldName] && schema.fields[fieldName].type === 'Object') {
+        if (typeof object[fieldName] === 'string') {
+          object[fieldName] = JSON.parse(object[fieldName]);
+        }
+      }
+    });
+    if (object.createdAt) {
+      object.createdAt = object.createdAt.toISOString();
+    }
+    if (object.updatedAt) {
+      object.updatedAt = object.updatedAt.toISOString();
+    }
+    if (object.expiresAt) {
+      object.expiresAt = {
+        __type: 'Date',
+        iso: object.expiresAt.toISOString(),
+      };
+    }
+    if (object._email_verify_token_expires_at) {
+      object._email_verify_token_expires_at = {
+        __type: 'Date',
+        iso: object._email_verify_token_expires_at.toISOString(),
+      };
+    }
+    if (object._account_lockout_expires_at) {
+      object._account_lockout_expires_at = {
+        __type: 'Date',
+        iso: object._account_lockout_expires_at.toISOString(),
+      };
+    }
+    if (object._perishable_token_expires_at) {
+      object._perishable_token_expires_at = {
+        __type: 'Date',
+        iso: object._perishable_token_expires_at.toISOString(),
+      };
+    }
+    if (object._password_changed_at) {
+      object._password_changed_at = {
+        __type: 'Date',
+        iso: object._password_changed_at.toISOString(),
+      };
+    }
+
+    for (const fieldName in object) {
+      if (object[fieldName] === null) {
+        delete object[fieldName];
+      }
+      if (object[fieldName] instanceof Date) {
+        object[fieldName] = {
+          __type: 'Date',
+          iso: object[fieldName].toISOString(),
+        };
+      }
+    }
+
+    return object;
+  }
+
+  async ensureUniqueness(className: string, schema: SchemaType, fieldNames: string[]) {
+    const constraintName = `${className}_unique_${fieldNames.sort().join('_')}`;
+    const constraintPatterns = fieldNames.map((fieldName, index) => `$${index + 3}:name`);
+    // Oracle doesn't support IF NOT EXISTS, need to check first
+    const indexExists = await this._client.one(
+      "SELECT CASE WHEN EXISTS (SELECT 1 FROM user_indexes WHERE index_name = :1) THEN 1 ELSE 0 END as cnt FROM DUAL",
+      [constraintName.toUpperCase()],
+      a => a.cnt > 0
+    ).catch(() => false);
+
+    if (!indexExists) {
+      const qs = `CREATE UNIQUE INDEX $2:name ON $1:name(${constraintPatterns.join()})`;
+      return this._client.none(qs, [className, constraintName, ...fieldNames]).catch(error => {
+        if (isOracleError(error, OracleDuplicateRelationError) && error.message && error.message.includes(constraintName)) {
+          // Index already exists. Ignore error.
+        } else if (
+          isOracleError(error, OracleUniqueIndexViolationError) &&
+          error.message && error.message.includes(constraintName)
+        ) {
+          throw new Parse.Error(
+            Parse.Error.DUPLICATE_VALUE,
+            'A duplicate value for a field with unique values was provided'
+          );
+        } else {
+          throw error;
+        }
+      });
+    }
+  }
+
+  async count(
+    className: string,
+    schema: SchemaType,
+    query: QueryType,
+    readPreference?: string,
+    estimate?: boolean = true
+  ) {
+    debug('count');
+    const values = [className];
+    const where = buildWhereClause({
+      schema,
+      query,
+      index: 2,
+      caseInsensitive: false,
+    });
+    values.push(...where.values);
+
+    const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
+    let qs = '';
+
+    if (where.pattern.length > 0 || !estimate) {
+      qs = `SELECT count(*) as cnt FROM $1:name ${wherePattern}`;
+    } else {
+      // Oracle approximate count
+      qs = "SELECT num_rows as approximate_row_count FROM user_tables WHERE table_name = :1";
+    }
+
+    return this._client
+      .one(qs, values, a => {
+        if (a.approximate_row_count == null || a.approximate_row_count == -1) {
+          return !isNaN(+a.cnt) ? +a.cnt : 0;
+        } else {
+          return +a.approximate_row_count;
+        }
+      })
+      .catch(error => {
+        if (!isOracleError(error, OracleRelationDoesNotExistError)) {
+          throw error;
+        }
+        return 0;
+      });
+  }
+
+  async distinct(className: string, schema: SchemaType, query: QueryType, fieldName: string) {
+    debug('distinct');
+    let field = fieldName;
+    let column = fieldName;
+    const isNested = fieldName.indexOf('.') >= 0;
+    if (isNested) {
+      field = transformDotField(fieldName);
+      column = fieldName.split('.')[0];
+    }
+    const isArrayField =
+      schema.fields && schema.fields[fieldName] && schema.fields[fieldName].type === 'Array';
+    const isPointerField =
+      schema.fields && schema.fields[fieldName] && schema.fields[fieldName].type === 'Pointer';
+    const values = [field, column, className];
+    const where = buildWhereClause({
+      schema,
+      query,
+      index: 4,
+      caseInsensitive: false,
+    });
+    values.push(...where.values);
+
+    const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
+    // Oracle DISTINCT with JSON array elements
+    let qs = `SELECT DISTINCT $1:name FROM $3:name ${wherePattern}`;
+    if (isNested) {
+      qs = `SELECT DISTINCT $1:raw FROM $3:name ${wherePattern}`;
+    }
+    return this._client
+      .any(qs, values)
+      .catch(error => {
+        if (isOracleError(error, OracleMissingColumnError)) {
+          return [];
+        }
+        throw error;
+      })
+      .then(results => {
+        if (!isNested) {
+          results = results.filter(object => object[field] !== null);
+          return results.map(object => {
+            if (!isPointerField) {
+              return object[field];
+            }
+            return {
+              __type: 'Pointer',
+              className: schema.fields[fieldName].targetClass,
+              objectId: object[field],
+            };
+          });
+        }
+        const child = fieldName.split('.')[1];
+        return results.map(object => object[column][child]);
+      })
+      .then(results =>
+        results.map(object => this.oracleObjectToParseObject(className, object, schema))
+      );
+  }
+
+  async aggregate(
+    className: string,
+    schema: any,
+    pipeline: any,
+    readPreference: ?string,
+    hint: ?mixed,
+    explain?: boolean
+  ) {
+    debug('aggregate');
+    const values = [className];
+    let index: number = 2;
+    let columns: string[] = [];
+    let countField = null;
+    let groupValues = null;
+    let wherePattern = '';
+    let limitPattern = '';
+    let skipPattern = '';
+    let sortPattern = '';
+    let groupPattern = '';
+    for (let i = 0; i < pipeline.length; i += 1) {
+      const stage = pipeline[i];
+      if (stage.$group) {
+        for (const field in stage.$group) {
+          const value = stage.$group[field];
+          if (value === null || value === undefined) {
+            continue;
+          }
+          if (field === '_id' && typeof value === 'string' && value !== '') {
+            columns.push(`$${index}:name AS "objectId"`);
+            groupPattern = `GROUP BY $${index}:name`;
+            values.push(transformAggregateField(value));
+            index += 1;
+            continue;
+          }
+          if (field === '_id' && typeof value === 'object' && Object.keys(value).length !== 0) {
+            groupValues = value;
+            const groupByFields = [];
+            for (const alias in value) {
+              if (typeof value[alias] === 'string' && value[alias]) {
+                const source = transformAggregateField(value[alias]);
+                if (!groupByFields.includes(`"${source}"`)) {
+                  groupByFields.push(`"${source}"`);
+                }
+                values.push(source, alias);
+                columns.push(`$${index}:name AS $${index + 1}:name`);
+                index += 2;
+              } else {
+                const operation = Object.keys(value[alias])[0];
+                const source = transformAggregateField(value[alias][operation]);
+                if (mongoAggregateToOracle[operation]) {
+                  if (!groupByFields.includes(`"${source}"`)) {
+                    groupByFields.push(`"${source}"`);
+                  }
+                  columns.push(
+                    `EXTRACT(${mongoAggregateToOracle[operation]
+                    } FROM $${index}:name) AS $${index + 1}:name`
+                  );
+                  values.push(source, alias);
+                  index += 2;
+                }
+              }
+            }
+            groupPattern = `GROUP BY $${index}:raw`;
+            values.push(groupByFields.join());
+            index += 1;
+            continue;
+          }
+          if (typeof value === 'object') {
+            if (value.$sum) {
+              if (typeof value.$sum === 'string') {
+                columns.push(`SUM($${index}:name) AS $${index + 1}:name`);
+                values.push(transformAggregateField(value.$sum), field);
+                index += 2;
+              } else {
+                countField = field;
+                columns.push(`COUNT(*) AS $${index}:name`);
+                values.push(field);
+                index += 1;
+              }
+            }
+            if (value.$max) {
+              columns.push(`MAX($${index}:name) AS $${index + 1}:name`);
+              values.push(transformAggregateField(value.$max), field);
+              index += 2;
+            }
+            if (value.$min) {
+              columns.push(`MIN($${index}:name) AS $${index + 1}:name`);
+              values.push(transformAggregateField(value.$min), field);
+              index += 2;
+            }
+            if (value.$avg) {
+              columns.push(`AVG($${index}:name) AS $${index + 1}:name`);
+              values.push(transformAggregateField(value.$avg), field);
+              index += 2;
+            }
+          }
+        }
+      } else {
+        columns.push('*');
+      }
+      if (stage.$project) {
+        if (columns.includes('*')) {
+          columns = [];
+        }
+        for (const field in stage.$project) {
+          const value = stage.$project[field];
+          if (value === 1 || value === true) {
+            columns.push(`$${index}:name`);
+            values.push(field);
+            index += 1;
+          }
+        }
+      }
+      if (stage.$match) {
+        const patterns = [];
+        const orOrAnd = Object.prototype.hasOwnProperty.call(stage.$match, '$or')
+          ? ' OR '
+          : ' AND ';
+
+        if (stage.$match.$or) {
+          const collapse = {};
+          stage.$match.$or.forEach(element => {
+            for (const key in element) {
+              collapse[key] = element[key];
+            }
+          });
+          stage.$match = collapse;
+        }
+        for (let field in stage.$match) {
+          const value = stage.$match[field];
+          if (field === '_id') {
+            field = 'objectId';
+          }
+          const matchPatterns = [];
+          Object.keys(ParseToOracleComparator).forEach(cmp => {
+            if (value[cmp]) {
+              const oracleComparator = ParseToOracleComparator[cmp];
+              matchPatterns.push(`$${index}:name ${oracleComparator} $${index + 1}`);
+              values.push(field, toOracleValue(value[cmp]));
+              index += 2;
+            }
+          });
+          if (matchPatterns.length > 0) {
+            patterns.push(`(${matchPatterns.join(' AND ')})`);
+          }
+          if (schema.fields[field] && schema.fields[field].type && matchPatterns.length === 0) {
+            patterns.push(`$${index}:name = $${index + 1}`);
+            values.push(field, value);
+            index += 2;
+          }
+        }
+        wherePattern = patterns.length > 0 ? `WHERE ${patterns.join(` ${orOrAnd} `)}` : '';
+      }
+      if (stage.$limit) {
+        limitPattern = `FETCH FIRST $${index} ROWS ONLY`;
+        values.push(stage.$limit);
+        index += 1;
+      }
+      if (stage.$skip) {
+        skipPattern = `OFFSET $${index}`;
+        values.push(stage.$skip);
+        index += 1;
+      }
+      if (stage.$sort) {
+        const sort = stage.$sort;
+        const keys = Object.keys(sort);
+        const sorting = keys
+          .map(key => {
+            const transformer = sort[key] === 1 ? 'ASC' : 'DESC';
+            const order = `$${index}:name ${transformer}`;
+            index += 1;
+            return order;
+          })
+          .join();
+        values.push(...keys);
+        sortPattern = sort !== undefined && sorting.length > 0 ? `ORDER BY ${sorting}` : '';
+      }
+    }
+
+    if (groupPattern) {
+      columns.forEach((e, i, a) => {
+        if (e && e.trim() === '*') {
+          a[i] = '';
+        }
+      });
+    }
+
+    const originalQuery = `SELECT ${columns
+      .filter(Boolean)
+      .join()} FROM $1:name ${wherePattern} ${skipPattern} ${groupPattern} ${sortPattern} ${limitPattern}`;
+    const qs = explain ? this.createExplainableQuery(originalQuery) : originalQuery;
+    return this._client.any(qs, values).then(a => {
+      if (explain) {
+        return a;
+      }
+      const results = a.map(object => this.oracleObjectToParseObject(className, object, schema));
+      results.forEach(result => {
+        if (!Object.prototype.hasOwnProperty.call(result, 'objectId')) {
+          result.objectId = null;
+        }
+        if (groupValues) {
+          result.objectId = {};
+          for (const key in groupValues) {
+            result.objectId[key] = result[key];
+            delete result[key];
+          }
+        }
+        if (countField) {
+          result[countField] = parseInt(result[countField], 10);
+        }
+      });
+      return results;
+    });
+  }
+
+  async performInitialization({ VolatileClassesSchemas }: any) {
+    debug('performInitialization');
+    await this._ensureSchemaCollectionExists();
+    const promises = VolatileClassesSchemas.map(schema => {
+      return this.createTable(schema.className, schema)
+        .catch(err => {
+          if (
+            isOracleError(err, OracleDuplicateRelationError) ||
+            err.code === Parse.Error.INVALID_CLASS_NAME
+          ) {
+            return Promise.resolve();
+          }
+          throw err;
+        })
+        .then(() => this.schemaUpgrade(schema.className, schema));
+    });
+    promises.push(this._listenToSchema());
+    return Promise.all(promises)
+      .then(() => {
+        return this._client.tx('perform-initialization', async t => {
+          await t.none(sql.misc.jsonObjectSetKeys);
+          await t.none(sql.array.add);
+          await t.none(sql.array.addUnique);
+          await t.none(sql.array.remove);
+          await t.none(sql.array.containsAll);
+          await t.none(sql.array.containsAllRegex);
+          await t.none(sql.array.contains);
+          return t.ctx;
+        });
+      })
+      .then(ctx => {
+        debug(`initializationDone in ${ctx.duration || 0}`);
+      })
+      .catch(error => {
+        // eslint-disable-next-line no-console
+        console.error(error);
+      });
+  }
+
+  async createIndexes(className: string, indexes: any, conn: ?any): Promise<void> {
+    return (conn || this._client).tx(t =>
+      t.batch(
+        indexes.map(i => {
+          const indexName = i.name;
+          // Check if index exists first
+          return t.one(
+            "SELECT CASE WHEN EXISTS (SELECT 1 FROM user_indexes WHERE index_name = :1) THEN 1 ELSE 0 END as cnt FROM DUAL",
+            [indexName.toUpperCase()],
+            a => a.cnt > 0
+          ).then(exists => {
+            if (!exists) {
+              return t.none('CREATE INDEX $1:name ON $2:name ($3:name)', [
+                indexName,
+                className,
+                i.key,
+              ]);
+            }
+          });
+        })
+      )
+    );
+  }
+
+  async createIndexesIfNeeded(
+    className: string,
+    fieldName: string,
+    type: any,
+    conn: ?any
+  ): Promise<void> {
+    const indexExists = await (conn || this._client).one(
+      "SELECT CASE WHEN EXISTS (SELECT 1 FROM user_indexes WHERE index_name = :1) THEN 1 ELSE 0 END as cnt FROM DUAL",
+      [fieldName.toUpperCase()],
+      a => a.cnt > 0
+    ).catch(() => false);
+
+    if (!indexExists) {
+      await (conn || this._client).none('CREATE INDEX $1:name ON $2:name ($3:name)', [
+        fieldName,
+        className,
+        type,
+      ]);
+    }
+  }
+
+  async dropIndexes(className: string, indexes: any, conn: any): Promise<void> {
+    const queries = indexes.map(i => ({
+      query: 'DROP INDEX $1:name',
+      values: [i],
+    }));
+    await (conn || this._client).tx(t => {
+      return t.batch(queries.map(q => t.none(q.query, q.values)));
+    });
+  }
+
+  async getIndexes(className: string) {
+    const qs = "SELECT * FROM user_indexes WHERE table_name = :1";
+    return this._client.any(qs, [className.toUpperCase()]);
+  }
+
+  async updateSchemaWithIndexes(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  async updateEstimatedCount(className: string) {
+    return this._client.none('ANALYZE TABLE $1:name', [className]);
+  }
+
+  async createTransactionalSession(): Promise<any> {
+    return new Promise(resolve => {
+      const transactionalSession = {};
+      transactionalSession.result = this._client.tx(t => {
+        transactionalSession.t = t;
+        transactionalSession.promise = new Promise(resolve => {
+          transactionalSession.resolve = resolve;
+        });
+        transactionalSession.batch = [];
+        resolve(transactionalSession);
+        return transactionalSession.promise;
+      });
+    });
+  }
+
+  commitTransactionalSession(transactionalSession: any): Promise<void> {
+    transactionalSession.resolve(transactionalSession.t.batch(transactionalSession.batch));
+    return transactionalSession.result;
+  }
+
+  abortTransactionalSession(transactionalSession: any): Promise<void> {
+    const result = transactionalSession.result.catch();
+    transactionalSession.batch.push(Promise.reject());
+    transactionalSession.resolve(transactionalSession.t.batch(transactionalSession.batch));
+    return result;
+  }
+
+  async ensureIndex(
+    className: string,
+    schema: SchemaType,
+    fieldNames: string[],
+    indexName: ?string,
+    caseInsensitive: boolean = false,
+    options?: Object = {}
+  ): Promise<any> {
+    const conn = options.conn !== undefined ? options.conn : this._client;
+    const defaultIndexName = `parse_default_${fieldNames.sort().join('_')}`;
+    const indexNameOptions: Object =
+      indexName != null ? { name: indexName } : { name: defaultIndexName };
+    const constraintPatterns = caseInsensitive
+      ? fieldNames.map((fieldName, index) => `LOWER($${index + 3}:name)`)
+      : fieldNames.map((fieldName, index) => `$${index + 3}:name`);
+    
+    const indexExists = await conn.one(
+      "SELECT CASE WHEN EXISTS (SELECT 1 FROM user_indexes WHERE index_name = :1) THEN 1 ELSE 0 END as cnt FROM DUAL",
+      [indexNameOptions.name.toUpperCase()],
+      a => a.cnt > 0
+    ).catch(() => false);
+
+    if (!indexExists) {
+      const qs = `CREATE INDEX $1:name ON $2:name (${constraintPatterns.join()})`;
+      await conn.none(qs, [indexNameOptions.name, className, ...fieldNames]).catch(error => {
+        if (
+          isOracleError(error, OracleDuplicateRelationError) &&
+          error.message && error.message.includes(indexNameOptions.name)
+        ) {
+          // Index already exists. Ignore error.
+        } else if (
+          isOracleError(error, OracleUniqueIndexViolationError) &&
+          error.message && error.message.includes(indexNameOptions.name)
+        ) {
+          throw new Parse.Error(
+            Parse.Error.DUPLICATE_VALUE,
+            'A duplicate value for a field with unique values was provided'
+          );
+        } else {
+          throw error;
+        }
+      });
+    }
+  }
+
+  async deleteIdempotencyFunction(options?: Object = {}): Promise<any> {
+    const conn = options.conn !== undefined ? options.conn : this._client;
+    const qs = 'DROP FUNCTION idempotency_delete_expired_records';
+    return conn.none(qs).catch(error => {
+      // Ignore if function doesn't exist
+      if (!isOracleError(error, OracleRelationDoesNotExistError)) {
+        throw error;
+      }
+    });
+  }
+
+  async ensureIdempotencyFunctionExists(options?: Object = {}): Promise<any> {
+    const conn = options.conn !== undefined ? options.conn : this._client;
+    const ttlOptions = options.ttl !== undefined ? `${options.ttl}` : '60';
+    const qs =
+      `CREATE OR REPLACE FUNCTION idempotency_delete_expired_records RETURN void AS BEGIN DELETE FROM "_Idempotency" WHERE expire < SYSTIMESTAMP - INTERVAL '${ttlOptions}' SECOND; END;`;
+    return conn.none(qs).catch(error => {
+      throw error;
+    });
+  }
+}
+
+export default OracleStorageAdapter;
+
 
