@@ -46,12 +46,15 @@ export class GridFSBucketAdapter extends FilesAdapter {
 
   _connect() {
     if (!this._connectionPromise) {
-      this._connectionPromise = MongoClient.connect(this._databaseURI, this._mongoOptions).then(
+      // Add wrapping library metadata.
+      const driverInfo = {
+        name: 'Parse Server',
+        version: pkg.version,
+      };
+      const mongoclient = new MongoClient(this._databaseURI, this._mongoOptions);
+      mongoclient.appendMetadata(driverInfo);
+      this._connectionPromise = mongoclient.connect().then(
         client => {
-          client.appendMetadata?.({
-            name: 'Parse Server',
-            version: pkg.version,
-          });
           this._client = client;
           return client.db(client.s.options.dbName);
         }

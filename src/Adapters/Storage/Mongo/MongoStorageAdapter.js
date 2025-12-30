@@ -180,15 +180,18 @@ export class MongoStorageAdapter implements StorageAdapter {
     // parsing and re-formatting causes the auth value (if there) to get URI
     // encoded
     const encodedUri = formatUrl(parseUrl(this._uri));
-    this.connectionPromise = MongoClient.connect(encodedUri, this._mongoOptions)
+    // Add wrapping library metadata.
+    const driverInfo = {
+      name: 'Parse Server',
+      version: pkg.version,
+    }
+    const mongoclient = new MongoClient(encodedUri, this._mongoOptions)
+    mongoclient.appendMetadata(driverInfo);
+    this.connectionPromise = mongoclient.connect()
       .then(client => {
         // Starting mongoDB 3.0, the MongoClient.connect don't return a DB anymore but a client
         // Fortunately, we can get back the options and use them to select the proper DB.
         // https://github.com/mongodb/node-mongodb-native/blob/2c35d76f08574225b8db02d7bef687123e6bb018/lib/mongo_client.js#L885
-        client.appendMetadata?.({
-          name: 'Parse Server',
-          version: pkg.version,
-        });
         const options = client.s.options;
         const database = client.db(options.dbName);
         if (!database) {

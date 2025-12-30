@@ -451,11 +451,9 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
 
   it('pass metadata to MongoClient', async () => {
     const pkg = require('../package.json');
-    spyOn(MongoClient.prototype, 'appendMetadata').and.callThrough();
-
     const adapter = new MongoStorageAdapter({ uri: databaseURI });
     await adapter.connect();
-    expect(adapter.client.appendMetadata).toHaveBeenCalledWith({
+    expect(adapter.client.s.options.driverInfo).toEqual({
       name: 'Parse Server',
       version: pkg.version,
     });
