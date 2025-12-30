@@ -1,4 +1,19 @@
 const fs = require('fs');
+
+/**
+ * Parses an Oracle database connection URI and extracts connection options.
+ * Supports Oracle-specific connection parameters including service name, SID,
+ * connection pooling, and SSL/TLS options.
+ *
+ * @param {string} uri - Oracle database connection URI (e.g., oracle://user:pass@host:port/serviceName)
+ * @returns {Object} Database options object with host, port, user, password, serviceName/sid, and pool options
+ * @example
+ * // Basic connection
+ * getDatabaseOptionsFromURI('oracle://user:pass@localhost:1521/XE');
+ *
+ * // With connection pooling
+ * getDatabaseOptionsFromURI('oracle://user:pass@localhost:1521/XE?poolMin=2&poolMax=10');
+ */
 function getDatabaseOptionsFromURI(uri) {
   const databaseOptions = {};
 
@@ -79,6 +94,14 @@ function getDatabaseOptionsFromURI(uri) {
   return databaseOptions;
 }
 
+/**
+ * Parses a URL query string into an object of key-value pairs.
+ *
+ * @param {string} queryString - URL query string (e.g., "key1=value1&key2=value2")
+ * @returns {Object} Object with decoded query parameters
+ * @example
+ * parseQueryParams('poolMin=2&poolMax=10') // { poolMin: '2', poolMax: '10' }
+ */
 function parseQueryParams(queryString) {
   queryString = queryString || '';
 

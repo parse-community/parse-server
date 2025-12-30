@@ -2,7 +2,14 @@ const parser = require('./OracleConfigParser');
 const oracledb = require('oracledb');
 const { formatQuery } = require('./QueryFormatter');
 
-// Helper to format pg-promise style queries to Oracle
+/**
+ * Helper function to format pg-promise style queries to Oracle format.
+ * Converts parameterized queries from pg-promise syntax to Oracle bind variable syntax.
+ *
+ * @param {string} query - SQL query with pg-promise style parameters ($1, $2, etc.)
+ * @param {Array} params - Array of parameter values
+ * @returns {Object} Object with formatted query and parameters for Oracle
+ */
 function formatQueryForOracle(query, params) {
   if (typeof query === 'string' && params && Array.isArray(params)) {
     return formatQuery(query, params);
@@ -10,6 +17,20 @@ function formatQueryForOracle(query, params) {
   return { query, params: params || [] };
 }
 
+/**
+ * Creates an Oracle database client with connection pooling.
+ * Returns a client object that mimics the pg-promise interface for compatibility
+ * with existing Parse Server code.
+ *
+ * @param {string} uri - Oracle database connection URI
+ * @param {Object} databaseOptions - Additional database connection options
+ * @returns {Object} Object containing client (with pg-promise-like interface) and oracledb module
+ * @example
+ * const { client } = createClient('oracle://user:pass@localhost:1521/XE', {
+ *   poolMin: 2,
+ *   poolMax: 10
+ * });
+ */
 export function createClient(uri, databaseOptions) {
   let dbOptions = {};
   databaseOptions = databaseOptions || {};

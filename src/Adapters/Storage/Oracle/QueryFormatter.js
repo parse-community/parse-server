@@ -1,7 +1,15 @@
-// Query formatter to convert pg-promise style queries to Oracle format
-// pg-promise uses $1, $2, etc. with modifiers like :name, :raw
-// Oracle uses :1, :2, etc. for positional or :name for named parameters
-
+/**
+ * Converts pg-promise style queries to Oracle bind variable format.
+ * pg-promise uses $1, $2, etc. with modifiers like :name, :raw
+ * Oracle uses :1, :2, etc. for positional or :name for named parameters
+ *
+ * @param {string} query - SQL query with pg-promise parameters ($1, $2:name, $3:raw)
+ * @param {Array} params - Array of parameter values
+ * @returns {Object} Object with formatted query and Oracle bind parameters
+ * @example
+ * formatQuery('SELECT * FROM $1:name WHERE id = $2', ['users', 123])
+ * // Returns: { query: 'SELECT * FROM "users" WHERE id = :1', params: [123] }
+ */
 function formatQuery(query, params) {
   if (!params || params.length === 0) {
     return { query, params: [] };
@@ -58,6 +66,14 @@ function formatQuery(query, params) {
   return { query: formattedQuery, params: oracleParams };
 }
 
+/**
+ * Converts pg-promise style queries to Oracle named parameter format.
+ * Uses named bind variables (:name) instead of positional (:1, :2).
+ *
+ * @param {string} query - SQL query with pg-promise parameters
+ * @param {Object} params - Object with named parameter values
+ * @returns {Object} Object with formatted query and Oracle named parameters
+ */
 function formatQueryWithNamedParams(query, params) {
   if (!params || params.length === 0) {
     return { query, params: {} };

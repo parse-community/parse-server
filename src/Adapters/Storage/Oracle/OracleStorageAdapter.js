@@ -1050,6 +1050,29 @@ var GeoPointCoder = {
   },
 };
 
+/**
+ * Oracle Storage Adapter for Parse Server.
+ * 
+ * Provides a storage adapter implementation for Oracle Database 23ai, leveraging
+ * native JSON support and Oracle Spatial for GeoPoint/Polygon types.
+ * 
+ * Features:
+ * - Dynamic schema management
+ * - Full CRUD operations
+ * - Query support (comparisons, arrays, pointers, relations, regex, etc.)
+ * - Index creation and management
+ * - Transaction support
+ * - JSON operations using Oracle 23ai native JSON
+ * - Spatial data support (GeoPoint, Polygon) using Oracle Spatial
+ * 
+ * @implements {StorageAdapter}
+ * @example
+ * const adapter = new OracleStorageAdapter({
+ *   uri: 'oracle://user:pass@localhost:1521/XE',
+ *   collectionPrefix: '',
+ *   databaseOptions: { poolMin: 2, poolMax: 10 }
+ * });
+ */
 export class OracleStorageAdapter implements StorageAdapter {
   canSortOnJoinTables: boolean;
   enableSchemaHooks: boolean;
@@ -1064,6 +1087,17 @@ export class OracleStorageAdapter implements StorageAdapter {
   schemaCacheTtl: ?number;
   disableIndexFieldValidation: boolean;
 
+  /**
+   * Creates a new Oracle Storage Adapter instance.
+   *
+   * @param {Object} options - Configuration options
+   * @param {string} options.uri - Oracle database connection URI
+   * @param {string} [options.collectionPrefix=''] - Prefix for collection/table names
+   * @param {Object} [options.databaseOptions={}] - Additional database options
+   * @param {boolean} [options.databaseOptions.enableSchemaHooks=false] - Enable schema change hooks
+   * @param {boolean} [options.databaseOptions.disableIndexFieldValidation=false] - Disable index field validation
+   * @param {number} [options.databaseOptions.schemaCacheTtl] - Schema cache TTL in seconds
+   */
   constructor({ uri, collectionPrefix = '', databaseOptions = {} }: any) {
     const options = { ...databaseOptions };
     this._collectionPrefix = collectionPrefix;
@@ -1083,11 +1117,23 @@ export class OracleStorageAdapter implements StorageAdapter {
     this.canSortOnJoinTables = false;
   }
 
+  /**
+   * Registers a callback to be notified of schema changes.
+   *
+   * @param {Function} callback - Callback function to invoke on schema changes
+   */
   watch(callback: () => void): void {
     this._onchange = callback;
   }
 
-  //Note that analyze=true will run the query, executing INSERTS, DELETES, etc.
+  /**
+   * Creates an explainable query for query analysis.
+   * Note that analyze=true will run the query, executing INSERTS, DELETES, etc.
+   *
+   * @param {string} query - SQL query to explain
+   * @param {boolean} [analyze=false] - Whether to analyze the query execution
+   * @returns {string} EXPLAIN PLAN query for Oracle
+   */
   createExplainableQuery(query: string, analyze: boolean = false) {
     // Oracle uses EXPLAIN PLAN
     if (analyze) {
@@ -1097,6 +1143,10 @@ export class OracleStorageAdapter implements StorageAdapter {
     }
   }
 
+  /**
+   * Handles graceful shutdown of the adapter.
+   * Closes any open streams and connection pools.
+   */
   handleShutdown() {
     if (this._stream) {
       this._stream.close();
@@ -1108,23 +1158,39 @@ export class OracleStorageAdapter implements StorageAdapter {
     this._client.$pool.end();
   }
 
+  /**
+   * Listens for schema changes (not yet implemented for Oracle).
+   * Oracle doesn't have native LISTEN/NOTIFY like Postgres.
+   * Schema hooks would need to be implemented differently (e.g., polling or Advanced Queuing).
+   *
+   * @private
+   */
   async _listenToSchema() {
-    // Oracle doesn't have native LISTEN/NOTIFY like Postgres
-    // Schema hooks would need to be implemented differently for Oracle
-    // For now, we'll skip this feature
     if (!this._stream && this.enableSchemaHooks) {
       debug('Schema hooks not yet implemented for Oracle');
     }
   }
 
+  /**
+   * Notifies listeners of schema changes (not yet implemented for Oracle).
+   * Oracle doesn't have native LISTEN/NOTIFY.
+   * Would need alternative implementation (e.g., polling or Advanced Queuing).
+   *
+   * @private
+   */
   _notifySchemaChange() {
-    // Oracle doesn't have native LISTEN/NOTIFY
-    // Would need alternative implementation (e.g., polling or Advanced Queuing)
     if (this.enableSchemaHooks) {
       debug('Schema change notification not yet implemented for Oracle');
     }
   }
 
+  /**
+   * Ensures the _SCHEMA table exists for storing Parse class schemas.
+   * Oracle doesn't support IF NOT EXISTS in CREATE TABLE, so we check first.
+   *
+   * @param {Object} [conn] - Database connection (uses default if not provided)
+   * @private
+   */
   async _ensureSchemaCollectionExists(conn: any) {
     conn = conn || this._client;
     // Oracle doesn't support IF NOT EXISTS in CREATE TABLE, need to check first
@@ -1146,6 +1212,12 @@ export class OracleStorageAdapter implements StorageAdapter {
     }
   }
 
+  /**
+   * Checks if a Parse class (table) exists in the database.
+   *
+   * @param {string} name - Class/table name to check
+   * @returns {Promise<boolean>} True if the class exists, false otherwise
+   */
   async classExists(name: string) {
     return this._client.one(
       "SELECT CASE WHEN EXISTS (SELECT 1 FROM user_tables WHERE table_name = :1) THEN 1 ELSE 0 END as cnt FROM DUAL",
@@ -1154,6 +1226,12 @@ export class OracleStorageAdapter implements StorageAdapter {
     );
   }
 
+  /**
+   * Sets class-level permissions (CLPs) for a Parse class.
+   *
+   * @param {string} className - Name of the Parse class
+   * @param {Object} CLPs - Class-level permissions object
+   */
   async setClassLevelPermissions(className: string, CLPs: any) {
     await this._client.task('set-class-level-permissions', async t => {
       const values = [className, 'schema', 'classLevelPermissions', JSON.stringify(CLPs)];
@@ -1165,6 +1243,16 @@ export class OracleStorageAdapter implements StorageAdapter {
     this._notifySchemaChange();
   }
 
+  /**
+   * Sets indexes for a Parse class using schema format.
+   * Creates new indexes and removes deleted ones.
+   *
+   * @param {string} className - Name of the Parse class
+   * @param {Object} submittedIndexes - Indexes to add/update/delete
+   * @param {Object} [existingIndexes={}] - Currently existing indexes
+   * @param {Object} fields - Schema fields for validation
+   * @param {Object} [conn] - Database connection (uses default if not provided)
+   */
   async setIndexesWithSchemaFormat(
     className: string,
     submittedIndexes: any,
@@ -1241,6 +1329,15 @@ export class OracleStorageAdapter implements StorageAdapter {
     this._notifySchemaChange();
   }
 
+  /**
+   * Creates a new Parse class with the given schema.
+   *
+   * @param {string} className - Name of the Parse class to create
+   * @param {SchemaType} schema - Schema definition for the class
+   * @param {Object} [conn] - Database connection (uses default if not provided)
+   * @returns {Promise<Object>} Parse schema object
+   * @throws {Parse.Error} If class already exists
+   */
   async createClass(className: string, schema: SchemaType, conn: ?any) {
     conn = conn || this._client;
     const parseSchema = await conn
@@ -1263,7 +1360,14 @@ export class OracleStorageAdapter implements StorageAdapter {
     return parseSchema;
   }
 
-  // Just create a table, do not insert in schema
+  /**
+   * Creates a database table for a Parse class.
+   * Just creates the table, does not insert into _SCHEMA.
+   *
+   * @param {string} className - Name of the Parse class
+   * @param {SchemaType} schema - Schema definition
+   * @param {Object} conn - Database connection
+   */
   async createTable(className: string, schema: SchemaType, conn: any) {
     conn = conn || this._client;
     debug('createTable');
@@ -1344,6 +1448,13 @@ export class OracleStorageAdapter implements StorageAdapter {
     }
   }
 
+  /**
+   * Upgrades the schema for a Parse class by adding any new fields.
+   *
+   * @param {string} className - Name of the Parse class
+   * @param {SchemaType} schema - Updated schema definition
+   * @param {Object} conn - Database connection
+   */
   async schemaUpgrade(className: string, schema: SchemaType, conn: any) {
     debug('schemaUpgrade');
     conn = conn || this._client;
@@ -1363,6 +1474,13 @@ export class OracleStorageAdapter implements StorageAdapter {
     });
   }
 
+  /**
+   * Adds a field to a Parse class if it doesn't already exist.
+   *
+   * @param {string} className - Name of the Parse class
+   * @param {string} fieldName - Name of the field to add
+   * @param {Object} type - Field type definition
+   */
   async addFieldIfNotExists(className: string, fieldName: string, type: any) {
     debug('addFieldIfNotExists');
     const self = this;
@@ -1428,6 +1546,13 @@ export class OracleStorageAdapter implements StorageAdapter {
     this._notifySchemaChange();
   }
 
+  /**
+   * Updates field options for a field in a Parse class schema.
+   *
+   * @param {string} className - Name of the Parse class
+   * @param {string} fieldName - Name of the field to update
+   * @param {Object} type - Updated field type definition
+   */
   async updateFieldOptions(className: string, fieldName: string, type: any) {
     await this._client.tx('update-schema-field-options', async t => {
       await t.none(
@@ -1437,6 +1562,14 @@ export class OracleStorageAdapter implements StorageAdapter {
     });
   }
 
+  /**
+   * Drops a Parse class (table) from the database.
+   * Resolves with true if it was a Parse Schema (e.g., _User, Custom, etc.)
+   * and resolves with false if it wasn't (e.g., a join table).
+   *
+   * @param {string} className - Name of the Parse class to delete
+   * @returns {Promise<boolean>} True if Parse class, false if join table
+   */
   async deleteClass(className: string) {
     const operations = [
       { query: `BEGIN EXECUTE IMMEDIATE 'DROP TABLE $1:name'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`, values: [className] },
@@ -1455,6 +1588,10 @@ export class OracleStorageAdapter implements StorageAdapter {
     return response;
   }
 
+  /**
+   * Deletes all data known to this adapter. Used for testing.
+   * Removes all Parse classes, join tables, and system tables.
+   */
   async deleteAllClasses() {
     const now = new Date().getTime();
     debug('deleteAllClasses');
@@ -1500,6 +1637,13 @@ export class OracleStorageAdapter implements StorageAdapter {
       });
   }
 
+  /**
+   * Deletes fields from a Parse class schema.
+   *
+   * @param {string} className - Name of the Parse class
+   * @param {SchemaType} schema - Updated schema without deleted fields
+   * @param {Array<string>} fieldNames - Names of fields to delete
+   */
   async deleteFields(className: string, schema: SchemaType, fieldNames: string[]): Promise<void> {
     debug('deleteFields');
     fieldNames = fieldNames.reduce((list: Array<string>, fieldName: string) => {
@@ -1525,6 +1669,11 @@ export class OracleStorageAdapter implements StorageAdapter {
     this._notifySchemaChange();
   }
 
+  /**
+   * Returns all Parse class schemas known to this adapter, in Parse format.
+   *
+   * @returns {Promise<Array>} Array of Parse schema objects
+   */
   async getAllClasses() {
     return this._client.task('get-all-classes', async t => {
       return await t.map('SELECT * FROM "_SCHEMA"', null, row =>
@@ -1533,6 +1682,13 @@ export class OracleStorageAdapter implements StorageAdapter {
     });
   }
 
+  /**
+   * Returns the schema for a Parse class, in Parse format.
+   *
+   * @param {string} className - Name of the Parse class
+   * @returns {Promise<Object>} Parse schema object
+   * @throws {undefined} If the class doesn't exist
+   */
   async getClass(className: string) {
     debug('getClass');
     return this._client
@@ -1546,6 +1702,16 @@ export class OracleStorageAdapter implements StorageAdapter {
       .then(toParseSchema);
   }
 
+  /**
+   * Creates a new Parse object in the database.
+   *
+   * @param {string} className - Name of the Parse class
+   * @param {SchemaType} schema - Schema definition for the class
+   * @param {Object} object - Parse object to create
+   * @param {Object} [transactionalSession] - Transaction session (if in transaction)
+   * @returns {Promise<Object>} Object with ops array containing created object
+   * @throws {Parse.Error} If duplicate value error occurs
+   */
   async createObject(
     className: string,
     schema: SchemaType,
@@ -1706,6 +1872,17 @@ export class OracleStorageAdapter implements StorageAdapter {
     return promise;
   }
 
+  /**
+   * Deletes all objects matching the given Parse query.
+   * If no objects match, rejects with OBJECT_NOT_FOUND.
+   *
+   * @param {string} className - Name of the Parse class
+   * @param {SchemaType} schema - Schema definition
+   * @param {QueryType} query - Parse query to match objects
+   * @param {Object} [transactionalSession] - Transaction session (if in transaction)
+   * @returns {Promise<number>} Number of deleted objects
+   * @throws {Parse.Error} If no objects found
+   */
   async deleteObjectsByQuery(
     className: string,
     schema: SchemaType,
@@ -1753,6 +1930,16 @@ export class OracleStorageAdapter implements StorageAdapter {
     return promise;
   }
 
+  /**
+   * Finds one object matching the query and updates it.
+   *
+   * @param {string} className - Name of the Parse class
+   * @param {SchemaType} schema - Schema definition
+   * @param {QueryType} query - Parse query to match object
+   * @param {Object} update - Update operations to apply
+   * @param {Object} [transactionalSession] - Transaction session (if in transaction)
+   * @returns {Promise<Object>} Updated object
+   */
   async findOneAndUpdate(
     className: string,
     schema: SchemaType,
@@ -1766,6 +1953,16 @@ export class OracleStorageAdapter implements StorageAdapter {
     );
   }
 
+  /**
+   * Updates all objects matching the given Parse query.
+   *
+   * @param {string} className - Name of the Parse class
+   * @param {SchemaType} schema - Schema definition
+   * @param {QueryType} query - Parse query to match objects
+   * @param {Object} update - Update operations to apply
+   * @param {Object} [transactionalSession] - Transaction session (if in transaction)
+   * @returns {Promise<Array>} Array of updated objects
+   */
   async updateObjectsByQuery(
     className: string,
     schema: SchemaType,
@@ -1957,6 +2154,15 @@ export class OracleStorageAdapter implements StorageAdapter {
     });
   }
 
+  /**
+   * Finds objects matching the given Parse query.
+   *
+   * @param {string} className - Name of the Parse class
+   * @param {SchemaType} schema - Schema definition
+   * @param {QueryType} query - Parse query to match objects
+   * @param {QueryOptions} options - Query options (skip, limit, sort, keys, etc.)
+   * @returns {Promise<Array>} Array of matching Parse objects
+   */
   find(
     className: string,
     schema: SchemaType,
@@ -2046,6 +2252,15 @@ export class OracleStorageAdapter implements StorageAdapter {
       });
   }
 
+  /**
+   * Converts an Oracle database object to Parse REST format.
+   * Handles type conversions for Pointers, Relations, GeoPoints, Files, Dates, etc.
+   *
+   * @param {string} className - Name of the Parse class
+   * @param {Object} object - Database object to convert
+   * @param {Object} schema - Schema definition
+   * @returns {Object} Parse-formatted object
+   */
   oracleObjectToParseObject(className: string, object: any, schema: any) {
     Object.keys(schema.fields).forEach(fieldName => {
       if (schema.fields[fieldName].type === 'Pointer' && object[fieldName]) {
@@ -2176,6 +2391,16 @@ export class OracleStorageAdapter implements StorageAdapter {
     }
   }
 
+  /**
+   * Counts objects matching the given Parse query.
+   *
+   * @param {string} className - Name of the Parse class
+   * @param {SchemaType} schema - Schema definition
+   * @param {QueryType} query - Parse query to match objects
+   * @param {string} [readPreference] - Read preference (not used in Oracle)
+   * @param {boolean} [estimate=true] - Whether to use estimated count for performance
+   * @returns {Promise<number>} Count of matching objects
+   */
   async count(
     className: string,
     schema: SchemaType,
@@ -2219,6 +2444,15 @@ export class OracleStorageAdapter implements StorageAdapter {
       });
   }
 
+  /**
+   * Returns distinct values for a field matching the given query.
+   *
+   * @param {string} className - Name of the Parse class
+   * @param {SchemaType} schema - Schema definition
+   * @param {QueryType} query - Parse query to match objects
+   * @param {string} fieldName - Name of the field to get distinct values for
+   * @returns {Promise<Array>} Array of distinct values
+   */
   async distinct(className: string, schema: SchemaType, query: QueryType, fieldName: string) {
     debug('distinct');
     let field = fieldName;
@@ -2277,6 +2511,17 @@ export class OracleStorageAdapter implements StorageAdapter {
       );
   }
 
+  /**
+   * Performs an aggregation pipeline on a Parse class.
+   *
+   * @param {string} className - Name of the Parse class
+   * @param {Object} schema - Schema definition
+   * @param {Array} pipeline - Aggregation pipeline stages
+   * @param {string} [readPreference] - Read preference (not used in Oracle)
+   * @param {*} [hint] - Query hint (not used in Oracle)
+   * @param {boolean} [explain] - Whether to return query explanation
+   * @returns {Promise<Array>} Aggregation results
+   */
   async aggregate(
     className: string,
     schema: any,
@@ -2492,6 +2737,13 @@ export class OracleStorageAdapter implements StorageAdapter {
     });
   }
 
+  /**
+   * Performs initialization tasks for the adapter.
+   * Creates system tables, sets up SQL functions, and initializes volatile classes.
+   *
+   * @param {Object} options - Initialization options
+   * @param {Array} options.VolatileClassesSchemas - Schemas for volatile Parse classes
+   */
   async performInitialization({ VolatileClassesSchemas }: any) {
     debug('performInitialization');
     await this._ensureSchemaCollectionExists();
