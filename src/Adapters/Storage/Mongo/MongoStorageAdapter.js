@@ -185,9 +185,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       name: 'Parse Server',
       version: pkg.version,
     }
-    const mongoclient = new MongoClient(encodedUri, this._mongoOptions)
-    mongoclient.appendMetadata(driverInfo);
-    this.connectionPromise = mongoclient.connect()
+    this.connectionPromise = MongoClient.connect(encodedUri, { ...this._mongoOptions, driverInfo })
       .then(client => {
         // Starting mongoDB 3.0, the MongoClient.connect don't return a DB anymore but a client
         // Fortunately, we can get back the options and use them to select the proper DB.
