@@ -24,12 +24,24 @@ const OracleMissingColumnError = '01449';
 const OracleUniqueIndexViolationError = '00001';
 const logger = require('../../../logger');
 
+/**
+ * Debug logging function for Oracle adapter.
+ *
+ * @param {...any} args - Arguments to log
+ */
 const debug = function (...args: any) {
   args = ['ORACLE: ' + arguments[0]].concat(args.slice(1, args.length));
   const log = logger.getLogger();
   log.debug.apply(log, args);
 };
 
+/**
+ * Maps Parse field types to Oracle database types.
+ *
+ * @param {Object} type - Parse field type definition
+ * @returns {string} Oracle data type
+ * @throws {Error} If type is not supported
+ */
 const parseTypeToOracleType = type => {
   switch (type.type) {
     case 'String':
@@ -63,6 +75,9 @@ const parseTypeToOracleType = type => {
   }
 };
 
+/**
+ * Maps Parse query comparators to Oracle SQL operators.
+ */
 const ParseToOracleComparator = {
   $gt: '>',
   $lt: '<',
@@ -70,6 +85,9 @@ const ParseToOracleComparator = {
   $lte: '<=',
 };
 
+/**
+ * Maps MongoDB aggregation date operators to Oracle EXTRACT format strings.
+ */
 const mongoAggregateToOracle = {
   $dayOfMonth: 'DAY',
   $dayOfWeek: 'DOW',
@@ -85,6 +103,12 @@ const mongoAggregateToOracle = {
   $year: 'YYYY',
 };
 
+/**
+ * Converts a Parse value to Oracle-compatible format.
+ *
+ * @param {*} value - Parse value to convert
+ * @returns {*} Oracle-compatible value
+ */
 const toOracleValue = value => {
   if (typeof value === 'object') {
     if (value.__type === 'Date') {
@@ -97,6 +121,12 @@ const toOracleValue = value => {
   return value;
 };
 
+/**
+ * Determines the Oracle cast type for a value.
+ *
+ * @param {*} value - Value to determine cast type for
+ * @returns {string|undefined} Oracle cast type or undefined
+ */
 const toOracleValueCastType = value => {
   const oracleValue = toOracleValue(value);
   let castType;
@@ -113,6 +143,13 @@ const toOracleValueCastType = value => {
   return castType;
 };
 
+/**
+ * Transforms a value for use in Oracle queries.
+ * Converts Pointer objects to their objectId.
+ *
+ * @param {*} value - Value to transform
+ * @returns {*} Transformed value
+ */
 const transformValue = value => {
   if (typeof value === 'object' && value.__type === 'Pointer') {
     return value.objectId;
@@ -149,6 +186,13 @@ const defaultCLPS = Object.freeze({
   protectedFields: { '*': [] },
 });
 
+/**
+ * Converts an Oracle schema to Parse schema format.
+ * Removes internal fields and sets default class-level permissions.
+ *
+ * @param {Object} schema - Oracle schema object
+ * @returns {Object} Parse schema object
+ */
 const toParseSchema = schema => {
   if (schema.className === '_User') {
     delete schema.fields._hashed_password;
@@ -173,6 +217,13 @@ const toParseSchema = schema => {
   };
 };
 
+/**
+ * Converts a Parse schema to Oracle schema format.
+ * Adds internal fields like _wperm, _rperm, and _hashed_password.
+ *
+ * @param {Object} schema - Parse schema object
+ * @returns {Object} Oracle schema object with internal fields
+ */
 const toOracleSchema = schema => {
   if (!schema) {
     return schema;
@@ -187,8 +238,20 @@ const toOracleSchema = schema => {
   return schema;
 };
 
+/**
+ * Checks if a string represents an array index (all numeric characters).
+ *
+ * @param {string} arrayIndex - String to check
+ * @returns {boolean} True if string is all numeric
+ */
 const isArrayIndex = (arrayIndex) => Array.from(arrayIndex).every(c => c >= '0' && c <= '9');
 
+/**
+ * Handles dot notation fields in an object, converting them to nested objects.
+ *
+ * @param {Object} object - Object with potential dot notation fields
+ * @returns {Object} Object with dot notation fields converted to nested structure
+ */
 const handleDotFields = object => {
   Object.keys(object).forEach(fieldName => {
     if (fieldName.indexOf('.') > -1) {
@@ -214,6 +277,12 @@ const handleDotFields = object => {
   return object;
 };
 
+/**
+ * Transforms a dot notation field name into components for Oracle JSON queries.
+ *
+ * @param {string} fieldName - Dot notation field name (e.g., "user.name")
+ * @returns {Array} Array of components with proper quoting
+ */
 const transformDotFieldToComponents = fieldName => {
   return fieldName.split('.').map((cmpt, index) => {
     if (index === 0) {
@@ -227,7 +296,13 @@ const transformDotFieldToComponents = fieldName => {
   });
 };
 
-// Oracle JSON path syntax: JSON_EXISTS, JSON_VALUE, JSON_QUERY
+/**
+ * Transforms a dot notation field name to Oracle JSON_VALUE syntax.
+ * Oracle JSON path syntax: JSON_EXISTS, JSON_VALUE, JSON_QUERY
+ *
+ * @param {string} fieldName - Dot notation field name
+ * @returns {string} Oracle JSON_VALUE expression
+ */
 const transformDotField = fieldName => {
   if (fieldName.indexOf('.') === -1) {
     return `"${fieldName}"`;
@@ -246,6 +321,12 @@ const transformDotField = fieldName => {
   return `JSON_VALUE("${components[0]}", '${path}')`;
 };
 
+/**
+ * Transforms aggregate field names (removes $ prefix from special fields).
+ *
+ * @param {string} fieldName - Field name to transform
+ * @returns {string} Transformed field name
+ */
 const transformAggregateField = fieldName => {
   if (typeof fieldName !== 'string') {
     return fieldName;
@@ -259,6 +340,13 @@ const transformAggregateField = fieldName => {
   return fieldName.substring(1);
 };
 
+/**
+ * Validates that object keys don't contain '$' or '.' characters.
+ * Throws an error if invalid nested keys are found.
+ *
+ * @param {Object} object - Object to validate
+ * @throws {Parse.Error} If invalid keys are found
+ */
 const validateKeys = object => {
   if (typeof object == 'object') {
     for (const key in object) {
@@ -276,7 +364,12 @@ const validateKeys = object => {
   }
 };
 
-// Returns the list of join tables on a schema
+/**
+ * Returns the list of join tables for a schema based on Relation fields.
+ *
+ * @param {Object} schema - Schema object
+ * @returns {Array<string>} Array of join table names
+ */
 const joinTablesForSchema = schema => {
   const list = [];
   if (schema) {
@@ -295,7 +388,13 @@ interface WhereClause {
   sorts: Array<any>;
 }
 
-// Helper to check Oracle error code
+/**
+ * Checks if an error matches a specific Oracle error code.
+ *
+ * @param {Error} error - Error object to check
+ * @param {string} code - Oracle error code to match
+ * @returns {boolean} True if error matches the code
+ */
 const isOracleError = (error, code) => {
   if (!error || !error.errorNum) {
     return false;
@@ -305,6 +404,16 @@ const isOracleError = (error, code) => {
   return errorCode.includes(code);
 };
 
+/**
+ * Builds a SQL WHERE clause from a Parse query.
+ *
+ * @param {Object} options - Build options
+ * @param {Object} options.schema - Parse schema
+ * @param {Object} options.query - Parse query object
+ * @param {number} options.index - Starting parameter index
+ * @param {boolean} [options.caseInsensitive] - Whether to use case-insensitive matching
+ * @returns {WhereClause} Object with pattern, values, and sorts
+ */
 const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClause => {
   const patterns = [];
   let values = [];
@@ -892,6 +1001,13 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
   return { pattern: patterns.join(' AND '), values, sorts };
 };
 
+/**
+ * Converts a Polygon coordinate array to Oracle Spatial format.
+ *
+ * @param {Array<Array<number>>} polygon - Array of coordinate pairs
+ * @returns {string} Oracle Spatial ordinate string
+ * @throws {Parse.Error} If polygon has less than 3 points
+ */
 function convertPolygonToSQL(polygon) {
   if (polygon.length < 3) {
     throw new Parse.Error(Parse.Error.INVALID_JSON, `Polygon must have at least 3 values`);
@@ -928,6 +1044,12 @@ function convertPolygonToSQL(polygon) {
   return ordinates.join(',');
 }
 
+/**
+ * Removes whitespace and comments from a regex pattern.
+ *
+ * @param {string} regex - Regex pattern string
+ * @returns {string} Cleaned regex pattern
+ */
 function removeWhiteSpace(regex) {
   if (!regex.endsWith('\n')) {
     regex += '\n';
@@ -947,6 +1069,13 @@ function removeWhiteSpace(regex) {
   );
 }
 
+/**
+ * Processes a regex pattern for Oracle REGEXP_LIKE.
+ * Handles startsWith (^), endsWith ($), and contains patterns.
+ *
+ * @param {string} s - Regex pattern string
+ * @returns {string} Processed regex pattern
+ */
 function processRegexPattern(s) {
   if (s && s.startsWith('^')) {
     // regex for startsWith
@@ -960,6 +1089,12 @@ function processRegexPattern(s) {
   return literalizeRegexPart(s);
 }
 
+/**
+ * Checks if a regex value represents a startsWith pattern.
+ *
+ * @param {string} value - Regex pattern to check
+ * @returns {boolean} True if pattern starts with ^
+ */
 function isStartsWithRegex(value) {
   if (!value || typeof value !== 'string' || !value.startsWith('^')) {
     return false;
@@ -969,6 +1104,12 @@ function isStartsWithRegex(value) {
   return !!matches;
 }
 
+/**
+ * Checks if all values in an array are regex patterns or none are.
+ *
+ * @param {Array} values - Array of values to check
+ * @returns {boolean} True if all or none are regex patterns
+ */
 function isAllValuesRegexOrNone(values) {
   if (!values || !Array.isArray(values) || values.length === 0) {
     return true;
@@ -988,12 +1129,24 @@ function isAllValuesRegexOrNone(values) {
   return true;
 }
 
+/**
+ * Checks if any value in an array is a startsWith regex pattern.
+ *
+ * @param {Array} values - Array of regex values to check
+ * @returns {boolean} True if any value is a startsWith pattern
+ */
 function isAnyValueRegexStartsWith(values) {
   return values.some(function (value) {
     return isStartsWithRegex(value.$regex);
   });
 }
 
+/**
+ * Creates a literal regex pattern from a string, escaping special characters.
+ *
+ * @param {string} remaining - String to convert to literal regex
+ * @returns {string} Escaped literal regex pattern
+ */
 function createLiteralRegex(remaining: string) {
   return remaining
     .split('')
@@ -1009,6 +1162,12 @@ function createLiteralRegex(remaining: string) {
     .join('');
 }
 
+/**
+ * Converts a regex pattern part to literal form, handling \Q...\E sequences.
+ *
+ * @param {string} s - Regex pattern part to literalize
+ * @returns {string} Literalized regex pattern
+ */
 function literalizeRegexPart(s: string) {
   const matcher1 = /\\Q((?!\\E).*)\\E$/;
   const result1: any = s.match(matcher1);
@@ -1044,7 +1203,16 @@ function literalizeRegexPart(s: string) {
     });
 }
 
+/**
+ * GeoPoint validation utility.
+ */
 var GeoPointCoder = {
+  /**
+   * Validates if a value is a valid GeoPoint JSON object.
+   *
+   * @param {*} value - Value to validate
+   * @returns {boolean} True if value is a valid GeoPoint
+   */
   isValidJSON(value) {
     return typeof value === 'object' && value !== null && value.__type === 'GeoPoint';
   },
@@ -2137,6 +2305,17 @@ export class OracleStorageAdapter implements StorageAdapter {
     return promise;
   }
 
+  /**
+   * Upserts (inserts or updates) a single object matching the query.
+   * Used for config and hooks.
+   *
+   * @param {string} className - Name of the Parse class
+   * @param {SchemaType} schema - Schema definition
+   * @param {QueryType} query - Parse query to match object
+   * @param {Object} update - Update operations to apply
+   * @param {Object} [transactionalSession] - Transaction session (if in transaction)
+   * @returns {Promise<Object>} Created or updated object
+   */
   upsertOneObject(
     className: string,
     schema: SchemaType,
@@ -2361,6 +2540,14 @@ export class OracleStorageAdapter implements StorageAdapter {
     return object;
   }
 
+  /**
+   * Creates a unique index on the specified fields.
+   * Unique indexes on nullable fields are not allowed.
+   *
+   * @param {string} className - Name of the Parse class
+   * @param {SchemaType} schema - Schema definition
+   * @param {Array<string>} fieldNames - Field names to create unique index on
+   */
   async ensureUniqueness(className: string, schema: SchemaType, fieldNames: string[]) {
     const constraintName = `${className}_unique_${fieldNames.sort().join('_')}`;
     const constraintPatterns = fieldNames.map((fieldName, index) => `$${index + 3}:name`);
@@ -2783,6 +2970,13 @@ export class OracleStorageAdapter implements StorageAdapter {
       });
   }
 
+  /**
+   * Creates indexes on a Parse class.
+   *
+   * @param {string} className - Name of the Parse class
+   * @param {Array} indexes - Array of index definitions
+   * @param {Object} [conn] - Database connection (uses default if not provided)
+   */
   async createIndexes(className: string, indexes: any, conn: ?any): Promise<void> {
     return (conn || this._client).tx(t =>
       t.batch(
@@ -2807,6 +3001,14 @@ export class OracleStorageAdapter implements StorageAdapter {
     );
   }
 
+  /**
+   * Creates an index if it doesn't already exist.
+   *
+   * @param {string} className - Name of the Parse class
+   * @param {string} fieldName - Name of the field to index
+   * @param {*} type - Index type or definition
+   * @param {Object} [conn] - Database connection (uses default if not provided)
+   */
   async createIndexesIfNeeded(
     className: string,
     fieldName: string,
@@ -2828,6 +3030,13 @@ export class OracleStorageAdapter implements StorageAdapter {
     }
   }
 
+  /**
+   * Drops indexes from a Parse class.
+   *
+   * @param {string} className - Name of the Parse class
+   * @param {Array} indexes - Array of index names to drop
+   * @param {Object} conn - Database connection
+   */
   async dropIndexes(className: string, indexes: any, conn: any): Promise<void> {
     const queries = indexes.map(i => ({
       query: 'DROP INDEX $1:name',
@@ -2838,6 +3047,12 @@ export class OracleStorageAdapter implements StorageAdapter {
     });
   }
 
+  /**
+   * Gets all indexes for a Parse class.
+   *
+   * @param {string} className - Name of the Parse class
+   * @returns {Promise<Array>} Array of index definitions
+   */
   async getIndexes(className: string) {
     const qs = "SELECT * FROM user_indexes WHERE table_name = :1";
     return this._client.any(qs, [className.toUpperCase()]);
@@ -2847,10 +3062,20 @@ export class OracleStorageAdapter implements StorageAdapter {
     return Promise.resolve();
   }
 
+  /**
+   * Updates estimated row count for a table. Used for testing purposes.
+   *
+   * @param {string} className - Name of the Parse class
+   */
   async updateEstimatedCount(className: string) {
     return this._client.none('ANALYZE TABLE $1:name', [className]);
   }
 
+  /**
+   * Creates a new transactional session for batch operations.
+   *
+   * @returns {Promise<Object>} Transactional session object
+   */
   async createTransactionalSession(): Promise<any> {
     return new Promise(resolve => {
       const transactionalSession = {};
@@ -2866,11 +3091,23 @@ export class OracleStorageAdapter implements StorageAdapter {
     });
   }
 
+  /**
+   * Commits a transactional session, executing all batched operations.
+   *
+   * @param {Object} transactionalSession - Transactional session to commit
+   * @returns {Promise<void>}
+   */
   commitTransactionalSession(transactionalSession: any): Promise<void> {
     transactionalSession.resolve(transactionalSession.t.batch(transactionalSession.batch));
     return transactionalSession.result;
   }
 
+  /**
+   * Aborts a transactional session, rolling back all operations.
+   *
+   * @param {Object} transactionalSession - Transactional session to abort
+   * @returns {Promise<void>}
+   */
   abortTransactionalSession(transactionalSession: any): Promise<void> {
     const result = transactionalSession.result.catch();
     transactionalSession.batch.push(Promise.reject());
@@ -2878,6 +3115,17 @@ export class OracleStorageAdapter implements StorageAdapter {
     return result;
   }
 
+  /**
+   * Ensures an index exists on the specified fields.
+   *
+   * @param {string} className - Name of the Parse class
+   * @param {SchemaType} schema - Schema definition
+   * @param {Array<string>} fieldNames - Field names to index
+   * @param {string} [indexName] - Optional custom index name
+   * @param {boolean} [caseInsensitive=false] - Whether to create case-insensitive index
+   * @param {Object} [options={}] - Additional options
+   * @param {Object} [options.conn] - Database connection to use
+   */
   async ensureIndex(
     className: string,
     schema: SchemaType,
@@ -2923,6 +3171,12 @@ export class OracleStorageAdapter implements StorageAdapter {
     }
   }
 
+  /**
+   * Deletes the idempotency cleanup function from the database.
+   *
+   * @param {Object} [options={}] - Options
+   * @param {Object} [options.conn] - Database connection to use
+   */
   async deleteIdempotencyFunction(options?: Object = {}): Promise<any> {
     const conn = options.conn !== undefined ? options.conn : this._client;
     const qs = 'DROP FUNCTION idempotency_delete_expired_records';
@@ -2934,6 +3188,13 @@ export class OracleStorageAdapter implements StorageAdapter {
     });
   }
 
+  /**
+   * Ensures the idempotency cleanup function exists in the database.
+   *
+   * @param {Object} [options={}] - Options
+   * @param {Object} [options.conn] - Database connection to use
+   * @param {number} [options.ttl] - Time-to-live in seconds for expired records
+   */
   async ensureIdempotencyFunctionExists(options?: Object = {}): Promise<any> {
     const conn = options.conn !== undefined ? options.conn : this._client;
     const ttlOptions = options.ttl !== undefined ? `${options.ttl}` : '60';
