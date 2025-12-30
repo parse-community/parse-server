@@ -430,7 +430,7 @@ async function getFinalOriginalObject(req, originalObject, user, isUpdateOp, fou
       const query = await RestQuery({
         method: RestQuery.Method.get,
         config: req.config,
-        auth: Auth.master(req.config),
+        auth: master(req.config),
         className: '_User',
         restWhere: { objectId: user.id },
         runBeforeFind: false,
