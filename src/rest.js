@@ -12,7 +12,6 @@ var Parse = require('parse/node').Parse;
 var RestQuery = require('./RestQuery');
 var RestWrite = require('./RestWrite');
 var triggers = require('./triggers');
-const Auth = require('./Auth');
 const { enforceRoleSecurity } = require('./SharedRest');
 const { createSanitizedError } = require('./Error');
 
