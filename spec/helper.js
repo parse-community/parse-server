@@ -437,7 +437,12 @@ function mockFetch(mockResponses) {
 
     options.method ||= 'GET';
     const mockResponse = mockResponses?.find(
-      (mock) => mock.url === url && mock.method === options.method
+      (mock) => {
+        const urlMatches = typeof mock.url === 'function' 
+          ? mock.url(url)
+          : mock.url === url;
+        return urlMatches && mock.method === options.method;
+      }
     );
 
     if (mockResponse) {
