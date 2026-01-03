@@ -47,7 +47,7 @@ describe('Deprecator', () => {
   });
 
   it('logs deprecation for nested option key with dot notation', async () => {
-    deprecations = [{ optionKey: 'databaseOptions.allowPublicExplain', changeNewDefault: 'false' }];
+    deprecations = [{ optionKey: 'databaseOptions.testOption', changeNewDefault: 'false' }];
 
     spyOn(Deprecator, '_getDeprecations').and.callFake(() => deprecations);
     const logger = require('../lib/logger').logger;
@@ -60,14 +60,14 @@ describe('Deprecator', () => {
   });
 
   it('does not log deprecation for nested option key if option is set manually', async () => {
-    deprecations = [{ optionKey: 'databaseOptions.allowPublicExplain', changeNewDefault: 'false' }];
+    deprecations = [{ optionKey: 'databaseOptions.testOption', changeNewDefault: 'false' }];
 
     spyOn(Deprecator, '_getDeprecations').and.callFake(() => deprecations);
     const logSpy = spyOn(Deprecator, '_logOption').and.callFake(() => {});
     const Config = require('../lib/Config');
     const config = Config.get('test');
     // Directly test scanParseServerOptions with nested option set
-    Deprecator.scanParseServerOptions({ databaseOptions: { allowPublicExplain: true } });
+    Deprecator.scanParseServerOptions({ databaseOptions: { testOption: true } });
     expect(logSpy).not.toHaveBeenCalled();
   });
 });

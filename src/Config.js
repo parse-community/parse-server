@@ -3,6 +3,7 @@
 // mount is the URL for the root of the API; includes http, domain, etc.
 
 import { isBoolean, isString } from 'lodash';
+import { pathToRegexp } from 'path-to-regexp';
 import net from 'net';
 import AppCache from './cache';
 import DatabaseController from './Controllers/DatabaseController';
@@ -687,6 +688,14 @@ export class Config {
       if (typeof option.requestPath !== 'string') {
         throw `rateLimit.requestPath must be a string`;
       }
+
+      // Validate that the path is valid path-to-regexp syntax
+      try {
+        pathToRegexp(option.requestPath);
+      } catch (error) {
+        throw `rateLimit.requestPath "${option.requestPath}" is not valid: ${error.message}`;
+      }
+
       if (option.requestTimeWindow == null) {
         throw `rateLimit.requestTimeWindow must be defined`;
       }
@@ -819,10 +828,8 @@ export class Config {
     return this.masterKey;
   }
 
-  // TODO: Remove this function once PagesRouter replaces the PublicAPIRouter;
-  // the (default) endpoint has to be defined in PagesRouter only.
   get pagesEndpoint() {
-    return this.pages && this.pages.enableRouter && this.pages.pagesEndpoint
+    return this.pages && this.pages.pagesEndpoint
       ? this.pages.pagesEndpoint
       : 'apps';
   }

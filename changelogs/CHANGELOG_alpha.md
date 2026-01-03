@@ -1,3 +1,167 @@
+## [9.1.1-alpha.1](https://github.com/parse-community/parse-server/compare/9.1.0...9.1.1-alpha.1) (2025-12-16)
+
+
+### Bug Fixes
+
+* Server-Side Request Forgery (SSRF) in Instagram auth adapter [GHSA-3f5f-xgrj-97pf](https://github.com/parse-community/parse-server/security/advisories/GHSA-3f5f-xgrj-97pf) ([#9988](https://github.com/parse-community/parse-server/issues/9988)) ([fbcc938](https://github.com/parse-community/parse-server/commit/fbcc938b5ade5ff4c30598ac51272ef7ecef0616))
+
+# [9.1.0-alpha.4](https://github.com/parse-community/parse-server/compare/9.1.0-alpha.3...9.1.0-alpha.4) (2025-12-14)
+
+
+### Features
+
+* Log more debug info when failing to set duplicate value for field with unique values ([#9919](https://github.com/parse-community/parse-server/issues/9919)) ([a23b192](https://github.com/parse-community/parse-server/commit/a23b1924668920f3c92fec0566b57091d0e8aae8))
+
+# [9.1.0-alpha.3](https://github.com/parse-community/parse-server/compare/9.1.0-alpha.2...9.1.0-alpha.3) (2025-12-14)
+
+
+### Bug Fixes
+
+* Cross-Site Scripting (XSS) via HTML pages for password reset and email verification [GHSA-jhgf-2h8h-ggxv](https://github.com/parse-community/parse-server/security/advisories/GHSA-jhgf-2h8h-ggxv) ([#9985](https://github.com/parse-community/parse-server/issues/9985)) ([3074eb7](https://github.com/parse-community/parse-server/commit/3074eb70f5b58bf72b528ae7b7804ed2d90455ce))
+
+# [9.1.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.1.0-alpha.1...9.1.0-alpha.2) (2025-12-14)
+
+
+### Features
+
+* Add support for custom HTTP status code and headers to Cloud Function response with Express-style syntax ([#9980](https://github.com/parse-community/parse-server/issues/9980)) ([8eeab8d](https://github.com/parse-community/parse-server/commit/8eeab8dc57edef3751aa188d8247f296a270b083))
+
+# [9.1.0-alpha.1](https://github.com/parse-community/parse-server/compare/9.0.0...9.1.0-alpha.1) (2025-12-14)
+
+
+### Features
+
+* Add option `logLevels.signupUsernameTaken` to change log level of username already exists sign-up rejection ([#9962](https://github.com/parse-community/parse-server/issues/9962)) ([f18f307](https://github.com/parse-community/parse-server/commit/f18f3073d70a292bc70b5d572ef58e4845de89ca))
+
+# [9.0.0-alpha.11](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.10...9.0.0-alpha.11) (2025-12-14)
+
+
+### Features
+
+* Deprecation DEPPS113: Config option `enableInsecureAuthAdapters` defaults to `false` ([#9982](https://github.com/parse-community/parse-server/issues/9982)) ([22d4622](https://github.com/parse-community/parse-server/commit/22d4622230b74839ed408a02bfcabb7b37b85aba))
+
+
+### BREAKING CHANGES
+
+* This release changes the config option `enableInsecureAuthAdapters` default to `false` (Deprecation DEPPS13). ([22d4622](22d4622))
+
+# [9.0.0-alpha.10](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.9...9.0.0-alpha.10) (2025-12-12)
+
+
+### Features
+
+* Upgrade to @parse/push-adapter 8.1.0 ([#9938](https://github.com/parse-community/parse-server/issues/9938)) ([d5e76b0](https://github.com/parse-community/parse-server/commit/d5e76b01db2b4eeb22a0bb5a04347a89209aa822))
+
+# [9.0.0-alpha.9](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.8...9.0.0-alpha.9) (2025-12-12)
+
+
+### Features
+
+* Deprecation DEPPS12: Database option `allowPublicExplain` defaults to `false` ([#9975](https://github.com/parse-community/parse-server/issues/9975)) ([c1c7e69](https://github.com/parse-community/parse-server/commit/c1c7e6976d868ccbc7dff325edce78ddfa999bb9))
+
+
+### BREAKING CHANGES
+
+* This release changes the MongoDB database option `allowPublicExplain` default to `false` (Deprecation DEPPS12). ([c1c7e69](c1c7e69))
+
+# [9.0.0-alpha.8](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.7...9.0.0-alpha.8) (2025-12-12)
+
+
+### Features
+
+* Deprecation DEPPS11: Replace `PublicAPIRouter` with `PagesRouter` ([#9974](https://github.com/parse-community/parse-server/issues/9974)) ([8f877d4](https://github.com/parse-community/parse-server/commit/8f877d42c02a6492b97c61e75ab77a896878f866))
+
+
+### BREAKING CHANGES
+
+* This release replaces `PublicAPIRouter` with `PagesRouter` (Deprecation DEPPS11). ([8f877d4](8f877d4))
+
+# [9.0.0-alpha.7](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.6...9.0.0-alpha.7) (2025-12-12)
+
+
+### Features
+
+* Deprecation DEPPS10: Encode `Parse.Object` in Cloud Function and remove option `encodeParseObjectInCloudFunction` ([#9973](https://github.com/parse-community/parse-server/issues/9973)) ([a2d3dbe](https://github.com/parse-community/parse-server/commit/a2d3dbe972e2e02ac599bfffe1ae6cd9768b02ca))
+
+
+### BREAKING CHANGES
+
+* This release encodes `Parse.Object` in Cloud Function and removes option `encodeParseObjectInCloudFunction` (Deprecation DEPPS10). ([a2d3dbe](a2d3dbe))
+
+# [9.0.0-alpha.6](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.5...9.0.0-alpha.6) (2025-12-12)
+
+
+### Features
+
+* Increase required minimum version to Postgres `16`, PostGIS `3.5` ([#9972](https://github.com/parse-community/parse-server/issues/9972)) ([7483add](https://github.com/parse-community/parse-server/commit/7483add73934e7d16098ccfb672cc45b3f7c7fbe))
+
+
+### BREAKING CHANGES
+
+* This releases increases the required minimum version to Postgres `16`, PostGIS `3.5`. ([7483add](7483add))
+
+# [9.0.0-alpha.5](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.4...9.0.0-alpha.5) (2025-12-12)
+
+
+### Features
+
+* Update route patterns to use path-to-regexp v8 syntax ([#9942](https://github.com/parse-community/parse-server/issues/9942)) ([fa8723b](https://github.com/parse-community/parse-server/commit/fa8723b3d1e895602d1187540818bbdb446259ba))
+
+
+### BREAKING CHANGES
+
+* Route pattern syntax across cloud routes and rate-limiting now use the new path-to-regexp v8 syntax; see the [migration guide](https://github.com/parse-community/parse-server/blob/alpha/9.0.0.md) for more details. ([fa8723b](fa8723b))
+
+# [9.0.0-alpha.4](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.3...9.0.0-alpha.4) (2025-12-12)
+
+
+### Features
+
+* Increase required minimum MongoDB version to `7.0.16` ([#9971](https://github.com/parse-community/parse-server/issues/9971)) ([7bb548b](https://github.com/parse-community/parse-server/commit/7bb548bf81b3cebc9ec92ef9e5e6faf8f9edbd3b))
+
+
+### BREAKING CHANGES
+
+* This releases increases the required minimum MongoDB version to `7.0.16`. ([7bb548b](7bb548b))
+
+# [9.0.0-alpha.3](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.2...9.0.0-alpha.3) (2025-12-12)
+
+
+### Bug Fixes
+
+* Upgrade to GraphQL Apollo Server 5 and restrict GraphQL introspection ([#9888](https://github.com/parse-community/parse-server/issues/9888)) ([87c7f07](https://github.com/parse-community/parse-server/commit/87c7f076eb84c9540f79f06c27fe13e102dc6295))
+
+
+### BREAKING CHANGES
+
+* Upgrade to Apollo Server 5 and GraphQL express 5 integration; GraphQL introspection now requires using `masterKey` or setting `graphQLPublicIntrospection: true`. ([87c7f07](87c7f07))
+
+# [9.0.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.0.0-alpha.1...9.0.0-alpha.2) (2025-12-12)
+
+
+### Features
+
+* Upgrade to parse 8.0.0 ([#9976](https://github.com/parse-community/parse-server/issues/9976)) ([f9970d4](https://github.com/parse-community/parse-server/commit/f9970d4bb253494392fb4cc366f222119927f082))
+
+# [9.0.0-alpha.1](https://github.com/parse-community/parse-server/compare/8.6.0...9.0.0-alpha.1) (2025-12-12)
+
+
+### Features
+
+* Increase required minimum Node version to `20.19.0` ([#9970](https://github.com/parse-community/parse-server/issues/9970)) ([633964d](https://github.com/parse-community/parse-server/commit/633964d32e249d8cc16c58de7ddd9b7637c69fb1))
+
+
+### BREAKING CHANGES
+
+* This releases increases the required minimum Node version to `20.19.0`. ([633964d](633964d))
+
+# [8.6.0-alpha.2](https://github.com/parse-community/parse-server/compare/8.6.0-alpha.1...8.6.0-alpha.2) (2025-12-10)
+
+
+### Bug Fixes
+
+* Remove elevated permissions in GitHub CI performance benchmark ([#9966](https://github.com/parse-community/parse-server/issues/9966)) ([6b9f896](https://github.com/parse-community/parse-server/commit/6b9f8963cc3debf59cd9c5dfc5422aff9404ce9d))
+
 # [8.6.0-alpha.1](https://github.com/parse-community/parse-server/compare/8.5.0...8.6.0-alpha.1) (2025-12-03)
 
 

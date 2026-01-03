@@ -322,7 +322,7 @@ const handleRateLimit = async (req, res, next) => {
   try {
     await Promise.all(
       rateLimits.map(async limit => {
-        const pathExp = new RegExp(limit.path);
+        const pathExp = limit.path.regexp || limit.path;
         if (pathExp.test(req.url)) {
           await limit.handler(req, res, err => {
             if (err) {
@@ -466,6 +466,8 @@ export function handleParseErrors(err, req, res, next) {
     if (req.config && req.config.enableExpressErrorHandler) {
       return next(err);
     }
+    const signupUsernameTakenLevel =
+      req.config?.logLevels?.signupUsernameTaken || 'info';
     let httpStatus;
     // TODO: fill out this mapping
     switch (err.code) {
@@ -480,7 +482,17 @@ export function handleParseErrors(err, req, res, next) {
     }
     res.status(httpStatus);
     res.json({ code: err.code, error: err.message });
-    log.error('Parse error: ', err);
+    if (err.code === Parse.Error.USERNAME_TAKEN) {
+      if (signupUsernameTakenLevel !== 'silent') {
+        const loggerMethod =
+          typeof log[signupUsernameTakenLevel] === 'function'
+            ? log[signupUsernameTakenLevel].bind(log)
+            : log.error.bind(log);
+        loggerMethod('Parse error: ', err);
+      }
+    } else {
+      log.error('Parse error: ', err);
+    }
   } else if (err.status && err.message) {
     res.status(err.status);
     res.json({ error: err.message });
@@ -560,12 +572,8 @@ export const addRateLimit = (route, config, cloud) => {
       },
     });
   }
-  let transformPath = route.requestPath.split('/*').join('/(.*)');
-  if (transformPath === '*') {
-    transformPath = '(.*)';
-  }
   config.rateLimits.push({
-    path: pathToRegexp(transformPath),
+    path: pathToRegexp(route.requestPath),
     handler: rateLimit({
       windowMs: route.requestTimeWindow,
       max: route.requestCount,

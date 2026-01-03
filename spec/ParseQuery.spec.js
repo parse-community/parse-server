@@ -5369,7 +5369,7 @@ describe('Parse.Query testing', () => {
     const query = new Parse.Query('_User');
     query.equalTo('objectId', user.id);
     query.explain();
-    const result = await query.find();
+    const result = await query.find({ useMasterKey: true });
     // Validate
     expect(result.executionStats).not.toBeUndefined();
   });
@@ -5533,11 +5533,8 @@ describe('Parse.Query testing', () => {
     );
 
     it_id('c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f')(it_only_db('mongo'))(
-      'explain works with and without master key by default',
+      'explain requires master key by default',
       async () => {
-        const logger = require('../lib/logger').logger;
-        const logSpy = spyOn(logger, 'warn').and.callFake(() => {});
-
         await reconfigureServer({
           databaseAdapter: undefined,
           databaseURI: 'mongodb://localhost:27017/parse',
@@ -5546,21 +5543,20 @@ describe('Parse.Query testing', () => {
           },
         });
 
-        // Verify deprecation warning is logged when allowPublicExplain is not explicitly set
-        expect(logSpy).toHaveBeenCalledWith(
-          jasmine.stringMatching(/DeprecationWarning.*databaseOptions\.allowPublicExplain.*false/)
-        );
-
         const obj = new TestObject({ foo: 'bar' });
         await obj.save();
 
-        // Without master key
+        // Without master key - should fail
         const query = new Parse.Query(TestObject);
         query.explain();
-        const resultWithoutMasterKey = await query.find();
-        expect(resultWithoutMasterKey).toBeDefined();
+        await expectAsync(query.find()).toBeRejectedWith(
+          new Parse.Error(
+            Parse.Error.INVALID_QUERY,
+            'Using the explain query parameter requires the master key'
+          )
+        );
 
-        // With master key
+        // With master key - should succeed
         const queryWithMasterKey = new Parse.Query(TestObject);
         queryWithMasterKey.explain();
         const resultWithMasterKey = await queryWithMasterKey.find({ useMasterKey: true });

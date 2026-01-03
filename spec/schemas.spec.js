@@ -3842,6 +3842,7 @@ describe('schemas', () => {
     });
 
     it_id('cbd5d897-b938-43a4-8f5a-5d02dd2be9be')(it_exclude_dbs(['postgres']))('cannot update to duplicate value on unique index', done => {
+      loggerErrorSpy.calls.reset();
       const index = {
         code: 1,
       };
@@ -3868,6 +3869,12 @@ describe('schemas', () => {
         .then(done.fail)
         .catch(error => {
           expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
+          // Client should only see generic message (no schema info exposed)
+          expect(error.message).toEqual('A duplicate value for a field with unique values was provided');
+          // Server logs should contain full MongoDB error message with detailed information
+          expect(loggerErrorSpy).toHaveBeenCalledWith('Duplicate key error:', jasmine.stringContaining('E11000 duplicate key error'));
+          expect(loggerErrorSpy).toHaveBeenCalledWith('Duplicate key error:', jasmine.stringContaining('test_UniqueIndexClass'));
+          expect(loggerErrorSpy).toHaveBeenCalledWith('Duplicate key error:', jasmine.stringContaining('code_1'));
           done();
         });
     });

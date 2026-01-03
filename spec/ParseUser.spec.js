@@ -81,6 +81,59 @@ describe('Parse.User testing', () => {
     }
   });
 
+  it('logs username taken with configured log level', async () => {
+    await reconfigureServer({ logLevels: { signupUsernameTaken: 'warn' } });
+    const logger = require('../lib/logger').default;
+    loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+    const loggerWarnSpy = spyOn(logger, 'warn').and.callThrough();
+
+    const user = new Parse.User();
+    user.setUsername('dupUser');
+    user.setPassword('pass');
+    await user.signUp();
+
+    const user2 = new Parse.User();
+    user2.setUsername('dupUser');
+    user2.setPassword('pass2');
+
+    expect(loggerWarnSpy).not.toHaveBeenCalled();
+
+    try {
+      await user2.signUp();
+      fail('should have thrown');
+    } catch (e) {
+      expect(e.code).toBe(Parse.Error.USERNAME_TAKEN);
+    }
+
+    expect(loggerWarnSpy).toHaveBeenCalledTimes(1);
+    expect(loggerErrorSpy.calls.count()).toBe(0);
+  });
+
+  it('can silence username taken log event', async () => {
+    await reconfigureServer({ logLevels: { signupUsernameTaken: 'silent' } });
+    const logger = require('../lib/logger').default;
+    loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+    const loggerWarnSpy = spyOn(logger, 'warn').and.callThrough();
+
+    const user = new Parse.User();
+    user.setUsername('dupUser');
+    user.setPassword('pass');
+    await user.signUp();
+
+    const user2 = new Parse.User();
+    user2.setUsername('dupUser');
+    user2.setPassword('pass2');
+    try {
+      await user2.signUp();
+      fail('should have thrown');
+    } catch (e) {
+      expect(e.code).toBe(Parse.Error.USERNAME_TAKEN);
+    }
+
+    expect(loggerWarnSpy).not.toHaveBeenCalled();
+    expect(loggerErrorSpy.calls.count()).toBe(0);
+  });
+
   it('user login with context', async () => {
     let hit = 0;
     const context = { foo: 'bar' };

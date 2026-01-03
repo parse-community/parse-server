@@ -96,8 +96,7 @@ class InstagramAdapter extends BaseAuthCodeAdapter {
   }
 
   async getUserFromAccessToken(accessToken, authData) {
-    const defaultURL = 'https://graph.instagram.com/';
-    const apiURL = authData.apiURL || defaultURL;
+    const apiURL = 'https://graph.instagram.com/';
     const path = `${apiURL}me?fields=id&access_token=${accessToken}`;
 
     const response = await fetch(path);

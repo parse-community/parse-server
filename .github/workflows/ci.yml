@@ -153,10 +153,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: MongoDB 6, ReplicaSet
-            MONGODB_VERSION: 6.0.19
-            MONGODB_TOPOLOGY: replset
-            NODE_VERSION: 24.11.0
           - name: MongoDB 7, ReplicaSet
             MONGODB_VERSION: 7.0.16
             MONGODB_TOPOLOGY: replset
@@ -173,11 +169,7 @@ jobs:
           - name: Node 20
             MONGODB_VERSION: 8.0.4
             MONGODB_TOPOLOGY: standalone
-            NODE_VERSION: 20.18.0
-          - name: Node 18
-            MONGODB_VERSION: 8.0.4
-            MONGODB_TOPOLOGY: standalone
-            NODE_VERSION: 18.20.4
+            NODE_VERSION: 20.19.0
           - name: Node 22
             MONGODB_VERSION: 8.0.4
             MONGODB_TOPOLOGY: standalone
@@ -227,15 +219,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: PostgreSQL 15, PostGIS 3.3
-            POSTGRES_IMAGE: postgis/postgis:15-3.3
-            NODE_VERSION: 24.11.0
-          - name: PostgreSQL 15, PostGIS 3.4
-            POSTGRES_IMAGE: postgis/postgis:15-3.4
-            NODE_VERSION: 24.11.0
-          - name: PostgreSQL 15, PostGIS 3.5
-            POSTGRES_IMAGE: postgis/postgis:15-3.5
-            NODE_VERSION: 24.11.0
           - name: PostgreSQL 16, PostGIS 3.5
             POSTGRES_IMAGE: postgis/postgis:16-3.5
             NODE_VERSION: 24.11.0
