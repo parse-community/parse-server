@@ -371,26 +371,26 @@ describe('Parse.User testing', () => {
 
     it('should not auto-signup when password is wrong for existing user', async () => {
       await reconfigureServer({ autoSignupOnLogin: true });
-      
+
       // Create an existing user
       const existingUser = new Parse.User();
       existingUser.setUsername('existing-user');
       existingUser.setPassword('correct-password');
       await existingUser.signUp();
-      
+
       // Try to login with wrong password
       await expectAsync(
         Parse.User.logIn('existing-user', 'wrong-password')
       ).toBeRejectedWith(
         jasmine.objectContaining({ code: Parse.Error.OBJECT_NOT_FOUND })
       );
-      
+
       // Ensure no new user was created
       const count = await new Parse.Query(Parse.User)
         .equalTo('username', 'existing-user')
         .count({ useMasterKey: true });
       expect(count).toBe(1);
-      
+
       // Ensure the existing user is still the only one
       const users = await new Parse.Query(Parse.User)
         .find({ useMasterKey: true });
