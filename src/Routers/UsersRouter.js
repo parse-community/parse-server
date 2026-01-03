@@ -151,7 +151,9 @@ export class UsersRouter extends ClassesRouter {
         .find('_User', query, {}, Auth.maintenance(req.config))
         .then(results => {
           if (!results.length) {
-            throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+            const error = new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+            error.userNotFound = true;
+            throw error;
           }
 
           if (results.length > 1) {
@@ -326,7 +328,8 @@ export class UsersRouter extends ClassesRouter {
       if (
         req.config.autoSignupOnLogin &&
         error &&
-        error.code === Parse.Error.OBJECT_NOT_FOUND
+        error.code === Parse.Error.OBJECT_NOT_FOUND &&
+        error.userNotFound === true
       ) {
         autoSignupResult = await this._autoSignupOnLogin(req);
         user = autoSignupResult.user;
