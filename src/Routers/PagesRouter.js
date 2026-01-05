@@ -160,7 +160,7 @@ export class PagesRouter extends PromiseRouter {
       () => {
         const params = {
           [pageParams.token]: token,
-          [pageParams.appId]: config.applicationId,
+          [pageParams.appId]: config.appId,
           [pageParams.appName]: config.appName,
         };
         return this.goToPage(req, pages.passwordReset, params);
@@ -225,7 +225,7 @@ export class PagesRouter extends PromiseRouter {
           ? {}
           : {
             [pageParams.token]: token,
-            [pageParams.appId]: config.applicationId,
+            [pageParams.appId]: config.appId,
             [pageParams.error]: result.err,
             [pageParams.appName]: config.appName,
           };

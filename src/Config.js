@@ -49,7 +49,7 @@ export class Config {
     Object.keys(cacheInfo).forEach(key => {
       if (key == 'databaseController') {
         config.database = new DatabaseController(cacheInfo.databaseController.adapter, config);
-      } else {
+      } else if (key !== 'applicationId') {
         config[key] = cacheInfo[key];
       }
     });
@@ -789,7 +789,7 @@ export class Config {
   }
 
   get requestResetPasswordURL() {
-    return `${this.publicServerURL}/${this.pagesEndpoint}/${this.applicationId}/request_password_reset`;
+    return `${this.publicServerURL}/${this.pagesEndpoint}/${this.appId}/request_password_reset`;
   }
 
   get passwordResetSuccessURL() {
@@ -804,7 +804,7 @@ export class Config {
   }
 
   get verifyEmailURL() {
-    return `${this.publicServerURL}/${this.pagesEndpoint}/${this.applicationId}/verify_email`;
+    return `${this.publicServerURL}/${this.pagesEndpoint}/${this.appId}/verify_email`;
   }
 
   async loadMasterKey() {
