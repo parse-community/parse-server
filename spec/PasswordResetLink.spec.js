@@ -63,7 +63,7 @@ describe('Password Reset Link', () => {
     await Parse.User.requestPasswordReset('test2@example.com');
     
     // Find the user to get the reset token
-    const results = await Parse.Query('_User')
+    const results = await new Parse.Query('_User')
       .equalTo('email', 'test2@example.com')
       .find({ useMasterKey: true });
     const resetToken = results[0].get('_perishable_token');
