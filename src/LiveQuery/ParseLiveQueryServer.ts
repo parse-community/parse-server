@@ -109,9 +109,9 @@ class ParseLiveQueryServer {
         this.subscriber.close?.(),
       ]);
     }
-    if (typeof this.subscriber.quit === 'function') {
+    if (typeof this.subscriber.close === 'function') {
       try {
-        await this.subscriber.quit();
+        await this.subscriber.close();
       } catch (err) {
         logger.error('PubSubAdapter error on shutdown', { error: err });
       }

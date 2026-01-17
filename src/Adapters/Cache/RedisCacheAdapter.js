@@ -35,7 +35,7 @@ export class RedisCacheAdapter {
       return;
     }
     try {
-      await this.client.quit();
+      await this.client.close();
     } catch (err) {
       logger.error('RedisCacheAdapter error on shutdown', { error: err });
     }
