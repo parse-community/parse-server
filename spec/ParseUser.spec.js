@@ -263,6 +263,141 @@ describe('Parse.User testing', () => {
     done();
   });
 
+  describe('autoSignupOnLogin option', () => {
+    it('does not auto sign up when disabled', async () => {
+      await reconfigureServer({ autoSignupOnLogin: false });
+      await expectAsync(Parse.User.logIn('ghost-user', 'hunter2')).toBeRejectedWith(
+        jasmine.objectContaining({ code: Parse.Error.OBJECT_NOT_FOUND })
+      );
+      const count = await new Parse.Query(Parse.User)
+        .equalTo('username', 'ghost-user')
+        .count({ useMasterKey: true });
+      expect(count).toBe(0);
+    });
+
+    it('creates user on login when enabled (username + password)', async () => {
+      await reconfigureServer({ autoSignupOnLogin: true });
+      const user = await Parse.User.logIn('auto-login-user', 'pass1234');
+      expect(user.id).toBeDefined();
+      expect(user.getSessionToken()).toBeDefined();
+      const stored = await new Parse.Query(Parse.User)
+        .equalTo('username', 'auto-login-user')
+        .first({ useMasterKey: true });
+      expect(stored).toBeTruthy();
+      expect(stored.id).toBe(user.id);
+    });
+
+    it('creates user on login when enabled with email + password', async () => {
+      await reconfigureServer({ autoSignupOnLogin: true });
+      const email = 'auto-email@example.com';
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/login',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        body: {
+          email,
+          password: 'pass1234',
+        },
+      });
+      expect(res.data.username).toBe(email);
+      expect(res.data.email).toBe(email);
+      expect(res.data.sessionToken).toBeDefined();
+      const stored = await new Parse.Query(Parse.User)
+        .equalTo('email', email)
+        .first({ useMasterKey: true });
+      expect(stored).toBeTruthy();
+      expect(stored.get('username')).toBe(email);
+    });
+
+    it('uses existing user when present and does not duplicate', async () => {
+      await reconfigureServer({ autoSignupOnLogin: true });
+      const existing = new Parse.User();
+      existing.setUsername('existing-login');
+      existing.setPassword('pass123');
+      await existing.signUp();
+
+      const logged = await Parse.User.logIn('existing-login', 'pass123');
+      expect(logged.id).toBe(existing.id);
+      const count = await new Parse.Query(Parse.User)
+        .equalTo('username', 'existing-login')
+        .count({ useMasterKey: true });
+      expect(count).toBe(1);
+    });
+
+    it('respects preventLoginWithUnverifiedEmail when auto-signing up', async () => {
+      await reconfigureServer({
+        appName: 'preventLoginWithUnverifiedEmail',
+        autoSignupOnLogin: true,
+        verifyUserEmails: true,
+        preventLoginWithUnverifiedEmail: true,
+        emailAdapter: {
+          sendVerificationMail: () => Promise.resolve(),
+          sendMail: () => Promise.resolve(),
+        },
+        publicServerURL: 'http://localhost:8378/1',
+      });
+      const email = 'unverified@example.com';
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/login',
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          body: {
+            email,
+            password: 'pass1234',
+          },
+        })
+      ).toBeRejectedWith(
+        jasmine.objectContaining({
+          data: jasmine.objectContaining({ code: Parse.Error.EMAIL_NOT_FOUND }),
+        })
+      );
+      const storedCount = await new Parse.Query(Parse.User)
+        .equalTo('email', email)
+        .count({ useMasterKey: true });
+      expect(storedCount).toBe(0);
+
+      // Ensure no session persists for the rejected login
+      const sessions = await new Parse.Query('_Session')
+        .find({ useMasterKey: true });
+      expect(sessions.length).toBe(0);
+    });
+
+    it('should not auto-signup when password is wrong for existing user', async () => {
+      await reconfigureServer({ autoSignupOnLogin: true });
+
+      // Create an existing user
+      const existingUser = new Parse.User();
+      existingUser.setUsername('existing-user');
+      existingUser.setPassword('correct-password');
+      await existingUser.signUp();
+
+      // Try to login with wrong password
+      await expectAsync(
+        Parse.User.logIn('existing-user', 'wrong-password')
+      ).toBeRejectedWith(
+        jasmine.objectContaining({ code: Parse.Error.OBJECT_NOT_FOUND })
+      );
+
+      // Ensure no new user was created
+      const count = await new Parse.Query(Parse.User)
+        .equalTo('username', 'existing-user')
+        .count({ useMasterKey: true });
+      expect(count).toBe(1);
+
+      // Ensure the existing user is still the only one
+      const users = await new Parse.Query(Parse.User)
+        .find({ useMasterKey: true });
+      expect(users.length).toBe(1);
+    });
+  });
+
   it('should respect ACL without locking user out', done => {
     const user = new Parse.User();
     const ACL = new Parse.ACL();
