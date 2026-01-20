@@ -4,9 +4,9 @@
  * @class KeycloakAdapter
  * @param {Object} options - The adapter configuration options.
  * @param {Object} options.config - The Keycloak configuration object, typically loaded from a JSON file.
- * @param {String} options.config.auth-server-url - The Keycloak authentication server URL.
+ * @param {String} options.config['auth-server-url'] - The Keycloak authentication server URL.
  * @param {String} options.config.realm - The Keycloak realm name.
- * @param {String} options.config.client-id - The Keycloak client ID.
+ * @param {String} options.config['client-id'] - The Keycloak client ID.
  *
  * @param {Object} authData - The authentication data provided by the client.
  * @param {String} authData.access_token - The Keycloak access token retrieved during client authentication.
@@ -21,6 +21,20 @@
  * {
  *   "auth": {
  *     "keycloak": {
+ *       "config": {
+ *         "auth-server-url": "https://sso.asap.dsna.fr/auth",
+ *         "realm": "iet"
+ *       },
+ *       "enabled": true
+ *     }
+ *   }
+ * }
+ * ```
+ * or
+ * ```javascript
+ * {
+ *   "auth": {
+ *     "keycloak": {
  *       "config": require('./auth/keycloak.json')
  *     }
  *   }
@@ -29,7 +43,6 @@
  * Ensure the `keycloak.json` configuration file is generated from Keycloak's setup guide and includes:
  * - `auth-server-url`: The Keycloak authentication server URL.
  * - `realm`: The Keycloak realm name.
- * - `client-id`: The Keycloak client ID.
  *
  * ## Auth Data
  * The adapter requires the following `authData` fields:
@@ -66,82 +79,67 @@
  * - [Server Administration Documentation](https://www.keycloak.org/docs/latest/server_admin/)
  */
 
-const { Parse } = require('parse/node');
-const httpsRequest = require('./httpsRequest');
+import AuthAdapter from './AuthAdapter';
 
 const arraysEqual = (_arr1, _arr2) => {
-  if (!Array.isArray(_arr1) || !Array.isArray(_arr2) || _arr1.length !== _arr2.length) { return false; }
-
+  if (
+    !Array.isArray(_arr1) ||
+    !Array.isArray(_arr2) ||
+    _arr1.length !== _arr2.length
+  ) {
+    return false;
+  }
   var arr1 = _arr1.concat().sort();
   var arr2 = _arr2.concat().sort();
-
   for (var i = 0; i < arr1.length; i++) {
-    if (arr1[i] !== arr2[i]) { return false; }
+    if (arr1[i] !== arr2[i]) {
+      return false;
+    }
   }
-
   return true;
 };
 
-const handleAuth = async ({ access_token, id, roles, groups } = {}, { config } = {}) => {
-  if (!(access_token && id)) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Missing access token and/or User id');
+class KeycloakAdapter extends AuthAdapter {
+  validateOptions(options) {
+    super.validateOptions(options);
+    if (!options["auth-server-url"]) {
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Keycloak host URL is missing.');
+    }
+    if (!options.realm) {
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Keycloak realm is missing.');
+    }
+    this.authServerUrl = options["auth-server-url"];
+    this.realm = options.realm;
   }
-  if (!config || !(config['auth-server-url'] && config['realm'])) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Missing keycloak configuration');
+  async validateAppId() {
+    return Promise.resolve();
   }
-  try {
-    const response = await httpsRequest.get({
-      host: config['auth-server-url'],
-      path: `/realms/${config['realm']}/protocol/openid-connect/userinfo`,
-      headers: {
-        Authorization: 'Bearer ' + access_token,
-      },
-    });
+  async validateAuthData(authData) {
+    const response = await this.requestTokenInfo(authData.access_token);
     if (
-      response &&
-      response.data &&
-      response.data.sub == id &&
-      arraysEqual(response.data.roles, roles) &&
-      arraysEqual(response.data.groups, groups)
+      authData.id !== response.sub ||
+      (authData.roles !== undefined && !arraysEqual(response.roles, authData.roles)) ||
+      (authData.groups !== undefined && !arraysEqual(response.roles, authData.groups))
     ) {
-      return;
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Keycloak access token is invalid for this user.');
     }
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid authentication');
-  } catch (e) {
-    if (e instanceof Parse.Error) {
-      throw e;
-    }
-    const error = JSON.parse(e.text);
-    if (error.error_description) {
-      throw new Parse.Error(Parse.Error.HOSTING_ERROR, error.error_description);
-    } else {
-      throw new Parse.Error(
-        Parse.Error.HOSTING_ERROR,
-        'Could not connect to the authentication server'
-      );
-    }
+    return {};
   }
-};
-
-/*
-  @param {Object} authData: the client provided authData
-  @param {string} authData.access_token: the access_token retrieved from client authentication in Keycloak
-  @param {string} authData.id: the id retrieved from client authentication in Keycloak
-  @param {Array}  authData.roles: the roles retrieved from client authentication in Keycloak
-  @param {Array}  authData.groups: the groups retrieved from client authentication in Keycloak
-  @param {Object} options: additional options
-  @param {Object} options.config: the config object passed during Parse Server instantiation
-*/
-function validateAuthData(authData, options = {}) {
-  return handleAuth(authData, options);
+  async requestTokenInfo(accessToken) {
+    const response = await fetch(
+      `${this.authServerUrl}/realms/${this.realm}/protocol/openid-connect/userinfo`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': 'Bearer ' + accessToken,
+        }
+      }
+    );
+    if (!response.ok) {
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Keycloak token validation failed.');
+    }
+    return response.json();
+  }
 }
 
-// Returns a promise that fulfills if this app id is valid.
-function validateAppId() {
-  return Promise.resolve();
-}
-
-module.exports = {
-  validateAppId,
-  validateAuthData,
-};
+export default new KeycloakAdapter();

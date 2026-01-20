@@ -12,7 +12,7 @@ import gpgames from './gpgames';
 import instagram from './instagram';
 const janraincapture = require('./janraincapture');
 const janrainengage = require('./janrainengage');
-const keycloak = require('./keycloak');
+import keycloak from './keycloak';
 const ldap = require('./ldap');
 import line from './line';
 import linkedin from './linkedin';
