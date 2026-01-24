@@ -32,7 +32,9 @@ const MongoSchemaCollectionName = '_SCHEMA';
  * (connection pool, network, server selection) as opposed to a query-level error.
  */
 function isTransientError(error) {
-  if (!error) return false;
+  if (!error) {
+    return false;
+  }
 
   // Connection pool, network, and server selection errors
   const transientErrorNames = [
@@ -41,11 +43,15 @@ function isTransientError(error) {
     'MongoNetworkTimeoutError',
     'MongoNetworkError',
   ];
-  if (transientErrorNames.includes(error.name)) return true;
+  if (transientErrorNames.includes(error.name)) {
+    return true;
+  }
 
   // Check for MongoDB's transient transaction error label
   if (typeof error.hasErrorLabel === 'function') {
-    if (error.hasErrorLabel('TransientTransactionError')) return true;
+    if (error.hasErrorLabel('TransientTransactionError')) {
+      return true;
+    }
   }
 
   return false;
