@@ -111,6 +111,9 @@ export interface ParseServerOptions {
   databaseOptions: ?DatabaseOptions;
   /* Adapter module for the database; any options that are not explicitly described here are passed directly to the database client. */
   databaseAdapter: ?Adapter<StorageAdapter>;
+  /* Custom metadata to append to MongoDB client connections for identifying Parse Server instances in MongoDB logs. If set, this metadata will be visible in mongos/mongod logs during connection handshakes. This can help with debugging and monitoring in deployments with multiple database clients. Set to a string value like a deployment identifier, server version, or commit hash. Leave undefined (default) to disable this feature and avoid the additional data transfer overhead.
+  :DEFAULT: undefined */
+  mongoDBClientMetadata: ?string;
   /* Optional. If set to `true`, the collation rule of case comparison for queries and indexes is enabled. Enable this option to run Parse Server with MongoDB Atlas Serverless or AWS Amazon DocumentDB. If `false`, the collation rule of case comparison is disabled. Default is `false`.
   :DEFAULT: false */
   enableCollationCaseComparison: ?boolean;

@@ -24,6 +24,7 @@ import Utils from '../../../Utils';
 const mongodb = require('mongodb');
 const MongoClient = mongodb.MongoClient;
 const ReadPreference = mongodb.ReadPreference;
+const pkg = require('../../../../package.json');
 
 const MongoSchemaCollectionName = '_SCHEMA';
 
@@ -134,6 +135,7 @@ export class MongoStorageAdapter implements StorageAdapter {
   _onchange: any;
   _stream: any;
   _logClientEvents: ?Array<any>;
+  _mongoDBClientMetadata: ?string;
   // Public
   connectionPromise: ?Promise<any>;
   database: any;
@@ -156,6 +158,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     this.schemaCacheTtl = mongoOptions.schemaCacheTtl;
     this.disableIndexFieldValidation = !!mongoOptions.disableIndexFieldValidation;
     this._logClientEvents = mongoOptions.logClientEvents;
+    this._mongoDBClientMetadata = mongoOptions.mongoDBClientMetadata;
 
     // Create a copy of mongoOptions and remove Parse Server-specific options that should not
     // be passed to MongoDB client. Note: We only delete from this._mongoOptions, not from the
@@ -179,7 +182,17 @@ export class MongoStorageAdapter implements StorageAdapter {
     // parsing and re-formatting causes the auth value (if there) to get URI
     // encoded
     const encodedUri = formatUrl(parseUrl(this._uri));
-    this.connectionPromise = MongoClient.connect(encodedUri, this._mongoOptions)
+    
+    // Only use driverInfo if mongoDBClientMetadata option is set
+    const options = { ...this._mongoOptions };
+    if (this._mongoDBClientMetadata) {
+      options.driverInfo = {
+        name: this._mongoDBClientMetadata,
+        version: pkg.version
+      };
+    }
+    
+    this.connectionPromise = MongoClient.connect(encodedUri, options)
       .then(client => {
         // Starting mongoDB 3.0, the MongoClient.connect don't return a DB anymore but a client
         // Fortunately, we can get back the options and use them to select the proper DB.

@@ -417,6 +417,12 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_MIDDLEWARE',
     help: 'middleware for express server, can be string or function',
   },
+  mongoDBClientMetadata: {
+    env: 'PARSE_SERVER_MONGO_DBCLIENT_METADATA',
+    help:
+      'Custom metadata to append to MongoDB client connections for identifying Parse Server instances in MongoDB logs. If set, this metadata will be visible in mongos/mongod logs during connection handshakes. This can help with debugging and monitoring in deployments with multiple database clients. Set to a string value like a deployment identifier, server version, or commit hash. Leave undefined (default) to disable this feature and avoid the additional data transfer overhead.',
+    default: 'undefined',
+  },
   mountGraphQL: {
     env: 'PARSE_SERVER_MOUNT_GRAPHQL',
     help: 'Mounts the GraphQL endpoint',

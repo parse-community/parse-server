@@ -49,5 +49,6 @@ export const ParseServerDatabaseOptions = [
   'enableSchemaHooks',
   'logClientEvents',
   'maxTimeMS',
+  'mongoDBClientMetadata',
   'schemaCacheTtl',
 ];

@@ -11,12 +11,14 @@ import { MongoClient, GridFSBucket, Db } from 'mongodb';
 import { FilesAdapter, validateFilename } from './FilesAdapter';
 import defaults, { ParseServerDatabaseOptions } from '../../defaults';
 const crypto = require('crypto');
+const pkg = require('../../../package.json');
 
 export class GridFSBucketAdapter extends FilesAdapter {
   _databaseURI: string;
   _connectionPromise: Promise<Db>;
   _mongoOptions: Object;
   _algorithm: string;
+  _mongoDBClientMetadata: ?string;
 
   constructor(
     mongoDatabaseURI = defaults.DefaultMongoURI,
@@ -36,6 +38,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
         : null;
     const defaultMongoOptions = {};
     const _mongoOptions = Object.assign(defaultMongoOptions, mongoOptions);
+    this._mongoDBClientMetadata = mongoOptions.mongoDBClientMetadata;
     // Remove Parse Server-specific options that should not be passed to MongoDB client
     for (const key of ParseServerDatabaseOptions) {
       delete _mongoOptions[key];
@@ -45,7 +48,16 @@ export class GridFSBucketAdapter extends FilesAdapter {
 
   _connect() {
     if (!this._connectionPromise) {
-      this._connectionPromise = MongoClient.connect(this._databaseURI, this._mongoOptions).then(
+      // Only use driverInfo if mongoDBClientMetadata option is set
+      const options = { ...this._mongoOptions };
+      if (this._mongoDBClientMetadata) {
+        options.driverInfo = {
+          name: this._mongoDBClientMetadata,
+          version: pkg.version
+        };
+      }
+      
+      this._connectionPromise = MongoClient.connect(this._databaseURI, options).then(
         client => {
           this._client = client;
           return client.db(client.s.options.dbName);
