@@ -487,7 +487,7 @@ describe_only_db('mongo')('GridFSBucket', () => {
     it('should pass custom metadata to MongoClient when configured', async () => {
       const customMetadata = 'MyParseServer-v1.0.0';
       const gfsAdapter = new GridFSBucketAdapter(databaseURI, {
-        mongoDBClientMetadata: customMetadata
+        clientMetadata: customMetadata
       });
       await gfsAdapter._connect();
       expect(gfsAdapter._client.s.options.driverInfo.name).toBe(customMetadata);

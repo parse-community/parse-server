@@ -75,7 +75,7 @@
  * @property {Number|String} maxLogFiles Maximum number of logs to keep. If not set, no logs will be removed. This can be a number of files or number of days. If using days, add 'd' as the suffix. (default: null)
  * @property {String} maxUploadSize Max file size for uploads, defaults to 20mb
  * @property {Union} middleware middleware for express server, can be string or function
- * @property {String} mongoDBClientMetadata Custom metadata to append to MongoDB client connections for identifying Parse Server instances in MongoDB logs. If set, this metadata will be visible in mongos/mongod logs during connection handshakes. This can help with debugging and monitoring in deployments with multiple database clients. Set to a string value like a deployment identifier, server version, or commit hash. Leave undefined (default) to disable this feature and avoid the additional data transfer overhead.
+ * @property {String} clientMetadata Custom metadata to append to database client connections for identifying Parse Server instances in database logs. If set, this metadata will be visible in database logs during connection handshakes. This can help with debugging and monitoring in deployments with multiple database clients. Set to a string value like a deployment identifier, server version, or commit hash. Leave undefined (default) to disable this feature and avoid the additional data transfer overhead.
  * @property {Boolean} mountGraphQL Mounts the GraphQL endpoint
  * @property {String} mountPath Mount path for the server, defaults to /parse
  * @property {Boolean} mountPlayground Mounts the GraphQL Playground - never use this option in production

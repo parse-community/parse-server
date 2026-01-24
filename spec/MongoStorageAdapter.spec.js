@@ -1076,7 +1076,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       const customMetadata = 'MyParseServer-v1.0.0';
       const adapter = new MongoStorageAdapter({
         uri: databaseURI,
-        mongoOptions: { mongoDBClientMetadata: customMetadata }
+        mongoOptions: { clientMetadata: customMetadata }
       });
       await adapter.connect();
       expect(adapter.client.s.options.driverInfo.name).toBe(customMetadata);

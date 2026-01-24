@@ -135,7 +135,7 @@ export class MongoStorageAdapter implements StorageAdapter {
   _onchange: any;
   _stream: any;
   _logClientEvents: ?Array<any>;
-  _mongoDBClientMetadata: ?string;
+  _clientMetadata: ?string;
   // Public
   connectionPromise: ?Promise<any>;
   database: any;
@@ -158,7 +158,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     this.schemaCacheTtl = mongoOptions.schemaCacheTtl;
     this.disableIndexFieldValidation = !!mongoOptions.disableIndexFieldValidation;
     this._logClientEvents = mongoOptions.logClientEvents;
-    this._mongoDBClientMetadata = mongoOptions.mongoDBClientMetadata;
+    this._clientMetadata = mongoOptions.clientMetadata;
 
     // Create a copy of mongoOptions and remove Parse Server-specific options that should not
     // be passed to MongoDB client. Note: We only delete from this._mongoOptions, not from the
@@ -183,11 +183,11 @@ export class MongoStorageAdapter implements StorageAdapter {
     // encoded
     const encodedUri = formatUrl(parseUrl(this._uri));
 
-    // Only use driverInfo if mongoDBClientMetadata option is set
+    // Only use driverInfo if clientMetadata option is set
     const options = { ...this._mongoOptions };
-    if (this._mongoDBClientMetadata) {
+    if (this._clientMetadata) {
       options.driverInfo = {
-        name: this._mongoDBClientMetadata,
+        name: this._clientMetadata,
         version: pkg.version
       };
     }

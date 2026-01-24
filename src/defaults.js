@@ -38,6 +38,7 @@ export const DefaultMongoURI = DefinitionDefaults.databaseURI;
 // before passing to MongoDB client
 export const ParseServerDatabaseOptions = [
   'allowPublicExplain',
+  'clientMetadata',
   'createIndexRoleName',
   'createIndexUserEmail',
   'createIndexUserEmailCaseInsensitive',
@@ -49,6 +50,5 @@ export const ParseServerDatabaseOptions = [
   'enableSchemaHooks',
   'logClientEvents',
   'maxTimeMS',
-  'mongoDBClientMetadata',
   'schemaCacheTtl',
 ];
