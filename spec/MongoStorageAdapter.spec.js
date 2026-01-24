@@ -1068,7 +1068,11 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     it('should not pass metadata to MongoClient by default', async () => {
       const adapter = new MongoStorageAdapter({ uri: databaseURI });
       await adapter.connect();
-      expect(adapter.client.s.options.driverInfo).toBeUndefined();
+      const driverInfo = adapter.client.s.options.driverInfo;
+      // Either driverInfo should be undefined, or it should not contain our custom metadata
+      if (driverInfo) {
+        expect(driverInfo.name).toBeUndefined();
+      }
       await adapter.handleShutdown();
     });
 

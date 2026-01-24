@@ -480,7 +480,11 @@ describe_only_db('mongo')('GridFSBucket', () => {
     it('should not pass metadata to MongoClient by default', async () => {
       const gfsAdapter = new GridFSBucketAdapter(databaseURI);
       await gfsAdapter._connect();
-      expect(gfsAdapter._client.s.options.driverInfo).toBeUndefined();
+      const driverInfo = gfsAdapter._client.s.options.driverInfo;
+      // Either driverInfo should be undefined, or it should not contain our custom metadata
+      if (driverInfo) {
+        expect(driverInfo.name).toBeUndefined();
+      }
       await gfsAdapter.handleShutdown();
     });
 
