@@ -1077,14 +1077,14 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     });
 
     it('should pass custom metadata to MongoClient when configured', async () => {
-      const customMetadata = 'MyParseServer-v1.0.0';
+      const customMetadata = { name: 'MyParseServer', version: '1.0.0' };
       const adapter = new MongoStorageAdapter({
         uri: databaseURI,
         mongoOptions: { clientMetadata: customMetadata }
       });
       await adapter.connect();
-      expect(adapter.client.s.options.driverInfo.name).toBe(customMetadata);
-      expect(adapter.client.s.options.driverInfo.version).toBe(require('../package.json').version);
+      expect(adapter.client.s.options.driverInfo.name).toBe(customMetadata.name);
+      expect(adapter.client.s.options.driverInfo.version).toBe(customMetadata.version);
       await adapter.handleShutdown();
     });
   });

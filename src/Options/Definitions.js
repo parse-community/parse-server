@@ -134,6 +134,13 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_CLIENT_KEY',
     help: 'Key for iOS, MacOS, tvOS clients',
   },
+  clientMetadata: {
+    env: 'PARSE_SERVER_CLIENT_METADATA',
+    help:
+      "Custom metadata to append to database client connections for identifying Parse Server instances in database logs. If set, this metadata will be visible in database logs during connection handshakes. This can help with debugging and monitoring in deployments with multiple database clients. Set `name` to identify your application (e.g., 'MyApp') and `version` to your application's version. Leave undefined (default) to disable this feature and avoid the additional data transfer overhead.",
+    action: parsers.objectParser,
+    type: 'ClientMetadata',
+  },
   cloud: {
     env: 'PARSE_SERVER_CLOUD',
     help: 'Full path to your cloud code main.js',
@@ -416,12 +423,6 @@ module.exports.ParseServerOptions = {
   middleware: {
     env: 'PARSE_SERVER_MIDDLEWARE',
     help: 'middleware for express server, can be string or function',
-  },
-  clientMetadata: {
-    env: 'PARSE_SERVER_CLIENT_METADATA',
-    help:
-      'Custom metadata to append to database client connections for identifying Parse Server instances in database logs. If set, this metadata will be visible in database logs during connection handshakes. This can help with debugging and monitoring in deployments with multiple database clients. Set to a string value like a deployment identifier, server version, or commit hash. Leave undefined (default) to disable this feature and avoid the additional data transfer overhead.',
-    default: 'undefined',
   },
   mountGraphQL: {
     env: 'PARSE_SERVER_MOUNT_GRAPHQL',
@@ -1465,6 +1466,18 @@ module.exports.DatabaseOptions = {
     help:
       'The MongoDB driver option to specify the compression level if using zlib for network compression (0-9).',
     action: parsers.numberParser('zlibCompressionLevel'),
+  },
+};
+module.exports.ClientMetadata = {
+  name: {
+    env: 'PARSE_SERVER_DATABASE_OPTIONS_CLIENT_METADATA_NAME',
+    help: "The name to identify your application in database logs (e.g., 'MyApp').",
+    required: true,
+  },
+  version: {
+    env: 'PARSE_SERVER_DATABASE_OPTIONS_CLIENT_METADATA_VERSION',
+    help: "The version of your application (e.g., '1.0.0').",
+    required: true,
   },
 };
 module.exports.AuthAdapter = {

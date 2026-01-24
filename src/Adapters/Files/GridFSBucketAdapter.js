@@ -11,14 +11,13 @@ import { MongoClient, GridFSBucket, Db } from 'mongodb';
 import { FilesAdapter, validateFilename } from './FilesAdapter';
 import defaults, { ParseServerDatabaseOptions } from '../../defaults';
 const crypto = require('crypto');
-const pkg = require('../../../package.json');
 
 export class GridFSBucketAdapter extends FilesAdapter {
   _databaseURI: string;
   _connectionPromise: Promise<Db>;
   _mongoOptions: Object;
   _algorithm: string;
-  _clientMetadata: ?string;
+  _clientMetadata: ?{ name: string, version: string };
 
   constructor(
     mongoDatabaseURI = defaults.DefaultMongoURI,
@@ -52,8 +51,8 @@ export class GridFSBucketAdapter extends FilesAdapter {
       const options = { ...this._mongoOptions };
       if (this._clientMetadata) {
         options.driverInfo = {
-          name: this._clientMetadata,
-          version: pkg.version
+          name: this._clientMetadata.name,
+          version: this._clientMetadata.version
         };
       }
 

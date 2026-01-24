@@ -24,7 +24,6 @@ import Utils from '../../../Utils';
 const mongodb = require('mongodb');
 const MongoClient = mongodb.MongoClient;
 const ReadPreference = mongodb.ReadPreference;
-const pkg = require('../../../../package.json');
 
 const MongoSchemaCollectionName = '_SCHEMA';
 
@@ -135,7 +134,7 @@ export class MongoStorageAdapter implements StorageAdapter {
   _onchange: any;
   _stream: any;
   _logClientEvents: ?Array<any>;
-  _clientMetadata: ?string;
+  _clientMetadata: ?{ name: string, version: string };
   // Public
   connectionPromise: ?Promise<any>;
   database: any;
@@ -187,8 +186,8 @@ export class MongoStorageAdapter implements StorageAdapter {
     const options = { ...this._mongoOptions };
     if (this._clientMetadata) {
       options.driverInfo = {
-        name: this._clientMetadata,
-        version: pkg.version
+        name: this._clientMetadata.name,
+        version: this._clientMetadata.version
       };
     }
 

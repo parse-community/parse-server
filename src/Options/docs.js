@@ -26,6 +26,7 @@
  * @property {Number} cacheMaxSize Sets the maximum size for the in memory cache, defaults to 10000
  * @property {Number} cacheTTL Sets the TTL for the in memory cache (in ms), defaults to 5000 (5 seconds)
  * @property {String} clientKey Key for iOS, MacOS, tvOS clients
+ * @property {ClientMetadata} clientMetadata Custom metadata to append to database client connections for identifying Parse Server instances in database logs. If set, this metadata will be visible in database logs during connection handshakes. This can help with debugging and monitoring in deployments with multiple database clients. Set `name` to identify your application (e.g., 'MyApp') and `version` to your application's version. Leave undefined (default) to disable this feature and avoid the additional data transfer overhead.
  * @property {String} cloud Full path to your cloud code main.js
  * @property {Number|Boolean} cluster Run with cluster, optionally set the number of processes default to os.cpus().length
  * @property {String} collectionPrefix A collection prefix for the classes
@@ -75,7 +76,6 @@
  * @property {Number|String} maxLogFiles Maximum number of logs to keep. If not set, no logs will be removed. This can be a number of files or number of days. If using days, add 'd' as the suffix. (default: null)
  * @property {String} maxUploadSize Max file size for uploads, defaults to 20mb
  * @property {Union} middleware middleware for express server, can be string or function
- * @property {String} clientMetadata Custom metadata to append to database client connections for identifying Parse Server instances in database logs. If set, this metadata will be visible in database logs during connection handshakes. This can help with debugging and monitoring in deployments with multiple database clients. Set to a string value like a deployment identifier, server version, or commit hash. Leave undefined (default) to disable this feature and avoid the additional data transfer overhead.
  * @property {Boolean} mountGraphQL Mounts the GraphQL endpoint
  * @property {String} mountPath Mount path for the server, defaults to /parse
  * @property {Boolean} mountPlayground Mounts the GraphQL Playground - never use this option in production
@@ -314,6 +314,12 @@
  * @property {Boolean} tlsInsecure The MongoDB driver option to disable various certificate validations.
  * @property {Number} waitQueueTimeoutMS The MongoDB driver option to specify the maximum time in milliseconds that a thread can wait for a connection to become available.
  * @property {Number} zlibCompressionLevel The MongoDB driver option to specify the compression level if using zlib for network compression (0-9).
+ */
+
+/**
+ * @interface ClientMetadata
+ * @property {String} name The name to identify your application in database logs (e.g., 'MyApp').
+ * @property {String} version The version of your application (e.g., '1.0.0').
  */
 
 /**
