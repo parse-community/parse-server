@@ -68,7 +68,7 @@
     "@actions/core": "1.11.1",
     "@apollo/client": "3.13.8",
     "@babel/cli": "7.27.0",
-    "@babel/core": "7.27.4",
+    "@babel/core": "7.28.6",
     "@babel/eslint-parser": "7.28.0",
     "@babel/plugin-proposal-object-rest-spread": "7.20.7",
     "@babel/plugin-transform-flow-strip-types": "7.26.5",
