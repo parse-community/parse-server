@@ -475,4 +475,24 @@ describe_only_db('mongo')('GridFSBucket', () => {
       expect(e.message).toEqual('Client must be connected before running operations');
     }
   });
+
+  describe('MongoDB Client Metadata', () => {
+    it('should not pass metadata to MongoClient by default', async () => {
+      const gfsAdapter = new GridFSBucketAdapter(databaseURI);
+      await gfsAdapter._connect();
+      expect(gfsAdapter._client.s.options.driverInfo).toBeUndefined();
+      await gfsAdapter.handleShutdown();
+    });
+
+    it('should pass custom metadata to MongoClient when configured', async () => {
+      const customMetadata = 'MyParseServer-v1.0.0';
+      const gfsAdapter = new GridFSBucketAdapter(databaseURI, { 
+        mongoDBClientMetadata: customMetadata 
+      });
+      await gfsAdapter._connect();
+      expect(gfsAdapter._client.s.options.driverInfo.name).toBe(customMetadata);
+      expect(gfsAdapter._client.s.options.driverInfo.version).toBe(require('../package.json').version);
+      await gfsAdapter.handleShutdown();
+    });
+  });
 });
