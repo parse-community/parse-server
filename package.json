@@ -42,7 +42,7 @@
     "jsonwebtoken": "9.0.2",
     "jwks-rsa": "3.2.0",
     "ldapjs": "3.0.7",
-    "lodash": "4.17.21",
+    "lodash": "4.17.23",
     "lru-cache": "10.4.0",
     "mime": "4.0.7",
     "mongodb": "6.20.0",
