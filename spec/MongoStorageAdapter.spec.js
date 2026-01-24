@@ -1186,4 +1186,29 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       }
     });
   });
+
+  describe('MongoDB Client Metadata', () => {
+    it('should not pass metadata to MongoClient by default', async () => {
+      const adapter = new MongoStorageAdapter({ uri: databaseURI });
+      await adapter.connect();
+      const driverInfo = adapter.client.s.options.driverInfo;
+      // Either driverInfo should be undefined, or it should not contain our custom metadata
+      if (driverInfo) {
+        expect(driverInfo.name).toBeUndefined();
+      }
+      await adapter.handleShutdown();
+    });
+
+    it('should pass custom metadata to MongoClient when configured', async () => {
+      const customMetadata = { name: 'MyParseServer', version: '1.0.0' };
+      const adapter = new MongoStorageAdapter({
+        uri: databaseURI,
+        mongoOptions: { clientMetadata: customMetadata }
+      });
+      await adapter.connect();
+      expect(adapter.client.s.options.driverInfo.name).toBe(customMetadata.name);
+      expect(adapter.client.s.options.driverInfo.version).toBe(customMetadata.version);
+      await adapter.handleShutdown();
+    });
+  });
 });

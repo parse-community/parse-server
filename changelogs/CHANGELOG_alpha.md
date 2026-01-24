@@ -1,3 +1,10 @@
+# [9.2.0-alpha.1](https://github.com/parse-community/parse-server/compare/9.1.1...9.2.0-alpha.1) (2026-01-24)
+
+
+### Features
+
+* Add option `databaseOptions.clientMetadata` to send custom metadata to database server for logging and debugging ([#10017](https://github.com/parse-community/parse-server/issues/10017)) ([756c204](https://github.com/parse-community/parse-server/commit/756c204220a2c7be3770b7d4a49f11e8903323db))
+
 ## [9.1.1-alpha.1](https://github.com/parse-community/parse-server/compare/9.1.0...9.1.1-alpha.1) (2025-12-16)
 
 

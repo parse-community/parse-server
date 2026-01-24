@@ -30,6 +30,7 @@ const nestedOptionTypes = [
 /** The prefix of environment variables for nested options. */
 const nestedOptionEnvPrefix = {
   AccountLockoutOptions: 'PARSE_SERVER_ACCOUNT_LOCKOUT_',
+  DatabaseOptionsClientMetadata: 'PARSE_SERVER_DATABASE_CLIENT_METADATA_',
   CustomPagesOptions: 'PARSE_SERVER_CUSTOM_PAGES_',
   DatabaseOptions: 'PARSE_SERVER_DATABASE_',
   FileUploadOptions: 'PARSE_SERVER_FILE_UPLOAD_',
