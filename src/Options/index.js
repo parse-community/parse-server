@@ -111,8 +111,6 @@ export interface ParseServerOptions {
   databaseOptions: ?DatabaseOptions;
   /* Adapter module for the database; any options that are not explicitly described here are passed directly to the database client. */
   databaseAdapter: ?Adapter<StorageAdapter>;
-  /* Custom metadata to append to database client connections for identifying Parse Server instances in database logs. If set, this metadata will be visible in database logs during connection handshakes. This can help with debugging and monitoring in deployments with multiple database clients. Set `name` to identify your application (e.g., 'MyApp') and `version` to your application's version. Leave undefined (default) to disable this feature and avoid the additional data transfer overhead. */
-  clientMetadata: ?ClientMetadata;
   /* Optional. If set to `true`, the collation rule of case comparison for queries and indexes is enabled. Enable this option to run Parse Server with MongoDB Atlas Serverless or AWS Amazon DocumentDB. If `false`, the collation rule of case comparison is disabled. Default is `false`.
   :DEFAULT: false */
   enableCollationCaseComparison: ?boolean;
@@ -757,9 +755,11 @@ export interface DatabaseOptions {
   allowPublicExplain: ?boolean;
   /* An array of MongoDB client event configurations to enable logging of specific events. */
   logClientEvents: ?(LogClientEvent[]);
+  /* Custom metadata to append to database client connections for identifying Parse Server instances in database logs. If set, this metadata will be visible in database logs during connection handshakes. This can help with debugging and monitoring in deployments with multiple database clients. Set `name` to identify your application (e.g., 'MyApp') and `version` to your application's version. Leave undefined (default) to disable this feature and avoid the additional data transfer overhead. */
+  clientMetadata: ?DatabaseOptionsClientMetadata;
 }
 
-export interface ClientMetadata {
+export interface DatabaseOptionsClientMetadata {
   /* The name to identify your application in database logs (e.g., 'MyApp'). */
   name: string;
   /* The version of your application (e.g., '1.0.0'). */
