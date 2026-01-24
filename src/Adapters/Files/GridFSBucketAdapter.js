@@ -56,7 +56,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
           version: pkg.version
         };
       }
-      
+
       this._connectionPromise = MongoClient.connect(this._databaseURI, options).then(
         client => {
           this._client = client;

@@ -1074,7 +1074,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
 
     it('should pass custom metadata to MongoClient when configured', async () => {
       const customMetadata = 'MyParseServer-v1.0.0';
-      const adapter = new MongoStorageAdapter({ 
+      const adapter = new MongoStorageAdapter({
         uri: databaseURI,
         mongoOptions: { mongoDBClientMetadata: customMetadata }
       });

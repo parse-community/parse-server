@@ -182,7 +182,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     // parsing and re-formatting causes the auth value (if there) to get URI
     // encoded
     const encodedUri = formatUrl(parseUrl(this._uri));
-    
+
     // Only use driverInfo if mongoDBClientMetadata option is set
     const options = { ...this._mongoOptions };
     if (this._mongoDBClientMetadata) {
@@ -191,7 +191,7 @@ export class MongoStorageAdapter implements StorageAdapter {
         version: pkg.version
       };
     }
-    
+
     this.connectionPromise = MongoClient.connect(encodedUri, options)
       .then(client => {
         // Starting mongoDB 3.0, the MongoClient.connect don't return a DB anymore but a client
