@@ -1362,7 +1362,7 @@ describe('Auth Adapter features', () => {
       simpleAdapter: { id: 'simple1' },
       // codeBasedAdapter is NOT modified (no new code provided)
     });
-    
+
     // This should succeed without requiring 'code' for codeBasedAdapter
     await user.save(null, { sessionToken });
 

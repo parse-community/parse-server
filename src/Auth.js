@@ -1,5 +1,4 @@
 const Parse = require('parse/node');
-import { isDeepStrictEqual } from 'util';
 import { getRequestObject, resolveError } from './triggers';
 import { logger } from './logger';
 import { LRUCache as LRU } from 'lru-cache';
@@ -456,9 +455,29 @@ const hasMutatedAuthData = (authData, userAuthData) => {
     if (provider === 'anonymous') { return; }
     const providerData = authData[provider];
     const userProviderAuthData = userAuthData[provider];
-    if (!isDeepStrictEqual(providerData, userProviderAuthData)) {
+
+    // If unlinking (setting to null), consider it mutated
+    if (providerData === null) {
       mutatedAuthData[provider] = providerData;
+      return;
     }
+
+    // If provider doesn't exist in stored data, it's new
+    if (!userProviderAuthData) {
+      mutatedAuthData[provider] = providerData;
+      return;
+    }
+
+    // If provider exists, check if the id has changed
+    // Only consider it mutated if the id is different
+    // This prevents re-validation when auth adapters strip fields via afterFind
+    if (providerData?.id !== userProviderAuthData?.id) {
+      mutatedAuthData[provider] = providerData;
+      return;
+    }
+
+    // If id is the same, don't treat as mutation even if other fields differ
+    // This handles the case where afterFind strips sensitive fields like 'code'
   });
   const hasMutatedAuthData = Object.keys(mutatedAuthData).length !== 0;
   return { hasMutatedAuthData, mutatedAuthData };
