@@ -27,7 +27,7 @@
     "@graphql-tools/utils": "10.8.6",
     "@parse/fs-files-adapter": "3.0.0",
     "@parse/push-adapter": "8.2.0",
-    "bcryptjs": "3.0.2",
+    "bcryptjs": "3.0.3",
     "commander": "14.0.2",
     "cors": "2.8.5",
     "deepcopy": "2.1.0",
