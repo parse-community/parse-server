@@ -1,4 +1,5 @@
 const Parse = require('parse/node');
+import { isDeepStrictEqual } from 'util';
 import { getRequestObject, resolveError } from './triggers';
 import { logger } from './logger';
 import { LRUCache as LRU } from 'lru-cache';
@@ -468,16 +469,21 @@ const hasMutatedAuthData = (authData, userAuthData) => {
       return;
     }
 
-    // If provider exists, check if the id has changed
-    // Only consider it mutated if the id is different
-    // This prevents re-validation when auth adapters strip fields via afterFind
-    if (providerData?.id !== userProviderAuthData?.id) {
-      mutatedAuthData[provider] = providerData;
-      return;
-    }
+    // Check if incoming data represents actual changes vs just echoing back
+    // what afterFind returned. If incoming data is a subset of stored data
+    // (all incoming fields match stored values), it's not mutated.
+    // If incoming data has different values or fields not in stored data, it's mutated.
+    // This handles the case where afterFind strips sensitive fields like 'code':
+    // - Incoming: { id: 'x' }, Stored: { id: 'x', code: 'secret' } -> NOT mutated (subset)
+    // - Incoming: { id: 'x', token: 'new' }, Stored: { id: 'x', token: 'old' } -> MUTATED
+    const incomingKeys = Object.keys(providerData || {});
+    const hasChanges = incomingKeys.some(key => {
+      return !isDeepStrictEqual(providerData[key], userProviderAuthData[key]);
+    });
 
-    // If id is the same, don't treat as mutation even if other fields differ
-    // This handles the case where afterFind strips sensitive fields like 'code'
+    if (hasChanges) {
+      mutatedAuthData[provider] = providerData;
+    }
   });
   const hasMutatedAuthData = Object.keys(mutatedAuthData).length !== 0;
   return { hasMutatedAuthData, mutatedAuthData };
