@@ -264,6 +264,7 @@
  * @property {String} authSource The MongoDB driver option to specify the database name associated with the user's credentials.
  * @property {Boolean} autoSelectFamily The MongoDB driver option to set whether the socket attempts to connect to IPv6 and IPv4 addresses until a connection is established. If available, the driver will select the first IPv6 address.
  * @property {Number} autoSelectFamilyAttemptTimeout The MongoDB driver option to specify the amount of time in milliseconds to wait for a connection attempt to finish before trying the next address when using the autoSelectFamily option. If set to a positive integer less than 10, the value 10 is used instead.
+ * @property {DatabaseOptionsClientMetadata} clientMetadata Custom metadata to append to database client connections for identifying Parse Server instances in database logs. If set, this metadata will be visible in database logs during connection handshakes. This can help with debugging and monitoring in deployments with multiple database clients. Set `name` to identify your application (e.g., 'MyApp') and `version` to your application's version. Leave undefined (default) to disable this feature and avoid the additional data transfer overhead.
  * @property {Union} compressors The MongoDB driver option to specify an array or comma-delimited string of compressors to enable network compression for communication between this client and a mongod/mongos instance.
  * @property {Number} connectTimeoutMS The MongoDB driver option to specify the amount of time, in milliseconds, to wait to establish a single TCP socket connection to the server before raising an error. Specifying 0 disables the connection timeout.
  * @property {Boolean} createIndexRoleName Set to `true` to automatically create a unique index on the name field of the _Role collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
@@ -313,6 +314,12 @@
  * @property {Boolean} tlsInsecure The MongoDB driver option to disable various certificate validations.
  * @property {Number} waitQueueTimeoutMS The MongoDB driver option to specify the maximum time in milliseconds that a thread can wait for a connection to become available.
  * @property {Number} zlibCompressionLevel The MongoDB driver option to specify the compression level if using zlib for network compression (0-9).
+ */
+
+/**
+ * @interface DatabaseOptionsClientMetadata
+ * @property {String} name The name to identify your application in database logs (e.g., 'MyApp').
+ * @property {String} version The version of your application (e.g., '1.0.0').
  */
 
 /**

@@ -1063,4 +1063,152 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       await adapter.handleShutdown();
     });
   });
+
+  describe('transient error handling', () => {
+    it('should transform MongoWaitQueueTimeoutError to Parse.Error.INTERNAL_SERVER_ERROR', async () => {
+      const adapter = new MongoStorageAdapter({ uri: databaseURI });
+      await adapter.connect();
+
+      // Create a mock error with the MongoWaitQueueTimeoutError name
+      const mockError = new Error('Timed out while checking out a connection from connection pool');
+      mockError.name = 'MongoWaitQueueTimeoutError';
+
+      try {
+        adapter.handleError(mockError);
+        fail('Expected handleError to throw');
+      } catch (error) {
+        expect(error instanceof Parse.Error).toBe(true);
+        expect(error.code).toBe(Parse.Error.INTERNAL_SERVER_ERROR);
+        expect(error.message).toBe('Database error');
+      }
+    });
+
+    it('should transform MongoServerSelectionError to Parse.Error.INTERNAL_SERVER_ERROR', async () => {
+      const adapter = new MongoStorageAdapter({ uri: databaseURI });
+      await adapter.connect();
+
+      const mockError = new Error('Server selection timed out');
+      mockError.name = 'MongoServerSelectionError';
+
+      try {
+        adapter.handleError(mockError);
+        fail('Expected handleError to throw');
+      } catch (error) {
+        expect(error instanceof Parse.Error).toBe(true);
+        expect(error.code).toBe(Parse.Error.INTERNAL_SERVER_ERROR);
+        expect(error.message).toBe('Database error');
+      }
+    });
+
+    it('should transform MongoNetworkTimeoutError to Parse.Error.INTERNAL_SERVER_ERROR', async () => {
+      const adapter = new MongoStorageAdapter({ uri: databaseURI });
+      await adapter.connect();
+
+      const mockError = new Error('Network timeout');
+      mockError.name = 'MongoNetworkTimeoutError';
+
+      try {
+        adapter.handleError(mockError);
+        fail('Expected handleError to throw');
+      } catch (error) {
+        expect(error instanceof Parse.Error).toBe(true);
+        expect(error.code).toBe(Parse.Error.INTERNAL_SERVER_ERROR);
+        expect(error.message).toBe('Database error');
+      }
+    });
+
+    it('should transform MongoNetworkError to Parse.Error.INTERNAL_SERVER_ERROR', async () => {
+      const adapter = new MongoStorageAdapter({ uri: databaseURI });
+      await adapter.connect();
+
+      const mockError = new Error('Network error');
+      mockError.name = 'MongoNetworkError';
+
+      try {
+        adapter.handleError(mockError);
+        fail('Expected handleError to throw');
+      } catch (error) {
+        expect(error instanceof Parse.Error).toBe(true);
+        expect(error.code).toBe(Parse.Error.INTERNAL_SERVER_ERROR);
+        expect(error.message).toBe('Database error');
+      }
+    });
+
+    it('should transform TransientTransactionError to Parse.Error.INTERNAL_SERVER_ERROR', async () => {
+      const adapter = new MongoStorageAdapter({ uri: databaseURI });
+      await adapter.connect();
+
+      const mockError = new Error('Transient transaction error');
+      mockError.hasErrorLabel = label => label === 'TransientTransactionError';
+
+      try {
+        adapter.handleError(mockError);
+        fail('Expected handleError to throw');
+      } catch (error) {
+        expect(error instanceof Parse.Error).toBe(true);
+        expect(error.code).toBe(Parse.Error.INTERNAL_SERVER_ERROR);
+        expect(error.message).toBe('Database error');
+      }
+    });
+
+    it('should not transform non-transient errors', async () => {
+      const adapter = new MongoStorageAdapter({ uri: databaseURI });
+      await adapter.connect();
+
+      const mockError = new Error('Some other error');
+      mockError.name = 'SomeOtherError';
+
+      try {
+        adapter.handleError(mockError);
+        fail('Expected handleError to throw');
+      } catch (error) {
+        expect(error instanceof Parse.Error).toBe(false);
+        expect(error.message).toBe('Some other error');
+      }
+    });
+
+    it('should handle null/undefined errors', async () => {
+      const adapter = new MongoStorageAdapter({ uri: databaseURI });
+      await adapter.connect();
+
+      try {
+        adapter.handleError(null);
+        fail('Expected handleError to throw');
+      } catch (error) {
+        expect(error).toBeNull();
+      }
+
+      try {
+        adapter.handleError(undefined);
+        fail('Expected handleError to throw');
+      } catch (error) {
+        expect(error).toBeUndefined();
+      }
+    });
+  });
+
+  describe('MongoDB Client Metadata', () => {
+    it('should not pass metadata to MongoClient by default', async () => {
+      const adapter = new MongoStorageAdapter({ uri: databaseURI });
+      await adapter.connect();
+      const driverInfo = adapter.client.s.options.driverInfo;
+      // Either driverInfo should be undefined, or it should not contain our custom metadata
+      if (driverInfo) {
+        expect(driverInfo.name).toBeUndefined();
+      }
+      await adapter.handleShutdown();
+    });
+
+    it('should pass custom metadata to MongoClient when configured', async () => {
+      const customMetadata = { name: 'MyParseServer', version: '1.0.0' };
+      const adapter = new MongoStorageAdapter({
+        uri: databaseURI,
+        mongoOptions: { clientMetadata: customMetadata }
+      });
+      await adapter.connect();
+      expect(adapter.client.s.options.driverInfo.name).toBe(customMetadata.name);
+      expect(adapter.client.s.options.driverInfo.version).toBe(customMetadata.version);
+      await adapter.handleShutdown();
+    });
+  });
 });
