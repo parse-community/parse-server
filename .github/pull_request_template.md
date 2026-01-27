@@ -12,7 +12,7 @@ Closes: FILL_THIS_OUT
 <!-- Describe the changes in this PR. -->
 
 ## Tasks
-<!-- Delete tasks that don't apply. -->
+<!-- Check completed tasks and delete tasks that don't apply. -->
 
 - [ ] Add tests
 - [ ] Add changes to documentation (guides, repository pages, code comments)
