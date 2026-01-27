@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "9.2.0-alpha.2",
+  "version": "9.2.0-alpha.3",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -26,7 +26,7 @@
     "@graphql-tools/schema": "10.0.23",
     "@graphql-tools/utils": "10.8.6",
     "@parse/fs-files-adapter": "3.0.0",
-    "@parse/push-adapter": "8.1.0",
+    "@parse/push-adapter": "8.2.0",
     "bcryptjs": "3.0.2",
     "commander": "14.0.2",
     "cors": "2.8.5",
@@ -48,7 +48,7 @@
     "mongodb": "6.20.0",
     "mustache": "4.2.0",
     "otpauth": "9.4.0",
-    "parse": "8.0.0",
+    "parse": "8.0.3",
     "path-to-regexp": "8.3.0",
     "pg-monitor": "3.0.0",
     "pg-promise": "12.2.0",
