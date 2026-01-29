@@ -1,3 +1,10 @@
+# [9.2.0-alpha.4](https://github.com/parse-community/parse-server/compare/9.2.0-alpha.3...9.2.0-alpha.4) (2026-01-29)
+
+
+### Features
+
+* Upgrade mongodb from 6.20.0 to 7.0.0 ([#10027](https://github.com/parse-community/parse-server/issues/10027)) ([14b3fce](https://github.com/parse-community/parse-server/commit/14b3fce203be0abaf29c27c123cba47f35d09c68))
+
 # [9.2.0-alpha.3](https://github.com/parse-community/parse-server/compare/9.2.0-alpha.2...9.2.0-alpha.3) (2026-01-27)
 
 
