@@ -27,6 +27,36 @@ const ReadPreference = mongodb.ReadPreference;
 
 const MongoSchemaCollectionName = '_SCHEMA';
 
+/**
+ * Determines if a MongoDB error is a transient infrastructure error
+ * (connection pool, network, server selection) as opposed to a query-level error.
+ */
+function isTransientError(error) {
+  if (!error) {
+    return false;
+  }
+
+  // Connection pool, network, and server selection errors
+  const transientErrorNames = [
+    'MongoWaitQueueTimeoutError',
+    'MongoServerSelectionError',
+    'MongoNetworkTimeoutError',
+    'MongoNetworkError',
+  ];
+  if (transientErrorNames.includes(error.name)) {
+    return true;
+  }
+
+  // Check for MongoDB's transient transaction error label
+  if (typeof error.hasErrorLabel === 'function') {
+    if (error.hasErrorLabel('TransientTransactionError')) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 const storageAdapterAllCollections = mongoAdapter => {
   return mongoAdapter
     .connect()
@@ -252,6 +282,13 @@ export class MongoStorageAdapter implements StorageAdapter {
       delete this.connectionPromise;
       logger.error('Received unauthorized error', { error: error });
     }
+
+    // Transform infrastructure/transient errors into Parse.Error.INTERNAL_SERVER_ERROR
+    if (isTransientError(error)) {
+      logger.error('Database transient error', error);
+      throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database error');
+    }
+
     throw error;
   }
 
