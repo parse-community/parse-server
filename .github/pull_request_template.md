@@ -2,10 +2,9 @@
 
 - Report security issues [confidentially](https://github.com/parse-community/parse-server/security/policy).
 - Any contribution is under this [license](https://github.com/parse-community/parse-server/blob/alpha/LICENSE).
-- Link this pull request to an [issue](https://github.com/parse-community/parse-server/issues?q=is%3Aissue).
 
 ## Issue
-<!-- Add the link to the issue that this PR closes. -->
+<!-- Describe the issue. -->
 
 Closes: FILL_THIS_OUT
 
@@ -13,7 +12,7 @@ Closes: FILL_THIS_OUT
 <!-- Describe the changes in this PR. -->
 
 ## Tasks
-<!-- Delete tasks that don't apply. -->
+<!-- Check completed tasks and delete tasks that don't apply. -->
 
 - [ ] Add tests
 - [ ] Add changes to documentation (guides, repository pages, code comments)

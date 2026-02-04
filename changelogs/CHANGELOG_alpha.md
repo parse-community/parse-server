@@ -1,3 +1,17 @@
+# [9.2.0-alpha.4](https://github.com/parse-community/parse-server/compare/9.2.0-alpha.3...9.2.0-alpha.4) (2026-01-29)
+
+
+### Features
+
+* Upgrade mongodb from 6.20.0 to 7.0.0 ([#10027](https://github.com/parse-community/parse-server/issues/10027)) ([14b3fce](https://github.com/parse-community/parse-server/commit/14b3fce203be0abaf29c27c123cba47f35d09c68))
+
+# [9.2.0-alpha.3](https://github.com/parse-community/parse-server/compare/9.2.0-alpha.2...9.2.0-alpha.3) (2026-01-27)
+
+
+### Features
+
+* Upgrade to parse 8.0.3 and @parse/push-adapter 8.2.0 ([#10021](https://github.com/parse-community/parse-server/issues/10021)) ([9833fdb](https://github.com/parse-community/parse-server/commit/9833fdb111c373dc75fc74ea5f9209408186a475))
+
 # [9.2.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.2.0-alpha.1...9.2.0-alpha.2) (2026-01-24)
 
 
