@@ -29,7 +29,7 @@
     "@parse/push-adapter": "8.2.0",
     "bcryptjs": "3.0.3",
     "commander": "14.0.2",
-    "cors": "2.8.5",
+    "cors": "2.8.6",
     "deepcopy": "2.1.0",
     "express": "5.2.1",
     "express-rate-limit": "7.5.1",
