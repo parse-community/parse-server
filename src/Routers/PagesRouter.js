@@ -624,12 +624,14 @@ export class PagesRouter extends PromiseRouter {
    * @param {Boolean} failGracefully Is true if failing to set the config should
    * not result in an invalid request response. Default is `false`.
    */
-  setConfig(req, failGracefully = false) {
+  async setConfig(req, failGracefully = false) {
     req.config = Config.get(req.params.appId || req.query.appId);
     if (!req.config && !failGracefully) {
       this.invalidRequest();
     }
-    return Promise.resolve();
+    if (req.config) {
+      await req.config.loadKeys();
+    }
   }
 
   mountPagesRoutes() {
@@ -637,7 +639,7 @@ export class PagesRouter extends PromiseRouter {
       'GET',
       `/${this.pagesEndpoint}/:appId/verify_email`,
       req => {
-        this.setConfig(req);
+        return this.setConfig(req);
       },
       req => {
         return this.verifyEmail(req);
@@ -648,7 +650,7 @@ export class PagesRouter extends PromiseRouter {
       'POST',
       `/${this.pagesEndpoint}/:appId/resend_verification_email`,
       req => {
-        this.setConfig(req);
+        return this.setConfig(req);
       },
       req => {
         return this.resendVerificationEmail(req);
@@ -659,7 +661,7 @@ export class PagesRouter extends PromiseRouter {
       'GET',
       `/${this.pagesEndpoint}/choose_password`,
       req => {
-        this.setConfig(req);
+        return this.setConfig(req);
       },
       req => {
         return this.passwordReset(req);
@@ -670,7 +672,7 @@ export class PagesRouter extends PromiseRouter {
       'POST',
       `/${this.pagesEndpoint}/:appId/request_password_reset`,
       req => {
-        this.setConfig(req);
+        return this.setConfig(req);
       },
       req => {
         return this.resetPassword(req);
@@ -681,7 +683,7 @@ export class PagesRouter extends PromiseRouter {
       'GET',
       `/${this.pagesEndpoint}/:appId/request_password_reset`,
       req => {
-        this.setConfig(req);
+        return this.setConfig(req);
       },
       req => {
         return this.requestResetPassword(req);
@@ -695,7 +697,7 @@ export class PagesRouter extends PromiseRouter {
         route.method,
         `/${this.pagesEndpoint}/:appId/${route.path}`,
         req => {
-          this.setConfig(req);
+          return this.setConfig(req);
         },
         async req => {
           const { file, query = {} } = (await route.handler(req)) || {};
@@ -718,7 +720,7 @@ export class PagesRouter extends PromiseRouter {
       'GET',
       `/${this.pagesEndpoint}/*resource`,
       req => {
-        this.setConfig(req, true);
+        return this.setConfig(req, true);
       },
       req => {
         return this.staticRoute(req);
