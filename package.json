@@ -20,7 +20,7 @@
   ],
   "license": "Apache-2.0",
   "dependencies": {
-    "@apollo/server": "5.0.0",
+    "@apollo/server": "5.4.0",
     "@as-integrations/express5": "1.1.2",
     "@graphql-tools/merge": "9.0.24",
     "@graphql-tools/schema": "10.0.23",
