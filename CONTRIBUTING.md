@@ -605,6 +605,8 @@ This creates a risk that a vulnerability is indirectly disclosed by publishing a
 
 While the current major version is published on branch `release`, a Long-Term-Support (LTS) version is published on branch `release-#.x.x`, for example `release-4.x.x` for the Parse Server 4.x LTS branch.
 
+Only the previous major version is under LTS. Older major versions are no longer maintained and their `release-#.x.x` branches are frozen; no further changes will be made. If you need features or fixes on an older branch, fork it and backport changes in your own branch.
+
 ### Preparing Release
 
 The following changes are done in the `alpha` branch, before publishing the last `beta` version that will eventually become the major release. This way the changes trickle naturally through all branches and code consistency is ensured among branches.

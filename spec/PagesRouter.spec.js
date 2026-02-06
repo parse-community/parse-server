@@ -1181,6 +1181,61 @@ describe('Pages Router', () => {
     });
   });
 
+  describe('async publicServerURL', () => {
+    it('resolves async publicServerURL for password reset page', async () => {
+      const emailAdapter = {
+        sendVerificationEmail: () => Promise.resolve(),
+        sendPasswordResetEmail: () => Promise.resolve(),
+        sendMail: () => {},
+      };
+      await reconfigureServer({
+        appId: 'test',
+        appName: 'exampleAppname',
+        verifyUserEmails: true,
+        emailAdapter,
+        publicServerURL: () => 'http://localhost:8378/1',
+        pages: { enableRouter: true },
+      });
+
+      const user = new Parse.User();
+      user.setUsername('asyncUrlUser');
+      user.setPassword('examplePassword');
+      user.set('email', 'async-url@example.com');
+      await user.signUp();
+      await Parse.User.requestPasswordReset('async-url@example.com');
+
+      const response = await request({
+        url: 'http://localhost:8378/1/apps/test/request_password_reset?token=invalidToken',
+        followRedirects: false,
+      }).catch(e => e);
+      expect(response.status).toBe(200);
+      expect(response.text).toContain('Invalid password reset link!');
+    });
+
+    it('resolves async publicServerURL for email verification page', async () => {
+      const emailAdapter = {
+        sendVerificationEmail: () => Promise.resolve(),
+        sendPasswordResetEmail: () => Promise.resolve(),
+        sendMail: () => {},
+      };
+      await reconfigureServer({
+        appId: 'test',
+        appName: 'exampleAppname',
+        verifyUserEmails: true,
+        emailAdapter,
+        publicServerURL: () => 'http://localhost:8378/1',
+        pages: { enableRouter: true },
+      });
+
+      const response = await request({
+        url: 'http://localhost:8378/1/apps/test/verify_email?token=invalidToken',
+        followRedirects: false,
+      }).catch(e => e);
+      expect(response.status).toBe(200);
+      expect(response.text).toContain('Invalid verification link!');
+    });
+  });
+
   describe('XSS Protection', () => {
     beforeEach(async () => {
       await reconfigureServer({
