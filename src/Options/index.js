@@ -186,12 +186,12 @@ export interface ParseServerOptions {
   /* Max file size for uploads, defaults to 20mb
   :DEFAULT: 20mb */
   maxUploadSize: ?string;
-  /* Set to `true` to require users to verify their email address to complete the sign-up process. Supports a function with a return value of `true` or `false` for conditional verification. The function receives a request object that includes `createdWith` to indicate whether the invocation is for `signup` or `login` and the used auth provider.
+  /* Set to `true` to require users to verify their email address to complete the sign-up process. Supports a function with a return value of `true` or `false` for conditional verification. The function receives a request object that includes `createdWith` to indicate whether the invocation is for `signup` or `login` and the used auth provider. The `createdWith` property is `undefined` for resend verification email requests; use the `resendRequest` property to identify those.
   <br><br>
   Default is `false`.
   :DEFAULT: false */
   verifyUserEmails: ?(boolean | (EmailVerificationRequest => boolean | Promise<boolean>));
-  /* Set to `true` to prevent a user from logging in if the email has not yet been verified and email verification is required.
+  /* Set to `true` to prevent a user from logging in if the email has not yet been verified and email verification is required. Supports a function with a return value of `true` or `false` for conditional prevention. The function receives a request object that includes `createdWith` to indicate whether the invocation is for `signup` or `login` and the used auth provider.
   <br><br>
   Default is `false`.
   <br>
