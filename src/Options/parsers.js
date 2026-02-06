@@ -68,6 +68,13 @@ function booleanParser(opt) {
   return false;
 }
 
+function booleanOrFunctionParser(opt) {
+  if (typeof opt === 'function') {
+    return opt;
+  }
+  return booleanParser(opt);
+}
+
 function nullParser(opt) {
   if (opt == 'null') {
     return null;
@@ -81,6 +88,7 @@ module.exports = {
   numberOrStringParser,
   nullParser,
   booleanParser,
+  booleanOrFunctionParser,
   moduleOrObjectParser,
   arrayParser,
   objectParser,

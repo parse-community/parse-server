@@ -474,6 +474,7 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_PREVENT_LOGIN_WITH_UNVERIFIED_EMAIL',
     help:
       'Set to `true` to prevent a user from logging in if the email has not yet been verified and email verification is required.<br><br>Default is `false`.<br>Requires option `verifyUserEmails: true`.',
+    action: parsers.booleanOrFunctionParser,
     default: false,
   },
   preventSignupWithUnverifiedEmail: {
@@ -630,6 +631,7 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_VERIFY_USER_EMAILS',
     help:
       'Set to `true` to require users to verify their email address to complete the sign-up process. Supports a function with a return value of `true` or `false` for conditional verification. The function receives a request object that includes `createdWith` to indicate whether the invocation is for `signup` or `login` and the used auth provider.<br><br>Default is `false`.',
+    action: parsers.booleanOrFunctionParser,
     default: false,
   },
   webhookKey: {
