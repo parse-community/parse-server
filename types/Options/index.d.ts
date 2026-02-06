@@ -26,7 +26,7 @@ type RequestKeywordDenylist = {
     key: string;
     value: any;
 };
-export interface VerifyUserEmailsRequest {
+export interface EmailVerificationRequest {
     original?: any;
     object: any;
     master?: boolean;
@@ -90,8 +90,8 @@ export interface ParseServerOptions {
     auth?: Record<string, AuthAdapter>;
     enableInsecureAuthAdapters?: boolean;
     maxUploadSize?: string;
-    verifyUserEmails?: boolean | ((params: VerifyUserEmailsRequest) => boolean | Promise<boolean>);
-    preventLoginWithUnverifiedEmail?: boolean | ((params: VerifyUserEmailsRequest) => boolean | Promise<boolean>);
+    verifyUserEmails?: boolean | ((params: EmailVerificationRequest) => boolean | Promise<boolean>);
+    preventLoginWithUnverifiedEmail?: boolean | ((params: EmailVerificationRequest) => boolean | Promise<boolean>);
     preventSignupWithUnverifiedEmail?: boolean;
     emailVerifyTokenValidityDuration?: number;
     emailVerifyTokenReuseIfValid?: boolean;
