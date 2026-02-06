@@ -1,3 +1,17 @@
+## [9.2.1-alpha.1](https://github.com/parse-community/parse-server/compare/9.2.0...9.2.1-alpha.1) (2026-02-06)
+
+
+### Bug Fixes
+
+* Default HTML pages for password reset, email verification not found ([#10034](https://github.com/parse-community/parse-server/issues/10034)) ([e299107](https://github.com/parse-community/parse-server/commit/e29910764daef3c03ed1b09eee19cedc3b12a86a))
+
+# [9.2.0-alpha.5](https://github.com/parse-community/parse-server/compare/9.2.0-alpha.4...9.2.0-alpha.5) (2026-02-05)
+
+
+### Bug Fixes
+
+* Security upgrade @apollo/server from 5.0.0 to 5.4.0 ([#10035](https://github.com/parse-community/parse-server/issues/10035)) ([9f368ff](https://github.com/parse-community/parse-server/commit/9f368ff9ca322c61cdcfab735e5b5240d1c8f917))
+
 # [9.2.0-alpha.4](https://github.com/parse-community/parse-server/compare/9.2.0-alpha.3...9.2.0-alpha.4) (2026-01-29)
 
 
