@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "9.2.0-alpha.4",
+  "version": "9.2.0",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -20,7 +20,7 @@
   ],
   "license": "Apache-2.0",
   "dependencies": {
-    "@apollo/server": "5.0.0",
+    "@apollo/server": "5.4.0",
     "@as-integrations/express5": "1.1.2",
     "@graphql-tools/merge": "9.0.24",
     "@graphql-tools/schema": "10.0.23",
@@ -29,7 +29,7 @@
     "@parse/push-adapter": "8.2.0",
     "bcryptjs": "3.0.3",
     "commander": "14.0.2",
-    "cors": "2.8.5",
+    "cors": "2.8.6",
     "deepcopy": "2.1.0",
     "express": "5.2.1",
     "express-rate-limit": "7.5.1",
@@ -68,7 +68,7 @@
     "@actions/core": "1.11.1",
     "@apollo/client": "3.13.8",
     "@babel/cli": "7.27.0",
-    "@babel/core": "7.28.6",
+    "@babel/core": "7.29.0",
     "@babel/eslint-parser": "7.28.6",
     "@babel/plugin-proposal-object-rest-spread": "7.20.7",
     "@babel/plugin-transform-flow-strip-types": "7.26.5",

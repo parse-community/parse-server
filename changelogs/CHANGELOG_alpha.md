@@ -1,3 +1,10 @@
+# [9.2.0-alpha.5](https://github.com/parse-community/parse-server/compare/9.2.0-alpha.4...9.2.0-alpha.5) (2026-02-05)
+
+
+### Bug Fixes
+
+* Security upgrade @apollo/server from 5.0.0 to 5.4.0 ([#10035](https://github.com/parse-community/parse-server/issues/10035)) ([9f368ff](https://github.com/parse-community/parse-server/commit/9f368ff9ca322c61cdcfab735e5b5240d1c8f917))
+
 # [9.2.0-alpha.4](https://github.com/parse-community/parse-server/compare/9.2.0-alpha.3...9.2.0-alpha.4) (2026-01-29)
 
 
