@@ -772,8 +772,7 @@ module.exports.PagesOptions = {
   pagesPath: {
     env: 'PARSE_SERVER_PAGES_PAGES_PATH',
     help:
-      "The path to the pages directory; this also defines where the static endpoint '/apps' points to. Default is the './public/' directory.",
-    default: './public',
+      "The path to the pages directory; this also defines where the static endpoint '/apps' points to. Default is the './public/' directory of the parse-server module.",
   },
   placeholders: {
     env: 'PARSE_SERVER_PAGES_PLACEHOLDERS',

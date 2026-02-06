@@ -437,8 +437,7 @@ export interface PagesOptions {
   /* Is true if responses should always be redirects and never content, false if the response type should depend on the request type (GET request -> content response; POST request -> redirect response).
   :DEFAULT: false */
   forceRedirect: ?boolean;
-  /* The path to the pages directory; this also defines where the static endpoint '/apps' points to. Default is the './public/' directory.
-  :DEFAULT: ./public */
+  /* The path to the pages directory; this also defines where the static endpoint '/apps' points to. Default is the './public/' directory of the parse-server module. */
   pagesPath: ?string;
   /* The API endpoint for the pages. Default is 'apps'.
   :DEFAULT: apps */
