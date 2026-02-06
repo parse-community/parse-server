@@ -183,6 +183,22 @@ describe('buildConfigDefinitions', () => {
       expect(result).toBeUndefined();
     });
 
+    it('should return undefined for UnionTypeAnnotation with boolean but without function', () => {
+      const mockElement = {
+        type: 'UnionTypeAnnotation',
+        typeAnnotation: {
+          types: [
+            { type: 'BooleanTypeAnnotation' },
+            { type: 'VoidTypeAnnotation' },
+          ],
+        },
+      };
+
+      const result = mapperFor(mockElement, t);
+
+      expect(result).toBeUndefined();
+    });
+
     it('should return objectParser for unknown GenericTypeAnnotation', () => {
       const mockElement = {
         type: 'GenericTypeAnnotation',
