@@ -186,13 +186,17 @@ export interface ParseServerOptions {
   /* Max file size for uploads, defaults to 20mb
   :DEFAULT: 20mb */
   maxUploadSize: ?string;
-  /* Set to `true` to require users to verify their email address to complete the sign-up process. Supports a function with a return value of `true` or `false` for conditional verification. The function receives a request object that includes `createdWith` to indicate whether the invocation is for `signup` or `login` and the used auth provider. The `createdWith` property is `undefined` for resend verification email requests; use the `resendRequest` property to identify those.
+  /* Set to `true` to require users to verify their email address to complete the sign-up process. Supports a function with a return value of `true` or `false` for conditional verification. The function receives a request object that includes `createdWith` to indicate whether the invocation is for `signup` or `login` and the used auth provider.
   <br><br>
+  The `createdWith` values per scenario:
+  <ul><li>Password signup: `{ action: 'signup', authProvider: 'password' }`</li><li>Auth provider signup: `{ action: 'signup', authProvider: '<provider>' }`</li><li>Password login: `{ action: 'login', authProvider: 'password' }`</li><li>Auth provider login: function not invoked; auth provider login bypasses email verification</li><li>Resend verification email: `createdWith` is `undefined`; use the `resendRequest` property to identify those</li></ul>
   Default is `false`.
   :DEFAULT: false */
   verifyUserEmails: ?(boolean | (EmailVerificationRequest => boolean | Promise<boolean>));
   /* Set to `true` to prevent a user from logging in if the email has not yet been verified and email verification is required. Supports a function with a return value of `true` or `false` for conditional prevention. The function receives a request object that includes `createdWith` to indicate whether the invocation is for `signup` or `login` and the used auth provider.
   <br><br>
+  The `createdWith` values per scenario:
+  <ul><li>Password signup: `{ action: 'signup', authProvider: 'password' }`</li><li>Auth provider signup: `{ action: 'signup', authProvider: '<provider>' }`</li><li>Password login: `{ action: 'login', authProvider: 'password' }`</li><li>Auth provider login: function not invoked; auth provider login bypasses email verification</li></ul>
   Default is `false`.
   <br>
   Requires option `verifyUserEmails: true`.
