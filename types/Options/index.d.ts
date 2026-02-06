@@ -38,6 +38,10 @@ export interface VerifyUserEmailsRequest {
     };
     resendRequest?: boolean;
 }
+export interface SendEmailVerificationRequest {
+    user: any;
+    master?: boolean;
+}
 export interface ParseServerOptions {
     appId: string;
     masterKey: (() => void) | string;
@@ -91,7 +95,7 @@ export interface ParseServerOptions {
     preventSignupWithUnverifiedEmail?: boolean;
     emailVerifyTokenValidityDuration?: number;
     emailVerifyTokenReuseIfValid?: boolean;
-    sendUserEmailVerification?: (boolean | void);
+    sendUserEmailVerification?: boolean | ((params: SendEmailVerificationRequest) => boolean | Promise<boolean>);
     accountLockout?: AccountLockoutOptions;
     passwordPolicy?: PasswordPolicyOptions;
     cacheAdapter?: Adapter<CacheAdapter>;

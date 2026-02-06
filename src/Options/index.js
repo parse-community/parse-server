@@ -55,6 +55,10 @@ type EmailVerificationRequest = {
   },
   resendRequest?: boolean,
 };
+type SendEmailVerificationRequest = {
+  user: any,
+  master?: boolean,
+};
 
 export interface ParseServerOptions {
   /* Your Parse Application ID
@@ -233,7 +237,10 @@ export interface ParseServerOptions {
   Default is `true`.
   <br>
   :DEFAULT: true */
-  sendUserEmailVerification: ?(boolean | void);
+  sendUserEmailVerification: ?(
+    | boolean
+    | (SendEmailVerificationRequest => boolean | Promise<boolean>)
+  );
   /* The account lockout policy for failed login attempts. */
   accountLockout: ?AccountLockoutOptions;
   /* The password policy for enforcing password related rules. */
