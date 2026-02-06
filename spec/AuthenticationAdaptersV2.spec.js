@@ -76,6 +76,41 @@ describe('Auth Adapter features', () => {
     validateAppId: () => Promise.resolve(),
   };
 
+  // Code-based adapter that requires 'code' field (like gpgames)
+  const codeBasedAdapter = {
+    validateAppId: () => Promise.resolve(),
+    validateSetUp: authData => {
+      if (!authData.code) {
+        throw new Error('code is required.');
+      }
+      return Promise.resolve({ save: { id: authData.id } });
+    },
+    validateUpdate: authData => {
+      if (!authData.code) {
+        throw new Error('code is required.');
+      }
+      return Promise.resolve({ save: { id: authData.id } });
+    },
+    validateLogin: authData => {
+      if (!authData.code) {
+        throw new Error('code is required.');
+      }
+      return Promise.resolve({ save: { id: authData.id } });
+    },
+    afterFind: authData => {
+      // Strip sensitive 'code' field when returning to client
+      return { id: authData.id };
+    },
+  };
+
+  // Simple adapter that doesn't require code
+  const simpleAdapter = {
+    validateAppId: () => Promise.resolve(),
+    validateSetUp: () => Promise.resolve(),
+    validateUpdate: () => Promise.resolve(),
+    validateLogin: () => Promise.resolve(),
+  };
+
   const headers = {
     'Content-Type': 'application/json',
     'X-Parse-Application-Id': 'test',
@@ -1301,5 +1336,43 @@ describe('Auth Adapter features', () => {
     await user.save({ authData: { adapterA: null, adapterB: { id: 'test' } } });
     await user.fetch({ useMasterKey: true });
     expect(user.get('authData')).toEqual({ adapterB: { id: 'test' } });
+  });
+
+  it('should handle multiple providers: add one while another remains unchanged (code-based)', async () => {
+    await reconfigureServer({
+      auth: {
+        codeBasedAdapter,
+        simpleAdapter,
+      },
+    });
+
+    // Login with code-based provider
+    const user = new Parse.User();
+    await user.save({ authData: { codeBasedAdapter: { id: 'user1', code: 'code1' } } });
+    const sessionToken = user.getSessionToken();
+    await user.fetch({ sessionToken });
+
+    // At this point, authData.codeBasedAdapter only has {id: 'user1'} due to afterFind
+    const current = user.get('authData') || {};
+    expect(current.codeBasedAdapter).toEqual({ id: 'user1' });
+
+    // Add a second provider while keeping the first unchanged
+    user.set('authData', {
+      ...current,
+      simpleAdapter: { id: 'simple1' },
+      // codeBasedAdapter is NOT modified (no new code provided)
+    });
+
+    // This should succeed without requiring 'code' for codeBasedAdapter
+    await user.save(null, { sessionToken });
+
+    // Verify both providers are present
+    const reloaded = await new Parse.Query(Parse.User).get(user.id, {
+      useMasterKey: true,
+    });
+
+    const authData = reloaded.get('authData') || {};
+    expect(authData.simpleAdapter && authData.simpleAdapter.id).toBe('simple1');
+    expect(authData.codeBasedAdapter && authData.codeBasedAdapter.id).toBe('user1');
   });
 });

@@ -456,7 +456,32 @@ const hasMutatedAuthData = (authData, userAuthData) => {
     if (provider === 'anonymous') { return; }
     const providerData = authData[provider];
     const userProviderAuthData = userAuthData[provider];
-    if (!isDeepStrictEqual(providerData, userProviderAuthData)) {
+
+    // If unlinking (setting to null), consider it mutated
+    if (providerData === null) {
+      mutatedAuthData[provider] = providerData;
+      return;
+    }
+
+    // If provider doesn't exist in stored data, it's new
+    if (!userProviderAuthData) {
+      mutatedAuthData[provider] = providerData;
+      return;
+    }
+
+    // Check if incoming data represents actual changes vs just echoing back
+    // what afterFind returned. If incoming data is a subset of stored data
+    // (all incoming fields match stored values), it's not mutated.
+    // If incoming data has different values or fields not in stored data, it's mutated.
+    // This handles the case where afterFind strips sensitive fields like 'code':
+    // - Incoming: { id: 'x' }, Stored: { id: 'x', code: 'secret' } -> NOT mutated (subset)
+    // - Incoming: { id: 'x', token: 'new' }, Stored: { id: 'x', token: 'old' } -> MUTATED
+    const incomingKeys = Object.keys(providerData || {});
+    const hasChanges = incomingKeys.some(key => {
+      return !isDeepStrictEqual(providerData[key], userProviderAuthData[key]);
+    });
+
+    if (hasChanges) {
       mutatedAuthData[provider] = providerData;
     }
   });

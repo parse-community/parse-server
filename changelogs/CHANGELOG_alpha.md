@@ -1,3 +1,10 @@
+## [9.2.1-alpha.2](https://github.com/parse-community/parse-server/compare/9.2.1-alpha.1...9.2.1-alpha.2) (2026-02-06)
+
+
+### Bug Fixes
+
+* AuthData validation incorrectly triggered on unchanged providers ([#10025](https://github.com/parse-community/parse-server/issues/10025)) ([d3d6e9e](https://github.com/parse-community/parse-server/commit/d3d6e9e22a212885690853cbbb84bb8c53da5646))
+
 ## [9.2.1-alpha.1](https://github.com/parse-community/parse-server/compare/9.2.0...9.2.1-alpha.1) (2026-02-06)
 
 
