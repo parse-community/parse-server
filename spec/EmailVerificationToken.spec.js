@@ -465,6 +465,79 @@ describe('Email Verification Token Expiration:', () => {
     expect(verifyUserEmailsSpy).toHaveBeenCalledTimes(2); // before login completion and on preventLoginWithUnverifiedEmail
   });
 
+  it('provides createdWith with auth provider on signup verification', async () => {
+    const createdWithValues = [];
+    const verifyUserEmails = {
+      method: params => {
+        createdWithValues.push(params.createdWith);
+        return true;
+      },
+    };
+    const verifySpy = spyOn(verifyUserEmails, 'method').and.callThrough();
+    await reconfigureServer({
+      appName: 'emailVerifyToken',
+      verifyUserEmails: verifyUserEmails.method,
+      preventLoginWithUnverifiedEmail: true,
+      preventSignupWithUnverifiedEmail: true,
+      emailAdapter: MockEmailAdapterWithOptions({
+        fromAddress: 'parse@example.com',
+        apiKey: 'k',
+        domain: 'd',
+      }),
+      publicServerURL: 'http://localhost:8378/1',
+    });
+
+    const provider = {
+      authData: { id: '8675309', access_token: 'jenny' },
+      shouldError: false,
+      authenticate(options) {
+        options.success(this, this.authData);
+      },
+      restoreAuthentication() {
+        return true;
+      },
+      getAuthType() {
+        return 'facebook';
+      },
+      deauthenticate() {},
+    };
+    Parse.User._registerAuthenticationProvider(provider);
+    const res = await Parse.User._logInWith('facebook').catch(e => e);
+    expect(res.message).toBe('User email is not verified.');
+    // Called once in createSessionTokenIfNeeded (no email set, so _validateEmail skips)
+    expect(verifySpy).toHaveBeenCalledTimes(1);
+    expect(createdWithValues[0]).toEqual({ action: 'signup', authProvider: 'facebook' });
+  });
+
+  it('provides createdWith for preventLoginWithUnverifiedEmail function', async () => {
+    const user = new Parse.User();
+    user.setUsername('user_prevent_login_fn');
+    user.setPassword('pass');
+    user.set('email', 'preventlogin@example.com');
+    await user.signUp();
+
+    const preventLoginCreatedWith = [];
+    await reconfigureServer({
+      appName: 'emailVerifyToken',
+      publicServerURL: 'http://localhost:8378/1',
+      verifyUserEmails: true,
+      preventLoginWithUnverifiedEmail: params => {
+        preventLoginCreatedWith.push(params.createdWith);
+        return true;
+      },
+      emailAdapter: MockEmailAdapterWithOptions({
+        fromAddress: 'parse@example.com',
+        apiKey: 'k',
+        domain: 'd',
+      }),
+    });
+
+    const res = await Parse.User.logIn('user_prevent_login_fn', 'pass').catch(e => e);
+    expect(res.code).toBe(205);
+    expect(preventLoginCreatedWith.length).toBe(1);
+    expect(preventLoginCreatedWith[0]).toEqual({ action: 'login', authProvider: 'password' });
+  });
+
   it_id('d812de87-33d1-495e-a6e8-3485f6dc3589')(it)('can conditionally send user email verification', async () => {
     const emailAdapter = {
       sendVerificationEmail: () => {},
