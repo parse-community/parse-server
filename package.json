@@ -105,7 +105,7 @@
     "node-abort-controller": "3.1.1",
     "node-fetch": "3.2.10",
     "nyc": "17.1.0",
-    "prettier": "2.0.5",
+    "prettier": "3.8.1",
     "semantic-release": "24.2.5",
     "typescript": "5.8.3",
     "typescript-eslint": "8.53.1",
