@@ -771,25 +771,27 @@ RestWrite.prototype._validateUserName = function () {
     });
 };
 
+RestWrite.buildCreatedWith = function (action, authProvider) {
+  return { action, authProvider: authProvider || 'password' };
+};
+
 RestWrite.prototype.getCreatedWith = function () {
   if (this.storage.createdWith) {
     return this.storage.createdWith;
   }
   const isCreateOperation = !this.query;
-  // Determine authProvider: from stored authProvider or authData keys (e.g., anonymous, facebook).
-  // Default to 'password' on signup with no authData so createdWith aligns with legacy expectations/tests.
-  const authProvider =
-    this.storage.authProvider ||
-    (this.data &&
-      this.data.authData &&
-      Object.keys(this.data.authData).length &&
-      Object.keys(this.data.authData).join(','));
-  const action = authProvider ? 'login' : isCreateOperation ? 'signup' : undefined;
+  const authDataProvider =
+    this.data?.authData &&
+    Object.keys(this.data.authData).length &&
+    Object.keys(this.data.authData).join(',');
+  const authProvider = this.storage.authProvider || authDataProvider;
+  // storage.authProvider is only set for login (existing user found in handleAuthData)
+  const action = this.storage.authProvider ? 'login' : isCreateOperation ? 'signup' : undefined;
   if (!action) {
     return;
   }
   const resolvedAuthProvider = authProvider || (action === 'signup' ? 'password' : undefined);
-  this.storage.createdWith = { action, authProvider: resolvedAuthProvider };
+  this.storage.createdWith = RestWrite.buildCreatedWith(action, resolvedAuthProvider);
   return this.storage.createdWith;
 };
 
@@ -1009,13 +1011,11 @@ RestWrite.prototype.createSessionToken = async function () {
 
   if (this.storage.authProvider == null && this.data.authData) {
     this.storage.authProvider = Object.keys(this.data.authData).join(',');
+    // Invalidate cached createdWith since authProvider was just resolved
+    delete this.storage.createdWith;
   }
 
-  const createdWith =
-    this.getCreatedWith() || {
-      action: this.storage.authProvider ? 'login' : 'signup',
-      authProvider: this.storage.authProvider || 'password',
-    };
+  const createdWith = this.getCreatedWith();
   const { sessionData, createSession } = RestWrite.createSession(this.config, {
     userId: this.objectId(),
     createdWith,
