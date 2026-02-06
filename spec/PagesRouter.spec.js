@@ -225,9 +225,7 @@ describe('Pages Router', () => {
         expect(Config.get(Parse.applicationId).pages.forceRedirect).toBe(
           Definitions.PagesOptions.forceRedirect.default
         );
-        expect(Config.get(Parse.applicationId).pages.pagesPath).toBe(
-          Definitions.PagesOptions.pagesPath.default
-        );
+        expect(Config.get(Parse.applicationId).pages.pagesPath).toBeUndefined();
         expect(Config.get(Parse.applicationId).pages.pagesEndpoint).toBe(
           Definitions.PagesOptions.pagesEndpoint.default
         );
@@ -1233,6 +1231,36 @@ describe('Pages Router', () => {
       }).catch(e => e);
       expect(response.status).toBe(200);
       expect(response.text).toContain('Invalid verification link!');
+    });
+  });
+
+  describe('pagesPath resolution', () => {
+    it('should serve pages when current working directory differs from module directory', async () => {
+      const originalCwd = process.cwd();
+      const os = require('os');
+      process.chdir(os.tmpdir());
+
+      try {
+        await reconfigureServer({
+          appId: 'test',
+          appName: 'exampleAppname',
+          publicServerURL: 'http://localhost:8378/1',
+          pages: { enableRouter: true },
+        });
+
+        // Request the password reset page with an invalid token;
+        // even with an invalid token, the server should serve the
+        // "invalid link" page (200), not a 404. A 404 indicates the
+        // HTML template files could not be found because pagesPath
+        // resolved to the wrong directory.
+        const response = await request({
+          url: 'http://localhost:8378/1/apps/test/request_password_reset?token=invalidToken',
+        }).catch(e => e);
+        expect(response.status).toBe(200);
+        expect(response.text).toContain('Invalid password reset link');
+      } finally {
+        process.chdir(originalCwd);
+      }
     });
   });
 
