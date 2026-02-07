@@ -630,6 +630,9 @@ export interface FileUploadOptions {
   /* Is true if file upload should be allowed for anyone, regardless of user authentication.
   :DEFAULT: false */
   enableForPublic: ?boolean;
+  /* Sets the allowed hostnames for file URLs referenced in Parse objects. When a File object includes a URL, its hostname must match one of these entries to be accepted. Supports exact hostnames (e.g., `'cdn.example.com'`) and wildcard subdomains (e.g., `'*.example.com'`). Use `['*']` to allow any domain. Use `[]` to block all file URLs (only name-based files allowed).
+  :DEFAULT: ["*"] */
+  allowedFileUrlDomains: ?(string[]);
 }
 
 /* The available log levels for Parse Server logging. Valid values are:<br>- `'error'` - Error level (highest priority)<br>- `'warn'` - Warning level<br>- `'info'` - Info level (default)<br>- `'verbose'` - Verbose level<br>- `'debug'` - Debug level<br>- `'silly'` - Silly level (lowest priority) */

@@ -1,3 +1,10 @@
+# [9.3.0-alpha.3](https://github.com/parse-community/parse-server/compare/9.3.0-alpha.2...9.3.0-alpha.3) (2026-02-07)
+
+
+### Features
+
+* Add `Parse.File.url` validation with config `fileUpload.allowedFileUrlDomains` against SSRF attacks ([#10044](https://github.com/parse-community/parse-server/issues/10044)) ([4c9c948](https://github.com/parse-community/parse-server/commit/4c9c9489f062bec6d751b23f4a68aea2a63936bd))
+
 # [9.3.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.3.0-alpha.1...9.3.0-alpha.2) (2026-02-06)
 
 

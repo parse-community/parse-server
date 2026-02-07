@@ -550,6 +550,17 @@ export class Config {
     } else if (!Array.isArray(fileUpload.fileExtensions)) {
       throw 'fileUpload.fileExtensions must be an array.';
     }
+    if (fileUpload.allowedFileUrlDomains === undefined) {
+      fileUpload.allowedFileUrlDomains = FileUploadOptions.allowedFileUrlDomains.default;
+    } else if (!Array.isArray(fileUpload.allowedFileUrlDomains)) {
+      throw 'fileUpload.allowedFileUrlDomains must be an array.';
+    } else {
+      for (const domain of fileUpload.allowedFileUrlDomains) {
+        if (typeof domain !== 'string' || domain === '') {
+          throw 'fileUpload.allowedFileUrlDomains must contain only non-empty strings.';
+        }
+      }
+    }
   }
 
   static validateIps(field, masterKeyIps) {
