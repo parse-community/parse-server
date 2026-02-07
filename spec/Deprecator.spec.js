@@ -70,4 +70,37 @@ describe('Deprecator', () => {
     Deprecator.scanParseServerOptions({ databaseOptions: { testOption: true } });
     expect(logSpy).not.toHaveBeenCalled();
   });
+
+  it('logs deprecation for allowedFileUrlDomains when not set', async () => {
+    const logSpy = spyOn(Deprecator, '_logOption').and.callFake(() => {});
+
+    // Pass a fresh fileUpload object without allowedFileUrlDomains to avoid
+    // inheriting the mutated default from a previous reconfigureServer() call.
+    await reconfigureServer({
+      fileUpload: {
+        enableForPublic: true,
+        enableForAnonymousUser: true,
+        enableForAuthenticatedUser: true,
+      },
+    });
+    expect(logSpy).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        optionKey: 'fileUpload.allowedFileUrlDomains',
+        changeNewDefault: '[]',
+      })
+    );
+  });
+
+  it('does not log deprecation for allowedFileUrlDomains when explicitly set', async () => {
+    const logSpy = spyOn(Deprecator, '_logOption').and.callFake(() => {});
+
+    await reconfigureServer({
+      fileUpload: { allowedFileUrlDomains: ['*'] },
+    });
+    expect(logSpy).not.toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        optionKey: 'fileUpload.allowedFileUrlDomains',
+      })
+    );
+  });
 });
