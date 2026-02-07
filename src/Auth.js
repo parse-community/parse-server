@@ -424,6 +424,11 @@ const findUsersWithAuthData = async (config, authData, beforeFind) => {
     providers.map(async provider => {
       const providerAuthData = authData[provider];
 
+      // Skip providers being unlinked (null value)
+      if (providerAuthData === null) {
+        return null;
+      }
+
       const adapter = config.authDataManager.getValidatorForProvider(provider)?.adapter;
       if (beforeFind && typeof adapter?.beforeFind === 'function') {
         await adapter.beforeFind(providerAuthData);

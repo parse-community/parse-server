@@ -1338,6 +1338,61 @@ describe('Auth Adapter features', () => {
     expect(user.get('authData')).toEqual({ adapterB: { id: 'test' } });
   });
 
+  it('should unlink a code-based auth provider without triggering adapter validation', async () => {
+    const mockUserId = 'gpgamesUser123';
+    const mockAccessToken = 'mockAccessToken';
+
+    mockFetch([
+      {
+        url: 'https://oauth2.googleapis.com/token',
+        method: 'POST',
+        response: {
+          ok: true,
+          json: () => Promise.resolve({ access_token: mockAccessToken }),
+        },
+      },
+      {
+        url: `https://www.googleapis.com/games/v1/players/${mockUserId}`,
+        method: 'GET',
+        response: {
+          ok: true,
+          json: () => Promise.resolve({ playerId: mockUserId }),
+        },
+      },
+    ]);
+
+    await reconfigureServer({
+      auth: {
+        gpgames: {
+          clientId: 'testClientId',
+          clientSecret: 'testClientSecret',
+        },
+      },
+    });
+
+    // Sign up with gpgames code-based provider
+    const user = new Parse.User();
+    await user.save({
+      authData: {
+        gpgames: { id: mockUserId, code: 'authCode123', redirect_uri: 'https://example.com/callback' },
+      },
+    });
+    const sessionToken = user.getSessionToken();
+
+    // Reset fetch spy to track calls during unlink
+    global.fetch.calls.reset();
+
+    // Unlink by setting authData to null; should not call beforeFind / external APIs
+    await user.save({ authData: { gpgames: null } }, { sessionToken });
+
+    // No external HTTP calls should have been made during unlink
+    expect(global.fetch.calls.count()).toBe(0);
+
+    // Verify provider was removed
+    const reloaded = await new Parse.Query(Parse.User).get(user.id, { useMasterKey: true });
+    expect((reloaded.get('authData') || {}).gpgames).toBeUndefined();
+  });
+
   it('should handle multiple providers: add one while another remains unchanged (code-based)', async () => {
     await reconfigureServer({
       auth: {
