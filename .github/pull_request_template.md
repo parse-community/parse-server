@@ -4,9 +4,7 @@
 - Any contribution is under this [license](https://github.com/parse-community/parse-server/blob/alpha/LICENSE).
 
 ## Issue
-<!-- Describe the issue. -->
-
-Closes: FILL_THIS_OUT
+<!-- Describe or link the issue that this PR closes. -->
 
 ## Approach
 <!-- Describe the changes in this PR. -->
