@@ -236,6 +236,7 @@ export interface PasswordPolicyOptions {
     resetPasswordSuccessOnInvalidEmail?: boolean;
 }
 export interface FileUploadOptions {
+    allowedFileUrlDomains?: string[];
     fileExtensions?: (string[]);
     enableForAnonymousUser?: boolean;
     enableForAuthenticatedUser?: boolean;
