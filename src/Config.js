@@ -550,6 +550,11 @@ export class Config {
     } else if (!Array.isArray(fileUpload.fileExtensions)) {
       throw 'fileUpload.fileExtensions must be an array.';
     }
+    if (fileUpload.allowedFileUrlDomains === undefined) {
+      fileUpload.allowedFileUrlDomains = FileUploadOptions.allowedFileUrlDomains.default;
+    } else if (!Array.isArray(fileUpload.allowedFileUrlDomains)) {
+      throw 'fileUpload.allowedFileUrlDomains must be an array.';
+    }
   }
 
   static validateIps(field, masterKeyIps) {

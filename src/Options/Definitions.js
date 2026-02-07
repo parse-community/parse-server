@@ -982,6 +982,12 @@ module.exports.PasswordPolicyOptions = {
   },
 };
 module.exports.FileUploadOptions = {
+  allowedFileUrlDomains: {
+    env: 'PARSE_SERVER_FILE_UPLOAD_ALLOWED_FILE_URL_DOMAINS',
+    help: "Sets the allowed hostnames for file URLs referenced in Parse objects. When a File object includes a URL, its hostname must match one of these entries to be accepted. Supports exact hostnames (e.g., `'cdn.example.com'`) and wildcard subdomains (e.g., `'*.example.com'`). Use `['*']` to allow any domain. Use `[]` to block all file URLs (only name-based files allowed).",
+    action: parsers.arrayParser,
+    default: ['*'],
+  },
   enableForAnonymousUser: {
     env: 'PARSE_SERVER_FILE_UPLOAD_ENABLE_FOR_ANONYMOUS_USER',
     help: 'Is true if file upload should be allowed for anonymous users.',

@@ -1625,4 +1625,165 @@ describe('Parse.File testing', () => {
       expect(b.url).toMatch(/^http:\/\/localhost:8378\/1\/files\/test\/.*file.html$/);
     });
   });
+
+  describe('File URL domain validation for SSRF prevention', () => {
+    it('rejects cloud function call with disallowed file URL', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          allowedFileUrlDomains: [],
+        },
+      });
+
+      Parse.Cloud.define('setUserIcon', () => {});
+
+      await expectAsync(
+        Parse.Cloud.run('setUserIcon', {
+          file: { __type: 'File', name: 'file.txt', url: 'http://malicious.example.com/leak' },
+        })
+      ).toBeRejectedWith(
+        jasmine.objectContaining({ message: jasmine.stringMatching(/not allowed/) })
+      );
+    });
+
+    it('rejects REST API create with disallowed file URL', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          allowedFileUrlDomains: [],
+        },
+      });
+
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/classes/TestObject',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          body: {
+            file: {
+              __type: 'File',
+              name: 'test.txt',
+              url: 'http://malicious.example.com/file',
+            },
+          },
+        })
+      ).toBeRejectedWith(jasmine.objectContaining({ status: 400 }));
+    });
+
+    it('rejects REST API update with disallowed file URL', async () => {
+      const obj = new Parse.Object('TestObject');
+      await obj.save();
+
+      await reconfigureServer({
+        fileUpload: {
+          allowedFileUrlDomains: [],
+        },
+      });
+
+      await expectAsync(
+        request({
+          method: 'PUT',
+          url: `http://localhost:8378/1/classes/TestObject/${obj.id}`,
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          body: {
+            file: {
+              __type: 'File',
+              name: 'test.txt',
+              url: 'http://malicious.example.com/file',
+            },
+          },
+        })
+      ).toBeRejectedWith(jasmine.objectContaining({ status: 400 }));
+    });
+
+    it('allows file URLs matching configured domains', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          allowedFileUrlDomains: ['cdn.example.com'],
+        },
+      });
+
+      Parse.Cloud.define('setUserIcon', () => 'ok');
+
+      const result = await Parse.Cloud.run('setUserIcon', {
+        file: { __type: 'File', name: 'file.txt', url: 'http://cdn.example.com/file.txt' },
+      });
+      expect(result).toBe('ok');
+    });
+
+    it('allows file URLs when default wildcard is used', async () => {
+      Parse.Cloud.define('setUserIcon', () => 'ok');
+
+      const result = await Parse.Cloud.run('setUserIcon', {
+        file: { __type: 'File', name: 'file.txt', url: 'http://example.com/file.txt' },
+      });
+      expect(result).toBe('ok');
+    });
+
+    it('allows files with server-hosted URLs even when domains are restricted', async () => {
+      const file = new Parse.File('test.txt', [1, 2, 3]);
+      await file.save();
+
+      await reconfigureServer({
+        fileUpload: {
+          allowedFileUrlDomains: ['localhost'],
+        },
+      });
+
+      const result = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/classes/TestObject',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        body: {
+          file: {
+            __type: 'File',
+            name: file.name(),
+            url: file.url(),
+          },
+        },
+      });
+      expect(result.status).toBe(201);
+    });
+
+    it('rejects disallowed file URL nested in object', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          allowedFileUrlDomains: [],
+        },
+      });
+
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/classes/TestObject',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          body: {
+            data: {
+              nested: {
+                file: {
+                  __type: 'File',
+                  name: 'test.txt',
+                  url: 'http://malicious.example.com/file',
+                },
+              },
+            },
+          },
+        })
+      ).toBeRejectedWith(jasmine.objectContaining({ status: 400 }));
+    });
+  });
 });
