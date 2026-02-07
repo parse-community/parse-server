@@ -1342,6 +1342,11 @@ describe('Auth Adapter features', () => {
     const mockUserId = 'gpgamesUser123';
     const mockAccessToken = 'mockAccessToken';
 
+    const otherAdapter = {
+      validateAppId: () => Promise.resolve(),
+      validateAuthData: () => Promise.resolve(),
+    };
+
     mockFetch([
       {
         url: 'https://oauth2.googleapis.com/token',
@@ -1367,14 +1372,16 @@ describe('Auth Adapter features', () => {
           clientId: 'testClientId',
           clientSecret: 'testClientSecret',
         },
+        otherAdapter,
       },
     });
 
-    // Sign up with gpgames code-based provider
+    // Sign up with gpgames code-based provider and a second provider
     const user = new Parse.User();
     await user.save({
       authData: {
         gpgames: { id: mockUserId, code: 'authCode123', redirect_uri: 'https://example.com/callback' },
+        otherAdapter: { id: 'other1' },
       },
     });
     const sessionToken = user.getSessionToken();
@@ -1382,15 +1389,18 @@ describe('Auth Adapter features', () => {
     // Reset fetch spy to track calls during unlink
     global.fetch.calls.reset();
 
-    // Unlink by setting authData to null; should not call beforeFind / external APIs
+    // Unlink gpgames by setting authData to null; should not call beforeFind / external APIs
     await user.save({ authData: { gpgames: null } }, { sessionToken });
 
     // No external HTTP calls should have been made during unlink
     expect(global.fetch.calls.count()).toBe(0);
 
-    // Verify provider was removed
+    // Verify gpgames was removed while the other provider remains
     const reloaded = await new Parse.Query(Parse.User).get(user.id, { useMasterKey: true });
-    expect((reloaded.get('authData') || {}).gpgames).toBeUndefined();
+    const authData = reloaded.get('authData');
+    expect(authData).toBeDefined();
+    expect(authData.gpgames).toBeUndefined();
+    expect(authData.otherAdapter).toEqual({ id: 'other1' });
   });
 
   it('should handle multiple providers: add one while another remains unchanged (code-based)', async () => {
