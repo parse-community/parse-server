@@ -68,6 +68,7 @@ A big _thank you_ 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
   - [Using Environment Variables](#using-environment-variables)
   - [Available Adapters](#available-adapters)
   - [Configuring File Adapters](#configuring-file-adapters)
+    - [Restricting File URL Domains](#restricting-file-url-domains)
   - [Idempotency Enforcement](#idempotency-enforcement)
   - [Localization](#localization)
     - [Pages](#pages)
@@ -490,6 +491,33 @@ Parse Server allows developers to choose from several options when hosting files
 - `FSAdapter` - local file storage
 
 `GridFSBucketAdapter` is used by default and requires no setup, but if you're interested in using Amazon S3, Google Cloud Storage, or local file storage, additional configuration information is available in the [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/#configuring-file-adapters).
+
+### Restricting File URL Domains
+
+Parse objects can reference files by URL. To prevent [SSRF attacks](https://owasp.org/www-community/attacks/Server_Side_Request_Forgery) via crafted file URLs, you can restrict the allowed URL domains using the `fileUpload.allowedFileUrlDomains` option.
+
+This protects against scenarios where an attacker provides a `Parse.File` with an arbitrary URL, for example as a Cloud Function parameter or in a field of type `Object` or `Array`. If Cloud Code or a client calls `getData()` on such a file, the Parse SDK makes an HTTP request to that URL, potentially leaking the server or client IP address and accessing internal services.
+
+> [!NOTE]
+> Fields of type `Parse.File` in the Parse schema are not affected by this attack, because Parse Server discards the URL on write and dynamically generates it on read based on the file adapter configuration.
+
+```javascript
+const parseServer = new ParseServer({
+  ...otherOptions,
+  fileUpload: {
+    allowedFileUrlDomains: ['cdn.example.com', '*.example.com'],
+  },
+});
+```
+
+| Parameter | Optional | Type | Default | Environment Variable |
+|---|---|---|---|---|
+| `fileUpload.allowedFileUrlDomains` | yes | `String[]` | `['*']` | `PARSE_SERVER_FILE_UPLOAD_ALLOWED_FILE_URL_DOMAINS` |
+
+- `['*']` (default) allows file URLs with any domain.
+- `['cdn.example.com']` allows only exact hostname matches.
+- `['*.example.com']` allows any subdomain of `example.com`.
+- `[]` blocks all file URLs; only files referenced by name are allowed.
 
 ## Idempotency Enforcement
 
