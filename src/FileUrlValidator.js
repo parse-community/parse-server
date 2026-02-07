@@ -19,7 +19,7 @@ function validateFileUrl(fileUrl, config) {
   let parsedUrl;
   try {
     parsedUrl = new URL(fileUrl);
-  } catch (_) {
+  } catch {
     throw new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `Invalid file URL.`);
   }
 
