@@ -1378,6 +1378,20 @@ describe('Parse.File testing', () => {
       await expectAsync(
         reconfigureServer({
           fileUpload: {
+            allowedFileUrlDomains: [123],
+          },
+        })
+      ).toBeRejectedWith('fileUpload.allowedFileUrlDomains must contain only non-empty strings.');
+      await expectAsync(
+        reconfigureServer({
+          fileUpload: {
+            allowedFileUrlDomains: [''],
+          },
+        })
+      ).toBeRejectedWith('fileUpload.allowedFileUrlDomains must contain only non-empty strings.');
+      await expectAsync(
+        reconfigureServer({
+          fileUpload: {
             allowedFileUrlDomains: ['example.com'],
           },
         })

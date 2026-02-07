@@ -554,6 +554,12 @@ export class Config {
       fileUpload.allowedFileUrlDomains = FileUploadOptions.allowedFileUrlDomains.default;
     } else if (!Array.isArray(fileUpload.allowedFileUrlDomains)) {
       throw 'fileUpload.allowedFileUrlDomains must be an array.';
+    } else {
+      for (const domain of fileUpload.allowedFileUrlDomains) {
+        if (typeof domain !== 'string' || domain === '') {
+          throw 'fileUpload.allowedFileUrlDomains must contain only non-empty strings.';
+        }
+      }
     }
   }
 
