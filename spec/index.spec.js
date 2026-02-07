@@ -73,7 +73,7 @@ describe('server', () => {
       }),
     });
     const error = await server.start().catch(e => e);
-    expect(`${error}`.includes('MongoServerSelectionError')).toBeTrue();
+    expect(`${error}`.includes('Database error')).toBeTrue();
     await reconfigureServer();
   });
 

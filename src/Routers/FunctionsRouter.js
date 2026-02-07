@@ -17,6 +17,10 @@ function parseObject(obj, config) {
   } else if (obj && obj.__type == 'Date') {
     return Object.assign(new Date(obj.iso), obj);
   } else if (obj && obj.__type == 'File') {
+    if (obj.url) {
+      const { validateFileUrl } = require('../FileUrlValidator');
+      validateFileUrl(obj.url, config);
+    }
     return Parse.File.fromJSON(obj);
   } else if (obj && obj.__type == 'Pointer') {
     return Parse.Object.fromJSON({

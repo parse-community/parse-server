@@ -30,6 +30,7 @@ const nestedOptionTypes = [
 /** The prefix of environment variables for nested options. */
 const nestedOptionEnvPrefix = {
   AccountLockoutOptions: 'PARSE_SERVER_ACCOUNT_LOCKOUT_',
+  DatabaseOptionsClientMetadata: 'PARSE_SERVER_DATABASE_CLIENT_METADATA_',
   CustomPagesOptions: 'PARSE_SERVER_CUSTOM_PAGES_',
   DatabaseOptions: 'PARSE_SERVER_DATABASE_',
   FileUploadOptions: 'PARSE_SERVER_FILE_UPLOAD_',
@@ -157,6 +158,11 @@ function mapperFor(elt, t) {
     return wrap(t.identifier('booleanParser'));
   } else if (t.isObjectTypeAnnotation(elt)) {
     return wrap(t.identifier('objectParser'));
+  } else if (t.isUnionTypeAnnotation(elt)) {
+    const unionTypes = elt.typeAnnotation?.types || elt.types;
+    if (unionTypes?.some(type => t.isBooleanTypeAnnotation(type)) && unionTypes?.some(type => t.isFunctionTypeAnnotation(type))) {
+      return wrap(t.identifier('booleanOrFunctionParser'));
+    }
   } else if (t.isGenericTypeAnnotation(elt)) {
     const type = elt.typeAnnotation.id.name;
     if (type == 'Adapter') {

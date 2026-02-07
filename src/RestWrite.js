@@ -899,6 +899,30 @@ RestWrite.prototype._validateUserName = function () {
     });
 };
 
+RestWrite.buildCreatedWith = function (action, authProvider) {
+  return { action, authProvider: authProvider || 'password' };
+};
+
+RestWrite.prototype.getCreatedWith = function () {
+  if (this.storage.createdWith) {
+    return this.storage.createdWith;
+  }
+  const isCreateOperation = !this.query;
+  const authDataProvider =
+    this.data?.authData &&
+    Object.keys(this.data.authData).length &&
+    Object.keys(this.data.authData).join(',');
+  const authProvider = this.storage.authProvider || authDataProvider;
+  // storage.authProvider is only set for login (existing user found in handleAuthData)
+  const action = this.storage.authProvider ? 'login' : isCreateOperation ? 'signup' : undefined;
+  if (!action) {
+    return;
+  }
+  const resolvedAuthProvider = authProvider || (action === 'signup' ? 'password' : undefined);
+  this.storage.createdWith = RestWrite.buildCreatedWith(action, resolvedAuthProvider);
+  return this.storage.createdWith;
+};
+
 /*
   As with usernames, Parse should not allow case insensitive collisions of email.
   unlike with usernames (which can have case insensitive collisions in the case of
@@ -954,6 +978,7 @@ RestWrite.prototype._validateEmail = function () {
           master: this.auth.isMaster,
           ip: this.config.ip,
           installationId: this.auth.installationId,
+          createdWith: this.getCreatedWith(),
         };
         return this.config.userController.setEmailVerifyToken(this.data, request, this.storage);
       }
@@ -1089,6 +1114,7 @@ RestWrite.prototype.createSessionTokenIfNeeded = async function () {
       master: this.auth.isMaster,
       ip: this.config.ip,
       installationId: this.auth.installationId,
+      createdWith: this.getCreatedWith(),
     };
     // Get verification conditions which can be booleans or functions; the purpose of this async/await
     // structure is to avoid unnecessarily executing subsequent functions if previous ones fail in the
@@ -1113,14 +1139,14 @@ RestWrite.prototype.createSessionToken = async function () {
 
   if (this.storage.authProvider == null && this.data.authData) {
     this.storage.authProvider = Object.keys(this.data.authData).join(',');
+    // Invalidate cached createdWith since authProvider was just resolved
+    delete this.storage.createdWith;
   }
 
+  const createdWith = this.getCreatedWith();
   const { sessionData, createSession } = RestWrite.createSession(this.config, {
     userId: this.objectId(),
-    createdWith: {
-      action: this.storage.authProvider ? 'login' : 'signup',
-      authProvider: this.storage.authProvider || 'password',
-    },
+    createdWith,
     installationId: this.auth.installationId,
   });
 

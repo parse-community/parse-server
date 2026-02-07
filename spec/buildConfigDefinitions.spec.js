@@ -133,6 +133,72 @@ describe('buildConfigDefinitions', () => {
       expect(result.property.name).toBe('arrayParser');
     });
 
+    it('should return booleanOrFunctionParser for UnionTypeAnnotation containing boolean (nullable)', () => {
+      const mockElement = {
+        type: 'UnionTypeAnnotation',
+        typeAnnotation: {
+          types: [
+            { type: 'BooleanTypeAnnotation' },
+            { type: 'FunctionTypeAnnotation' },
+          ],
+        },
+      };
+
+      const result = mapperFor(mockElement, t);
+
+      expect(t.isMemberExpression(result)).toBe(true);
+      expect(result.object.name).toBe('parsers');
+      expect(result.property.name).toBe('booleanOrFunctionParser');
+    });
+
+    it('should return booleanOrFunctionParser for UnionTypeAnnotation containing boolean (non-nullable)', () => {
+      const mockElement = {
+        type: 'UnionTypeAnnotation',
+        types: [
+          { type: 'BooleanTypeAnnotation' },
+          { type: 'FunctionTypeAnnotation' },
+        ],
+      };
+
+      const result = mapperFor(mockElement, t);
+
+      expect(t.isMemberExpression(result)).toBe(true);
+      expect(result.object.name).toBe('parsers');
+      expect(result.property.name).toBe('booleanOrFunctionParser');
+    });
+
+    it('should return undefined for UnionTypeAnnotation without boolean', () => {
+      const mockElement = {
+        type: 'UnionTypeAnnotation',
+        typeAnnotation: {
+          types: [
+            { type: 'StringTypeAnnotation' },
+            { type: 'NumberTypeAnnotation' },
+          ],
+        },
+      };
+
+      const result = mapperFor(mockElement, t);
+
+      expect(result).toBeUndefined();
+    });
+
+    it('should return undefined for UnionTypeAnnotation with boolean but without function', () => {
+      const mockElement = {
+        type: 'UnionTypeAnnotation',
+        typeAnnotation: {
+          types: [
+            { type: 'BooleanTypeAnnotation' },
+            { type: 'VoidTypeAnnotation' },
+          ],
+        },
+      };
+
+      const result = mapperFor(mockElement, t);
+
+      expect(result).toBeUndefined();
+    });
+
     it('should return objectParser for unknown GenericTypeAnnotation', () => {
       const mockElement = {
         type: 'GenericTypeAnnotation',

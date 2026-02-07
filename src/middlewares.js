@@ -378,9 +378,9 @@ export const handleParseSession = async (req, res, next) => {
       next(error);
       return;
     }
-    // TODO: Determine the correct error scenario.
+    // Log full error details internally, but don't expose to client
     req.config.loggerController.error('error getting auth for sessionToken', error);
-    throw new Parse.Error(Parse.Error.UNKNOWN_ERROR, error);
+    next(new Parse.Error(Parse.Error.UNKNOWN_ERROR, 'Unknown error'));
   }
 };
 
