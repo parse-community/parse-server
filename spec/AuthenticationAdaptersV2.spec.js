@@ -1448,7 +1448,7 @@ describe('Auth Adapter features', () => {
 
     // Login with gpgames
     const user = await Parse.User.logInWith('gpgames', {
-      authData: { id: gpgamesUserId, code: 'gpCode1' },
+      authData: { id: gpgamesUserId, code: 'gpCode1', redirect_uri: 'https://example.com/callback' },
     });
     const sessionToken = user.getSessionToken();
 
