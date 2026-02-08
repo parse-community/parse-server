@@ -1408,6 +1408,102 @@ describe('Auth Adapter features', () => {
     expect(authData.otherAdapter).toEqual({ id: 'other1' });
   });
 
+  fit('should unlink one code-based provider while echoing back another unchanged', async () => {
+    const gpgamesUserId = 'gpgamesUser1';
+    const instagramUserId = 'igUser1';
+
+    // Mock gpgames API for initial login
+    mockFetch([
+      {
+        url: 'https://oauth2.googleapis.com/token',
+        method: 'POST',
+        response: {
+          ok: true,
+          json: () => Promise.resolve({ access_token: 'gpgamesToken' }),
+        },
+      },
+      {
+        url: `https://www.googleapis.com/games/v1/players/${gpgamesUserId}`,
+        method: 'GET',
+        response: {
+          ok: true,
+          json: () => Promise.resolve({ playerId: gpgamesUserId }),
+        },
+      },
+    ]);
+
+    await reconfigureServer({
+      auth: {
+        gpgames: {
+          clientId: 'testClientId',
+          clientSecret: 'testClientSecret',
+        },
+        instagram: {
+          clientId: 'testClientId',
+          clientSecret: 'testClientSecret',
+          redirectUri: 'https://example.com/callback',
+        },
+      },
+    });
+
+    // Login with gpgames
+    const user = await Parse.User.logInWith('gpgames', {
+      authData: { id: gpgamesUserId, code: 'gpCode1' },
+    });
+    const sessionToken = user.getSessionToken();
+
+    // Mock instagram API for linking
+    mockFetch([
+      {
+        url: 'https://api.instagram.com/oauth/access_token',
+        method: 'POST',
+        response: {
+          ok: true,
+          json: () => Promise.resolve({ access_token: 'igToken' }),
+        },
+      },
+      {
+        url: `https://graph.instagram.com/me?fields=id&access_token=igToken`,
+        method: 'GET',
+        response: {
+          ok: true,
+          json: () => Promise.resolve({ id: instagramUserId }),
+        },
+      },
+    ]);
+
+    // Link instagram as second provider
+    await user.save(
+      { authData: { instagram: { id: instagramUserId, code: 'igCode1' } } },
+      { sessionToken }
+    );
+
+    // Fetch to get current authData (afterFind strips credentials, leaving only { id })
+    await user.fetch({ sessionToken });
+    const currentAuthData = user.get('authData');
+    expect(currentAuthData.gpgames).toBeDefined();
+    expect(currentAuthData.instagram).toBeDefined();
+
+    // Reset fetch spy
+    global.fetch.calls.reset();
+
+    // Unlink gpgames while echoing back instagram unchanged — the common client pattern:
+    // fetch current state, spread it, set the one to unlink to null
+    user.set('authData', { ...currentAuthData, gpgames: null });
+    await user.save(null, { sessionToken });
+
+    // No external HTTP calls during unlink (no code exchange for unchanged instagram)
+    expect(global.fetch.calls.count()).toBe(0);
+
+    // Verify gpgames removed, instagram preserved
+    await user.fetch({ useMasterKey: true });
+    const finalAuthData = user.get('authData');
+    expect(finalAuthData).toBeDefined();
+    expect(finalAuthData.gpgames).toBeUndefined();
+    expect(finalAuthData.instagram).toBeDefined();
+    expect(finalAuthData.instagram.id).toBe(instagramUserId);
+  });
+
   it('should handle multiple providers: add one while another remains unchanged (code-based)', async () => {
     await reconfigureServer({
       auth: {

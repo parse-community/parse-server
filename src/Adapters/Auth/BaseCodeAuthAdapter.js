@@ -29,6 +29,13 @@ export default class BaseAuthCodeAdapter extends AuthAdapter {
   }
 
   async beforeFind(authData) {
+    // If id is already resolved and no credentials are provided, there's nothing
+    // to process. This handles echoed-back authData from afterFind during updates,
+    // e.g. when a client fetches authData { id: '...' } and sends it back unchanged.
+    if (authData?.id && !authData?.code && !authData?.access_token) {
+      return;
+    }
+
     if (this.enableInsecureAuth && !authData?.code) {
       if (!authData?.access_token) {
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `${this.adapterName} auth is invalid for this user.`);
