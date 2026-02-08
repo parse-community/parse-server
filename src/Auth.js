@@ -429,8 +429,14 @@ const findUsersWithAuthData = async (config, authData, beforeFind) => {
         return null;
       }
 
+      // Skip beforeFind when authData has no credentials to process (only id or empty).
+      // This handles echoed-back authData from afterFind during updates, e.g. when a
+      // client sends back unchanged provider data alongside a provider unlink.
+      const providerKeys = Object.keys(providerAuthData || {});
+      const hasCredentials = providerKeys.some(key => key !== 'id');
+
       const adapter = config.authDataManager.getValidatorForProvider(provider)?.adapter;
-      if (beforeFind && typeof adapter?.beforeFind === 'function') {
+      if (beforeFind && hasCredentials && typeof adapter?.beforeFind === 'function') {
         await adapter.beforeFind(providerAuthData);
       }
 

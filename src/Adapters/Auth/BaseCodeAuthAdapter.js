@@ -29,13 +29,6 @@ export default class BaseAuthCodeAdapter extends AuthAdapter {
   }
 
   async beforeFind(authData) {
-    // If id is already resolved and no credentials are provided, there's nothing
-    // to process. This handles echoed-back authData from afterFind during updates,
-    // e.g. when a client fetches authData { id: '...' } and sends it back unchanged.
-    if (authData?.id && !authData?.code && !authData?.access_token) {
-      return;
-    }
-
     if (this.enableInsecureAuth && !authData?.code) {
       if (!authData?.access_token) {
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `${this.adapterName} auth is invalid for this user.`);
@@ -80,14 +73,18 @@ export default class BaseAuthCodeAdapter extends AuthAdapter {
   }
 
   validateLogin(authData) {
-    // User validation is already done in beforeFind
+    if (!authData?.access_token) {
+      throw new Parse.Error(Parse.Error.VALIDATION_ERROR, `${this.adapterName} code is required.`);
+    }
     return {
       id: authData.id,
     }
   }
 
   validateSetUp(authData) {
-    // User validation is already done in beforeFind
+    if (!authData?.access_token) {
+      throw new Parse.Error(Parse.Error.VALIDATION_ERROR, `${this.adapterName} code is required.`);
+    }
     return {
       id: authData.id,
     }
@@ -100,7 +97,9 @@ export default class BaseAuthCodeAdapter extends AuthAdapter {
   }
 
   validateUpdate(authData) {
-    // User validation is already done in beforeFind
+    if (!authData?.access_token) {
+      throw new Parse.Error(Parse.Error.VALIDATION_ERROR, `${this.adapterName} code is required.`);
+    }
     return {
       id: authData.id,
     }
