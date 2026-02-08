@@ -73,18 +73,12 @@ export default class BaseAuthCodeAdapter extends AuthAdapter {
   }
 
   validateLogin(authData) {
-    if (!authData?.access_token) {
-      throw new Parse.Error(Parse.Error.VALIDATION_ERROR, `${this.adapterName} code is required.`);
-    }
     return {
       id: authData.id,
     }
   }
 
   validateSetUp(authData) {
-    if (!authData?.access_token) {
-      throw new Parse.Error(Parse.Error.VALIDATION_ERROR, `${this.adapterName} code is required.`);
-    }
     return {
       id: authData.id,
     }
@@ -97,13 +91,9 @@ export default class BaseAuthCodeAdapter extends AuthAdapter {
   }
 
   validateUpdate(authData) {
-    if (!authData?.access_token) {
-      throw new Parse.Error(Parse.Error.VALIDATION_ERROR, `${this.adapterName} code is required.`);
-    }
     return {
       id: authData.id,
     }
-
   }
 
   parseResponseData(data) {
