@@ -1408,7 +1408,7 @@ describe('Auth Adapter features', () => {
     expect(authData.otherAdapter).toEqual({ id: 'other1' });
   });
 
-  fit('should unlink one code-based provider while echoing back another unchanged', async () => {
+  it('should unlink one code-based provider while echoing back another unchanged', async () => {
     const gpgamesUserId = 'gpgamesUser1';
     const instagramUserId = 'igUser1';
 
