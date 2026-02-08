@@ -1376,28 +1376,33 @@ describe('Auth Adapter features', () => {
       },
     });
 
-    // Sign up with gpgames code-based provider and a second provider
+    // Sign up with username/password, then link providers
     const user = new Parse.User();
+    await user.signUp({ username: 'gpgamesTestUser', password: 'password123' });
+
+    // Link gpgames code-based provider
     await user.save({
       authData: {
         gpgames: { id: mockUserId, code: 'authCode123', redirect_uri: 'https://example.com/callback' },
-        otherAdapter: { id: 'other1' },
       },
     });
-    const sessionToken = user.getSessionToken();
+
+    // Link a second provider
+    await user.save({ authData: { otherAdapter: { id: 'other1' } } });
 
     // Reset fetch spy to track calls during unlink
     global.fetch.calls.reset();
 
     // Unlink gpgames by setting authData to null; should not call beforeFind / external APIs
+    const sessionToken = user.getSessionToken();
     await user.save({ authData: { gpgames: null } }, { sessionToken });
 
     // No external HTTP calls should have been made during unlink
     expect(global.fetch.calls.count()).toBe(0);
 
     // Verify gpgames was removed while the other provider remains
-    const reloaded = await new Parse.Query(Parse.User).get(user.id, { useMasterKey: true });
-    const authData = reloaded.get('authData');
+    await user.fetch({ useMasterKey: true });
+    const authData = user.get('authData');
     expect(authData).toBeDefined();
     expect(authData.gpgames).toBeUndefined();
     expect(authData.otherAdapter).toEqual({ id: 'other1' });
