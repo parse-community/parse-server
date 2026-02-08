@@ -72,24 +72,45 @@ export default class BaseAuthCodeAdapter extends AuthAdapter {
     throw new Error('getAccessTokenFromCode is not implemented');
   }
 
+  /**
+   * Validates auth data on login. No credential check is needed as `beforeFind`
+   * already validated credentials before this method is called. `beforeFind`
+   * exchanges the auth code for an access_token and verifies user identity; it
+   * rejects requests with missing credentials before these methods are called.
+   */
   validateLogin(authData) {
     return {
       id: authData.id,
     }
   }
 
+  /**
+   * Validates auth data on first setup. No credential check is needed as `beforeFind`
+   * already validated credentials before this method is called. `beforeFind`
+   * exchanges the auth code for an access_token and verifies user identity; it
+   * rejects requests with missing credentials before these methods are called.
+   */
   validateSetUp(authData) {
     return {
       id: authData.id,
     }
   }
 
+  /**
+   * Returns the auth data to expose to the client after a query.
+   */
   afterFind(authData) {
     return {
       id: authData.id,
     }
   }
 
+  /**
+   * Validates auth data on update. No credential check is needed as `beforeFind`
+   * already validated credentials before this method is called. `beforeFind`
+   * exchanges the auth code for an access_token and verifies user identity; it
+   * rejects requests with missing credentials before these methods are called.
+   */
   validateUpdate(authData) {
     return {
       id: authData.id,
