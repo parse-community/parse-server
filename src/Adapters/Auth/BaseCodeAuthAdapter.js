@@ -73,10 +73,9 @@ export default class BaseAuthCodeAdapter extends AuthAdapter {
   }
 
   /**
-   * Validates auth data on login. No credential check is needed as `beforeFind`
-   * already validated credentials before this method is called. `beforeFind`
-   * exchanges the auth code for an access_token and verifies user identity; it
-   * rejects requests with missing credentials before these methods are called.
+   * Validates auth data on login. On login, `beforeFind` always runs first and
+   * validates credentials (exchanges code for access_token, verifies identity),
+   * so no additional credential check is needed here.
    */
   validateLogin(authData) {
     return {
@@ -85,10 +84,8 @@ export default class BaseAuthCodeAdapter extends AuthAdapter {
   }
 
   /**
-   * Validates auth data on first setup. No credential check is needed as `beforeFind`
-   * already validated credentials before this method is called. `beforeFind`
-   * exchanges the auth code for an access_token and verifies user identity; it
-   * rejects requests with missing credentials before these methods are called.
+   * Validates auth data on first setup. On signup, `beforeFind` always runs first
+   * and validates credentials, so no additional credential check is needed here.
    */
   validateSetUp(authData) {
     return {
@@ -106,10 +103,11 @@ export default class BaseAuthCodeAdapter extends AuthAdapter {
   }
 
   /**
-   * Validates auth data on update. No credential check is needed as `beforeFind`
-   * already validated credentials before this method is called. `beforeFind`
-   * exchanges the auth code for an access_token and verifies user identity; it
-   * rejects requests with missing credentials before these methods are called.
+   * Validates auth data on update. On update, `beforeFind` is skipped when
+   * authData has no credentials (e.g. echoed-back `{ id }` from `afterFind`).
+   * Non-mutated echoed-back data is not validated at all. Mutated data without
+   * credentials (e.g. a changed `id`) will reach this method without prior
+   * `beforeFind` validation.
    */
   validateUpdate(authData) {
     return {
