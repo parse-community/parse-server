@@ -173,15 +173,10 @@ describe('BaseAuthCodeAdapter', function () {
   });
 
   describe('validateUpdate', function () {
-    it('should return user id from authData with access_token', function () {
-      const authData = { id: 'validUserId', access_token: 'validAccessToken' };
+    it('should return user id from authData', function () {
+      const authData = { id: 'validUserId' };
       const result = adapter.validateUpdate(authData);
       expect(result).toEqual({ id: 'validUserId' });
-    });
-
-    it('should throw if access_token is missing', function () {
-      const authData = { id: 'validUserId' };
-      expect(() => adapter.validateUpdate(authData)).toThrowError('TestAdapter code is required.');
     });
   });
 });

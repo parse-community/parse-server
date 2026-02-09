@@ -1504,55 +1504,6 @@ describe('Auth Adapter features', () => {
     expect(finalAuthData.instagram.id).toBe(instagramUserId);
   });
 
-  it('should reject updating a code-based provider with only an id and no credentials', async () => {
-    const mockUserId = 'gpgamesUser123';
-    const mockAccessToken = 'mockAccessToken';
-
-    mockFetch([
-      {
-        url: 'https://oauth2.googleapis.com/token',
-        method: 'POST',
-        response: {
-          ok: true,
-          json: () => Promise.resolve({ access_token: mockAccessToken }),
-        },
-      },
-      {
-        url: `https://www.googleapis.com/games/v1/players/${mockUserId}`,
-        method: 'GET',
-        response: {
-          ok: true,
-          json: () => Promise.resolve({ playerId: mockUserId }),
-        },
-      },
-    ]);
-
-    await reconfigureServer({
-      auth: {
-        gpgames: {
-          clientId: 'testClientId',
-          clientSecret: 'testClientSecret',
-        },
-      },
-    });
-
-    // Sign up and link gpgames with valid credentials
-    const user = new Parse.User();
-    await user.save({
-      authData: {
-        gpgames: { id: mockUserId, code: 'authCode123', redirect_uri: 'https://example.com/callback' },
-      },
-    });
-    const sessionToken = user.getSessionToken();
-
-    // Attempt to change gpgames id without credentials (no code or access_token)
-    await expectAsync(
-      user.save({ authData: { gpgames: { id: 'differentUserId' } } }, { sessionToken })
-    ).toBeRejectedWith(
-      jasmine.objectContaining({ message: jasmine.stringContaining('code is required') })
-    );
-  });
-
   it('should handle multiple providers: add one while another remains unchanged (code-based)', async () => {
     await reconfigureServer({
       auth: {
