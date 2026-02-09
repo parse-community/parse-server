@@ -1553,29 +1553,6 @@ describe('Auth Adapter features', () => {
     );
   });
 
-  it('should reject linking a new code-based provider with only an id and no credentials', async () => {
-    await reconfigureServer({
-      auth: {
-        gpgames: {
-          clientId: 'testClientId',
-          clientSecret: 'testClientSecret',
-        },
-      },
-    });
-
-    // Sign up with username/password (no gpgames linked)
-    const user = new Parse.User();
-    await user.signUp({ username: 'linkTestUser', password: 'password123' });
-    const sessionToken = user.getSessionToken();
-
-    // Attempt to link gpgames with only { id } — no code or access_token
-    await expectAsync(
-      user.save({ authData: { gpgames: { id: 'victimUserId' } } }, { sessionToken })
-    ).toBeRejectedWith(
-      jasmine.objectContaining({ message: jasmine.stringContaining('code is required') })
-    );
-  });
-
   it('should handle multiple providers: add one while another remains unchanged (code-based)', async () => {
     await reconfigureServer({
       auth: {

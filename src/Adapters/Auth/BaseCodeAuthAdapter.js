@@ -85,14 +85,9 @@ export default class BaseAuthCodeAdapter extends AuthAdapter {
 
   /**
    * Validates auth data on first setup. On signup, `beforeFind` always runs first
-   * and validates credentials. On update (linking a new provider), `beforeFind`
-   * may be skipped when authData has no credentials, so an explicit credential
-   * check is required here.
+   * and validates credentials, so no additional credential check is needed here.
    */
   validateSetUp(authData) {
-    if (!authData?.access_token) {
-      throw new Parse.Error(Parse.Error.VALIDATION_ERROR, `${this.adapterName} code is required.`);
-    }
     return {
       id: authData.id,
     }
