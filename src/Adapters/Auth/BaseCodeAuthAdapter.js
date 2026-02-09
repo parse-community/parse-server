@@ -107,9 +107,12 @@ export default class BaseAuthCodeAdapter extends AuthAdapter {
    * authData has no credentials (e.g. echoed-back `{ id }` from `afterFind`).
    * Non-mutated echoed-back data is not validated at all. Mutated data without
    * credentials (e.g. a changed `id`) will reach this method without prior
-   * `beforeFind` validation.
+   * `beforeFind` validation, so an explicit credential check is required here.
    */
   validateUpdate(authData) {
+    if (!authData?.access_token) {
+      throw new Parse.Error(Parse.Error.VALIDATION_ERROR, `${this.adapterName} code is required.`);
+    }
     return {
       id: authData.id,
     }
