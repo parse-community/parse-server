@@ -73,9 +73,8 @@ export default class BaseAuthCodeAdapter extends AuthAdapter {
   }
 
   /**
-   * Validates auth data on login. On login, `beforeFind` always runs first and
-   * validates credentials (exchanges code for access_token, verifies identity),
-   * so no additional credential check is needed here.
+   * Validates auth data on login. `beforeFind` always runs first and validates
+   * credentials, so no additional credential check is needed here.
    */
   validateLogin(authData) {
     return {
@@ -84,8 +83,9 @@ export default class BaseAuthCodeAdapter extends AuthAdapter {
   }
 
   /**
-   * Validates auth data on first setup. On signup, `beforeFind` always runs first
-   * and validates credentials, so no additional credential check is needed here.
+   * Validates auth data on first setup or when linking a new provider.
+   * `beforeFind` always runs first and validates credentials, so no additional
+   * credential check is needed here.
    */
   validateSetUp(authData) {
     return {
@@ -103,11 +103,10 @@ export default class BaseAuthCodeAdapter extends AuthAdapter {
   }
 
   /**
-   * Validates auth data on update. On update, `beforeFind` is skipped when
-   * authData has no credentials (e.g. echoed-back `{ id }` from `afterFind`).
-   * Non-mutated echoed-back data is not validated at all. Mutated data without
-   * credentials (e.g. a changed `id`) will reach this method without prior
-   * `beforeFind` validation.
+   * Validates auth data on update. `beforeFind` runs first for any changed
+   * auth data and validates credentials, so no additional credential check
+   * is needed here. Unchanged (echoed-back) data skips both `beforeFind`
+   * and validation entirely.
    */
   validateUpdate(authData) {
     return {

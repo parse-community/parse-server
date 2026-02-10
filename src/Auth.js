@@ -417,7 +417,7 @@ Auth.prototype._getAllRolesNamesForRoleIds = function (roleIDs, names = [], quer
     });
 };
 
-const findUsersWithAuthData = async (config, authData, beforeFind, isUpdate) => {
+const findUsersWithAuthData = async (config, authData, beforeFind, currentUserAuthData) => {
   const providers = Object.keys(authData);
 
   const queries = await Promise.all(
@@ -429,16 +429,18 @@ const findUsersWithAuthData = async (config, authData, beforeFind, isUpdate) => 
         return null;
       }
 
-      const providerKeys = Object.keys(providerAuthData || {});
-      const hasCredentials = providerKeys.some(key => key !== 'id');
+      // Skip beforeFind only when incoming data is confirmed unchanged from stored data.
+      // This handles echoed-back authData from afterFind (e.g. client sends back { id: 'x' }
+      // alongside a provider unlink). On login/signup, currentUserAuthData is undefined so
+      // beforeFind always runs, preserving it as the security gate for missing credentials.
+      const storedProviderData = currentUserAuthData?.[provider];
+      const incomingKeys = Object.keys(providerAuthData || {});
+      const isUnchanged = storedProviderData && incomingKeys.length > 0 &&
+        !incomingKeys.some(key => !isDeepStrictEqual(providerAuthData[key], storedProviderData[key]));
 
-      // On update, skip beforeFind for echoed-back authData (no credentials to process).
-      // On login/signup, always call beforeFind so it can reject missing credentials.
       const adapter = config.authDataManager.getValidatorForProvider(provider)?.adapter;
-      if (beforeFind && typeof adapter?.beforeFind === 'function') {
-        if (hasCredentials || !isUpdate) {
-          await adapter.beforeFind(providerAuthData);
-        }
+      if (beforeFind && typeof adapter?.beforeFind === 'function' && !isUnchanged) {
+        await adapter.beforeFind(providerAuthData);
       }
 
       if (!providerAuthData?.id) {
