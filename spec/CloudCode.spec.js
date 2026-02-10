@@ -1702,28 +1702,7 @@ describe('Cloud Code', () => {
       });
   });
 
-  it('should not encode Parse Objects', async () => {
-    await reconfigureServer({ encodeParseObjectInCloudFunction: false });
-    const user = new Parse.User();
-    user.setUsername('username');
-    user.setPassword('password');
-    user.set('deleted', false);
-    await user.signUp();
-    Parse.Cloud.define(
-      'deleteAccount',
-      async req => {
-        expect(req.params.object instanceof Parse.Object).not.toBeTrue();
-        return 'Object deleted';
-      },
-      {
-        requireMaster: true,
-      }
-    );
-    await Parse.Cloud.run('deleteAccount', { object: user.toPointer() }, { useMasterKey: true });
-  });
-
-  it('allow cloud to encode Parse Objects', async () => {
-    await reconfigureServer({ encodeParseObjectInCloudFunction: true });
+  it('should encode Parse Objects in cloud functions', async () => {
     const user = new Parse.User();
     user.setUsername('username');
     user.setPassword('password');
@@ -3307,19 +3286,19 @@ describe('afterFind hooks', () => {
     }).not.toThrow('Only the _User class is allowed for the beforeLogin and afterLogin triggers');
     expect(() => {
       Parse.Cloud.beforeLogin('SomeClass', () => { });
-    }).toThrow('Only the _User class is allowed for the beforeLogin and afterLogin triggers');
+    }).toThrow('Only the _User class is allowed for the beforeLogin, afterLogin, and beforePasswordResetRequest triggers');
     expect(() => {
       Parse.Cloud.afterLogin(() => { });
-    }).not.toThrow('Only the _User class is allowed for the beforeLogin and afterLogin triggers');
+    }).not.toThrow('Only the _User class is allowed for the beforeLogin, afterLogin, and beforePasswordResetRequest triggers');
     expect(() => {
       Parse.Cloud.afterLogin('_User', () => { });
-    }).not.toThrow('Only the _User class is allowed for the beforeLogin and afterLogin triggers');
+    }).not.toThrow('Only the _User class is allowed for the beforeLogin, afterLogin, and beforePasswordResetRequest triggers');
     expect(() => {
       Parse.Cloud.afterLogin(Parse.User, () => { });
-    }).not.toThrow('Only the _User class is allowed for the beforeLogin and afterLogin triggers');
+    }).not.toThrow('Only the _User class is allowed for the beforeLogin, afterLogin, and beforePasswordResetRequest triggers');
     expect(() => {
       Parse.Cloud.afterLogin('SomeClass', () => { });
-    }).toThrow('Only the _User class is allowed for the beforeLogin and afterLogin triggers');
+    }).toThrow('Only the _User class is allowed for the beforeLogin, afterLogin, and beforePasswordResetRequest triggers');
     expect(() => {
       Parse.Cloud.afterLogout(() => { });
     }).not.toThrow();
@@ -4654,5 +4633,386 @@ describe('sendEmail', () => {
     expect(logger.error).toHaveBeenCalledWith(
       'Failed to send email because no mail adapter is configured for Parse Server.'
     );
+  });
+});
+
+describe('beforePasswordResetRequest hook', () => {
+  it('should run beforePasswordResetRequest with valid user', async () => {
+    let hit = 0;
+    let sendPasswordResetEmailCalled = false;
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: () => {
+        sendPasswordResetEmailCalled = true;
+      },
+      sendMail: () => {},
+    };
+
+    await reconfigureServer({
+      appName: 'test',
+      emailAdapter: emailAdapter,
+      publicServerURL: 'http://localhost:8378/1',
+    });
+
+    Parse.Cloud.beforePasswordResetRequest(req => {
+      hit++;
+      expect(req.object).toBeDefined();
+      expect(req.object.get('email')).toEqual('test@example.com');
+      expect(req.object.get('username')).toEqual('testuser');
+    });
+
+    const user = new Parse.User();
+    user.setUsername('testuser');
+    user.setPassword('password');
+    user.set('email', 'test@example.com');
+    await user.signUp();
+
+    await Parse.User.requestPasswordReset('test@example.com');
+    expect(hit).toBe(1);
+    expect(sendPasswordResetEmailCalled).toBe(true);
+  });
+
+  it('should be able to block password reset request if an error is thrown', async () => {
+    let hit = 0;
+    let sendPasswordResetEmailCalled = false;
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: () => {
+        sendPasswordResetEmailCalled = true;
+      },
+      sendMail: () => {},
+    };
+
+    await reconfigureServer({
+      appName: 'test',
+      emailAdapter: emailAdapter,
+      publicServerURL: 'http://localhost:8378/1',
+    });
+
+    Parse.Cloud.beforePasswordResetRequest(req => {
+      hit++;
+      throw new Error('password reset blocked');
+    });
+
+    const user = new Parse.User();
+    user.setUsername('testuser');
+    user.setPassword('password');
+    user.set('email', 'test@example.com');
+    await user.signUp();
+
+    try {
+      await Parse.User.requestPasswordReset('test@example.com');
+      throw new Error('should not have sent password reset email.');
+    } catch (e) {
+      expect(e.message).toBe('password reset blocked');
+    }
+    expect(hit).toBe(1);
+    expect(sendPasswordResetEmailCalled).toBe(false);
+  });
+
+  it('should not run beforePasswordResetRequest if email does not exist', async () => {
+    let hit = 0;
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: () => {},
+      sendMail: () => {},
+    };
+
+    await reconfigureServer({
+      appName: 'test',
+      emailAdapter: emailAdapter,
+      publicServerURL: 'http://localhost:8378/1',
+    });
+
+    Parse.Cloud.beforePasswordResetRequest(req => {
+      hit++;
+    });
+
+    await Parse.User.requestPasswordReset('nonexistent@example.com');
+
+    expect(hit).toBe(0);
+  });
+
+  it('should have expected data in request in beforePasswordResetRequest', async () => {
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: () => {},
+      sendMail: () => {},
+    };
+
+    await reconfigureServer({
+      appName: 'test',
+      emailAdapter: emailAdapter,
+      publicServerURL: 'http://localhost:8378/1',
+    });
+
+    const base64 = 'V29ya2luZyBhdCBQYXJzZSBpcyBncmVhdCE=';
+    const file = new Parse.File('myfile.txt', { base64 });
+    await file.save();
+
+    Parse.Cloud.beforePasswordResetRequest(req => {
+      expect(req.object).toBeDefined();
+      expect(req.object.get('email')).toBeDefined();
+      expect(req.object.get('email')).toBe('test2@example.com');
+      expect(req.object.get('file')).toBeDefined();
+      expect(req.object.get('file')).toBeInstanceOf(Parse.File);
+      expect(req.object.get('file').name()).toContain('myfile.txt');
+      expect(req.headers).toBeDefined();
+      expect(req.ip).toBeDefined();
+      expect(req.installationId).toBeDefined();
+      expect(req.context).toBeDefined();
+      expect(req.config).toBeDefined();
+    });
+
+    const user = new Parse.User();
+    user.setUsername('testuser2');
+    user.setPassword('password');
+    user.set('email', 'test2@example.com');
+    user.set('file', file);
+    await user.signUp();
+
+    await Parse.User.requestPasswordReset('test2@example.com');
+  });
+
+  it('should validate that only _User class is allowed for beforePasswordResetRequest', () => {
+    expect(() => {
+      Parse.Cloud.beforePasswordResetRequest('SomeClass', () => { });
+    }).toThrow('Only the _User class is allowed for the beforeLogin, afterLogin, and beforePasswordResetRequest triggers');
+    expect(() => {
+      Parse.Cloud.beforePasswordResetRequest(() => { });
+    }).not.toThrow();
+    expect(() => {
+      Parse.Cloud.beforePasswordResetRequest('_User', () => { });
+    }).not.toThrow();
+    expect(() => {
+      Parse.Cloud.beforePasswordResetRequest(Parse.User, () => { });
+    }).not.toThrow();
+  });
+
+  describe('Express-style cloud functions with (req, res) parameters', () => {
+    it('should support express-style cloud function with res.success()', async () => {
+      Parse.Cloud.define('expressStyleFunction', (req, res) => {
+        res.success({ message: 'Hello from express style!' });
+      });
+
+      const result = await Parse.Cloud.run('expressStyleFunction', {});
+      expect(result.message).toEqual('Hello from express style!');
+    });
+
+    it('should support express-style cloud function with res.error()', async () => {
+      Parse.Cloud.define('expressStyleError', (req, res) => {
+        res.error('Custom error message');
+      });
+
+      await expectAsync(Parse.Cloud.run('expressStyleError', {})).toBeRejectedWith(
+        new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Custom error message')
+      );
+    });
+
+    it('should support setting custom HTTP status code with res.status().success()', async () => {
+      Parse.Cloud.define('customStatusCode', (req, res) => {
+        res.status(201).success({ created: true });
+      });
+
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/customStatusCode',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: true,
+        body: {},
+      });
+
+      expect(response.status).toBe(201);
+      expect(response.data.result.created).toBe(true);
+    });
+
+    it('should support 401 unauthorized status code with error', async () => {
+      Parse.Cloud.define('unauthorizedFunction', (req, res) => {
+        if (!req.user) {
+          res.status(401).error('Unauthorized access');
+        } else {
+          res.success({ message: 'Authorized' });
+        }
+      });
+
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/functions/unauthorizedFunction',
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          json: true,
+          body: {},
+        })
+      ).toBeRejected();
+    });
+
+    it('should support 404 not found status code with error', async () => {
+      Parse.Cloud.define('notFoundFunction', (req, res) => {
+        res.status(404).error('Resource not found');
+      });
+
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/functions/notFoundFunction',
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          json: true,
+          body: {},
+        })
+      ).toBeRejected();
+    });
+
+    it('should default to 200 status code when not specified', async () => {
+      Parse.Cloud.define('defaultStatusCode', (req, res) => {
+        res.success({ message: 'Default status' });
+      });
+
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/defaultStatusCode',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: true,
+        body: {},
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.data.result.message).toBe('Default status');
+    });
+
+    it('should maintain backward compatibility with single-parameter functions', async () => {
+      Parse.Cloud.define('traditionalFunction', (req) => {
+        return { message: 'Traditional style works!' };
+      });
+
+      const result = await Parse.Cloud.run('traditionalFunction', {});
+      expect(result.message).toEqual('Traditional style works!');
+    });
+
+    it('should maintain backward compatibility with implicit return functions', async () => {
+      Parse.Cloud.define('implicitReturnFunction', () => 'Implicit return works!');
+
+      const result = await Parse.Cloud.run('implicitReturnFunction', {});
+      expect(result).toEqual('Implicit return works!');
+    });
+
+    it('should support async express-style functions', async () => {
+      Parse.Cloud.define('asyncExpressStyle', async (req, res) => {
+        await new Promise(resolve => setTimeout(resolve, 10));
+        res.success({ async: true });
+      });
+
+      const result = await Parse.Cloud.run('asyncExpressStyle', {});
+      expect(result.async).toBe(true);
+    });
+
+    it('should access request parameters in express-style functions', async () => {
+      Parse.Cloud.define('expressWithParams', (req, res) => {
+        const { name } = req.params;
+        res.success({ greeting: `Hello, ${name}!` });
+      });
+
+      const result = await Parse.Cloud.run('expressWithParams', { name: 'World' });
+      expect(result.greeting).toEqual('Hello, World!');
+    });
+
+    it('should access user in express-style functions', async () => {
+      const user = new Parse.User();
+      user.set('username', 'testuser');
+      user.set('password', 'testpass');
+      await user.signUp();
+
+      Parse.Cloud.define('expressWithUser', (req, res) => {
+        if (req.user) {
+          res.success({ username: req.user.get('username') });
+        } else {
+          res.status(401).error('Not authenticated');
+        }
+      });
+
+      const result = await Parse.Cloud.run('expressWithUser', {});
+      expect(result.username).toEqual('testuser');
+
+      await Parse.User.logOut();
+    });
+
+    it('should support setting custom headers with res.header()', async () => {
+      Parse.Cloud.define('customHeaderFunction', (req, res) => {
+        res.header('X-Custom-Header', 'custom-value').success({ message: 'OK' });
+      });
+
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/customHeaderFunction',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: true,
+        body: {},
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.headers['x-custom-header']).toBe('custom-value');
+      expect(response.data.result.message).toBe('OK');
+    });
+
+    it('should support setting multiple custom headers', async () => {
+      Parse.Cloud.define('multipleHeadersFunction', (req, res) => {
+        res.header('X-Header-One', 'value1')
+          .header('X-Header-Two', 'value2')
+          .success({ message: 'Multiple headers' });
+      });
+
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/multipleHeadersFunction',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: true,
+        body: {},
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.headers['x-header-one']).toBe('value1');
+      expect(response.headers['x-header-two']).toBe('value2');
+      expect(response.data.result.message).toBe('Multiple headers');
+    });
+
+    it('should support combining status code and custom headers', async () => {
+      Parse.Cloud.define('statusAndHeaderFunction', (req, res) => {
+        res.status(201)
+          .header('X-Resource-Id', '12345')
+          .success({ created: true });
+      });
+
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/statusAndHeaderFunction',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: true,
+        body: {},
+      });
+
+      expect(response.status).toBe(201);
+      expect(response.headers['x-resource-id']).toBe('12345');
+      expect(response.data.result.created).toBe(true);
+    });
   });
 });

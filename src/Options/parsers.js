@@ -55,7 +55,7 @@ function moduleOrObjectParser(opt) {
   }
   try {
     return JSON.parse(opt);
-  } catch (e) {
+  } catch {
     /* */
   }
   return opt;
@@ -66,6 +66,13 @@ function booleanParser(opt) {
     return true;
   }
   return false;
+}
+
+function booleanOrFunctionParser(opt) {
+  if (typeof opt === 'function') {
+    return opt;
+  }
+  return booleanParser(opt);
 }
 
 function nullParser(opt) {
@@ -81,6 +88,7 @@ module.exports = {
   numberOrStringParser,
   nullParser,
   booleanParser,
+  booleanOrFunctionParser,
   moduleOrObjectParser,
   arrayParser,
   objectParser,

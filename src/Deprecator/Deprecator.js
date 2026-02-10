@@ -1,5 +1,6 @@
 import logger from '../logger';
 import Deprecations from './Deprecations';
+import Utils from '../Utils';
 
 /**
  * The deprecator class.
@@ -21,7 +22,7 @@ class Deprecator {
       const changeNewDefault = deprecation.changeNewDefault;
 
       // If default will change, only throw a warning if option is not set
-      if (changeNewDefault != null && options[optionKey] == null) {
+      if (changeNewDefault != null && Utils.getNestedProperty(options, optionKey) == null) {
         Deprecator._logOption({ optionKey, changeNewDefault, solution });
       }
     }

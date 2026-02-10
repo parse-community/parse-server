@@ -40,7 +40,7 @@ COPY --from=build /tmp/lib lib
 
 COPY package*.json ./
 COPY bin bin
-COPY public_html public_html
+COPY public public
 COPY views views
 RUN mkdir -p logs && chown -R node: logs
 

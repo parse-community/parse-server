@@ -82,7 +82,7 @@ class Utils {
     try {
       await fs.access(path);
       return true;
-    } catch (e) {
+    } catch {
       return false;
     }
   }
@@ -409,6 +409,65 @@ class Utils {
     return encodeURIComponent(input).replace(/[!'.()*]/g, char =>
       '%' + char.charCodeAt(0).toString(16).toUpperCase()
     );
+  }
+
+  /**
+   * Creates a JSON replacer function that handles Map, Set, and circular references.
+   * This replacer can be used with JSON.stringify to safely serialize complex objects.
+   *
+   * @returns {Function} A replacer function for JSON.stringify that:
+   * - Converts Map instances to plain objects
+   * - Converts Set instances to arrays
+   * - Replaces circular references with '[Circular]' marker
+   *
+   * @example
+   * const obj = { name: 'test', map: new Map([['key', 'value']]) };
+   * obj.self = obj; // circular reference
+   * JSON.stringify(obj, Utils.getCircularReplacer());
+   * // Output: {"name":"test","map":{"key":"value"},"self":"[Circular]"}
+   */
+  static getCircularReplacer() {
+    const seen = new WeakSet();
+    return (key, value) => {
+      if (value instanceof Map) {
+        return Object.fromEntries(value);
+      }
+      if (value instanceof Set) {
+        return Array.from(value);
+      }
+      if (typeof value === 'object' && value !== null) {
+        if (seen.has(value)) {
+          return '[Circular]';
+        }
+        seen.add(value);
+      }
+      return value;
+    };
+  }
+
+  /**
+   * Gets a nested property value from an object using dot notation.
+   * @param {Object} obj The object to get the property from.
+   * @param {String} path The property path in dot notation, e.g. 'databaseOptions.allowPublicExplain'.
+   * @returns {any} The property value or undefined if not found.
+   * @example
+   * const obj = { database: { options: { enabled: true } } };
+   * Utils.getNestedProperty(obj, 'database.options.enabled');
+   * // Output: true
+   */
+  static getNestedProperty(obj, path) {
+    if (!obj || !path) {
+      return undefined;
+    }
+    const keys = path.split('.');
+    let current = obj;
+    for (const key of keys) {
+      if (current == null || typeof current !== 'object') {
+        return undefined;
+      }
+      current = current[key];
+    }
+    return current;
   }
 }
 

@@ -21,7 +21,6 @@ describe('RedisPubSub', function () {
     expect(redis.createClient).toHaveBeenCalledWith({
       url: 'redisAddress',
       socket_keepalive: true,
-      no_ready_check: true,
     });
   });
 
@@ -35,7 +34,6 @@ describe('RedisPubSub', function () {
     expect(redis.createClient).toHaveBeenCalledWith({
       url: 'redisAddress',
       socket_keepalive: true,
-      no_ready_check: true,
     });
   });
 

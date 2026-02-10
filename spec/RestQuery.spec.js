@@ -5,7 +5,6 @@ const Config = require('../lib/Config');
 const rest = require('../lib/rest');
 const RestQuery = require('../lib/RestQuery');
 const request = require('../lib/request');
-
 const querystring = require('querystring');
 
 let config;
@@ -155,9 +154,13 @@ describe('rest query', () => {
   });
 
   it('query non-existent class when disabled client class creation', done => {
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+
     const customConfig = Object.assign({}, config, {
       allowClientClassCreation: false,
     });
+    loggerErrorSpy.calls.reset();
     rest.find(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {}).then(
       () => {
         fail('Should throw an error');
@@ -165,9 +168,8 @@ describe('rest query', () => {
       },
       err => {
         expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
-        expect(err.message).toEqual(
-          'This user is not allowed to access ' + 'non-existent class: ClientClassCreation'
-        );
+        expect(err.message).toEqual('Permission denied');
+        expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('This user is not allowed to access ' + 'non-existent class: ClientClassCreation'));
         done();
       }
     );
@@ -243,7 +245,7 @@ describe('rest query', () => {
       expectAsync(new Parse.Query('Test').exists('zip').find()).toBeRejectedWith(
         new Parse.Error(
           Parse.Error.OPERATION_FORBIDDEN,
-          'This user is not allowed to query zip on class Test'
+          'Permission denied'
         )
       ),
     ]);
@@ -385,6 +387,88 @@ describe('rest query', () => {
           done();
         }
       );
+  });
+
+  it('battle test parallel include with 100 nested includes', async () => {
+    const RootObject = Parse.Object.extend('RootObject');
+    const Level1Object = Parse.Object.extend('Level1Object');
+    const Level2Object = Parse.Object.extend('Level2Object');
+
+    // Create 100 level2 objects (10 per level1 object)
+    const level2Objects = [];
+    for (let i = 0; i < 100; i++) {
+      const level2 = new Level2Object({
+        index: i,
+        value: `level2_${i}`,
+      });
+      level2Objects.push(level2);
+    }
+    await Parse.Object.saveAll(level2Objects);
+
+    // Create 10 level1 objects, each with 10 pointers to level2 objects
+    const level1Objects = [];
+    for (let i = 0; i < 10; i++) {
+      const level1 = new Level1Object({
+        index: i,
+        value: `level1_${i}`,
+      });
+      // Set 10 pointer fields (level2_0 through level2_9)
+      for (let j = 0; j < 10; j++) {
+        level1.set(`level2_${j}`, level2Objects[i * 10 + j]);
+      }
+      level1Objects.push(level1);
+    }
+    await Parse.Object.saveAll(level1Objects);
+
+    // Create 1 root object with 10 pointers to level1 objects
+    const rootObject = new RootObject({
+      value: 'root',
+    });
+    for (let i = 0; i < 10; i++) {
+      rootObject.set(`level1_${i}`, level1Objects[i]);
+    }
+    await rootObject.save();
+
+    // Build include paths: level1_0 through level1_9, and level1_0.level2_0 through level1_9.level2_9
+    const includePaths = [];
+    for (let i = 0; i < 10; i++) {
+      includePaths.push(`level1_${i}`);
+      for (let j = 0; j < 10; j++) {
+        includePaths.push(`level1_${i}.level2_${j}`);
+      }
+    }
+
+    // Query with all includes
+    const query = new Parse.Query(RootObject);
+    query.equalTo('objectId', rootObject.id);
+    for (const path of includePaths) {
+      query.include(path);
+    }
+    console.time('query.find');
+    const results = await query.find();
+    console.timeEnd('query.find');
+    expect(results.length).toBe(1);
+
+    const result = results[0];
+    expect(result.id).toBe(rootObject.id);
+
+    // Verify all 10 level1 objects are included
+    for (let i = 0; i < 10; i++) {
+      const level1Field = result.get(`level1_${i}`);
+      expect(level1Field).toBeDefined();
+      expect(level1Field instanceof Parse.Object).toBe(true);
+      expect(level1Field.get('index')).toBe(i);
+      expect(level1Field.get('value')).toBe(`level1_${i}`);
+
+      // Verify all 10 level2 objects are included for each level1 object
+      for (let j = 0; j < 10; j++) {
+        const level2Field = level1Field.get(`level2_${j}`);
+        expect(level2Field).toBeDefined();
+        expect(level2Field instanceof Parse.Object).toBe(true);
+        expect(level2Field.get('index')).toBe(i * 10 + j);
+        expect(level2Field.get('value')).toBe(`level2_${i * 10 + j}`);
+      }
+    }
   });
 });
 

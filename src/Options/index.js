@@ -43,6 +43,22 @@ type RequestKeywordDenylist = {
   key: string | any,
   value: any,
 };
+type EmailVerificationRequest = {
+  original?: any,
+  object: any,
+  master?: boolean,
+  ip?: string,
+  installationId?: string,
+  createdWith?: {
+    action: 'login' | 'signup',
+    authProvider: string,
+  },
+  resendRequest?: boolean,
+};
+type SendEmailVerificationRequest = {
+  user: any,
+  master?: boolean,
+};
 
 export interface ParseServerOptions {
   /* Your Parse Application ID
@@ -54,9 +70,12 @@ export interface ParseServerOptions {
   masterKeyTtl: ?number;
   /* (Optional) The maintenance key is used for modifying internal and read-only fields of Parse Server.<br><br>⚠️ This key is not intended to be used as part of a regular operation of Parse Server. This key is intended to conduct out-of-band changes such as one-time migrations or data correction tasks. Internal fields are not officially documented and may change at any time without publication in release changelogs. We strongly advice not to rely on internal fields as part of your regular operation and to investigate the implications of any planned changes *directly in the source code* of your current version of Parse Server. */
   maintenanceKey: string;
-  /* URL to your parse server with http:// or https://.
+  /* The URL to Parse Server.<br><br>⚠️ Certain server features or adapters may require Parse Server to be able to call itself by making requests to the URL set in `serverURL`. If a feature requires this, it is mentioned in the documentation. In that case ensure that the URL is accessible from the server itself.
   :ENV: PARSE_SERVER_URL */
   serverURL: string;
+  /* Parse Server makes a HTTP request to the URL set in `serverURL` at the end of its launch routine to verify that the launch succeeded. If this option is set to `false`, the verification will be skipped. This can be useful in environments where the server URL is not accessible from the server itself, such as when running behind a firewall or in certain containerized environments.<br><br>⚠️ Server URL verification requires Parse Server to be able to call itself by making requests to the URL set in `serverURL`.<br><br>Default is `true`.
+  :DEFAULT: true */
+  verifyServerUrl: ?boolean;
   /* (Optional) Restricts the use of master key permissions to a list of IP addresses or ranges.<br><br>This option accepts a list of single IP addresses, for example `['10.0.0.1', '10.0.0.2']`. You can also use CIDR notation to specify an IP address range, for example `['10.0.1.0/24']`.<br><br><b>Special scenarios:</b><br>- Setting an empty array `[]` means that the master key cannot be used even in Parse Server Cloud Code. This value cannot be set via an environment variable as there is no way to pass an empty array to Parse Server via an environment variable.<br>- Setting `['0.0.0.0/0', '::0']` means to allow any IPv4 and IPv6 address to use the master key and effectively disables the IP filter.<br><br><b>Considerations:</b><br>- IPv4 and IPv6 addresses are not compared against each other. Each IP version (IPv4 and IPv6) needs to be considered separately. For example, `['0.0.0.0/0']` allows any IPv4 address and blocks every IPv6 address. Conversely, `['::0']` allows any IPv6 address and blocks every IPv4 address.<br>- Keep in mind that the IP version in use depends on the network stack of the environment in which Parse Server runs. A local environment may use a different IP version than a remote environment. For example, it's possible that locally the value `['0.0.0.0/0']` allows the request IP because the environment is using IPv4, but when Parse Server is deployed remotely the request IP is blocked because the remote environment is using IPv6.<br>- When setting the option via an environment variable the notation is a comma-separated string, for example `"0.0.0.0/0,::0"`.<br>- IPv6 zone indices (`%` suffix) are not supported, for example `fe80::1%eth0`, `fe80::1%1` or `::1%lo`.<br><br>Defaults to `['127.0.0.1', '::1']` which means that only `localhost`, the server instance on which Parse Server runs, is allowed to use the master key.
   :DEFAULT: ["127.0.0.1","::1"] */
   masterKeyIps: ?(string[]);
@@ -164,25 +183,32 @@ export interface ParseServerOptions {
   /* Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication
   :ENV: PARSE_SERVER_AUTH_PROVIDERS */
   auth: ?{ [string]: AuthAdapter };
-  /* Enable (or disable) insecure auth adapters, defaults to true. Insecure auth adapters are deprecated and it is recommended to disable them.
+  /* Optional. Enables insecure authentication adapters. Insecure auth adapters are deprecated and will be removed in a future version. Defaults to `false`.
   :ENV: PARSE_SERVER_ENABLE_INSECURE_AUTH_ADAPTERS
-  :DEFAULT: true */
+  :DEFAULT: false */
   enableInsecureAuthAdapters: ?boolean;
   /* Max file size for uploads, defaults to 20mb
   :DEFAULT: 20mb */
   maxUploadSize: ?string;
-  /* Set to `true` to require users to verify their email address to complete the sign-up process. Supports a function with a return value of `true` or `false` for conditional verification.
+  /* Set to `true` to require users to verify their email address to complete the sign-up process. Supports a function with a return value of `true` or `false` for conditional verification. The function receives a request object that includes `createdWith` to indicate whether the invocation is for `signup` or `login` and the used auth provider.
   <br><br>
+  The `createdWith` values per scenario:
+  <ul><li>Password signup: `{ action: 'signup', authProvider: 'password' }`</li><li>Auth provider signup: `{ action: 'signup', authProvider: '<provider>' }`</li><li>Password login: `{ action: 'login', authProvider: 'password' }`</li><li>Auth provider login: function not invoked; auth provider login bypasses email verification</li><li>Resend verification email: `createdWith` is `undefined`; use the `resendRequest` property to identify those</li></ul>
   Default is `false`.
   :DEFAULT: false */
-  verifyUserEmails: ?(boolean | void);
-  /* Set to `true` to prevent a user from logging in if the email has not yet been verified and email verification is required.
+  verifyUserEmails: ?(boolean | (EmailVerificationRequest => boolean | Promise<boolean>));
+  /* Set to `true` to prevent a user from logging in if the email has not yet been verified and email verification is required. Supports a function with a return value of `true` or `false` for conditional prevention. The function receives a request object that includes `createdWith` to indicate whether the invocation is for `signup` or `login` and the used auth provider.
   <br><br>
+  The `createdWith` values per scenario:
+  <ul><li>Password signup: `{ action: 'signup', authProvider: 'password' }`</li><li>Auth provider signup: `{ action: 'signup', authProvider: '<provider>' }`</li><li>Password login: `{ action: 'login', authProvider: 'password' }`</li><li>Auth provider login: function not invoked; auth provider login bypasses email verification</li></ul>
   Default is `false`.
   <br>
   Requires option `verifyUserEmails: true`.
   :DEFAULT: false */
-  preventLoginWithUnverifiedEmail: ?boolean;
+  preventLoginWithUnverifiedEmail: ?(
+    | boolean
+    | (EmailVerificationRequest => boolean | Promise<boolean>)
+  );
   /* If set to `true` it prevents a user from signing up if the email has not yet been verified and email verification is required. In that case the server responds to the sign-up with HTTP status 400 and a Parse Error 205 `EMAIL_NOT_FOUND`. If set to `false` the server responds with HTTP status 200, and client SDKs return an unauthenticated Parse User without session token. In that case subsequent requests fail until the user's email address is verified.
   <br><br>
   Default is `false`.
@@ -211,7 +237,10 @@ export interface ParseServerOptions {
   Default is `true`.
   <br>
   :DEFAULT: true */
-  sendUserEmailVerification: ?(boolean | void);
+  sendUserEmailVerification: ?(
+    | boolean
+    | (SendEmailVerificationRequest => boolean | Promise<boolean>)
+  );
   /* The account lockout policy for failed login attempts. */
   accountLockout: ?AccountLockoutOptions;
   /* The password policy for enforcing password related rules. */
@@ -220,12 +249,9 @@ export interface ParseServerOptions {
   cacheAdapter: ?Adapter<CacheAdapter>;
   /* Adapter module for email sending */
   emailAdapter: ?Adapter<MailAdapter>;
-  /* If set to `true`, a `Parse.Object` that is in the payload when calling a Cloud Function will be converted to an instance of `Parse.Object`. If `false`, the object will not be converted and instead be a plain JavaScript object, which contains the raw data of a `Parse.Object` but is not an actual instance of `Parse.Object`. Default is `false`. <br><br>ℹ️ The expected behavior would be that the object is converted to an instance of `Parse.Object`, so you would normally set this option to `true`. The default is `false` because this is a temporary option that has been introduced to avoid a breaking change when fixing a bug where JavaScript objects are not converted to actual instances of `Parse.Object`.
-  :DEFAULT: true */
-  encodeParseObjectInCloudFunction: ?boolean;
-  /* Public URL to your parse server with http:// or https://.
+  /* Optional. The public URL to Parse Server. This URL will be used to reach Parse Server publicly for features like password reset and email verification links. The option can be set to a string or a function that can be asynchronously resolved. The returned URL string must start with `http://` or `https://`.
   :ENV: PARSE_PUBLIC_SERVER_URL */
-  publicServerURL: ?string;
+  publicServerURL: ?(string | (() => string) | (() => Promise<string>));
   /* The options for pages such as password reset and email verification.
   :DEFAULT: {} */
   pages: ?PagesOptions;
@@ -305,7 +331,7 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_MOUNT_GRAPHQL
   :DEFAULT: false */
   mountGraphQL: ?boolean;
-  /* Mount path for the GraphQL endpoint, defaults to /graphql
+  /* The mount path for the GraphQL endpoint<br><br>⚠️ File upload inside the GraphQL mutation system requires Parse Server to be able to call itself by making requests to the URL set in `serverURL`.<br><br>Defaults is `/graphql`.
   :ENV: PARSE_SERVER_GRAPHQL_PATH
   :DEFAULT: /graphql */
   graphQLPath: ?string;
@@ -344,10 +370,13 @@ export interface ParseServerOptions {
   rateLimit: ?(RateLimitOptions[]);
   /* Options to customize the request context using inversion of control/dependency injection.*/
   requestContextMiddleware: ?(req: any, res: any, next: any) => void;
+  /* If set to `true`, error details are removed from error messages in responses to client requests, and instead a generic error message is sent. Default is `true`.
+  :DEFAULT: true */
+  enableSanitizedErrorResponse: ?boolean;
 }
 
 export interface RateLimitOptions {
-  /* The path of the API route to be rate limited. Route paths, in combination with a request method, define the endpoints at which requests can be made. Route paths can be strings, string patterns, or regular expression. See: https://expressjs.com/en/guide/routing.html */
+  /* The path of the API route to be rate limited. Route paths, in combination with a request method, define the endpoints at which requests can be made. Route paths can be strings or string patterns following <a href="https://github.com/pillarjs/path-to-regexp">path-to-regexp v8</a> syntax. */
   requestPath: string;
   /* The window of time in milliseconds within which the number of requests set in `requestCount` can be made before the rate limit is applied. */
   requestTimeWindow: ?number;
@@ -367,16 +396,15 @@ export interface RateLimitOptions {
   /* Optional, the URL of the Redis server to store rate limit data. This allows to rate limit requests for multiple servers by calculating the sum of all requests across all servers. This is useful if multiple servers are processing requests behind a load balancer. For example, the limit of 10 requests is reached if each of 2 servers processed 5 requests.
    */
   redisUrl: ?string;
-  /*
-  The type of rate limit to apply. The following types are supported:
-  <br><br>
-  - `global`: rate limit based on the number of requests made by all users <br>
-  - `ip`: rate limit based on the IP address of the request <br>
-  - `user`: rate limit based on the user ID of the request <br>
-  - `session`: rate limit based on the session token of the request <br>
-  <br><br>
-  :default: 'ip'
-  */
+  /* The type of rate limit to apply. The following types are supported:
+  <ul>
+  <li>`global`: rate limit based on the number of requests made by all users</li>
+  <li>`ip`: rate limit based on the IP address of the request</li>
+  <li>`user`: rate limit based on the user ID of the request</li>
+  <li>`session`: rate limit based on the session token of the request</li>
+  </ul>
+  Default is `ip`.
+  :DEFAULT: ip */
   zone: ?string;
 }
 
@@ -409,8 +437,7 @@ export interface PagesOptions {
   /* Is true if responses should always be redirects and never content, false if the response type should depend on the request type (GET request -> content response; POST request -> redirect response).
   :DEFAULT: false */
   forceRedirect: ?boolean;
-  /* The path to the pages directory; this also defines where the static endpoint '/apps' points to. Default is the './public/' directory.
-  :DEFAULT: ./public */
+  /* The path to the pages directory; this also defines where the static endpoint '/apps' points to. Default is the './public/' directory of the parse-server module. */
   pagesPath: ?string;
   /* The API endpoint for the pages. Default is 'apps'.
   :DEFAULT: apps */
@@ -591,8 +618,8 @@ export interface PasswordPolicyOptions {
 }
 
 export interface FileUploadOptions {
-  /* Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML files are especially problematic as they may be used by an attacker who uploads a HTML form to look legitimate under your app's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^(?!(h|H)(t|T)(m|M)(l|L)?$)` which allows any file extension except HTML files.
-  :DEFAULT: ["^(?!(h|H)(t|T)(m|M)(l|L)?$)"] */
+  /* Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML files are especially problematic as they may be used by an attacker who uploads a HTML form to look legitimate under your app's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^(?![xXsS]?[hH][tT][mM][lL]?$)` which allows any file extension except those MIME types that are mapped to `text/html` and are rendered as website by a web browser.
+  :DEFAULT: ["^(?![xXsS]?[hH][tT][mM][lL]?$)"] */
   fileExtensions: ?(string[]);
   /*  Is true if file upload should be allowed for anonymous users.
   :DEFAULT: false */
@@ -603,6 +630,35 @@ export interface FileUploadOptions {
   /* Is true if file upload should be allowed for anyone, regardless of user authentication.
   :DEFAULT: false */
   enableForPublic: ?boolean;
+  /* Sets the allowed hostnames for file URLs referenced in Parse objects. When a File object includes a URL, its hostname must match one of these entries to be accepted. Supports exact hostnames (e.g., `'cdn.example.com'`) and wildcard subdomains (e.g., `'*.example.com'`). Use `['*']` to allow any domain. Use `[]` to block all file URLs (only name-based files allowed).
+  :DEFAULT: ["*"] */
+  allowedFileUrlDomains: ?(string[]);
+}
+
+/* The available log levels for Parse Server logging. Valid values are:<br>- `'error'` - Error level (highest priority)<br>- `'warn'` - Warning level<br>- `'info'` - Info level (default)<br>- `'verbose'` - Verbose level<br>- `'debug'` - Debug level<br>- `'silly'` - Silly level (lowest priority) */
+export interface LogLevel {
+  /* Error level - highest priority */
+  error: 'error';
+  /* Warning level */
+  warn: 'warn';
+  /* Info level - default */
+  info: 'info';
+  /* Verbose level */
+  verbose: 'verbose';
+  /* Debug level */
+  debug: 'debug';
+  /* Silly level - lowest priority */
+  silly: 'silly';
+}
+
+export interface LogClientEvent {
+  /* The MongoDB driver event name to listen for. See the [MongoDB driver events documentation](https://www.mongodb.com/docs/drivers/node/current/fundamentals/monitoring/) for available events. */
+  name: string;
+  /* Optional array of dot-notation paths to extract specific data from the event object. If not provided or empty, the entire event object will be logged. */
+  keys: ?(string[]);
+  /* The log level to use for this event. See [LogLevel](LogLevel.html) for available values. Defaults to `'info'`.
+  :DEFAULT: info */
+  logLevel: ?string;
 }
 
 export interface DatabaseOptions {
@@ -621,6 +677,12 @@ export interface DatabaseOptions {
   minPoolSize: ?number;
   /* The MongoDB driver option to set the maximum number of opened, cached, ready-to-use database connections maintained by the driver. */
   maxPoolSize: ?number;
+  /* The MongoDB driver option to specify the amount of time in milliseconds for a server to be considered suitable for selection. */
+  serverSelectionTimeoutMS: ?number;
+  /* The MongoDB driver option to specify the amount of time in milliseconds that a connection can remain idle in the connection pool before being removed and closed. */
+  maxIdleTimeMS: ?number;
+  /* The MongoDB driver option to specify the frequency in milliseconds at which the driver checks the state of the MongoDB deployment. */
+  heartbeatFrequencyMS: ?number;
   /* The MongoDB driver option to specify the amount of time, in milliseconds, to wait to establish a single TCP socket connection to the server before raising an error. Specifying 0 disables the connection timeout. */
   connectTimeoutMS: ?number;
   /* The MongoDB driver option to specify the amount of time, in milliseconds, spent attempting to send or receive on a socket before timing out. Specifying 0 means no timeout. */
@@ -629,8 +691,107 @@ export interface DatabaseOptions {
   autoSelectFamily: ?boolean;
   /* The MongoDB driver option to specify the amount of time in milliseconds to wait for a connection attempt to finish before trying the next address when using the autoSelectFamily option. If set to a positive integer less than 10, the value 10 is used instead. */
   autoSelectFamilyAttemptTimeout: ?number;
+  /* The MongoDB driver option to specify the maximum number of connections that may be in the process of being established concurrently by the connection pool. */
+  maxConnecting: ?number;
+  /* The MongoDB driver option to specify the maximum time in milliseconds that a thread can wait for a connection to become available. */
+  waitQueueTimeoutMS: ?number;
+  /* The MongoDB driver option to specify the name of the replica set, if the mongod is a member of a replica set. */
+  replicaSet: ?string;
+  /* The MongoDB driver option to force a Single topology type with a connection string containing one host. */
+  directConnection: ?boolean;
+  /* The MongoDB driver option to instruct the driver it is connecting to a load balancer fronting a mongos like service. */
+  loadBalanced: ?boolean;
+  /* The MongoDB driver option to specify the size (in milliseconds) of the latency window for selecting among multiple suitable MongoDB instances. */
+  localThresholdMS: ?number;
+  /* The MongoDB driver option to specify the maximum number of hosts to connect to when using an srv connection string, a setting of 0 means unlimited hosts. */
+  srvMaxHosts: ?number;
+  /* The MongoDB driver option to modify the srv URI service name. */
+  srvServiceName: ?string;
+  /* The MongoDB driver option to enable or disable TLS/SSL for the connection. */
+  tls: ?boolean;
+  /* The MongoDB driver option to enable or disable TLS/SSL for the connection (equivalent to tls option). */
+  ssl: ?boolean;
+  /* The MongoDB driver option to specify the location of a local .pem file that contains the client's TLS/SSL certificate and key. */
+  tlsCertificateKeyFile: ?string;
+  /* The MongoDB driver option to specify the password to decrypt the tlsCertificateKeyFile. */
+  tlsCertificateKeyFilePassword: ?string;
+  /* The MongoDB driver option to specify the location of a local .pem file that contains the root certificate chain from the Certificate Authority. */
+  tlsCAFile: ?string;
+  /* The MongoDB driver option to bypass validation of the certificates presented by the mongod/mongos instance. */
+  tlsAllowInvalidCertificates: ?boolean;
+  /* The MongoDB driver option to disable hostname validation of the certificate presented by the mongod/mongos instance. */
+  tlsAllowInvalidHostnames: ?boolean;
+  /* The MongoDB driver option to disable various certificate validations. */
+  tlsInsecure: ?boolean;
+  /* The MongoDB driver option to specify an array or comma-delimited string of compressors to enable network compression for communication between this client and a mongod/mongos instance. */
+  compressors: ?(string[] | string);
+  /* The MongoDB driver option to specify the compression level if using zlib for network compression (0-9). */
+  zlibCompressionLevel: ?number;
+  /* The MongoDB driver option to specify the read preferences for this connection. */
+  readPreference: ?string;
+  /* The MongoDB driver option to specify the tags document as a comma-separated list of colon-separated key-value pairs. */
+  readPreferenceTags: ?(any[]);
+  /* The MongoDB driver option to specify the level of isolation. */
+  readConcernLevel: ?string;
+  /* The MongoDB driver option to specify the database name associated with the user's credentials. */
+  authSource: ?string;
+  /* The MongoDB driver option to specify the authentication mechanism that MongoDB will use to authenticate the connection. */
+  authMechanism: ?string;
+  /* The MongoDB driver option to specify properties for the specified authMechanism as a comma-separated list of colon-separated key-value pairs. */
+  authMechanismProperties: ?any;
+  /* The MongoDB driver option to specify the name of the application that created this MongoClient instance. */
+  appName: ?string;
+  /* The MongoDB driver option to enable retryable reads. */
+  retryReads: ?boolean;
+  /* The MongoDB driver option to force server to assign _id values instead of driver. */
+  forceServerObjectId: ?boolean;
+  /* The MongoDB driver option to instruct the driver monitors to use a specific monitoring mode. */
+  serverMonitoringMode: ?string;
+  /* The MongoDB driver option to configure a Socks5 proxy host used for creating TCP connections. */
+  proxyHost: ?string;
+  /* The MongoDB driver option to configure a Socks5 proxy port used for creating TCP connections. */
+  proxyPort: ?number;
+  /* The MongoDB driver option to configure a Socks5 proxy username when the proxy requires username/password authentication. */
+  proxyUsername: ?string;
+  /* The MongoDB driver option to configure a Socks5 proxy password when the proxy requires username/password authentication. */
+  proxyPassword: ?string;
+  /* Set to `true` to automatically create indexes on the email field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
+  :DEFAULT: true */
+  createIndexUserEmail: ?boolean;
+  /* Set to `true` to automatically create a case-insensitive index on the email field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
+  :DEFAULT: true */
+  createIndexUserEmailCaseInsensitive: ?boolean;
+  /* Set to `true` to automatically create an index on the _email_verify_token field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
+  :DEFAULT: true */
+  createIndexUserEmailVerifyToken: ?boolean;
+  /* Set to `true` to automatically create an index on the _perishable_token field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
+  :DEFAULT: true */
+  createIndexUserPasswordResetToken: ?boolean;
+  /* Set to `true` to automatically create indexes on the username field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
+  :DEFAULT: true */
+  createIndexUserUsername: ?boolean;
+  /* Set to `true` to automatically create a case-insensitive index on the username field of the _User collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
+  :DEFAULT: true */
+  createIndexUserUsernameCaseInsensitive: ?boolean;
+  /* Set to `true` to automatically create a unique index on the name field of the _Role collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
+  :DEFAULT: true */
+  createIndexRoleName: ?boolean;
   /* Set to `true` to disable validation of index fields. When disabled, indexes can be created even if the fields do not exist in the schema. This can be useful when creating indexes on fields that will be added later. */
   disableIndexFieldValidation: ?boolean;
+  /* Set to `true` to allow `Parse.Query.explain` without master key.<br><br>⚠️ Enabling this option may expose sensitive query performance data to unauthorized users and could potentially be exploited for malicious purposes.
+  :DEFAULT: false */
+  allowPublicExplain: ?boolean;
+  /* An array of MongoDB client event configurations to enable logging of specific events. */
+  logClientEvents: ?(LogClientEvent[]);
+  /* Custom metadata to append to database client connections for identifying Parse Server instances in database logs. If set, this metadata will be visible in database logs during connection handshakes. This can help with debugging and monitoring in deployments with multiple database clients. Set `name` to identify your application (e.g., 'MyApp') and `version` to your application's version. Leave undefined (default) to disable this feature and avoid the additional data transfer overhead. */
+  clientMetadata: ?DatabaseOptionsClientMetadata;
+}
+
+export interface DatabaseOptionsClientMetadata {
+  /* The name to identify your application in database logs (e.g., 'MyApp'). */
+  name: string;
+  /* The version of your application (e.g., '1.0.0'). */
+  version: string;
 }
 
 export interface AuthAdapter {
@@ -642,24 +803,28 @@ export interface AuthAdapter {
 }
 
 export interface LogLevels {
-  /* Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterFind`, `afterLogout`. Default is `info`.
+  /* Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterFind`, `afterLogout`. Default is `info`. See [LogLevel](LogLevel.html) for available values.
   :DEFAULT: info
   */
   triggerAfter: ?string;
-  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on success. Default is `info`.
+  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on success. Default is `info`. See [LogLevel](LogLevel.html) for available values.
   :DEFAULT: info
   */
   triggerBeforeSuccess: ?string;
-  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on error. Default is `error`.
+  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on error. Default is `error`. See [LogLevel](LogLevel.html) for available values.
   :DEFAULT: error
   */
   triggerBeforeError: ?string;
-  /* Log level used by the Cloud Code Functions on success. Default is `info`.
+  /* Log level used by the Cloud Code Functions on success. Default is `info`. See [LogLevel](LogLevel.html) for available values.
   :DEFAULT: info
   */
   cloudFunctionSuccess: ?string;
-  /* Log level used by the Cloud Code Functions on error. Default is `error`.
+  /* Log level used by the Cloud Code Functions on error. Default is `error`. See [LogLevel](LogLevel.html) for available values.
   :DEFAULT: error
   */
   cloudFunctionError: ?string;
+  /* Log level used when a sign-up fails because the username already exists. Default is `info`. See [LogLevel](LogLevel.html) for available values.
+  :DEFAULT: info
+  */
+  signupUsernameTaken: ?string;
 }

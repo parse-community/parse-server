@@ -147,8 +147,8 @@ describe('Regex Vulnerabilities', () => {
         url: `${serverURL}/apps/test/request_password_reset?token[$regex]=`,
         method: 'GET',
       });
-      expect(passwordResetResponse.status).toEqual(302);
-      expect(passwordResetResponse.headers.location).toMatch(`\\/invalid\\_link\\.html`);
+      expect(passwordResetResponse.status).toEqual(200);
+      expect(passwordResetResponse.text).toContain('Invalid password reset link!');
       await request({
         url: `${serverURL}/apps/test/request_password_reset`,
         method: 'POST',
@@ -195,10 +195,8 @@ describe('Regex Vulnerabilities', () => {
         url: `${serverURL}/apps/test/request_password_reset?token=${token}`,
         method: 'GET',
       });
-      expect(passwordResetResponse.status).toEqual(302);
-      expect(passwordResetResponse.headers.location).toMatch(
-        `\\/choose\\_password\\?token\\=${token}\\&`
-      );
+      expect(passwordResetResponse.status).toEqual(200);
+      expect(passwordResetResponse.text).toContain('Reset Your Password');
       await request({
         url: `${serverURL}/apps/test/request_password_reset`,
         method: 'POST',

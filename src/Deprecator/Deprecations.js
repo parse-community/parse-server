@@ -16,6 +16,9 @@
  * If there are no deprecations, this must return an empty array.
  */
 module.exports = [
-  { optionKey: 'encodeParseObjectInCloudFunction', changeNewDefault: 'true' },
-  { optionKey: 'enableInsecureAuthAdapters', changeNewDefault: 'false' },
+  {
+    optionKey: 'fileUpload.allowedFileUrlDomains',
+    changeNewDefault: '[]',
+    solution: "Set 'fileUpload.allowedFileUrlDomains' to the domains you want to allow, or to '[]' to block all file URLs.",
+  },
 ];

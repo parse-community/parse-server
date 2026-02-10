@@ -26,6 +26,22 @@ type RequestKeywordDenylist = {
     key: string;
     value: any;
 };
+export interface EmailVerificationRequest {
+    original?: any;
+    object: any;
+    master?: boolean;
+    ip?: string;
+    installationId?: string;
+    createdWith?: {
+        action: 'login' | 'signup';
+        authProvider: string;
+    };
+    resendRequest?: boolean;
+}
+export interface SendEmailVerificationRequest {
+    user: any;
+    master?: boolean;
+}
 export interface ParseServerOptions {
     appId: string;
     masterKey: (() => void) | string;
@@ -74,18 +90,17 @@ export interface ParseServerOptions {
     auth?: Record<string, AuthAdapter>;
     enableInsecureAuthAdapters?: boolean;
     maxUploadSize?: string;
-    verifyUserEmails?: (boolean | void);
-    preventLoginWithUnverifiedEmail?: boolean;
+    verifyUserEmails?: boolean | ((params: EmailVerificationRequest) => boolean | Promise<boolean>);
+    preventLoginWithUnverifiedEmail?: boolean | ((params: EmailVerificationRequest) => boolean | Promise<boolean>);
     preventSignupWithUnverifiedEmail?: boolean;
     emailVerifyTokenValidityDuration?: number;
     emailVerifyTokenReuseIfValid?: boolean;
-    sendUserEmailVerification?: (boolean | void);
+    sendUserEmailVerification?: boolean | ((params: SendEmailVerificationRequest) => boolean | Promise<boolean>);
     accountLockout?: AccountLockoutOptions;
     passwordPolicy?: PasswordPolicyOptions;
     cacheAdapter?: Adapter<CacheAdapter>;
     emailAdapter?: Adapter<MailAdapter>;
-    encodeParseObjectInCloudFunction?: boolean;
-    publicServerURL?: string;
+    publicServerURL?: string | (() => string) | (() => Promise<string>);
     pages?: PagesOptions;
     customPages?: CustomPagesOptions;
     liveQuery?: LiveQueryOptions;
@@ -122,6 +137,7 @@ export interface ParseServerOptions {
     allowExpiredAuthDataToken?: boolean;
     requestKeywordDenylist?: (RequestKeywordDenylist[]);
     rateLimit?: (RateLimitOptions[]);
+    verifyServerUrl?: boolean;
 }
 export interface RateLimitOptions {
     requestPath: string;
@@ -220,23 +236,73 @@ export interface PasswordPolicyOptions {
     resetPasswordSuccessOnInvalidEmail?: boolean;
 }
 export interface FileUploadOptions {
+    allowedFileUrlDomains?: string[];
     fileExtensions?: (string[]);
     enableForAnonymousUser?: boolean;
     enableForAuthenticatedUser?: boolean;
     enableForPublic?: boolean;
 }
 export interface DatabaseOptions {
+    // Parse Server custom options
+    allowPublicExplain?: boolean;
+    createIndexRoleName?: boolean;
+    createIndexUserEmail?: boolean;
+    createIndexUserEmailCaseInsensitive?: boolean;
+    createIndexUserEmailVerifyToken?: boolean;
+    createIndexUserPasswordResetToken?: boolean;
+    createIndexUserUsername?: boolean;
+    createIndexUserUsernameCaseInsensitive?: boolean;
+    disableIndexFieldValidation?: boolean;
     enableSchemaHooks?: boolean;
-    schemaCacheTtl?: number;
-    retryWrites?: boolean;
+    logClientEvents?: any[];
+    // maxTimeMS is a MongoDB option but Parse Server applies it per-operation, not as a global client option
     maxTimeMS?: number;
-    maxStalenessSeconds?: number;
-    minPoolSize?: number;
-    maxPoolSize?: number;
-    connectTimeoutMS?: number;
-    socketTimeoutMS?: number;
+    schemaCacheTtl?: number;
+
+    // MongoDB driver options
+    appName?: string;
+    authMechanism?: string;
+    authMechanismProperties?: any;
+    authSource?: string;
     autoSelectFamily?: boolean;
     autoSelectFamilyAttemptTimeout?: number;
+    compressors?: string[] | string;
+    connectTimeoutMS?: number;
+    directConnection?: boolean;
+    forceServerObjectId?: boolean;
+    heartbeatFrequencyMS?: number;
+    loadBalanced?: boolean;
+    localThresholdMS?: number;
+    maxConnecting?: number;
+    maxIdleTimeMS?: number;
+    maxPoolSize?: number;
+    maxStalenessSeconds?: number;
+    minPoolSize?: number;
+    proxyHost?: string;
+    proxyPassword?: string;
+    proxyPort?: number;
+    proxyUsername?: string;
+    readConcernLevel?: string;
+    readPreference?: string;
+    readPreferenceTags?: any[];
+    replicaSet?: string;
+    retryReads?: boolean;
+    retryWrites?: boolean;
+    serverMonitoringMode?: string;
+    serverSelectionTimeoutMS?: number;
+    socketTimeoutMS?: number;
+    srvMaxHosts?: number;
+    srvServiceName?: string;
+    ssl?: boolean;
+    tls?: boolean;
+    tlsAllowInvalidCertificates?: boolean;
+    tlsAllowInvalidHostnames?: boolean;
+    tlsCAFile?: string;
+    tlsCertificateKeyFile?: string;
+    tlsCertificateKeyFilePassword?: string;
+    tlsInsecure?: boolean;
+    waitQueueTimeoutMS?: number;
+    zlibCompressionLevel?: number;
 }
 export interface AuthAdapter {
     enabled?: boolean;
@@ -247,5 +313,6 @@ export interface LogLevels {
     triggerBeforeError?: string;
     cloudFunctionSuccess?: string;
     cloudFunctionError?: string;
+    signupUsernameTaken?: string;
 }
 export {};

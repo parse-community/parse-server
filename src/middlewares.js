@@ -13,6 +13,7 @@ import { pathToRegexp } from 'path-to-regexp';
 import RedisStore from 'rate-limit-redis';
 import { createClient } from 'redis';
 import { BlockList, isIPv4 } from 'net';
+import { createSanitizedHttpError } from './Error';
 
 export const DEFAULT_ALLOWED_HEADERS =
   'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, X-Parse-Request-Id, Content-Type, Pragma, Cache-Control';
@@ -79,7 +80,7 @@ export async function handleParseHeaders(req, res, next) {
       if (Object.prototype.toString.call(context) !== '[object Object]') {
         throw 'Context is not an object';
       }
-    } catch (e) {
+    } catch {
       return malformedContext(req, res);
     }
   }
@@ -126,7 +127,7 @@ export async function handleParseHeaders(req, res, next) {
       // to provide x-parse-app-id in header and parse a binary file will fail
       try {
         req.body = JSON.parse(req.body);
-      } catch (e) {
+      } catch {
         return invalidRequest(req, res);
       }
       fileViaJSON = true;
@@ -173,7 +174,7 @@ export async function handleParseHeaders(req, res, next) {
             if (Object.prototype.toString.call(info.context) !== '[object Object]') {
               throw 'Context is not an object';
             }
-          } catch (e) {
+          } catch {
             return malformedContext(req, res);
           }
         }
@@ -213,6 +214,7 @@ export async function handleParseHeaders(req, res, next) {
     });
     return;
   }
+  await config.loadKeys();
 
   info.app = AppCache.get(info.appId);
   req.config = config;
@@ -320,7 +322,7 @@ const handleRateLimit = async (req, res, next) => {
   try {
     await Promise.all(
       rateLimits.map(async limit => {
-        const pathExp = new RegExp(limit.path);
+        const pathExp = limit.path.regexp || limit.path;
         if (pathExp.test(req.url)) {
           await limit.handler(req, res, err => {
             if (err) {
@@ -376,9 +378,9 @@ export const handleParseSession = async (req, res, next) => {
       next(error);
       return;
     }
-    // TODO: Determine the correct error scenario.
+    // Log full error details internally, but don't expose to client
     req.config.loggerController.error('error getting auth for sessionToken', error);
-    throw new Parse.Error(Parse.Error.UNKNOWN_ERROR, error);
+    next(new Parse.Error(Parse.Error.UNKNOWN_ERROR, 'Unknown error'));
   }
 };
 
@@ -464,6 +466,8 @@ export function handleParseErrors(err, req, res, next) {
     if (req.config && req.config.enableExpressErrorHandler) {
       return next(err);
     }
+    const signupUsernameTakenLevel =
+      req.config?.logLevels?.signupUsernameTaken || 'info';
     let httpStatus;
     // TODO: fill out this mapping
     switch (err.code) {
@@ -478,7 +482,17 @@ export function handleParseErrors(err, req, res, next) {
     }
     res.status(httpStatus);
     res.json({ code: err.code, error: err.message });
-    log.error('Parse error: ', err);
+    if (err.code === Parse.Error.USERNAME_TAKEN) {
+      if (signupUsernameTakenLevel !== 'silent') {
+        const loggerMethod =
+          typeof log[signupUsernameTakenLevel] === 'function'
+            ? log[signupUsernameTakenLevel].bind(log)
+            : log.error.bind(log);
+        loggerMethod('Parse error: ', err);
+      }
+    } else {
+      log.error('Parse error: ', err);
+    }
   } else if (err.status && err.message) {
     res.status(err.status);
     res.json({ error: err.message });
@@ -500,8 +514,9 @@ export function handleParseErrors(err, req, res, next) {
 
 export function enforceMasterKeyAccess(req, res, next) {
   if (!req.auth.isMaster) {
-    res.status(403);
-    res.end('{"error":"unauthorized: master key is required"}');
+    const error = createSanitizedHttpError(403, 'unauthorized: master key is required', req.config);
+    res.status(error.status);
+    res.end(`{"error":"${error.message}"}`);
     return;
   }
   next();
@@ -509,10 +524,7 @@ export function enforceMasterKeyAccess(req, res, next) {
 
 export function promiseEnforceMasterKeyAccess(request) {
   if (!request.auth.isMaster) {
-    const error = new Error();
-    error.status = 403;
-    error.message = 'unauthorized: master key is required';
-    throw error;
+    throw createSanitizedHttpError(403, 'unauthorized: master key is required', request.config);
   }
   return Promise.resolve();
 }
@@ -560,12 +572,8 @@ export const addRateLimit = (route, config, cloud) => {
       },
     });
   }
-  let transformPath = route.requestPath.split('/*').join('/(.*)');
-  if (transformPath === '*') {
-    transformPath = '(.*)';
-  }
   config.rateLimits.push({
-    path: pathToRegexp(transformPath),
+    path: pathToRegexp(route.requestPath),
     handler: rateLimit({
       windowMs: route.requestTimeWindow,
       max: route.requestCount,

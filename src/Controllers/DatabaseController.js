@@ -499,6 +499,12 @@ class DatabaseController {
     } catch (error) {
       return Promise.reject(new Parse.Error(Parse.Error.INVALID_KEY_NAME, error));
     }
+    try {
+      const { validateFileUrlsInObject } = require('../FileUrlValidator');
+      validateFileUrlsInObject(update, this.options);
+    } catch (error) {
+      return Promise.reject(error instanceof Parse.Error ? error : new Parse.Error(Parse.Error.FILE_SAVE_ERROR, error.message || error));
+    }
     const originalQuery = query;
     const originalUpdate = update;
     // Make a copy of the object, so we don't mutate the incoming data.
@@ -593,7 +599,7 @@ class DatabaseController {
               convertUsernameToLowercase(update, className, this.options);
               transformAuthData(className, update, schema);
               if (validateOnly) {
-                return this.adapter.find(className, schema, query, {}).then(result => {
+                return this.adapter.find(className, schema, query, { readPreference: 'primary' }).then(result => {
                   if (!result || !result.length) {
                     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
                   }
@@ -835,6 +841,12 @@ class DatabaseController {
       Utils.checkProhibitedKeywords(this.options, object);
     } catch (error) {
       return Promise.reject(new Parse.Error(Parse.Error.INVALID_KEY_NAME, error));
+    }
+    try {
+      const { validateFileUrlsInObject } = require('../FileUrlValidator');
+      validateFileUrlsInObject(object, this.options);
+    } catch (error) {
+      return Promise.reject(error instanceof Parse.Error ? error : new Parse.Error(Parse.Error.FILE_SAVE_ERROR, error.message || error));
     }
     // Make a copy of the object, so we don't mutate the incoming data.
     const originalObject = object;
@@ -1743,36 +1755,66 @@ class DatabaseController {
     await this.loadSchema().then(schema => schema.enforceClassExists('_Role'));
     await this.loadSchema().then(schema => schema.enforceClassExists('_Idempotency'));
 
-    await this.adapter.ensureUniqueness('_User', requiredUserFields, ['username']).catch(error => {
-      logger.warn('Unable to ensure uniqueness for usernames: ', error);
-      throw error;
-    });
+    const databaseOptions = this.options.databaseOptions || {};
+
+    if (databaseOptions.createIndexUserUsername !== false) {
+      await this.adapter.ensureUniqueness('_User', requiredUserFields, ['username']).catch(error => {
+        logger.warn('Unable to ensure uniqueness for usernames: ', error);
+        throw error;
+      });
+    }
 
     if (!this.options.enableCollationCaseComparison) {
-      await this.adapter
-        .ensureIndex('_User', requiredUserFields, ['username'], 'case_insensitive_username', true)
-        .catch(error => {
-          logger.warn('Unable to create case insensitive username index: ', error);
-          throw error;
-        });
+      if (databaseOptions.createIndexUserUsernameCaseInsensitive !== false) {
+        await this.adapter
+          .ensureIndex('_User', requiredUserFields, ['username'], 'case_insensitive_username', true)
+          .catch(error => {
+            logger.warn('Unable to create case insensitive username index: ', error);
+            throw error;
+          });
+      }
 
+      if (databaseOptions.createIndexUserEmailCaseInsensitive !== false) {
+        await this.adapter
+          .ensureIndex('_User', requiredUserFields, ['email'], 'case_insensitive_email', true)
+          .catch(error => {
+            logger.warn('Unable to create case insensitive email index: ', error);
+            throw error;
+          });
+      }
+    }
+
+    if (databaseOptions.createIndexUserEmail !== false) {
+      await this.adapter.ensureUniqueness('_User', requiredUserFields, ['email']).catch(error => {
+        logger.warn('Unable to ensure uniqueness for user email addresses: ', error);
+        throw error;
+      });
+    }
+
+    if (databaseOptions.createIndexUserEmailVerifyToken !== false) {
       await this.adapter
-        .ensureIndex('_User', requiredUserFields, ['email'], 'case_insensitive_email', true)
+        .ensureIndex('_User', requiredUserFields, ['_email_verify_token'], '_email_verify_token', false)
         .catch(error => {
-          logger.warn('Unable to create case insensitive email index: ', error);
+          logger.warn('Unable to create index for email verification token: ', error);
           throw error;
         });
     }
 
-    await this.adapter.ensureUniqueness('_User', requiredUserFields, ['email']).catch(error => {
-      logger.warn('Unable to ensure uniqueness for user email addresses: ', error);
-      throw error;
-    });
+    if (databaseOptions.createIndexUserPasswordResetToken !== false) {
+      await this.adapter
+        .ensureIndex('_User', requiredUserFields, ['_perishable_token'], '_perishable_token', false)
+        .catch(error => {
+          logger.warn('Unable to create index for password reset token: ', error);
+          throw error;
+        });
+    }
 
-    await this.adapter.ensureUniqueness('_Role', requiredRoleFields, ['name']).catch(error => {
-      logger.warn('Unable to ensure uniqueness for role name: ', error);
-      throw error;
-    });
+    if (databaseOptions.createIndexRoleName !== false) {
+      await this.adapter.ensureUniqueness('_Role', requiredRoleFields, ['name']).catch(error => {
+        logger.warn('Unable to ensure uniqueness for role name: ', error);
+        throw error;
+      });
+    }
 
     await this.adapter
       .ensureUniqueness('_Idempotency', requiredIdempotencyFields, ['reqId'])
