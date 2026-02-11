@@ -32,7 +32,7 @@
     "cors": "2.8.6",
     "deepcopy": "2.1.0",
     "express": "5.2.1",
-    "express-rate-limit": "7.5.1",
+    "express-rate-limit": "8.2.1",
     "follow-redirects": "1.15.9",
     "graphql": "16.11.0",
     "graphql-list-fields": "2.0.4",
@@ -65,7 +65,7 @@
     "ws": "8.18.2"
   },
   "devDependencies": {
-    "@actions/core": "1.11.1",
+    "@actions/core": "3.0.0",
     "@apollo/client": "3.13.8",
     "@babel/cli": "7.27.0",
     "@babel/core": "7.29.0",
@@ -90,7 +90,7 @@
     "eslint-plugin-expect-type": "0.6.2",
     "eslint-plugin-unused-imports": "4.4.1",
     "form-data": "4.0.5",
-    "globals": "16.2.0",
+    "globals": "17.3.0",
     "graphql-tag": "2.12.6",
     "jasmine": "5.7.1",
     "jasmine-spec-reporter": "7.0.0",
