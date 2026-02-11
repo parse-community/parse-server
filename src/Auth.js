@@ -574,7 +574,7 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
         try {
           authAdapter = req.config.authDataManager.getValidatorForProvider(provider);
         } catch (e) {
-          // Ignore error
+          logger.debug(`Failed to load auth adapter for provider ${provider} during unlinking: ${e}`);
         }
         const { adapter } = authAdapter || {};
 

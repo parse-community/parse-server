@@ -1874,4 +1874,28 @@ describe('OTP SMS auth adatper', () => {
     await Parse.User.logIn('username', 'password');
     expect(spy).not.toHaveBeenCalled();
   });
+  it('should allow unlinking MFA with master key', async () => {
+    const user = await Parse.User.signUp('username_mfa_unlink_integrated', 'password');
+    const sessionToken = user.getSessionToken();
+
+    // Enroll in MFA
+    await user.save({ authData: { mfa: { mobile: '+11111111111' } } }, { sessionToken });
+
+    // Confirm enrollment
+    await user.save({ authData: { mfa: { mobile: '+11111111111', token: code } } }, { sessionToken });
+    await user.fetch({ sessionToken });
+    expect(user.get('authData').mfa).toBeDefined();
+
+    // Now try to unlink with Master Key
+    await user.save({ authData: { mfa: null } }, { useMasterKey: true });
+
+    // Verification
+    await user.fetch({ useMasterKey: true });
+    const authData = user.get('authData');
+    if (authData) {
+      expect(authData.mfa).toBeUndefined();
+    } else {
+      expect(authData).toBeUndefined();
+    }
+  });
 });
