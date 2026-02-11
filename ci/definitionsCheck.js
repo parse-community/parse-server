@@ -1,8 +1,8 @@
 const fs = require('fs').promises;
 const { exec } = require('child_process');
-const core = require('@actions/core');
 const util = require('util');
 (async () => {
+  const core = await import('@actions/core');
   const [currentDefinitions, currentDocs] = await Promise.all([
     fs.readFile('./src/Options/Definitions.js', 'utf8'),
     fs.readFile('./src/Options/docs.js', 'utf8'),
