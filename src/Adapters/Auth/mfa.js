@@ -191,6 +191,13 @@ class MFAAdapter extends AuthAdapter {
     }
     throw 'Invalid MFA data';
   }
+  validateUnlink(authData, options, req) {
+    if (req.master) {
+      return;
+    }
+    throw 'Invalid MFA data';
+  }
+
   afterFind(authData, options, req) {
     if (req.master) {
       return;

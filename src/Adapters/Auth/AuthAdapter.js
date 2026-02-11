@@ -85,6 +85,17 @@ export class AuthAdapter {
   }
 
   /**
+   * Triggered when user tries to remove authData related to this provider
+   * @param {Object} authData The client provided authData (usually null)
+   * @param {Object} options additional adapter options
+   * @param {Parse.Cloud.TriggerRequest} request
+   * @returns {Promise<ParseAuthResponse|void|undefined>}
+   */
+  validateUnlink(authData, options, req) {
+    return Promise.resolve({});
+  }
+
+  /**
    * Triggered when user is looked up by authData with this provider. Override the `id` field if needed.
    * @param {Object} authData The client provided authData
    */
