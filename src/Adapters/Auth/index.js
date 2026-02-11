@@ -110,6 +110,16 @@ function authDataValidator(provider, adapter, appIds, options) {
       hasAuthDataConfigured = true;
     }
 
+    if (authData === null && isLoggedIn && hasAuthDataConfigured) {
+      if (typeof adapter.validateUnlink === 'function') {
+        return {
+          method: 'validateUnlink',
+          validator: () => adapter.validateUnlink(authData, options, requestObject),
+        };
+      }
+      return;
+    }
+
     if (isLoggedIn) {
       // User is updating their authData
       if (hasAuthDataConfigured) {
@@ -169,6 +179,7 @@ function loadAuthAdapter(provider, authOptions) {
     'validateSetUp',
     'validateLogin',
     'validateUpdate',
+    'validateUnlink',
     'challenge',
     'validateOptions',
     'policy',

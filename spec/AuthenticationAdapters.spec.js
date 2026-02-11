@@ -446,8 +446,8 @@ describe('AuthenticationProviders', function () {
   it('properly loads a custom adapter with options', () => {
     const options = {
       custom: {
-        validateAppId: () => {},
-        validateAuthData: () => {},
+        validateAppId: () => { },
+        validateAuthData: () => { },
         appIds: ['a', 'b'],
       },
     };
@@ -1695,6 +1695,60 @@ describe('OTP TOTP auth adatper', () => {
         throw e.data;
       })
     ).toBeRejectedWith({ code: Parse.Error.SCRIPT_FAILED, error: 'Invalid MFA token' });
+  });
+
+  it('cannot unlink MFA via null', async () => {
+    const user = await Parse.User.signUp('username', 'password');
+    const OTPAuth = require('otpauth');
+    const secret = new OTPAuth.Secret();
+    const totp = new OTPAuth.TOTP({
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
+    const token = totp.generate();
+    await user.save(
+      { authData: { mfa: { secret: secret.base32, token } } },
+      { sessionToken: user.getSessionToken() }
+    );
+
+    await user.fetch();
+    expect(user.get('authData').mfa).toEqual({ status: 'enabled' });
+
+    await expectAsync(
+      user.save({ authData: { mfa: null } }, { sessionToken: user.getSessionToken() })
+    ).toBeRejected();
+
+    await user.fetch();
+    expect(user.get('authData').mfa).toBeDefined();
+    expect(user.get('authData').mfa.status).toBe('enabled');
+  });
+
+  it('cannot unlink MFA via _unlinkFrom', async () => {
+    const user = await Parse.User.signUp('username', 'password');
+    const OTPAuth = require('otpauth');
+    const secret = new OTPAuth.Secret();
+    const totp = new OTPAuth.TOTP({
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
+    const token = totp.generate();
+    await user.save(
+      { authData: { mfa: { secret: secret.base32, token } } },
+      { sessionToken: user.getSessionToken() }
+    );
+
+    await user.fetch();
+    expect(user.get('authData').mfa).toEqual({ status: 'enabled' });
+
+    await expectAsync(user._unlinkFrom('mfa')).toBeRejected();
+
+    await user.fetch();
+    expect(user.get('authData').mfa).toBeDefined();
+    expect(user.get('authData').mfa.status).toBe('enabled');
   });
 });
 

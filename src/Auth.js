@@ -570,8 +570,18 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
     let method = '';
     try {
       if (authData[provider] === null) {
-        acc.authData[provider] = null;
-        continue;
+        let authAdapter;
+        try {
+          authAdapter = req.config.authDataManager.getValidatorForProvider(provider);
+        } catch (e) {
+          // Ignore error
+        }
+        const { adapter } = authAdapter || {};
+
+        if (!adapter || typeof adapter.validateUnlink !== 'function') {
+          acc.authData[provider] = null;
+          continue;
+        }
       }
       const { validator } = req.config.authDataManager.getValidatorForProvider(provider) || {};
       const authProvider = (req.config.auth || {})[provider] || {};
@@ -612,7 +622,7 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
         req.auth && req.auth.user ? req.auth.user.id : req.data.objectId || undefined;
       logger.error(
         `Failed running auth step ${method} for ${provider} for user ${userString} with Error: ` +
-          JSON.stringify(e),
+        JSON.stringify(e),
         {
           authenticationStep: method,
           error: e,
