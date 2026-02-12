@@ -50,7 +50,7 @@
     "otpauth": "9.4.0",
     "parse": "8.0.3",
     "path-to-regexp": "8.3.0",
-    "pg-monitor": "3.0.0",
+    "pg-monitor": "3.1.0",
     "pg-promise": "12.6.0",
     "pluralize": "8.0.0",
     "punycode": "2.3.1",
