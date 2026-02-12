@@ -541,7 +541,15 @@ RestWrite.prototype.ensureUniqueAuthDataId = async function () {
 };
 
 RestWrite.prototype.handleAuthData = async function (authData) {
-  const r = await Auth.findUsersWithAuthData(this.config, authData, true);
+  let currentUserAuthData;
+  if (this.query?.objectId) {
+    const [currentUser] = await this.config.database.find(
+      '_User',
+      { objectId: this.query.objectId }
+    );
+    currentUserAuthData = currentUser?.authData;
+  }
+  const r = await Auth.findUsersWithAuthData(this.config, authData, true, currentUserAuthData);
   const results = this.filteredObjectsByACL(r);
 
   const userId = this.getUserId();

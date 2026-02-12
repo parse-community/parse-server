@@ -72,32 +72,47 @@ export default class BaseAuthCodeAdapter extends AuthAdapter {
     throw new Error('getAccessTokenFromCode is not implemented');
   }
 
+  /**
+   * Validates auth data on login. In the standard auth flows (login, signup,
+   * update), `beforeFind` runs first and validates credentials, so no
+   * additional credential check is needed here.
+   */
   validateLogin(authData) {
-    // User validation is already done in beforeFind
     return {
       id: authData.id,
     }
   }
 
+  /**
+   * Validates auth data on first setup or when linking a new provider.
+   * In the standard auth flows, `beforeFind` runs first and validates
+   * credentials, so no additional credential check is needed here.
+   */
   validateSetUp(authData) {
-    // User validation is already done in beforeFind
     return {
       id: authData.id,
     }
   }
 
+  /**
+   * Returns the auth data to expose to the client after a query.
+   */
   afterFind(authData) {
     return {
       id: authData.id,
     }
   }
 
+  /**
+   * Validates auth data on update. In the standard auth flows, `beforeFind`
+   * runs first for any changed auth data and validates credentials, so no
+   * additional credential check is needed here. Unchanged (echoed-back) data
+   * skips both `beforeFind` and validation entirely.
+   */
   validateUpdate(authData) {
-    // User validation is already done in beforeFind
     return {
       id: authData.id,
     }
-
   }
 
   parseResponseData(data) {

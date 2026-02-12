@@ -1,3 +1,10 @@
+# [9.3.0-alpha.4](https://github.com/parse-community/parse-server/compare/9.3.0-alpha.3...9.3.0-alpha.4) (2026-02-12)
+
+
+### Bug Fixes
+
+* Unlinking auth provider triggers auth data validation ([#10045](https://github.com/parse-community/parse-server/issues/10045)) ([b6b6327](https://github.com/parse-community/parse-server/commit/b6b632755263417c2a3c3a31381eedc516723740))
+
 # [9.3.0-alpha.3](https://github.com/parse-community/parse-server/compare/9.3.0-alpha.2...9.3.0-alpha.3) (2026-02-07)
 
 

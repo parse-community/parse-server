@@ -1395,6 +1395,19 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it('should return authData when select authData with masterKey', async () => {
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    const user = await Parse.User._logInWith('facebook');
+    const query = new Parse.Query(Parse.User);
+    query.select('authData');
+    const result = await query.get(user.id, { useMasterKey: true });
+    expect(result.get('authData')).toBeDefined();
+    expect(result.get('authData').facebook).toBeDefined();
+    expect(result.get('authData').facebook.id).toBe('8675309');
+    expect(result.get('authData').facebook.access_token).toBe('jenny');
+  });
+
   it('only creates a single session for an installation / user pair (#2885)', async done => {
     Parse.Object.disableSingleInstance();
     const provider = getMockFacebookProvider();

@@ -1607,20 +1607,28 @@ export class PostgresStorageAdapter implements StorageAdapter {
         const generate = (jsonb: string, key: string, value: any) => {
           return `json_object_set_key(COALESCE(${jsonb}, '{}'::jsonb), ${key}, ${value})::jsonb`;
         };
+        const generateRemove = (jsonb: string, key: string) => {
+          return `(COALESCE(${jsonb}, '{}'::jsonb) - ${key})`;
+        };
         const lastKey = `$${index}:name`;
         const fieldNameIndex = index;
         index += 1;
         values.push(fieldName);
         const update = Object.keys(fieldValue).reduce((lastKey: string, key: string) => {
+          let value = fieldValue[key];
+          if (value && value.__op === 'Delete') {
+            value = null;
+          }
+          if (value === null) {
+            const str = generateRemove(lastKey, `$${index}::text`);
+            values.push(key);
+            index += 1;
+            return str;
+          }
           const str = generate(lastKey, `$${index}::text`, `$${index + 1}::jsonb`);
           index += 2;
-          let value = fieldValue[key];
           if (value) {
-            if (value.__op === 'Delete') {
-              value = null;
-            } else {
-              value = JSON.stringify(value);
-            }
+            value = JSON.stringify(value);
           }
           values.push(key, value);
           return str;

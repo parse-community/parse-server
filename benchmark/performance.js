@@ -8,7 +8,6 @@
  * Run with: npm run benchmark
  */
 
-const core = require('@actions/core');
 const Parse = require('parse/node');
 const { performance } = require('node:perf_hooks');
 const { MongoClient } = require('mongodb');
@@ -25,6 +24,7 @@ const LOG_ITERATIONS = false;
 // Parse Server instance
 let parseServer;
 let mongoClient;
+let core;
 
 // Logging helpers
 const logInfo = message => core.info(message);
@@ -529,6 +529,7 @@ async function benchmarkQueryWithIncludeNested(name) {
  * Run all benchmarks
  */
 async function runBenchmarks() {
+  core = await import('@actions/core');
   logInfo('Starting Parse Server Performance Benchmarks...');
 
   let server;
