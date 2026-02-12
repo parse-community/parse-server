@@ -264,7 +264,7 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
     return [...allProviders].filter(provider => {
       try {
         return !!loadAuthAdapter(provider, authOptions);
-      } catch (e) {
+      } catch {
         return false;
       }
     });
