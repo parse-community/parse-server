@@ -107,7 +107,7 @@
     "nyc": "17.1.0",
     "prettier": "3.8.1",
     "semantic-release": "24.2.5",
-    "typescript": "5.8.3",
+    "typescript": "5.9.3",
     "typescript-eslint": "8.53.1",
     "yaml": "2.8.2"
   },
