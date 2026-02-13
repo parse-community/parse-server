@@ -961,6 +961,7 @@ describe('Parse.ACL', () => {
       {
         create: { '*': true },
         update: { '*': true },
+        addField: { '*': true },
         ACL: {
           '*': { read: true },
           currentUser: { read: true, write: true },
