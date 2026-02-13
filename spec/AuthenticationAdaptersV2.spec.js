@@ -76,6 +76,41 @@ describe('Auth Adapter features', () => {
     validateAppId: () => Promise.resolve(),
   };
 
+  // Code-based adapter that requires 'code' field (like gpgames)
+  const codeBasedAdapter = {
+    validateAppId: () => Promise.resolve(),
+    validateSetUp: authData => {
+      if (!authData.code) {
+        throw new Error('code is required.');
+      }
+      return Promise.resolve({ save: { id: authData.id } });
+    },
+    validateUpdate: authData => {
+      if (!authData.code) {
+        throw new Error('code is required.');
+      }
+      return Promise.resolve({ save: { id: authData.id } });
+    },
+    validateLogin: authData => {
+      if (!authData.code) {
+        throw new Error('code is required.');
+      }
+      return Promise.resolve({ save: { id: authData.id } });
+    },
+    afterFind: authData => {
+      // Strip sensitive 'code' field when returning to client
+      return { id: authData.id };
+    },
+  };
+
+  // Simple adapter that doesn't require code
+  const simpleAdapter = {
+    validateAppId: () => Promise.resolve(),
+    validateSetUp: () => Promise.resolve(),
+    validateUpdate: () => Promise.resolve(),
+    validateLogin: () => Promise.resolve(),
+  };
+
   const headers = {
     'Content-Type': 'application/json',
     'X-Parse-Application-Id': 'test',
@@ -1301,5 +1336,281 @@ describe('Auth Adapter features', () => {
     await user.save({ authData: { adapterA: null, adapterB: { id: 'test' } } });
     await user.fetch({ useMasterKey: true });
     expect(user.get('authData')).toEqual({ adapterB: { id: 'test' } });
+  });
+
+  it('should unlink a code-based auth provider without triggering adapter validation', async () => {
+    const mockUserId = 'gpgamesUser123';
+    const mockAccessToken = 'mockAccessToken';
+
+    const otherAdapter = {
+      validateAppId: () => Promise.resolve(),
+      validateAuthData: () => Promise.resolve(),
+    };
+
+    mockFetch([
+      {
+        url: 'https://oauth2.googleapis.com/token',
+        method: 'POST',
+        response: {
+          ok: true,
+          json: () => Promise.resolve({ access_token: mockAccessToken }),
+        },
+      },
+      {
+        url: `https://www.googleapis.com/games/v1/players/${mockUserId}`,
+        method: 'GET',
+        response: {
+          ok: true,
+          json: () => Promise.resolve({ playerId: mockUserId }),
+        },
+      },
+    ]);
+
+    await reconfigureServer({
+      auth: {
+        gpgames: {
+          clientId: 'testClientId',
+          clientSecret: 'testClientSecret',
+        },
+        otherAdapter,
+      },
+    });
+
+    // Sign up with username/password, then link providers
+    const user = new Parse.User();
+    await user.signUp({ username: 'gpgamesTestUser', password: 'password123' });
+
+    // Link gpgames code-based provider
+    await user.save({
+      authData: {
+        gpgames: { id: mockUserId, code: 'authCode123', redirect_uri: 'https://example.com/callback' },
+      },
+    });
+
+    // Link a second provider
+    await user.save({ authData: { otherAdapter: { id: 'other1' } } });
+
+    // Reset fetch spy to track calls during unlink
+    global.fetch.calls.reset();
+
+    // Unlink gpgames by setting authData to null; should not call beforeFind / external APIs
+    const sessionToken = user.getSessionToken();
+    await user.save({ authData: { gpgames: null } }, { sessionToken });
+
+    // No external HTTP calls should have been made during unlink
+    expect(global.fetch.calls.count()).toBe(0);
+
+    // Verify gpgames was removed while the other provider remains
+    await user.fetch({ useMasterKey: true });
+    const authData = user.get('authData');
+    expect(authData).toBeDefined();
+    expect(authData.gpgames).toBeUndefined();
+    expect(authData.otherAdapter).toEqual({ id: 'other1' });
+  });
+
+  it('should unlink one code-based provider while echoing back another unchanged', async () => {
+    const gpgamesUserId = 'gpgamesUser1';
+    const instagramUserId = 'igUser1';
+
+    // Mock gpgames API for initial login
+    mockFetch([
+      {
+        url: 'https://oauth2.googleapis.com/token',
+        method: 'POST',
+        response: {
+          ok: true,
+          json: () => Promise.resolve({ access_token: 'gpgamesToken' }),
+        },
+      },
+      {
+        url: `https://www.googleapis.com/games/v1/players/${gpgamesUserId}`,
+        method: 'GET',
+        response: {
+          ok: true,
+          json: () => Promise.resolve({ playerId: gpgamesUserId }),
+        },
+      },
+    ]);
+
+    await reconfigureServer({
+      auth: {
+        gpgames: {
+          clientId: 'testClientId',
+          clientSecret: 'testClientSecret',
+        },
+        instagram: {
+          clientId: 'testClientId',
+          clientSecret: 'testClientSecret',
+          redirectUri: 'https://example.com/callback',
+        },
+      },
+    });
+
+    // Login with gpgames
+    const user = await Parse.User.logInWith('gpgames', {
+      authData: { id: gpgamesUserId, code: 'gpCode1', redirect_uri: 'https://example.com/callback' },
+    });
+    const sessionToken = user.getSessionToken();
+
+    // Mock instagram API for linking
+    mockFetch([
+      {
+        url: 'https://api.instagram.com/oauth/access_token',
+        method: 'POST',
+        response: {
+          ok: true,
+          json: () => Promise.resolve({ access_token: 'igToken' }),
+        },
+      },
+      {
+        url: `https://graph.instagram.com/me?fields=id&access_token=igToken`,
+        method: 'GET',
+        response: {
+          ok: true,
+          json: () => Promise.resolve({ id: instagramUserId }),
+        },
+      },
+    ]);
+
+    // Link instagram as second provider
+    await user.save(
+      { authData: { instagram: { id: instagramUserId, code: 'igCode1' } } },
+      { sessionToken }
+    );
+
+    // Fetch to get current authData (afterFind strips credentials, leaving only { id })
+    await user.fetch({ sessionToken });
+    const currentAuthData = user.get('authData');
+    expect(currentAuthData.gpgames).toBeDefined();
+    expect(currentAuthData.instagram).toBeDefined();
+
+    // Reset fetch spy
+    global.fetch.calls.reset();
+
+    // Unlink gpgames while echoing back instagram unchanged — the common client pattern:
+    // fetch current state, spread it, set the one to unlink to null
+    user.set('authData', { ...currentAuthData, gpgames: null });
+    await user.save(null, { sessionToken });
+
+    // No external HTTP calls during unlink (no code exchange for unchanged instagram)
+    expect(global.fetch.calls.count()).toBe(0);
+
+    // Verify gpgames removed, instagram preserved
+    await user.fetch({ useMasterKey: true });
+    const finalAuthData = user.get('authData');
+    expect(finalAuthData).toBeDefined();
+    expect(finalAuthData.gpgames).toBeUndefined();
+    expect(finalAuthData.instagram).toBeDefined();
+    expect(finalAuthData.instagram.id).toBe(instagramUserId);
+  });
+
+  it('should reject changing an existing code-based provider id without credentials', async () => {
+    const mockUserId = 'gpgamesUser123';
+    const mockAccessToken = 'mockAccessToken';
+
+    mockFetch([
+      {
+        url: 'https://oauth2.googleapis.com/token',
+        method: 'POST',
+        response: {
+          ok: true,
+          json: () => Promise.resolve({ access_token: mockAccessToken }),
+        },
+      },
+      {
+        url: `https://www.googleapis.com/games/v1/players/${mockUserId}`,
+        method: 'GET',
+        response: {
+          ok: true,
+          json: () => Promise.resolve({ playerId: mockUserId }),
+        },
+      },
+    ]);
+
+    await reconfigureServer({
+      auth: {
+        gpgames: {
+          clientId: 'testClientId',
+          clientSecret: 'testClientSecret',
+        },
+      },
+    });
+
+    // Sign up and link gpgames with valid credentials
+    const user = new Parse.User();
+    await user.save({
+      authData: {
+        gpgames: { id: mockUserId, code: 'authCode123', redirect_uri: 'https://example.com/callback' },
+      },
+    });
+    const sessionToken = user.getSessionToken();
+
+    // Attempt to change gpgames id without credentials (no code or access_token)
+    await expectAsync(
+      user.save({ authData: { gpgames: { id: 'differentUserId' } } }, { sessionToken })
+    ).toBeRejectedWith(
+      jasmine.objectContaining({ message: jasmine.stringContaining('code is required') })
+    );
+  });
+
+  it('should reject linking a new code-based provider with only an id and no credentials', async () => {
+    await reconfigureServer({
+      auth: {
+        gpgames: {
+          clientId: 'testClientId',
+          clientSecret: 'testClientSecret',
+        },
+      },
+    });
+
+    // Sign up with username/password (no gpgames linked)
+    const user = new Parse.User();
+    await user.signUp({ username: 'linkTestUser', password: 'password123' });
+    const sessionToken = user.getSessionToken();
+
+    // Attempt to link gpgames with only { id } — no code or access_token
+    await expectAsync(
+      user.save({ authData: { gpgames: { id: 'victimUserId' } } }, { sessionToken })
+    ).toBeRejectedWith(
+      jasmine.objectContaining({ message: jasmine.stringContaining('code is required') })
+    );
+  });
+
+  it('should handle multiple providers: add one while another remains unchanged (code-based)', async () => {
+    await reconfigureServer({
+      auth: {
+        codeBasedAdapter,
+        simpleAdapter,
+      },
+    });
+
+    // Login with code-based provider
+    const user = new Parse.User();
+    await user.save({ authData: { codeBasedAdapter: { id: 'user1', code: 'code1' } } });
+    const sessionToken = user.getSessionToken();
+    await user.fetch({ sessionToken });
+
+    // At this point, authData.codeBasedAdapter only has {id: 'user1'} due to afterFind
+    const current = user.get('authData') || {};
+    expect(current.codeBasedAdapter).toEqual({ id: 'user1' });
+
+    // Add a second provider while keeping the first unchanged
+    user.set('authData', {
+      ...current,
+      simpleAdapter: { id: 'simple1' },
+      // codeBasedAdapter is NOT modified (no new code provided)
+    });
+
+    // This should succeed without requiring 'code' for codeBasedAdapter
+    await user.save(null, { sessionToken });
+
+    // Verify both providers are present
+    const reloaded = await new Parse.Query(Parse.User).get(user.id, {
+      useMasterKey: true,
+    });
+
+    const authData = reloaded.get('authData') || {};
+    expect(authData.simpleAdapter && authData.simpleAdapter.id).toBe('simple1');
+    expect(authData.codeBasedAdapter && authData.codeBasedAdapter.id).toBe('user1');
   });
 });

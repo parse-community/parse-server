@@ -26,6 +26,22 @@ type RequestKeywordDenylist = {
     key: string;
     value: any;
 };
+export interface EmailVerificationRequest {
+    original?: any;
+    object: any;
+    master?: boolean;
+    ip?: string;
+    installationId?: string;
+    createdWith?: {
+        action: 'login' | 'signup';
+        authProvider: string;
+    };
+    resendRequest?: boolean;
+}
+export interface SendEmailVerificationRequest {
+    user: any;
+    master?: boolean;
+}
 export interface ParseServerOptions {
     appId: string;
     masterKey: (() => void) | string;
@@ -74,12 +90,12 @@ export interface ParseServerOptions {
     auth?: Record<string, AuthAdapter>;
     enableInsecureAuthAdapters?: boolean;
     maxUploadSize?: string;
-    verifyUserEmails?: (boolean | void);
-    preventLoginWithUnverifiedEmail?: boolean;
+    verifyUserEmails?: boolean | ((params: EmailVerificationRequest) => boolean | Promise<boolean>);
+    preventLoginWithUnverifiedEmail?: boolean | ((params: EmailVerificationRequest) => boolean | Promise<boolean>);
     preventSignupWithUnverifiedEmail?: boolean;
     emailVerifyTokenValidityDuration?: number;
     emailVerifyTokenReuseIfValid?: boolean;
-    sendUserEmailVerification?: (boolean | void);
+    sendUserEmailVerification?: boolean | ((params: SendEmailVerificationRequest) => boolean | Promise<boolean>);
     accountLockout?: AccountLockoutOptions;
     passwordPolicy?: PasswordPolicyOptions;
     cacheAdapter?: Adapter<CacheAdapter>;
@@ -220,6 +236,7 @@ export interface PasswordPolicyOptions {
     resetPasswordSuccessOnInvalidEmail?: boolean;
 }
 export interface FileUploadOptions {
+    allowedFileUrlDomains?: string[];
     fileExtensions?: (string[]);
     enableForAnonymousUser?: boolean;
     enableForAuthenticatedUser?: boolean;

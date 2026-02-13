@@ -254,8 +254,25 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
     );
   };
 
+  // Returns the list of auth provider names that have a valid adapter configured.
+  // This includes both built-in providers and custom providers from authOptions.
+  const getProviders = function () {
+    const allProviders = new Set([...Object.keys(providers), ...Object.keys(authOptions)]);
+    if (!_enableAnonymousUsers) {
+      allProviders.delete('anonymous');
+    }
+    return [...allProviders].filter(provider => {
+      try {
+        return !!loadAuthAdapter(provider, authOptions);
+      } catch {
+        return false;
+      }
+    });
+  };
+
   return Object.freeze({
     getValidatorForProvider,
+    getProviders,
     setEnableAnonymousUsers,
     runAfterFind,
   });

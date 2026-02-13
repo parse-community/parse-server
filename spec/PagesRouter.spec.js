@@ -225,9 +225,7 @@ describe('Pages Router', () => {
         expect(Config.get(Parse.applicationId).pages.forceRedirect).toBe(
           Definitions.PagesOptions.forceRedirect.default
         );
-        expect(Config.get(Parse.applicationId).pages.pagesPath).toBe(
-          Definitions.PagesOptions.pagesPath.default
-        );
+        expect(Config.get(Parse.applicationId).pages.pagesPath).toBeUndefined();
         expect(Config.get(Parse.applicationId).pages.pagesEndpoint).toBe(
           Definitions.PagesOptions.pagesEndpoint.default
         );
@@ -1178,6 +1176,91 @@ describe('Pages Router', () => {
         const pagePath = pageResponse.calls.all()[0].args[0];
         expect(pagePath).toMatch(new RegExp(`\/${pages.emailVerificationSuccess.defaultFile}`));
       });
+    });
+  });
+
+  describe('async publicServerURL', () => {
+    it('resolves async publicServerURL for password reset page', async () => {
+      const emailAdapter = {
+        sendVerificationEmail: () => Promise.resolve(),
+        sendPasswordResetEmail: () => Promise.resolve(),
+        sendMail: () => {},
+      };
+      await reconfigureServer({
+        appId: 'test',
+        appName: 'exampleAppname',
+        verifyUserEmails: true,
+        emailAdapter,
+        publicServerURL: () => 'http://localhost:8378/1',
+        pages: { enableRouter: true },
+      });
+
+      const user = new Parse.User();
+      user.setUsername('asyncUrlUser');
+      user.setPassword('examplePassword');
+      user.set('email', 'async-url@example.com');
+      await user.signUp();
+      await Parse.User.requestPasswordReset('async-url@example.com');
+
+      const response = await request({
+        url: 'http://localhost:8378/1/apps/test/request_password_reset?token=invalidToken',
+        followRedirects: false,
+      }).catch(e => e);
+      expect(response.status).toBe(200);
+      expect(response.text).toContain('Invalid password reset link!');
+    });
+
+    it('resolves async publicServerURL for email verification page', async () => {
+      const emailAdapter = {
+        sendVerificationEmail: () => Promise.resolve(),
+        sendPasswordResetEmail: () => Promise.resolve(),
+        sendMail: () => {},
+      };
+      await reconfigureServer({
+        appId: 'test',
+        appName: 'exampleAppname',
+        verifyUserEmails: true,
+        emailAdapter,
+        publicServerURL: () => 'http://localhost:8378/1',
+        pages: { enableRouter: true },
+      });
+
+      const response = await request({
+        url: 'http://localhost:8378/1/apps/test/verify_email?token=invalidToken',
+        followRedirects: false,
+      }).catch(e => e);
+      expect(response.status).toBe(200);
+      expect(response.text).toContain('Invalid verification link!');
+    });
+  });
+
+  describe('pagesPath resolution', () => {
+    it('should serve pages when current working directory differs from module directory', async () => {
+      const originalCwd = process.cwd();
+      const os = require('os');
+      process.chdir(os.tmpdir());
+
+      try {
+        await reconfigureServer({
+          appId: 'test',
+          appName: 'exampleAppname',
+          publicServerURL: 'http://localhost:8378/1',
+          pages: { enableRouter: true },
+        });
+
+        // Request the password reset page with an invalid token;
+        // even with an invalid token, the server should serve the
+        // "invalid link" page (200), not a 404. A 404 indicates the
+        // HTML template files could not be found because pagesPath
+        // resolved to the wrong directory.
+        const response = await request({
+          url: 'http://localhost:8378/1/apps/test/request_password_reset?token=invalidToken',
+        }).catch(e => e);
+        expect(response.status).toBe(200);
+        expect(response.text).toContain('Invalid password reset link');
+      } finally {
+        process.chdir(originalCwd);
+      }
     });
   });
 

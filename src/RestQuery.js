@@ -751,6 +751,26 @@ _UnsafeRestQuery.prototype.runFind = async function (options = {}) {
     findOptions.keys = this.keys.map(key => {
       return key.split('.')[0];
     });
+    // When selecting `authData` on `_User`, also add the internal auth data fields
+    // (e.g. `_auth_data_facebook`) for each configured auth provider. In MongoDB,
+    // `authData` is stored as individual `_auth_data_<provider>` fields, so the
+    // projection for `authData` alone won't match them. Adding both ensures it
+    // works across all database adapters: Mongo uses `_auth_data_*` fields,
+    // Postgres uses the `authData` column directly.
+    //
+    // Note: When selecting `authData`, only auth data of currently configured
+    // providers is returned. Auth data entries of providers that are no longer
+    // configured won't be included. To return all auth data regardless of the
+    // provider configuration, do not use `authData` as a selected key.
+    if (this.className === '_User' && findOptions.keys.includes('authData')) {
+      const providers = this.config.authDataManager.getProviders();
+      for (const provider of providers) {
+        const key = `_auth_data_${provider}`;
+        if (!findOptions.keys.includes(key)) {
+          findOptions.keys.push(key);
+        }
+      }
+    }
   }
   if (options.op) {
     findOptions.op = options.op;

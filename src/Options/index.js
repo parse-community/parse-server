@@ -43,6 +43,22 @@ type RequestKeywordDenylist = {
   key: string | any,
   value: any,
 };
+type EmailVerificationRequest = {
+  original?: any,
+  object: any,
+  master?: boolean,
+  ip?: string,
+  installationId?: string,
+  createdWith?: {
+    action: 'login' | 'signup',
+    authProvider: string,
+  },
+  resendRequest?: boolean,
+};
+type SendEmailVerificationRequest = {
+  user: any,
+  master?: boolean,
+};
 
 export interface ParseServerOptions {
   /* Your Parse Application ID
@@ -174,18 +190,25 @@ export interface ParseServerOptions {
   /* Max file size for uploads, defaults to 20mb
   :DEFAULT: 20mb */
   maxUploadSize: ?string;
-  /* Set to `true` to require users to verify their email address to complete the sign-up process. Supports a function with a return value of `true` or `false` for conditional verification.
+  /* Set to `true` to require users to verify their email address to complete the sign-up process. Supports a function with a return value of `true` or `false` for conditional verification. The function receives a request object that includes `createdWith` to indicate whether the invocation is for `signup` or `login` and the used auth provider.
   <br><br>
+  The `createdWith` values per scenario:
+  <ul><li>Password signup: `{ action: 'signup', authProvider: 'password' }`</li><li>Auth provider signup: `{ action: 'signup', authProvider: '<provider>' }`</li><li>Password login: `{ action: 'login', authProvider: 'password' }`</li><li>Auth provider login: function not invoked; auth provider login bypasses email verification</li><li>Resend verification email: `createdWith` is `undefined`; use the `resendRequest` property to identify those</li></ul>
   Default is `false`.
   :DEFAULT: false */
-  verifyUserEmails: ?(boolean | void);
-  /* Set to `true` to prevent a user from logging in if the email has not yet been verified and email verification is required.
+  verifyUserEmails: ?(boolean | (EmailVerificationRequest => boolean | Promise<boolean>));
+  /* Set to `true` to prevent a user from logging in if the email has not yet been verified and email verification is required. Supports a function with a return value of `true` or `false` for conditional prevention. The function receives a request object that includes `createdWith` to indicate whether the invocation is for `signup` or `login` and the used auth provider.
   <br><br>
+  The `createdWith` values per scenario:
+  <ul><li>Password signup: `{ action: 'signup', authProvider: 'password' }`</li><li>Auth provider signup: `{ action: 'signup', authProvider: '<provider>' }`</li><li>Password login: `{ action: 'login', authProvider: 'password' }`</li><li>Auth provider login: function not invoked; auth provider login bypasses email verification</li></ul>
   Default is `false`.
   <br>
   Requires option `verifyUserEmails: true`.
   :DEFAULT: false */
-  preventLoginWithUnverifiedEmail: ?boolean;
+  preventLoginWithUnverifiedEmail: ?(
+    | boolean
+    | (EmailVerificationRequest => boolean | Promise<boolean>)
+  );
   /* If set to `true` it prevents a user from signing up if the email has not yet been verified and email verification is required. In that case the server responds to the sign-up with HTTP status 400 and a Parse Error 205 `EMAIL_NOT_FOUND`. If set to `false` the server responds with HTTP status 200, and client SDKs return an unauthenticated Parse User without session token. In that case subsequent requests fail until the user's email address is verified.
   <br><br>
   Default is `false`.
@@ -214,7 +237,10 @@ export interface ParseServerOptions {
   Default is `true`.
   <br>
   :DEFAULT: true */
-  sendUserEmailVerification: ?(boolean | void);
+  sendUserEmailVerification: ?(
+    | boolean
+    | (SendEmailVerificationRequest => boolean | Promise<boolean>)
+  );
   /* The account lockout policy for failed login attempts. */
   accountLockout: ?AccountLockoutOptions;
   /* The password policy for enforcing password related rules. */
@@ -411,8 +437,7 @@ export interface PagesOptions {
   /* Is true if responses should always be redirects and never content, false if the response type should depend on the request type (GET request -> content response; POST request -> redirect response).
   :DEFAULT: false */
   forceRedirect: ?boolean;
-  /* The path to the pages directory; this also defines where the static endpoint '/apps' points to. Default is the './public/' directory.
-  :DEFAULT: ./public */
+  /* The path to the pages directory; this also defines where the static endpoint '/apps' points to. Default is the './public/' directory of the parse-server module. */
   pagesPath: ?string;
   /* The API endpoint for the pages. Default is 'apps'.
   :DEFAULT: apps */
@@ -605,6 +630,9 @@ export interface FileUploadOptions {
   /* Is true if file upload should be allowed for anyone, regardless of user authentication.
   :DEFAULT: false */
   enableForPublic: ?boolean;
+  /* Sets the allowed hostnames for file URLs referenced in Parse objects. When a File object includes a URL, its hostname must match one of these entries to be accepted. Supports exact hostnames (e.g., `'cdn.example.com'`) and wildcard subdomains (e.g., `'*.example.com'`). Use `['*']` to allow any domain. Use `[]` to block all file URLs (only name-based files allowed).
+  :DEFAULT: ["*"] */
+  allowedFileUrlDomains: ?(string[]);
 }
 
 /* The available log levels for Parse Server logging. Valid values are:<br>- `'error'` - Error level (highest priority)<br>- `'warn'` - Warning level<br>- `'info'` - Info level (default)<br>- `'verbose'` - Verbose level<br>- `'debug'` - Debug level<br>- `'silly'` - Silly level (lowest priority) */

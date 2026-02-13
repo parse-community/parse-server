@@ -97,6 +97,10 @@ const transformers = {
       const { fileInfo } = await handleUpload(upload, config);
       return { ...fileInfo, __type: 'File' };
     } else if (file && file.name) {
+      if (file.url) {
+        const { validateFileUrl } = require('../../FileUrlValidator');
+        validateFileUrl(file.url, config);
+      }
       return { name: file.name, __type: 'File', url: file.url };
     }
     throw new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Invalid file upload.');

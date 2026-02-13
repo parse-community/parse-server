@@ -140,11 +140,17 @@ export class UsersRouter extends ClassesRouter {
             throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
           }
           // Create request object for verification functions
+          const authProvider =
+            req.body &&
+            req.body.authData &&
+            Object.keys(req.body.authData).length &&
+            Object.keys(req.body.authData).join(',');
           const request = {
             master: req.auth.isMaster,
             ip: req.config.ip,
             installationId: req.auth.installationId,
             object: Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
+            createdWith: RestWrite.buildCreatedWith('login', authProvider),
           };
 
           // If request doesn't use master or maintenance key with ignoring email verification
@@ -290,10 +296,7 @@ export class UsersRouter extends ClassesRouter {
 
     const { sessionData, createSession } = RestWrite.createSession(req.config, {
       userId: user.objectId,
-      createdWith: {
-        action: 'login',
-        authProvider: 'password',
-      },
+      createdWith: RestWrite.buildCreatedWith('login'),
       installationId: req.info.installationId,
     });
 
@@ -360,10 +363,7 @@ export class UsersRouter extends ClassesRouter {
 
     const { sessionData, createSession } = RestWrite.createSession(req.config, {
       userId,
-      createdWith: {
-        action: 'login',
-        authProvider: 'masterkey',
-      },
+      createdWith: RestWrite.buildCreatedWith('login', 'masterkey'),
       installationId: req.info.installationId,
     });
 

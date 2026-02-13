@@ -1,7 +1,7 @@
-const core = require('@actions/core');
 const semver = require('semver');
 const fs = require('fs').promises;
 const path = require('path');
+let core;
 
 /**
  * This checks whether any package dependency requires a minimum node engine
@@ -137,6 +137,7 @@ class NodeEngineCheck {
 }
 
 async function check() {
+  core = await import('@actions/core');
   // Define paths
   const nodeModulesPath = path.join(__dirname, '../node_modules');
   const packageJsonPath = path.join(__dirname, '../package.json');

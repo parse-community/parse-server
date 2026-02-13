@@ -3,6 +3,7 @@ const {
   numberOrBoolParser,
   numberOrStringParser,
   booleanParser,
+  booleanOrFunctionParser,
   objectParser,
   arrayParser,
   moduleOrObjectParser,
@@ -46,6 +47,23 @@ describe('parsers', () => {
     expect(parser('false')).toEqual(false);
     expect(parser(1)).toEqual(true);
     expect(parser(2)).toEqual(false);
+  });
+
+  it('parses correctly with booleanOrFunctionParser', () => {
+    const parser = booleanOrFunctionParser;
+    // Preserves functions
+    const fn = () => true;
+    expect(parser(fn)).toBe(fn);
+    const asyncFn = async () => false;
+    expect(parser(asyncFn)).toBe(asyncFn);
+    // Parses booleans and string booleans like booleanParser
+    expect(parser(true)).toEqual(true);
+    expect(parser(false)).toEqual(false);
+    expect(parser('true')).toEqual(true);
+    expect(parser('false')).toEqual(false);
+    expect(parser('1')).toEqual(true);
+    expect(parser(1)).toEqual(true);
+    expect(parser(0)).toEqual(false);
   });
 
   it('parses correctly with objectParser', () => {

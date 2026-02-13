@@ -499,6 +499,12 @@ class DatabaseController {
     } catch (error) {
       return Promise.reject(new Parse.Error(Parse.Error.INVALID_KEY_NAME, error));
     }
+    try {
+      const { validateFileUrlsInObject } = require('../FileUrlValidator');
+      validateFileUrlsInObject(update, this.options);
+    } catch (error) {
+      return Promise.reject(error instanceof Parse.Error ? error : new Parse.Error(Parse.Error.FILE_SAVE_ERROR, error.message || error));
+    }
     const originalQuery = query;
     const originalUpdate = update;
     // Make a copy of the object, so we don't mutate the incoming data.
@@ -835,6 +841,12 @@ class DatabaseController {
       Utils.checkProhibitedKeywords(this.options, object);
     } catch (error) {
       return Promise.reject(new Parse.Error(Parse.Error.INVALID_KEY_NAME, error));
+    }
+    try {
+      const { validateFileUrlsInObject } = require('../FileUrlValidator');
+      validateFileUrlsInObject(object, this.options);
+    } catch (error) {
+      return Promise.reject(error instanceof Parse.Error ? error : new Parse.Error(Parse.Error.FILE_SAVE_ERROR, error.message || error));
     }
     // Make a copy of the object, so we don't mutate the incoming data.
     const originalObject = object;

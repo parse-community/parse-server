@@ -326,9 +326,7 @@ export class Config {
     } else if (!isBoolean(pages.forceRedirect)) {
       throw 'Parse Server option pages.forceRedirect must be a boolean.';
     }
-    if (pages.pagesPath === undefined) {
-      pages.pagesPath = PagesOptions.pagesPath.default;
-    } else if (!isString(pages.pagesPath)) {
+    if (pages.pagesPath !== undefined && !isString(pages.pagesPath)) {
       throw 'Parse Server option pages.pagesPath must be a string.';
     }
     if (pages.pagesEndpoint === undefined) {
@@ -551,6 +549,17 @@ export class Config {
       fileUpload.fileExtensions = FileUploadOptions.fileExtensions.default;
     } else if (!Array.isArray(fileUpload.fileExtensions)) {
       throw 'fileUpload.fileExtensions must be an array.';
+    }
+    if (fileUpload.allowedFileUrlDomains === undefined) {
+      fileUpload.allowedFileUrlDomains = FileUploadOptions.allowedFileUrlDomains.default;
+    } else if (!Array.isArray(fileUpload.allowedFileUrlDomains)) {
+      throw 'fileUpload.allowedFileUrlDomains must be an array.';
+    } else {
+      for (const domain of fileUpload.allowedFileUrlDomains) {
+        if (typeof domain !== 'string' || domain === '') {
+          throw 'fileUpload.allowedFileUrlDomains must contain only non-empty strings.';
+        }
+      }
     }
   }
 

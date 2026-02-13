@@ -84,7 +84,7 @@
  * @property {String} playgroundPath Mount path for the GraphQL Playground, defaults to /playground
  * @property {Number} port The port to run the ParseServer, defaults to 1337.
  * @property {Boolean} preserveFileName Enable (or disable) the addition of a unique hash to the file names
- * @property {Boolean} preventLoginWithUnverifiedEmail Set to `true` to prevent a user from logging in if the email has not yet been verified and email verification is required.<br><br>Default is `false`.<br>Requires option `verifyUserEmails: true`.
+ * @property {Boolean} preventLoginWithUnverifiedEmail Set to `true` to prevent a user from logging in if the email has not yet been verified and email verification is required. Supports a function with a return value of `true` or `false` for conditional prevention. The function receives a request object that includes `createdWith` to indicate whether the invocation is for `signup` or `login` and the used auth provider.<br><br>The `createdWith` values per scenario:<ul><li>Password signup: `{ action: 'signup', authProvider: 'password' }`</li><li>Auth provider signup: `{ action: 'signup', authProvider: '<provider>' }`</li><li>Password login: `{ action: 'login', authProvider: 'password' }`</li><li>Auth provider login: function not invoked; auth provider login bypasses email verification</li></ul>Default is `false`.<br>Requires option `verifyUserEmails: true`.
  * @property {Boolean} preventSignupWithUnverifiedEmail If set to `true` it prevents a user from signing up if the email has not yet been verified and email verification is required. In that case the server responds to the sign-up with HTTP status 400 and a Parse Error 205 `EMAIL_NOT_FOUND`. If set to `false` the server responds with HTTP status 200, and client SDKs return an unauthenticated Parse User without session token. In that case subsequent requests fail until the user's email address is verified.<br><br>Default is `false`.<br>Requires option `verifyUserEmails: true`.
  * @property {ProtectedFields} protectedFields Protected fields that should be treated with extra security when fetching details.
  * @property {Union} publicServerURL Optional. The public URL to Parse Server. This URL will be used to reach Parse Server publicly for features like password reset and email verification links. The option can be set to a string or a function that can be asynchronously resolved. The returned URL string must start with `http://` or `https://`.
@@ -108,7 +108,7 @@
  * @property {String[]} userSensitiveFields Personally identifiable information fields in the user table the should be removed for non-authorized users. Deprecated @see protectedFields
  * @property {Boolean} verbose Set the logging to verbose
  * @property {Boolean} verifyServerUrl Parse Server makes a HTTP request to the URL set in `serverURL` at the end of its launch routine to verify that the launch succeeded. If this option is set to `false`, the verification will be skipped. This can be useful in environments where the server URL is not accessible from the server itself, such as when running behind a firewall or in certain containerized environments.<br><br>⚠️ Server URL verification requires Parse Server to be able to call itself by making requests to the URL set in `serverURL`.<br><br>Default is `true`.
- * @property {Boolean} verifyUserEmails Set to `true` to require users to verify their email address to complete the sign-up process. Supports a function with a return value of `true` or `false` for conditional verification.<br><br>Default is `false`.
+ * @property {Boolean} verifyUserEmails Set to `true` to require users to verify their email address to complete the sign-up process. Supports a function with a return value of `true` or `false` for conditional verification. The function receives a request object that includes `createdWith` to indicate whether the invocation is for `signup` or `login` and the used auth provider.<br><br>The `createdWith` values per scenario:<ul><li>Password signup: `{ action: 'signup', authProvider: 'password' }`</li><li>Auth provider signup: `{ action: 'signup', authProvider: '<provider>' }`</li><li>Password login: `{ action: 'login', authProvider: 'password' }`</li><li>Auth provider login: function not invoked; auth provider login bypasses email verification</li><li>Resend verification email: `createdWith` is `undefined`; use the `resendRequest` property to identify those</li></ul>Default is `false`.
  * @property {String} webhookKey Key sent with outgoing webhook calls
  */
 
@@ -142,7 +142,7 @@
  * @property {String} localizationFallbackLocale The fallback locale for localization if no matching translation is provided for the given locale. This is only relevant when providing translation resources via JSON file.
  * @property {String} localizationJsonPath The path to the JSON file for localization; the translations will be used to fill template placeholders according to the locale.
  * @property {String} pagesEndpoint The API endpoint for the pages. Default is 'apps'.
- * @property {String} pagesPath The path to the pages directory; this also defines where the static endpoint '/apps' points to. Default is the './public/' directory.
+ * @property {String} pagesPath The path to the pages directory; this also defines where the static endpoint '/apps' points to. Default is the './public/' directory of the parse-server module.
  * @property {Object} placeholders The placeholder keys and values which will be filled in pages; this can be a simple object or a callback function.
  */
 
@@ -232,6 +232,7 @@
 
 /**
  * @interface FileUploadOptions
+ * @property {String[]} allowedFileUrlDomains Sets the allowed hostnames for file URLs referenced in Parse objects. When a File object includes a URL, its hostname must match one of these entries to be accepted. Supports exact hostnames (e.g., `'cdn.example.com'`) and wildcard subdomains (e.g., `'*.example.com'`). Use `['*']` to allow any domain. Use `[]` to block all file URLs (only name-based files allowed).
  * @property {Boolean} enableForAnonymousUser Is true if file upload should be allowed for anonymous users.
  * @property {Boolean} enableForAuthenticatedUser Is true if file upload should be allowed for authenticated users.
  * @property {Boolean} enableForPublic Is true if file upload should be allowed for anyone, regardless of user authentication.

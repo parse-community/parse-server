@@ -10240,6 +10240,52 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
+        it('should reject file with disallowed URL domain', async () => {
+          try {
+            parseServer = await global.reconfigureServer({
+              publicServerURL: 'http://localhost:13377/parse',
+              fileUpload: {
+                allowedFileUrlDomains: [],
+              },
+            });
+            await createGQLFromParseServer(parseServer);
+
+            const schemaController = await parseServer.config.databaseController.loadSchema();
+            await schemaController.addClassIfNotExists('SomeClass', {
+              someField: { type: 'File' },
+            });
+            await resetGraphQLCache();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+
+            const createResult = await apolloClient.mutate({
+              mutation: gql`
+                mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
+                  createSomeClass(input: { fields: $fields }) {
+                    someClass {
+                      id
+                    }
+                  }
+                }
+              `,
+              variables: {
+                fields: {
+                  someField: {
+                    file: {
+                      name: 'test.txt',
+                      url: 'http://malicious.example.com/leak',
+                      __type: 'File',
+                    },
+                  },
+                },
+              },
+            });
+            fail('should have thrown');
+            expect(createResult).toBeUndefined();
+          } catch (e) {
+            expect(e.message).toMatch(/not allowed/);
+          }
+        });
+
         it('should support files on required file', async () => {
           try {
             parseServer = await global.reconfigureServer({
