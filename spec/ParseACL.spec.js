@@ -951,4 +951,66 @@ describe('Parse.ACL', () => {
     expect(acl[user.id].write).toBeTrue();
     expect(acl[user.id].read).toBeTrue();
   });
+
+  it('should not overwrite ACL with defaultACL on update', async () => {
+    await new Parse.Object('TestObject').save();
+    const schema = await Parse.Server.database.loadSchema();
+    await schema.updateClass(
+      'TestObject',
+      {},
+      {
+        create: { '*': true },
+        update: { '*': true },
+        addField: { '*': true },
+        ACL: {
+          '*': { read: true },
+          currentUser: { read: true, write: true },
+        },
+      }
+    );
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
+    const obj = new Parse.Object('TestObject');
+    await obj.save(null, { sessionToken: user.getSessionToken() });
+
+    const originalAcl = obj.getACL().toJSON();
+    expect(originalAcl['*']).toEqual({ read: true });
+    expect(originalAcl[user.id]).toEqual({ read: true, write: true });
+
+    obj.set('field', 'value');
+    await obj.save(null, { sessionToken: user.getSessionToken() });
+
+    const updatedAcl = obj.getACL().toJSON();
+    expect(updatedAcl).toEqual(originalAcl);
+  });
+
+  it('should allow explicit ACL modification on update', async () => {
+    await new Parse.Object('TestObject').save();
+    const schema = await Parse.Server.database.loadSchema();
+    await schema.updateClass(
+      'TestObject',
+      {},
+      {
+        create: { '*': true },
+        update: { '*': true },
+        ACL: {
+          '*': { read: true },
+          currentUser: { read: true, write: true },
+        },
+      }
+    );
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
+    const obj = new Parse.Object('TestObject');
+    await obj.save(null, { sessionToken: user.getSessionToken() });
+
+    const customAcl = new Parse.ACL();
+    customAcl.setPublicReadAccess(false);
+    customAcl.setReadAccess(user.id, true);
+    customAcl.setWriteAccess(user.id, true);
+    obj.setACL(customAcl);
+    await obj.save(null, { sessionToken: user.getSessionToken() });
+
+    const updatedAcl = obj.getACL().toJSON();
+    expect(updatedAcl['*']).toBeUndefined();
+    expect(updatedAcl[user.id]).toEqual({ read: true, write: true });
+  });
 });

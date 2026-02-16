@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "9.3.0-alpha.4",
+  "version": "9.3.0-alpha.6",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -50,7 +50,7 @@
     "otpauth": "9.4.0",
     "parse": "8.0.3",
     "path-to-regexp": "8.3.0",
-    "pg-monitor": "3.0.0",
+    "pg-monitor": "3.1.0",
     "pg-promise": "12.6.0",
     "pluralize": "8.0.0",
     "punycode": "2.3.1",
@@ -71,7 +71,7 @@
     "@babel/core": "7.29.0",
     "@babel/eslint-parser": "7.28.6",
     "@babel/plugin-proposal-object-rest-spread": "7.20.7",
-    "@babel/plugin-transform-flow-strip-types": "7.26.5",
+    "@babel/plugin-transform-flow-strip-types": "7.27.1",
     "@babel/preset-env": "7.27.2",
     "@babel/preset-typescript": "7.27.1",
     "@saithodev/semantic-release-backmerge": "4.0.1",
@@ -107,7 +107,7 @@
     "nyc": "17.1.0",
     "prettier": "3.8.1",
     "semantic-release": "24.2.5",
-    "typescript": "5.8.3",
+    "typescript": "5.9.3",
     "typescript-eslint": "8.53.1",
     "yaml": "2.8.2"
   },

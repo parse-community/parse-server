@@ -1,3 +1,17 @@
+# [9.3.0-alpha.6](https://github.com/parse-community/parse-server/compare/9.3.0-alpha.5...9.3.0-alpha.6) (2026-02-14)
+
+
+### Bug Fixes
+
+* Default ACL overwrites custom ACL on `Parse.Object` update ([#10061](https://github.com/parse-community/parse-server/issues/10061)) ([4ef89d9](https://github.com/parse-community/parse-server/commit/4ef89d912c08bb24500a4d4142a3220f024a2d34))
+
+# [9.3.0-alpha.5](https://github.com/parse-community/parse-server/compare/9.3.0-alpha.4...9.3.0-alpha.5) (2026-02-12)
+
+
+### Bug Fixes
+
+* `Parse.Query.select('authData')` for `_User` class doesn't return auth data ([#10055](https://github.com/parse-community/parse-server/issues/10055)) ([44a5bb1](https://github.com/parse-community/parse-server/commit/44a5bb105e11e6918e899e0f1427b0adb38d6d67))
+
 # [9.3.0-alpha.4](https://github.com/parse-community/parse-server/compare/9.3.0-alpha.3...9.3.0-alpha.4) (2026-02-12)
 
 

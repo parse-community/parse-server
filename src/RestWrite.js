@@ -370,8 +370,8 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function () {
         }
       };
 
-      // add default ACL
-      if (
+      // add default ACL (only on CREATE, not UPDATE)
+      if (!this.query &&
         schema?.classLevelPermissions?.ACL &&
         !this.data.ACL &&
         JSON.stringify(schema.classLevelPermissions.ACL) !==
