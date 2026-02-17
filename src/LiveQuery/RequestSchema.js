@@ -78,6 +78,14 @@ const subscribe = {
           minItems: 1,
           uniqueItems: true,
         },
+        include: {
+          type: 'array',
+          items: {
+            type: 'string'
+          },
+          minItems: 1,
+          uniqueItems: true
+        },
       },
       required: ['where', 'className'],
       additionalProperties: false,
@@ -123,6 +131,14 @@ const update = {
           },
           minItems: 1,
           uniqueItems: true,
+        },
+        include: {
+          type: 'array',
+          items: {
+            type: 'string'
+          },
+          minItems: 1,
+          uniqueItems: true
         },
       },
       required: ['where', 'className'],
