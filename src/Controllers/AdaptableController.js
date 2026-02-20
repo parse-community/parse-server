@@ -48,6 +48,11 @@ export class AdaptableController {
 
     // Makes sure the prototype matches
     const mismatches = Object.getOwnPropertyNames(Type.prototype).reduce((obj, key) => {
+      // Skip getters — they provide optional defaults that adapters don't need to implement
+      const descriptor = Object.getOwnPropertyDescriptor(Type.prototype, key);
+      if (descriptor && typeof descriptor.get === 'function') {
+        return obj;
+      }
       const adapterType = typeof adapter[key];
       const expectedType = typeof Type.prototype[key];
       if (adapterType !== expectedType) {

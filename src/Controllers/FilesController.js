@@ -29,6 +29,16 @@ export class FilesController extends AdaptableController {
       filename = randomHexString(32) + '_' + filename;
     }
 
+    // Fallback: buffer stream for adapters that don't support streaming
+    if (typeof data?.pipe === 'function' && !this.adapter.supportsStreaming) {
+      data = await new Promise((resolve, reject) => {
+        const chunks = [];
+        data.on('data', chunk => chunks.push(chunk));
+        data.on('end', () => resolve(Buffer.concat(chunks)));
+        data.on('error', reject);
+      });
+    }
+
     const location = await this.adapter.getFileLocation(config, filename);
     await this.adapter.createFile(filename, data, contentType, options);
     return {

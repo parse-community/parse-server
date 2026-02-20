@@ -476,6 +476,31 @@ describe_only_db('mongo')('GridFSBucket', () => {
     }
   });
 
+  it('reports supportsStreaming as true', () => {
+    const gfsAdapter = new GridFSBucketAdapter(databaseURI);
+    expect(gfsAdapter.supportsStreaming).toBe(true);
+  });
+
+  it('creates file from Readable stream', async () => {
+    const { Readable } = require('stream');
+    const gfsAdapter = new GridFSBucketAdapter(databaseURI);
+    const data = Buffer.from('streamed file content');
+    const stream = Readable.from(data);
+    await gfsAdapter.createFile('streamFile.txt', stream);
+    const result = await gfsAdapter.getFileData('streamFile.txt');
+    expect(result.toString('utf8')).toBe('streamed file content');
+  });
+
+  it('creates encrypted file from Readable stream (buffers for encryption)', async () => {
+    const { Readable } = require('stream');
+    const gfsAdapter = new GridFSBucketAdapter(databaseURI, {}, 'test-encryption-key');
+    const data = Buffer.from('encrypted streamed content');
+    const stream = Readable.from(data);
+    await gfsAdapter.createFile('encryptedStream.txt', stream);
+    const result = await gfsAdapter.getFileData('encryptedStream.txt');
+    expect(result.toString('utf8')).toBe('encrypted streamed content');
+  });
+
   describe('MongoDB Client Metadata', () => {
     it('should not pass metadata to MongoClient by default', async () => {
       const gfsAdapter = new GridFSBucketAdapter(databaseURI);
