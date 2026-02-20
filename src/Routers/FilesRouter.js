@@ -358,6 +358,7 @@ export class FilesRouter {
     const { filename } = req.params;
     let contentType = req.get('Content-Type');
     const maxBytes = req._maxUploadSizeBytes;
+    let stream;
 
     try {
       // Early rejection via Content-Length header
@@ -382,7 +383,7 @@ export class FilesRouter {
       }
 
       // Create size-limited stream wrapping the request
-      const stream = createSizeLimitedStream(req, maxBytes);
+      stream = createSizeLimitedStream(req, maxBytes);
 
       // Build a Parse.File with no _data (streaming mode)
       const file = new Parse.File(filename, { base64: '' }, contentType);
@@ -393,7 +394,7 @@ export class FilesRouter {
         Utils.checkProhibitedKeywords(config, metadata);
         Utils.checkProhibitedKeywords(config, tags);
       } catch (error) {
-        req.resume();
+        stream.destroy();
         next(new Parse.Error(Parse.Error.INVALID_KEY_NAME, error));
         return;
       }
@@ -424,8 +425,8 @@ export class FilesRouter {
             url: triggerResult.url(),
             name: triggerResult._name,
           };
-          // Consume and discard the stream since we're skipping save
-          req.resume();
+          // Destroy stream to remove listeners and drain request
+          stream.destroy();
         }
       }
 
@@ -466,8 +467,12 @@ export class FilesRouter {
       res.set('Location', saveResult.url);
       res.json(saveResult);
     } catch (e) {
-      // Consume stream on error to prevent connection hanging
-      req.resume();
+      // Destroy stream to remove listeners and drain request, or resume directly
+      if (stream) {
+        stream.destroy();
+      } else {
+        req.resume();
+      }
       logger.error('Error creating a file: ', e);
       const error = triggers.resolveError(e, {
         code: Parse.Error.FILE_SAVE_ERROR,
