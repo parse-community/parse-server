@@ -1940,6 +1940,24 @@ describe('Parse.File testing', () => {
       expect(getResponse.text).toEqual('streaming file content');
     });
 
+    it('infers content type from extension when Content-Type header is missing', async () => {
+      const headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Upload-Mode': 'stream',
+      };
+      const response = await request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/files/inferred.txt',
+        body: 'inferred content type',
+      });
+      const b = response.data;
+      expect(b.name).toMatch(/_inferred.txt$/);
+      const getResponse = await request({ url: b.url });
+      expect(getResponse.text).toEqual('inferred content type');
+    });
+
     it('uses buffered path without X-Parse-Upload-Mode header', async () => {
       const headers = {
         'Content-Type': 'application/octet-stream',
