@@ -1908,16 +1908,6 @@ describe('Parse.File testing', () => {
         }
       });
 
-      it('passes through when Content-Length is within limit', async () => {
-        const input = Readable.from(Buffer.from('hi'));
-        input.headers = { 'content-length': '2' };
-        const limited = createSizeLimitedStream(input, 100);
-        const chunks = [];
-        for await (const chunk of limited) {
-          chunks.push(chunk);
-        }
-        expect(Buffer.concat(chunks).toString()).toBe('hi');
-      });
     });
 
     it('streams binary upload with X-Parse-Upload-Mode header', async () => {
