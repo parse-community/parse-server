@@ -2057,9 +2057,11 @@ describe('Parse.File testing', () => {
 
     it('skips save when beforeSave trigger returns Parse.File with URL on streaming upload', async () => {
       Parse.Cloud.beforeSave(Parse.File, () => {
-        const file = new Parse.File('existing.txt');
-        file._url = 'http://example.com/existing.txt';
-        return file;
+        return Parse.File.fromJSON({
+          __type: 'File',
+          name: 'existing.txt',
+          url: 'http://example.com/existing.txt',
+        });
       });
       const headers = {
         'Content-Type': 'application/octet-stream',
