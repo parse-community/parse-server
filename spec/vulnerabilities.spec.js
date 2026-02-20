@@ -13,9 +13,13 @@ describe('Vulnerabilities', () => {
     });
 
     it('denies user creation with poisoned object ID', async () => {
+      const logger = require('../lib/logger').default;
+      const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+      loggerErrorSpy.calls.reset();
       await expectAsync(
         new Parse.User({ id: 'role:a', username: 'a', password: '123' }).save()
-      ).toBeRejectedWith(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid object ID.'));
+      ).toBeRejectedWith(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied'));
+      expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining("Invalid object ID."));
     });
 
     describe('existing sessions for users with poisoned object ID', () => {
@@ -175,12 +179,10 @@ describe('Vulnerabilities', () => {
           },
         });
       });
-      await expectAsync(new Parse.Object('TestObject').save()).toBeRejectedWith(
-        new Parse.Error(
-          Parse.Error.INVALID_KEY_NAME,
-          'Prohibited keyword in request data: {"key":"constructor"}.'
-        )
-      );
+      // The new Parse SDK handles prototype pollution prevention in .set()
+      // so no error is thrown, but the object prototype should not be polluted
+      await new Parse.Object('TestObject').save();
+      expect(Object.prototype.dummy).toBeUndefined();
     });
 
     it('denies creating global config with polluted data', async () => {
@@ -250,11 +252,10 @@ describe('Vulnerabilities', () => {
 
     it_id('e8b5f1e1-8326-4c70-b5f4-1e8678dfff8d')(it)('denies creating a hook with polluted data', async () => {
       const express = require('express');
-      const bodyParser = require('body-parser');
       const port = 34567;
       const hookServerURL = 'http://localhost:' + port;
       const app = express();
-      app.use(bodyParser.json({ type: '*/*' }));
+      app.use(express.json({ type: '*/*' }));
       const server = await new Promise(resolve => {
         const res = app.listen(port, undefined, () => resolve(res));
       });
@@ -271,12 +272,10 @@ describe('Vulnerabilities', () => {
         res.json({ success: object });
       });
       await Parse.Hooks.createTrigger('TestObject', 'beforeSave', hookServerURL + '/BeforeSave');
-      await expectAsync(new Parse.Object('TestObject').save()).toBeRejectedWith(
-        new Parse.Error(
-          Parse.Error.INVALID_KEY_NAME,
-          'Prohibited keyword in request data: {"key":"constructor"}.'
-        )
-      );
+      // The new Parse SDK handles prototype pollution prevention in .set()
+      // so no error is thrown, but the object prototype should not be polluted
+      await new Parse.Object('TestObject').save();
+      expect(Object.prototype.dummy).toBeUndefined();
       await new Promise(resolve => server.close(resolve));
     });
 

@@ -7,6 +7,7 @@ const triggers = require('./triggers');
 const { continueWhile } = require('parse/lib/node/promiseUtils');
 const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt', 'ACL'];
 const { enforceRoleSecurity } = require('./SharedRest');
+const { createSanitizedError } = require('./Error');
 
 // restOptions can include:
 //   skip
@@ -50,7 +51,8 @@ async function RestQuery({
   if (![RestQuery.Method.find, RestQuery.Method.get].includes(method)) {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'bad query type');
   }
-  enforceRoleSecurity(method, className, auth);
+  const isGet = method === RestQuery.Method.get;
+  enforceRoleSecurity(method, className, auth, config);
   const result = runBeforeFind
     ? await triggers.maybeRunQueryTrigger(
       triggers.Types.beforeFind,
@@ -60,7 +62,7 @@ async function RestQuery({
       config,
       auth,
       context,
-      method === RestQuery.Method.get
+      isGet
     )
     : Promise.resolve({ restWhere, restOptions });
 
@@ -72,7 +74,8 @@ async function RestQuery({
     result.restOptions || restOptions,
     clientSDK,
     runAfterFind,
-    context
+    context,
+    isGet
   );
 }
 
@@ -101,7 +104,8 @@ function _UnsafeRestQuery(
   restOptions = {},
   clientSDK,
   runAfterFind = true,
-  context
+  context,
+  isGet
 ) {
   this.config = config;
   this.auth = auth;
@@ -113,10 +117,11 @@ function _UnsafeRestQuery(
   this.response = null;
   this.findOptions = {};
   this.context = context || {};
+  this.isGet = isGet;
   if (!this.auth.isMaster) {
     if (this.className == '_Session') {
       if (!this.auth.user) {
-        throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+        throw createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token', config);
       }
       this.restWhere = {
         $and: [
@@ -417,9 +422,10 @@ _UnsafeRestQuery.prototype.validateClientClassCreation = function () {
       .then(schemaController => schemaController.hasClass(this.className))
       .then(hasClass => {
         if (hasClass !== true) {
-          throw new Parse.Error(
+          throw createSanitizedError(
             Parse.Error.OPERATION_FORBIDDEN,
-            'This user is not allowed to access ' + 'non-existent class: ' + this.className
+            'This user is not allowed to access ' + 'non-existent class: ' + this.className,
+            this.config
           );
         }
       });
@@ -745,6 +751,26 @@ _UnsafeRestQuery.prototype.runFind = async function (options = {}) {
     findOptions.keys = this.keys.map(key => {
       return key.split('.')[0];
     });
+    // When selecting `authData` on `_User`, also add the internal auth data fields
+    // (e.g. `_auth_data_facebook`) for each configured auth provider. In MongoDB,
+    // `authData` is stored as individual `_auth_data_<provider>` fields, so the
+    // projection for `authData` alone won't match them. Adding both ensures it
+    // works across all database adapters: Mongo uses `_auth_data_*` fields,
+    // Postgres uses the `authData` column directly.
+    //
+    // Note: When selecting `authData`, only auth data of currently configured
+    // providers is returned. Auth data entries of providers that are no longer
+    // configured won't be included. To return all auth data regardless of the
+    // provider configuration, do not use `authData` as a selected key.
+    if (this.className === '_User' && findOptions.keys.includes('authData')) {
+      const providers = this.config.authDataManager.getProviders();
+      for (const provider of providers) {
+        const key = `_auth_data_${provider}`;
+        if (!findOptions.keys.includes(key)) {
+          findOptions.keys.push(key);
+        }
+      }
+    }
   }
   if (options.op) {
     findOptions.op = options.op;
@@ -796,9 +822,10 @@ _UnsafeRestQuery.prototype.denyProtectedFields = async function () {
     ) || [];
   for (const key of protectedFields) {
     if (this.restWhere[key]) {
-      throw new Parse.Error(
+      throw createSanitizedError(
         Parse.Error.OPERATION_FORBIDDEN,
-        `This user is not allowed to query ${key} on class ${this.className}`
+        `This user is not allowed to query ${key} on class ${this.className}`,
+        this.config
       );
     }
   }
@@ -852,31 +879,54 @@ _UnsafeRestQuery.prototype.handleExcludeKeys = function () {
 };
 
 // Augments this.response with data at the paths provided in this.include.
-_UnsafeRestQuery.prototype.handleInclude = function () {
+_UnsafeRestQuery.prototype.handleInclude = async function () {
   if (this.include.length == 0) {
     return;
   }
 
-  var pathResponse = includePath(
-    this.config,
-    this.auth,
-    this.response,
-    this.include[0],
-    this.context,
-    this.restOptions
-  );
-  if (pathResponse.then) {
-    return pathResponse.then(newResponse => {
-      this.response = newResponse;
-      this.include = this.include.slice(1);
-      return this.handleInclude();
+  const indexedResults = this.response.results.reduce((indexed, result, i) => {
+    indexed[result.objectId] = i;
+    return indexed;
+  }, {});
+
+  // Build the execution tree
+  const executionTree = {}
+  this.include.forEach(path => {
+    let current = executionTree;
+    path.forEach((node) => {
+      if (!current[node]) {
+        current[node] = {
+          path,
+          children: {}
+        };
+      }
+      current = current[node].children
     });
-  } else if (this.include.length > 0) {
-    this.include = this.include.slice(1);
-    return this.handleInclude();
+  });
+
+  const recursiveExecutionTree = async (treeNode) => {
+    const { path, children } = treeNode;
+    const pathResponse = includePath(
+      this.config,
+      this.auth,
+      this.response,
+      path,
+      this.context,
+      this.restOptions,
+      this,
+    );
+    if (pathResponse.then) {
+      const newResponse = await pathResponse
+      newResponse.results.forEach(newObject => {
+        // We hydrate the root of each result with sub results
+        this.response.results[indexedResults[newObject.objectId]][path[0]] = newObject[path[0]];
+      })
+    }
+    return Promise.all(Object.values(children).map(recursiveExecutionTree));
   }
 
-  return pathResponse;
+  await Promise.all(Object.values(executionTree).map(recursiveExecutionTree));
+  this.include = []
 };
 
 //Returns a promise of a processed set of results
@@ -914,7 +964,8 @@ _UnsafeRestQuery.prototype.runAfterFindTrigger = function () {
       this.response.results,
       this.config,
       parseQuery,
-      this.context
+      this.context,
+      this.isGet
     )
     .then(results => {
       // Ensure we properly set the className back
@@ -1013,7 +1064,6 @@ function includePath(config, auth, response, path, context, restOptions = {}) {
   } else if (restOptions.readPreference) {
     includeRestOptions.readPreference = restOptions.readPreference;
   }
-
   const queryPromises = Object.keys(pointersHash).map(async className => {
     const objectIds = Array.from(pointersHash[className]);
     let where;
@@ -1052,7 +1102,6 @@ function includePath(config, auth, response, path, context, restOptions = {}) {
       }
       return replace;
     }, {});
-
     var resp = {
       results: replacePointers(response.results, path, replace),
     };

@@ -3,6 +3,7 @@
 // mount is the URL for the root of the API; includes http, domain, etc.
 
 import { isBoolean, isString } from 'lodash';
+import { pathToRegexp } from 'path-to-regexp';
 import net from 'net';
 import AppCache from './cache';
 import DatabaseController from './Controllers/DatabaseController';
@@ -20,6 +21,7 @@ import {
   SecurityOptions,
 } from './Options/Definitions';
 import ParseServer from './cloud-code/Parse.Server';
+import Deprecator from './Deprecator/Deprecator';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -30,6 +32,11 @@ function removeTrailingSlash(str) {
   }
   return str;
 }
+
+/**
+ * Config keys that need to be loaded asynchronously.
+ */
+const asyncKeys = ['publicServerURL'];
 
 export class Config {
   static get(applicationId: string, mount: string) {
@@ -55,9 +62,42 @@ export class Config {
     return config;
   }
 
+  async loadKeys() {
+    await Promise.all(
+      asyncKeys.map(async key => {
+        if (typeof this[`_${key}`] === 'function') {
+          try {
+            this[key] = await this[`_${key}`]();
+          } catch (error) {
+            throw new Error(`Failed to resolve async config key '${key}': ${error.message}`);
+          }
+        }
+      })
+    );
+
+    const cachedConfig = AppCache.get(this.appId);
+    if (cachedConfig) {
+      const updatedConfig = { ...cachedConfig };
+      asyncKeys.forEach(key => {
+        updatedConfig[key] = this[key];
+      });
+      AppCache.put(this.appId, updatedConfig);
+    }
+  }
+
+  static transformConfiguration(serverConfiguration) {
+    for (const key of Object.keys(serverConfiguration)) {
+      if (asyncKeys.includes(key) && typeof serverConfiguration[key] === 'function') {
+        serverConfiguration[`_${key}`] = serverConfiguration[key];
+        delete serverConfiguration[key];
+      }
+    }
+  }
+
   static put(serverConfiguration) {
     Config.validateOptions(serverConfiguration);
     Config.validateControllers(serverConfiguration);
+    Config.transformConfiguration(serverConfiguration);
     AppCache.put(serverConfiguration.appId, serverConfiguration);
     Config.setupPasswordValidator(serverConfiguration.passwordPolicy);
     return serverConfiguration;
@@ -84,6 +124,7 @@ export class Config {
     pages,
     security,
     enforcePrivateUsers,
+    enableInsecureAuthAdapters,
     schema,
     requestKeywordDenylist,
     allowExpiredAuthDataToken,
@@ -113,11 +154,7 @@ export class Config {
       throw 'extendSessionOnUse must be a boolean value';
     }
 
-    if (publicServerURL) {
-      if (!publicServerURL.startsWith('http://') && !publicServerURL.startsWith('https://')) {
-        throw 'publicServerURL should be a valid HTTPS URL starting with https://';
-      }
-    }
+    this.validatePublicServerURL({ publicServerURL });
     this.validateSessionConfiguration(sessionLength, expireInactiveSessions);
     this.validateIps('masterKeyIps', masterKeyIps);
     this.validateIps('maintenanceKeyIps', maintenanceKeyIps);
@@ -129,6 +166,7 @@ export class Config {
     this.validateSecurityOptions(security);
     this.validateSchemaOptions(schema);
     this.validateEnforcePrivateUsers(enforcePrivateUsers);
+    this.validateEnableInsecureAuthAdapters(enableInsecureAuthAdapters);
     this.validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken);
     this.validateRequestKeywordDenylist(requestKeywordDenylist);
     this.validateRateLimit(rateLimit);
@@ -151,6 +189,7 @@ export class Config {
     userController,
     appName,
     publicServerURL,
+    _publicServerURL,
     emailVerifyTokenValidityDuration,
     emailVerifyTokenReuseIfValid,
   }) {
@@ -159,7 +198,7 @@ export class Config {
       this.validateEmailConfiguration({
         emailAdapter,
         appName,
-        publicServerURL,
+        publicServerURL: publicServerURL || _publicServerURL,
         emailVerifyTokenValidityDuration,
         emailVerifyTokenReuseIfValid,
       });
@@ -287,9 +326,7 @@ export class Config {
     } else if (!isBoolean(pages.forceRedirect)) {
       throw 'Parse Server option pages.forceRedirect must be a boolean.';
     }
-    if (pages.pagesPath === undefined) {
-      pages.pagesPath = PagesOptions.pagesPath.default;
-    } else if (!isString(pages.pagesPath)) {
+    if (pages.pagesPath !== undefined && !isString(pages.pagesPath)) {
       throw 'Parse Server option pages.pagesPath must be a string.';
     }
     if (pages.pagesEndpoint === undefined) {
@@ -429,6 +466,30 @@ export class Config {
     }
   }
 
+  static validatePublicServerURL({ publicServerURL, required = false }) {
+    if (!publicServerURL) {
+      if (!required) {
+        return;
+      }
+      throw 'The option publicServerURL is required.';
+    }
+
+    const type = typeof publicServerURL;
+
+    if (type === 'string') {
+      if (!publicServerURL.startsWith('http://') && !publicServerURL.startsWith('https://')) {
+        throw 'The option publicServerURL must be a valid URL starting with http:// or https://.';
+      }
+      return;
+    }
+
+    if (type === 'function') {
+      return;
+    }
+
+    throw `The option publicServerURL must be a string or function, but got ${type}.`;
+  }
+
   static validateEmailConfiguration({
     emailAdapter,
     appName,
@@ -442,9 +503,7 @@ export class Config {
     if (typeof appName !== 'string') {
       throw 'An app name is required for e-mail verification and password resets.';
     }
-    if (typeof publicServerURL !== 'string') {
-      throw 'A public server url is required for e-mail verification and password resets.';
-    }
+    this.validatePublicServerURL({ publicServerURL, required: true });
     if (emailVerifyTokenValidityDuration) {
       if (isNaN(emailVerifyTokenValidityDuration)) {
         throw 'Email verify token validity duration must be a valid number.';
@@ -491,6 +550,17 @@ export class Config {
     } else if (!Array.isArray(fileUpload.fileExtensions)) {
       throw 'fileUpload.fileExtensions must be an array.';
     }
+    if (fileUpload.allowedFileUrlDomains === undefined) {
+      fileUpload.allowedFileUrlDomains = FileUploadOptions.allowedFileUrlDomains.default;
+    } else if (!Array.isArray(fileUpload.allowedFileUrlDomains)) {
+      throw 'fileUpload.allowedFileUrlDomains must be an array.';
+    } else {
+      for (const domain of fileUpload.allowedFileUrlDomains) {
+        if (typeof domain !== 'string' || domain === '') {
+          throw 'fileUpload.allowedFileUrlDomains must contain only non-empty strings.';
+        }
+      }
+    }
   }
 
   static validateIps(field, masterKeyIps) {
@@ -501,6 +571,15 @@ export class Config {
       if (!net.isIP(ip)) {
         throw `The Parse Server option "${field}" contains an invalid IP address "${ip}".`;
       }
+    }
+  }
+
+  static validateEnableInsecureAuthAdapters(enableInsecureAuthAdapters) {
+    if (enableInsecureAuthAdapters && typeof enableInsecureAuthAdapters !== 'boolean') {
+      throw 'Parse Server option enableInsecureAuthAdapters must be a boolean.';
+    }
+    if (enableInsecureAuthAdapters) {
+      Deprecator.logRuntimeDeprecation({ usage: 'insecure adapter' });
     }
   }
 
@@ -590,6 +669,11 @@ export class Config {
     } else if (typeof databaseOptions.schemaCacheTtl !== 'number') {
       throw `databaseOptions.schemaCacheTtl must be a number`;
     }
+    if (databaseOptions.allowPublicExplain === undefined) {
+      databaseOptions.allowPublicExplain = DatabaseOptions.allowPublicExplain.default;
+    } else if (typeof databaseOptions.allowPublicExplain !== 'boolean') {
+      throw `Parse Server option 'databaseOptions.allowPublicExplain' must be a boolean.`;
+    }
   }
 
   static validateRateLimit(rateLimit) {
@@ -613,6 +697,14 @@ export class Config {
       if (typeof option.requestPath !== 'string') {
         throw `rateLimit.requestPath must be a string`;
       }
+
+      // Validate that the path is valid path-to-regexp syntax
+      try {
+        pathToRegexp(option.requestPath);
+      } catch (error) {
+        throw `rateLimit.requestPath "${option.requestPath}" is not valid: ${error.message}`;
+      }
+
       if (option.requestTimeWindow == null) {
         throw `rateLimit.requestTimeWindow must be defined`;
       }
@@ -724,10 +816,29 @@ export class Config {
     return `${this.publicServerURL}/${this.pagesEndpoint}/${this.applicationId}/verify_email`;
   }
 
-  // TODO: Remove this function once PagesRouter replaces the PublicAPIRouter;
-  // the (default) endpoint has to be defined in PagesRouter only.
+  async loadMasterKey() {
+    if (typeof this.masterKey === 'function') {
+      const ttlIsEmpty = !this.masterKeyTtl;
+      const isExpired = this.masterKeyCache?.expiresAt && this.masterKeyCache.expiresAt < new Date();
+
+      if ((!isExpired || ttlIsEmpty) && this.masterKeyCache?.masterKey) {
+        return this.masterKeyCache.masterKey;
+      }
+
+      const masterKey = await this.masterKey();
+
+      const expiresAt = this.masterKeyTtl ? new Date(Date.now() + 1000 * this.masterKeyTtl) : null
+      this.masterKeyCache = { masterKey, expiresAt };
+      Config.put(this);
+
+      return this.masterKeyCache.masterKey;
+    }
+
+    return this.masterKey;
+  }
+
   get pagesEndpoint() {
-    return this.pages && this.pages.enableRouter && this.pages.pagesEndpoint
+    return this.pages && this.pages.pagesEndpoint
       ? this.pages.pagesEndpoint
       : 'apps';
   }

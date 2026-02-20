@@ -3,18 +3,16 @@
 ---
 
 [![Build Status](https://github.com/parse-community/parse-server/actions/workflows/ci.yml/badge.svg?branch=alpha)](https://github.com/parse-community/parse-server/actions/workflows/ci.yml?query=workflow%3Aci+branch%3Aalpha)
-[![Build Status](https://github.com/parse-community/parse-server/actions/workflows/ci.yml/badge.svg?branch=beta)](https://github.com/parse-community/parse-server/actions/workflows/ci.yml?query=workflow%3Aci+branch%3Abeta)
 [![Build Status](https://github.com/parse-community/parse-server/actions/workflows/ci.yml/badge.svg?branch=release)](https://github.com/parse-community/parse-server/actions/workflows/ci.yml?query=workflow%3Aci+branch%3Arelease)
 [![Snyk Badge](https://snyk.io/test/github/parse-community/parse-server/badge.svg)](https://snyk.io/test/github/parse-community/parse-server)
 [![Coverage](https://codecov.io/github/parse-community/parse-server/branch/alpha/graph/badge.svg)](https://app.codecov.io/github/parse-community/parse-server/tree/alpha)
 [![auto-release](https://img.shields.io/badge/%F0%9F%9A%80-auto--release-9e34eb.svg)](https://github.com/parse-community/parse-dashboard/releases)
 
-[![Node Version](https://img.shields.io/badge/nodejs-18,_20,_22-green.svg?logo=node.js&style=flat)](https://nodejs.org)
-[![MongoDB Version](https://img.shields.io/badge/mongodb-4.2,_4.4,_5,_6,_7,_8-green.svg?logo=mongodb&style=flat)](https://www.mongodb.com)
-[![Postgres Version](https://img.shields.io/badge/postgresql-13,_14,_15,_16,_17-green.svg?logo=postgresql&style=flat)](https://www.postgresql.org)
+[![Node Version](https://img.shields.io/badge/nodejs-20,_22,_24-green.svg?logo=node.js&style=flat)](https://nodejs.org)
+[![MongoDB Version](https://img.shields.io/badge/mongodb-7,_8-green.svg?logo=mongodb&style=flat)](https://www.mongodb.com)
+[![Postgres Version](https://img.shields.io/badge/postgresql-16,_17,_18-green.svg?logo=postgresql&style=flat)](https://www.postgresql.org)
 
 [![npm latest version](https://img.shields.io/npm/v/parse-server/latest.svg)](https://www.npmjs.com/package/parse-server)
-[![npm beta version](https://img.shields.io/npm/v/parse-server/beta.svg)](https://www.npmjs.com/package/parse-server)
 [![npm alpha version](https://img.shields.io/npm/v/parse-server/alpha.svg)](https://www.npmjs.com/package/parse-server)
 
 [![Backers on Open Collective](https://opencollective.com/parse-server/backers/badge.svg)][open-collective-link]
@@ -31,7 +29,7 @@ The full documentation for Parse Server is available in the [wiki](https://githu
 
 ---
 
-A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who support the development of Parse Platform!
+A big _thank you_ 🙏 to our [sponsors](#sponsors) and [backers](#backers) who support the development of Parse Platform!
 
 #### Bronze Sponsors
 
@@ -49,7 +47,7 @@ A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
       - [PostgreSQL](#postgresql)
     - [Locally](#locally)
     - [Docker Container](#docker-container)
-    - [Saving an Object](#saving-an-object)
+    - [Saving and Querying Objects](#saving-and-querying-objects)
     - [Connect an SDK](#connect-an-sdk)
   - [Running Parse Server elsewhere](#running-parse-server-elsewhere)
     - [Sample Application](#sample-application)
@@ -70,6 +68,7 @@ A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
   - [Using Environment Variables](#using-environment-variables)
   - [Available Adapters](#available-adapters)
   - [Configuring File Adapters](#configuring-file-adapters)
+    - [Restricting File URL Domains](#restricting-file-url-domains)
   - [Idempotency Enforcement](#idempotency-enforcement)
   - [Localization](#localization)
     - [Pages](#pages)
@@ -100,7 +99,7 @@ A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
 
 Parse Server is available in different flavors on different branches:
 
-- The main branches are [release][log_release], [beta][log_beta] and [alpha][log_alpha]. See the [changelog overview](CHANGELOG.md) for details.
+- The main branches are [release][log_release] and [alpha][log_alpha]. See the [changelog overview](CHANGELOG.md) for details.
 - The long-term-support (LTS) branches are named `release-<version>.x.x`, for example `release-5.x.x`. LTS branches do not have pre-release branches.
 
 ## Long Term Support
@@ -127,36 +126,35 @@ Before you start make sure you have installed:
 
 Parse Server is continuously tested with the most recent releases of Node.js to ensure compatibility. We follow the [Node.js Long Term Support plan](https://github.com/nodejs/Release) and only test against versions that are officially supported and have not reached their end-of-life date.
 
-| Version    | Latest Version | End-of-Life | Compatible |
-|------------|----------------|-------------|------------|
-| Node.js 18 | 18.20.4        | April 2025  | ✅ Yes      |
-| Node.js 20 | 20.15.1        | April 2026  | ✅ Yes      |
-| Node.js 22 | 22.4.1         | April 2027  | ✅ Yes      |
+| Version    | Minimum Version | End-of-Life | Parse Server Support |
+| ---------- | --------------- | ----------- | -------------------- |
+| Node.js 18 | 18.20.4         | April 2025  | <= 8.x (2025)        |
+| Node.js 20 | 20.19.0         | April 2026  | <= 9.x (2026)        |
+| Node.js 22 | 22.12.0         | April 2027  | <= 10.x (2027)       |
+| Node.js 24 | 24.11.0         | April 2028  | <= 11.x (2028)       |
 
 #### MongoDB
 
 Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and [MongoDB lifecycle schedule](https://www.mongodb.com/support-policy/lifecycles) and only test against versions that are officially supported and have not reached their end-of-life date. MongoDB "rapid releases" are ignored as these are considered pre-releases of the next major version.
 
-| Version     | Latest Version | End-of-Life   | Compatible |
-|-------------|----------------|---------------|------------|
-| MongoDB 4.2 | 4.2.25         | April 2023    | ✅ Yes      |
-| MongoDB 4.4 | 4.4.29         | February 2024 | ✅ Yes      |
-| MongoDB 5   | 5.0.26         | October 2024  | ✅ Yes      |
-| MongoDB 6   | 6.0.14         | July 2025     | ✅ Yes      |
-| MongoDB 7   | 7.0.8          | TDB           | ✅ Yes      |
-| MongoDB 8   | 8.0.0          | TDB           | ✅ Yes      |
+| Version   | Minimum Version | End-of-Life | Parse Server Support |
+| --------- | --------------- | ----------- | -------------------- |
+| MongoDB 6 | 6.0.19          | July 2025   | <= 8.x (2025)        |
+| MongoDB 7 | 7.0.16          | August 2026 | <= 9.x (2026)        |
+| MongoDB 8 | 8.0.4           | TDB         | <= 10.x (2027)       |
 
 #### PostgreSQL
 
 Parse Server is continuously tested with the most recent releases of PostgreSQL and PostGIS to ensure compatibility, using [PostGIS docker images](https://registry.hub.docker.com/r/postgis/postgis/tags?page=1&ordering=last_updated). We follow the [PostgreSQL support schedule](https://www.postgresql.org/support/versioning) and [PostGIS support schedule](https://www.postgis.net/eol_policy/) and only test against versions that are officially supported and have not reached their end-of-life date. Due to the extensive PostgreSQL support duration of 5 years, Parse Server drops support about 2 years before the official end-of-life date.
 
-| Version     | PostGIS Version    | End-of-Life   | Parse Server Support | Compatible |
-|-------------|--------------------|---------------|----------------------|------------|
-| Postgres 13 | 3.1, 3.2, 3.3, 3.4, 3.5 | November 2025 | <= 6.x (2023)        | ✅ Yes      |
-| Postgres 14 | 3.5                | November 2026 | <= 7.x (2024)        | ✅ Yes      |
-| Postgres 15 | 3.5                | November 2027 | <= 8.x (2025)        | ✅ Yes      |
-| Postgres 16 | 3.5                | November 2028 | <= 9.x (2026)        | ✅ Yes      |
-| Postgres 17 | 3.5                | November 2029 | <= 9.x (2026)        | ✅ Yes      |
+| Version     | PostGIS Version         | End-of-Life   | Parse Server Support |
+| ----------- | ----------------------- | ------------- | -------------------- |
+| Postgres 13 | 3.1, 3.2, 3.3, 3.4, 3.5 | November 2025 | <= 6.x (2023)        |
+| Postgres 14 | 3.5                     | November 2026 | <= 7.x (2024)        |
+| Postgres 15 | 3.3, 3.4, 3.5           | November 2027 | <= 8.x (2025)        |
+| Postgres 16 | 3.5                     | November 2028 | <= 9.x (2026)        |
+| Postgres 17 | 3.5                     | November 2029 | <= 10.x (2027)       |
+| Postgres 18 | 3.6                     | November 2030 | <= 11.x (2028)       |
 
 ### Locally
 
@@ -165,8 +163,8 @@ $ npm install -g parse-server mongodb-runner
 $ mongodb-runner start
 $ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test
 ```
-***Note:*** *If installation with* `-g` *fails due to permission problems* (`npm ERR! code 'EACCES'`), *please refer to [this link](https://docs.npmjs.com/getting-started/fixing-npm-permissions).*
 
+**_Note:_** _If installation with_ `-g` _fails due to permission problems_ (`npm ERR! code 'EACCES'`), _please refer to [this link](https://docs.npmjs.com/getting-started/fixing-npm-permissions)._
 
 ### Docker Container
 
@@ -183,78 +181,17 @@ $ docker run --name my-mongo -d mongo
 $ docker run --name my-parse-server -v config-vol:/parse-server/config -p 1337:1337 --link my-mongo:mongo -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test
 ```
 
-***Note:*** *If you want to use [Cloud Code](https://docs.parseplatform.org/cloudcode/guide/), add `-v cloud-code-vol:/parse-server/cloud --cloud /parse-server/cloud/main.js` to the command above. Make sure `main.js` is in the `cloud-code-vol` directory before starting Parse Server.*
+**_Note:_** _If you want to use [Cloud Code](https://docs.parseplatform.org/cloudcode/guide/), add `-v cloud-code-vol:/parse-server/cloud --cloud /parse-server/cloud/main.js` to the command above. Make sure `main.js` is in the `cloud-code-vol` directory before starting Parse Server._
 
 You can use any arbitrary string as your application id and master key. These will be used by your clients to authenticate with the Parse Server.
 
 That's it! You are now running a standalone version of Parse Server on your machine.
 
-**Using a remote MongoDB?** Pass the  `--databaseURI DATABASE_URI` parameter when starting `parse-server`. Learn more about configuring Parse Server [here](#configuration). For a full list of available options, run `parse-server --help`.
+**Using a remote MongoDB?** Pass the `--databaseURI DATABASE_URI` parameter when starting `parse-server`. Learn more about configuring Parse Server [here](#configuration). For a full list of available options, run `parse-server --help`.
 
-### Saving an Object
+### Saving and Querying Objects
 
-Now that you're running Parse Server, it is time to save your first object. We'll use the [REST API](http://docs.parseplatform.org/rest/guide), but you can easily do the same using any of the [Parse SDKs](http://parseplatform.org/#sdks). Run the following:
-
-```bash
-$ curl -X POST \
--H "X-Parse-Application-Id: APPLICATION_ID" \
--H "Content-Type: application/json" \
--d '{"score":1337,"playerName":"Sean Plott","cheatMode":false}' \
-http://localhost:1337/parse/classes/GameScore
-```
-
-You should get a response similar to this:
-
-```js
-{
-  "objectId": "2ntvSpRGIK",
-  "createdAt": "2016-03-11T23:51:48.050Z"
-}
-```
-
-You can now retrieve this object directly (make sure to replace `2ntvSpRGIK` with the actual `objectId` you received when the object was created):
-
-```bash
-$ curl -X GET \
-  -H "X-Parse-Application-Id: APPLICATION_ID" \
-  http://localhost:1337/parse/classes/GameScore/2ntvSpRGIK
-```
-```json
-// Response
-{
-  "objectId": "2ntvSpRGIK",
-  "score": 1337,
-  "playerName": "Sean Plott",
-  "cheatMode": false,
-  "updatedAt": "2016-03-11T23:51:48.050Z",
-  "createdAt": "2016-03-11T23:51:48.050Z"
-}
-```
-
-Keeping tracks of individual object ids is not ideal, however. In most cases you will want to run a query over the collection, like so:
-
-```bash
-$ curl -X GET \
-  -H "X-Parse-Application-Id: APPLICATION_ID" \
-  http://localhost:1337/parse/classes/GameScore
-```
-```json
-// The response will provide all the matching objects within the `results` array:
-{
-  "results": [
-    {
-      "objectId": "2ntvSpRGIK",
-      "score": 1337,
-      "playerName": "Sean Plott",
-      "cheatMode": false,
-      "updatedAt": "2016-03-11T23:51:48.050Z",
-      "createdAt": "2016-03-11T23:51:48.050Z"
-    }
-  ]
-}
-```
-
-To learn more about using saving and querying objects on Parse Server, check out the [Parse documentation](http://docs.parseplatform.org).
+Now that you're running Parse Server, it is time to save your first object. The easiest way is to use the [REST API](http://docs.parseplatform.org/rest/guide), but you can easily do the same using any of the [Parse SDKs](http://parseplatform.org/#sdks). To learn more check out the [documentation](http://docs.parseplatform.org).
 
 ### Connect an SDK
 
@@ -268,17 +205,17 @@ Once you have a better understanding of how the project works, please refer to t
 
 We have provided a basic [Node.js application](https://github.com/parse-community/parse-server-example) that uses the Parse Server module on Express and can be easily deployed to various infrastructure providers:
 
-* [Heroku and mLab](https://devcenter.heroku.com/articles/deploying-a-parse-server-to-heroku)
-* [AWS and Elastic Beanstalk](http://mobile.awsblog.com/post/TxCD57GZLM2JR/How-to-set-up-Parse-Server-on-AWS-using-AWS-Elastic-Beanstalk)
-* [Google App Engine](https://medium.com/@justinbeckwith/deploying-parse-server-to-google-app-engine-6bc0b7451d50)
-* [Microsoft Azure](https://azure.microsoft.com/en-us/blog/azure-welcomes-parse-developers/)
-* [SashiDo](https://blog.sashido.io/tag/migration/)
-* [Digital Ocean](https://www.digitalocean.com/community/tutorials/how-to-run-parse-server-on-ubuntu-14-04)
-* [Pivotal Web Services](https://github.com/cf-platform-eng/pws-parse-server)
-* [Back4app](https://www.back4app.com/docs/get-started/welcome)
-* [Glitch](https://glitch.com/edit/#!/parse-server)
-* [Flynn](https://flynn.io/blog/parse-apps-on-flynn)
-* [Elestio](https://elest.io/open-source/parse)
+- [Heroku and mLab](https://devcenter.heroku.com/articles/deploying-a-parse-server-to-heroku)
+- [AWS and Elastic Beanstalk](http://mobile.awsblog.com/post/TxCD57GZLM2JR/How-to-set-up-Parse-Server-on-AWS-using-AWS-Elastic-Beanstalk)
+- [Google App Engine](https://medium.com/@justinbeckwith/deploying-parse-server-to-google-app-engine-6bc0b7451d50)
+- [Microsoft Azure](https://azure.microsoft.com/en-us/blog/azure-welcomes-parse-developers/)
+- [SashiDo](https://blog.sashido.io/tag/migration/)
+- [Digital Ocean](https://www.digitalocean.com/community/tutorials/how-to-run-parse-server-on-ubuntu-14-04)
+- [Pivotal Web Services](https://github.com/cf-platform-eng/pws-parse-server)
+- [Back4app](https://www.back4app.com/docs/get-started/welcome)
+- [Glitch](https://glitch.com/edit/#!/parse-server)
+- [Flynn](https://flynn.io/blog/parse-apps-on-flynn)
+- [Elestio](https://elest.io/open-source/parse)
 
 ### Parse Server + Express
 
@@ -295,7 +232,7 @@ const server = new ParseServer({
   appId: 'myAppId',
   masterKey: 'myMasterKey', // Keep this key secret!
   fileKey: 'optionalFileKey',
-  serverURL: 'http://localhost:1337/parse' // Don't forget to change to https if needed
+  serverURL: 'http://localhost:1337/parse', // Don't forget to change to https if needed
 });
 
 // Start server
@@ -304,7 +241,7 @@ await server.start();
 // Serve the Parse API on the /parse URL prefix
 app.use('/parse', server.app);
 
-app.listen(1337, function() {
+app.listen(1337, function () {
   console.log('parse-server-example running on port 1337.');
 });
 ```
@@ -326,7 +263,7 @@ The response looks like this:
 ### Status Values
 
 | Value         | Description                                                                 |
-|---------------|-----------------------------------------------------------------------------|
+| ------------- | --------------------------------------------------------------------------- |
 | `initialized` | The server has been created but the `start` method has not been called yet. |
 | `starting`    | The server is starting up.                                                  |
 | `ok`          | The server started and is running.                                          |
@@ -340,27 +277,27 @@ For the full list of available options, run `parse-server --help` or take a look
 
 ## Basic Options
 
-* `appId` **(required)** - The application id to host with this server instance. You can use any arbitrary string. For migrated apps, this should match your hosted Parse app.
-* `masterKey` **(required)** - The master key to use for overriding ACL security.  You can use any arbitrary string. Keep it secret! For migrated apps, this should match your hosted Parse app.
-* `databaseURI` **(required)** - The connection string for your database, i.e. `mongodb://user:pass@host.com/dbname`. Be sure to [URL encode your password](https://app.zencoder.com/docs/guides/getting-started/special-characters-in-usernames-and-passwords) if your password has special characters.
-* `port` - The default port is 1337, specify this parameter to use a different port.
-* `serverURL` - URL to your Parse Server (don't forget to specify http:// or https://). This URL will be used when making requests to Parse Server from Cloud Code.
-* `cloud` - The absolute path to your cloud code `main.js` file.
-* `push` - Configuration options for APNS and GCM push. See the [Push Notifications quick start](https://docs.parseplatform.org/parse-server/guide/#push-notifications-quick-start).
+- `appId` **(required)** - The application id to host with this server instance. You can use any arbitrary string. For migrated apps, this should match your hosted Parse app.
+- `masterKey` **(required)** - The master key to use for overriding ACL security. You can use any arbitrary string. Keep it secret! For migrated apps, this should match your hosted Parse app.
+- `databaseURI` **(required)** - The connection string for your database, i.e. `mongodb://user:pass@host.com/dbname`. Be sure to [URL encode your password](https://app.zencoder.com/docs/guides/getting-started/special-characters-in-usernames-and-passwords) if your password has special characters.
+- `port` - The default port is 1337, specify this parameter to use a different port.
+- `serverURL` - URL to your Parse Server (don't forget to specify http:// or https://). This URL will be used when making requests to Parse Server from Cloud Code.
+- `cloud` - The absolute path to your cloud code `main.js` file.
+- `push` - Configuration options for APNS and FCM push. See the [Push Notifications quick start](https://docs.parseplatform.org/parse-server/guide/#push-notifications-quick-start).
 
 ## Client Key Options
 
 The client keys used with Parse are no longer necessary with Parse Server. If you wish to still require them, perhaps to be able to refuse access to older clients, you can set the keys at initialization time. Setting any of these keys will require all requests to provide one of the configured keys.
 
-* `clientKey`
-* `javascriptKey`
-* `restAPIKey`
-* `dotNetKey`
+- `clientKey`
+- `javascriptKey`
+- `restAPIKey`
+- `dotNetKey`
 
 ## Access Scopes
 
 | Scope          | Internal data | Read-only data <sub>(1)</sub> | Custom data | Restricted by CLP, ACL | Key                 |
-|----------------|---------------|-------------------------------|-------------|------------------------|---------------------|
+| -------------- | ------------- | ----------------------------- | ----------- | ---------------------- | ------------------- |
 | Internal       | r/w           | r/w                           | r/w         | no                     | `maintenanceKey`    |
 | Master         | -/-           | r/-                           | r/w         | no                     | `masterKey`         |
 | ReadOnlyMaster | -/-           | r/-                           | r/-         | no                     | `readOnlyMasterKey` |
@@ -387,16 +324,18 @@ const server = ParseServer({
     module: 'example-mail-adapter',
     options: {
       // Additional adapter options
-      ...mailAdapterOptions
-    }
+      ...mailAdapterOptions,
+    },
   },
 });
 ```
 
 Offical email adapters maintained by Parse Platform:
+
 - [parse-server-api-mail-adapter](https://github.com/parse-community/parse-server-api-mail-adapter) (localization, templates, universally supports any email provider)
 
 Email adapters contributed by the community:
+
 - [parse-smtp-template](https://www.npmjs.com/package/parse-smtp-template) (localization, templates)
 - [parse-server-postmark-adapter](https://www.npmjs.com/package/parse-server-postmark-adapter)
 - [parse-server-sendgrid-adapter](https://www.npmjs.com/package/parse-server-sendgrid-adapter)
@@ -440,8 +379,6 @@ const server = ParseServer({
 
 ## Custom Routes
 
-**Caution, this is an experimental feature that may not be appropriate for production.**
-
 Custom routes allow to build user flows with webpages, similar to the existing password reset and email verification features. Custom routes are defined with the `pages` option in the Parse Server configuration:
 
 ### Example
@@ -451,7 +388,7 @@ const api = new ParseServer({
   ...otherOptions,
 
   pages: {
-    enableRouter: true, // Enables the experimental feature; required for custom routes
+    enableRouter: true,
     customRoutes: [{
       method: 'GET',
       path: 'custom_route',
@@ -476,7 +413,7 @@ The `handler` receives the `request` and returns a `custom_page.html` webpage fr
 The following paths are already used by Parse Server's built-in features and are therefore not available for custom routes. Custom routes with an identical combination of `path` and `method` are ignored.
 
 | Path                        | HTTP Method | Feature            |
-|-----------------------------|-------------|--------------------|
+| --------------------------- | ----------- | ------------------ |
 | `verify_email`              | `GET`       | email verification |
 | `resend_verification_email` | `POST`      | email verification |
 | `choose_password`           | `GET`       | password reset     |
@@ -486,9 +423,9 @@ The following paths are already used by Parse Server's built-in features and are
 ### Parameters
 
 | Parameter                    | Optional | Type            | Default value | Example values        | Environment variable               | Description                                                                                                                                                                                                                                                  |
-|------------------------------|----------|-----------------|---------------|-----------------------|------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ---------------------------- | -------- | --------------- | ------------- | --------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `pages`                      | yes      | `Object`        | `undefined`   | -                     | `PARSE_SERVER_PAGES`               | The options for pages such as password reset and email verification.                                                                                                                                                                                         |
-| `pages.enableRouter`         | yes      | `Boolean`       | `false`       | -                     | `PARSE_SERVER_PAGES_ENABLE_ROUTER` | Is `true` if the pages router should be enabled; this is required for any of the pages options to take effect. **Caution, this is an experimental feature that may not be appropriate for production.**                                                      |
+| `pages.enableRouter`         | yes      | `Boolean`       | `false`       | -                     | `PARSE_SERVER_PAGES_ENABLE_ROUTER` | Is `true` if the pages router should be enabled; this is required for any of the pages options to take effect.                                                                                                                                               |
 | `pages.customRoutes`         | yes      | `Array`         | `[]`          | -                     | `PARSE_SERVER_PAGES_CUSTOM_ROUTES` | The custom routes. The routes are added in the order they are defined here, which has to be considered since requests traverse routes in an ordered manner. Custom routes are traversed after build-in routes such as password reset and email verification. |
 | `pages.customRoutes.method`  |          | `String`        | -             | `GET`, `POST`         | -                                  | The HTTP method of the custom route.                                                                                                                                                                                                                         |
 | `pages.customRoutes.path`    |          | `String`        | -             | `custom_page`         | -                                  | The path of the custom route. Note that the same path can used if the `method` is different, for example a path `custom_page` can have two routes, a `GET` and `POST` route, which will be invoked depending on the HTTP request method.                     |
@@ -503,16 +440,16 @@ const server = ParseServer({
   ...otherOptions,
 
   customPages: {
-    passwordResetSuccess: "http://yourapp.com/passwordResetSuccess",
-    verifyEmailSuccess: "http://yourapp.com/verifyEmailSuccess",
-    parseFrameURL: "http://yourapp.com/parseFrameURL",
-    linkSendSuccess: "http://yourapp.com/linkSendSuccess",
-    linkSendFail: "http://yourapp.com/linkSendFail",
-    invalidLink: "http://yourapp.com/invalidLink",
-    invalidVerificationLink: "http://yourapp.com/invalidVerificationLink",
-    choosePassword: "http://yourapp.com/choosePassword"
-  }
-})
+    passwordResetSuccess: 'http://yourapp.com/passwordResetSuccess',
+    verifyEmailSuccess: 'http://yourapp.com/verifyEmailSuccess',
+    parseFrameURL: 'http://yourapp.com/parseFrameURL',
+    linkSendSuccess: 'http://yourapp.com/linkSendSuccess',
+    linkSendFail: 'http://yourapp.com/linkSendFail',
+    invalidLink: 'http://yourapp.com/invalidLink',
+    invalidVerificationLink: 'http://yourapp.com/invalidVerificationLink',
+    choosePassword: 'http://yourapp.com/choosePassword',
+  },
+});
 ```
 
 ## Using Environment Variables
@@ -548,12 +485,39 @@ You can also find more adapters maintained by the community by searching on [npm
 
 Parse Server allows developers to choose from several options when hosting files:
 
-* `GridFSBucketAdapter` - which is backed by MongoDB
-* `S3Adapter` - which is backed by [Amazon S3](https://aws.amazon.com/s3/)
-* `GCSAdapter` - which is backed by [Google Cloud Storage](https://cloud.google.com/storage/)
-* `FSAdapter` - local file storage
+- `GridFSBucketAdapter` - which is backed by MongoDB
+- `S3Adapter` - which is backed by [Amazon S3](https://aws.amazon.com/s3/)
+- `GCSAdapter` - which is backed by [Google Cloud Storage](https://cloud.google.com/storage/)
+- `FSAdapter` - local file storage
 
 `GridFSBucketAdapter` is used by default and requires no setup, but if you're interested in using Amazon S3, Google Cloud Storage, or local file storage, additional configuration information is available in the [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/#configuring-file-adapters).
+
+### Restricting File URL Domains
+
+Parse objects can reference files by URL. To prevent [SSRF attacks](https://owasp.org/www-community/attacks/Server_Side_Request_Forgery) via crafted file URLs, you can restrict the allowed URL domains using the `fileUpload.allowedFileUrlDomains` option.
+
+This protects against scenarios where an attacker provides a `Parse.File` with an arbitrary URL, for example as a Cloud Function parameter or in a field of type `Object` or `Array`. If Cloud Code or a client calls `getData()` on such a file, the Parse SDK makes an HTTP request to that URL, potentially leaking the server or client IP address and accessing internal services.
+
+> [!NOTE]
+> Fields of type `Parse.File` in the Parse schema are not affected by this attack, because Parse Server discards the URL on write and dynamically generates it on read based on the file adapter configuration.
+
+```javascript
+const parseServer = new ParseServer({
+  ...otherOptions,
+  fileUpload: {
+    allowedFileUrlDomains: ['cdn.example.com', '*.example.com'],
+  },
+});
+```
+
+| Parameter | Optional | Type | Default | Environment Variable |
+|---|---|---|---|---|
+| `fileUpload.allowedFileUrlDomains` | yes | `String[]` | `['*']` | `PARSE_SERVER_FILE_UPLOAD_ALLOWED_FILE_URL_DOMAINS` |
+
+- `['*']` (default) allows file URLs with any domain.
+- `['cdn.example.com']` allows only exact hostname matches.
+- `['*.example.com']` allows any subdomain of `example.com`.
+- `[]` blocks all file URLs; only files referenced by name are allowed.
 
 ## Idempotency Enforcement
 
@@ -581,7 +545,7 @@ let api = new ParseServer({
 ### Parameters <!-- omit in toc -->
 
 | Parameter                  | Optional | Type            | Default value | Example values                                                                                                                                                                                                                                                              | Environment variable                          | Description                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-|----------------------------|----------|-----------------|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| -------------------------- | -------- | --------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `idempotencyOptions`       | yes      | `Object`        | `undefined`   |                                                                                                                                                                                                                                                                             | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS | Setting this enables idempotency enforcement for the specified paths.                                                                                                                                                                                                                                                                                                                                                                                |
 | `idempotencyOptions.paths` | yes      | `Array<String>` | `[]`          | `.*` (all paths, includes the examples below), <br>`functions/.*` (all functions), <br>`jobs/.*` (all jobs), <br>`classes/.*` (all classes), <br>`functions/.*` (all functions), <br>`users` (user creation / update), <br>`installations` (installation creation / update) | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_PATHS   | An array of path patterns that have to match the request path for request deduplication to be enabled. The mount path must not be included, for example to match the request path `/parse/functions/myFunction` specify the path pattern `functions/myFunction`. A trailing slash of the request path is ignored, for example the path pattern `functions/myFunction` matches both `/parse/functions/myFunction` and `/parse/functions/myFunction/`. |
 | `idempotencyOptions.ttl`   | yes      | `Integer`       | `300`         | `60` (60 seconds)                                                                                                                                                                                                                                                           | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_TTL     | The duration in seconds after which a request record is discarded from the database. Duplicate requests due to network issues can be expected to arrive within milliseconds up to several seconds. This value must be greater than `0`.                                                                                                                                                                                                              |
@@ -611,8 +575,6 @@ Assuming the script above is named, `parse_idempotency_delete_expired_records.sh
 
 ### Pages
 
-**Caution, this is an experimental feature that may not be appropriate for production.**
-
 Custom pages as well as feature pages (e.g. password reset, email verification) can be localized with the `pages` option in the Parse Server configuration:
 
 ```js
@@ -620,18 +582,20 @@ const api = new ParseServer({
   ...otherOptions,
 
   pages: {
-    enableRouter: true, // Enables the experimental feature; required for localization
+    enableRouter: true,
     enableLocalization: true,
   }
 }
 ```
 
 Localization is achieved by matching a request-supplied `locale` parameter with localized page content. The locale can be supplied in either the request query, body or header with the following keys:
+
 - query: `locale`
 - body: `locale`
 - header: `x-parse-page-param-locale`
 
 For example, a password reset link with the locale parameter in the query could look like this:
+
 ```
 http://example.com/parse/apps/[appId]/request_password_reset?token=[token]&username=[username]&locale=de-AT
 ```
@@ -647,6 +611,7 @@ Pages can be localized in two ways:
 Pages are localized by using the corresponding file in the directory structure where the files are placed in subdirectories named after the locale or language. The file in the base directory is the default file.
 
 **Example Directory Structure:**
+
 ```js
 root/
 ├── public/                  // pages base path
@@ -658,17 +623,19 @@ root/
 ```
 
 Files are matched with the locale in the following order:
+
 1. Locale match, e.g. locale `de-AT` matches file in folder `de-AT`.
 1. Language match, e.g. locale `de-CH` matches file in folder `de`.
 1. Default; file in base folder is returned.
 
 **Configuration Example:**
+
 ```js
 const api = new ParseServer({
   ...otherOptions,
 
   pages: {
-    enableRouter: true, // Enables the experimental feature; required for localization
+    enableRouter: true,
     enableLocalization: true,
     customUrls: {
       passwordReset: 'https://example.com/page.html'
@@ -678,9 +645,11 @@ const api = new ParseServer({
 ```
 
 Pros:
+
 - All files are complete in their content and can be easily opened and previewed by viewing the file in a browser.
 
 Cons:
+
 - In most cases, a localized page differs only slightly from the default page, which could cause a lot of duplicate code that is difficult to maintain.
 
 #### Localization with JSON Resource
@@ -688,6 +657,7 @@ Cons:
 Pages are localized by adding placeholders in the HTML files and providing a JSON resource that contains the translations to fill into the placeholders.
 
 **Example Directory Structure:**
+
 ```js
 root/
 ├── public/                  // pages base path
@@ -699,6 +669,7 @@ root/
 The JSON resource file loosely follows the [i18next](https://github.com/i18next/i18next) syntax, which is a syntax that is often supported by translation platforms, making it easy to manage translations, exporting them for use in Parse Server, and even to automate this workflow.
 
 **Example JSON Content:**
+
 ```json
 {
   "en": {               // resource for language `en` (English)
@@ -720,12 +691,13 @@ The JSON resource file loosely follows the [i18next](https://github.com/i18next/
 ```
 
 **Configuration Example:**
+
 ```js
 const api = new ParseServer({
   ...otherOptions,
 
   pages: {
-    enableRouter: true, // Enables the experimental feature; required for localization
+    enableRouter: true,
     enableLocalization: true,
     localizationJsonPath: './private/localization.json',
     localizationFallbackLocale: 'en'
@@ -734,9 +706,11 @@ const api = new ParseServer({
 ```
 
 Pros:
+
 - There is only one HTML file to maintain that contains the placeholders that are filled with the translations according to the locale.
 
 Cons:
+
 - Files cannot be easily previewed by viewing the file in a browser because the content contains only placeholders and even HTML or CSS changes may be dynamically applied, e.g. when a localization requires a Right-To-Left layout direction.
 - Style and other fundamental layout changes may be more difficult to apply.
 
@@ -745,18 +719,20 @@ Cons:
 In addition to feature related default parameters such as `appId` and the translations provided via JSON resource, it is possible to define custom dynamic placeholders as part of the router configuration. This works independently of localization and, also if `enableLocalization` is disabled.
 
 **Configuration Example:**
+
 ```js
 const api = new ParseServer({
   ...otherOptions,
 
   pages: {
-    enableRouter: true, // Enables the experimental feature; required for localization
+    enableRouter: true,
     placeholders: {
       exampleKey: 'exampleValue'
     }
   }
 }
 ```
+
 The placeholders can also be provided as function or as async function, with the `locale` and other feature related parameters passed through, to allow for dynamic placeholder values:
 
 ```js
@@ -764,7 +740,7 @@ const api = new ParseServer({
   ...otherOptions,
 
   pages: {
-    enableRouter: true, // Enables the experimental feature; required for localization
+    enableRouter: true,
     placeholders: async (params) => {
       const value = await doSomething(params.locale);
       return {
@@ -782,9 +758,9 @@ The following parameter and placeholder keys are reserved because they are used 
 #### Parameters
 
 | Parameter                                       | Optional | Type                                  | Default value                          | Example values                                       | Environment variable                                            | Description                                                                                                                                                                                                   |
-|-------------------------------------------------|----------|---------------------------------------|----------------------------------------|------------------------------------------------------|-----------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ----------------------------------------------- | -------- | ------------------------------------- | -------------------------------------- | ---------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pages`                                         | yes      | `Object`                              | `undefined`                            | -                                                    | `PARSE_SERVER_PAGES`                                            | The options for pages such as password reset and email verification.                                                                                                                                          |
-| `pages.enableRouter`                            | yes      | `Boolean`                             | `false`                                | -                                                    | `PARSE_SERVER_PAGES_ENABLE_ROUTER`                              | Is `true` if the pages router should be enabled; this is required for any of the pages options to take effect. **Caution, this is an experimental feature that may not be appropriate for production.**       |
+| `pages.enableRouter`                            | yes      | `Boolean`                             | `false`                                | -                                                    | `PARSE_SERVER_PAGES_ENABLE_ROUTER`                              | Is `true` if the pages router should be enabled; this is required for any of the pages options to take effect.                                                                                                |
 | `pages.enableLocalization`                      | yes      | `Boolean`                             | `false`                                | -                                                    | `PARSE_SERVER_PAGES_ENABLE_LOCALIZATION`                        | Is true if pages should be localized; this has no effect on custom page redirects.                                                                                                                            |
 | `pages.localizationJsonPath`                    | yes      | `String`                              | `undefined`                            | `./private/translations.json`                        | `PARSE_SERVER_PAGES_LOCALIZATION_JSON_PATH`                     | The path to the JSON file for localization; the translations will be used to fill template placeholders according to the locale.                                                                              |
 | `pages.localizationFallbackLocale`              | yes      | `String`                              | `en`                                   | `en`, `en-GB`, `default`                             | `PARSE_SERVER_PAGES_LOCALIZATION_FALLBACK_LOCALE`               | The fallback locale for localization if no matching translation is provided for the given locale. This is only relevant when providing translation resources via JSON file.                                   |
@@ -809,18 +785,19 @@ The following parameter and placeholder keys are reserved because they are used 
 ## Logging
 
 Parse Server will, by default, log:
-* to the console
-* daily rotating files as new line delimited JSON
+
+- to the console
+- daily rotating files as new line delimited JSON
 
 Logs are also viewable in Parse Dashboard.
 
-**Want to log each request and response?** Set the `VERBOSE` environment variable when starting `parse-server`. Usage :-  `VERBOSE='1' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
+**Want to log each request and response?** Set the `VERBOSE` environment variable when starting `parse-server`. Usage :- `VERBOSE='1' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
 
-**Want logs to be placed in a different folder?** Pass the `PARSE_SERVER_LOGS_FOLDER` environment variable when starting `parse-server`. Usage :-  `PARSE_SERVER_LOGS_FOLDER='<path-to-logs-folder>' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
+**Want logs to be placed in a different folder?** Pass the `PARSE_SERVER_LOGS_FOLDER` environment variable when starting `parse-server`. Usage :- `PARSE_SERVER_LOGS_FOLDER='<path-to-logs-folder>' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
 
-**Want to log specific levels?** Pass the `logLevel` parameter when starting `parse-server`. Usage :-  `parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --logLevel LOG_LEVEL`
+**Want to log specific levels?** Pass the `logLevel` parameter when starting `parse-server`. Usage :- `parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --logLevel LOG_LEVEL`
 
-**Want new line delimited JSON error logs (for consumption by CloudWatch, Google Cloud Logging, etc)?** Pass the `JSON_LOGS` environment variable when starting `parse-server`. Usage :-  `JSON_LOGS='1' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
+**Want new line delimited JSON error logs (for consumption by CloudWatch, Google Cloud Logging, etc)?** Pass the `JSON_LOGS` environment variable when starting `parse-server`. Usage :- `JSON_LOGS='1' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
 
 # Deprecations
 
@@ -850,7 +827,7 @@ $ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongo
 
 After starting the server, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
 
-***Note:*** Do ***NOT*** use --mountPlayground option in production. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and it is the recommended option for production apps.
+**_Note:_** Do **_NOT_** use --mountPlayground option in production. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and it is the recommended option for production apps.
 
 ### Using Docker
 
@@ -869,11 +846,11 @@ $ docker run --name my-mongo -d mongo
 $ docker run --name my-parse-server --link my-mongo:mongo -v config-vol:/parse-server/config -p 1337:1337 -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test --publicServerURL http://localhost:1337/parse --mountGraphQL --mountPlayground
 ```
 
-***Note:*** *If you want to use [Cloud Code](https://docs.parseplatform.org/cloudcode/guide/), add `-v cloud-code-vol:/parse-server/cloud --cloud /parse-server/cloud/main.js` to the command above. Make sure `main.js` is in the `cloud-code-vol` directory before starting Parse Server.*
+**_Note:_** _If you want to use [Cloud Code](https://docs.parseplatform.org/cloudcode/guide/), add `-v cloud-code-vol:/parse-server/cloud --cloud /parse-server/cloud/main.js` to the command above. Make sure `main.js` is in the `cloud-code-vol` directory before starting Parse Server._
 
 After starting the server, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
 
-***Note:*** Do ***NOT*** use --mountPlayground option in production. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and it is the recommended option for production apps.
+**_Note:_** Do **_NOT_** use --mountPlayground option in production. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and it is the recommended option for production apps.
 
 ### Using Express.js
 
@@ -898,23 +875,20 @@ const parseServer = new ParseServer({
   appId: 'APPLICATION_ID',
   masterKey: 'MASTER_KEY',
   serverURL: 'http://localhost:1337/parse',
-  publicServerURL: 'http://localhost:1337/parse'
+  publicServerURL: 'http://localhost:1337/parse',
 });
 
-const parseGraphQLServer = new ParseGraphQLServer(
-  parseServer,
-  {
-    graphQLPath: '/graphql',
-    playgroundPath: '/playground'
-  }
-);
+const parseGraphQLServer = new ParseGraphQLServer(parseServer, {
+  graphQLPath: '/graphql',
+  playgroundPath: '/playground',
+});
 
 app.use('/parse', parseServer.app); // (Optional) Mounts the REST API
 parseGraphQLServer.applyGraphQL(app); // Mounts the GraphQL API
 parseGraphQLServer.applyPlayground(app); // (Optional) Mounts the GraphQL Playground - do NOT use in Production
 
 await parseServer.start();
-app.listen(1337, function() {
+app.listen(1337, function () {
   console.log('REST API running on http://localhost:1337/parse');
   console.log('GraphQL API running on http://localhost:1337/graphql');
   console.log('GraphQL Playground running on http://localhost:1337/playground');
@@ -930,7 +904,7 @@ $ node index.js
 
 After starting the app, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
 
-***Note:*** Do ***NOT*** mount the GraphQL Playground in production. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and it is the recommended option for production apps.
+**_Note:_** Do **_NOT_** mount the GraphQL Playground in production. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and it is the recommended option for production apps.
 
 ## Checking the API health
 
@@ -1025,13 +999,7 @@ Run the following to create your first object:
 
 ```graphql
 mutation CreateGameScore {
-  createGameScore(
-    fields: {
-      playerName: "Sean Plott"
-      score: 1337
-      cheatMode: false
-    }
-  ) {
+  createGameScore(fields: { playerName: "Sean Plott", score: 1337, cheatMode: false }) {
     id
     updatedAt
     createdAt
@@ -1210,4 +1178,5 @@ Support us with a monthly donation and help us continue our activities. [Become 
 [log_release]: https://github.com/parse-community/parse-server/blob/release/changelogs/CHANGELOG_release.md
 [log_beta]: https://github.com/parse-community/parse-server/blob/beta/changelogs/CHANGELOG_beta.md
 [log_alpha]: https://github.com/parse-community/parse-server/blob/alpha/changelogs/CHANGELOG_alpha.md
+
 [server-options] http://parseplatform.org/parse-server/api/release/ParseServerOptions.html

@@ -366,7 +366,6 @@ describe('batch', () => {
       });
 
       it('should generate separate session for each call', async () => {
-        await reconfigureServer();
         const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
         await myObject.save({ key: 'stringField' });
         await myObject.destroy();

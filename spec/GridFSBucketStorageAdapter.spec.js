@@ -50,10 +50,20 @@ describe_only_db('mongo')('GridFSBucket', () => {
     const databaseURI = 'mongodb://localhost:27017/parse';
     const gfsAdapter = new GridFSBucketAdapter(databaseURI, {
       retryWrites: true,
-      // these are not supported by the mongo client
+      // Parse Server-specific options that should be filtered out before passing to MongoDB client
+      allowPublicExplain: true,
       enableSchemaHooks: true,
       schemaCacheTtl: 5000,
       maxTimeMS: 30000,
+      disableIndexFieldValidation: true,
+      logClientEvents: [{ name: 'commandStarted' }],
+      createIndexUserUsername: true,
+      createIndexUserUsernameCaseInsensitive: true,
+      createIndexUserEmail: true,
+      createIndexUserEmailCaseInsensitive: true,
+      createIndexUserEmailVerifyToken: true,
+      createIndexUserPasswordResetToken: true,
+      createIndexRoleName: true,
     });
 
     const db = await gfsAdapter._connect();
@@ -464,6 +474,14 @@ describe_only_db('mongo')('GridFSBucket', () => {
     expect(gfsResult.toString('utf8')).toBe(twoMegabytesFile);
   });
 
+  it('properly upload a file when disableIndexFieldValidation exist in databaseOptions', async () => {
+    const gfsAdapter = new GridFSBucketAdapter(databaseURI, { disableIndexFieldValidation: true });
+    const twoMegabytesFile = randomString(2048 * 1024);
+    await gfsAdapter.createFile('myFileName', twoMegabytesFile);
+    const gfsResult = await gfsAdapter.getFileData('myFileName');
+    expect(gfsResult.toString('utf8')).toBe(twoMegabytesFile);
+  });
+
   it('properly deletes a file from GridFS', async () => {
     const gfsAdapter = new GridFSBucketAdapter(databaseURI);
     await gfsAdapter.createFile('myFileName', 'a simple file');
@@ -577,5 +595,29 @@ describe_only_db('mongo')('GridFSBucket', () => {
     } catch (e) {
       expect(e.message).toEqual('Client must be connected before running operations');
     }
+  });
+
+  describe('MongoDB Client Metadata', () => {
+    it('should not pass metadata to MongoClient by default', async () => {
+      const gfsAdapter = new GridFSBucketAdapter(databaseURI);
+      await gfsAdapter._connect();
+      const driverInfo = gfsAdapter._client.s.options.driverInfo;
+      // Either driverInfo should be undefined, or it should not contain our custom metadata
+      if (driverInfo) {
+        expect(driverInfo.name).toBeUndefined();
+      }
+      await gfsAdapter.handleShutdown();
+    });
+
+    it('should pass custom metadata to MongoClient when configured', async () => {
+      const customMetadata = { name: 'MyParseServer', version: '1.0.0' };
+      const gfsAdapter = new GridFSBucketAdapter(databaseURI, {
+        clientMetadata: customMetadata
+      });
+      await gfsAdapter._connect();
+      expect(gfsAdapter._client.s.options.driverInfo.name).toBe(customMetadata.name);
+      expect(gfsAdapter._client.s.options.driverInfo.version).toBe(customMetadata.version);
+      await gfsAdapter.handleShutdown();
+    });
   });
 });

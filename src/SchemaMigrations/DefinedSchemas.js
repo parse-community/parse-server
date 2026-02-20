@@ -349,7 +349,10 @@ export class DefinedSchemas {
       Object.keys(cloudSchema.indexes).forEach(indexName => {
         if (!this.isProtectedIndex(localSchema.className, indexName)) {
           if (!localSchema.indexes || !localSchema.indexes[indexName]) {
-            newLocalSchema.deleteIndex(indexName);
+            // If keepUnknownIndex is falsy, then delete all unknown indexes from the db.
+            if(!this.schemaOptions.keepUnknownIndexes){
+              newLocalSchema.deleteIndex(indexName);
+            }
           } else if (
             !this.paramsAreEquals(localSchema.indexes[indexName], cloudSchema.indexes[indexName])
           ) {
@@ -387,7 +390,7 @@ export class DefinedSchemas {
       logger.warn(`classLevelPermissions not provided for ${localSchema.className}.`);
     }
     // Use spread to avoid read only issue (encountered by Moumouls using directAccess)
-    const clp = ({ ...localSchema.classLevelPermissions } || {}: Parse.CLP.PermissionsMap);
+    const clp = ({ ...localSchema.classLevelPermissions || {} }: Parse.CLP.PermissionsMap);
     // To avoid inconsistency we need to remove all rights on addField
     clp.addField = {};
     newLocalSchema.setCLP(clp);

@@ -302,7 +302,7 @@ describe('Parse.Object testing', () => {
 
   it('invalid key name', function (done) {
     const item = new Parse.Object('Item');
-    ok(!item.set({ 'foo^bar': 'baz' }), 'Item should not be updated with invalid key.');
+    expect(() => item.set({ 'foo^bar': 'baz' })).toThrow(new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: foo^bar'));
     item.save({ 'foo^bar': 'baz' }).then(fail, () => done());
   });
 
@@ -1395,10 +1395,10 @@ describe('Parse.Object testing', () => {
       .save()
       .then(function () {
         const query = new Parse.Query(TestObject);
-        return query.find(object.id);
+        return query.get(object.id);
       })
-      .then(function (results) {
-        updatedObject = results[0];
+      .then(function (result) {
+        updatedObject = result;
         updatedObject.set('x', 11);
         return updatedObject.save();
       })
@@ -1409,7 +1409,8 @@ describe('Parse.Object testing', () => {
         equal(object.createdAt.getTime(), updatedObject.createdAt.getTime());
         equal(object.updatedAt.getTime(), updatedObject.updatedAt.getTime());
         done();
-      });
+      })
+      .catch(done.fail);
   });
 
   xit('fetchAll backbone-style callbacks', function (done) {

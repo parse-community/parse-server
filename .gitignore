@@ -46,6 +46,8 @@ node_modules
 
 # Babel.js
 lib/
+# types/* once we have full typescript support, we can generate types from the typescript files
+!types/tsconfig.json
 
 # cache folder
 .cache
@@ -59,3 +61,6 @@ lib/
 
 # Redis Dump
 dump.rdb
+
+# AI agents
+.claude

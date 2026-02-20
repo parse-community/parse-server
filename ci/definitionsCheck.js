@@ -1,8 +1,8 @@
 const fs = require('fs').promises;
 const { exec } = require('child_process');
-const core = require('@actions/core');
 const util = require('util');
 (async () => {
+  const core = await import('@actions/core');
   const [currentDefinitions, currentDocs] = await Promise.all([
     fs.readFile('./src/Options/Definitions.js', 'utf8'),
     fs.readFile('./src/Options/docs.js', 'utf8'),
@@ -14,6 +14,7 @@ const util = require('util');
     fs.readFile('./src/Options/docs.js', 'utf8'),
   ]);
   if (currentDefinitions !== newDefinitions || currentDocs !== newDocs) {
+    // eslint-disable-next-line no-console
     console.error(
       '\x1b[31m%s\x1b[0m',
       'Definitions files cannot be updated manually. Please update src/Options/index.js then run `npm run definitions` to generate definitions.'

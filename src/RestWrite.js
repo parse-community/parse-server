@@ -17,6 +17,7 @@ import RestQuery from './RestQuery';
 import _ from 'lodash';
 import logger from './logger';
 import { requiredColumns } from './Controllers/SchemaController';
+import { createSanitizedError } from './Error';
 
 // query and data are both provided in REST API format. So data
 // types are encoded by plain old objects.
@@ -29,9 +30,10 @@ import { requiredColumns } from './Controllers/SchemaController';
 // for the _User class.
 function RestWrite(config, auth, className, query, data, originalData, clientSDK, context, action) {
   if (auth.isReadOnly) {
-    throw new Parse.Error(
+    throw createSanitizedError(
       Parse.Error.OPERATION_FORBIDDEN,
-      'Cannot perform a write operation when using readOnlyMasterKey'
+      'Cannot perform a write operation when using readOnlyMasterKey',
+      config
     );
   }
   this.config = config;
@@ -199,9 +201,10 @@ RestWrite.prototype.validateClientClassCreation = function () {
       .then(schemaController => schemaController.hasClass(this.className))
       .then(hasClass => {
         if (hasClass !== true) {
-          throw new Parse.Error(
+          throw createSanitizedError(
             Parse.Error.OPERATION_FORBIDDEN,
-            'This user is not allowed to access ' + 'non-existent class: ' + this.className
+            'This user is not allowed to access non-existent class: ' + this.className,
+            this.config
           );
         }
       });
@@ -367,6 +370,25 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function () {
         }
       };
 
+      // add default ACL (only on CREATE, not UPDATE)
+      if (!this.query &&
+        schema?.classLevelPermissions?.ACL &&
+        !this.data.ACL &&
+        JSON.stringify(schema.classLevelPermissions.ACL) !==
+          JSON.stringify({ '*': { read: true, write: true } })
+      ) {
+        const acl = deepcopy(schema.classLevelPermissions.ACL);
+        if (acl.currentUser) {
+          if (this.auth.user?.id) {
+            acl[this.auth.user?.id] = deepcopy(acl.currentUser);
+          }
+          delete acl.currentUser;
+        }
+        this.data.ACL = acl;
+        this.storage.fieldsChangedByTrigger = this.storage.fieldsChangedByTrigger || [];
+        this.storage.fieldsChangedByTrigger.push('ACL');
+      }
+
       // Add default fields
       if (!this.query) {
         // allow customizing createdAt and updatedAt when using maintenance key
@@ -458,9 +480,8 @@ RestWrite.prototype.validateAuthData = function () {
   var providers = Object.keys(authData);
   if (providers.length > 0) {
     const canHandleAuthData = providers.some(provider => {
-      var providerAuthData = authData[provider];
-      var hasToken = providerAuthData && providerAuthData.id;
-      return hasToken || providerAuthData === null;
+      const providerAuthData = authData[provider] || {};
+      return !!Object.keys(providerAuthData).length;
     });
     if (canHandleAuthData || hasUsernameAndPassword || this.auth.isMaster || this.getUserId()) {
       return this.handleAuthData(authData);
@@ -520,7 +541,15 @@ RestWrite.prototype.ensureUniqueAuthDataId = async function () {
 };
 
 RestWrite.prototype.handleAuthData = async function (authData) {
-  const r = await Auth.findUsersWithAuthData(this.config, authData);
+  let currentUserAuthData;
+  if (this.query?.objectId) {
+    const [currentUser] = await this.config.database.find(
+      '_User',
+      { objectId: this.query.objectId }
+    );
+    currentUserAuthData = currentUser?.authData;
+  }
+  const r = await Auth.findUsersWithAuthData(this.config, authData, true, currentUserAuthData);
   const results = this.filteredObjectsByACL(r);
 
   const userId = this.getUserId();
@@ -548,7 +577,6 @@ RestWrite.prototype.handleAuthData = async function (authData) {
 
   // User found with provided authData
   if (results.length === 1) {
-
     this.storage.authProvider = Object.keys(authData).join(',');
 
     const { hasMutatedAuthData, mutatedAuthData } = Auth.hasMutatedAuthData(
@@ -642,8 +670,11 @@ RestWrite.prototype.checkRestrictedFields = async function () {
   }
 
   if (!this.auth.isMaintenance && !this.auth.isMaster && 'emailVerified' in this.data) {
-    const error = `Clients aren't allowed to manually update email verification.`;
-    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
+    throw createSanitizedError(
+      Parse.Error.OPERATION_FORBIDDEN,
+      "Clients aren't allowed to manually update email verification.",
+      this.config
+    );
   }
 };
 
@@ -748,6 +779,30 @@ RestWrite.prototype._validateUserName = function () {
     });
 };
 
+RestWrite.buildCreatedWith = function (action, authProvider) {
+  return { action, authProvider: authProvider || 'password' };
+};
+
+RestWrite.prototype.getCreatedWith = function () {
+  if (this.storage.createdWith) {
+    return this.storage.createdWith;
+  }
+  const isCreateOperation = !this.query;
+  const authDataProvider =
+    this.data?.authData &&
+    Object.keys(this.data.authData).length &&
+    Object.keys(this.data.authData).join(',');
+  const authProvider = this.storage.authProvider || authDataProvider;
+  // storage.authProvider is only set for login (existing user found in handleAuthData)
+  const action = this.storage.authProvider ? 'login' : isCreateOperation ? 'signup' : undefined;
+  if (!action) {
+    return;
+  }
+  const resolvedAuthProvider = authProvider || (action === 'signup' ? 'password' : undefined);
+  this.storage.createdWith = RestWrite.buildCreatedWith(action, resolvedAuthProvider);
+  return this.storage.createdWith;
+};
+
 /*
   As with usernames, Parse should not allow case insensitive collisions of email.
   unlike with usernames (which can have case insensitive collisions in the case of
@@ -803,6 +858,7 @@ RestWrite.prototype._validateEmail = function () {
           master: this.auth.isMaster,
           ip: this.config.ip,
           installationId: this.auth.installationId,
+          createdWith: this.getCreatedWith(),
         };
         return this.config.userController.setEmailVerifyToken(this.data, request, this.storage);
       }
@@ -938,6 +994,7 @@ RestWrite.prototype.createSessionTokenIfNeeded = async function () {
       master: this.auth.isMaster,
       ip: this.config.ip,
       installationId: this.auth.installationId,
+      createdWith: this.getCreatedWith(),
     };
     // Get verification conditions which can be booleans or functions; the purpose of this async/await
     // structure is to avoid unnecessarily executing subsequent functions if previous ones fail in the
@@ -962,14 +1019,14 @@ RestWrite.prototype.createSessionToken = async function () {
 
   if (this.storage.authProvider == null && this.data.authData) {
     this.storage.authProvider = Object.keys(this.data.authData).join(',');
+    // Invalidate cached createdWith since authProvider was just resolved
+    delete this.storage.createdWith;
   }
 
+  const createdWith = this.getCreatedWith();
   const { sessionData, createSession } = RestWrite.createSession(this.config, {
     userId: this.objectId(),
-    createdWith: {
-      action: this.storage.authProvider ? 'login' : 'signup',
-      authProvider: this.storage.authProvider || 'password',
-    },
+    createdWith,
     installationId: this.auth.installationId,
   });
 
@@ -1432,9 +1489,10 @@ RestWrite.prototype.runDatabaseOperation = function () {
   }
 
   if (this.className === '_User' && this.query && this.auth.isUnauthenticated()) {
-    throw new Parse.Error(
+    throw createSanitizedError(
       Parse.Error.SESSION_MISSING,
-      `Cannot modify user ${this.query.objectId}.`
+      `Cannot modify user ${this.query.objectId}.`,
+      this.config
     );
   }
 
@@ -1725,6 +1783,14 @@ RestWrite.prototype.buildParseObjects = function () {
   const readOnlyAttributes = className.constructor.readOnlyAttributes
     ? className.constructor.readOnlyAttributes()
     : [];
+
+  // For _Role class, 'name' cannot be set after the role has an objectId.
+  // In afterSave context, _handleSaveResponse has already set the objectId,
+  // so we treat 'name' as read-only to avoid Parse SDK validation errors.
+  const isRoleAfterSave = this.className === '_Role' && this.response && !this.query;
+  if (isRoleAfterSave && this.data.name && !readOnlyAttributes.includes('name')) {
+    readOnlyAttributes.push('name');
+  }
   if (!this.originalData) {
     for (const attribute of readOnlyAttributes) {
       extraData[attribute] = this.data[attribute];

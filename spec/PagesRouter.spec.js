@@ -108,7 +108,7 @@ describe('Pages Router', () => {
       const res = await request({
         method: 'POST',
         url: 'http://localhost:8378/1/apps/test/request_password_reset',
-        body: `new_password=user1&token=43634643&username=username`,
+        body: `new_password=user1&token=43634643`,
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           'X-Requested-With': 'XMLHttpRequest',
@@ -124,7 +124,7 @@ describe('Pages Router', () => {
         await request({
           method: 'POST',
           url: 'http://localhost:8378/1/apps/test/request_password_reset',
-          body: `new_password=&token=132414&username=Johnny`,
+          body: `new_password=&token=132414`,
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             'X-Requested-With': 'XMLHttpRequest',
@@ -137,30 +137,12 @@ describe('Pages Router', () => {
       }
     });
 
-    it('request_password_reset: responds with AJAX error on missing username', async () => {
-      try {
-        await request({
-          method: 'POST',
-          url: 'http://localhost:8378/1/apps/test/request_password_reset',
-          body: `new_password=user1&token=43634643&username=`,
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-Requested-With': 'XMLHttpRequest',
-          },
-          followRedirects: false,
-        });
-      } catch (error) {
-        expect(error.status).not.toBe(302);
-        expect(error.text).toEqual('{"code":200,"error":"Missing username"}');
-      }
-    });
-
     it('request_password_reset: responds with AJAX error on missing token', async () => {
       try {
         await request({
           method: 'POST',
           url: 'http://localhost:8378/1/apps/test/request_password_reset',
-          body: `new_password=user1&token=&username=Johnny`,
+          body: `new_password=user1&token=`,
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             'X-Requested-With': 'XMLHttpRequest',
@@ -243,9 +225,7 @@ describe('Pages Router', () => {
         expect(Config.get(Parse.applicationId).pages.forceRedirect).toBe(
           Definitions.PagesOptions.forceRedirect.default
         );
-        expect(Config.get(Parse.applicationId).pages.pagesPath).toBe(
-          Definitions.PagesOptions.pagesPath.default
-        );
+        expect(Config.get(Parse.applicationId).pages.pagesPath).toBeUndefined();
         expect(Config.get(Parse.applicationId).pages.pagesEndpoint).toBe(
           Definitions.PagesOptions.pagesEndpoint.default
         );
@@ -577,7 +557,7 @@ describe('Pages Router', () => {
         spyOnProperty(Page.prototype, 'defaultFile').and.returnValue(jsonPageFile);
 
         const response = await request({
-          url: `http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&username=exampleUsername&locale=${exampleLocale}`,
+          url: `http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&locale=${exampleLocale}`,
           followRedirects: false,
         }).catch(e => e);
         expect(response.status).toEqual(200);
@@ -626,7 +606,7 @@ describe('Pages Router', () => {
         await reconfigureServer(config);
         const response = await request({
           url:
-            'http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&username=exampleUsername&locale=de-AT',
+            'http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&locale=de-AT',
           followRedirects: false,
           method: 'POST',
         });
@@ -640,7 +620,7 @@ describe('Pages Router', () => {
         await reconfigureServer(config);
         const response = await request({
           url:
-            'http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&username=exampleUsername&locale=de-AT',
+            'http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&locale=de-AT',
           followRedirects: false,
           method: 'GET',
         });
@@ -676,13 +656,11 @@ describe('Pages Router', () => {
         const appId = linkResponse.headers['x-parse-page-param-appid'];
         const token = linkResponse.headers['x-parse-page-param-token'];
         const locale = linkResponse.headers['x-parse-page-param-locale'];
-        const username = linkResponse.headers['x-parse-page-param-username'];
         const publicServerUrl = linkResponse.headers['x-parse-page-param-publicserverurl'];
         const passwordResetPagePath = pageResponse.calls.all()[0].args[0];
         expect(appId).toBeDefined();
         expect(token).toBeDefined();
         expect(locale).toBeDefined();
-        expect(username).toBeDefined();
         expect(publicServerUrl).toBeDefined();
         expect(passwordResetPagePath).toMatch(
           new RegExp(`\/${exampleLocale}\/${pages.passwordReset.defaultFile}`)
@@ -696,7 +674,6 @@ describe('Pages Router', () => {
           body: {
             token,
             locale,
-            username,
             new_password: 'newPassword',
           },
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -793,15 +770,13 @@ describe('Pages Router', () => {
 
         const appId = linkResponse.headers['x-parse-page-param-appid'];
         const locale = linkResponse.headers['x-parse-page-param-locale'];
-        const username = linkResponse.headers['x-parse-page-param-username'];
         const publicServerUrl = linkResponse.headers['x-parse-page-param-publicserverurl'];
         const invalidVerificationPagePath = pageResponse.calls.all()[0].args[0];
         expect(appId).toBeDefined();
         expect(locale).toBe(exampleLocale);
-        expect(username).toBeDefined();
         expect(publicServerUrl).toBeDefined();
         expect(invalidVerificationPagePath).toMatch(
-          new RegExp(`\/${exampleLocale}\/${pages.emailVerificationLinkExpired.defaultFile}`)
+          new RegExp(`\/${exampleLocale}\/${pages.emailVerificationLinkInvalid.defaultFile}`)
         );
 
         const formUrl = `${publicServerUrl}/apps/${appId}/resend_verification_email`;
@@ -810,7 +785,7 @@ describe('Pages Router', () => {
           method: 'POST',
           body: {
             locale,
-            username,
+            username: 'exampleUsername',
           },
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           followRedirects: false,
@@ -847,17 +822,15 @@ describe('Pages Router', () => {
 
         const appId = linkResponse.headers['x-parse-page-param-appid'];
         const locale = linkResponse.headers['x-parse-page-param-locale'];
-        const username = linkResponse.headers['x-parse-page-param-username'];
         const publicServerUrl = linkResponse.headers['x-parse-page-param-publicserverurl'];
         await jasmine.timeout();
 
         const invalidVerificationPagePath = pageResponse.calls.all()[0].args[0];
         expect(appId).toBeDefined();
         expect(locale).toBe(exampleLocale);
-        expect(username).toBeDefined();
         expect(publicServerUrl).toBeDefined();
         expect(invalidVerificationPagePath).toMatch(
-          new RegExp(`\/${exampleLocale}\/${pages.emailVerificationLinkExpired.defaultFile}`)
+          new RegExp(`\/${exampleLocale}\/${pages.emailVerificationLinkInvalid.defaultFile}`)
         );
 
         spyOn(UserController.prototype, 'resendVerificationEmail').and.callFake(() =>
@@ -870,7 +843,7 @@ describe('Pages Router', () => {
           method: 'POST',
           body: {
             locale,
-            username,
+            username: 'exampleUsername',
           },
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           followRedirects: false,
@@ -1155,12 +1128,10 @@ describe('Pages Router', () => {
 
         const appId = linkResponse.headers['x-parse-page-param-appid'];
         const token = linkResponse.headers['x-parse-page-param-token'];
-        const username = linkResponse.headers['x-parse-page-param-username'];
         const publicServerUrl = linkResponse.headers['x-parse-page-param-publicserverurl'];
         const passwordResetPagePath = pageResponse.calls.all()[0].args[0];
         expect(appId).toBeDefined();
         expect(token).toBeDefined();
-        expect(username).toBeDefined();
         expect(publicServerUrl).toBeDefined();
         expect(passwordResetPagePath).toMatch(new RegExp(`\/${pages.passwordReset.defaultFile}`));
         pageResponse.calls.reset();
@@ -1171,7 +1142,6 @@ describe('Pages Router', () => {
           method: 'POST',
           body: {
             token,
-            username,
             new_password: 'newPassword',
           },
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -1206,6 +1176,159 @@ describe('Pages Router', () => {
         const pagePath = pageResponse.calls.all()[0].args[0];
         expect(pagePath).toMatch(new RegExp(`\/${pages.emailVerificationSuccess.defaultFile}`));
       });
+    });
+  });
+
+  describe('async publicServerURL', () => {
+    it('resolves async publicServerURL for password reset page', async () => {
+      const emailAdapter = {
+        sendVerificationEmail: () => Promise.resolve(),
+        sendPasswordResetEmail: () => Promise.resolve(),
+        sendMail: () => {},
+      };
+      await reconfigureServer({
+        appId: 'test',
+        appName: 'exampleAppname',
+        verifyUserEmails: true,
+        emailAdapter,
+        publicServerURL: () => 'http://localhost:8378/1',
+        pages: { enableRouter: true },
+      });
+
+      const user = new Parse.User();
+      user.setUsername('asyncUrlUser');
+      user.setPassword('examplePassword');
+      user.set('email', 'async-url@example.com');
+      await user.signUp();
+      await Parse.User.requestPasswordReset('async-url@example.com');
+
+      const response = await request({
+        url: 'http://localhost:8378/1/apps/test/request_password_reset?token=invalidToken',
+        followRedirects: false,
+      }).catch(e => e);
+      expect(response.status).toBe(200);
+      expect(response.text).toContain('Invalid password reset link!');
+    });
+
+    it('resolves async publicServerURL for email verification page', async () => {
+      const emailAdapter = {
+        sendVerificationEmail: () => Promise.resolve(),
+        sendPasswordResetEmail: () => Promise.resolve(),
+        sendMail: () => {},
+      };
+      await reconfigureServer({
+        appId: 'test',
+        appName: 'exampleAppname',
+        verifyUserEmails: true,
+        emailAdapter,
+        publicServerURL: () => 'http://localhost:8378/1',
+        pages: { enableRouter: true },
+      });
+
+      const response = await request({
+        url: 'http://localhost:8378/1/apps/test/verify_email?token=invalidToken',
+        followRedirects: false,
+      }).catch(e => e);
+      expect(response.status).toBe(200);
+      expect(response.text).toContain('Invalid verification link!');
+    });
+  });
+
+  describe('pagesPath resolution', () => {
+    it('should serve pages when current working directory differs from module directory', async () => {
+      const originalCwd = process.cwd();
+      const os = require('os');
+      process.chdir(os.tmpdir());
+
+      try {
+        await reconfigureServer({
+          appId: 'test',
+          appName: 'exampleAppname',
+          publicServerURL: 'http://localhost:8378/1',
+          pages: { enableRouter: true },
+        });
+
+        // Request the password reset page with an invalid token;
+        // even with an invalid token, the server should serve the
+        // "invalid link" page (200), not a 404. A 404 indicates the
+        // HTML template files could not be found because pagesPath
+        // resolved to the wrong directory.
+        const response = await request({
+          url: 'http://localhost:8378/1/apps/test/request_password_reset?token=invalidToken',
+        }).catch(e => e);
+        expect(response.status).toBe(200);
+        expect(response.text).toContain('Invalid password reset link');
+      } finally {
+        process.chdir(originalCwd);
+      }
+    });
+  });
+
+  describe('XSS Protection', () => {
+    beforeEach(async () => {
+      await reconfigureServer({
+        appId: 'test',
+        appName: 'exampleAppname',
+        publicServerURL: 'http://localhost:8378/1',
+        pages: { enableRouter: true },
+      });
+    });
+
+    it('should escape XSS payloads in token parameter', async () => {
+      const xssPayload = '"><script>alert("XSS")</script>';
+      const response = await request({
+        url: `http://localhost:8378/1/apps/choose_password?token=${encodeURIComponent(xssPayload)}&username=test&appId=test`,
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.text).not.toContain('<script>alert("XSS")</script>');
+      expect(response.text).toContain('&quot;&gt;&lt;script&gt;');
+    });
+
+    it('should escape XSS in username parameter', async () => {
+      const xssUsername = '<img src=x onerror=alert(1)>';
+      const response = await request({
+        url: `http://localhost:8378/1/apps/choose_password?username=${encodeURIComponent(xssUsername)}&appId=test`,
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.text).not.toContain('<img src=x onerror=alert(1)>');
+      expect(response.text).toContain('&lt;img');
+    });
+
+    it('should escape XSS in locale parameter', async () => {
+      const xssLocale = '"><svg/onload=alert(1)>';
+      const response = await request({
+        url: `http://localhost:8378/1/apps/choose_password?locale=${encodeURIComponent(xssLocale)}&appId=test`,
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.text).not.toContain('<svg/onload=alert(1)>');
+      expect(response.text).toContain('&quot;&gt;&lt;svg');
+    });
+
+    it('should handle legitimate usernames with quotes correctly', async () => {
+      const username = "O'Brien";
+      const response = await request({
+        url: `http://localhost:8378/1/apps/choose_password?username=${encodeURIComponent(username)}&appId=test`,
+      });
+
+      expect(response.status).toBe(200);
+      // Should be properly escaped as HTML entity
+      expect(response.text).toContain('O&#39;Brien');
+      // Should NOT contain unescaped quote that breaks HTML
+      expect(response.text).not.toContain('value="O\'Brien"');
+    });
+
+    it('should handle legitimate usernames with ampersands correctly', async () => {
+      const username = 'Smith & Co';
+      const response = await request({
+        url: `http://localhost:8378/1/apps/choose_password?username=${encodeURIComponent(username)}&appId=test`,
+      });
+
+      expect(response.status).toBe(200);
+      // Should be properly escaped
+      expect(response.text).toContain('Smith &amp; Co');
     });
   });
 });

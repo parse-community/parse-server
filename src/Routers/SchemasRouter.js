@@ -5,6 +5,7 @@ var Parse = require('parse/node').Parse,
 
 import PromiseRouter from '../PromiseRouter';
 import * as middleware from '../middlewares';
+import { createSanitizedError } from '../Error';
 
 function classNameMismatchResponse(bodyClass, pathClass) {
   throw new Parse.Error(
@@ -72,46 +73,49 @@ export const internalUpdateSchema = async (className, body, config) => {
 async function createSchema(req) {
   checkIfDefinedSchemasIsUsed(req);
   if (req.auth.isReadOnly) {
-    throw new Parse.Error(
+    throw createSanitizedError(
       Parse.Error.OPERATION_FORBIDDEN,
-      "read-only masterKey isn't allowed to create a schema."
+      "read-only masterKey isn't allowed to create a schema.",
+      req.config
     );
   }
-  if (req.params.className && req.body.className) {
+  if (req.params.className && req.body?.className) {
     if (req.params.className != req.body.className) {
       return classNameMismatchResponse(req.body.className, req.params.className);
     }
   }
 
-  const className = req.params.className || req.body.className;
+  const className = req.params.className || req.body?.className;
   if (!className) {
     throw new Parse.Error(135, `POST ${req.path} needs a class name.`);
   }
 
-  return await internalCreateSchema(className, req.body, req.config);
+  return await internalCreateSchema(className, req.body || {}, req.config);
 }
 
 function modifySchema(req) {
   checkIfDefinedSchemasIsUsed(req);
   if (req.auth.isReadOnly) {
-    throw new Parse.Error(
+    throw createSanitizedError(
       Parse.Error.OPERATION_FORBIDDEN,
-      "read-only masterKey isn't allowed to update a schema."
+      "read-only masterKey isn't allowed to update a schema.",
+      req.config
     );
   }
-  if (req.body.className && req.body.className != req.params.className) {
+  if (req.body?.className && req.body.className != req.params.className) {
     return classNameMismatchResponse(req.body.className, req.params.className);
   }
   const className = req.params.className;
 
-  return internalUpdateSchema(className, req.body, req.config);
+  return internalUpdateSchema(className, req.body || {}, req.config);
 }
 
 const deleteSchema = req => {
   if (req.auth.isReadOnly) {
-    throw new Parse.Error(
+    throw createSanitizedError(
       Parse.Error.OPERATION_FORBIDDEN,
-      "read-only masterKey isn't allowed to delete a schema."
+      "read-only masterKey isn't allowed to delete a schema.",
+      req.config
     );
   }
   if (!SchemaController.classNameIsValid(req.params.className)) {

@@ -1,4 +1,3 @@
-const core = require('@actions/core');
 const semver = require('semver');
 const yaml = require('yaml');
 const fs = require('fs').promises;
@@ -220,6 +219,8 @@ class CiVersionCheck {
    * Runs the check.
    */
   async check() {
+    const core = await import('@actions/core');
+    /* eslint-disable no-console */
     try {
       console.log(`\nChecking ${this.packageName} versions in CI environments...`);
 
@@ -284,6 +285,7 @@ class CiVersionCheck {
       const msg = `Failed to check ${this.packageName} versions with error: ${e}`;
       core.setFailed(msg);
     }
+    /* eslint-enable no-console */
   }
 }
 

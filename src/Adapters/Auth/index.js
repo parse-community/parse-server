@@ -3,30 +3,31 @@ import Parse from 'parse/node';
 import AuthAdapter from './AuthAdapter';
 
 const apple = require('./apple');
-const gcenter = require('./gcenter');
-const gpgames = require('./gpgames');
-const facebook = require('./facebook');
-const instagram = require('./instagram');
-const linkedin = require('./linkedin');
-const meetup = require('./meetup');
-import mfa from './mfa';
-const google = require('./google');
-const github = require('./github');
-const twitter = require('./twitter');
-const spotify = require('./spotify');
 const digits = require('./twitter'); // digits tokens are validated by twitter
-const janrainengage = require('./janrainengage');
+const facebook = require('./facebook');
+import gcenter from './gcenter';
+import github from './github';
+const google = require('./google');
+import gpgames from './gpgames';
+import instagram from './instagram';
 const janraincapture = require('./janraincapture');
-const line = require('./line');
-const vkontakte = require('./vkontakte');
-const qq = require('./qq');
-const wechat = require('./wechat');
-const weibo = require('./weibo');
-const oauth2 = require('./oauth2');
-const phantauth = require('./phantauth');
-const microsoft = require('./microsoft');
+const janrainengage = require('./janrainengage');
 const keycloak = require('./keycloak');
 const ldap = require('./ldap');
+import line from './line';
+import linkedin from './linkedin';
+const meetup = require('./meetup');
+import mfa from './mfa';
+import microsoft from './microsoft';
+import oauth2 from './oauth2';
+const phantauth = require('./phantauth');
+import qq from './qq';
+import spotify from './spotify';
+import twitter from './twitter';
+const vkontakte = require('./vkontakte');
+import wechat from './wechat';
+import weibo from './weibo';
+
 
 const anonymous = {
   validateAuthData: () => {
@@ -241,9 +242,9 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
           };
           const result = afterFind.call(
             adapter,
-            requestObject,
             authData[provider],
-            providerOptions
+            providerOptions,
+            requestObject,
           );
           if (result) {
             authData[provider] = result;
@@ -253,8 +254,25 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
     );
   };
 
+  // Returns the list of auth provider names that have a valid adapter configured.
+  // This includes both built-in providers and custom providers from authOptions.
+  const getProviders = function () {
+    const allProviders = new Set([...Object.keys(providers), ...Object.keys(authOptions)]);
+    if (!_enableAnonymousUsers) {
+      allProviders.delete('anonymous');
+    }
+    return [...allProviders].filter(provider => {
+      try {
+        return !!loadAuthAdapter(provider, authOptions);
+      } catch {
+        return false;
+      }
+    });
+  };
+
   return Object.freeze({
     getValidatorForProvider,
+    getProviders,
     setEnableAnonymousUsers,
     runAfterFind,
   });

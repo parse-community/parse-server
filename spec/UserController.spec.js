@@ -1,6 +1,7 @@
 const emailAdapter = require('./support/MockEmailAdapter');
 const Config = require('../lib/Config');
 const Auth = require('../lib/Auth');
+const { resolvingPromise } = require('../lib/TestUtils');
 
 describe('UserController', () => {
   describe('sendVerificationEmail', () => {
@@ -17,9 +18,10 @@ describe('UserController', () => {
         });
 
         let emailOptions;
+        const sendPromise = resolvingPromise();
         emailAdapter.sendVerificationEmail = options => {
           emailOptions = options;
-          return Promise.resolve();
+          sendPromise.resolve();
         };
 
         const username = 'verificationUser';
@@ -28,6 +30,7 @@ describe('UserController', () => {
         user.setPassword('pass');
         user.setEmail('verification@example.com');
         await user.signUp();
+        await sendPromise;
 
         const config = Config.get('test');
         const rawUser = await config.database.find('_User', { username }, {}, Auth.maintenance(config));
@@ -35,7 +38,8 @@ describe('UserController', () => {
         const rawToken = rawUser[0]._email_verify_token;
         expect(rawToken).toBeDefined();
         expect(rawUsername).toBe(username);
-        expect(emailOptions.link).toEqual(`http://www.example.com/apps/test/verify_email?token=${rawToken}&username=${username}`);
+
+        expect(emailOptions.link).toEqual(`http://www.example.com/apps/test/verify_email?token=${rawToken}`);
       });
     });
 
@@ -52,9 +56,10 @@ describe('UserController', () => {
         });
 
         let emailOptions;
+        const sendPromise = resolvingPromise();
         emailAdapter.sendVerificationEmail = options => {
           emailOptions = options;
-          return Promise.resolve();
+          sendPromise.resolve();
         };
 
         const username = 'verificationUser';
@@ -63,6 +68,7 @@ describe('UserController', () => {
         user.setPassword('pass');
         user.setEmail('verification@example.com');
         await user.signUp();
+        await sendPromise;
 
         const config = Config.get('test');
         const rawUser = await config.database.find('_User', { username }, {}, Auth.maintenance(config));
@@ -70,7 +76,8 @@ describe('UserController', () => {
         const rawToken = rawUser[0]._email_verify_token;
         expect(rawToken).toBeDefined();
         expect(rawUsername).toBe(username);
-        expect(emailOptions.link).toEqual(`http://someother.example.com/handle-parse-iframe?link=%2Fapps%2Ftest%2Fverify_email&token=${rawToken}&username=${username}`);
+
+        expect(emailOptions.link).toEqual(`http://someother.example.com/handle-parse-iframe?link=%2Fapps%2Ftest%2Fverify_email&token=${rawToken}`);
       });
     });
   });

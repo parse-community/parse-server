@@ -20,8 +20,12 @@ const hasAllPODobject = () => {
 };
 
 describe('SchemaController', () => {
+  let loggerErrorSpy;
+
   beforeEach(() => {
     config = Config.get('test');
+    const logger = require('../lib/logger').default;
+    loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
   });
 
   it('can validate one object', done => {
@@ -275,6 +279,7 @@ describe('SchemaController', () => {
         })
         .then(results => {
           expect(results.length).toBe(1);
+          loggerErrorSpy.calls.reset();
           const query = new Parse.Query('Stuff');
           return query.count();
         })
@@ -283,7 +288,9 @@ describe('SchemaController', () => {
             fail('Class permissions should have rejected this query.');
           },
           err => {
-            expect(err.message).toEqual('Permission denied for action count on class Stuff.');
+            expect(err.message).toEqual('Permission denied');
+            expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Permission denied for action count on class Stuff'));
             done();
           }
         )
@@ -309,6 +316,12 @@ describe('SchemaController', () => {
             foo: { type: 'String' },
           },
           classLevelPermissions: {
+            ACL: {
+              '*': {
+                read: true,
+                write: true,
+              },
+            },
             find: { '*': true },
             get: { '*': true },
             count: { '*': true },
@@ -329,6 +342,12 @@ describe('SchemaController', () => {
 
   it('can update classes without needing an object', done => {
     const levelPermissions = {
+      ACL: {
+        '*': {
+          read: true,
+          write: true,
+        },
+      },
       find: { '*': true },
       get: { '*': true },
       count: { '*': true },
@@ -489,6 +508,12 @@ describe('SchemaController', () => {
             foo: { type: 'String' },
           },
           classLevelPermissions: {
+            ACL: {
+              '*': {
+                read: true,
+                write: true,
+              },
+            },
             find: { '*': true },
             get: { '*': true },
             count: { '*': true },
@@ -694,6 +719,12 @@ describe('SchemaController', () => {
 
   it('refuses to add CLP with incorrect find', done => {
     const levelPermissions = {
+      ACL: {
+        '*': {
+          read: true,
+          write: true,
+        },
+      },
       find: { '*': false },
       get: { '*': true },
       create: { '*': true },
@@ -717,6 +748,12 @@ describe('SchemaController', () => {
 
   it('refuses to add CLP when incorrectly sending a string to protectedFields object value instead of an array', done => {
     const levelPermissions = {
+      ACL: {
+        '*': {
+          read: true,
+          write: true,
+        },
+      },
       find: { '*': true },
       get: { '*': true },
       create: { '*': true },
@@ -785,6 +822,12 @@ describe('SchemaController', () => {
             aPolygon: { type: 'Polygon' },
           },
           classLevelPermissions: {
+            ACL: {
+              '*': {
+                read: true,
+                write: true,
+              },
+            },
             find: { '*': true },
             get: { '*': true },
             count: { '*': true },
@@ -832,6 +875,12 @@ describe('SchemaController', () => {
             parseVersion: { type: 'String' },
           },
           classLevelPermissions: {
+            ACL: {
+              '*': {
+                read: true,
+                write: true,
+              },
+            },
             find: { '*': true },
             get: { '*': true },
             count: { '*': true },
@@ -866,6 +915,12 @@ describe('SchemaController', () => {
             roles: { type: 'Relation', targetClass: '_Role' },
           },
           classLevelPermissions: {
+            ACL: {
+              '*': {
+                read: true,
+                write: true,
+              },
+            },
             find: { '*': true },
             get: { '*': true },
             count: { '*': true },
@@ -900,6 +955,12 @@ describe('SchemaController', () => {
             ACL: { type: 'ACL' },
           },
           classLevelPermissions: {
+            ACL: {
+              '*': {
+                read: true,
+                write: true,
+              },
+            },
             find: { '*': true },
             get: { '*': true },
             count: { '*': true },
@@ -1070,6 +1131,12 @@ describe('SchemaController', () => {
               relationField: { type: 'Relation', targetClass: '_User' },
             },
             classLevelPermissions: {
+              ACL: {
+                '*': {
+                  read: true,
+                  write: true,
+                },
+              },
               find: { '*': true },
               get: { '*': true },
               count: { '*': true },
@@ -1367,8 +1434,12 @@ describe('SchemaController', () => {
 });
 
 describe('Class Level Permissions for requiredAuth', () => {
+  let loggerErrorSpy;
+
   beforeEach(() => {
     config = Config.get('test');
+    const logger = require('../lib/logger').default;
+    loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
   });
 
   function createUser() {
@@ -1393,6 +1464,7 @@ describe('Class Level Permissions for requiredAuth', () => {
         });
       })
       .then(() => {
+        loggerErrorSpy.calls.reset();
         const query = new Parse.Query('Stuff');
         return query.find();
       })
@@ -1402,7 +1474,8 @@ describe('Class Level Permissions for requiredAuth', () => {
           done();
         },
         e => {
-          expect(e.message).toEqual('Permission denied, user needs to be authenticated.');
+          expect(e.message).toEqual('Permission denied');
+          expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Permission denied, user needs to be authenticated.'));
           done();
         }
       );
@@ -1491,6 +1564,7 @@ describe('Class Level Permissions for requiredAuth', () => {
         });
       })
       .then(() => {
+        loggerErrorSpy.calls.reset();
         const stuff = new Parse.Object('Stuff');
         stuff.set('foo', 'bar');
         return stuff.save();
@@ -1501,7 +1575,8 @@ describe('Class Level Permissions for requiredAuth', () => {
           done();
         },
         e => {
-          expect(e.message).toEqual('Permission denied, user needs to be authenticated.');
+          expect(e.message).toEqual('Permission denied');
+          expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Permission denied, user needs to be authenticated.'));
           done();
         }
       );
@@ -1579,6 +1654,7 @@ describe('Class Level Permissions for requiredAuth', () => {
         const stuff = new Parse.Object('Stuff');
         stuff.set('foo', 'bar');
         return stuff.save().then(() => {
+          loggerErrorSpy.calls.reset();
           const query = new Parse.Query('Stuff');
           return query.get(stuff.id);
         });
@@ -1589,7 +1665,8 @@ describe('Class Level Permissions for requiredAuth', () => {
           done();
         },
         e => {
-          expect(e.message).toEqual('Permission denied, user needs to be authenticated.');
+          expect(e.message).toEqual('Permission denied');
+          expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Permission denied, user needs to be authenticated.'));
           done();
         }
       );
@@ -1625,6 +1702,7 @@ describe('Class Level Permissions for requiredAuth', () => {
       })
       .then(result => {
         expect(result.get('foo')).toEqual('bar');
+        loggerErrorSpy.calls.reset();
         const query = new Parse.Query('Stuff');
         return query.find();
       })
@@ -1634,7 +1712,8 @@ describe('Class Level Permissions for requiredAuth', () => {
           done();
         },
         e => {
-          expect(e.message).toEqual('Permission denied, user needs to be authenticated.');
+          expect(e.message).toEqual('Permission denied');
+          expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Permission denied, user needs to be authenticated.'));
           done();
         }
       );

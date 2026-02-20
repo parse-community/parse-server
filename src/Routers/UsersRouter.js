@@ -12,10 +12,12 @@ import {
   Types as TriggerTypes,
   getRequestObject,
   resolveError,
+  inflate,
 } from '../triggers';
 import { promiseEnsureIdempotency } from '../middlewares';
 import RestWrite from '../RestWrite';
 import { logger } from '../logger';
+import { createSanitizedError } from '../Error';
 
 export class UsersRouter extends ClassesRouter {
   className() {
@@ -68,7 +70,7 @@ export class UsersRouter extends ClassesRouter {
   _authenticateUserFromRequest(req) {
     return new Promise((resolve, reject) => {
       // Use query parameters instead if provided in url
-      let payload = req.body;
+      let payload = req.body || {};
       if (
         (!payload.username && req.query && req.query.username) ||
         (!payload.email && req.query && req.query.email)
@@ -138,11 +140,17 @@ export class UsersRouter extends ClassesRouter {
             throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
           }
           // Create request object for verification functions
+          const authProvider =
+            req.body &&
+            req.body.authData &&
+            Object.keys(req.body.authData).length &&
+            Object.keys(req.body.authData).join(',');
           const request = {
             master: req.auth.isMaster,
             ip: req.config.ip,
             installationId: req.auth.installationId,
             object: Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
+            createdWith: RestWrite.buildCreatedWith('login', authProvider),
           };
 
           // If request doesn't use master or maintenance key with ignoring email verification
@@ -170,7 +178,7 @@ export class UsersRouter extends ClassesRouter {
 
   handleMe(req) {
     if (!req.info || !req.info.sessionToken) {
-      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+      throw createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token', req.config);
     }
     const sessionToken = req.info.sessionToken;
     return rest
@@ -185,7 +193,7 @@ export class UsersRouter extends ClassesRouter {
       )
       .then(response => {
         if (!response.results || response.results.length == 0 || !response.results[0].user) {
-          throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+          throw createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token', req.config);
         } else {
           const user = response.results[0].user;
           // Send token back on the login, because SDKs expect that.
@@ -219,7 +227,7 @@ export class UsersRouter extends ClassesRouter {
           req.auth,
           '_User',
           { objectId: user.objectId },
-          req.body,
+          req.body || {},
           user,
           req.info.clientSDK,
           req.info.context
@@ -288,10 +296,7 @@ export class UsersRouter extends ClassesRouter {
 
     const { sessionData, createSession } = RestWrite.createSession(req.config, {
       userId: user.objectId,
-      createdWith: {
-        action: 'login',
-        authProvider: 'password',
-      },
+      createdWith: RestWrite.buildCreatedWith('login'),
       installationId: req.info.installationId,
     });
 
@@ -333,10 +338,14 @@ export class UsersRouter extends ClassesRouter {
    */
   async handleLogInAs(req) {
     if (!req.auth.isMaster) {
-      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'master key is required');
+      throw createSanitizedError(
+        Parse.Error.OPERATION_FORBIDDEN,
+        'master key is required',
+        req.config
+      );
     }
 
-    const userId = req.body.userId || req.query.userId;
+    const userId = req.body?.userId || req.query.userId;
     if (!userId) {
       throw new Parse.Error(
         Parse.Error.INVALID_VALUE,
@@ -354,10 +363,7 @@ export class UsersRouter extends ClassesRouter {
 
     const { sessionData, createSession } = RestWrite.createSession(req.config, {
       userId,
-      createdWith: {
-        action: 'login',
-        authProvider: 'masterkey',
-      },
+      createdWith: RestWrite.buildCreatedWith('login', 'masterkey'),
       installationId: req.info.installationId,
     });
 
@@ -418,7 +424,7 @@ export class UsersRouter extends ClassesRouter {
       Config.validateEmailConfiguration({
         emailAdapter: req.config.userController.adapter,
         appName: req.config.appName,
-        publicServerURL: req.config.publicServerURL,
+        publicServerURL: req.config.publicServerURL || req.config._publicServerURL,
         emailVerifyTokenValidityDuration: req.config.emailVerifyTokenValidityDuration,
         emailVerifyTokenReuseIfValid: req.config.emailVerifyTokenReuseIfValid,
       });
@@ -438,16 +444,65 @@ export class UsersRouter extends ClassesRouter {
   async handleResetRequest(req) {
     this._throwOnBadEmailConfig(req);
 
-    const { email } = req.body;
-    if (!email) {
+    let email = req.body?.email;
+    const token = req.body?.token;
+
+    if (!email && !token) {
       throw new Parse.Error(Parse.Error.EMAIL_MISSING, 'you must provide an email');
     }
+
+    let userResults = null;
+    let userData = null;
+
+    // We can find the user using token
+    if (token) {
+      userResults = await req.config.database.find('_User', {
+        _perishable_token: token,
+        _perishable_token_expires_at: { $lt: Parse._encode(new Date()) },
+      });
+      if (userResults?.length > 0) {
+        userData = userResults[0];
+        if (userData.email) {
+          email = userData.email;
+        }
+      }
+    // Or using email if no token provided
+    } else if (typeof email === 'string') {
+      userResults = await req.config.database.find(
+        '_User',
+        { $or: [{ email }, { username: email, email: { $exists: false } }] },
+        { limit: 1 },
+        Auth.maintenance(req.config)
+      );
+      if (userResults?.length > 0) {
+        userData = userResults[0];
+      }
+    }
+
     if (typeof email !== 'string') {
       throw new Parse.Error(
         Parse.Error.INVALID_EMAIL_ADDRESS,
         'you must provide a valid email string'
       );
     }
+
+    if (userData) {
+      this._sanitizeAuthData(userData);
+      // Get files attached to user
+      await req.config.filesController.expandFilesInObject(req.config, userData);
+
+      const user = inflate('_User', userData);
+
+      await maybeRunTrigger(
+        TriggerTypes.beforePasswordResetRequest,
+        req.auth,
+        user,
+        null,
+        req.config,
+        req.info.context
+      );
+    }
+
     const userController = req.config.userController;
     try {
       await userController.sendPasswordResetEmail(email);
@@ -470,7 +525,7 @@ export class UsersRouter extends ClassesRouter {
   async handleVerificationEmailRequest(req) {
     this._throwOnBadEmailConfig(req);
 
-    const { email } = req.body;
+    const { email } = req.body || {};
     if (!email) {
       throw new Parse.Error(Parse.Error.EMAIL_MISSING, 'you must provide an email');
     }
@@ -503,7 +558,7 @@ export class UsersRouter extends ClassesRouter {
   }
 
   async handleChallenge(req) {
-    const { username, email, password, authData, challengeData } = req.body;
+    const { username, email, password, authData, challengeData } = req.body || {};
 
     // if username or email provided with password try to authenticate the user by username
     let user;

@@ -3,6 +3,7 @@ import rest from '../rest';
 import _ from 'lodash';
 import Parse from 'parse/node';
 import { promiseEnsureIdempotency } from '../middlewares';
+import { createSanitizedError } from '../Error';
 
 const ALLOWED_GET_QUERY_KEYS = [
   'keys',
@@ -19,7 +20,7 @@ export class ClassesRouter extends PromiseRouter {
   }
 
   handleFind(req) {
-    const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
+    const body = Object.assign(req.body || {}, ClassesRouter.JSONFromQuery(req.query));
     const options = ClassesRouter.optionsFromBody(body, req.config.defaultLimit);
     if (req.config.maxLimit && body.limit > req.config.maxLimit) {
       // Silently replace the limit on the query with the max configured
@@ -48,7 +49,7 @@ export class ClassesRouter extends PromiseRouter {
 
   // Returns a promise for a {response} object.
   handleGet(req) {
-    const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
+    const body = Object.assign(req.body || {}, ClassesRouter.JSONFromQuery(req.query));
     const options = {};
 
     for (const key of Object.keys(body)) {
@@ -111,13 +112,13 @@ export class ClassesRouter extends PromiseRouter {
       typeof req.body?.objectId === 'string' &&
       req.body.objectId.startsWith('role:')
     ) {
-      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid object ID.');
+      throw createSanitizedError(Parse.Error.OPERATION_FORBIDDEN, 'Invalid object ID.', req.config);
     }
     return rest.create(
       req.config,
       req.auth,
       this.className(req),
-      req.body,
+      req.body || {},
       req.info.clientSDK,
       req.info.context
     );
@@ -130,7 +131,7 @@ export class ClassesRouter extends PromiseRouter {
       req.auth,
       this.className(req),
       where,
-      req.body,
+      req.body || {},
       req.info.clientSDK,
       req.info.context
     );
@@ -149,7 +150,7 @@ export class ClassesRouter extends PromiseRouter {
     for (const [key, value] of _.entries(query)) {
       try {
         json[key] = JSON.parse(value);
-      } catch (e) {
+      } catch {
         json[key] = value;
       }
     }

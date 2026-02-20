@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es2015",
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "types",
+    "noImplicitAny": false,
+    "allowJs": false,
+    "skipLibCheck": true,
+    "paths": {
+      "deepcopy": ["./types/@types/deepcopy"],
+    }
+  },
+  "include": [
+    "src/*.ts"
+  ]
+}

@@ -1,23 +1,24 @@
 // @flow
+import { format as formatUrl, parse as parseUrl } from '../../../vendor/mongodbUrl';
+import type { QueryOptions, QueryType, SchemaType, StorageClass } from '../StorageAdapter';
+import { StorageAdapter } from '../StorageAdapter';
 import MongoCollection from './MongoCollection';
 import MongoSchemaCollection from './MongoSchemaCollection';
-import { StorageAdapter } from '../StorageAdapter';
-import type { SchemaType, QueryType, StorageClass, QueryOptions } from '../StorageAdapter';
-import { parse as parseUrl, format as formatUrl } from '../../../vendor/mongodbUrl';
 import {
-  parseObjectToMongoObjectForCreate,
   mongoObjectToParseObject,
+  parseObjectToMongoObjectForCreate,
   transformKey,
-  transformWhere,
-  transformUpdate,
   transformPointerString,
+  transformUpdate,
+  transformWhere,
 } from './MongoTransform';
 // @flow-disable-next
 import Parse from 'parse/node';
 // @flow-disable-next
 import _ from 'lodash';
-import defaults from '../../../defaults';
+import defaults, { ParseServerDatabaseOptions } from '../../../defaults';
 import logger from '../../../logger';
+import Utils from '../../../Utils';
 
 // @flow-disable-next
 const mongodb = require('mongodb');
@@ -25,6 +26,36 @@ const MongoClient = mongodb.MongoClient;
 const ReadPreference = mongodb.ReadPreference;
 
 const MongoSchemaCollectionName = '_SCHEMA';
+
+/**
+ * Determines if a MongoDB error is a transient infrastructure error
+ * (connection pool, network, server selection) as opposed to a query-level error.
+ */
+function isTransientError(error) {
+  if (!error) {
+    return false;
+  }
+
+  // Connection pool, network, and server selection errors
+  const transientErrorNames = [
+    'MongoWaitQueueTimeoutError',
+    'MongoServerSelectionError',
+    'MongoNetworkTimeoutError',
+    'MongoNetworkError',
+  ];
+  if (transientErrorNames.includes(error.name)) {
+    return true;
+  }
+
+  // Check for MongoDB's transient transaction error label
+  if (typeof error.hasErrorLabel === 'function') {
+    if (error.hasErrorLabel('TransientTransactionError')) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 const storageAdapterAllCollections = mongoAdapter => {
   return mongoAdapter
@@ -132,6 +163,8 @@ export class MongoStorageAdapter implements StorageAdapter {
   _mongoOptions: Object;
   _onchange: any;
   _stream: any;
+  _logClientEvents: ?Array<any>;
+  _clientMetadata: ?{ name: string, version: string };
   // Public
   connectionPromise: ?Promise<any>;
   database: any;
@@ -140,20 +173,28 @@ export class MongoStorageAdapter implements StorageAdapter {
   canSortOnJoinTables: boolean;
   enableSchemaHooks: boolean;
   schemaCacheTtl: ?number;
+  disableIndexFieldValidation: boolean;
 
   constructor({ uri = defaults.DefaultMongoURI, collectionPrefix = '', mongoOptions = {} }: any) {
     this._uri = uri;
     this._collectionPrefix = collectionPrefix;
-    this._mongoOptions = { ...mongoOptions };
-    this._onchange = () => { };
+    this._onchange = () => {};
 
     // MaxTimeMS is not a global MongoDB client option, it is applied per operation.
     this._maxTimeMS = mongoOptions.maxTimeMS;
     this.canSortOnJoinTables = true;
     this.enableSchemaHooks = !!mongoOptions.enableSchemaHooks;
     this.schemaCacheTtl = mongoOptions.schemaCacheTtl;
-    for (const key of ['enableSchemaHooks', 'schemaCacheTtl', 'maxTimeMS']) {
-      delete mongoOptions[key];
+    this.disableIndexFieldValidation = !!mongoOptions.disableIndexFieldValidation;
+    this._logClientEvents = mongoOptions.logClientEvents;
+    this._clientMetadata = mongoOptions.clientMetadata;
+
+    // Create a copy of mongoOptions and remove Parse Server-specific options that should not
+    // be passed to MongoDB client. Note: We only delete from this._mongoOptions, not from the
+    // original mongoOptions object, because other components (like DatabaseController) need
+    // access to these options.
+    this._mongoOptions = { ...mongoOptions };
+    for (const key of ParseServerDatabaseOptions) {
       delete this._mongoOptions[key];
     }
   }
@@ -170,7 +211,17 @@ export class MongoStorageAdapter implements StorageAdapter {
     // parsing and re-formatting causes the auth value (if there) to get URI
     // encoded
     const encodedUri = formatUrl(parseUrl(this._uri));
-    this.connectionPromise = MongoClient.connect(encodedUri, this._mongoOptions)
+
+    // Only use driverInfo if clientMetadata option is set
+    const options = { ...this._mongoOptions };
+    if (this._clientMetadata) {
+      options.driverInfo = {
+        name: this._clientMetadata.name,
+        version: this._clientMetadata.version
+      };
+    }
+
+    this.connectionPromise = MongoClient.connect(encodedUri, options)
       .then(client => {
         // Starting mongoDB 3.0, the MongoClient.connect don't return a DB anymore but a client
         // Fortunately, we can get back the options and use them to select the proper DB.
@@ -187,6 +238,31 @@ export class MongoStorageAdapter implements StorageAdapter {
         client.on('close', () => {
           delete this.connectionPromise;
         });
+
+        // Set up client event logging if configured
+        if (this._logClientEvents && Array.isArray(this._logClientEvents)) {
+          this._logClientEvents.forEach(eventConfig => {
+            client.on(eventConfig.name, event => {
+              let logData = {};
+              if (!eventConfig.keys || eventConfig.keys.length === 0) {
+                logData = event;
+              } else {
+                eventConfig.keys.forEach(keyPath => {
+                  logData[keyPath] = _.get(event, keyPath);
+                });
+              }
+
+              // Validate log level exists, fallback to 'info'
+              const logLevel = typeof logger[eventConfig.logLevel] === 'function' ? eventConfig.logLevel : 'info';
+
+              // Safe JSON serialization with Map/Set and circular reference support
+              const logMessage = `MongoDB client event ${eventConfig.name}: ${JSON.stringify(logData, Utils.getCircularReplacer())}`;
+
+              logger[logLevel](logMessage);
+            });
+          });
+        }
+
         this.client = client;
         this.database = database;
       })
@@ -206,6 +282,13 @@ export class MongoStorageAdapter implements StorageAdapter {
       delete this.connectionPromise;
       logger.error('Received unauthorized error', { error: error });
     }
+
+    // Transform infrastructure/transient errors into Parse.Error.INTERNAL_SERVER_ERROR
+    if (isTransientError(error)) {
+      logger.error('Database transient error', error);
+      throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database error');
+    }
+
     throw error;
   }
 
@@ -289,6 +372,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       } else {
         Object.keys(field).forEach(key => {
           if (
+            !this.disableIndexFieldValidation &&
             !Object.prototype.hasOwnProperty.call(
               fields,
               key.indexOf('_p_') === 0 ? key.replace('_p_', '') : key
@@ -484,7 +568,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(() => ({ ops: [mongoObject] }))
       .catch(error => {
         if (error.code === 11000) {
-          // Duplicate value
+          logger.error('Duplicate key error:', error.message);
           const err = new Parse.Error(
             Parse.Error.DUPLICATE_VALUE,
             'A duplicate value for a field with unique values was provided'
@@ -570,6 +654,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(result => mongoObjectToParseObject(className, result, schema))
       .catch(error => {
         if (error.code === 11000) {
+          logger.error('Duplicate key error:', error.message);
           throw new Parse.Error(
             Parse.Error.DUPLICATE_VALUE,
             'A duplicate value for a field with unique values was provided'
@@ -684,6 +769,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     const defaultOptions: Object = { background: true, sparse: true };
     const indexNameOptions: Object = indexName ? { name: indexName } : {};
     const ttlOptions: Object = options.ttl !== undefined ? { expireAfterSeconds: options.ttl } : {};
+    const sparseOptions: Object = options.sparse !== undefined ? { sparse: options.sparse } : {};
     const caseInsensitiveOptions: Object = caseInsensitive
       ? { collation: MongoCollection.caseInsensitiveCollation() }
       : {};
@@ -692,6 +778,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       ...caseInsensitiveOptions,
       ...indexNameOptions,
       ...ttlOptions,
+      ...sparseOptions,
     };
 
     return this._adaptiveCollection(className)
@@ -960,23 +1047,28 @@ export class MongoStorageAdapter implements StorageAdapter {
     return pipeline;
   }
 
-  // This function will attempt to convert the provided value to a Date object. Since this is part
-  // of an aggregation pipeline, the value can either be a string or it can be another object with
-  // an operator in it (like $gt, $lt, etc). Because of this I felt it was easier to make this a
-  // recursive method to traverse down to the "leaf node" which is going to be the string.
+  /**
+   * Recursively converts values to Date objects. Since the passed object is part of an aggregation
+   * pipeline and can contain various logic operators (like $gt, $lt, etc), this function will
+   * traverse the object and convert any strings that can be parsed as dates into Date objects.
+   * @param {any} value The value to convert.
+   * @returns {any} The original value if not convertible to Date, or a Date object if it is.
+   */
   _convertToDate(value: any): any {
     if (value instanceof Date) {
       return value;
     }
     if (typeof value === 'string') {
-      return new Date(value);
+      return isNaN(Date.parse(value)) ? value : new Date(value);
     }
-
-    const returnValue = {};
-    for (const field in value) {
-      returnValue[field] = this._convertToDate(value[field]);
+    if (typeof value === 'object') {
+      const returnValue = {};
+      for (const field in value) {
+        returnValue[field] = this._convertToDate(value[field]);
+      }
+      return returnValue;
     }
-    return returnValue;
+    return value;
   }
 
   _parseReadPreference(readPreference: ?string): ?string {

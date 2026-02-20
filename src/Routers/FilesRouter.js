@@ -1,37 +1,10 @@
 import express from 'express';
-import BodyParser from 'body-parser';
 import * as Middlewares from '../middlewares';
 import Parse from 'parse/node';
 import Config from '../Config';
 import logger from '../logger';
 const triggers = require('../triggers');
-const http = require('http');
 const Utils = require('../Utils');
-
-const downloadFileFromURI = uri => {
-  return new Promise((res, rej) => {
-    http
-      .get(uri, response => {
-        response.setDefaultEncoding('base64');
-        let body = `data:${response.headers['content-type']};base64,`;
-        response.on('data', data => (body += data));
-        response.on('end', () => res(body));
-      })
-      .on('error', e => {
-        rej(`Error downloading file from ${uri}: ${e.message}`);
-      });
-  });
-};
-
-const addFileDataIfNeeded = async file => {
-  if (file._source.format === 'uri') {
-    const base64 = await downloadFileFromURI(file._source.uri);
-    file._previousSave = file;
-    file._data = base64;
-    file._requestTask = null;
-  }
-  return file;
-};
 
 export class FilesRouter {
   expressRouter({ maxUploadSize = '20Mb' } = {}) {
@@ -45,7 +18,7 @@ export class FilesRouter {
 
     router.post(
       '/files/:filename',
-      BodyParser.raw({
+      express.raw({
         type: () => {
           return true;
         },
@@ -70,34 +43,71 @@ export class FilesRouter {
     const config = Config.get(req.params.appId);
     if (!config) {
       res.status(403);
-      const err = new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid application ID.');
-      res.json({ code: err.code, error: err.message });
+      res.json({ code: Parse.Error.OPERATION_FORBIDDEN, error: 'Invalid application ID.' });
       return;
     }
-    const filesController = config.filesController;
-    const filename = req.params.filename;
-    const mime = (await import('mime')).default;
-    const contentType = mime.getType(filename);
-    if (isFileStreamable(req, filesController)) {
-      filesController.handleFileStream(config, filename, req, res, contentType).catch(() => {
-        res.status(404);
-        res.set('Content-Type', 'text/plain');
-        res.end('File not found.');
-      });
-    } else {
-      filesController
-        .getFileData(config, filename)
-        .then(data => {
-          res.status(200);
-          res.set('Content-Type', contentType);
-          res.set('Content-Length', data.length);
-          res.end(data);
-        })
-        .catch(() => {
+
+    let filename = req.params.filename;
+    try {
+      const filesController = config.filesController;
+      const mime = (await import('mime')).default;
+      let contentType = mime.getType(filename);
+      let file = new Parse.File(filename, { base64: '' }, contentType);
+      const triggerResult = await triggers.maybeRunFileTrigger(
+        triggers.Types.beforeFind,
+        { file },
+        config,
+        req.auth
+      );
+      if (triggerResult?.file?._name) {
+        filename = triggerResult?.file?._name;
+        contentType = mime.getType(filename);
+      }
+
+      if (isFileStreamable(req, filesController)) {
+        filesController.handleFileStream(config, filename, req, res, contentType).catch(() => {
           res.status(404);
           res.set('Content-Type', 'text/plain');
           res.end('File not found.');
         });
+        return;
+      }
+
+      let data = await filesController.getFileData(config, filename).catch(() => {
+        res.status(404);
+        res.set('Content-Type', 'text/plain');
+        res.end('File not found.');
+      });
+      if (!data) {
+        return;
+      }
+      file = new Parse.File(filename, { base64: data.toString('base64') }, contentType);
+      const afterFind = await triggers.maybeRunFileTrigger(
+        triggers.Types.afterFind,
+        { file, forceDownload: false },
+        config,
+        req.auth
+      );
+
+      if (afterFind?.file) {
+        contentType = mime.getType(afterFind.file._name);
+        data = Buffer.from(afterFind.file._data, 'base64');
+      }
+
+      res.status(200);
+      res.set('Content-Type', contentType);
+      res.set('Content-Length', data.length);
+      if (afterFind.forceDownload) {
+        res.set('Content-Disposition', `attachment;filename=${afterFind.file._name}`);
+      }
+      res.end(data);
+    } catch (e) {
+      const err = triggers.resolveError(e, {
+        code: Parse.Error.SCRIPT_FAILED,
+        message: `Could not find file: ${filename}.`,
+      });
+      res.status(403);
+      res.json({ code: err.code, error: err.message });
     }
   }
 
@@ -220,8 +230,6 @@ export class FilesRouter {
       }
       // if the file returned by the trigger has already been saved skip saving anything
       if (!saveResult) {
-        // if the ParseFile returned is type uri, download the file before saving it
-        await addFileDataIfNeeded(fileObject.file);
         // update fileSize
         let fileData;
         // if the file is a blob, get the size from the blob
@@ -321,7 +329,7 @@ export class FilesRouter {
       const data = await filesController.getMetadata(filename);
       res.status(200);
       res.json(data);
-    } catch (e) {
+    } catch {
       res.status(200);
       res.json({});
     }

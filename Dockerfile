@@ -1,7 +1,7 @@
 ############################################################
 # Build stage
 ############################################################
-FROM node:20.17.0-alpine3.20 AS build
+FROM node:20.19.0-alpine3.20 AS build
 
 RUN apk --no-cache add \
    build-base \
@@ -28,7 +28,7 @@ RUN npm ci --omit=dev --ignore-scripts \
 ############################################################
 # Release stage
 ############################################################
-FROM node:20.17.0-alpine3.20 AS release
+FROM node:20.19.0-alpine3.20 AS release
 
 VOLUME /parse-server/cloud /parse-server/config
 
@@ -40,7 +40,7 @@ COPY --from=build /tmp/lib lib
 
 COPY package*.json ./
 COPY bin bin
-COPY public_html public_html
+COPY public public
 COPY views views
 RUN mkdir -p logs && chown -R node: logs
 

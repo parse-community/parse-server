@@ -47,9 +47,12 @@ function handleError(e) {
 describe('ParseGraphQLServer', () => {
   let parseServer;
   let parseGraphQLServer;
+  let loggerErrorSpy;
+
 
   beforeEach(async () => {
     parseServer = await global.reconfigureServer({
+      maintenanceKey: 'test2',
       maxUploadSize: '1kb',
     });
     parseGraphQLServer = new ParseGraphQLServer(parseServer, {
@@ -57,6 +60,9 @@ describe('ParseGraphQLServer', () => {
       playgroundPath: '/playground',
       subscriptionsPath: '/subscriptions',
     });
+
+    const logger = require('../lib/logger').default;
+    loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
   });
 
   describe('constructor', () => {
@@ -88,8 +94,8 @@ describe('ParseGraphQLServer', () => {
 
     it('should initialize parseGraphQLSchema with a log controller', async () => {
       const loggerAdapter = {
-        log: () => {},
-        error: () => {},
+        log: () => { },
+        error: () => { },
       };
       const parseServer = await global.reconfigureServer({
         loggerAdapter,
@@ -117,6 +123,20 @@ describe('ParseGraphQLServer', () => {
       expect(server3).not.toBe(server2);
       expect(server3).toBe(server4);
     });
+
+    it('should return same server reference when called 100 times in parallel', async () => {
+      parseGraphQLServer.server = undefined;
+
+      // Call _getServer 100 times in parallel
+      const promises = Array.from({ length: 100 }, () => parseGraphQLServer._getServer());
+      const servers = await Promise.all(promises);
+
+      // All resolved servers should be the same reference
+      const firstServer = servers[0];
+      servers.forEach((server, index) => {
+        expect(server).toBe(firstServer);
+      });
+    });
   });
 
   describe('_getGraphQLOptions', () => {
@@ -124,10 +144,10 @@ describe('ParseGraphQLServer', () => {
       info: new Object(),
       config: new Object(),
       auth: new Object(),
-      get: () => {},
+      get: () => { },
     };
     const res = {
-      set: () => {},
+      set: () => { },
     };
 
     it_id('0696675e-060f-414f-bc77-9d57f31807f5')(it)('should return schema and context with req\'s info, config and auth', async () => {
@@ -431,17 +451,33 @@ describe('ParseGraphQLServer', () => {
       objects.push(object1, object2, object3, object4);
     }
 
-    beforeEach(async () => {
+    async function createGQLFromParseServer(_parseServer, parseGraphQLServerOptions) {
+      if (parseLiveQueryServer) {
+        await parseLiveQueryServer.server.close();
+      }
+      if (httpServer) {
+        await httpServer.close();
+      }
       const expressApp = express();
       httpServer = http.createServer(expressApp);
-      expressApp.use('/parse', parseServer.app);
+      expressApp.use('/parse', _parseServer.app);
       parseLiveQueryServer = await ParseServer.createLiveQueryServer(httpServer, {
         port: 1338,
+      });
+      parseGraphQLServer = new ParseGraphQLServer(_parseServer, {
+        graphQLPath: '/graphql',
+        playgroundPath: '/playground',
+        subscriptionsPath: '/subscriptions',
+        ...parseGraphQLServerOptions,
       });
       parseGraphQLServer.applyGraphQL(expressApp);
       parseGraphQLServer.applyPlayground(expressApp);
       parseGraphQLServer.createSubscriptions(httpServer);
       await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
+    }
+
+    beforeEach(async () => {
+      await createGQLFromParseServer(parseServer);
 
       const subscriptionClient = new SubscriptionClient(
         'ws://localhost:13377/subscriptions',
@@ -473,8 +509,8 @@ describe('ParseGraphQLServer', () => {
           },
         },
       });
-      spyOn(console, 'warn').and.callFake(() => {});
-      spyOn(console, 'error').and.callFake(() => {});
+      spyOn(console, 'warn').and.callFake(() => { });
+      spyOn(console, 'error').and.callFake(() => { });
     });
 
     afterEach(async () => {
@@ -590,7 +626,345 @@ describe('ParseGraphQLServer', () => {
         ]);
       };
 
+      describe('Context', () => {
+        it('should support dependency injection on graphql  api', async () => {
+          const requestContextMiddleware = (req, res, next) => {
+            req.config.aCustomController = 'aCustomController';
+            next();
+          };
+
+          let called;
+          const parseServer = await reconfigureServer({ requestContextMiddleware });
+          await createGQLFromParseServer(parseServer);
+          Parse.Cloud.beforeSave('_User', request => {
+            expect(request.config.aCustomController).toEqual('aCustomController');
+            called = true;
+          });
+
+          await apolloClient.query({
+            query: gql`
+                  mutation {
+                    createUser(input: { fields: { username: "test", password: "test" } }) {
+                      user {
+                        objectId
+                      }
+                    }
+                  }
+                `,
+            context: {
+              headers: {
+                'X-Parse-Master-Key': 'test',
+              },
+            }
+          })
+          expect(called).toBe(true);
+        })
+      })
+
+      describe('Introspection', () => {
+        it('should have public introspection disabled by default without master key', async () => {
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Introspection {
+                  __schema {
+                    types {
+                      name
+                    }
+                  }
+                }
+              `,
+            })
+
+            fail('should have thrown an error');
+
+          } catch (e) {
+            expect(e.message).toEqual('Response not successful: Received status code 403');
+            expect(e.networkError.result.errors[0].message).toEqual('Introspection is not allowed');
+          }
+        });
+
+        it('should always work with master key', async () => {
+          const introspection =
+            await apolloClient.query({
+              query: gql`
+                query Introspection {
+                  __schema {
+                    types {
+                      name
+                    }
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              }
+            },)
+          expect(introspection.data).toBeDefined();
+          expect(introspection.errors).not.toBeDefined();
+        });
+
+        it('should always work with maintenance key', async () => {
+          const introspection =
+            await apolloClient.query({
+              query: gql`
+                query Introspection {
+                  __schema {
+                    types {
+                      name
+                    }
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Maintenance-Key': 'test2',
+                },
+              }
+            },)
+          expect(introspection.data).toBeDefined();
+          expect(introspection.errors).not.toBeDefined();
+        });
+
+        it('should have public introspection enabled if enabled', async () => {
+
+          const parseServer = await reconfigureServer();
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
+
+          const introspection =
+            await apolloClient.query({
+              query: gql`
+                query Introspection {
+                  __schema {
+                    types {
+                      name
+                    }
+                  }
+                }
+              `,
+            })
+          expect(introspection.data).toBeDefined();
+        });
+
+        it('should block __type introspection without master key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                query TypeIntrospection {
+                  __type(name: "User") {
+                    name
+                    kind
+                  }
+                }
+              `,
+            });
+
+            fail('should have thrown an error');
+          } catch (e) {
+            expect(e.message).toEqual('Response not successful: Received status code 403');
+            expect(e.networkError.result.errors[0].message).toEqual('Introspection is not allowed');
+          }
+        });
+
+        it('should block aliased __type introspection without master key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                query AliasedTypeIntrospection {
+                  myAlias: __type(name: "User") {
+                    name
+                    kind
+                  }
+                }
+              `,
+            });
+
+            fail('should have thrown an error');
+          } catch (e) {
+            expect(e.message).toEqual('Response not successful: Received status code 403');
+            expect(e.networkError.result.errors[0].message).toEqual('Introspection is not allowed');
+          }
+        });
+
+        it('should block __type introspection in fragments without master key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                fragment TypeIntrospectionFields on Query {
+                  typeInfo: __type(name: "User") {
+                    name
+                    kind
+                  }
+                }
+                
+                query FragmentTypeIntrospection {
+                  ...TypeIntrospectionFields
+                }
+              `,
+            });
+
+            fail('should have thrown an error');
+          } catch (e) {
+            expect(e.message).toEqual('Response not successful: Received status code 403');
+            expect(e.networkError.result.errors[0].message).toEqual('Introspection is not allowed');
+          }
+        });
+
+        it('should block __type introspection through nested fragment spreads without master key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                fragment InnerFragment on Query {
+                  __type(name: "User") {
+                    name
+                    fields {
+                      name
+                    }
+                  }
+                }
+
+                fragment OuterFragment on Query {
+                  ...InnerFragment
+                }
+
+                query NestedFragmentIntrospection {
+                  ...OuterFragment
+                }
+              `,
+            });
+
+            fail('should have thrown an error');
+          } catch (e) {
+            expect(e.message).toEqual('Response not successful: Received status code 403');
+            expect(e.networkError.result.errors[0].message).toEqual('Introspection is not allowed');
+          }
+        });
+
+        it('should block __type introspection hidden in fragment with valid field without master key', async () => {
+          try {
+            // First create a test object to query
+            const object = new Parse.Object('SomeClass');
+            await object.save();
+
+            await apolloClient.query({
+              query: gql`
+                fragment MixedFragment on Query {
+                  someClasses {
+                    edges {
+                      node {
+                        objectId
+                      }
+                    }
+                  }
+                  __type(name: "User") {
+                    name
+                    kind
+                  }
+                }
+
+                query MixedQuery {
+                  ...MixedFragment
+                }
+              `,
+            });
+
+            fail('should have thrown an error');
+          } catch (e) {
+            expect(e.message).toEqual('Response not successful: Received status code 403');
+            expect(e.networkError.result.errors[0].message).toEqual('Introspection is not allowed');
+          }
+        });
+
+        it('should allow __type introspection with master key', async () => {
+          const introspection = await apolloClient.query({
+            query: gql`
+              query TypeIntrospection {
+                __type(name: "User") {
+                  name
+                  kind
+                }
+              }
+            `,
+            context: {
+              headers: {
+                'X-Parse-Master-Key': 'test',
+              },
+            },
+          });
+          expect(introspection.data).toBeDefined();
+          expect(introspection.data.__type).toBeDefined();
+          expect(introspection.errors).not.toBeDefined();
+        });
+
+        it('should allow aliased __type introspection with master key', async () => {
+          const introspection = await apolloClient.query({
+            query: gql`
+              query AliasedTypeIntrospection {
+                myAlias: __type(name: "User") {
+                  name
+                  kind
+                }
+              }
+            `,
+            context: {
+              headers: {
+                'X-Parse-Master-Key': 'test',
+              },
+            },
+          });
+          expect(introspection.data).toBeDefined();
+          expect(introspection.data.myAlias).toBeDefined();
+          expect(introspection.errors).not.toBeDefined();
+        });
+
+        it('should allow __type introspection with maintenance key', async () => {
+          const introspection = await apolloClient.query({
+            query: gql`
+              query TypeIntrospection {
+                __type(name: "User") {
+                  name
+                  kind
+                }
+              }
+            `,
+            context: {
+              headers: {
+                'X-Parse-Maintenance-Key': 'test2',
+              },
+            },
+          });
+          expect(introspection.data).toBeDefined();
+          expect(introspection.data.__type).toBeDefined();
+          expect(introspection.errors).not.toBeDefined();
+        });
+
+        it('should allow __type introspection when public introspection is enabled', async () => {
+          const parseServer = await reconfigureServer();
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
+
+          const introspection = await apolloClient.query({
+            query: gql`
+              query TypeIntrospection {
+                __type(name: "User") {
+                  name
+                  kind
+                }
+              }
+            `,
+          });
+          expect(introspection.data).toBeDefined();
+          expect(introspection.data.__type).toBeDefined();
+        });
+      });
+
+
       describe('Default Types', () => {
+        beforeEach(async () => {
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
+        });
         it('should have Object scalar type', async () => {
           const objectType = (
             await apolloClient.query({
@@ -734,6 +1108,11 @@ describe('ParseGraphQLServer', () => {
                   }
                 }
               `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              }
             })
           ).data['__schema'].types.map(type => type.name);
 
@@ -745,16 +1124,16 @@ describe('ParseGraphQLServer', () => {
       });
 
       describe('Relay Specific Types', () => {
+        beforeEach(async () => {
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
+        });
+
         let clearCache;
         beforeEach(async () => {
           if (!clearCache) {
             await resetGraphQLCache();
             clearCache = true;
           }
-        });
-
-        afterAll(async () => {
-          await resetGraphQLCache();
         });
 
         it('should have Node interface', async () => {
@@ -769,6 +1148,11 @@ describe('ParseGraphQLServer', () => {
                   }
                 }
               `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              }
             })
           ).data['__schema'].types.map(type => type.name);
 
@@ -853,7 +1237,7 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should have clientMutationId in call function input', async () => {
-          Parse.Cloud.define('hello', () => {});
+          Parse.Cloud.define('hello', () => { });
 
           const callFunctionInputFields = (
             await apolloClient.query({
@@ -875,7 +1259,7 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should have clientMutationId in call function payload', async () => {
-          Parse.Cloud.define('hello', () => {});
+          Parse.Cloud.define('hello', () => { });
 
           const callFunctionPayloadFields = (
             await apolloClient.query({
@@ -1287,6 +1671,9 @@ describe('ParseGraphQLServer', () => {
       });
 
       describe('Parse Class Types', () => {
+        beforeEach(async () => {
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
+        });
         it('should have all expected types', async () => {
           await parseServer.config.databaseController.loadSchema();
 
@@ -1301,6 +1688,11 @@ describe('ParseGraphQLServer', () => {
                   }
                 }
               `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              }
             })
           ).data['__schema'].types.map(type => type.name);
 
@@ -1393,6 +1785,7 @@ describe('ParseGraphQLServer', () => {
         beforeEach(async () => {
           await parseGraphQLServer.setGraphQLConfig({});
           await resetGraphQLCache();
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
         });
 
         it_id('d6a23a2f-ca18-4b15-bc73-3e636f99e6bc')(it)('should only include types in the enabledForClasses list', async () => {
@@ -2821,7 +3214,8 @@ describe('ParseGraphQLServer', () => {
             }
           });
           it('Id inputs should work either with global id or object id with objectId higher than 19', async () => {
-            await reconfigureServer({ objectIdSize: 20 });
+            const parseServer = await reconfigureServer({ objectIdSize: 20 });
+            await createGQLFromParseServer(parseServer);
             const obj = new Parse.Object('SomeClass');
             await obj.save({ name: 'aname', type: 'robot' });
             const result = await apolloClient.query({
@@ -3320,6 +3714,7 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should require master key to create a new class', async () => {
+          loggerErrorSpy.calls.reset();
           try {
             await apolloClient.mutate({
               mutation: gql`
@@ -3333,7 +3728,8 @@ describe('ParseGraphQLServer', () => {
             fail('should fail');
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
-            expect(e.graphQLErrors[0].message).toEqual('unauthorized: master key is required');
+            expect(e.graphQLErrors[0].message).toEqual('Permission denied');
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('unauthorized: master key is required'));
           }
         });
 
@@ -3690,6 +4086,7 @@ describe('ParseGraphQLServer', () => {
             handleError(e);
           }
 
+          loggerErrorSpy.calls.reset();
           try {
             await apolloClient.mutate({
               mutation: gql`
@@ -3703,7 +4100,8 @@ describe('ParseGraphQLServer', () => {
             fail('should fail');
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
-            expect(e.graphQLErrors[0].message).toEqual('unauthorized: master key is required');
+            expect(e.graphQLErrors[0].message).toEqual('Permission denied');
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('unauthorized: master key is required'));
           }
         });
 
@@ -3915,6 +4313,7 @@ describe('ParseGraphQLServer', () => {
             handleError(e);
           }
 
+          loggerErrorSpy.calls.reset();
           try {
             await apolloClient.mutate({
               mutation: gql`
@@ -3928,7 +4327,8 @@ describe('ParseGraphQLServer', () => {
             fail('should fail');
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
-            expect(e.graphQLErrors[0].message).toEqual('unauthorized: master key is required');
+            expect(e.graphQLErrors[0].message).toEqual('Permission denied');
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('unauthorized: master key is required'));
           }
         });
 
@@ -3956,6 +4356,7 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should require master key to get an existing class', async () => {
+          loggerErrorSpy.calls.reset();
           try {
             await apolloClient.query({
               query: gql`
@@ -3969,11 +4370,13 @@ describe('ParseGraphQLServer', () => {
             fail('should fail');
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
-            expect(e.graphQLErrors[0].message).toEqual('unauthorized: master key is required');
+            expect(e.graphQLErrors[0].message).toEqual('Permission denied');
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('unauthorized: master key is required'));
           }
         });
 
         it('should require master key to find the existing classes', async () => {
+          loggerErrorSpy.calls.reset();
           try {
             await apolloClient.query({
               query: gql`
@@ -3987,7 +4390,8 @@ describe('ParseGraphQLServer', () => {
             fail('should fail');
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
-            expect(e.graphQLErrors[0].message).toEqual('unauthorized: master key is required');
+            expect(e.graphQLErrors[0].message).toEqual('Permission denied');
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('unauthorized: master key is required'));
           }
         });
       });
@@ -5328,7 +5732,7 @@ describe('ParseGraphQLServer', () => {
             parseServer = await global.reconfigureServer({
               maxLimit: 10,
             });
-
+            await createGQLFromParseServer(parseServer);
             const promises = [];
             for (let i = 0; i < 100; i++) {
               const obj = new Parse.Object('SomeClass');
@@ -5913,7 +6317,7 @@ describe('ParseGraphQLServer', () => {
             }
 
             await expectAsync(createObject('GraphQLClass')).toBeRejectedWith(
-              jasmine.stringMatching('Permission denied for action create on class GraphQLClass')
+              jasmine.stringMatching('Permission denied')
             );
             await expectAsync(createObject('PublicClass')).toBeResolved();
             await expectAsync(
@@ -5947,7 +6351,7 @@ describe('ParseGraphQLServer', () => {
                 'X-Parse-Session-Token': user4.getSessionToken(),
               })
             ).toBeRejectedWith(
-              jasmine.stringMatching('Permission denied for action create on class GraphQLClass')
+              jasmine.stringMatching('Permission denied')
             );
             await expectAsync(
               createObject('PublicClass', {
@@ -6841,7 +7245,7 @@ describe('ParseGraphQLServer', () => {
             parseServer = await global.reconfigureServer({
               publicServerURL: 'http://localhost:13377/parse',
             });
-
+            await createGQLFromParseServer(parseServer);
             const body = new FormData();
             body.append(
               'operations',
@@ -6896,6 +7300,284 @@ describe('ParseGraphQLServer', () => {
           });
         });
       });
+
+      describe("Config Queries", () => {
+        beforeEach(async () => {
+          // Setup initial config data
+          await Parse.Config.save(
+            { publicParam: 'publicValue', privateParam: 'privateValue' },
+            { privateParam: true },
+            { useMasterKey: true }
+          );
+        });
+
+        it("should return the config value for a specific parameter", async () => {
+          const query = gql`
+            query cloudConfig($paramName: String!) {
+              cloudConfig(paramName: $paramName) {
+                value
+                isMasterKeyOnly
+              }
+            }
+          `;
+
+          const result = await apolloClient.query({
+            query,
+            variables: { paramName: 'publicParam' },
+            context: {
+              headers: {
+                'X-Parse-Master-Key': 'test',
+              },
+            },
+          });
+
+          expect(result.errors).toBeUndefined();
+          expect(result.data.cloudConfig.value).toEqual('publicValue');
+          expect(result.data.cloudConfig.isMasterKeyOnly).toEqual(false);
+        });
+
+        it("should return null for non-existent parameter", async () => {
+          const query = gql`
+            query cloudConfig($paramName: String!) {
+              cloudConfig(paramName: $paramName) {
+                value
+                isMasterKeyOnly
+              }
+            }
+          `;
+
+          const result = await apolloClient.query({
+            query,
+            variables: { paramName: 'nonExistentParam' },
+            context: {
+              headers: {
+                'X-Parse-Master-Key': 'test',
+              },
+            },
+          });
+
+          expect(result.errors).toBeUndefined();
+          expect(result.data.cloudConfig.value).toBeNull();
+          expect(result.data.cloudConfig.isMasterKeyOnly).toBeNull();
+        });
+      });
+
+      describe("Config Mutations", () => {
+        it("should update a config value using mutation and retrieve it with query", async () => {
+          const mutation = gql`
+            mutation updateCloudConfig($input: UpdateCloudConfigInput!) {
+              updateCloudConfig(input: $input) {
+                clientMutationId
+                cloudConfig {
+                  value
+                  isMasterKeyOnly
+                }
+              }
+            }
+          `;
+
+          const query = gql`
+            query cloudConfig($paramName: String!) {
+              cloudConfig(paramName: $paramName) {
+                value
+                isMasterKeyOnly
+              }
+            }
+          `;
+
+          const mutationResult = await apolloClient.mutate({
+            mutation,
+            variables: {
+              input: {
+                clientMutationId: 'test-mutation-id',
+                paramName: 'testParam',
+                value: 'testValue',
+                isMasterKeyOnly: false,
+              },
+            },
+            context: {
+              headers: {
+                'X-Parse-Master-Key': 'test',
+              },
+            },
+          });
+
+          expect(mutationResult.errors).toBeUndefined();
+          expect(mutationResult.data.updateCloudConfig.cloudConfig.value).toEqual('testValue');
+          expect(mutationResult.data.updateCloudConfig.cloudConfig.isMasterKeyOnly).toEqual(false);
+
+          const queryResult = await apolloClient.query({
+            query,
+            variables: { paramName: 'testParam' },
+            context: {
+              headers: {
+                'X-Parse-Master-Key': 'test',
+              },
+            },
+          });
+
+          expect(queryResult.errors).toBeUndefined();
+          expect(queryResult.data.cloudConfig.value).toEqual('testValue');
+          expect(queryResult.data.cloudConfig.isMasterKeyOnly).toEqual(false);
+        });
+
+        it("should update a config value with isMasterKeyOnly set to true", async () => {
+          const mutation = gql`
+            mutation updateCloudConfig($input: UpdateCloudConfigInput!) {
+              updateCloudConfig(input: $input) {
+                clientMutationId
+                cloudConfig {
+                  value
+                  isMasterKeyOnly
+                }
+              }
+            }
+          `;
+
+          const query = gql`
+            query cloudConfig($paramName: String!) {
+              cloudConfig(paramName: $paramName) {
+                value
+                isMasterKeyOnly
+              }
+            }
+          `;
+
+          const mutationResult = await apolloClient.mutate({
+            mutation,
+            variables: {
+              input: {
+                clientMutationId: 'test-mutation-id-2',
+                paramName: 'privateTestParam',
+                value: 'privateValue',
+                isMasterKeyOnly: true,
+              },
+            },
+            context: {
+              headers: {
+                'X-Parse-Master-Key': 'test',
+              },
+            },
+          });
+
+          expect(mutationResult.errors).toBeUndefined();
+          expect(mutationResult.data.updateCloudConfig.cloudConfig.value).toEqual('privateValue');
+          expect(mutationResult.data.updateCloudConfig.cloudConfig.isMasterKeyOnly).toEqual(true);
+
+          const queryResult = await apolloClient.query({
+            query,
+            variables: { paramName: 'privateTestParam' },
+            context: {
+              headers: {
+                'X-Parse-Master-Key': 'test',
+              },
+            },
+          });
+
+          expect(queryResult.errors).toBeUndefined();
+          expect(queryResult.data.cloudConfig.value).toEqual('privateValue');
+          expect(queryResult.data.cloudConfig.isMasterKeyOnly).toEqual(true);
+        });
+
+        it("should update an existing config value", async () => {
+          await Parse.Config.save(
+            { existingParam: 'initialValue' },
+            {},
+            { useMasterKey: true }
+          );
+
+          const mutation = gql`
+            mutation updateCloudConfig($input: UpdateCloudConfigInput!) {
+              updateCloudConfig(input: $input) {
+                clientMutationId
+                cloudConfig {
+                  value
+                  isMasterKeyOnly
+                }
+              }
+            }
+          `;
+
+          const query = gql`
+            query cloudConfig($paramName: String!) {
+              cloudConfig(paramName: $paramName) {
+                value
+                isMasterKeyOnly
+              }
+            }
+          `;
+
+          const mutationResult = await apolloClient.mutate({
+            mutation,
+            variables: {
+              input: {
+                clientMutationId: 'test-mutation-id-3',
+                paramName: 'existingParam',
+                value: 'updatedValue',
+                isMasterKeyOnly: false,
+              },
+            },
+            context: {
+              headers: {
+                'X-Parse-Master-Key': 'test',
+              },
+            },
+          });
+
+          expect(mutationResult.errors).toBeUndefined();
+          expect(mutationResult.data.updateCloudConfig.cloudConfig.value).toEqual('updatedValue');
+
+          const queryResult = await apolloClient.query({
+            query,
+            variables: { paramName: 'existingParam' },
+            context: {
+              headers: {
+                'X-Parse-Master-Key': 'test',
+              },
+            },
+          });
+
+          expect(queryResult.errors).toBeUndefined();
+          expect(queryResult.data.cloudConfig.value).toEqual('updatedValue');
+        });
+
+        it("should require master key to update config", async () => {
+          const mutation = gql`
+            mutation updateCloudConfig($input: UpdateCloudConfigInput!) {
+              updateCloudConfig(input: $input) {
+                clientMutationId
+                cloudConfig {
+                  value
+                  isMasterKeyOnly
+                }
+              }
+            }
+          `;
+
+          try {
+            await apolloClient.mutate({
+              mutation,
+              variables: {
+                input: {
+                  clientMutationId: 'test-mutation-id-4',
+                  paramName: 'testParam',
+                  value: 'testValue',
+                  isMasterKeyOnly: false,
+                },
+              },
+              context: {
+                headers: {
+                  'X-Parse-Application-Id': 'test',
+                },
+              },
+            });
+            fail('Should have thrown an error');
+          } catch (error) {
+            expect(error.graphQLErrors).toBeDefined();
+            expect(error.graphQLErrors[0].message).toContain('Permission denied');
+          }
+        });
+      })
 
       describe('Users Queries', () => {
         it('should return current logged user', async () => {
@@ -7049,6 +7731,7 @@ describe('ParseGraphQLServer', () => {
               challengeAdapter,
             },
           });
+          await createGQLFromParseServer(parseServer);
           const clientMutationId = uuidv4();
 
           const result = await apolloClient.mutate({
@@ -7095,6 +7778,7 @@ describe('ParseGraphQLServer', () => {
               challengeAdapter,
             },
           });
+          await createGQLFromParseServer(parseServer);
           const clientMutationId = uuidv4();
           const userSchema = new Parse.Schema('_User');
           userSchema.addString('someField');
@@ -7169,7 +7853,7 @@ describe('ParseGraphQLServer', () => {
               },
             },
           });
-
+          await createGQLFromParseServer(parseServer);
           userSchema.addString('someField');
           userSchema.addPointer('aPointer', '_User');
           await userSchema.update();
@@ -7239,7 +7923,7 @@ describe('ParseGraphQLServer', () => {
               challengeAdapter,
             },
           });
-
+          await createGQLFromParseServer(parseServer);
           const user = new Parse.User();
           await user.save({ username: 'username', password: 'password' });
 
@@ -7310,6 +7994,7 @@ describe('ParseGraphQLServer', () => {
               challengeAdapter,
             },
           });
+          await createGQLFromParseServer(parseServer);
           const clientMutationId = uuidv4();
           const user = new Parse.User();
           user.setUsername('user1');
@@ -7432,15 +8117,16 @@ describe('ParseGraphQLServer', () => {
         it('should send reset password', async () => {
           const clientMutationId = uuidv4();
           const emailAdapter = {
-            sendVerificationEmail: () => {},
+            sendVerificationEmail: () => { },
             sendPasswordResetEmail: () => Promise.resolve(),
-            sendMail: () => {},
+            sendMail: () => { },
           };
           parseServer = await global.reconfigureServer({
             appName: 'test',
             emailAdapter: emailAdapter,
             publicServerURL: 'http://test.test',
           });
+          await createGQLFromParseServer(parseServer);
           const user = new Parse.User();
           user.setUsername('user1');
           user.setPassword('user1');
@@ -7472,11 +8158,11 @@ describe('ParseGraphQLServer', () => {
           const clientMutationId = uuidv4();
           let resetPasswordToken;
           const emailAdapter = {
-            sendVerificationEmail: () => {},
+            sendVerificationEmail: () => { },
             sendPasswordResetEmail: ({ link }) => {
               resetPasswordToken = link.split('token=')[1].split('&')[0];
             },
-            sendMail: () => {},
+            sendMail: () => { },
           };
           parseServer = await global.reconfigureServer({
             appName: 'test',
@@ -7488,6 +8174,7 @@ describe('ParseGraphQLServer', () => {
               },
             },
           });
+          await createGQLFromParseServer(parseServer);
           const user = new Parse.User();
           user.setUsername('user1');
           user.setPassword('user1');
@@ -7541,15 +8228,16 @@ describe('ParseGraphQLServer', () => {
         it('should send verification email again', async () => {
           const clientMutationId = uuidv4();
           const emailAdapter = {
-            sendVerificationEmail: () => {},
+            sendVerificationEmail: () => { },
             sendPasswordResetEmail: () => Promise.resolve(),
-            sendMail: () => {},
+            sendMail: () => { },
           };
           parseServer = await global.reconfigureServer({
             appName: 'test',
             emailAdapter: emailAdapter,
             publicServerURL: 'http://test.test',
           });
+          await createGQLFromParseServer(parseServer);
           const user = new Parse.User();
           user.setUsername('user1');
           user.setPassword('user1');
@@ -7628,7 +8316,8 @@ describe('ParseGraphQLServer', () => {
           } catch (err) {
             const { graphQLErrors } = err;
             expect(graphQLErrors.length).toBe(1);
-            expect(graphQLErrors[0].message).toBe('Invalid session token');
+            expect(graphQLErrors[0].message).toBe('Permission denied');
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Invalid session token'));
           }
         });
 
@@ -7666,12 +8355,16 @@ describe('ParseGraphQLServer', () => {
           } catch (err) {
             const { graphQLErrors } = err;
             expect(graphQLErrors.length).toBe(1);
-            expect(graphQLErrors[0].message).toBe('Invalid session token');
+            expect(graphQLErrors[0].message).toBe('Permission denied');
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Invalid session token'));
           }
         });
       });
 
       describe('Functions Mutations', () => {
+        beforeEach(async () => {
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
+        });
         it('can be called', async () => {
           try {
             const clientMutationId = uuidv4();
@@ -9306,7 +9999,7 @@ describe('ParseGraphQLServer', () => {
             parseServer = await global.reconfigureServer({
               publicServerURL: 'http://localhost:13377/parse',
             });
-
+            await createGQLFromParseServer(parseServer);
             const body = new FormData();
             body.append(
               'operations',
@@ -9339,7 +10032,6 @@ describe('ParseGraphQLServer', () => {
               headers,
               body,
             });
-
             expect(res.status).toEqual(200);
 
             const result = JSON.parse(await res.text());
@@ -9548,11 +10240,58 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
+        it('should reject file with disallowed URL domain', async () => {
+          try {
+            parseServer = await global.reconfigureServer({
+              publicServerURL: 'http://localhost:13377/parse',
+              fileUpload: {
+                allowedFileUrlDomains: [],
+              },
+            });
+            await createGQLFromParseServer(parseServer);
+
+            const schemaController = await parseServer.config.databaseController.loadSchema();
+            await schemaController.addClassIfNotExists('SomeClass', {
+              someField: { type: 'File' },
+            });
+            await resetGraphQLCache();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+
+            const createResult = await apolloClient.mutate({
+              mutation: gql`
+                mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
+                  createSomeClass(input: { fields: $fields }) {
+                    someClass {
+                      id
+                    }
+                  }
+                }
+              `,
+              variables: {
+                fields: {
+                  someField: {
+                    file: {
+                      name: 'test.txt',
+                      url: 'http://malicious.example.com/leak',
+                      __type: 'File',
+                    },
+                  },
+                },
+              },
+            });
+            fail('should have thrown');
+            expect(createResult).toBeUndefined();
+          } catch (e) {
+            expect(e.message).toMatch(/not allowed/);
+          }
+        });
+
         it('should support files on required file', async () => {
           try {
             parseServer = await global.reconfigureServer({
               publicServerURL: 'http://localhost:13377/parse',
             });
+            await createGQLFromParseServer(parseServer);
             const schemaController = await parseServer.config.databaseController.loadSchema();
             await schemaController.addClassIfNotExists('SomeClassWithRequiredFile', {
               someField: { type: 'File', required: true },
@@ -9617,6 +10356,7 @@ describe('ParseGraphQLServer', () => {
           parseServer = await global.reconfigureServer({
             publicServerURL: 'http://localhost:13377/parse',
           });
+          await createGQLFromParseServer(parseServer);
           const schema = new Parse.Schema('SomeClass');
           schema.addFile('someFileField');
           schema.addPointer('somePointerField', 'SomeClass');
@@ -9725,7 +10465,7 @@ describe('ParseGraphQLServer', () => {
             parseServer = await global.reconfigureServer({
               publicServerURL: 'http://localhost:13377/parse',
             });
-
+            await createGQLFromParseServer(parseServer);
             const body = new FormData();
             body.append(
               'operations',
