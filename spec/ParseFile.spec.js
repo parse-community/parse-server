@@ -1880,6 +1880,10 @@ describe('Parse.File testing', () => {
   });
 
   describe('streaming binary uploads', () => {
+    afterEach(() => {
+      Parse.Cloud._removeAllHooks();
+    });
+
     describe('createSizeLimitedStream', () => {
       const { createSizeLimitedStream } = require('../lib/Routers/FilesRouter');
       const { Readable } = require('stream');
