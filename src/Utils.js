@@ -472,7 +472,7 @@ class Utils {
 
   /**
    * Parses a human-readable size string into a byte count.
-   * @param {number | string} size - A number (returned as-is), a numeric string
+   * @param {number | string} size - A number (floored to an integer), a numeric string
    *   (treated as bytes), or a string with a unit suffix: `b`, `kb`, `mb`, `gb`
    *   (case-insensitive). Examples: `'20mb'`, `'512kb'`, `'1.5gb'`, `1048576`.
    * @returns {number} The size in bytes, floored to the nearest integer.
@@ -483,7 +483,7 @@ class Utils {
       if (!Number.isFinite(size) || size < 0) {
         throw new Error(`Invalid size value: ${size}`);
       }
-      return size;
+      return Math.floor(size);
     }
     const str = String(size).trim().toLowerCase();
     const match = str.match(/^(\d+(?:\.\d+)?)\s*(b|kb|mb|gb)?$/);
