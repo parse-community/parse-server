@@ -26,9 +26,6 @@ export function createSizeLimitedStream(source, maxBytes) {
         source.on('data', (chunk) => {
           totalBytes += chunk.length;
           if (totalBytes > maxBytes) {
-            source.removeAllListeners('data');
-            source.removeAllListeners('end');
-            source.resume();
             output.destroy(
               new Parse.Error(
                 Parse.Error.FILE_SAVE_ERROR,
@@ -54,6 +51,15 @@ export function createSizeLimitedStream(source, maxBytes) {
       if (!sourceEnded) {
         source.resume();
       }
+    },
+    destroy(err, callback) {
+      source.removeAllListeners('data');
+      source.removeAllListeners('end');
+      source.removeAllListeners('error');
+      if (!sourceEnded) {
+        source.resume();
+      }
+      callback(err);
     }
   });
 
