@@ -236,6 +236,18 @@ describe('Utils', () => {
     it('throws on unsupported unit', () => {
       expect(() => Utils.parseSizeToBytes('10tb')).toThrow();
     });
+
+    it('throws on NaN', () => {
+      expect(() => Utils.parseSizeToBytes(NaN)).toThrow();
+    });
+
+    it('throws on Infinity', () => {
+      expect(() => Utils.parseSizeToBytes(Infinity)).toThrow();
+    });
+
+    it('throws on negative number', () => {
+      expect(() => Utils.parseSizeToBytes(-1)).toThrow();
+    });
   });
 
   describe('createSanitizedError', () => {

@@ -480,6 +480,9 @@ class Utils {
    */
   static parseSizeToBytes(size) {
     if (typeof size === 'number') {
+      if (!Number.isFinite(size) || size < 0) {
+        throw new Error(`Invalid size value: ${size}`);
+      }
       return size;
     }
     const str = String(size).trim().toLowerCase();
