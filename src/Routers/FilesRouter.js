@@ -389,8 +389,14 @@ export class FilesRouter {
       const { metadata = {}, tags = {} } = req.fileData || {};
 
       // Validate metadata and tags for prohibited keywords
-      Utils.checkProhibitedKeywords(config, metadata);
-      Utils.checkProhibitedKeywords(config, tags);
+      try {
+        Utils.checkProhibitedKeywords(config, metadata);
+        Utils.checkProhibitedKeywords(config, tags);
+      } catch (error) {
+        req.resume();
+        next(new Parse.Error(Parse.Error.INVALID_KEY_NAME, error));
+        return;
+      }
 
       file.setTags(tags);
       file.setMetadata(metadata);
