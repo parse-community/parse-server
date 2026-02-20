@@ -17,13 +17,14 @@ export function createSizeLimitedStream(source, maxBytes) {
   let totalBytes = 0;
   let started = false;
   let sourceEnded = false;
+  let onData, onEnd, onError;
 
   const output = new Readable({
     read() {
       if (!started) {
         started = true;
 
-        source.on('data', (chunk) => {
+        onData = (chunk) => {
           totalBytes += chunk.length;
           if (totalBytes > maxBytes) {
             output.destroy(
@@ -37,14 +38,18 @@ export function createSizeLimitedStream(source, maxBytes) {
           if (!output.push(chunk)) {
             source.pause();
           }
-        });
+        };
 
-        source.on('end', () => {
+        onEnd = () => {
           sourceEnded = true;
           output.push(null);
-        });
+        };
 
-        source.on('error', (err) => output.destroy(err));
+        onError = (err) => output.destroy(err);
+
+        source.on('data', onData);
+        source.on('end', onEnd);
+        source.on('error', onError);
       }
 
       // Resume source in case it was paused due to backpressure
@@ -53,9 +58,11 @@ export function createSizeLimitedStream(source, maxBytes) {
       }
     },
     destroy(err, callback) {
-      source.removeAllListeners('data');
-      source.removeAllListeners('end');
-      source.removeAllListeners('error');
+      if (onData) source.removeListener('data', onData);
+      if (onEnd) source.removeListener('end', onEnd);
+      if (onError) source.removeListener('error', onError);
+      // Suppress errors emitted during drain (e.g. client disconnect)
+      source.on('error', () => {});
       if (!sourceEnded) {
         source.resume();
       }
