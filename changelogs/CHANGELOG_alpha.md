@@ -1,3 +1,10 @@
+# [9.3.0-alpha.7](https://github.com/parse-community/parse-server/compare/9.3.0-alpha.6...9.3.0-alpha.7) (2026-02-20)
+
+
+### Features
+
+* Upgrade to parse 8.2.0, @parse/push-adapter 8.3.0 ([#10066](https://github.com/parse-community/parse-server/issues/10066)) ([8b5a14e](https://github.com/parse-community/parse-server/commit/8b5a14ecaf0b58b899651fb97d43e0e5d9be506d))
+
 # [9.3.0-alpha.6](https://github.com/parse-community/parse-server/compare/9.3.0-alpha.5...9.3.0-alpha.6) (2026-02-14)
 
 
