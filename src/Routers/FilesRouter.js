@@ -58,9 +58,15 @@ export function createSizeLimitedStream(source, maxBytes) {
       }
     },
     destroy(err, callback) {
-      if (onData) source.removeListener('data', onData);
-      if (onEnd) source.removeListener('end', onEnd);
-      if (onError) source.removeListener('error', onError);
+      if (onData) {
+        source.removeListener('data', onData);
+      }
+      if (onEnd) {
+        source.removeListener('end', onEnd);
+      }
+      if (onError) {
+        source.removeListener('error', onError);
+      }
       // Suppress errors emitted during drain (e.g. client disconnect)
       source.on('error', () => {});
       if (!sourceEnded) {
