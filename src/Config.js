@@ -293,11 +293,6 @@ export class Config {
     if (Object.prototype.toString.call(pages) !== '[object Object]') {
       throw 'Parse Server option pages must be an object.';
     }
-    if (pages.enableRouter === undefined) {
-      pages.enableRouter = PagesOptions.enableRouter.default;
-    } else if (!isBoolean(pages.enableRouter)) {
-      throw 'Parse Server option pages.enableRouter must be a boolean.';
-    }
     if (pages.enableLocalization === undefined) {
       pages.enableLocalization = PagesOptions.enableLocalization.default;
     } else if (!isBoolean(pages.enableLocalization)) {

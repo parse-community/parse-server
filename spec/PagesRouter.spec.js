@@ -207,9 +207,6 @@ describe('Pages Router', () => {
     describe('server options', () => {
       it('uses default configuration when none is set', async () => {
         await reconfigureServerWithPagesConfig({});
-        expect(Config.get(Parse.applicationId).pages.enableRouter).toBe(
-          Definitions.PagesOptions.enableRouter.default
-        );
         expect(Config.get(Parse.applicationId).pages.enableLocalization).toBe(
           Definitions.PagesOptions.enableLocalization.default
         );
