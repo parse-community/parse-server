@@ -388,7 +388,6 @@ const api = new ParseServer({
   ...otherOptions,
 
   pages: {
-    enableRouter: true,
     customRoutes: [{
       method: 'GET',
       path: 'custom_route',
@@ -581,7 +580,6 @@ const api = new ParseServer({
   ...otherOptions,
 
   pages: {
-    enableRouter: true,
     enableLocalization: true,
   }
 }
@@ -634,7 +632,6 @@ const api = new ParseServer({
   ...otherOptions,
 
   pages: {
-    enableRouter: true,
     enableLocalization: true,
     customUrls: {
       passwordReset: 'https://example.com/page.html'
@@ -696,7 +693,6 @@ const api = new ParseServer({
   ...otherOptions,
 
   pages: {
-    enableRouter: true,
     enableLocalization: true,
     localizationJsonPath: './private/localization.json',
     localizationFallbackLocale: 'en'
@@ -724,7 +720,6 @@ const api = new ParseServer({
   ...otherOptions,
 
   pages: {
-    enableRouter: true,
     placeholders: {
       exampleKey: 'exampleValue'
     }
@@ -739,7 +734,6 @@ const api = new ParseServer({
   ...otherOptions,
 
   pages: {
-    enableRouter: true,
     placeholders: async (params) => {
       const value = await doSomething(params.locale);
       return {

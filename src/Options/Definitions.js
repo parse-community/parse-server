@@ -688,12 +688,6 @@ module.exports.PagesOptions = {
     action: parsers.booleanParser,
     default: false,
   },
-  enableRouter: {
-    env: 'PARSE_SERVER_PAGES_ENABLE_ROUTER',
-    help: 'Is true if the pages router should be enabled; this is required for any of the pages options to take effect.',
-    action: parsers.booleanParser,
-    default: false,
-  },
   forceRedirect: {
     env: 'PARSE_SERVER_PAGES_FORCE_REDIRECT',
     help: 'Is true if responses should always be redirects and never content, false if the response type should depend on the request type (GET request -> content response; POST request -> redirect response).',

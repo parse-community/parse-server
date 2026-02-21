@@ -24,7 +24,6 @@ describe('Pages Router', () => {
         appId: 'test',
         appName: 'exampleAppname',
         publicServerURL: 'http://localhost:8378/1',
-        pages: { enableRouter: true },
       };
       await reconfigureServer(config);
     });
@@ -66,7 +65,6 @@ describe('Pages Router', () => {
     it('responds with 404 if publicServerURL is not configured', async () => {
       await reconfigureServer({
         appName: 'unused',
-        pages: { enableRouter: true },
       });
       const urls = [
         'http://localhost:8378/1/apps/test/verify_email',
@@ -99,7 +97,6 @@ describe('Pages Router', () => {
       await reconfigureServer({
         appName: 'exampleAppname',
         publicServerURL: 'http://localhost:8378/1',
-        pages: { enableRouter: true },
       });
     });
 
@@ -190,7 +187,6 @@ describe('Pages Router', () => {
         },
         publicServerURL: 'http://localhost:8378/1',
         pages: {
-          enableRouter: true,
           enableLocalization: true,
           customUrls: {},
         },
@@ -240,10 +236,6 @@ describe('Pages Router', () => {
           'a',
           0,
           true,
-          { enableRouter: 'a' },
-          { enableRouter: 0 },
-          { enableRouter: {} },
-          { enableRouter: [] },
           { enableLocalization: 'a' },
           { enableLocalization: 0 },
           { enableLocalization: {} },
@@ -1189,7 +1181,6 @@ describe('Pages Router', () => {
         verifyUserEmails: true,
         emailAdapter,
         publicServerURL: () => 'http://localhost:8378/1',
-        pages: { enableRouter: true },
       });
 
       const user = new Parse.User();
@@ -1219,7 +1210,6 @@ describe('Pages Router', () => {
         verifyUserEmails: true,
         emailAdapter,
         publicServerURL: () => 'http://localhost:8378/1',
-        pages: { enableRouter: true },
       });
 
       const response = await request({
@@ -1242,7 +1232,6 @@ describe('Pages Router', () => {
           appId: 'test',
           appName: 'exampleAppname',
           publicServerURL: 'http://localhost:8378/1',
-          pages: { enableRouter: true },
         });
 
         // Request the password reset page with an invalid token;
@@ -1267,7 +1256,6 @@ describe('Pages Router', () => {
         appId: 'test',
         appName: 'exampleAppname',
         publicServerURL: 'http://localhost:8378/1',
-        pages: { enableRouter: true },
       });
     });
 
