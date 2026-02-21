@@ -26,7 +26,7 @@ export class FilesAdapter {
   /** Responsible for storing the file in order to be retrieved later by its filename
    *
    * @param {string} filename - the filename to save
-   * @param {Buffer|import('stream').Readable} data - the file data as a Buffer, or a Readable stream if the adapter supports streaming (see supportsStreaming)
+   * @param {Buffer|Readable} data - the file data as a Buffer, or a Readable stream if the adapter supports streaming (see supportsStreaming)
    * @param {string} contentType - the supposed contentType
    * @discussion the contentType can be undefined if the controller was not able to determine it
    * @param {object} options - (Optional) options to be passed to file adapter (S3 File Adapter Only)

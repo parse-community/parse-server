@@ -1,3 +1,10 @@
+## [9.3.1-alpha.1](https://github.com/parse-community/parse-server/compare/9.3.0...9.3.1-alpha.1) (2026-02-21)
+
+
+### Bug Fixes
+
+* Type error in docs creation ([#10069](https://github.com/parse-community/parse-server/issues/10069)) ([02a277f](https://github.com/parse-community/parse-server/commit/02a277f1e937fd3e6bd85bdb49870bf3f47678a0))
+
 # [9.3.0-alpha.9](https://github.com/parse-community/parse-server/compare/9.3.0-alpha.8...9.3.0-alpha.9) (2026-02-21)
 
 
