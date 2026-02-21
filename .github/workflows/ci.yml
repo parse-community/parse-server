@@ -111,6 +111,29 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - run: npm run madge:circular
+  check-docs:
+    name: Docs
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Cache Node.js modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
+      - name: Install dependencies
+        run: npm ci
+      - name: Build source
+        run: npm run build
+      - name: Generate docs
+        run: npm run docs
   check-docker:
     name: Docker Build
     timeout-minutes: 15
