@@ -1,3 +1,10 @@
+# [9.3.0-alpha.8](https://github.com/parse-community/parse-server/compare/9.3.0-alpha.7...9.3.0-alpha.8) (2026-02-21)
+
+
+### Bug Fixes
+
+* Incorrect dependency chain of `Parse` uses browser build instead of Node build ([#10067](https://github.com/parse-community/parse-server/issues/10067)) ([1a2521d](https://github.com/parse-community/parse-server/commit/1a2521d930b855845aa13fde700b2e8170ff65a1))
+
 # [9.3.0-alpha.7](https://github.com/parse-community/parse-server/compare/9.3.0-alpha.6...9.3.0-alpha.7) (2026-02-20)
 
 
