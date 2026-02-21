@@ -156,7 +156,6 @@ export interface SecurityOptions {
     checkGroups?: (CheckGroup[]);
 }
 export interface PagesOptions {
-    enableRouter?: boolean;
     enableLocalization?: boolean;
     localizationJsonPath?: string;
     localizationFallbackLocale?: string;

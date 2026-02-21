@@ -137,7 +137,6 @@
  * @property {PagesRoute[]} customRoutes The custom routes.
  * @property {PagesCustomUrlsOptions} customUrls The URLs to the custom pages.
  * @property {Boolean} enableLocalization Is true if pages should be localized; this has no effect on custom page redirects.
- * @property {Boolean} enableRouter Is true if the pages router should be enabled; this is required for any of the pages options to take effect.
  * @property {Boolean} forceRedirect Is true if responses should always be redirects and never content, false if the response type should depend on the request type (GET request -> content response; POST request -> redirect response).
  * @property {String} localizationFallbackLocale The fallback locale for localization if no matching translation is provided for the given locale. This is only relevant when providing translation resources via JSON file.
  * @property {String} localizationJsonPath The path to the JSON file for localization; the translations will be used to fill template placeholders according to the locale.

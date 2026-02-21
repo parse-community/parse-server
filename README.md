@@ -388,7 +388,6 @@ const api = new ParseServer({
   ...otherOptions,
 
   pages: {
-    enableRouter: true,
     customRoutes: [{
       method: 'GET',
       path: 'custom_route',
@@ -425,7 +424,6 @@ The following paths are already used by Parse Server's built-in features and are
 | Parameter                    | Optional | Type            | Default value | Example values        | Environment variable               | Description                                                                                                                                                                                                                                                  |
 | ---------------------------- | -------- | --------------- | ------------- | --------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `pages`                      | yes      | `Object`        | `undefined`   | -                     | `PARSE_SERVER_PAGES`               | The options for pages such as password reset and email verification.                                                                                                                                                                                         |
-| `pages.enableRouter`         | yes      | `Boolean`       | `false`       | -                     | `PARSE_SERVER_PAGES_ENABLE_ROUTER` | Is `true` if the pages router should be enabled; this is required for any of the pages options to take effect.                                                                                                                                               |
 | `pages.customRoutes`         | yes      | `Array`         | `[]`          | -                     | `PARSE_SERVER_PAGES_CUSTOM_ROUTES` | The custom routes. The routes are added in the order they are defined here, which has to be considered since requests traverse routes in an ordered manner. Custom routes are traversed after build-in routes such as password reset and email verification. |
 | `pages.customRoutes.method`  |          | `String`        | -             | `GET`, `POST`         | -                                  | The HTTP method of the custom route.                                                                                                                                                                                                                         |
 | `pages.customRoutes.path`    |          | `String`        | -             | `custom_page`         | -                                  | The path of the custom route. Note that the same path can used if the `method` is different, for example a path `custom_page` can have two routes, a `GET` and `POST` route, which will be invoked depending on the HTTP request method.                     |
@@ -582,7 +580,6 @@ const api = new ParseServer({
   ...otherOptions,
 
   pages: {
-    enableRouter: true,
     enableLocalization: true,
   }
 }
@@ -635,7 +632,6 @@ const api = new ParseServer({
   ...otherOptions,
 
   pages: {
-    enableRouter: true,
     enableLocalization: true,
     customUrls: {
       passwordReset: 'https://example.com/page.html'
@@ -697,7 +693,6 @@ const api = new ParseServer({
   ...otherOptions,
 
   pages: {
-    enableRouter: true,
     enableLocalization: true,
     localizationJsonPath: './private/localization.json',
     localizationFallbackLocale: 'en'
@@ -725,7 +720,6 @@ const api = new ParseServer({
   ...otherOptions,
 
   pages: {
-    enableRouter: true,
     placeholders: {
       exampleKey: 'exampleValue'
     }
@@ -740,7 +734,6 @@ const api = new ParseServer({
   ...otherOptions,
 
   pages: {
-    enableRouter: true,
     placeholders: async (params) => {
       const value = await doSomething(params.locale);
       return {
@@ -760,7 +753,6 @@ The following parameter and placeholder keys are reserved because they are used 
 | Parameter                                       | Optional | Type                                  | Default value                          | Example values                                       | Environment variable                                            | Description                                                                                                                                                                                                   |
 | ----------------------------------------------- | -------- | ------------------------------------- | -------------------------------------- | ---------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pages`                                         | yes      | `Object`                              | `undefined`                            | -                                                    | `PARSE_SERVER_PAGES`                                            | The options for pages such as password reset and email verification.                                                                                                                                          |
-| `pages.enableRouter`                            | yes      | `Boolean`                             | `false`                                | -                                                    | `PARSE_SERVER_PAGES_ENABLE_ROUTER`                              | Is `true` if the pages router should be enabled; this is required for any of the pages options to take effect.                                                                                                |
 | `pages.enableLocalization`                      | yes      | `Boolean`                             | `false`                                | -                                                    | `PARSE_SERVER_PAGES_ENABLE_LOCALIZATION`                        | Is true if pages should be localized; this has no effect on custom page redirects.                                                                                                                            |
 | `pages.localizationJsonPath`                    | yes      | `String`                              | `undefined`                            | `./private/translations.json`                        | `PARSE_SERVER_PAGES_LOCALIZATION_JSON_PATH`                     | The path to the JSON file for localization; the translations will be used to fill template placeholders according to the locale.                                                                              |
 | `pages.localizationFallbackLocale`              | yes      | `String`                              | `en`                                   | `en`, `en-GB`, `default`                             | `PARSE_SERVER_PAGES_LOCALIZATION_FALLBACK_LOCALE`               | The fallback locale for localization if no matching translation is provided for the given locale. This is only relevant when providing translation resources via JSON file.                                   |

@@ -420,9 +420,6 @@ export interface SecurityOptions {
 }
 
 export interface PagesOptions {
-  /* Is true if the pages router should be enabled; this is required for any of the pages options to take effect.
-  :DEFAULT: false */
-  enableRouter: ?boolean;
   /* Is true if pages should be localized; this has no effect on custom page redirects.
   :DEFAULT: false */
   enableLocalization: ?boolean;

@@ -1,3 +1,10 @@
+## [9.3.1-alpha.2](https://github.com/parse-community/parse-server/compare/9.3.1-alpha.1...9.3.1-alpha.2) (2026-02-21)
+
+
+### Bug Fixes
+
+* Remove obsolete Parse Server option `pages.enableRouter` ([#10070](https://github.com/parse-community/parse-server/issues/10070)) ([00b3b72](https://github.com/parse-community/parse-server/commit/00b3b7297d806b4b40d7c08dd987b748e018e4b6))
+
 ## [9.3.1-alpha.1](https://github.com/parse-community/parse-server/compare/9.3.0...9.3.1-alpha.1) (2026-02-21)
 
 
