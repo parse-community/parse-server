@@ -469,6 +469,40 @@ class Utils {
     }
     return current;
   }
+
+  /**
+   * Parses a human-readable size string into a byte count.
+   * @param {number | string} size - A number (floored to an integer), a numeric string
+   *   (treated as bytes), or a string with a unit suffix: `b`, `kb`, `mb`, `gb`
+   *   (case-insensitive). Examples: `'20mb'`, `'512kb'`, `'1.5gb'`, `1048576`.
+   * @returns {number} The size in bytes, floored to the nearest integer.
+   * @throws {Error} If the string does not match the expected format.
+   */
+  static parseSizeToBytes(size) {
+    if (typeof size === 'number') {
+      if (!Number.isFinite(size) || size < 0) {
+        throw new Error(`Invalid size value: ${size}`);
+      }
+      return Math.floor(size);
+    }
+    const str = String(size).trim().toLowerCase();
+    const match = str.match(/^(\d+(?:\.\d+)?)\s*(b|kb|mb|gb)?$/);
+    if (!match) {
+      throw new Error(`Invalid size value: ${size}`);
+    }
+    const num = parseFloat(match[1]);
+    const unit = match[2];
+    switch (unit) {
+      case 'kb':
+        return Math.floor(num * 1024);
+      case 'mb':
+        return Math.floor(num * 1024 * 1024);
+      case 'gb':
+        return Math.floor(num * 1024 * 1024 * 1024);
+      default:
+        return Math.floor(num);
+    }
+  }
 }
 
 module.exports = Utils;

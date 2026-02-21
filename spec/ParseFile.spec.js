@@ -1878,4 +1878,279 @@ describe('Parse.File testing', () => {
       ).toBeRejectedWith(jasmine.objectContaining({ status: 400 }));
     });
   });
+
+  describe('streaming binary uploads', () => {
+    afterEach(() => {
+      Parse.Cloud._removeAllHooks();
+    });
+
+    describe('createSizeLimitedStream', () => {
+      const { createSizeLimitedStream } = require('../lib/Routers/FilesRouter');
+      const { Readable } = require('stream');
+
+      it('passes data through when under limit', async () => {
+        const input = Readable.from(Buffer.from('hello'));
+        const limited = createSizeLimitedStream(input, 100);
+        const chunks = [];
+        for await (const chunk of limited) {
+          chunks.push(chunk);
+        }
+        expect(Buffer.concat(chunks).toString()).toBe('hello');
+      });
+
+      it('destroys stream when data exceeds limit', async () => {
+        const input = Readable.from(Buffer.from('hello world, this is too long'));
+        const limited = createSizeLimitedStream(input, 5);
+        const chunks = [];
+        try {
+          for await (const chunk of limited) {
+            chunks.push(chunk);
+          }
+          fail('should have thrown');
+        } catch (e) {
+          expect(e.message).toContain('exceeds');
+        }
+      });
+
+    });
+
+    it('streams binary upload with X-Parse-Upload-Mode header', async () => {
+      const headers = {
+        'Content-Type': 'application/octet-stream',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Upload-Mode': 'stream',
+      };
+      let response;
+      try {
+        response = await request({
+          method: 'POST',
+          headers: headers,
+          url: 'http://localhost:8378/1/files/stream-test.txt',
+          body: 'streaming file content',
+        });
+      } catch (e) {
+        fail('Request failed: status=' + e.status + ' text=' + e.text + ' data=' + JSON.stringify(e.data));
+        return;
+      }
+      const b = response.data;
+      expect(b.name).toMatch(/_stream-test.txt$/);
+      expect(b.url).toMatch(/stream-test\.txt$/);
+      const getResponse = await request({ url: b.url });
+      expect(getResponse.text).toEqual('streaming file content');
+    });
+
+    it('infers content type from extension when Content-Type header is missing', async () => {
+      const headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Upload-Mode': 'stream',
+      };
+      const response = await request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/files/inferred.txt',
+        body: 'inferred content type',
+      });
+      const b = response.data;
+      expect(b.name).toMatch(/_inferred.txt$/);
+      const getResponse = await request({ url: b.url });
+      expect(getResponse.text).toEqual('inferred content type');
+    });
+
+    it('uses buffered path without X-Parse-Upload-Mode header', async () => {
+      const headers = {
+        'Content-Type': 'application/octet-stream',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      };
+      const response = await request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/files/buffered-test.txt',
+        body: 'buffered file content',
+      });
+      const b = response.data;
+      expect(b.name).toMatch(/_buffered-test.txt$/);
+      const getResponse = await request({ url: b.url });
+      expect(getResponse.text).toEqual('buffered file content');
+    });
+
+    it('rejects streaming upload exceeding size limit', async () => {
+      await reconfigureServer({ maxUploadSize: '10b' });
+      const headers = {
+        'Content-Type': 'application/octet-stream',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Upload-Mode': 'stream',
+      };
+      try {
+        await request({
+          method: 'POST',
+          headers: headers,
+          url: 'http://localhost:8378/1/files/big-file.txt',
+          body: 'this content is definitely longer than 10 bytes',
+        });
+        fail('should have thrown');
+      } catch (response) {
+        expect(response.data.code).toBe(Parse.Error.FILE_SAVE_ERROR);
+        expect(response.data.error).toContain('exceeds');
+      }
+    });
+
+    it('rejects streaming upload with Content-Length exceeding limit', async () => {
+      await reconfigureServer({ maxUploadSize: '10b' });
+      const headers = {
+        'Content-Type': 'application/octet-stream',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Upload-Mode': 'stream',
+        'Content-Length': '99999',
+      };
+      try {
+        await request({
+          method: 'POST',
+          headers: headers,
+          url: 'http://localhost:8378/1/files/big-file.txt',
+          body: 'hi',
+        });
+        fail('should have thrown');
+      } catch (response) {
+        expect(response.data.code).toBe(Parse.Error.FILE_SAVE_ERROR);
+        expect(response.data.error).toContain('exceeds');
+      }
+    });
+
+    it('fires beforeSave trigger with request.stream = true on streaming upload', async () => {
+      let receivedStream;
+      let receivedData;
+      Parse.Cloud.beforeSave(Parse.File, (request) => {
+        receivedStream = request.stream;
+        receivedData = request.file._data;
+        request.file.addMetadata('source', 'stream');
+        request.file.addTag('env', 'test');
+      });
+      const headers = {
+        'Content-Type': 'application/octet-stream',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Upload-Mode': 'stream',
+      };
+      const response = await request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/files/trigger-test.txt',
+        body: 'trigger test content',
+      });
+      expect(response.data.name).toMatch(/_trigger-test.txt$/);
+      expect(receivedStream).toBe(true);
+      expect(receivedData).toBeFalsy();
+      const getResponse = await request({ url: response.data.url });
+      expect(getResponse.text).toEqual('trigger test content');
+    });
+
+    it('rejects streaming upload when beforeSave trigger throws', async () => {
+      Parse.Cloud.beforeSave(Parse.File, () => {
+        throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Upload rejected');
+      });
+      const headers = {
+        'Content-Type': 'application/octet-stream',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Upload-Mode': 'stream',
+      };
+      try {
+        await request({
+          method: 'POST',
+          headers: headers,
+          url: 'http://localhost:8378/1/files/rejected.txt',
+          body: 'rejected content',
+        });
+        fail('should have thrown');
+      } catch (response) {
+        expect(response.data.code).toBe(Parse.Error.SCRIPT_FAILED);
+        expect(response.data.error).toBe('Upload rejected');
+      }
+    });
+
+    it('skips save when beforeSave trigger returns Parse.File with URL on streaming upload', async () => {
+      Parse.Cloud.beforeSave(Parse.File, () => {
+        return Parse.File.fromJSON({
+          __type: 'File',
+          name: 'existing.txt',
+          url: 'http://example.com/existing.txt',
+        });
+      });
+      const headers = {
+        'Content-Type': 'application/octet-stream',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Upload-Mode': 'stream',
+      };
+      const response = await request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/files/skip-save.txt',
+        body: 'should not be saved',
+      });
+      expect(response.data.url).toBe('http://example.com/existing.txt');
+      expect(response.data.name).toBe('existing.txt');
+    });
+
+    it('fires afterSave trigger with request.stream = true on streaming upload', async () => {
+      let afterSaveStream;
+      let afterSaveData;
+      let afterSaveUrl;
+      Parse.Cloud.afterSave(Parse.File, (request) => {
+        afterSaveStream = request.stream;
+        afterSaveData = request.file._data;
+        afterSaveUrl = request.file._url;
+      });
+      const headers = {
+        'Content-Type': 'application/octet-stream',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Upload-Mode': 'stream',
+      };
+      const response = await request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/files/after-save.txt',
+        body: 'after save content',
+      });
+      expect(response.data.name).toMatch(/_after-save.txt$/);
+      expect(afterSaveStream).toBe(true);
+      expect(afterSaveData).toBeFalsy();
+      expect(afterSaveUrl).toBeTruthy();
+    });
+
+    it('verifies FilesAdapter default supportsStreaming is false', () => {
+      const { FilesAdapter } = require('../lib/Adapters/Files/FilesAdapter');
+      const adapter = new FilesAdapter();
+      expect(adapter.supportsStreaming).toBe(false);
+    });
+
+    it('legacy JSON-wrapped upload still works', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+          fileExtensions: ['*'],
+        },
+      });
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/files/legacy.txt',
+        body: JSON.stringify({
+          _ApplicationId: 'test',
+          _JavaScriptKey: 'test',
+          _ContentType: 'text/plain',
+          base64: Buffer.from('legacy content').toString('base64'),
+        }),
+      });
+      const b = response.data;
+      expect(b.name).toMatch(/_legacy.txt$/);
+      const getResponse = await request({ url: b.url });
+      expect(getResponse.text).toEqual('legacy content');
+    });
+  });
 });

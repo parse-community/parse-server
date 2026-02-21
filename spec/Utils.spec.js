@@ -175,6 +175,81 @@ describe('Utils', () => {
     });
   });
 
+  describe('parseSizeToBytes', () => {
+    it('parses megabyte string', () => {
+      expect(Utils.parseSizeToBytes('20mb')).toBe(20 * 1024 * 1024);
+    });
+
+    it('parses Mb string (case-insensitive)', () => {
+      expect(Utils.parseSizeToBytes('20Mb')).toBe(20 * 1024 * 1024);
+    });
+
+    it('parses kilobyte string', () => {
+      expect(Utils.parseSizeToBytes('512kb')).toBe(512 * 1024);
+    });
+
+    it('parses gigabyte string', () => {
+      expect(Utils.parseSizeToBytes('1gb')).toBe(1 * 1024 * 1024 * 1024);
+    });
+
+    it('parses bytes suffix', () => {
+      expect(Utils.parseSizeToBytes('100b')).toBe(100);
+    });
+
+    it('parses plain number as bytes', () => {
+      expect(Utils.parseSizeToBytes(1048576)).toBe(1048576);
+    });
+
+    it('parses numeric string as bytes', () => {
+      expect(Utils.parseSizeToBytes('1048576')).toBe(1048576);
+    });
+
+    it('parses decimal value and floors result', () => {
+      expect(Utils.parseSizeToBytes('1.5mb')).toBe(Math.floor(1.5 * 1024 * 1024));
+    });
+
+    it('trims whitespace around value', () => {
+      expect(Utils.parseSizeToBytes('  20mb  ')).toBe(20 * 1024 * 1024);
+    });
+
+    it('allows whitespace between number and unit', () => {
+      expect(Utils.parseSizeToBytes('20 mb')).toBe(20 * 1024 * 1024);
+    });
+
+    it('parses zero', () => {
+      expect(Utils.parseSizeToBytes('0')).toBe(0);
+      expect(Utils.parseSizeToBytes(0)).toBe(0);
+    });
+
+    it('throws on invalid string', () => {
+      expect(() => Utils.parseSizeToBytes('abc')).toThrow();
+    });
+
+    it('throws on negative value', () => {
+      expect(() => Utils.parseSizeToBytes('-5mb')).toThrow();
+    });
+
+    it('throws on empty string', () => {
+      expect(() => Utils.parseSizeToBytes('')).toThrow();
+    });
+
+    it('throws on unsupported unit', () => {
+      expect(() => Utils.parseSizeToBytes('10tb')).toThrow();
+    });
+
+    it('throws on NaN', () => {
+      expect(() => Utils.parseSizeToBytes(NaN)).toThrow();
+    });
+
+    it('throws on Infinity', () => {
+      expect(() => Utils.parseSizeToBytes(Infinity)).toThrow();
+    });
+
+    it('throws on negative number', () => {
+      expect(() => Utils.parseSizeToBytes(-1)).toThrow();
+    });
+  });
+
   describe('createSanitizedError', () => {
     it('should return "Permission denied" when enableSanitizedErrorResponse is true', () => {
       const config = { enableSanitizedErrorResponse: true };

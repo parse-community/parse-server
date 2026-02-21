@@ -26,7 +26,7 @@ export class FilesAdapter {
   /** Responsible for storing the file in order to be retrieved later by its filename
    *
    * @param {string} filename - the filename to save
-   * @param {*} data - the buffer of data from the file
+   * @param {Buffer|import('stream').Readable} data - the file data as a Buffer, or a Readable stream if the adapter supports streaming (see supportsStreaming)
    * @param {string} contentType - the supposed contentType
    * @discussion the contentType can be undefined if the controller was not able to determine it
    * @param {object} options - (Optional) options to be passed to file adapter (S3 File Adapter Only)
@@ -37,6 +37,16 @@ export class FilesAdapter {
    * @return {Promise} a promise that should fail if the storage didn't succeed
    */
   createFile(filename: string, data, contentType: string, options: Object): Promise {}
+
+  /** Whether this adapter supports receiving Readable streams in createFile().
+   * If false (default), streams are buffered to a Buffer before being passed.
+   * Override and return true to receive Readable streams directly.
+   *
+   * @return {boolean}
+   */
+  get supportsStreaming() {
+    return false;
+  }
 
   /** Responsible for deleting the specified file
    *

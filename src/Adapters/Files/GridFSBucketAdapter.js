@@ -45,6 +45,10 @@ export class GridFSBucketAdapter extends FilesAdapter {
     this._mongoOptions = _mongoOptions;
   }
 
+  get supportsStreaming() {
+    return true;
+  }
+
   _connect() {
     if (!this._connectionPromise) {
       // Only use driverInfo if clientMetadata option is set
@@ -77,6 +81,32 @@ export class GridFSBucketAdapter extends FilesAdapter {
     const stream = await bucket.openUploadStream(filename, {
       metadata: options.metadata,
     });
+
+    // If data is a stream and encryption is enabled, buffer first
+    // (AES-256-GCM needs complete data for format: [encrypted][IV][authTag])
+    if (typeof data?.pipe === 'function' && this._encryptionKey !== null) {
+      data = await new Promise((resolve, reject) => {
+        const chunks = [];
+        data.on('data', chunk => chunks.push(chunk));
+        data.on('end', () => resolve(Buffer.concat(chunks)));
+        data.on('error', reject);
+      });
+    }
+
+    if (typeof data?.pipe === 'function') {
+      // Pipe readable stream directly into GridFS upload stream
+      return new Promise((resolve, reject) => {
+        data.pipe(stream);
+        stream.on('finish', resolve);
+        stream.on('error', reject);
+        data.on('error', (err) => {
+          stream.destroy(err);
+          reject(err);
+        });
+      });
+    }
+
+    // Buffer path (existing behavior)
     if (this._encryptionKey !== null) {
       try {
         const iv = crypto.randomBytes(16);

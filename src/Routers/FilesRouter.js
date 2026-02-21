@@ -5,6 +5,79 @@ import Config from '../Config';
 import logger from '../logger';
 const triggers = require('../triggers');
 const Utils = require('../Utils');
+import { Readable } from 'stream';
+
+/**
+ * Wraps a readable stream in a Readable that enforces a byte size limit.
+ * Data flow is lazy: the source is not read until a consumer starts reading
+ * from the returned stream (via pipe or 'data' listener). This ensures the
+ * consumer's error listener is attached before any data (or error) is emitted.
+ */
+export function createSizeLimitedStream(source, maxBytes) {
+  let totalBytes = 0;
+  let started = false;
+  let sourceEnded = false;
+  let onData, onEnd, onError;
+
+  const output = new Readable({
+    read() {
+      if (!started) {
+        started = true;
+
+        onData = (chunk) => {
+          totalBytes += chunk.length;
+          if (totalBytes > maxBytes) {
+            output.destroy(
+              new Parse.Error(
+                Parse.Error.FILE_SAVE_ERROR,
+                `File size exceeds maximum allowed: ${maxBytes} bytes.`
+              )
+            );
+            return;
+          }
+          if (!output.push(chunk)) {
+            source.pause();
+          }
+        };
+
+        onEnd = () => {
+          sourceEnded = true;
+          output.push(null);
+        };
+
+        onError = (err) => output.destroy(err);
+
+        source.on('data', onData);
+        source.on('end', onEnd);
+        source.on('error', onError);
+      }
+
+      // Resume source in case it was paused due to backpressure
+      if (!sourceEnded) {
+        source.resume();
+      }
+    },
+    destroy(err, callback) {
+      if (onData) {
+        source.removeListener('data', onData);
+      }
+      if (onEnd) {
+        source.removeListener('end', onEnd);
+      }
+      if (onError) {
+        source.removeListener('error', onError);
+      }
+      // Suppress errors emitted during drain (e.g. client disconnect)
+      source.on('error', () => {});
+      if (!sourceEnded) {
+        source.resume();
+      }
+      callback(err);
+    }
+  });
+
+  return output;
+}
 
 export class FilesRouter {
   expressRouter({ maxUploadSize = '20Mb' } = {}) {
@@ -18,15 +91,10 @@ export class FilesRouter {
 
     router.post(
       '/files/:filename',
-      express.raw({
-        type: () => {
-          return true;
-        },
-        limit: maxUploadSize,
-      }), // Allow uploads without Content-Type, or with any Content-Type.
+      this._bodyParsingMiddleware(maxUploadSize),
       Middlewares.handleParseHeaders,
       Middlewares.handleParseSession,
-      this.createHandler
+      this.createHandler.bind(this)
     );
 
     router.delete(
@@ -111,6 +179,20 @@ export class FilesRouter {
     }
   }
 
+  _bodyParsingMiddleware(maxUploadSize) {
+    const rawParser = express.raw({
+      type: () => true,
+      limit: maxUploadSize,
+    });
+    return (req, res, next) => {
+      if (req.get('X-Parse-Upload-Mode') === 'stream') {
+        req._maxUploadSizeBytes = Utils.parseSizeToBytes(maxUploadSize);
+        return next();
+      }
+      return rawParser(req, res, next);
+    };
+  }
+
   async createHandler(req, res, next) {
     const config = req.config;
     const user = req.auth.user;
@@ -138,11 +220,6 @@ export class FilesRouter {
     const filesController = config.filesController;
     const { filename } = req.params;
     const contentType = req.get('Content-type');
-
-    if (!req.body || !req.body.length) {
-      next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Invalid file upload.'));
-      return;
-    }
 
     const error = filesController.validateFilename(filename);
     if (error) {
@@ -180,6 +257,24 @@ export class FilesRouter {
         );
         return;
       }
+    }
+
+    // Dispatch to the appropriate handler based on whether the body was buffered
+    if (req.body instanceof Buffer) {
+      return this._handleBufferedUpload(req, res, next);
+    }
+    return this._handleStreamUpload(req, res, next);
+  }
+
+  async _handleBufferedUpload(req, res, next) {
+    const config = req.config;
+    const filesController = config.filesController;
+    const { filename } = req.params;
+    const contentType = req.get('Content-type');
+
+    if (!req.body || !req.body.length) {
+      next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Invalid file upload.'));
+      return;
     }
 
     const base64 = req.body.toString('base64');
@@ -221,7 +316,12 @@ export class FilesRouter {
       // if the file returned by the trigger has already been saved skip saving anything
       if (!saveResult) {
         // update fileSize
-        const bufferData = Buffer.from(fileObject.file._data, 'base64');
+        let bufferData;
+        if (fileObject.file._source?.format === 'buffer') {
+          bufferData = fileObject.file._source.buffer;
+        } else {
+          bufferData = Buffer.from(fileObject.file._data, 'base64');
+        }
         fileObject.fileSize = Buffer.byteLength(bufferData);
         // prepare file options
         const fileOptions = {
@@ -260,6 +360,136 @@ export class FilesRouter {
       const error = triggers.resolveError(e, {
         code: Parse.Error.FILE_SAVE_ERROR,
         message: `Could not store file: ${fileObject.file._name}.`,
+      });
+      next(error);
+    }
+  }
+
+  async _handleStreamUpload(req, res, next) {
+    const config = req.config;
+    const filesController = config.filesController;
+    const { filename } = req.params;
+    let contentType = req.get('Content-Type');
+    const maxBytes = req._maxUploadSizeBytes;
+    let stream;
+
+    try {
+      // Early rejection via Content-Length header
+      const contentLength = req.get('Content-Length');
+      if (contentLength && parseInt(contentLength, 10) > maxBytes) {
+        req.resume();
+        next(new Parse.Error(
+          Parse.Error.FILE_SAVE_ERROR,
+          `File size exceeds maximum allowed: ${maxBytes} bytes.`
+        ));
+        return;
+      }
+
+      const mime = (await import('mime')).default;
+
+      // Infer content type from extension or add extension from content type
+      const hasExtension = filename && filename.includes('.');
+      if (hasExtension && !contentType) {
+        contentType = mime.getType(filename);
+      } else if (!hasExtension && contentType) {
+        // extension will be added by filesController.createFile
+      }
+
+      // Create size-limited stream wrapping the request
+      stream = createSizeLimitedStream(req, maxBytes);
+
+      // Build a Parse.File with no _data (streaming mode)
+      const file = new Parse.File(filename, { base64: '' }, contentType);
+      const { metadata = {}, tags = {} } = req.fileData || {};
+
+      // Validate metadata and tags for prohibited keywords
+      try {
+        Utils.checkProhibitedKeywords(config, metadata);
+        Utils.checkProhibitedKeywords(config, tags);
+      } catch (error) {
+        stream.destroy();
+        next(new Parse.Error(Parse.Error.INVALID_KEY_NAME, error));
+        return;
+      }
+
+      file.setTags(tags);
+      file.setMetadata(metadata);
+
+      const fileSize = req.get('Content-Length')
+        ? parseInt(req.get('Content-Length'), 10)
+        : null;
+      const fileObject = { file, fileSize, stream: true };
+
+      // Run beforeSaveFile trigger
+      const triggerResult = await triggers.maybeRunFileTrigger(
+        triggers.Types.beforeSave,
+        fileObject,
+        config,
+        req.auth
+      );
+
+      let saveResult;
+      // If a new ParseFile is returned, check if it's an already saved file
+      if (triggerResult instanceof Parse.File) {
+        fileObject.file = triggerResult;
+        if (triggerResult.url()) {
+          fileObject.fileSize = null;
+          saveResult = {
+            url: triggerResult.url(),
+            name: triggerResult._name,
+          };
+          // Destroy stream to remove listeners and drain request
+          stream.destroy();
+        }
+      }
+
+      // If the file returned by the trigger has already been saved, skip saving
+      if (!saveResult) {
+        // Prepare file options
+        const fileOptions = {
+          metadata: fileObject.file._metadata,
+        };
+        const fileTags =
+          Object.keys(fileObject.file._tags).length > 0 ? { tags: fileObject.file._tags } : {};
+        Object.assign(fileOptions, fileTags);
+
+        // Pass stream directly to filesController — it will buffer if adapter doesn't support streaming
+        const sourceType = fileObject.file._source?.type || contentType;
+        const createFileResult = await filesController.createFile(
+          config,
+          fileObject.file._name,
+          stream,
+          sourceType,
+          fileOptions
+        );
+
+        // Update file with new data
+        fileObject.file._name = createFileResult.name;
+        fileObject.file._url = createFileResult.url;
+        fileObject.file._requestTask = null;
+        fileObject.file._previousSave = Promise.resolve(fileObject.file);
+        saveResult = {
+          url: createFileResult.url,
+          name: createFileResult.name,
+        };
+      }
+
+      // Run afterSaveFile trigger
+      await triggers.maybeRunFileTrigger(triggers.Types.afterSave, fileObject, config, req.auth);
+      res.status(201);
+      res.set('Location', saveResult.url);
+      res.json(saveResult);
+    } catch (e) {
+      // Destroy stream to remove listeners and drain request, or resume directly
+      if (stream) {
+        stream.destroy();
+      } else {
+        req.resume();
+      }
+      logger.error('Error creating a file: ', e);
+      const error = triggers.resolveError(e, {
+        code: Parse.Error.FILE_SAVE_ERROR,
+        message: `Could not store file: ${filename}.`,
       });
       next(error);
     }

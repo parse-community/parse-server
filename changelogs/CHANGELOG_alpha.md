@@ -1,3 +1,10 @@
+# [9.3.0-alpha.9](https://github.com/parse-community/parse-server/compare/9.3.0-alpha.8...9.3.0-alpha.9) (2026-02-21)
+
+
+### Features
+
+* Add support for streaming file upload via `Buffer`, `Readable`, `ReadableStream` ([#10065](https://github.com/parse-community/parse-server/issues/10065)) ([f0feb48](https://github.com/parse-community/parse-server/commit/f0feb48d0fb697a161693721eadd09d740336283))
+
 # [9.3.0-alpha.8](https://github.com/parse-community/parse-server/compare/9.3.0-alpha.7...9.3.0-alpha.8) (2026-02-21)
 
 
