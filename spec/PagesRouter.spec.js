@@ -24,6 +24,7 @@ describe('Pages Router', () => {
         appId: 'test',
         appName: 'exampleAppname',
         publicServerURL: 'http://localhost:8378/1',
+        pages: {},
       };
       await reconfigureServer(config);
     });
