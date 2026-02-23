@@ -673,8 +673,10 @@ describe('server', () => {
           exp: Date.now(),
           sub: 'the_user_id',
         };
-        const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+        const fakeDecodedToken = { kid: '123', alg: 'RS256' };
+        const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
         spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
+        spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
         spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
         const user = new Parse.User();
         user
