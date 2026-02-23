@@ -685,9 +685,16 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
-        it('should always work with master key', async () => {
-          const introspection =
-            await apolloClient.query({
+        it('should always work with master key in node environment production', async () => {
+          const originalNodeEnv = process.env.NODE_ENV;
+          try {
+            // Apollo Server have changing behavior based on the NODE_ENV variable
+            // so we need to set it to production to get the expected behavior
+            // and cover correctly the introspection cases
+            process.env.NODE_ENV = 'production';
+            await createGQLFromParseServer(parseServer);
+
+            const introspection = await apolloClient.query({
               query: gql`
                 query Introspection {
                   __schema {
@@ -701,10 +708,45 @@ describe('ParseGraphQLServer', () => {
                 headers: {
                   'X-Parse-Master-Key': 'test',
                 },
-              }
-            },)
-          expect(introspection.data).toBeDefined();
-          expect(introspection.errors).not.toBeDefined();
+              },
+            });
+            expect(introspection.data).toBeDefined();
+            expect(introspection.errors).not.toBeDefined();
+          } finally {
+            process.env.NODE_ENV = originalNodeEnv;
+          }
+        });
+
+        it('should always work with master key in node environment development', async () => {
+          const originalNodeEnv = process.env.NODE_ENV;
+          try {
+            // Apollo Server have changing behavior based on the NODE_ENV variable
+            // so we need to set it to development to get the expected behavior
+            // and cover correctly the introspection cases
+            process.env.NODE_ENV = 'development';
+            await createGQLFromParseServer(parseServer);
+
+            const introspection = await apolloClient.query({
+              query: gql`
+                query Introspection {
+                  __schema {
+                    types {
+                      name
+                    }
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+            expect(introspection.data).toBeDefined();
+            expect(introspection.errors).not.toBeDefined();
+          } finally {
+            process.env.NODE_ENV = originalNodeEnv;
+          }
         });
 
         it('should always work with maintenance key', async () => {
@@ -6945,7 +6987,7 @@ describe('ParseGraphQLServer', () => {
             );
             expect(
               (await deleteObject(object4.className, object4.id)).data.delete[
-                object4.className.charAt(0).toLowerCase() + object4.className.slice(1)
+              object4.className.charAt(0).toLowerCase() + object4.className.slice(1)
               ]
             ).toEqual({ objectId: object4.id, __typename: 'PublicClass' });
             await expectAsync(object4.fetch({ useMasterKey: true })).toBeRejectedWith(
@@ -11878,25 +11920,25 @@ describe('ParseGraphQLServer', () => {
           },
         });
         const SomeClassType = new GraphQLObjectType({
-            name: 'SomeClass',
-            fields: {
-              nameUpperCase: {
-                type: new GraphQLNonNull(GraphQLString),
-                resolve: p => p.name.toUpperCase(),
-              },
-              type: { type: TypeEnum },
-              language: {
-                type: new GraphQLEnumType({
-                  name: 'LanguageEnum',
-                  values: {
-                    fr: { value: 'fr' },
-                    en: { value: 'en' },
-                  },
-                }),
-                resolve: () => 'fr',
-              },
+          name: 'SomeClass',
+          fields: {
+            nameUpperCase: {
+              type: new GraphQLNonNull(GraphQLString),
+              resolve: p => p.name.toUpperCase(),
             },
-          }),
+            type: { type: TypeEnum },
+            language: {
+              type: new GraphQLEnumType({
+                name: 'LanguageEnum',
+                values: {
+                  fr: { value: 'fr' },
+                  en: { value: 'en' },
+                },
+              }),
+              resolve: () => 'fr',
+            },
+          },
+        }),
           parseGraphQLServer = new ParseGraphQLServer(parseServer, {
             graphQLPath: '/graphql',
             graphQLCustomTypeDefs: new GraphQLSchema({

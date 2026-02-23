@@ -147,7 +147,9 @@ class ParseGraphQLServer {
             // needed since we use graphql upload
             requestHeaders: ['X-Parse-Application-Id'],
           },
-          introspection: this.config.graphQLPublicIntrospection,
+          // We need always true introspection because apollo server have changing behavior based on the NODE_ENV variable
+          // we delegate the introspection control to the IntrospectionControlPlugin
+          introspection: true,
           plugins: [ApolloServerPluginCacheControlDisabled(), IntrospectionControlPlugin(this.config.graphQLPublicIntrospection)],
           schema,
         });
