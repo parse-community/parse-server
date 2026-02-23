@@ -685,9 +685,16 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
-        it('should always work with master key', async () => {
-          const introspection =
-            await apolloClient.query({
+        it('should always work with master key in node environment production', async () => {
+          const originalNodeEnv = process.env.NODE_ENV;
+          try {
+            // Apollo Server have changing behavior based on the NODE_ENV variable
+            // so we need to set it to production to get the expected behavior
+            // and cover correctly the introspection cases
+            process.env.NODE_ENV = 'production';
+            await createGQLFromParseServer(parseServer);
+
+            const introspection = await apolloClient.query({
               query: gql`
                 query Introspection {
                   __schema {
@@ -701,10 +708,45 @@ describe('ParseGraphQLServer', () => {
                 headers: {
                   'X-Parse-Master-Key': 'test',
                 },
-              }
-            },)
-          expect(introspection.data).toBeDefined();
-          expect(introspection.errors).not.toBeDefined();
+              },
+            });
+            expect(introspection.data).toBeDefined();
+            expect(introspection.errors).not.toBeDefined();
+          } finally {
+            process.env.NODE_ENV = originalNodeEnv;
+          }
+        });
+
+        it('should always work with master key in node environment development', async () => {
+          const originalNodeEnv = process.env.NODE_ENV;
+          try {
+            // Apollo Server have changing behavior based on the NODE_ENV variable
+            // so we need to set it to development to get the expected behavior
+            // and cover correctly the introspection cases
+            process.env.NODE_ENV = 'development';
+            await createGQLFromParseServer(parseServer);
+
+            const introspection = await apolloClient.query({
+              query: gql`
+                query Introspection {
+                  __schema {
+                    types {
+                      name
+                    }
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+            expect(introspection.data).toBeDefined();
+            expect(introspection.errors).not.toBeDefined();
+          } finally {
+            process.env.NODE_ENV = originalNodeEnv;
+          }
         });
 
         it('should always work with maintenance key', async () => {

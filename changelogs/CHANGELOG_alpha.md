@@ -1,3 +1,10 @@
+## [9.3.1-alpha.3](https://github.com/parse-community/parse-server/compare/9.3.1-alpha.2...9.3.1-alpha.3) (2026-02-23)
+
+
+### Bug Fixes
+
+* GraphQL introspection disabled in `NODE_ENV=production` even with master key ([#10071](https://github.com/parse-community/parse-server/issues/10071)) ([a5269f0](https://github.com/parse-community/parse-server/commit/a5269f077666537fad1d2eeefee82a36a148255c))
+
 ## [9.3.1-alpha.2](https://github.com/parse-community/parse-server/compare/9.3.1-alpha.1...9.3.1-alpha.2) (2026-02-21)
 
 
