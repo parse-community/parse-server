@@ -1,3 +1,10 @@
+## [8.6.3](https://github.com/parse-community/parse-server/compare/8.6.2...8.6.3) (2026-02-23)
+
+
+### Bug Fixes
+
+* JWT Algorithm Confusion in Google Auth Adapter ([GHSA-4q3h-vp4r-prv2](https://github.com/parse-community/parse-server/security/advisories/GHSA-4q3h-vp4r-prv2)) ([#10073](https://github.com/parse-community/parse-server/issues/10073)) ([9b94083](https://github.com/parse-community/parse-server/commit/9b94083accb7f3e72c6b8126c195c7a03dd2dfd7))
+
 ## [8.6.2](https://github.com/parse-community/parse-server/compare/8.6.1...8.6.2) (2025-12-16)
 
 
