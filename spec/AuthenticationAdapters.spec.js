@@ -500,19 +500,60 @@ describe('google auth adapter', () => {
     }
   });
 
-  // it('should throw error if public key used to encode token is not available', async () => {
-  //   const fakeDecodedToken = { header: { kid: '789', alg: 'RS256' } };
-  //   try {
-  //     spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
+  it('should reject forged alg:none JWT from advisory PoC (GHSA-4q3h-vp4r-prv2)', async () => {
+    const header = Buffer.from('{"alg":"none","kid":"nonexistent-key","typ":"JWT"}').toString('base64url');
+    const payload = Buffer.from('{"sub":"the_user_id","iss":"accounts.google.com","aud":"secret","exp":9999999999}').toString('base64url');
+    const forgedToken = `${header}.${payload}.`;
 
-  //     await google.validateAuthData({ id: 'the_user_id', id_token: 'the_token' }, {});
-  //     fail();
-  //   } catch (e) {
-  //     expect(e.message).toBe(
-  //       `Unable to find matching key for Key ID: ${fakeDecodedToken.header.kid}`
-  //     );
-  //   }
-  // });
+    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
+
+    try {
+      await google.validateAuthData(
+        { id: 'the_user_id', id_token: forgedToken },
+        { clientId: 'secret' }
+      );
+      fail('should have rejected forged token');
+    } catch (e) {
+      expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+    }
+  });
+
+  it('should pass hardcoded RS256 algorithm to jwt.verify, not the JWT header alg', async () => {
+    const fakeClaim = {
+      iss: 'https://accounts.google.com',
+      aud: 'secret',
+      exp: Date.now(),
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = { kid: '123', alg: 'ES256' };
+    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    await google.validateAuthData(
+      { id: 'the_user_id', id_token: 'the_token' },
+      { clientId: 'secret' }
+    );
+    expect(jwt.verify.calls.first().args[2].algorithms).toEqual(['RS256']);
+  });
+
+  it('should throw error if Google signing key is not found', async () => {
+    const fakeDecodedToken = { kid: '789', alg: 'RS256' };
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getSigningKey').and.rejectWith(new Error('key not found'));
+
+    try {
+      await google.validateAuthData(
+        { id: 'the_user_id', id_token: 'the_token' },
+        { clientId: 'secret' }
+      );
+      fail('should have thrown');
+    } catch (e) {
+      expect(e.message).toBe('Unable to find matching key for Key ID: 789');
+    }
+  });
 
   it('(using client id as string) should verify id_token (google.com)', async () => {
     const fakeClaim = {
@@ -521,8 +562,10 @@ describe('google auth adapter', () => {
       exp: Date.now(),
       sub: 'the_user_id',
     };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeDecodedToken = { kid: '123', alg: 'RS256' };
+    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
     spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     const result = await google.validateAuthData(
@@ -537,8 +580,10 @@ describe('google auth adapter', () => {
       iss: 'https://not.google.com',
       sub: 'the_user_id',
     };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeDecodedToken = { kid: '123', alg: 'RS256' };
+    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
     spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     try {
@@ -561,8 +606,10 @@ describe('google auth adapter', () => {
       exp: Date.now(),
       sub: 'the_user_id',
     };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeDecodedToken = { kid: '123', alg: 'RS256' };
+    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
     spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     try {
@@ -583,8 +630,10 @@ describe('google auth adapter', () => {
       exp: Date.now(),
       sub: 'the_user_id',
     };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeDecodedToken = { kid: '123', alg: 'RS256' };
+    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
     spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     try {
@@ -897,7 +946,27 @@ describe('apple signin auth adapter', () => {
       { clientId: 'secret' }
     );
     expect(result).toEqual(fakeClaim);
-    expect(jwt.verify.calls.first().args[2].algorithms).toEqual(fakeDecodedToken.header.alg);
+    expect(jwt.verify.calls.first().args[2].algorithms).toEqual(['RS256']);
+  });
+
+  it('should pass hardcoded RS256 algorithm to jwt.verify, not the JWT header alg (GHSA-4q3h-vp4r-prv2)', async () => {
+    const fakeClaim = {
+      iss: 'https://appleid.apple.com',
+      aud: 'secret',
+      exp: Date.now(),
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = { kid: '123', alg: 'none' };
+    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    await apple.validateAuthData(
+      { id: 'the_user_id', token: 'the_token' },
+      { clientId: 'secret' }
+    );
+    expect(jwt.verify.calls.first().args[2].algorithms).toEqual(['RS256']);
   });
 
   it('should not verify invalid id_token', async () => {
@@ -1236,7 +1305,27 @@ describe('facebook limited auth adapter', () => {
       { clientId: 'secret' }
     );
     expect(result).toEqual(fakeClaim);
-    expect(jwt.verify.calls.first().args[2].algorithms).toEqual(fakeDecodedToken.header.alg);
+    expect(jwt.verify.calls.first().args[2].algorithms).toEqual(['RS256']);
+  });
+
+  it('should pass hardcoded RS256 algorithm to jwt.verify, not the JWT header alg (GHSA-4q3h-vp4r-prv2)', async () => {
+    const fakeClaim = {
+      iss: 'https://www.facebook.com',
+      aud: 'secret',
+      exp: Date.now(),
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = { kid: '123', alg: 'none' };
+    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    await facebook.validateAuthData(
+      { id: 'the_user_id', token: 'the_token' },
+      { clientId: 'secret' }
+    );
+    expect(jwt.verify.calls.first().args[2].algorithms).toEqual(['RS256']);
   });
 
   it('should not verify invalid id_token', async () => {
