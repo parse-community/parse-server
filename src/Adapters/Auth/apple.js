@@ -77,7 +77,7 @@ const verifyIdToken = async ({ token, id }, { clientId, cacheMaxEntries, cacheMa
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `id token is invalid for this user.`);
   }
 
-  const { kid: keyId, alg: algorithm } = authUtils.getHeaderFromToken(token);
+  const { kid: keyId } = authUtils.getHeaderFromToken(token);
   const ONE_HOUR_IN_MS = 3600000;
   let jwtClaims;
 
@@ -89,7 +89,7 @@ const verifyIdToken = async ({ token, id }, { clientId, cacheMaxEntries, cacheMa
 
   try {
     jwtClaims = jwt.verify(token, signingKey, {
-      algorithms: algorithm,
+      algorithms: ['RS256'],
       // the audience can be checked against a string, a regular expression or a list of strings and/or regular expressions.
       audience: clientId,
     });
