@@ -500,6 +500,25 @@ describe('google auth adapter', () => {
     }
   });
 
+  it('should reject forged alg:none JWT from advisory PoC (GHSA-4q3h-vp4r-prv2)', async () => {
+    const header = Buffer.from('{"alg":"none","kid":"nonexistent-key","typ":"JWT"}').toString('base64url');
+    const payload = Buffer.from('{"sub":"the_user_id","iss":"accounts.google.com","aud":"secret","exp":9999999999}').toString('base64url');
+    const forgedToken = `${header}.${payload}.`;
+
+    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
+
+    try {
+      await google.validateAuthData(
+        { id: 'the_user_id', id_token: forgedToken },
+        { clientId: 'secret' }
+      );
+      fail('should have rejected forged token');
+    } catch (e) {
+      expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+    }
+  });
+
   it('should pass hardcoded RS256 algorithm to jwt.verify, not the JWT header alg', async () => {
     const fakeClaim = {
       iss: 'https://accounts.google.com',
