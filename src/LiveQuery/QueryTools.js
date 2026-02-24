@@ -99,7 +99,7 @@ function contains(haystack: Array, needle: any): boolean {
       if (typeof ptr === 'string' && ptr === needle.objectId) {
         return true;
       }
-      if (ptr.className === needle.className && ptr.objectId === needle.objectId) {
+      if (ptr && ptr.className === needle.className && ptr.objectId === needle.objectId) {
         return true;
       }
     }
@@ -212,6 +212,7 @@ function matchesKeyConstraints(object, key, constraints) {
       return equalObjectsGeneric(object[key], constraints, function (obj, ptr) {
         return (
           typeof obj !== 'undefined' &&
+          obj !== null &&
           ptr.className === obj.className &&
           ptr.objectId === obj.objectId
         );

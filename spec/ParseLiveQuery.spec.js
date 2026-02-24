@@ -1308,4 +1308,59 @@ describe('ParseLiveQuery', function () {
     await new Promise(resolve => setTimeout(resolve, 100));
     expect(createSpy).toHaveBeenCalledTimes(1);
   });
+
+  it('Live query should work if needle is ParsePointer and haystack is any[], checking QueryTools.js>contains', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const child1 = new Parse.Object('Child');
+    await child1.save();
+    const child2 = new Parse.Object('Child');
+    await child2.save();
+    const child3 = new Parse.Object('Child');
+    await child3.save();
+    
+    const query = new Parse.Query(TestObject);
+    query.containedIn('childs', [child1, child2, null]);
+    
+    const subscription = await query.subscribe();
+    subscription.on('create', () => {});
+
+    // Do not need any expect block, just make sure that the server doesn't crash or throw error
+    const object1 = new TestObject();
+    object1.set('childs', [child3]);
+    await object1.save();
+  });
+
+
+  it('Live query should work if we set equalTo(someKey,someParseObject) and new Parse object is created but someKey = null', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const child = new Parse.Object('Child');
+    await child.save();
+
+    const query = new Parse.Query(TestObject);
+    query.equalTo('child', child);
+    
+    const subscription = await query.subscribe();
+    subscription.on('create', () => {});
+
+    // Do not need any expect block, just make sure that the server doesn't crash or throw error
+    const object1 = new TestObject();
+    object1.set('child', null);
+    await object1.save();
+  });
 });
