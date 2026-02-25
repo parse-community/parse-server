@@ -1,3 +1,13 @@
+## [9.3.1](https://github.com/parse-community/parse-server/compare/9.3.0...9.3.1) (2026-02-25)
+
+
+### Bug Fixes
+
+* GraphQL introspection disabled in `NODE_ENV=production` even with master key ([#10071](https://github.com/parse-community/parse-server/issues/10071)) ([a5269f0](https://github.com/parse-community/parse-server/commit/a5269f077666537fad1d2eeefee82a36a148255c))
+* JWT Algorithm Confusion in Google Auth Adapter ([GHSA-4q3h-vp4r-prv2](https://github.com/parse-community/parse-server/security/advisories/GHSA-4q3h-vp4r-prv2)) ([#10072](https://github.com/parse-community/parse-server/issues/10072)) ([9d5942d](https://github.com/parse-community/parse-server/commit/9d5942d50e55c822924c27b05aa98f1393e7a330))
+* Remove obsolete Parse Server option `pages.enableRouter` ([#10070](https://github.com/parse-community/parse-server/issues/10070)) ([00b3b72](https://github.com/parse-community/parse-server/commit/00b3b7297d806b4b40d7c08dd987b748e018e4b6))
+* Type error in docs creation ([#10069](https://github.com/parse-community/parse-server/issues/10069)) ([02a277f](https://github.com/parse-community/parse-server/commit/02a277f1e937fd3e6bd85bdb49870bf3f47678a0))
+
 # [9.3.0](https://github.com/parse-community/parse-server/compare/9.2.0...9.3.0) (2026-02-21)
 
 
