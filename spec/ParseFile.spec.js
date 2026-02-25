@@ -2319,7 +2319,7 @@ describe('Parse.File testing', () => {
         fail('should have thrown');
       } catch (error) {
         expect(error.code).toEqual(Parse.Error.INVALID_FILE_NAME);
-        expect(error.message).toContain('/');
+        expect(error.message).toContain('start or end with');
       }
     });
 
