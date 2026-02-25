@@ -6,6 +6,7 @@ import logger from '../logger';
 const triggers = require('../triggers');
 const Utils = require('../Utils');
 import { Readable } from 'stream';
+import { createSanitizedHttpError } from '../Error';
 
 /**
  * Wraps a readable stream in a Readable that enforces a byte size limit.
@@ -151,8 +152,9 @@ export class FilesRouter {
   async getHandler(req, res) {
     const config = Config.get(req.params.appId);
     if (!config) {
-      res.status(403);
-      res.json({ code: Parse.Error.OPERATION_FORBIDDEN, error: 'Invalid application ID.' });
+      const error = createSanitizedHttpError(403, 'Invalid application ID.', config);
+      res.status(error.status);
+      res.json({ error: error.message });
       return;
     }
 
