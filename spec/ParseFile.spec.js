@@ -2290,6 +2290,51 @@ describe('Parse.File testing', () => {
       }
     });
 
+    it('saves file with directory via streaming upload (trigger)', async () => {
+      Parse.Cloud.beforeSave(Parse.File, req => {
+        req.file.setDirectory('stream-uploads');
+      });
+      const headers = {
+        'Content-Type': 'text/plain',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Upload-Mode': 'stream',
+      };
+      const response = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/files/stream-dir.txt',
+        body: 'stream directory content',
+      });
+      const b = response.data;
+      expect(b.name).toMatch(/^stream-uploads\/.*_stream-dir.txt$/);
+      expect(b.url).toBeDefined();
+    });
+
+    it('validates directory - rejects trailing slash', async () => {
+      const file = new Parse.File('hello.txt', data, 'text/plain');
+      file.setDirectory('trailing/');
+      try {
+        await file.save({ useMasterKey: true });
+        fail('should have thrown');
+      } catch (error) {
+        expect(error.code).toEqual(Parse.Error.INVALID_FILE_NAME);
+        expect(error.message).toContain('/');
+      }
+    });
+
+    it('validates directory - rejects too long path', async () => {
+      const file = new Parse.File('hello.txt', data, 'text/plain');
+      file.setDirectory('a'.repeat(257));
+      try {
+        await file.save({ useMasterKey: true });
+        fail('should have thrown');
+      } catch (error) {
+        expect(error.code).toEqual(Parse.Error.INVALID_FILE_NAME);
+        expect(error.message).toContain('too long');
+      }
+    });
+
     it('saves file without directory (no change to existing behavior)', async () => {
       spyOn(FilesController.prototype, 'createFile').and.callThrough();
       const file = new Parse.File('hello.txt', data, 'text/plain');

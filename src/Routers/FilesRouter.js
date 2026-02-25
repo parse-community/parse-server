@@ -109,11 +109,8 @@ export class FilesRouter {
   }
 
   static _getFilenameFromParams(req) {
-    if (req.params.filepath) {
-      const parts = req.params.filepath;
-      return Array.isArray(parts) ? parts.join('/') : parts;
-    }
-    return req.params.filename;
+    const parts = req.params.filepath;
+    return Array.isArray(parts) ? parts.join('/') : parts;
   }
 
   static validateDirectory(directory) {
