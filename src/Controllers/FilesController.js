@@ -29,6 +29,12 @@ export class FilesController extends AdaptableController {
       filename = randomHexString(32) + '_' + filename;
     }
 
+    // Prepend directory if provided
+    if (options && options.directory) {
+      filename = options.directory + '/' + filename;
+      delete options.directory;
+    }
+
     // Fallback: buffer stream for adapters that don't support streaming
     if (typeof data?.pipe === 'function' && !this.adapter.supportsStreaming) {
       data = await new Promise((resolve, reject) => {

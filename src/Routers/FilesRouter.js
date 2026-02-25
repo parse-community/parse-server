@@ -82,8 +82,9 @@ export function createSizeLimitedStream(source, maxBytes) {
 export class FilesRouter {
   expressRouter({ maxUploadSize = '20Mb' } = {}) {
     var router = express.Router();
-    router.get('/files/:appId/:filename', this.getHandler);
-    router.get('/files/:appId/metadata/:filename', this.metadataHandler);
+    // Metadata route must come before the catch-all GET route
+    router.get('/files/:appId/metadata/*filepath', this.metadataHandler);
+    router.get('/files/:appId/*filepath', this.getHandler);
 
     router.post('/files', function (req, res, next) {
       next(new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Filename not provided.'));
@@ -98,13 +99,56 @@ export class FilesRouter {
     );
 
     router.delete(
-      '/files/:filename',
+      '/files/*filepath',
       Middlewares.handleParseHeaders,
       Middlewares.handleParseSession,
       Middlewares.enforceMasterKeyAccess,
       this.deleteHandler
     );
     return router;
+  }
+
+  static _getFilenameFromParams(req) {
+    if (req.params.filepath) {
+      const parts = req.params.filepath;
+      return Array.isArray(parts) ? parts.join('/') : parts;
+    }
+    return req.params.filename;
+  }
+
+  static validateDirectory(directory) {
+    if (typeof directory !== 'string') {
+      return new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Directory must be a string.');
+    }
+    if (directory.length === 0) {
+      return new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Directory must not be empty.');
+    }
+    if (directory.length > 256) {
+      return new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Directory path is too long.');
+    }
+    if (directory.includes('..')) {
+      return new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Directory must not contain "..".');
+    }
+    if (directory.startsWith('/') || directory.endsWith('/')) {
+      return new Parse.Error(
+        Parse.Error.INVALID_FILE_NAME,
+        'Directory must not start or end with "/".'
+      );
+    }
+    if (directory.includes('//')) {
+      return new Parse.Error(
+        Parse.Error.INVALID_FILE_NAME,
+        'Directory must not contain consecutive slashes.'
+      );
+    }
+    const dirRegex = /^[a-zA-Z0-9][a-zA-Z0-9_\-/]*$/;
+    if (!dirRegex.test(directory)) {
+      return new Parse.Error(
+        Parse.Error.INVALID_FILE_NAME,
+        'Directory contains invalid characters.'
+      );
+    }
+    return null;
   }
 
   async getHandler(req, res) {
@@ -115,7 +159,7 @@ export class FilesRouter {
       return;
     }
 
-    let filename = req.params.filename;
+    let filename = FilesRouter._getFilenameFromParams(req);
     try {
       const filesController = config.filesController;
       const mime = (await import('mime')).default;
@@ -259,6 +303,25 @@ export class FilesRouter {
       }
     }
 
+    // Validate directory option (requires master key)
+    const directory = req.fileData?.directory;
+    if (directory !== undefined) {
+      if (!isMaster) {
+        next(
+          new Parse.Error(
+            Parse.Error.OPERATION_FORBIDDEN,
+            'Directory can only be set using the Master Key.'
+          )
+        );
+        return;
+      }
+      const directoryError = FilesRouter.validateDirectory(directory);
+      if (directoryError) {
+        next(directoryError);
+        return;
+      }
+    }
+
     // Dispatch to the appropriate handler based on whether the body was buffered
     if (req.body instanceof Buffer) {
       return this._handleBufferedUpload(req, res, next);
@@ -279,7 +342,7 @@ export class FilesRouter {
 
     const base64 = req.body.toString('base64');
     const file = new Parse.File(filename, { base64 }, contentType);
-    const { metadata = {}, tags = {} } = req.fileData || {};
+    const { metadata = {}, tags = {}, directory } = req.fileData || {};
     try {
       // Scan request data for denied keywords
       Utils.checkProhibitedKeywords(config, metadata);
@@ -290,6 +353,9 @@ export class FilesRouter {
     }
     file.setTags(tags);
     file.setMetadata(metadata);
+    if (directory) {
+      file.setDirectory(directory);
+    }
     const fileSize = Buffer.byteLength(req.body);
     const fileObject = { file, fileSize };
     try {
@@ -332,6 +398,10 @@ export class FilesRouter {
         const fileTags =
           Object.keys(fileObject.file._tags).length > 0 ? { tags: fileObject.file._tags } : {};
         Object.assign(fileOptions, fileTags);
+        // include directory if set (from client request or beforeSaveFile trigger)
+        if (fileObject.file._directory) {
+          fileOptions.directory = fileObject.file._directory;
+        }
         // save file
         const createFileResult = await filesController.createFile(
           config,
@@ -400,7 +470,7 @@ export class FilesRouter {
 
       // Build a Parse.File with no _data (streaming mode)
       const file = new Parse.File(filename, { base64: '' }, contentType);
-      const { metadata = {}, tags = {} } = req.fileData || {};
+      const { metadata = {}, tags = {}, directory } = req.fileData || {};
 
       // Validate metadata and tags for prohibited keywords
       try {
@@ -414,6 +484,9 @@ export class FilesRouter {
 
       file.setTags(tags);
       file.setMetadata(metadata);
+      if (directory) {
+        file.setDirectory(directory);
+      }
 
       const fileSize = req.get('Content-Length')
         ? parseInt(req.get('Content-Length'), 10)
@@ -452,6 +525,10 @@ export class FilesRouter {
         const fileTags =
           Object.keys(fileObject.file._tags).length > 0 ? { tags: fileObject.file._tags } : {};
         Object.assign(fileOptions, fileTags);
+        // include directory if set (from client request or beforeSaveFile trigger)
+        if (fileObject.file._directory) {
+          fileOptions.directory = fileObject.file._directory;
+        }
 
         // Pass stream directly to filesController — it will buffer if adapter doesn't support streaming
         const sourceType = fileObject.file._source?.type || contentType;
@@ -498,7 +575,7 @@ export class FilesRouter {
   async deleteHandler(req, res, next) {
     try {
       const { filesController } = req.config;
-      const { filename } = req.params;
+      const filename = FilesRouter._getFilenameFromParams(req);
       // run beforeDeleteFile trigger
       const file = new Parse.File(filename);
       file._url = await filesController.adapter.getFileLocation(req.config, filename);
@@ -535,7 +612,7 @@ export class FilesRouter {
     try {
       const config = Config.get(req.params.appId);
       const { filesController } = config;
-      const { filename } = req.params;
+      const filename = FilesRouter._getFilenameFromParams(req);
       const data = await filesController.getMetadata(filename);
       res.status(200);
       res.json(data);
