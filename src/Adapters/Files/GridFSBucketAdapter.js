@@ -220,7 +220,8 @@ export class GridFSBucketAdapter extends FilesAdapter {
   }
 
   getFileLocation(config, filename) {
-    return config.mount + '/files/' + config.applicationId + '/' + encodeURIComponent(filename);
+    const encodedFilename = filename.split('/').map(encodeURIComponent).join('/');
+    return config.mount + '/files/' + config.applicationId + '/' + encodedFilename;
   }
 
   async getMetadata(filename) {

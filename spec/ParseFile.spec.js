@@ -771,7 +771,7 @@ describe('Parse.File testing', () => {
         url: 'http://localhost:8378/1/files/invalid-id/invalid-file.txt',
       }).catch(e => e);
       expect(res1.status).toBe(403);
-      expect(res1.data).toEqual({ code: 119, error: 'Invalid application ID.' });
+      expect(res1.data).toEqual({ error: 'Permission denied' });
       // Ensure server did not crash
       const res2 = await request({ url: 'http://localhost:8378/1/health' });
       expect(res2.status).toEqual(200);
@@ -783,7 +783,7 @@ describe('Parse.File testing', () => {
         url: 'http://localhost:8378/1/files/invalid-id//invalid-path/%20/invalid-file.txt',
       }).catch(e => e);
       expect(res1.status).toBe(403);
-      expect(res1.data).toEqual({ error: 'unauthorized' });
+      expect(res1.data).toEqual({ error: 'Permission denied' });
       // Ensure server did not crash
       const res2 = await request({ url: 'http://localhost:8378/1/health' });
       expect(res2.status).toEqual(200);
@@ -2151,6 +2151,211 @@ describe('Parse.File testing', () => {
       expect(b.name).toMatch(/_legacy.txt$/);
       const getResponse = await request({ url: b.url });
       expect(getResponse.text).toEqual('legacy content');
+    });
+  });
+
+  describe('file directory', () => {
+    it('saves file with directory using master key', async () => {
+      spyOn(FilesController.prototype, 'createFile').and.callThrough();
+      const file = new Parse.File('hello.txt', data, 'text/plain');
+      file.setDirectory('user-uploads/avatars');
+      const result = await file.save({ useMasterKey: true });
+      expect(result.name()).toMatch(/^user-uploads\/avatars\/.*_hello.txt$/);
+      expect(result.url()).toBeDefined();
+      // directory is consumed (deleted) from options by FilesController.createFile
+      // and prepended to the filename, which is verified above via result.name()
+      expect(FilesController.prototype.createFile.calls.argsFor(0)[4]).toEqual({
+        metadata: {},
+      });
+    });
+
+    it('rejects directory without master key', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+        },
+      });
+      try {
+        const response = await request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/files/hello.txt',
+          body: JSON.stringify({
+            _ApplicationId: 'test',
+            _JavaScriptKey: 'test',
+            _ContentType: 'text/plain',
+            base64: Buffer.from('Hello World!').toString('base64'),
+            fileData: {
+              directory: 'some-dir',
+              metadata: {},
+              tags: {},
+            },
+          }),
+        });
+        fail('should have thrown');
+        expect(response).toBeUndefined();
+      } catch (error) {
+        expect(error.data.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+        expect(error.data.error).toEqual('Directory can only be set using the Master Key.');
+      }
+    });
+
+    it('validates directory - rejects path traversal', async () => {
+      const file = new Parse.File('hello.txt', data, 'text/plain');
+      file.setDirectory('some/../etc');
+      try {
+        await file.save({ useMasterKey: true });
+        fail('should have thrown');
+      } catch (error) {
+        expect(error.code).toEqual(Parse.Error.INVALID_FILE_NAME);
+        expect(error.message).toContain('..');
+      }
+    });
+
+    it('validates directory - rejects leading slash', async () => {
+      const file = new Parse.File('hello.txt', data, 'text/plain');
+      file.setDirectory('/absolute-path');
+      try {
+        await file.save({ useMasterKey: true });
+        fail('should have thrown');
+      } catch (error) {
+        expect(error.code).toEqual(Parse.Error.INVALID_FILE_NAME);
+      }
+    });
+
+    it('validates directory - rejects invalid characters', async () => {
+      const invalidDirs = ['dir with spaces', '~root', '$HOME/files', 'dir%00name', '.hidden', 'foo\\bar'];
+      for (const dir of invalidDirs) {
+        const file = new Parse.File('hello.txt', data, 'text/plain');
+        file.setDirectory(dir);
+        try {
+          await file.save({ useMasterKey: true });
+          fail(`should have thrown for directory: ${dir}`);
+        } catch (error) {
+          expect(error.code).toEqual(Parse.Error.INVALID_FILE_NAME);
+          expect(error.message).toContain('invalid characters');
+        }
+      }
+    });
+
+    it('validates directory - rejects consecutive slashes', async () => {
+      const file = new Parse.File('hello.txt', data, 'text/plain');
+      file.setDirectory('dir//subdir');
+      try {
+        await file.save({ useMasterKey: true });
+        fail('should have thrown');
+      } catch (error) {
+        expect(error.code).toEqual(Parse.Error.INVALID_FILE_NAME);
+        expect(error.message).toContain('consecutive slashes');
+      }
+    });
+
+    it('saves and retrieves file with nested directory', async () => {
+      const file = new Parse.File('hello.txt', data, 'text/plain');
+      file.setDirectory('photos/2024/january');
+      const result = await file.save({ useMasterKey: true });
+      expect(result.name()).toMatch(/^photos\/2024\/january\/.*_hello.txt$/);
+      expect(result.url()).toBeDefined();
+      // Retrieve the file via its URL
+      const response = await request({ url: result.url() });
+      expect(response.text).toEqual(str);
+    });
+
+    it('allows beforeSaveFile trigger to set directory', async () => {
+      Parse.Cloud.beforeSave(Parse.File, req => {
+        req.file.setDirectory('trigger-dir');
+      });
+      spyOn(FilesController.prototype, 'createFile').and.callThrough();
+      const file = new Parse.File('hello.txt', data, 'text/plain');
+      const result = await file.save();
+      expect(result.name()).toMatch(/^trigger-dir\/.*_hello.txt$/);
+      // directory is consumed (deleted) from options by FilesController.createFile
+      // and prepended to the filename, which is verified above via result.name()
+      expect(FilesController.prototype.createFile.calls.argsFor(0)[4]).toEqual({
+        metadata: {},
+      });
+    });
+
+    it('deletes file with directory path', async () => {
+      const file = new Parse.File('hello.txt', data, 'text/plain');
+      file.setDirectory('delete-test');
+      const result = await file.save({ useMasterKey: true });
+      expect(result.name()).toMatch(/^delete-test\/.*_hello.txt$/);
+      await result.destroy({ useMasterKey: true });
+      // Verify file is gone
+      try {
+        await request({ url: result.url() });
+        fail('should have thrown');
+      } catch (error) {
+        expect(error.status).toBe(404);
+      }
+    });
+
+    it('saves file with directory via streaming upload (trigger)', async () => {
+      Parse.Cloud.beforeSave(Parse.File, req => {
+        req.file.setDirectory('stream-uploads');
+      });
+      const headers = {
+        'Content-Type': 'text/plain',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Upload-Mode': 'stream',
+      };
+      const response = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/files/stream-dir.txt',
+        body: 'stream directory content',
+      });
+      const b = response.data;
+      expect(b.name).toMatch(/^stream-uploads\/.*_stream-dir.txt$/);
+      expect(b.url).toBeDefined();
+    });
+
+    it('validates directory - rejects trailing slash', async () => {
+      const file = new Parse.File('hello.txt', data, 'text/plain');
+      file.setDirectory('trailing/');
+      try {
+        await file.save({ useMasterKey: true });
+        fail('should have thrown');
+      } catch (error) {
+        expect(error.code).toEqual(Parse.Error.INVALID_FILE_NAME);
+        expect(error.message).toContain('start or end with');
+      }
+    });
+
+    it('validates directory - rejects too long path', async () => {
+      const file = new Parse.File('hello.txt', data, 'text/plain');
+      file.setDirectory('a'.repeat(257));
+      try {
+        await file.save({ useMasterKey: true });
+        fail('should have thrown');
+      } catch (error) {
+        expect(error.code).toEqual(Parse.Error.INVALID_FILE_NAME);
+        expect(error.message).toContain('too long');
+      }
+    });
+
+    it('validates directory - rejects reserved segment "metadata"', async () => {
+      const file = new Parse.File('hello.txt', data, 'text/plain');
+      file.setDirectory('metadata/docs');
+      try {
+        await file.save({ useMasterKey: true });
+        fail('should have thrown');
+      } catch (error) {
+        expect(error.code).toEqual(Parse.Error.INVALID_FILE_NAME);
+        expect(error.message).toContain('reserved segment');
+      }
+    });
+
+    it('saves file without directory (no change to existing behavior)', async () => {
+      spyOn(FilesController.prototype, 'createFile').and.callThrough();
+      const file = new Parse.File('hello.txt', data, 'text/plain');
+      const result = await file.save();
+      expect(result.name()).not.toContain('/');
+      expect(result.url()).toBeDefined();
+      expect(FilesController.prototype.createFile.calls.argsFor(0)[4]).toEqual({
+        metadata: {},
+      });
     });
   });
 });
