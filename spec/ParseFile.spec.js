@@ -2335,6 +2335,18 @@ describe('Parse.File testing', () => {
       }
     });
 
+    it('validates directory - rejects reserved segment "metadata"', async () => {
+      const file = new Parse.File('hello.txt', data, 'text/plain');
+      file.setDirectory('metadata/docs');
+      try {
+        await file.save({ useMasterKey: true });
+        fail('should have thrown');
+      } catch (error) {
+        expect(error.code).toEqual(Parse.Error.INVALID_FILE_NAME);
+        expect(error.message).toContain('reserved segment');
+      }
+    });
+
     it('saves file without directory (no change to existing behavior)', async () => {
       spyOn(FilesController.prototype, 'createFile').and.callThrough();
       const file = new Parse.File('hello.txt', data, 'text/plain');

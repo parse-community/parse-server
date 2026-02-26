@@ -80,6 +80,11 @@ export function createSizeLimitedStream(source, maxBytes) {
   return output;
 }
 
+// Segments that conflict with sub-routes under GET /files/:appId/*. If a file
+// directory starts with one of these, its URL would match the wrong route
+// handler. Update this list when adding new sub-routes to expressRouter().
+export const RESERVED_DIRECTORY_SEGMENTS = ['metadata'];
+
 export class FilesRouter {
   expressRouter({ maxUploadSize = '20Mb' } = {}) {
     var router = express.Router();
@@ -137,6 +142,13 @@ export class FilesRouter {
       return new Parse.Error(
         Parse.Error.INVALID_FILE_NAME,
         'Directory must not contain consecutive slashes.'
+      );
+    }
+    const firstSegment = directory.split('/')[0];
+    if (RESERVED_DIRECTORY_SEGMENTS.includes(firstSegment)) {
+      return new Parse.Error(
+        Parse.Error.INVALID_FILE_NAME,
+        `Directory must not start with reserved segment "${firstSegment}".`
       );
     }
     const dirRegex = /^[a-zA-Z0-9][a-zA-Z0-9_\-/]*$/;
