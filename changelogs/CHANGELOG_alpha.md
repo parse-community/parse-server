@@ -1,3 +1,10 @@
+# [9.4.0-alpha.1](https://github.com/parse-community/parse-server/compare/9.3.1...9.4.0-alpha.1) (2026-02-26)
+
+
+### Features
+
+* Add support for `Parse.File.setDirectory()` with master key to save file in directory ([#10076](https://github.com/parse-community/parse-server/issues/10076)) ([17d987c](https://github.com/parse-community/parse-server/commit/17d987c95accdb2d75f63aed25abd919b0999589))
+
 ## [9.3.1-alpha.4](https://github.com/parse-community/parse-server/compare/9.3.1-alpha.3...9.3.1-alpha.4) (2026-02-23)
 
 
