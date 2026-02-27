@@ -454,9 +454,10 @@ export class PagesRouter extends PromiseRouter {
 
     // Add placeholders in header to allow parsing for programmatic use
     // of response, instead of having to parse the HTML content.
+    const encode = this.pagesConfig.encodePageParamHeaders;
     const headers = Object.entries(params).reduce((m, p) => {
       if (p[1] !== undefined) {
-        m[`${pageParamHeaderPrefix}${p[0].toLowerCase()}`] = p[1];
+        m[`${pageParamHeaderPrefix}${p[0].toLowerCase()}`] = encode ? encodeURIComponent(p[1]) : p[1];
       }
       return m;
     }, {});
@@ -576,9 +577,10 @@ export class PagesRouter extends PromiseRouter {
 
     // Add parameters to header to allow parsing for programmatic use
     // of response, instead of having to parse the HTML content.
+    const encode = this.pagesConfig.encodePageParamHeaders;
     const headers = Object.entries(params).reduce((m, p) => {
       if (p[1] !== undefined) {
-        m[`${pageParamHeaderPrefix}${p[0].toLowerCase()}`] = p[1];
+        m[`${pageParamHeaderPrefix}${p[0].toLowerCase()}`] = encode ? encodeURIComponent(p[1]) : p[1];
       }
       return m;
     }, {});
