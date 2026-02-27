@@ -339,6 +339,11 @@ export class Config {
     } else if (!(pages.customRoutes instanceof Array)) {
       throw 'Parse Server option pages.customRoutes must be an array.';
     }
+    if (pages.encodePageParamHeaders === undefined) {
+      pages.encodePageParamHeaders = PagesOptions.encodePageParamHeaders.default;
+    } else if (!isBoolean(pages.encodePageParamHeaders)) {
+      throw 'Parse Server option pages.encodePageParamHeaders must be a boolean.';
+    }
   }
 
   static validateIdempotencyOptions(idempotencyOptions) {

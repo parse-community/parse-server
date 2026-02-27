@@ -1,3 +1,10 @@
+# [9.4.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.4.0-alpha.1...9.4.0-alpha.2) (2026-02-27)
+
+
+### Bug Fixes
+
+* `PagesRouter` header parameters are not URL-encoded to support non-ASCII characters in app name ([#10078](https://github.com/parse-community/parse-server/issues/10078)) ([c92660b](https://github.com/parse-community/parse-server/commit/c92660bd9a776eec81e4ef18217916b931c267a1))
+
 # [9.4.0-alpha.1](https://github.com/parse-community/parse-server/compare/9.3.1...9.4.0-alpha.1) (2026-02-26)
 
 
