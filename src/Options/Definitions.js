@@ -688,6 +688,12 @@ module.exports.PagesOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  encodePageParamHeaders: {
+    env: 'PARSE_SERVER_PAGES_ENCODE_PAGE_PARAM_HEADERS',
+    help: 'Is `true` if the page parameter headers should be URI-encoded. This is required if any page parameter value contains non-ASCII characters, such as the app name.',
+    action: parsers.booleanParser,
+    default: false,
+  },
   forceRedirect: {
     env: 'PARSE_SERVER_PAGES_FORCE_REDIRECT',
     help: 'Is true if responses should always be redirects and never content, false if the response type should depend on the request type (GET request -> content response; POST request -> redirect response).',

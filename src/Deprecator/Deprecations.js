@@ -21,4 +21,9 @@ module.exports = [
     changeNewDefault: '[]',
     solution: "Set 'fileUpload.allowedFileUrlDomains' to the domains you want to allow, or to '[]' to block all file URLs.",
   },
+  {
+    optionKey: 'pages.encodePageParamHeaders',
+    changeNewDefault: 'true',
+    solution: "Set 'pages.encodePageParamHeaders' to 'true' to URI-encode non-ASCII characters in page parameter headers.",
+  },
 ];

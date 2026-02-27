@@ -445,6 +445,9 @@ export interface PagesOptions {
   /* The custom routes.
   :DEFAULT: [] */
   customRoutes: ?(PagesRoute[]);
+  /* Is `true` if the page parameter headers should be URI-encoded. This is required if any page parameter value contains non-ASCII characters, such as the app name.
+  :DEFAULT: false */
+  encodePageParamHeaders: ?boolean;
 }
 
 export interface PagesRoute {

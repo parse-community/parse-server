@@ -1252,11 +1252,31 @@ describe('Pages Router', () => {
   });
 
   describe('special characters in config', () => {
-    it('should URI-encode page param headers when appName contains non-ASCII characters', async () => {
+    it('should not URI-encode page param headers by default', async () => {
+      await reconfigureServer({
+        appId: 'test',
+        appName: 'ExampleAppName',
+        publicServerURL: 'http://localhost:8378/1',
+      });
+
+      const response = await request({
+        url: 'http://localhost:8378/1/apps/choose_password?appId=test',
+      });
+      expect(response.status).toBe(200);
+      expect(response.headers['x-parse-page-param-appname']).toBe('ExampleAppName');
+      expect(response.headers['x-parse-page-param-publicserverurl']).toBe(
+        'http://localhost:8378/1'
+      );
+    });
+
+    it('should URI-encode page param headers when encodePageParamHeaders is true', async () => {
       await reconfigureServer({
         appId: 'test',
         appName: 'Product™',
         publicServerURL: 'http://localhost:8378/1',
+        pages: {
+          encodePageParamHeaders: true,
+        },
       });
 
       const response = await request({
@@ -1265,6 +1285,9 @@ describe('Pages Router', () => {
       expect(response.status).toBe(200);
       expect(response.headers['x-parse-page-param-appname']).toBe(
         encodeURIComponent('Product™')
+      );
+      expect(response.headers['x-parse-page-param-publicserverurl']).toBe(
+        encodeURIComponent('http://localhost:8378/1')
       );
     });
   });
