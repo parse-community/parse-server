@@ -1251,6 +1251,24 @@ describe('Pages Router', () => {
     });
   });
 
+  describe('special characters in config', () => {
+    it('should URI-encode page param headers when appName contains non-ASCII characters', async () => {
+      await reconfigureServer({
+        appId: 'test',
+        appName: 'Product™',
+        publicServerURL: 'http://localhost:8378/1',
+      });
+
+      const response = await request({
+        url: 'http://localhost:8378/1/apps/choose_password?appId=test',
+      });
+      expect(response.status).toBe(200);
+      expect(response.headers['x-parse-page-param-appname']).toBe(
+        encodeURIComponent('Product™')
+      );
+    });
+  });
+
   describe('XSS Protection', () => {
     beforeEach(async () => {
       await reconfigureServer({

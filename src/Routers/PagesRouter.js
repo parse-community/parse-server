@@ -456,7 +456,7 @@ export class PagesRouter extends PromiseRouter {
     // of response, instead of having to parse the HTML content.
     const headers = Object.entries(params).reduce((m, p) => {
       if (p[1] !== undefined) {
-        m[`${pageParamHeaderPrefix}${p[0].toLowerCase()}`] = p[1];
+        m[`${pageParamHeaderPrefix}${p[0].toLowerCase()}`] = encodeURIComponent(p[1]);
       }
       return m;
     }, {});
@@ -578,7 +578,7 @@ export class PagesRouter extends PromiseRouter {
     // of response, instead of having to parse the HTML content.
     const headers = Object.entries(params).reduce((m, p) => {
       if (p[1] !== undefined) {
-        m[`${pageParamHeaderPrefix}${p[0].toLowerCase()}`] = p[1];
+        m[`${pageParamHeaderPrefix}${p[0].toLowerCase()}`] = encodeURIComponent(p[1]);
       }
       return m;
     }, {});
