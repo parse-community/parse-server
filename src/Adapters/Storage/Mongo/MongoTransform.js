@@ -1074,7 +1074,7 @@ const nestedMongoObjectToNestedParseObject = mongoObject => {
         return mongoObject.value;
       }
 
-      if (mongoObject instanceof mongodb.Decimal128) {
+      if (Decimal128Coder.isValidDatabaseObject(mongoObject)) {
         return Decimal128Coder.databaseToJSON(mongoObject);
       }
 
@@ -1141,7 +1141,7 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
         return mongoObject.value;
       }
 
-      if (mongoObject instanceof mongodb.Decimal128) {
+      if (Decimal128Coder.isValidDatabaseObject(mongoObject)) {
         return Decimal128Coder.databaseToJSON(mongoObject);
       }
 
@@ -1468,14 +1468,43 @@ var FileCoder = {
 
 var Decimal128Coder = {
   databaseToJSON(object) {
+    if (object instanceof mongodb.Decimal128) {
+      return {
+        __type: 'Decimal128',
+        value: object.toString(),
+      };
+    }
+    // Handle deserialized Decimal128 objects (e.g. across BSON boundaries)
+    const byteArray = new Uint8Array(16);
+    for (let i = 0; i < 16; i++) {
+      byteArray[i] = object.bytes[i];
+    }
+    const reconstructed = new mongodb.Decimal128(Buffer.from(byteArray));
     return {
       __type: 'Decimal128',
-      value: object.toString(),
+      value: reconstructed.toString(),
     };
   },
 
   isValidDatabaseObject(object) {
-    return object instanceof mongodb.Decimal128;
+    if (object instanceof mongodb.Decimal128) {
+      return true;
+    }
+    // Handle Decimal128 objects that have been serialized/deserialized
+    // across BSON boundaries and lost their prototype
+    if (
+      object &&
+      typeof object === 'object' &&
+      object.bytes &&
+      typeof object.bytes === 'object' &&
+      Object.keys(object).length === 1
+    ) {
+      const keys = Object.keys(object.bytes);
+      if (keys.length === 16 && keys[0] === '0' && keys[15] === '15') {
+        return true;
+      }
+    }
+    return false;
   },
 
   JSONToDatabase(json) {

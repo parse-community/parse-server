@@ -337,4 +337,37 @@ describe('Parse Decimal128', () => {
     expect(queryResponse.data.results.length).toBe(1);
     expect(queryResponse.data.results[0].label).toBe('target');
   });
+
+  it('should handle Decimal128 nested inside an Object field', async () => {
+    const createResponse = await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/DecimalNested',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+        'Content-Type': 'application/json',
+      },
+      body: {
+        metadata: {
+          price: { __type: 'Decimal128', value: '19.99' },
+          currency: 'USD',
+        },
+      },
+    });
+    expect(createResponse.data.objectId).toBeDefined();
+
+    const getResponse = await request({
+      url: `http://localhost:8378/1/classes/DecimalNested/${createResponse.data.objectId}`,
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+      },
+    });
+    expect(getResponse.data.metadata).toBeDefined();
+    expect(getResponse.data.metadata.currency).toBe('USD');
+    expect(getResponse.data.metadata.price).toEqual({
+      __type: 'Decimal128',
+      value: '19.99',
+    });
+  });
 });
