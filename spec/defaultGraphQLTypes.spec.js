@@ -580,6 +580,14 @@ describe('defaultGraphQLTypes', () => {
             ])
           )
         ).toThrow(jasmine.stringMatching('is not a valid Decimal128'));
+        expect(() =>
+          parseLiteral(
+            createValue(Kind.OBJECT, undefined, undefined, [
+              createObjectField('__type', { value: 'Decimal128' }),
+              createObjectField('value', { value: '123', kind: Kind.INT }),
+            ])
+          )
+        ).toThrow(jasmine.stringMatching('is not a valid Decimal128'));
       });
     });
 

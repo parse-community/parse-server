@@ -332,7 +332,7 @@ const DECIMAL128 = new GraphQLScalarType({
         __type.value.value === 'Decimal128' &&
         value &&
         value.value &&
-        typeof value.value.value === 'string'
+        value.value.kind === Kind.STRING
       ) {
         return {
           __type: __type.value.value,
