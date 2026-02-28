@@ -1,4 +1,5 @@
 const { Kind } = require('graphql');
+const defaultGraphQLTypes = require('../lib/GraphQL/loaders/defaultGraphQLTypes');
 const {
   TypeValidationError,
   parseStringValue,
@@ -13,7 +14,12 @@ const {
   DECIMAL128,
   DATE,
   FILE,
-} = require('../lib/GraphQL/loaders/defaultGraphQLTypes');
+} = defaultGraphQLTypes;
+const {
+  transformConstraintTypeToGraphQL,
+} = require('../lib/GraphQL/transformers/constraintType');
+const { transformInputTypeToGraphQL } = require('../lib/GraphQL/transformers/inputType');
+const { transformOutputTypeToGraphQL } = require('../lib/GraphQL/transformers/outputType');
 
 function createValue(kind, value, values, fields) {
   return {
@@ -723,6 +729,22 @@ describe('defaultGraphQLTypes', () => {
         expect(() => serialize([])).toThrow(jasmine.stringMatching('is not a valid File'));
         expect(() => serialize(123)).toThrow(jasmine.stringMatching('is not a valid File'));
       });
+    });
+  });
+
+  describe('Decimal128 GraphQL transformers', () => {
+    it('should return DECIMAL128_WHERE_INPUT for constraintType', () => {
+      expect(transformConstraintTypeToGraphQL('Decimal128')).toBe(
+        defaultGraphQLTypes.DECIMAL128_WHERE_INPUT
+      );
+    });
+
+    it('should return DECIMAL128 for inputType', () => {
+      expect(transformInputTypeToGraphQL('Decimal128')).toBe(defaultGraphQLTypes.DECIMAL128);
+    });
+
+    it('should return DECIMAL128 for outputType', () => {
+      expect(transformOutputTypeToGraphQL('Decimal128')).toBe(defaultGraphQLTypes.DECIMAL128);
     });
   });
 });
