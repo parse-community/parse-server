@@ -43,6 +43,8 @@ const transformOutputTypeToGraphQL = (parseType, targetClass, parseClassTypes) =
       return defaultGraphQLTypes.POLYGON;
     case 'Bytes':
       return defaultGraphQLTypes.BYTES;
+    case 'Decimal128':
+      return defaultGraphQLTypes.DECIMAL128;
     case 'ACL':
       return new GraphQLNonNull(defaultGraphQLTypes.ACL);
     default:

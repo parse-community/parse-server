@@ -284,6 +284,51 @@ const BYTES = new GraphQLScalarType({
   },
 });
 
+const DECIMAL128 = new GraphQLScalarType({
+  name: 'Decimal128',
+  description:
+    'The Decimal128 scalar type is used in operations and types that involve high-precision decimal numbers, such as monetary values or blockchain asset amounts.',
+  parseValue(value) {
+    if (typeof value === 'string') {
+      return {
+        __type: 'Decimal128',
+        value,
+      };
+    } else if (
+      typeof value === 'object' &&
+      value.__type === 'Decimal128' &&
+      typeof value.value === 'string'
+    ) {
+      return value;
+    }
+
+    throw new TypeValidationError(value, 'Decimal128');
+  },
+  serialize(value) {
+    if (typeof value === 'string') {
+      return value;
+    } else if (
+      typeof value === 'object' &&
+      value.__type === 'Decimal128' &&
+      typeof value.value === 'string'
+    ) {
+      return value.value;
+    }
+
+    throw new TypeValidationError(value, 'Decimal128');
+  },
+  parseLiteral(ast) {
+    if (ast.kind === Kind.STRING) {
+      return {
+        __type: 'Decimal128',
+        value: ast.value,
+      };
+    }
+
+    throw new TypeValidationError(ast.kind, 'Decimal128');
+  },
+});
+
 const parseFileValue = value => {
   if (typeof value === 'string') {
     return {
@@ -1097,6 +1142,25 @@ const BYTES_WHERE_INPUT = new GraphQLInputObjectType({
   },
 });
 
+const DECIMAL128_WHERE_INPUT = new GraphQLInputObjectType({
+  name: 'Decimal128WhereInput',
+  description:
+    'The Decimal128WhereInput input type is used in operations that involve filtering objects by a field of type Decimal128.',
+  fields: {
+    equalTo: equalTo(DECIMAL128),
+    notEqualTo: notEqualTo(DECIMAL128),
+    lessThan: lessThan(DECIMAL128),
+    lessThanOrEqualTo: lessThanOrEqualTo(DECIMAL128),
+    greaterThan: greaterThan(DECIMAL128),
+    greaterThanOrEqualTo: greaterThanOrEqualTo(DECIMAL128),
+    in: inOp(DECIMAL128),
+    notIn: notIn(DECIMAL128),
+    exists,
+    inQueryKey,
+    notInQueryKey,
+  },
+});
+
 const FILE_WHERE_INPUT = new GraphQLInputObjectType({
   name: 'FileWhereInput',
   description:
@@ -1224,6 +1288,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(OBJECT, true);
   parseGraphQLSchema.addGraphQLType(DATE, true);
   parseGraphQLSchema.addGraphQLType(BYTES, true);
+  parseGraphQLSchema.addGraphQLType(DECIMAL128, true);
   parseGraphQLSchema.addGraphQLType(FILE, true);
   parseGraphQLSchema.addGraphQLType(FILE_INFO, true);
   parseGraphQLSchema.addGraphQLType(FILE_INPUT, true);
@@ -1248,6 +1313,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(OBJECT_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(DATE_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(BYTES_WHERE_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(DECIMAL128_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(FILE_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(GEO_POINT_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(POLYGON_WHERE_INPUT, true);
@@ -1280,6 +1346,7 @@ export {
   serializeDateIso,
   DATE,
   BYTES,
+  DECIMAL128,
   parseFileValue,
   SUBQUERY_INPUT,
   SELECT_INPUT,
@@ -1342,6 +1409,7 @@ export {
   OBJECT_WHERE_INPUT,
   DATE_WHERE_INPUT,
   BYTES_WHERE_INPUT,
+  DECIMAL128_WHERE_INPUT,
   FILE_WHERE_INPUT,
   GEO_POINT_WHERE_INPUT,
   POLYGON_WHERE_INPUT,
