@@ -1479,11 +1479,19 @@ var Decimal128Coder = {
   },
 
   JSONToDatabase(json) {
+    if (typeof json.value !== 'string') {
+      throw new Parse.Error(Parse.Error.INVALID_JSON, 'Decimal128 value must be a string');
+    }
     return mongodb.Decimal128.fromString(json.value);
   },
 
   isValidJSON(value) {
-    return typeof value === 'object' && value !== null && value.__type === 'Decimal128';
+    return (
+      typeof value === 'object' &&
+      value !== null &&
+      value.__type === 'Decimal128' &&
+      typeof value.value === 'string'
+    );
   },
 };
 

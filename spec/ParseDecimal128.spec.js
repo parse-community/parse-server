@@ -149,7 +149,7 @@ describe('Parse Decimal128', () => {
   });
 
   it('should handle high-precision Decimal128 values', async () => {
-    const highPrecisionValue = '9999999999999999999999999999999999';
+    const highPrecisionValue = '12345678901234567890.12345678901234';
     const createResponse = await request({
       method: 'POST',
       url: 'http://localhost:8378/1/classes/DecimalPrecision',
@@ -170,8 +170,10 @@ describe('Parse Decimal128', () => {
         'X-Parse-Master-Key': 'test',
       },
     });
-    expect(getResponse.data.amount.__type).toBe('Decimal128');
-    expect(getResponse.data.amount.value).toBeDefined();
+    expect(getResponse.data.amount).toEqual({
+      __type: 'Decimal128',
+      value: highPrecisionValue,
+    });
   });
 
   it('should handle negative Decimal128 values', async () => {

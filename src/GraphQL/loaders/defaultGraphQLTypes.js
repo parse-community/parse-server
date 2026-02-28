@@ -323,6 +323,22 @@ const DECIMAL128 = new GraphQLScalarType({
         __type: 'Decimal128',
         value: ast.value,
       };
+    } else if (ast.kind === Kind.OBJECT) {
+      const __type = ast.fields.find(field => field.name.value === '__type');
+      const value = ast.fields.find(field => field.name.value === 'value');
+      if (
+        __type &&
+        __type.value &&
+        __type.value.value === 'Decimal128' &&
+        value &&
+        value.value &&
+        typeof value.value.value === 'string'
+      ) {
+        return {
+          __type: __type.value.value,
+          value: value.value.value,
+        };
+      }
     }
 
     throw new TypeValidationError(ast.kind, 'Decimal128');

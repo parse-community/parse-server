@@ -1629,7 +1629,7 @@ function getObjectType(obj): ?(SchemaField | string) {
         }
         break;
       case 'Decimal128':
-        if (obj.value != null) {
+        if (typeof obj.value === 'string') {
           return 'Decimal128';
         }
         break;

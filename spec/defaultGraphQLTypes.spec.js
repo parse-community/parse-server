@@ -542,7 +542,21 @@ describe('defaultGraphQLTypes', () => {
         });
       });
 
-      it('should fail if not a valid string', () => {
+      it('should parse to Decimal128 if object', () => {
+        expect(
+          parseLiteral(
+            createValue(Kind.OBJECT, undefined, undefined, [
+              createObjectField('__type', { value: 'Decimal128' }),
+              createObjectField('value', { value: '123.456', kind: Kind.STRING }),
+            ])
+          )
+        ).toEqual({
+          __type: 'Decimal128',
+          value: '123.456',
+        });
+      });
+
+      it('should fail if not a valid string or object', () => {
         expect(() => parseLiteral({})).toThrow(
           jasmine.stringMatching('is not a valid Decimal128')
         );
@@ -552,6 +566,14 @@ describe('defaultGraphQLTypes', () => {
         expect(() => parseLiteral([])).toThrow(
           jasmine.stringMatching('is not a valid Decimal128')
         );
+        expect(() =>
+          parseLiteral(
+            createValue(Kind.OBJECT, undefined, undefined, [
+              createObjectField('__type', { value: 'Foo' }),
+              createObjectField('value', { value: '123.456' }),
+            ])
+          )
+        ).toThrow(jasmine.stringMatching('is not a valid Decimal128'));
       });
     });
 

@@ -493,7 +493,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
             values.push(fieldName);
             baseArray.forEach((listElem, listIndex) => {
               if (listElem != null) {
-                values.push(listElem);
+                values.push(toPostgresValue(listElem));
                 inPatterns.push(`$${index + 1 + listIndex}`);
               }
             });
