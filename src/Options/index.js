@@ -669,6 +669,9 @@ export interface DatabaseOptions {
   schemaCacheTtl: ?number;
   /* The MongoDB driver option to set whether to retry failed writes. */
   retryWrites: ?boolean;
+  /* The number of documents per batch for MongoDB cursor `getMore` operations. A lower value reduces memory usage per batch; a higher value reduces the number of network round-trips.
+  :DEFAULT: 1000 */
+  batchSize: ?number;
   /* The MongoDB driver option to set a cumulative time limit in milliseconds for processing operations on a cursor. */
   maxTimeMS: ?number;
   /* The MongoDB driver option to set the maximum replication lag for reads from secondary nodes.*/

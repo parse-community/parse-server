@@ -170,6 +170,7 @@ export class MongoStorageAdapter implements StorageAdapter {
   database: any;
   client: MongoClient;
   _maxTimeMS: ?number;
+  _batchSize: ?number;
   canSortOnJoinTables: boolean;
   enableSchemaHooks: boolean;
   schemaCacheTtl: ?number;
@@ -182,6 +183,8 @@ export class MongoStorageAdapter implements StorageAdapter {
 
     // MaxTimeMS is not a global MongoDB client option, it is applied per operation.
     this._maxTimeMS = mongoOptions.maxTimeMS;
+    // BatchSize is not a global MongoDB client option, it is applied per cursor operation.
+    this._batchSize = mongoOptions.batchSize;
     this.canSortOnJoinTables = true;
     this.enableSchemaHooks = !!mongoOptions.enableSchemaHooks;
     this.schemaCacheTtl = mongoOptions.schemaCacheTtl;
@@ -735,6 +738,7 @@ export class MongoStorageAdapter implements StorageAdapter {
           sort: mongoSort,
           keys: mongoKeys,
           maxTimeMS: this._maxTimeMS,
+          batchSize: this._batchSize,
           readPreference,
           hint,
           caseInsensitive,
@@ -820,6 +824,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(collection =>
         collection.find(query, {
           maxTimeMS: this._maxTimeMS,
+          batchSize: this._batchSize,
         })
       )
       .catch(err => this.handleError(err));
@@ -909,6 +914,7 @@ export class MongoStorageAdapter implements StorageAdapter {
         collection.aggregate(pipeline, {
           readPreference,
           maxTimeMS: this._maxTimeMS,
+          batchSize: this._batchSize,
           hint,
           explain,
           comment,
