@@ -29,6 +29,7 @@ describe_only_db('mongo')('GridFSBucket', () => {
       enableSchemaHooks: true,
       schemaCacheTtl: 5000,
       maxTimeMS: 30000,
+      batchSize: 500,
       disableIndexFieldValidation: true,
       logClientEvents: [{ name: 'commandStarted' }],
       createIndexUserUsername: true,
@@ -44,6 +45,13 @@ describe_only_db('mongo')('GridFSBucket', () => {
     const status = await db.admin().serverStatus();
     expect(status.connections.current > 0).toEqual(true);
     expect(db.options?.retryWrites).toEqual(true);
+  });
+
+  it('should store batchSize and filter it from MongoClient options', async () => {
+    const gfsAdapter = new GridFSBucketAdapter(databaseURI, { batchSize: 500 });
+    expect(gfsAdapter._batchSize).toEqual(500);
+    // Verify batchSize is filtered from MongoClient options
+    expect(gfsAdapter._mongoOptions.batchSize).toBeUndefined();
   });
 
   it('should save an encrypted file that can only be decrypted by a GridFS adapter with the encryptionKey', async () => {

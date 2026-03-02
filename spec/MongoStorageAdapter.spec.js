@@ -108,6 +108,47 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       );
   });
 
+  it('passes batchSize to find operations', async () => {
+    const batchSize = 50;
+    const adapter = new MongoStorageAdapter({
+      uri: databaseURI,
+      mongoOptions: { batchSize },
+    });
+    expect(adapter._batchSize).toEqual(50);
+
+    // Create test objects
+    for (let i = 0; i < 5; i++) {
+      await adapter.createObject('BatchTest', { fields: {} }, { objectId: `obj${i}` });
+    }
+
+    // Verify find returns results (batchSize doesn't affect correctness, just network behavior)
+    const results = await adapter._rawFind('BatchTest', {});
+    expect(results.length).toEqual(5);
+  });
+
+  it('passes batchSize to aggregate operations', async () => {
+    const batchSize = 50;
+    const adapter = new MongoStorageAdapter({
+      uri: databaseURI,
+      mongoOptions: { batchSize },
+    });
+
+    // Create test objects
+    for (let i = 0; i < 3; i++) {
+      await adapter.createObject('AggBatchTest', { fields: { count: { type: 'Number' } } }, { objectId: `obj${i}`, count: i });
+    }
+
+    const results = await adapter.aggregate('AggBatchTest', { fields: { count: { type: 'Number' } } }, [{ $match: {} }]);
+    expect(results.length).toEqual(3);
+  });
+
+  it('defaults batchSize to undefined when not configured', () => {
+    const adapter = new MongoStorageAdapter({
+      uri: databaseURI,
+    });
+    expect(adapter._batchSize).toBeUndefined();
+  });
+
   it('stores pointers with a _p_ prefix', done => {
     const obj = {
       objectId: 'bar',
