@@ -142,11 +142,14 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     expect(results.length).toEqual(3);
   });
 
-  it('defaults batchSize to undefined when not configured', () => {
-    const adapter = new MongoStorageAdapter({
-      uri: databaseURI,
+  it('defaults batchSize to 1000', async () => {
+    await reconfigureServer({
+      databaseURI: databaseURI,
+      collectionPrefix: 'test_',
+      databaseAdapter: undefined,
     });
-    expect(adapter._batchSize).toBeUndefined();
+    const adapter = Config.get(Parse.applicationId).database.adapter;
+    expect(adapter._batchSize).toEqual(1000);
   });
 
   it('stores pointers with a _p_ prefix', done => {
