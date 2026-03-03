@@ -108,6 +108,58 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       );
   });
 
+  it('passes batchSize to the MongoDB driver find() call', async () => {
+    const batchSize = 50;
+    const adapter = new MongoStorageAdapter({
+      uri: databaseURI,
+      mongoOptions: { batchSize },
+    });
+    await adapter.createObject('BatchTest', { fields: {} }, { objectId: 'obj1' });
+
+    // Spy on the MongoDB driver's Collection.prototype.find to verify batchSize is forwarded
+    const originalFind = Collection.prototype.find;
+    let capturedOptions;
+    spyOn(Collection.prototype, 'find').and.callFake(function (query, options) {
+      capturedOptions = options;
+      return originalFind.call(this, query, options);
+    });
+
+    await adapter.find('BatchTest', { fields: {} }, {}, {});
+    expect(capturedOptions).toBeDefined();
+    expect(capturedOptions.batchSize).toEqual(50);
+  });
+
+  it('passes batchSize to the MongoDB driver aggregate() call', async () => {
+    const batchSize = 50;
+    const adapter = new MongoStorageAdapter({
+      uri: databaseURI,
+      mongoOptions: { batchSize },
+    });
+    await adapter.createObject('AggBatchTest', { fields: { count: { type: 'Number' } } }, { objectId: 'obj1', count: 1 });
+
+    // Spy on the MongoDB driver's Collection.prototype.aggregate to verify batchSize is forwarded
+    const originalAggregate = Collection.prototype.aggregate;
+    let capturedOptions;
+    spyOn(Collection.prototype, 'aggregate').and.callFake(function (pipeline, options) {
+      capturedOptions = options;
+      return originalAggregate.call(this, pipeline, options);
+    });
+
+    await adapter.aggregate('AggBatchTest', { fields: { count: { type: 'Number' } } }, [{ $match: {} }]);
+    expect(capturedOptions).toBeDefined();
+    expect(capturedOptions.batchSize).toEqual(50);
+  });
+
+  it('defaults batchSize to 1000', async () => {
+    await reconfigureServer({
+      databaseURI: databaseURI,
+      collectionPrefix: 'test_',
+      databaseAdapter: undefined,
+    });
+    const adapter = Config.get(Parse.applicationId).database.adapter;
+    expect(adapter._batchSize).toEqual(1000);
+  });
+
   it('stores pointers with a _p_ prefix', done => {
     const obj = {
       objectId: 'bar',

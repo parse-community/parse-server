@@ -1,3 +1,10 @@
+## [9.4.1-alpha.1](https://github.com/parse-community/parse-server/compare/9.4.0...9.4.1-alpha.1) (2026-03-03)
+
+
+### Bug Fixes
+
+* MongoDB default batch size changed from 1000 to 100 without announcement ([#10085](https://github.com/parse-community/parse-server/issues/10085)) ([8f17397](https://github.com/parse-community/parse-server/commit/8f1739788d434c91109f049a438c32bdd4fc26a5))
+
 # [9.4.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.4.0-alpha.1...9.4.0-alpha.2) (2026-02-27)
 
 

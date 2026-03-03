@@ -1,5 +1,5 @@
 import { nullParser } from './Options/parsers';
-const { ParseServerOptions } = require('./Options/Definitions');
+const { ParseServerOptions, DatabaseOptions } = require('./Options/Definitions');
 const logsFolder = (() => {
   let folder = './logs/';
   if (typeof process !== 'undefined' && process.env.TESTING === '1') {
@@ -34,10 +34,19 @@ const computedDefaults = {
 export default Object.assign({}, DefinitionDefaults, computedDefaults);
 export const DefaultMongoURI = DefinitionDefaults.databaseURI;
 
+export const DatabaseOptionDefaults = Object.keys(DatabaseOptions).reduce((memo, key) => {
+  const def = DatabaseOptions[key];
+  if (Object.prototype.hasOwnProperty.call(def, 'default')) {
+    memo[key] = def.default;
+  }
+  return memo;
+}, {});
+
 // Parse Server-specific database options that should be filtered out
 // before passing to MongoDB client
 export const ParseServerDatabaseOptions = [
   'allowPublicExplain',
+  'batchSize',
   'clientMetadata',
   'createIndexRoleName',
   'createIndexUserEmail',

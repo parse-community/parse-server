@@ -244,6 +244,7 @@ export interface FileUploadOptions {
 export interface DatabaseOptions {
     // Parse Server custom options
     allowPublicExplain?: boolean;
+    batchSize?: number;
     createIndexRoleName?: boolean;
     createIndexUserEmail?: boolean;
     createIndexUserEmailCaseInsensitive?: boolean;

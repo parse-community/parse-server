@@ -38,6 +38,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
     const defaultMongoOptions = {};
     const _mongoOptions = Object.assign(defaultMongoOptions, mongoOptions);
     this._clientMetadata = mongoOptions.clientMetadata;
+    this._batchSize = mongoOptions.batchSize;
     // Remove Parse Server-specific options that should not be passed to MongoDB client
     for (const key of ParseServerDatabaseOptions) {
       delete _mongoOptions[key];
@@ -135,7 +136,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
 
   async deleteFile(filename: string) {
     const bucket = await this._getBucket();
-    const documents = await bucket.find({ filename }).toArray();
+    const documents = await bucket.find({ filename }, { batchSize: this._batchSize }).toArray();
     if (documents.length === 0) {
       throw new Error('FileNotFound');
     }
@@ -196,7 +197,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
     if (options.fileNames !== undefined) {
       fileNames = options.fileNames;
     } else {
-      const fileNamesIterator = await bucket.find().toArray();
+      const fileNamesIterator = await bucket.find({}, { batchSize: this._batchSize }).toArray();
       fileNamesIterator.forEach(file => {
         fileNames.push(file.filename);
       });
@@ -226,7 +227,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
 
   async getMetadata(filename) {
     const bucket = await this._getBucket();
-    const files = await bucket.find({ filename }).toArray();
+    const files = await bucket.find({ filename }, { batchSize: this._batchSize }).toArray();
     if (files.length === 0) {
       return {};
     }
@@ -236,7 +237,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
 
   async handleFileStream(filename: string, req, res, contentType) {
     const bucket = await this._getBucket();
-    const files = await bucket.find({ filename }).toArray();
+    const files = await bucket.find({ filename }, { batchSize: this._batchSize }).toArray();
     if (files.length === 0) {
       throw new Error('FileNotFound');
     }

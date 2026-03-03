@@ -9,7 +9,7 @@ var batch = require('./batch'),
   fs = require('fs');
 
 import { ParseServerOptions, LiveQueryServerOptions } from './Options';
-import defaults from './defaults';
+import defaults, { DatabaseOptionDefaults } from './defaults';
 import * as logging from './logger';
 import Config from './Config';
 import PromiseRouter from './PromiseRouter';
@@ -592,6 +592,22 @@ function injectDefaults(options: ParseServerOptions) {
       options[key] = defaults[key];
     }
   });
+
+  // Inject defaults for database options; only when no explicit database adapter is set,
+  // because an explicit adapter manages its own options and passing databaseOptions alongside
+  // it would cause a conflict error in getDatabaseController.
+  if (!options.databaseAdapter) {
+    if (options.databaseOptions == null) {
+      options.databaseOptions = {};
+    }
+    if (typeof options.databaseOptions === 'object' && !Array.isArray(options.databaseOptions)) {
+      Object.keys(DatabaseOptionDefaults).forEach(key => {
+        if (!Object.prototype.hasOwnProperty.call(options.databaseOptions, key)) {
+          options.databaseOptions[key] = DatabaseOptionDefaults[key];
+        }
+      });
+    }
+  }
 
   if (!Object.prototype.hasOwnProperty.call(options, 'serverURL')) {
     options.serverURL = `http://localhost:${options.port}${options.mountPath}`;
