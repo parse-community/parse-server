@@ -597,14 +597,16 @@ function injectDefaults(options: ParseServerOptions) {
   // because an explicit adapter manages its own options and passing databaseOptions alongside
   // it would cause a conflict error in getDatabaseController.
   if (!options.databaseAdapter) {
-    if (!options.databaseOptions) {
+    if (options.databaseOptions == null) {
       options.databaseOptions = {};
     }
-    Object.keys(DatabaseOptionDefaults).forEach(key => {
-      if (!Object.prototype.hasOwnProperty.call(options.databaseOptions, key)) {
-        options.databaseOptions[key] = DatabaseOptionDefaults[key];
-      }
-    });
+    if (typeof options.databaseOptions === 'object' && !Array.isArray(options.databaseOptions)) {
+      Object.keys(DatabaseOptionDefaults).forEach(key => {
+        if (!Object.prototype.hasOwnProperty.call(options.databaseOptions, key)) {
+          options.databaseOptions[key] = DatabaseOptionDefaults[key];
+        }
+      });
+    }
   }
 
   if (!Object.prototype.hasOwnProperty.call(options, 'serverURL')) {
