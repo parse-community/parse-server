@@ -8,6 +8,7 @@ import { promiseEnforceMasterKeyAccess, promiseEnsureIdempotency } from '../midd
 import { jobStatusHandler } from '../StatusHandler';
 import _ from 'lodash';
 import { logger } from '../logger';
+import { createSanitizedError } from '../Error';
 
 function parseObject(obj, config) {
   if (Array.isArray(obj)) {
@@ -62,6 +63,13 @@ export class FunctionsRouter extends PromiseRouter {
   }
 
   static handleCloudJob(req) {
+    if (req.auth.isReadOnly) {
+      throw createSanitizedError(
+        Parse.Error.OPERATION_FORBIDDEN,
+        "read-only masterKey isn't allowed to run a job.",
+        req.config
+      );
+    }
     const jobName = req.params.jobName || req.body?.jobName;
     const applicationId = req.config.applicationId;
     const jobHandler = jobStatusHandler(req.config);
