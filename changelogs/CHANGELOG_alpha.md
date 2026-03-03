@@ -1,3 +1,10 @@
+## [9.4.1-alpha.2](https://github.com/parse-community/parse-server/compare/9.4.1-alpha.1...9.4.1-alpha.2) (2026-03-03)
+
+
+### Performance Improvements
+
+* Upgrade to mongodb 7.1.0 ([#10087](https://github.com/parse-community/parse-server/issues/10087)) ([bebf2fd](https://github.com/parse-community/parse-server/commit/bebf2fd62b51cfc35c271ad4c76b8f552f886ce8))
+
 ## [9.4.1-alpha.1](https://github.com/parse-community/parse-server/compare/9.4.0...9.4.1-alpha.1) (2026-03-03)
 
 
