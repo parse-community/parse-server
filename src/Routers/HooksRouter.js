@@ -1,6 +1,7 @@
 import { Parse } from 'parse/node';
 import PromiseRouter from '../PromiseRouter';
 import * as middleware from '../middlewares';
+import { createSanitizedError } from '../Error';
 
 export class HooksRouter extends PromiseRouter {
   createHook(aHook, config) {
@@ -12,6 +13,13 @@ export class HooksRouter extends PromiseRouter {
   }
 
   handlePost(req) {
+    if (req.auth.isReadOnly) {
+      throw createSanitizedError(
+        Parse.Error.OPERATION_FORBIDDEN,
+        "read-only masterKey isn't allowed to create a hook.",
+        req.config
+      );
+    }
     return this.createHook(req.body || {}, req.config);
   }
 
@@ -82,6 +90,13 @@ export class HooksRouter extends PromiseRouter {
   }
 
   handlePut(req) {
+    if (req.auth.isReadOnly) {
+      throw createSanitizedError(
+        Parse.Error.OPERATION_FORBIDDEN,
+        "read-only masterKey isn't allowed to modify a hook.",
+        req.config
+      );
+    }
     var body = req.body || {};
     if (body.__op == 'Delete') {
       return this.handleDelete(req);

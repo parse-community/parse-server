@@ -1172,6 +1172,141 @@ describe('read-only masterKey', () => {
         done();
       });
   });
+
+  it('should throw when trying to create a hook function', async () => {
+    loggerErrorSpy.calls.reset();
+    try {
+      await request({
+        url: `${Parse.serverURL}/hooks/functions`,
+        method: 'POST',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': 'read-only-test',
+          'Content-Type': 'application/json',
+        },
+        body: { functionName: 'readOnlyTest', url: 'https://example.com/hook' },
+      });
+      fail('should have thrown');
+    } catch (res) {
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    }
+  });
+
+  it('should throw when trying to create a hook trigger', async () => {
+    loggerErrorSpy.calls.reset();
+    try {
+      await request({
+        url: `${Parse.serverURL}/hooks/triggers`,
+        method: 'POST',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': 'read-only-test',
+          'Content-Type': 'application/json',
+        },
+        body: { className: 'MyClass', triggerName: 'beforeSave', url: 'https://example.com/hook' },
+      });
+      fail('should have thrown');
+    } catch (res) {
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    }
+  });
+
+  it('should throw when trying to update a hook function', async () => {
+    // First create the hook with the real master key
+    await request({
+      url: `${Parse.serverURL}/hooks/functions`,
+      method: 'POST',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
+        'Content-Type': 'application/json',
+      },
+      body: { functionName: 'readOnlyUpdateTest', url: 'https://example.com/hook' },
+    });
+    loggerErrorSpy.calls.reset();
+    try {
+      await request({
+        url: `${Parse.serverURL}/hooks/functions/readOnlyUpdateTest`,
+        method: 'PUT',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': 'read-only-test',
+          'Content-Type': 'application/json',
+        },
+        body: { url: 'https://example.com/hacked' },
+      });
+      fail('should have thrown');
+    } catch (res) {
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    }
+  });
+
+  it('should throw when trying to delete a hook function', async () => {
+    // First create the hook with the real master key
+    await request({
+      url: `${Parse.serverURL}/hooks/functions`,
+      method: 'POST',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
+        'Content-Type': 'application/json',
+      },
+      body: { functionName: 'readOnlyDeleteTest', url: 'https://example.com/hook' },
+    });
+    loggerErrorSpy.calls.reset();
+    try {
+      await request({
+        url: `${Parse.serverURL}/hooks/functions/readOnlyDeleteTest`,
+        method: 'PUT',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': 'read-only-test',
+          'Content-Type': 'application/json',
+        },
+        body: { __op: 'Delete' },
+      });
+      fail('should have thrown');
+    } catch (res) {
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    }
+  });
+
+  it('should throw when trying to run a job with readOnlyMasterKey', async () => {
+    Parse.Cloud.job('readOnlyTestJob', () => {});
+    loggerErrorSpy.calls.reset();
+    try {
+      await request({
+        url: `${Parse.serverURL}/jobs/readOnlyTestJob`,
+        method: 'POST',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': 'read-only-test',
+          'Content-Type': 'application/json',
+        },
+        body: {},
+      });
+      fail('should have thrown');
+    } catch (res) {
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    }
+  });
+
+  it('should allow reading hooks with readOnlyMasterKey', async () => {
+    const res = await request({
+      url: `${Parse.serverURL}/hooks/functions`,
+      method: 'GET',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': 'read-only-test',
+      },
+    });
+    expect(Array.isArray(res.data)).toBe(true);
+  });
 });
 
 describe('rest context', () => {
