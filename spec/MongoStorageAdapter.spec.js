@@ -108,38 +108,46 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       );
   });
 
-  it('passes batchSize to find operations', async () => {
+  it('passes batchSize to the MongoDB driver find() call', async () => {
     const batchSize = 50;
     const adapter = new MongoStorageAdapter({
       uri: databaseURI,
       mongoOptions: { batchSize },
     });
-    expect(adapter._batchSize).toEqual(50);
+    await adapter.createObject('BatchTest', { fields: {} }, { objectId: 'obj1' });
 
-    // Create test objects
-    for (let i = 0; i < 5; i++) {
-      await adapter.createObject('BatchTest', { fields: {} }, { objectId: `obj${i}` });
-    }
+    // Spy on the MongoDB driver's Collection.prototype.find to verify batchSize is forwarded
+    const originalFind = Collection.prototype.find;
+    let capturedOptions;
+    spyOn(Collection.prototype, 'find').and.callFake(function (query, options) {
+      capturedOptions = options;
+      return originalFind.call(this, query, options);
+    });
 
-    // Verify find returns results (batchSize doesn't affect correctness, just network behavior)
-    const results = await adapter._rawFind('BatchTest', {});
-    expect(results.length).toEqual(5);
+    await adapter.find('BatchTest', { fields: {} }, {}, {});
+    expect(capturedOptions).toBeDefined();
+    expect(capturedOptions.batchSize).toEqual(50);
   });
 
-  it('passes batchSize to aggregate operations', async () => {
+  it('passes batchSize to the MongoDB driver aggregate() call', async () => {
     const batchSize = 50;
     const adapter = new MongoStorageAdapter({
       uri: databaseURI,
       mongoOptions: { batchSize },
     });
+    await adapter.createObject('AggBatchTest', { fields: { count: { type: 'Number' } } }, { objectId: 'obj1', count: 1 });
 
-    // Create test objects
-    for (let i = 0; i < 3; i++) {
-      await adapter.createObject('AggBatchTest', { fields: { count: { type: 'Number' } } }, { objectId: `obj${i}`, count: i });
-    }
+    // Spy on the MongoDB driver's Collection.prototype.aggregate to verify batchSize is forwarded
+    const originalAggregate = Collection.prototype.aggregate;
+    let capturedOptions;
+    spyOn(Collection.prototype, 'aggregate').and.callFake(function (pipeline, options) {
+      capturedOptions = options;
+      return originalAggregate.call(this, pipeline, options);
+    });
 
-    const results = await adapter.aggregate('AggBatchTest', { fields: { count: { type: 'Number' } } }, [{ $match: {} }]);
-    expect(results.length).toEqual(3);
+    await adapter.aggregate('AggBatchTest', { fields: { count: { type: 'Number' } } }, [{ $match: {} }]);
+    expect(capturedOptions).toBeDefined();
+    expect(capturedOptions.batchSize).toEqual(50);
   });
 
   it('defaults batchSize to 1000', async () => {
