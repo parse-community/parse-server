@@ -2463,6 +2463,56 @@ describe('Parse.File testing', () => {
       }
     });
 
+    it('rejects non-object metadata header', async () => {
+      const invalidValues = ['"a string"', '[1,2]', 'null', '42', 'true'];
+      for (const value of invalidValues) {
+        const headers = {
+          'Content-Type': 'text/plain',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+          'X-Parse-Upload-Mode': 'stream',
+          'X-Parse-File-Metadata': value,
+        };
+        try {
+          await request({
+            method: 'POST',
+            headers,
+            url: 'http://localhost:8378/1/files/stream-bad.txt',
+            body: 'should fail',
+          });
+          fail(`should have thrown for metadata: ${value}`);
+        } catch (error) {
+          expect(error.data.code).toEqual(Parse.Error.INVALID_JSON);
+          expect(error.data.error).toBe('Invalid JSON in X-Parse-File-Metadata header.');
+        }
+      }
+    });
+
+    it('rejects non-object tags header', async () => {
+      const invalidValues = ['"a string"', '[1,2]', 'null', '42', 'true'];
+      for (const value of invalidValues) {
+        const headers = {
+          'Content-Type': 'text/plain',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+          'X-Parse-Upload-Mode': 'stream',
+          'X-Parse-File-Tags': value,
+        };
+        try {
+          await request({
+            method: 'POST',
+            headers,
+            url: 'http://localhost:8378/1/files/stream-bad.txt',
+            body: 'should fail',
+          });
+          fail(`should have thrown for tags: ${value}`);
+        } catch (error) {
+          expect(error.data.code).toEqual(Parse.Error.INVALID_JSON);
+          expect(error.data.error).toBe('Invalid JSON in X-Parse-File-Tags header.');
+        }
+      }
+    });
+
     it('validates directory - rejects trailing slash', async () => {
       const file = new Parse.File('hello.txt', data, 'text/plain');
       file.setDirectory('trailing/');

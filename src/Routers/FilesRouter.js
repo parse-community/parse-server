@@ -322,7 +322,11 @@ export class FilesRouter {
       }
       if (req.get('X-Parse-File-Metadata')) {
         try {
-          req.fileData.metadata = JSON.parse(req.get('X-Parse-File-Metadata'));
+          const parsed = JSON.parse(req.get('X-Parse-File-Metadata'));
+          if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+            throw new Error();
+          }
+          req.fileData.metadata = parsed;
         } catch {
           next(new Parse.Error(Parse.Error.INVALID_JSON, 'Invalid JSON in X-Parse-File-Metadata header.'));
           return;
@@ -330,7 +334,11 @@ export class FilesRouter {
       }
       if (req.get('X-Parse-File-Tags')) {
         try {
-          req.fileData.tags = JSON.parse(req.get('X-Parse-File-Tags'));
+          const parsed = JSON.parse(req.get('X-Parse-File-Tags'));
+          if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+            throw new Error();
+          }
+          req.fileData.tags = parsed;
         } catch {
           next(new Parse.Error(Parse.Error.INVALID_JSON, 'Invalid JSON in X-Parse-File-Tags header.'));
           return;
