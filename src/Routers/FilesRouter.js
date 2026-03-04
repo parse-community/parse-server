@@ -291,10 +291,10 @@ export class FilesRouter {
     const defaultMaxBytes = Utils.parseSizeToBytes(maxUploadSize);
     return (req, res, next) => {
       if (req.get('X-Parse-Upload-Mode') === 'stream') {
-        req._maxUploadSizeBytes = req._maxUploadSizeOverride || defaultMaxBytes;
+        req._maxUploadSizeBytes = req._maxUploadSizeOverride ?? defaultMaxBytes;
         return next();
       }
-      const limit = req._maxUploadSizeOverride || maxUploadSize;
+      const limit = req._maxUploadSizeOverride ?? maxUploadSize;
       return express.raw({ type: () => true, limit })(req, res, next);
     };
   }
