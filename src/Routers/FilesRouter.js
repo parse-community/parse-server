@@ -314,6 +314,30 @@ export class FilesRouter {
       }
     }
 
+    // For streaming uploads, read file data from headers since the body is the raw stream
+    if (req.get('X-Parse-Upload-Mode') === 'stream') {
+      req.fileData = {};
+      if (req.get('X-Parse-File-Directory')) {
+        req.fileData.directory = req.get('X-Parse-File-Directory');
+      }
+      if (req.get('X-Parse-File-Metadata')) {
+        try {
+          req.fileData.metadata = JSON.parse(req.get('X-Parse-File-Metadata'));
+        } catch {
+          next(new Parse.Error(Parse.Error.INVALID_JSON, 'Invalid JSON in X-Parse-File-Metadata header.'));
+          return;
+        }
+      }
+      if (req.get('X-Parse-File-Tags')) {
+        try {
+          req.fileData.tags = JSON.parse(req.get('X-Parse-File-Tags'));
+        } catch {
+          next(new Parse.Error(Parse.Error.INVALID_JSON, 'Invalid JSON in X-Parse-File-Tags header.'));
+          return;
+        }
+      }
+    }
+
     // Validate directory option (requires master key)
     const directory = req.fileData?.directory;
     if (directory !== undefined) {
