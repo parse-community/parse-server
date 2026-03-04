@@ -1,3 +1,10 @@
+## [9.4.1-alpha.3](https://github.com/parse-community/parse-server/compare/9.4.1-alpha.2...9.4.1-alpha.3) (2026-03-04)
+
+
+### Bug Fixes
+
+* Cloud Hooks and Cloud Jobs bypass `readOnlyMasterKey` write restriction ([GHSA-vc89-5g3r-cmhh](https://github.com/parse-community/parse-server/security/advisories/GHSA-vc89-5g3r-cmhh)) ([#10088](https://github.com/parse-community/parse-server/issues/10088)) ([9a3dd4d](https://github.com/parse-community/parse-server/commit/9a3dd4d2d55ad506348062b43a7fe42e22a57fe9))
+
 ## [9.4.1-alpha.2](https://github.com/parse-community/parse-server/compare/9.4.1-alpha.1...9.4.1-alpha.2) (2026-03-03)
 
 
