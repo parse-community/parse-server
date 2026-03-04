@@ -2021,6 +2021,210 @@ describe('Parse.File testing', () => {
       }
     });
 
+    describe('maxUploadSize override', () => {
+      it('allows streaming upload exceeding server limit with maxUploadSize override and master key', async () => {
+        await reconfigureServer({ maxUploadSize: '10b' });
+        const headers = {
+          'Content-Type': 'application/octet-stream',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+          'X-Parse-Upload-Mode': 'stream',
+          'X-Parse-File-Max-Upload-Size': '1mb',
+        };
+        const response = await request({
+          method: 'POST',
+          headers: headers,
+          url: 'http://localhost:8378/1/files/override-stream.txt',
+          body: 'this content is definitely longer than 10 bytes',
+        });
+        expect(response.data.name).toContain('override-stream');
+        expect(response.data.url).toBeDefined();
+      });
+
+      it('allows buffered upload exceeding server limit with maxUploadSize override and master key', async () => {
+        await reconfigureServer({ maxUploadSize: '10b' });
+        const headers = {
+          'Content-Type': 'application/octet-stream',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+          'X-Parse-File-Max-Upload-Size': '1mb',
+        };
+        const response = await request({
+          method: 'POST',
+          headers: headers,
+          url: 'http://localhost:8378/1/files/override-buffer.txt',
+          body: 'this content is definitely longer than 10 bytes',
+        });
+        expect(response.data.name).toContain('override-buffer');
+        expect(response.data.url).toBeDefined();
+      });
+
+      it('rejects maxUploadSize override without master key', async () => {
+        await reconfigureServer({ maxUploadSize: '10b' });
+        const headers = {
+          'Content-Type': 'application/octet-stream',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Upload-Mode': 'stream',
+          'X-Parse-File-Max-Upload-Size': '1mb',
+        };
+        try {
+          await request({
+            method: 'POST',
+            headers: headers,
+            url: 'http://localhost:8378/1/files/no-master.txt',
+            body: 'this content is longer than 10 bytes',
+          });
+          fail('should have thrown');
+        } catch (response) {
+          expect(response.status).toBe(403);
+        }
+      });
+
+      it('rejects invalid maxUploadSize override value', async () => {
+        const headers = {
+          'Content-Type': 'application/octet-stream',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+          'X-Parse-Upload-Mode': 'stream',
+          'X-Parse-File-Max-Upload-Size': 'notasize',
+        };
+        try {
+          await request({
+            method: 'POST',
+            headers: headers,
+            url: 'http://localhost:8378/1/files/bad-value.txt',
+            body: 'some data',
+          });
+          fail('should have thrown');
+        } catch (response) {
+          expect(response.data.code).toBe(Parse.Error.FILE_SAVE_ERROR);
+          expect(response.data.error).toContain('Invalid maxUploadSize override');
+        }
+      });
+
+      it('rejects streaming upload exceeding the overridden maxUploadSize', async () => {
+        await reconfigureServer({ maxUploadSize: '5b' });
+        const headers = {
+          'Content-Type': 'application/octet-stream',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+          'X-Parse-Upload-Mode': 'stream',
+          'X-Parse-File-Max-Upload-Size': '10b',
+        };
+        try {
+          await request({
+            method: 'POST',
+            headers: headers,
+            url: 'http://localhost:8378/1/files/still-too-big.txt',
+            body: 'this content is definitely longer than 10 bytes',
+          });
+          fail('should have thrown');
+        } catch (response) {
+          expect(response.data.code).toBe(Parse.Error.FILE_SAVE_ERROR);
+          expect(response.data.error).toContain('exceeds');
+        }
+      });
+
+      it('rejects maxUploadSize override with wrong master key', async () => {
+        const headers = {
+          'Content-Type': 'application/octet-stream',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'wrong-key',
+          'X-Parse-Upload-Mode': 'stream',
+          'X-Parse-File-Max-Upload-Size': '1mb',
+        };
+        try {
+          await request({
+            method: 'POST',
+            headers: headers,
+            url: 'http://localhost:8378/1/files/wrong-key.txt',
+            body: 'some data',
+          });
+          fail('should have thrown');
+        } catch (response) {
+          expect(response.status).toBe(403);
+        }
+      });
+
+      it('rejects maxUploadSize override with invalid application ID', async () => {
+        const headers = {
+          'Content-Type': 'application/octet-stream',
+          'X-Parse-Application-Id': 'invalid-app-id',
+          'X-Parse-Master-Key': 'test',
+          'X-Parse-Upload-Mode': 'stream',
+          'X-Parse-File-Max-Upload-Size': '1mb',
+        };
+        try {
+          await request({
+            method: 'POST',
+            headers: headers,
+            url: 'http://localhost:8378/1/files/bad-app.txt',
+            body: 'some data',
+          });
+          fail('should have thrown');
+        } catch (response) {
+          expect(response.status).toBe(403);
+        }
+      });
+
+      it('rejects maxUploadSize override when masterKeyIps blocks the IP', async () => {
+        await reconfigureServer({ masterKeyIps: ['10.0.0.1'] });
+        const headers = {
+          'Content-Type': 'application/octet-stream',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+          'X-Parse-Upload-Mode': 'stream',
+          'X-Parse-File-Max-Upload-Size': '1mb',
+        };
+        try {
+          await request({
+            method: 'POST',
+            headers: headers,
+            url: 'http://localhost:8378/1/files/blocked-ip.txt',
+            body: 'some data',
+          });
+          fail('should have thrown');
+        } catch (response) {
+          expect(response.status).toBe(403);
+        }
+      });
+
+    });
+
+    describe('maxUploadSize override via SDK', () => {
+      it('saves buffer file with maxUploadSize override and master key', async () => {
+        await reconfigureServer({ maxUploadSize: '10b' });
+        const data = Buffer.alloc(100, 'a');
+        const file = new Parse.File('sdk-buffer-override.txt', data, 'text/plain');
+        const result = await file.save({ useMasterKey: true, maxUploadSize: '1mb' });
+        expect(result.url()).toBeDefined();
+        expect(result.name()).toContain('sdk-buffer-override');
+      });
+
+      it('saves stream file with maxUploadSize override and master key', async () => {
+        await reconfigureServer({ maxUploadSize: '10b' });
+        const { Readable } = require('stream');
+        const stream = Readable.from(Buffer.alloc(100, 'b'));
+        const file = new Parse.File('sdk-stream-override.txt', stream, 'text/plain');
+        const result = await file.save({ useMasterKey: true, maxUploadSize: '1mb' });
+        expect(result.url()).toBeDefined();
+        expect(result.name()).toContain('sdk-stream-override');
+      });
+
+      it('rejects maxUploadSize override without master key', async () => {
+        await reconfigureServer({ maxUploadSize: '10b' });
+        const data = Buffer.alloc(100, 'c');
+        const file = new Parse.File('sdk-no-master.txt', data, 'text/plain');
+        try {
+          await file.save({ maxUploadSize: '1mb' });
+          fail('should have thrown');
+        } catch (error) {
+          expect(error.error).toBeDefined();
+        }
+      });
+    });
+
     it('fires beforeSave trigger with request.stream = true on streaming upload', async () => {
       let receivedStream;
       let receivedData;

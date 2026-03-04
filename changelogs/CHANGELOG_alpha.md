@@ -1,3 +1,10 @@
+# [9.5.0-alpha.1](https://github.com/parse-community/parse-server/compare/9.4.1...9.5.0-alpha.1) (2026-03-04)
+
+
+### Features
+
+* Add support for `Parse.File.setDirectory`, `setMetadata`, `setTags` with stream-based file upload ([#10092](https://github.com/parse-community/parse-server/issues/10092)) ([ca666b0](https://github.com/parse-community/parse-server/commit/ca666b02fcc2229180621a42694c0838f700c06d))
+
 ## [9.4.1-alpha.3](https://github.com/parse-community/parse-server/compare/9.4.1-alpha.2...9.4.1-alpha.3) (2026-03-04)
 
 
