@@ -1,3 +1,15 @@
+## [9.4.1](https://github.com/parse-community/parse-server/compare/9.4.0...9.4.1) (2026-03-04)
+
+
+### Bug Fixes
+
+* Cloud Hooks and Cloud Jobs bypass `readOnlyMasterKey` write restriction ([GHSA-vc89-5g3r-cmhh](https://github.com/parse-community/parse-server/security/advisories/GHSA-vc89-5g3r-cmhh)) ([#10088](https://github.com/parse-community/parse-server/issues/10088)) ([9a3dd4d](https://github.com/parse-community/parse-server/commit/9a3dd4d2d55ad506348062b43a7fe42e22a57fe9))
+* MongoDB default batch size changed from 1000 to 100 without announcement ([#10085](https://github.com/parse-community/parse-server/issues/10085)) ([8f17397](https://github.com/parse-community/parse-server/commit/8f1739788d434c91109f049a438c32bdd4fc26a5))
+
+### Performance Improvements
+
+* Upgrade to mongodb 7.1.0 ([#10087](https://github.com/parse-community/parse-server/issues/10087)) ([bebf2fd](https://github.com/parse-community/parse-server/commit/bebf2fd62b51cfc35c271ad4c76b8f552f886ce8))
+
 # [9.4.0](https://github.com/parse-community/parse-server/compare/9.3.1...9.4.0) (2026-03-01)
 
 

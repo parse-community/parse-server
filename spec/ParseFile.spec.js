@@ -2311,6 +2311,208 @@ describe('Parse.File testing', () => {
       expect(b.url).toBeDefined();
     });
 
+    it('saves file with directory via streaming upload (header)', async () => {
+      const headers = {
+        'Content-Type': 'text/plain',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+        'X-Parse-Upload-Mode': 'stream',
+        'X-Parse-File-Directory': 'stream-dir-test',
+      };
+      const response = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/files/stream-header.txt',
+        body: 'stream directory header content',
+      });
+      const b = response.data;
+      expect(b.name).toMatch(/^stream-dir-test\/.*_stream-header.txt$/);
+      expect(b.url).toBeDefined();
+    });
+
+    it('rejects directory header without master key for streaming upload', async () => {
+      const headers = {
+        'Content-Type': 'text/plain',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Upload-Mode': 'stream',
+        'X-Parse-File-Directory': 'no-master',
+      };
+      try {
+        await request({
+          method: 'POST',
+          headers,
+          url: 'http://localhost:8378/1/files/stream-header.txt',
+          body: 'should fail',
+        });
+        fail('should have thrown');
+      } catch (error) {
+        expect(error.data.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+      }
+    });
+
+    it('validates directory header for streaming upload', async () => {
+      const headers = {
+        'Content-Type': 'text/plain',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+        'X-Parse-Upload-Mode': 'stream',
+        'X-Parse-File-Directory': '../etc',
+      };
+      try {
+        await request({
+          method: 'POST',
+          headers,
+          url: 'http://localhost:8378/1/files/stream-header.txt',
+          body: 'should fail',
+        });
+        fail('should have thrown');
+      } catch (error) {
+        expect(error.data.code).toEqual(Parse.Error.INVALID_FILE_NAME);
+      }
+    });
+
+    it('saves file with metadata and tags via streaming upload headers', async () => {
+      spyOn(FilesController.prototype, 'createFile').and.callThrough();
+      const headers = {
+        'Content-Type': 'text/plain',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+        'X-Parse-Upload-Mode': 'stream',
+        'X-Parse-File-Metadata': JSON.stringify({ key1: 'value1' }),
+        'X-Parse-File-Tags': JSON.stringify({ tag1: 'tagValue1' }),
+      };
+      const response = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/files/stream-meta.txt',
+        body: 'stream with metadata content',
+      });
+      const b = response.data;
+      expect(b.name).toMatch(/_stream-meta.txt$/);
+      expect(b.url).toBeDefined();
+      const options = FilesController.prototype.createFile.calls.argsFor(0)[4];
+      expect(options.metadata).toEqual({ key1: 'value1' });
+      expect(options.tags).toEqual({ tag1: 'tagValue1' });
+    });
+
+    it('saves file with directory, metadata, and tags via streaming upload headers', async () => {
+      spyOn(FilesController.prototype, 'createFile').and.callThrough();
+      const headers = {
+        'Content-Type': 'text/plain',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+        'X-Parse-Upload-Mode': 'stream',
+        'X-Parse-File-Directory': 'uploads',
+        'X-Parse-File-Metadata': JSON.stringify({ author: 'test' }),
+        'X-Parse-File-Tags': JSON.stringify({ env: 'test' }),
+      };
+      const response = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/files/stream-all.txt',
+        body: 'stream with all file data',
+      });
+      const b = response.data;
+      expect(b.name).toMatch(/^uploads\/.*_stream-all.txt$/);
+      expect(b.url).toBeDefined();
+      const options = FilesController.prototype.createFile.calls.argsFor(0)[4];
+      expect(options.metadata).toEqual({ author: 'test' });
+      expect(options.tags).toEqual({ env: 'test' });
+    });
+
+    it('rejects invalid JSON in metadata header', async () => {
+      const headers = {
+        'Content-Type': 'text/plain',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+        'X-Parse-Upload-Mode': 'stream',
+        'X-Parse-File-Metadata': 'not-json',
+      };
+      try {
+        await request({
+          method: 'POST',
+          headers,
+          url: 'http://localhost:8378/1/files/stream-bad.txt',
+          body: 'should fail',
+        });
+        fail('should have thrown');
+      } catch (error) {
+        expect(error.data.code).toEqual(Parse.Error.INVALID_JSON);
+      }
+    });
+
+    it('rejects invalid JSON in tags header', async () => {
+      const headers = {
+        'Content-Type': 'text/plain',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+        'X-Parse-Upload-Mode': 'stream',
+        'X-Parse-File-Tags': '{bad',
+      };
+      try {
+        await request({
+          method: 'POST',
+          headers,
+          url: 'http://localhost:8378/1/files/stream-bad.txt',
+          body: 'should fail',
+        });
+        fail('should have thrown');
+      } catch (error) {
+        expect(error.data.code).toEqual(Parse.Error.INVALID_JSON);
+      }
+    });
+
+    it('rejects non-object metadata header', async () => {
+      const invalidValues = ['"a string"', '[1,2]', 'null', '42', 'true'];
+      for (const value of invalidValues) {
+        const headers = {
+          'Content-Type': 'text/plain',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+          'X-Parse-Upload-Mode': 'stream',
+          'X-Parse-File-Metadata': value,
+        };
+        try {
+          await request({
+            method: 'POST',
+            headers,
+            url: 'http://localhost:8378/1/files/stream-bad.txt',
+            body: 'should fail',
+          });
+          fail(`should have thrown for metadata: ${value}`);
+        } catch (error) {
+          expect(error.data.code).toEqual(Parse.Error.INVALID_JSON);
+          expect(error.data.error).toBe('Invalid JSON in X-Parse-File-Metadata header.');
+        }
+      }
+    });
+
+    it('rejects non-object tags header', async () => {
+      const invalidValues = ['"a string"', '[1,2]', 'null', '42', 'true'];
+      for (const value of invalidValues) {
+        const headers = {
+          'Content-Type': 'text/plain',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+          'X-Parse-Upload-Mode': 'stream',
+          'X-Parse-File-Tags': value,
+        };
+        try {
+          await request({
+            method: 'POST',
+            headers,
+            url: 'http://localhost:8378/1/files/stream-bad.txt',
+            body: 'should fail',
+          });
+          fail(`should have thrown for tags: ${value}`);
+        } catch (error) {
+          expect(error.data.code).toEqual(Parse.Error.INVALID_JSON);
+          expect(error.data.error).toBe('Invalid JSON in X-Parse-File-Tags header.');
+        }
+      }
+    });
+
     it('validates directory - rejects trailing slash', async () => {
       const file = new Parse.File('hello.txt', data, 'text/plain');
       file.setDirectory('trailing/');
