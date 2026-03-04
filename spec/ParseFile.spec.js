@@ -2147,6 +2147,49 @@ describe('Parse.File testing', () => {
         }
       });
 
+      it('rejects maxUploadSize override with invalid application ID', async () => {
+        const headers = {
+          'Content-Type': 'application/octet-stream',
+          'X-Parse-Application-Id': 'invalid-app-id',
+          'X-Parse-Master-Key': 'test',
+          'X-Parse-Upload-Mode': 'stream',
+          'X-Parse-File-Max-Upload-Size': '1mb',
+        };
+        try {
+          await request({
+            method: 'POST',
+            headers: headers,
+            url: 'http://localhost:8378/1/files/bad-app.txt',
+            body: 'some data',
+          });
+          fail('should have thrown');
+        } catch (response) {
+          expect(response.status).toBe(403);
+        }
+      });
+
+      it('rejects maxUploadSize override when masterKeyIps blocks the IP', async () => {
+        await reconfigureServer({ masterKeyIps: ['10.0.0.1'] });
+        const headers = {
+          'Content-Type': 'application/octet-stream',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+          'X-Parse-Upload-Mode': 'stream',
+          'X-Parse-File-Max-Upload-Size': '1mb',
+        };
+        try {
+          await request({
+            method: 'POST',
+            headers: headers,
+            url: 'http://localhost:8378/1/files/blocked-ip.txt',
+            body: 'some data',
+          });
+          fail('should have thrown');
+        } catch (response) {
+          expect(response.status).toBe(403);
+        }
+      });
+
     });
 
     describe('maxUploadSize override via SDK', () => {
