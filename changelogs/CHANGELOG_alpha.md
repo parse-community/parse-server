@@ -1,3 +1,10 @@
+# [9.5.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.5.0-alpha.1...9.5.0-alpha.2) (2026-03-04)
+
+
+### Features
+
+* Add `Parse.File` option `maxUploadSize` to override the Parse Server option `maxUploadSize` per file upload ([#10093](https://github.com/parse-community/parse-server/issues/10093)) ([3d8807b](https://github.com/parse-community/parse-server/commit/3d8807b4eceafab92ac9c23516d564f5fce6cb8e))
+
 # [9.5.0-alpha.1](https://github.com/parse-community/parse-server/compare/9.4.1...9.5.0-alpha.1) (2026-03-04)
 
 
