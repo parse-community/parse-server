@@ -252,7 +252,7 @@ async function measureMemoryOperation({ name, operation, iterations, skipWarmup 
     gcDurations.push(maxGcPause);
 
     if (LOG_ITERATIONS) {
-      logInfo(`Iteration ${i + 1}: ${iterationGcDuration.toFixed(2)} ms GC`);
+      logInfo(`Iteration ${i + 1}: ${maxGcPause.toFixed(2)} ms GC`);
     } else if ((i + 1) % progressInterval === 0 || i + 1 === iterations) {
       const progress = Math.round(((i + 1) / iterations) * 100);
       logInfo(`Progress: ${progress}%`);
