@@ -305,6 +305,9 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 
 <sub>(1) `Parse.Object.createdAt`, `Parse.Object.updatedAt`.</sub>
 
+> [!NOTE]
+> In Cloud Code, both `masterKey` and `readOnlyMasterKey` set `request.master` to `true`. To distinguish between them, check `request.isReadOnly`. For example, use `request.master && !request.isReadOnly` to ensure full master key access.
+
 ## Email Verification and Password Reset
 
 Verifying user email addresses and enabling password reset via email requires an email adapter. There are many email adapters provided and maintained by the community. The following is an example configuration with an example email adapter. See the [Parse Server Options][server-options] for more details and a full list of available options.

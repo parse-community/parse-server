@@ -176,6 +176,7 @@ export class FunctionsRouter extends PromiseRouter {
       params: params,
       config: req.config,
       master: req.auth && req.auth.isMaster,
+      isReadOnly: !!(req.auth && req.auth.isReadOnly),
       user: req.auth && req.auth.user,
       installationId: req.info.installationId,
       log: req.config.loggerController,

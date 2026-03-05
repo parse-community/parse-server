@@ -268,6 +268,7 @@ export function getRequestObject(
     triggerName: triggerType,
     object: parseObject,
     master: false,
+    isReadOnly: false,
     log: config.loggerController,
     headers: config.headers,
     ip: config.ip,
@@ -301,6 +302,9 @@ export function getRequestObject(
   if (auth.isMaster) {
     request['master'] = true;
   }
+  if (auth.isReadOnly) {
+    request['isReadOnly'] = true;
+  }
   if (auth.user) {
     request['user'] = auth.user;
   }
@@ -317,6 +321,7 @@ export function getRequestQueryObject(triggerType, auth, query, count, config, c
     triggerName: triggerType,
     query,
     master: false,
+    isReadOnly: false,
     count,
     log: config.loggerController,
     isGet,
@@ -331,6 +336,9 @@ export function getRequestQueryObject(triggerType, auth, query, count, config, c
   }
   if (auth.isMaster) {
     request['master'] = true;
+  }
+  if (auth.isReadOnly) {
+    request['isReadOnly'] = true;
   }
   if (auth.user) {
     request['user'] = auth.user;
@@ -1019,6 +1027,7 @@ export function getRequestFileObject(triggerType, auth, fileObject, config) {
     ...fileObject,
     triggerName: triggerType,
     master: false,
+    isReadOnly: false,
     log: config.loggerController,
     headers: config.headers,
     ip: config.ip,
@@ -1030,6 +1039,9 @@ export function getRequestFileObject(triggerType, auth, fileObject, config) {
   }
   if (auth.isMaster) {
     request['master'] = true;
+  }
+  if (auth.isReadOnly) {
+    request['isReadOnly'] = true;
   }
   if (auth.user) {
     request['user'] = auth.user;
