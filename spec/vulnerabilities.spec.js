@@ -516,6 +516,8 @@ describe('Malformed $regex information disclosure', () => {
   it('should not leak database error internals for invalid regex pattern in role query', async () => {
     const logger = require('../lib/logger').default;
     const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+    const role = new Parse.Role('testrole', new Parse.ACL());
+    await role.save(null, { useMasterKey: true });
     try {
       await request({
         method: 'GET',
