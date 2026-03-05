@@ -478,6 +478,75 @@ describe('Vulnerabilities', () => {
   });
 });
 
+describe('Malformed $regex information disclosure', () => {
+  it('should not leak database error internals for invalid regex pattern in class query', async () => {
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+    const obj = new Parse.Object('TestObject');
+    await obj.save({ field: 'value' });
+
+    try {
+      await request({
+        method: 'GET',
+        url: `http://localhost:8378/1/classes/TestObject`,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        qs: {
+          where: JSON.stringify({ field: { $regex: '[abc' } }),
+        },
+      });
+      fail('Request should have failed');
+    } catch (e) {
+      expect(e.data.code).toBe(Parse.Error.INTERNAL_SERVER_ERROR);
+      expect(e.data.error).toBe('An internal server error occurred');
+      expect(typeof e.data.error).toBe('string');
+      expect(JSON.stringify(e.data)).not.toContain('errmsg');
+      expect(JSON.stringify(e.data)).not.toContain('codeName');
+      expect(JSON.stringify(e.data)).not.toContain('errorResponse');
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
+        'Sanitized error:',
+        jasmine.stringMatching(/[Rr]egular expression/i)
+      );
+    }
+  });
+
+  it('should not leak database error internals for invalid regex pattern in role query', async () => {
+    const logger = require('../lib/logger').default;
+    const loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+    const role = new Parse.Role('testrole', new Parse.ACL());
+    await role.save(null, { useMasterKey: true });
+    try {
+      await request({
+        method: 'GET',
+        url: `http://localhost:8378/1/roles`,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        qs: {
+          where: JSON.stringify({ name: { $regex: '[abc' } }),
+        },
+      });
+      fail('Request should have failed');
+    } catch (e) {
+      expect(e.data.code).toBe(Parse.Error.INTERNAL_SERVER_ERROR);
+      expect(e.data.error).toBe('An internal server error occurred');
+      expect(typeof e.data.error).toBe('string');
+      expect(JSON.stringify(e.data)).not.toContain('errmsg');
+      expect(JSON.stringify(e.data)).not.toContain('codeName');
+      expect(JSON.stringify(e.data)).not.toContain('errorResponse');
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
+        'Sanitized error:',
+        jasmine.stringMatching(/[Rr]egular expression/i)
+      );
+    }
+  });
+});
+
 describe('Postgres regex sanitizater', () => {
   it('sanitizes the regex correctly to prevent Injection', async () => {
     const user = new Parse.User();
