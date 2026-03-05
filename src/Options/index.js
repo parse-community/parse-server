@@ -339,7 +339,7 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_GRAPHQL_PUBLIC_INTROSPECTION
   :DEFAULT: false */
   graphQLPublicIntrospection: ?boolean;
-  /* Mounts the GraphQL Playground - never use this option in production
+  /* Mounts the GraphQL Playground which exposes the master key in the browser - never use this option in production
   :ENV: PARSE_SERVER_MOUNT_PLAYGROUND
   :DEFAULT: false */
   mountPlayground: ?boolean;

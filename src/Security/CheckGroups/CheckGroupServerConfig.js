@@ -91,6 +91,18 @@ class CheckGroupServerConfig extends CheckGroup {
         },
       }),
       new Check({
+        title: 'GraphQL Playground disabled',
+        warning:
+          'GraphQL Playground is enabled and exposes the master key in the browser page.',
+        solution:
+          "Change Parse Server configuration to 'mountPlayground: false'. Use Parse Dashboard for GraphQL exploration in production.",
+        check: () => {
+          if (config.mountPlayground) {
+            throw 1;
+          }
+        },
+      }),
+      new Check({
         title: 'Public database explain disabled',
         warning:
           'Database explain queries are publicly accessible, which may expose sensitive database performance information and schema details.',

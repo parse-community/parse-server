@@ -822,7 +822,7 @@ $ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongo
 
 After starting the server, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
 
-**_Note:_** Do **_NOT_** use --mountPlayground option in production. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and it is the recommended option for production apps.
+**_Note:_** Do **_NOT_** use --mountPlayground option in production. The GraphQL Playground exposes the master key in the browser page. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and is the recommended option for production apps.
 
 ### Using Docker
 
@@ -845,7 +845,7 @@ $ docker run --name my-parse-server --link my-mongo:mongo -v config-vol:/parse-s
 
 After starting the server, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
 
-**_Note:_** Do **_NOT_** use --mountPlayground option in production. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and it is the recommended option for production apps.
+**_Note:_** Do **_NOT_** use --mountPlayground option in production. The GraphQL Playground exposes the master key in the browser page. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and is the recommended option for production apps.
 
 ### Using Express.js
 
@@ -899,7 +899,7 @@ $ node index.js
 
 After starting the app, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
 
-**_Note:_** Do **_NOT_** mount the GraphQL Playground in production. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and it is the recommended option for production apps.
+**_Note:_** Do **_NOT_** mount the GraphQL Playground in production. The GraphQL Playground exposes the master key in the browser page. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and is the recommended option for production apps.
 
 ## Checking the API health
 
