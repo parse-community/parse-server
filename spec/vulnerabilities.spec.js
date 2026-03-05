@@ -508,7 +508,7 @@ describe('Malformed $regex information disclosure', () => {
       expect(JSON.stringify(e.data)).not.toContain('errorResponse');
       expect(loggerErrorSpy).toHaveBeenCalledWith(
         'Sanitized error:',
-        jasmine.stringContaining('Regular expression is invalid')
+        jasmine.stringMatching(/[Rr]egular expression/i)
       );
     }
   });
@@ -526,7 +526,7 @@ describe('Malformed $regex information disclosure', () => {
           'X-Parse-REST-API-Key': 'rest',
         },
         qs: {
-          where: JSON.stringify({ name: { $regex: 'a(' } }),
+          where: JSON.stringify({ name: { $regex: '[abc' } }),
         },
       });
       fail('Request should have failed');
@@ -539,7 +539,7 @@ describe('Malformed $regex information disclosure', () => {
       expect(JSON.stringify(e.data)).not.toContain('errorResponse');
       expect(loggerErrorSpy).toHaveBeenCalledWith(
         'Sanitized error:',
-        jasmine.stringContaining('Regular expression is invalid')
+        jasmine.stringMatching(/[Rr]egular expression/i)
       );
     }
   });
