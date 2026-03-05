@@ -501,7 +501,7 @@ export class PagesRouter extends PromiseRouter {
     const normalizedPath = path.normalize(filePath);
 
     // Abort if the path is outside of the path directory scope
-    if (!normalizedPath.startsWith(this.pagesPath)) {
+    if (!normalizedPath.startsWith(this.pagesPath + path.sep)) {
       throw errors.fileOutsideAllowedScope;
     }
 

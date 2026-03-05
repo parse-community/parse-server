@@ -1,6 +1,7 @@
 'use strict';
 
 const request = require('../lib/request');
+const path = require('path');
 const fs = require('fs').promises;
 const mustache = require('mustache');
 const Utils = require('../lib/Utils');
@@ -944,6 +945,50 @@ describe('Pages Router', () => {
         }).catch(e => e);
         expect(response.status).toBe(404);
         expect(response.text).toBe('Not found.');
+      });
+
+      it('rejects requesting file from sibling directory with prefix-colliding name via encoded path traversal', async () => {
+        // Create a temporary pages directory and a sibling directory whose name
+        // starts with the same prefix (e.g. "pages" vs "pages-secret"), which
+        // would bypass a naive `startsWith` check without a path separator.
+        const baseDir = path.join(__dirname, 'tmp-pages-exploit-test');
+        const pagesDir = path.join(baseDir, 'pages');
+        const siblingDir = path.join(baseDir, 'pages-secret');
+        const marker = `SECRET_CONTENT_${Date.now()}`;
+
+        try {
+          await fs.mkdir(pagesDir, { recursive: true });
+          await fs.mkdir(siblingDir, { recursive: true });
+          // Copy a required HTML file so the pages router initializes correctly
+          const publicDir = path.resolve(__dirname, '../public');
+          const htmlFile = await fs.readFile(
+            path.join(publicDir, 'email_verification_link_invalid.html'),
+            'utf-8'
+          );
+          await fs.writeFile(
+            path.join(pagesDir, 'email_verification_link_invalid.html'),
+            htmlFile
+          );
+          // Write a secret file in the sibling directory
+          await fs.writeFile(path.join(siblingDir, 'secret.txt'), marker);
+
+          config.pages.pagesPath = pagesDir;
+          await reconfigureServer(config);
+
+          // Use URL-encoded path traversal: %2e%2e%2f = ../
+          // This reaches the sibling "pages-secret" directory which shares
+          // the "pages" prefix with the configured pagesPath directory name.
+          const url = `${config.publicServerURL}/apps/%2e%2e%2fpages-secret%2fsecret.txt`;
+          const response = await request({
+            url: url,
+            followRedirects: false,
+          }).catch(e => e);
+
+          expect(response.status).toBe(404);
+          expect(response.text).not.toContain(marker);
+        } finally {
+          await fs.rm(baseDir, { recursive: true, force: true });
+        }
       });
     });
 
