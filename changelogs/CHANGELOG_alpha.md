@@ -1,3 +1,10 @@
+# [9.5.0-alpha.7](https://github.com/parse-community/parse-server/compare/9.5.0-alpha.6...9.5.0-alpha.7) (2026-03-05)
+
+
+### Features
+
+* Add security check for server option `mountPlayground` for GraphQL development ([#10103](https://github.com/parse-community/parse-server/issues/10103)) ([2ae5db1](https://github.com/parse-community/parse-server/commit/2ae5db142574b0e62f4263e2fa9a9831c966b478))
+
 # [9.5.0-alpha.6](https://github.com/parse-community/parse-server/compare/9.5.0-alpha.5...9.5.0-alpha.6) (2026-03-05)
 
 
