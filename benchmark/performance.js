@@ -248,6 +248,12 @@ async function measureMemoryOperation({ name, operation, iterations, skipWarmup 
 
     await operation();
 
+    // Flush any buffered entries before disconnecting to avoid data loss
+    for (const entry of obs.takeRecords()) {
+      if (entry.duration > maxGcPause) {
+        maxGcPause = entry.duration;
+      }
+    }
     obs.disconnect();
     gcDurations.push(maxGcPause);
 
