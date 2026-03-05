@@ -1027,6 +1027,7 @@ export function getRequestFileObject(triggerType, auth, fileObject, config) {
     ...fileObject,
     triggerName: triggerType,
     master: false,
+    isReadOnly: false,
     log: config.loggerController,
     headers: config.headers,
     ip: config.ip,
