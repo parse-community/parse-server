@@ -77,7 +77,7 @@
  * @property {Union} middleware middleware for express server, can be string or function
  * @property {Boolean} mountGraphQL Mounts the GraphQL endpoint
  * @property {String} mountPath Mount path for the server, defaults to /parse
- * @property {Boolean} mountPlayground Mounts the GraphQL Playground - never use this option in production
+ * @property {Boolean} mountPlayground Mounts the GraphQL Playground which exposes the master key in the browser - never use this option in production
  * @property {Number} objectIdSize Sets the number of characters in generated object id's, default 10
  * @property {PagesOptions} pages The options for pages such as password reset and email verification.
  * @property {PasswordPolicyOptions} passwordPolicy The password policy for enforcing password related rules.

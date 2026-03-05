@@ -404,7 +404,7 @@ module.exports.ParseServerOptions = {
   },
   mountPlayground: {
     env: 'PARSE_SERVER_MOUNT_PLAYGROUND',
-    help: 'Mounts the GraphQL Playground - never use this option in production',
+    help: 'Mounts the GraphQL Playground which exposes the master key in the browser - never use this option in production',
     action: parsers.booleanParser,
     default: false,
   },

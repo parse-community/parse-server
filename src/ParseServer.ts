@@ -458,6 +458,9 @@ class ParseServer {
 
       if (options.mountPlayground) {
         parseGraphQLServer.applyPlayground(app);
+        logging.getLogger().warn(
+          'GraphQL Playground is enabled and exposes the master key in the browser. The playground is a developer tool and should not be used in production. Use Parse Dashboard for production environments.'
+        );
       }
     }
     const server = await new Promise(resolve => {
