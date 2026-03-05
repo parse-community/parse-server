@@ -1,3 +1,10 @@
+# [9.5.0-alpha.4](https://github.com/parse-community/parse-server/compare/9.5.0-alpha.3...9.5.0-alpha.4) (2026-03-05)
+
+
+### Bug Fixes
+
+* Endpoint `/loginAs` allows `readOnlyMasterKey` to gain full read and write access as any user ([GHSA-79wj-8rqv-jvp5](https://github.com/parse-community/parse-server/security/advisories/GHSA-79wj-8rqv-jvp5)) ([#10098](https://github.com/parse-community/parse-server/issues/10098)) ([bc20945](https://github.com/parse-community/parse-server/commit/bc20945fc7cdb2e56d7c46d537d8f4baf7231303))
+
 # [9.5.0-alpha.3](https://github.com/parse-community/parse-server/compare/9.5.0-alpha.2...9.5.0-alpha.3) (2026-03-05)
 
 
