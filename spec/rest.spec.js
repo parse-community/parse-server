@@ -1390,6 +1390,54 @@ describe('read-only masterKey', () => {
       expect(res.data.error).toBe('Permission denied');
     }
   });
+
+  it('should expose isReadOnly in Cloud Function request when using readOnlyMasterKey', async () => {
+    let receivedMaster;
+    let receivedIsReadOnly;
+    Parse.Cloud.define('checkReadOnly', req => {
+      receivedMaster = req.master;
+      receivedIsReadOnly = req.isReadOnly;
+      return 'ok';
+    });
+
+    await request({
+      method: 'POST',
+      url: `${Parse.serverURL}/functions/checkReadOnly`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': 'read-only-test',
+        'Content-Type': 'application/json',
+      },
+      body: {},
+    });
+
+    expect(receivedMaster).toBe(true);
+    expect(receivedIsReadOnly).toBe(true);
+  });
+
+  it('should not set isReadOnly in Cloud Function request when using masterKey', async () => {
+    let receivedMaster;
+    let receivedIsReadOnly;
+    Parse.Cloud.define('checkNotReadOnly', req => {
+      receivedMaster = req.master;
+      receivedIsReadOnly = req.isReadOnly;
+      return 'ok';
+    });
+
+    await request({
+      method: 'POST',
+      url: `${Parse.serverURL}/functions/checkNotReadOnly`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
+        'Content-Type': 'application/json',
+      },
+      body: {},
+    });
+
+    expect(receivedMaster).toBe(true);
+    expect(receivedIsReadOnly).toBe(false);
+  });
 });
 
 describe('rest context', () => {
