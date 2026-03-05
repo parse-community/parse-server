@@ -1,3 +1,10 @@
+# [9.5.0-alpha.6](https://github.com/parse-community/parse-server/compare/9.5.0-alpha.5...9.5.0-alpha.6) (2026-03-05)
+
+
+### Bug Fixes
+
+* Malformed `$regex` query leaks database error details in API response ([GHSA-9cp7-3q5w-j92g](https://github.com/parse-community/parse-server/security/advisories/GHSA-9cp7-3q5w-j92g)) ([#10101](https://github.com/parse-community/parse-server/issues/10101)) ([9792d24](https://github.com/parse-community/parse-server/commit/9792d24b963f3b45e5ade2bbceb6f5c0b5d0251c))
+
 # [9.5.0-alpha.5](https://github.com/parse-community/parse-server/compare/9.5.0-alpha.4...9.5.0-alpha.5) (2026-03-05)
 
 
