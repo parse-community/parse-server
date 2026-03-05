@@ -1307,6 +1307,63 @@ describe('read-only masterKey', () => {
     });
     expect(Array.isArray(res.data)).toBe(true);
   });
+
+  it('should throw when trying to delete a file with readOnlyMasterKey', async () => {
+    // Create a file with the real master key
+    const uploadRes = await request({
+      method: 'POST',
+      url: `${Parse.serverURL}/files/readonly-delete-test.txt`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
+        'Content-Type': 'text/plain',
+      },
+      body: 'file content',
+    });
+    const filename = uploadRes.data.name;
+    expect(filename).toBeDefined();
+
+    // Attempt delete with readOnlyMasterKey — should be rejected
+    loggerErrorSpy.calls.reset();
+    try {
+      await request({
+        method: 'DELETE',
+        url: `${Parse.serverURL}/files/${filename}`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': 'read-only-test',
+        },
+      });
+      fail('should have thrown');
+    } catch (res) {
+      expect(res.status).toBe(403);
+      expect(res.data.error).toBe('Permission denied');
+    }
+
+    // Verify file still exists
+    const getRes = await request({ url: uploadRes.data.url });
+    expect(getRes.status).toBe(200);
+  });
+
+  it('should throw when trying to create a file with readOnlyMasterKey', async () => {
+    loggerErrorSpy.calls.reset();
+    try {
+      await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/files/readonly-create-test.txt`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': 'read-only-test',
+          'Content-Type': 'text/plain',
+        },
+        body: 'file content',
+      });
+      fail('should have thrown');
+    } catch (res) {
+      expect(res.status).toBe(403);
+      expect(res.data.error).toBe('Permission denied');
+    }
+  });
 });
 
 describe('rest context', () => {
