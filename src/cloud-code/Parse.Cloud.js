@@ -730,7 +730,8 @@ module.exports = ParseCloud;
 /**
  * @interface Parse.Cloud.TriggerRequest
  * @property {String} installationId If set, the installationId triggering the request.
- * @property {Boolean} master If true, means the master key was used.
+ * @property {Boolean} master If true, means the master key or the read-only master key was used.
+ * @property {Boolean} isReadOnly If true, means the read-only master key was used. This is a subset of `master`, so `master` will also be true. Use `master && !isReadOnly` to check for full master key access.
  * @property {Boolean} isChallenge If true, means the current request is originally triggered by an auth challenge.
  * @property {Parse.User} user If set, the user that made the request.
  * @property {Parse.Object} object The object triggering the hook.
@@ -745,7 +746,8 @@ module.exports = ParseCloud;
 /**
  * @interface Parse.Cloud.FileTriggerRequest
  * @property {String} installationId If set, the installationId triggering the request.
- * @property {Boolean} master If true, means the master key was used.
+ * @property {Boolean} master If true, means the master key or the read-only master key was used.
+ * @property {Boolean} isReadOnly If true, means the read-only master key was used. This is a subset of `master`, so `master` will also be true. Use `master && !isReadOnly` to check for full master key access.
  * @property {Parse.User} user If set, the user that made the request.
  * @property {Parse.File} file The file that triggered the hook.
  * @property {Integer} fileSize The size of the file in bytes.
@@ -784,7 +786,8 @@ module.exports = ParseCloud;
 /**
  * @interface Parse.Cloud.BeforeFindRequest
  * @property {String} installationId If set, the installationId triggering the request.
- * @property {Boolean} master If true, means the master key was used.
+ * @property {Boolean} master If true, means the master key or the read-only master key was used.
+ * @property {Boolean} isReadOnly If true, means the read-only master key was used. This is a subset of `master`, so `master` will also be true. Use `master && !isReadOnly` to check for full master key access.
  * @property {Parse.User} user If set, the user that made the request.
  * @property {Parse.Query} query The query triggering the hook.
  * @property {String} ip The IP address of the client making the request.
@@ -798,7 +801,8 @@ module.exports = ParseCloud;
 /**
  * @interface Parse.Cloud.AfterFindRequest
  * @property {String} installationId If set, the installationId triggering the request.
- * @property {Boolean} master If true, means the master key was used.
+ * @property {Boolean} master If true, means the master key or the read-only master key was used.
+ * @property {Boolean} isReadOnly If true, means the read-only master key was used. This is a subset of `master`, so `master` will also be true. Use `master && !isReadOnly` to check for full master key access.
  * @property {Parse.User} user If set, the user that made the request.
  * @property {Parse.Query} query The query triggering the hook.
  * @property {Array<Parse.Object>} results The results the query yielded.
@@ -812,7 +816,8 @@ module.exports = ParseCloud;
 /**
  * @interface Parse.Cloud.FunctionRequest
  * @property {String} installationId If set, the installationId triggering the request.
- * @property {Boolean} master If true, means the master key was used.
+ * @property {Boolean} master If true, means the master key or the read-only master key was used.
+ * @property {Boolean} isReadOnly If true, means the read-only master key was used. This is a subset of `master`, so `master` will also be true. Use `master && !isReadOnly` to check for full master key access.
  * @property {Parse.User} user If set, the user that made the request.
  * @property {Object} params The params passed to the cloud function.
  * @property {String} ip The IP address of the client making the request.
