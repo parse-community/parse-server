@@ -1,3 +1,10 @@
+# [9.5.0-alpha.5](https://github.com/parse-community/parse-server/compare/9.5.0-alpha.4...9.5.0-alpha.5) (2026-03-05)
+
+
+### Features
+
+* Allow to identify `readOnlyMasterKey` invocation of Cloud Function via `request.isReadOnly` ([#10100](https://github.com/parse-community/parse-server/issues/10100)) ([2c48751](https://github.com/parse-community/parse-server/commit/2c48751c6de36ec090ac6ab08e289876561ed324))
+
 # [9.5.0-alpha.4](https://github.com/parse-community/parse-server/compare/9.5.0-alpha.3...9.5.0-alpha.4) (2026-03-05)
 
 
