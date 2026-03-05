@@ -1,3 +1,10 @@
+## [8.6.5](https://github.com/parse-community/parse-server/compare/8.6.4...8.6.5) (2026-03-05)
+
+
+### Bug Fixes
+
+* File creation and deletion bypasses `readOnlyMasterKey` write restriction (GHSA-xfh7-phr7-gr2x) ([#10096](https://github.com/parse-community/parse-server/issues/10096)) ([07bddc0](https://github.com/parse-community/parse-server/commit/07bddc0850c0eebb51219fe1d5d342f4412461ba))
+
 ## [8.6.4](https://github.com/parse-community/parse-server/compare/8.6.3...8.6.4) (2026-03-04)
 
 
