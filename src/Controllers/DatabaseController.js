@@ -20,6 +20,7 @@ import SchemaCache from '../Adapters/Cache/SchemaCache';
 import type { LoadSchemaOptions } from './types';
 import type { ParseServerOptions } from '../Options';
 import type { QueryOptions, FullQueryOptions } from '../Adapters/Storage/StorageAdapter';
+import { createSanitizedError } from '../Error';
 
 function addWriteACL(query, acl) {
   const newQuery = _.cloneDeep(query);
@@ -1366,7 +1367,19 @@ class DatabaseController {
                     })
                   )
                   .catch(error => {
-                    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, error);
+                    if (error instanceof Parse.Error) {
+                      throw error;
+                    }
+                    const detailedMessage =
+                      typeof error === 'string'
+                        ? error
+                        : error?.message || 'An internal server error occurred';
+                    throw createSanitizedError(
+                      Parse.Error.INTERNAL_SERVER_ERROR,
+                      detailedMessage,
+                      this.options,
+                      'An internal server error occurred'
+                    );
                   });
               }
             });
