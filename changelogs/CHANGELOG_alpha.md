@@ -1,3 +1,10 @@
+# [9.5.0-alpha.8](https://github.com/parse-community/parse-server/compare/9.5.0-alpha.7...9.5.0-alpha.8) (2026-03-05)
+
+
+### Bug Fixes
+
+* `PagesRouter` path traversal allows reading files outside configured pages directory ([GHSA-hm3f-q6rw-m6wh](https://github.com/parse-community/parse-server/security/advisories/GHSA-hm3f-q6rw-m6wh)) ([#10104](https://github.com/parse-community/parse-server/issues/10104)) ([e772543](https://github.com/parse-community/parse-server/commit/e772543ad8d01bce83664566551893dffc5b8117))
+
 # [9.5.0-alpha.7](https://github.com/parse-community/parse-server/compare/9.5.0-alpha.6...9.5.0-alpha.7) (2026-03-05)
 
 
