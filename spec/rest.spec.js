@@ -1462,6 +1462,30 @@ describe('read-only masterKey', () => {
     expect(receivedMaster).toBe(true);
     expect(receivedIsReadOnly).toBe(true);
   });
+
+  it('should not set isReadOnly in beforeFind trigger when using masterKey', async () => {
+    let receivedMaster;
+    let receivedIsReadOnly;
+    Parse.Cloud.beforeFind('ReadOnlyTriggerTestNeg', req => {
+      receivedMaster = req.master;
+      receivedIsReadOnly = req.isReadOnly;
+    });
+
+    const obj = new Parse.Object('ReadOnlyTriggerTestNeg');
+    await obj.save(null, { useMasterKey: true });
+
+    await request({
+      method: 'GET',
+      url: `${Parse.serverURL}/classes/ReadOnlyTriggerTestNeg`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
+      },
+    });
+
+    expect(receivedMaster).toBe(true);
+    expect(receivedIsReadOnly).toBe(false);
+  });
 });
 
 describe('rest context', () => {
