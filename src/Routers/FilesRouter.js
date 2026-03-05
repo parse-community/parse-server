@@ -300,6 +300,12 @@ export class FilesRouter {
   }
 
   async createHandler(req, res, next) {
+    if (req.auth.isReadOnly) {
+      const error = createSanitizedHttpError(403, "read-only masterKey isn't allowed to create a file.", req.config);
+      res.status(error.status);
+      res.end(`{"error":"${error.message}"}`);
+      return;
+    }
     const config = req.config;
     const user = req.auth.user;
     const isMaster = req.auth.isMaster;
@@ -667,6 +673,12 @@ export class FilesRouter {
   }
 
   async deleteHandler(req, res, next) {
+    if (req.auth.isReadOnly) {
+      const error = createSanitizedHttpError(403, "read-only masterKey isn't allowed to delete a file.", req.config);
+      res.status(error.status);
+      res.end(`{"error":"${error.message}"}`);
+      return;
+    }
     try {
       const { filesController } = req.config;
       const filename = FilesRouter._getFilenameFromParams(req);
