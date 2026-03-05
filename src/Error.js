@@ -6,6 +6,8 @@ import defaultLogger from './logger';
  *
  * @param {number} errorCode - The Parse.Error code (e.g., Parse.Error.OPERATION_FORBIDDEN)
  * @param {string} detailedMessage - The detailed error message to log server-side
+ * @param {object} config - Parse Server config with enableSanitizedErrorResponse
+ * @param {string} [sanitizedMessage='Permission denied'] - The sanitized message to return to clients
  * @returns {Parse.Error} A Parse.Error with sanitized message
  */
 function createSanitizedError(errorCode, detailedMessage, config, sanitizedMessage = 'Permission denied') {
