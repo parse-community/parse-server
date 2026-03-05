@@ -1737,15 +1737,34 @@ RestWrite.prototype.buildParseObjects = function () {
           updatedObject.set(key, data[key]);
         }
       } else {
-        // subdocument key with dot notation { 'x.y': v } => { 'x': { 'y' : v } })
-        const splittedKey = key.split('.');
-        const parentProp = splittedKey[0];
-        let parentVal = updatedObject.get(parentProp);
-        if (typeof parentVal !== 'object') {
-          parentVal = {};
+        // Handle deeply nested dot notation, e.g., 'x.y.z', { 'x.y.z': v } => { 'x': { 'y' : {'z': v} } }
+        const keys = key.split('.');
+        const rootProp = keys[0];
+
+        // Get a deep copy of the root object
+        let rootObj = updatedObject.get(rootProp);
+        if (rootObj && typeof rootObj === 'object') {
+          rootObj = deepcopy(rootObj);
+        } else {
+          rootObj = {};
         }
-        parentVal[splittedKey[1]] = data[key];
-        updatedObject.set(parentProp, parentVal);
+
+        // Recursively set nested properties
+        let current = rootObj;
+        for (let i = 1; i < keys.length - 1; i++) {
+          const prop = keys[i];
+          if (!current[prop] || typeof current[prop] !== 'object') {
+            current[prop] = {};
+          } else {
+            // Ensure we're working with a copy rather than the original reference
+            current[prop] = deepcopy(current[prop]);
+          }
+          current = current[prop];
+        }
+
+        // Set the final value
+        current[keys[keys.length - 1]] = data[key];
+        updatedObject.set(rootProp, rootObj);
       }
       delete data[key];
     }
