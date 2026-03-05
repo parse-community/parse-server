@@ -627,11 +627,11 @@ async function benchmarkQueryWithIncludeNested(name) {
  */
 async function benchmarkLargeResultMemory(name) {
   const TestObject = Parse.Object.extend('BenchmarkLargeResult');
-  const TOTAL_OBJECTS = 10_000;
+  const TOTAL_OBJECTS = 3_000;
   const SAVE_BATCH_SIZE = 200;
 
-  // Seed data in batches; ~8 KB per document so 10,000 docs ≈ 80 MB total,
-  // well exceeding MongoDB's 16 MiB default batch limit to test cursor batching
+  // Seed data in batches; ~8 KB per document so 3,000 docs ≈ 24 MB total,
+  // exceeding MongoDB's 16 MiB default batch limit to test cursor batching
   for (let i = 0; i < TOTAL_OBJECTS; i += SAVE_BATCH_SIZE) {
     const batch = [];
     for (let j = 0; j < SAVE_BATCH_SIZE && i + j < TOTAL_OBJECTS; j++) {
@@ -663,12 +663,12 @@ async function benchmarkLargeResultMemory(name) {
  */
 async function benchmarkConcurrentQueryMemory(name) {
   const TestObject = Parse.Object.extend('BenchmarkConcurrentResult');
-  const TOTAL_OBJECTS = 10_000;
+  const TOTAL_OBJECTS = 3_000;
   const SAVE_BATCH_SIZE = 200;
   const CONCURRENT_QUERIES = 10;
 
-  // Seed data in batches; ~8 KB per document so 10,000 docs ≈ 80 MB total,
-  // well exceeding MongoDB's 16 MiB default batch limit to test cursor batching
+  // Seed data in batches; ~8 KB per document so 3,000 docs ≈ 24 MB total,
+  // exceeding MongoDB's 16 MiB default batch limit to test cursor batching
   for (let i = 0; i < TOTAL_OBJECTS; i += SAVE_BATCH_SIZE) {
     const batch = [];
     for (let j = 0; j < SAVE_BATCH_SIZE && i + j < TOTAL_OBJECTS; j++) {
