@@ -1364,6 +1364,32 @@ describe('read-only masterKey', () => {
       expect(res.data.error).toBe('Permission denied');
     }
   });
+
+  it('should throw when trying to loginAs with readOnlyMasterKey', async () => {
+    // Create a target user
+    await Parse.User.signUp('readonly-loginas-test', 'password123');
+    const userId = Parse.User.current().id;
+    await Parse.User.logOut();
+
+    // Attempt loginAs with readOnlyMasterKey — should be rejected
+    loggerErrorSpy.calls.reset();
+    try {
+      await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/loginAs`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': 'read-only-test',
+          'Content-Type': 'application/json',
+        },
+        body: { userId },
+      });
+      fail('should have thrown');
+    } catch (res) {
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    }
+  });
 });
 
 describe('rest context', () => {
