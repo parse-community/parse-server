@@ -344,6 +344,13 @@ export class UsersRouter extends ClassesRouter {
         req.config
       );
     }
+    if (req.auth.isReadOnly) {
+      throw createSanitizedError(
+        Parse.Error.OPERATION_FORBIDDEN,
+        "read-only masterKey isn't allowed to login as another user.",
+        req.config
+      );
+    }
 
     const userId = req.body?.userId || req.query.userId;
     if (!userId) {
