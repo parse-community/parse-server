@@ -4452,6 +4452,21 @@ describe('Parse.File hooks', () => {
     });
     expect(response.headers['content-disposition']).toBe(`attachment;filename=${file._name}`);
   });
+
+  it('beforeFind blocks metadata endpoint', async () => {
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
+    await file.save({ useMasterKey: true });
+    Parse.Cloud.beforeFind(Parse.File, () => {
+      throw 'unauthorized';
+    });
+    await expectAsync(
+      request({
+        url: `http://localhost:8378/1/files/test/metadata/${file._name}`,
+      }).catch(e => {
+        throw new Parse.Error(e.data.code, e.data.error);
+      })
+    ).toBeRejectedWith(new Parse.Error(Parse.Error.SCRIPT_FAILED, 'unauthorized'));
+  });
 });
 
 describe('Cloud Config hooks', () => {

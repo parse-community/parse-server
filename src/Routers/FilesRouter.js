@@ -717,14 +717,36 @@ export class FilesRouter {
   async metadataHandler(req, res) {
     try {
       const config = Config.get(req.params.appId);
+      if (!config) {
+        res.status(200);
+        res.json({});
+        return;
+      }
       const { filesController } = config;
       const filename = FilesRouter._getFilenameFromParams(req);
+      const file = new Parse.File(filename, { base64: '' });
+      await triggers.maybeRunFileTrigger(
+        triggers.Types.beforeFind,
+        { file },
+        config,
+        req.auth
+      );
       const data = await filesController.getMetadata(filename);
+      await triggers.maybeRunFileTrigger(
+        triggers.Types.afterFind,
+        { file },
+        config,
+        req.auth
+      );
       res.status(200);
       res.json(data);
-    } catch {
-      res.status(200);
-      res.json({});
+    } catch (e) {
+      const err = triggers.resolveError(e, {
+        code: Parse.Error.SCRIPT_FAILED,
+        message: 'Could not get file metadata.',
+      });
+      res.status(403);
+      res.json({ code: err.code, error: err.message });
     }
   }
 }
