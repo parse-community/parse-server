@@ -1,6 +1,25 @@
 var equalObjects = require('./equalObjects');
 var Id = require('./Id');
 var Parse = require('parse/node');
+var { RE2JS } = require('re2js');
+
+var re2Cache = new Map();
+var RE2_CACHE_MAX = 1000;
+
+function compileSafeRegex(pattern, flags) {
+  var key = flags + ':' + pattern;
+  var cached = re2Cache.get(key);
+  if (cached !== undefined) return cached;
+  if (re2Cache.size >= RE2_CACHE_MAX) re2Cache.clear();
+  try {
+    var compiled = RE2JS.compile(pattern, flags);
+    re2Cache.set(key, compiled);
+    return compiled;
+  } catch {
+    re2Cache.set(key, null);
+    return null;
+  }
+}
 
 /**
  * Query Hashes are deterministic hashes for Parse Queries.
@@ -290,33 +309,19 @@ function matchesKeyConstraints(object, key, constraints) {
         }
         break;
       }
-      case '$regex':
-        if (typeof compareTo === 'object') {
-          return compareTo.test(object[key]);
-        }
-        // JS doesn't support perl-style escaping
-        var expString = '';
-        var escapeEnd = -2;
-        var escapeStart = compareTo.indexOf('\\Q');
-        while (escapeStart > -1) {
-          // Add the unescaped portion
-          expString += compareTo.substring(escapeEnd + 2, escapeStart);
-          escapeEnd = compareTo.indexOf('\\E', escapeStart);
-          if (escapeEnd > -1) {
-            expString += compareTo
-              .substring(escapeStart + 2, escapeEnd)
-              .replace(/\\\\\\\\E/g, '\\E')
-              .replace(/\W/g, '\\$&');
-          }
-
-          escapeStart = compareTo.indexOf('\\Q', escapeEnd);
-        }
-        expString += compareTo.substring(Math.max(escapeStart, escapeEnd + 2));
-        var exp = new RegExp(expString, constraints.$options || '');
-        if (!exp.test(object[key])) {
+      case '$regex': {
+        var regexString = typeof compareTo === 'object' ? compareTo.source : compareTo;
+        var regexOptions = typeof compareTo === 'object' ? compareTo.flags : (constraints.$options || '');
+        var re2Flags = 0;
+        if (regexOptions.includes('i')) re2Flags |= RE2JS.CASE_INSENSITIVE;
+        if (regexOptions.includes('m')) re2Flags |= RE2JS.MULTILINE;
+        if (regexOptions.includes('s')) re2Flags |= RE2JS.DOTALL;
+        var re2 = compileSafeRegex(regexString, re2Flags);
+        if (!re2 || !re2.matcher(object[key] || '').find()) {
           return false;
         }
         break;
+      }
       case '$nearSphere':
         if (!compareTo || !object[key]) {
           return false;
