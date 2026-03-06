@@ -18,6 +18,7 @@ The following is a list of deprecations, according to the [Deprecation Policy](h
 | DEPPS12 | Database option `allowPublicExplain` defaults to `false`                                     | [#7519](https://github.com/parse-community/parse-server/issues/7519)   | 8.5.0 (2025)                    | 9.0.0 (2026)                    | changed               | -     |
 | DEPPS13 | Config option `enableInsecureAuthAdapters` defaults to `false`                               | [#9667](https://github.com/parse-community/parse-server/pull/9667)     | 8.0.0 (2025)                    | 9.0.0 (2026)                    | changed               | -     |
 | DEPPS14 | Config option `pages.encodePageParamHeaders` defaults to `true`                              | [#10063](https://github.com/parse-community/parse-server/issues/10063) | 9.4.0 (2026)                    | 10.0.0 (2027)                   | deprecated            | -     |
+| DEPPS15 | Config option `readOnlyMasterKeyIps` defaults to `['127.0.0.1', '::1']`                     | [#10115](https://github.com/parse-community/parse-server/pull/10115)   | 9.5.0 (2026)                    | 10.0.0 (2027)                   | deprecated            | -     |
 
 [i_deprecation]: ## "The version and date of the deprecation."
 [i_change]: ## "The version and date of the planned change."

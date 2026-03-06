@@ -26,4 +26,9 @@ module.exports = [
     changeNewDefault: 'true',
     solution: "Set 'pages.encodePageParamHeaders' to 'true' to URI-encode non-ASCII characters in page parameter headers.",
   },
+  {
+    optionKey: 'readOnlyMasterKeyIps',
+    changeNewDefault: '["127.0.0.1", "::1"]',
+    solution: "Set 'readOnlyMasterKeyIps' to the IP addresses that should be allowed to use the read-only master key, or to '[\"127.0.0.1\", \"::1\"]' to restrict access to localhost.",
+  },
 ];
