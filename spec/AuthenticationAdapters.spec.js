@@ -652,7 +652,7 @@ describe('google auth adapter', () => {
       await google.validateAuthData({ id: 'the_user_id', id_token: 'the_token' }, {});
       fail('should have thrown');
     } catch (e) {
-      expect(e.message).toBe('Google auth adapter requires a configured clientId.');
+      expect(e.message).toBe('Google auth is not configured.');
     }
   });
 });
@@ -1217,7 +1217,7 @@ describe('apple signin auth adapter', () => {
       await apple.validateAuthData({ id: 'the_user_id', token: 'the_token' }, {});
       fail('should have thrown');
     } catch (e) {
-      expect(e.message).toBe('Apple auth adapter requires a configured clientId.');
+      expect(e.message).toBe('Apple auth is not configured.');
     }
   });
 });
@@ -1479,7 +1479,7 @@ describe('facebook limited auth adapter', () => {
       await facebook.validateAuthData({ id: 'the_user_id', token: 'the_token' }, {});
       fail('should have thrown');
     } catch (e) {
-      expect(e.message).toBe('Facebook auth adapter requires configured appIds.');
+      expect(e.message).toBe('Facebook auth is not configured.');
     }
   });
 });

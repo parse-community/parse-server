@@ -76,7 +76,7 @@ const verifyIdToken = async ({ token, id }, { clientId, cacheMaxEntries, cacheMa
   if (!clientId) {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
-      'Apple auth adapter requires a configured clientId.'
+      'Apple auth is not configured.'
     );
   }
 

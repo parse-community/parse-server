@@ -77,7 +77,7 @@ async function verifyIdToken({ id_token: token, id }, { clientId, cacheMaxEntrie
   if (!clientId) {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
-      'Google auth adapter requires a configured clientId.'
+      'Google auth is not configured.'
     );
   }
 

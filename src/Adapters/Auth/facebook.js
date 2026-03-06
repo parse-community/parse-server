@@ -133,7 +133,7 @@ const verifyIdToken = async ({ token, id }, { appIds, cacheMaxEntries, cacheMaxA
   if (!Array.isArray(appIds) || !appIds.length) {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
-      'Facebook auth adapter requires configured appIds.'
+      'Facebook auth is not configured.'
     );
   }
 
