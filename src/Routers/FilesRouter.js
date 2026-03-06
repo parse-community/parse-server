@@ -323,14 +323,17 @@ export class FilesRouter {
         return;
       }
       const { filesController } = config;
-      const { filename } = req.params;
+      let { filename } = req.params;
       const file = new Parse.File(filename, { base64: '' });
-      await triggers.maybeRunFileTrigger(
+      const triggerResult = await triggers.maybeRunFileTrigger(
         triggers.Types.beforeFind,
         { file },
         config,
         req.auth
       );
+      if (triggerResult?.file?._name) {
+        filename = triggerResult.file._name;
+      }
       const data = await filesController.getMetadata(filename).catch(() => {
         res.status(200);
         res.json({});
