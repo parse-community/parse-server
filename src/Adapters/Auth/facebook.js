@@ -132,6 +132,13 @@ const getFacebookKeyByKeyId = async (keyId, cacheMaxEntries, cacheMaxAge) => {
 };
 
 const verifyIdToken = async ({ token, id }, { clientId, cacheMaxEntries, cacheMaxAge }) => {
+  if (!clientId) {
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      'Facebook auth adapter requires a configured clientId.'
+    );
+  }
+
   if (!token) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'id token is invalid for this user.');
   }

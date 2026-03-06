@@ -484,7 +484,7 @@ describe('google auth adapter', () => {
 
   it('should throw error with missing id_token', async () => {
     try {
-      await google.validateAuthData({}, {});
+      await google.validateAuthData({}, { clientId: 'secret' });
       fail();
     } catch (e) {
       expect(e.message).toBe('id token is invalid for this user.');
@@ -493,7 +493,7 @@ describe('google auth adapter', () => {
 
   it('should not decode invalid id_token', async () => {
     try {
-      await google.validateAuthData({ id: 'the_user_id', id_token: 'the_token' }, {});
+      await google.validateAuthData({ id: 'the_user_id', id_token: 'the_token' }, { clientId: 'secret' });
       fail();
     } catch (e) {
       expect(e.message).toBe('provided token does not decode as JWT');
@@ -644,6 +644,15 @@ describe('google auth adapter', () => {
       fail();
     } catch (e) {
       expect(e.message).toBe('auth data is invalid for this user.');
+    }
+  });
+
+  it('should throw error when clientId is not configured', async () => {
+    try {
+      await google.validateAuthData({ id: 'the_user_id', id_token: 'the_token' }, {});
+      fail('should have thrown');
+    } catch (e) {
+      expect(e.message).toBe('Google auth adapter requires a configured clientId.');
     }
   });
 });
@@ -1202,6 +1211,15 @@ describe('apple signin auth adapter', () => {
       expect(e.message).toBe('auth data is invalid for this user.');
     }
   });
+
+  it('should throw error when clientId is not configured', async () => {
+    try {
+      await apple.validateAuthData({ id: 'the_user_id', token: 'the_token' }, {});
+      fail('should have thrown');
+    } catch (e) {
+      expect(e.message).toBe('Apple auth adapter requires a configured clientId.');
+    }
+  });
 });
 
 describe('phant auth adapter', () => {
@@ -1568,6 +1586,15 @@ describe('facebook limited auth adapter', () => {
       fail();
     } catch (e) {
       expect(e.message).toBe('auth data is invalid for this user.');
+    }
+  });
+
+  it('should throw error when clientId is not configured', async () => {
+    try {
+      await facebook.validateAuthData({ id: 'the_user_id', token: 'the_token' }, {});
+      fail('should have thrown');
+    } catch (e) {
+      expect(e.message).toBe('Facebook auth adapter requires a configured clientId.');
     }
   });
 });
