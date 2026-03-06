@@ -1,3 +1,10 @@
+# [9.5.0-alpha.10](https://github.com/parse-community/parse-server/compare/9.5.0-alpha.9...9.5.0-alpha.10) (2026-03-06)
+
+
+### Bug Fixes
+
+* GraphQL `__type` introspection bypass via inline fragments when public introspection is disabled ([GHSA-q5q9-2rhp-33qw](https://github.com/parse-community/parse-server/security/advisories/GHSA-q5q9-2rhp-33qw)) ([#10111](https://github.com/parse-community/parse-server/issues/10111)) ([61261a5](https://github.com/parse-community/parse-server/commit/61261a5aa15c95a22a87a5a9c53077059ad49d15))
+
 # [9.5.0-alpha.9](https://github.com/parse-community/parse-server/compare/9.5.0-alpha.8...9.5.0-alpha.9) (2026-03-06)
 
 
