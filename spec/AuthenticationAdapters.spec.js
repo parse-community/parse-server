@@ -1255,19 +1255,9 @@ describe('facebook limited auth adapter', () => {
   const authUtils = require('../lib/Adapters/Auth/utils');
 
   // TODO: figure out a way to run this test alongside facebook classic tests
-  xit('(using client id as string) should throw error with missing id_token', async () => {
+  xit('should throw error with missing id_token', async () => {
     try {
-      await facebook.validateAuthData({}, { clientId: 'secret' });
-      fail();
-    } catch (e) {
-      expect(e.message).toBe('Facebook auth is not configured.');
-    }
-  });
-
-  // TODO: figure out a way to run this test alongside facebook classic tests
-  xit('(using client id as array) should throw error with missing id_token', async () => {
-    try {
-      await facebook.validateAuthData({}, { clientId: ['secret'] });
+      await facebook.validateAuthData({}, { appIds: ['secret'] });
       fail();
     } catch (e) {
       expect(e.message).toBe('Facebook auth is not configured.');
@@ -1278,7 +1268,7 @@ describe('facebook limited auth adapter', () => {
     try {
       await facebook.validateAuthData(
         { id: 'the_user_id', token: 'the_token' },
-        { clientId: 'secret' }
+        { appIds: ['secret'] }
       );
       fail();
     } catch (e) {
@@ -1295,7 +1285,7 @@ describe('facebook limited auth adapter', () => {
 
       await facebook.validateAuthData(
         { id: 'the_user_id', token: 'the_token' },
-        { clientId: 'secret' }
+        { appIds: ['secret'] }
       );
       fail();
     } catch (e) {
@@ -1320,7 +1310,7 @@ describe('facebook limited auth adapter', () => {
 
     const result = await facebook.validateAuthData(
       { id: 'the_user_id', token: 'the_token' },
-      { clientId: 'secret' }
+      { appIds: ['secret'] }
     );
     expect(result).toEqual(fakeClaim);
     expect(jwt.verify.calls.first().args[2].algorithms).toEqual(['RS256']);
@@ -1341,7 +1331,7 @@ describe('facebook limited auth adapter', () => {
 
     await facebook.validateAuthData(
       { id: 'the_user_id', token: 'the_token' },
-      { clientId: 'secret' }
+      { appIds: ['secret'] }
     );
     expect(jwt.verify.calls.first().args[2].algorithms).toEqual(['RS256']);
   });
@@ -1355,7 +1345,7 @@ describe('facebook limited auth adapter', () => {
     try {
       await facebook.validateAuthData(
         { id: 'the_user_id', token: 'the_token' },
-        { clientId: 'secret' }
+        { appIds: ['secret'] }
       );
       fail();
     } catch (e) {
@@ -1363,19 +1353,7 @@ describe('facebook limited auth adapter', () => {
     }
   });
 
-  it('(using client id as array) should not verify invalid id_token', async () => {
-    try {
-      await facebook.validateAuthData(
-        { id: 'the_user_id', token: 'the_token' },
-        { clientId: ['secret'] }
-      );
-      fail();
-    } catch (e) {
-      expect(e.message).toBe('provided token does not decode as JWT');
-    }
-  });
-
-  it_id('4bcb1a1a-11f8-4e12-a3f6-73f7e25e355a')(it)('using client id as string) should verify id_token (facebook.com)', async () => {
+  it_id('4bcb1a1a-11f8-4e12-a3f6-73f7e25e355a')(it)('should verify id_token (facebook.com)', async () => {
     const fakeClaim = {
       iss: 'https://www.facebook.com',
       aud: 'secret',
@@ -1390,12 +1368,12 @@ describe('facebook limited auth adapter', () => {
 
     const result = await facebook.validateAuthData(
       { id: 'the_user_id', token: 'the_token' },
-      { clientId: 'secret' }
+      { appIds: ['secret'] }
     );
     expect(result).toEqual(fakeClaim);
   });
 
-  it_id('c521a272-2ac2-4d8b-b5ed-ea250336d8b1')(it)('(using client id as array) should verify id_token (facebook.com)', async () => {
+  it_id('e3f16404-18e9-4a87-a555-4710cfbdac67')(it)('(using multiple appIds) should verify id_token (facebook.com)', async () => {
     const fakeClaim = {
       iss: 'https://www.facebook.com',
       aud: 'secret',
@@ -1410,32 +1388,12 @@ describe('facebook limited auth adapter', () => {
 
     const result = await facebook.validateAuthData(
       { id: 'the_user_id', token: 'the_token' },
-      { clientId: ['secret'] }
+      { appIds: ['secret', 'secret 123'] }
     );
     expect(result).toEqual(fakeClaim);
   });
 
-  it_id('e3f16404-18e9-4a87-a555-4710cfbdac67')(it)('(using client id as array with multiple items) should verify id_token (facebook.com)', async () => {
-    const fakeClaim = {
-      iss: 'https://www.facebook.com',
-      aud: 'secret',
-      exp: Date.now(),
-      sub: 'the_user_id',
-    };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
-    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
-    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
-    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
-
-    const result = await facebook.validateAuthData(
-      { id: 'the_user_id', token: 'the_token' },
-      { clientId: ['secret', 'secret 123'] }
-    );
-    expect(result).toEqual(fakeClaim);
-  });
-
-  it_id('549c33a1-3a6b-4732-8cf6-8f010ad4569c')(it)('(using client id as string) should throw error with with invalid jwt issuer (facebook.com)', async () => {
+  it_id('549c33a1-3a6b-4732-8cf6-8f010ad4569c')(it)('should throw error with with invalid jwt issuer (facebook.com)', async () => {
     const fakeClaim = {
       iss: 'https://not.facebook.com',
       sub: 'the_user_id',
@@ -1449,7 +1407,7 @@ describe('facebook limited auth adapter', () => {
     try {
       await facebook.validateAuthData(
         { id: 'the_user_id', token: 'the_token' },
-        { clientId: 'secret' }
+        { appIds: ['secret'] }
       );
       fail();
     } catch (e) {
@@ -1461,87 +1419,14 @@ describe('facebook limited auth adapter', () => {
 
   // TODO: figure out a way to generate our own facebook signed tokens, perhaps with a parse facebook account
   // and a private key
-  xit('(using client id as array) should throw error with with invalid jwt issuer', async () => {
-    const fakeClaim = {
-      iss: 'https://not.facebook.com',
-      sub: 'the_user_id',
-    };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
-    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
-    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
-    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
-
-    try {
-      await facebook.validateAuthData(
-        {
-          id: 'INSERT ID HERE',
-          token: 'INSERT FACEBOOK TOKEN HERE WITH INVALID JWT ISSUER',
-        },
-        { clientId: ['INSERT CLIENT ID HERE'] }
-      );
-      fail();
-    } catch (e) {
-      expect(e.message).toBe(
-        'id token not issued by correct OpenID provider - expected: https://www.facebook.com | from: https://not.facebook.com'
-      );
-    }
-  });
-
-  it('(using client id as string)  with token', async () => {
-    const fakeClaim = {
-      iss: 'https://not.facebook.com',
-      sub: 'the_user_id',
-    };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
-    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
-    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
-    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
-
-    try {
-      await facebook.validateAuthData(
-        {
-          id: 'INSERT ID HERE',
-          token: 'INSERT FACEBOOK TOKEN HERE WITH INVALID JWT ISSUER',
-        },
-        { clientId: 'INSERT CLIENT ID HERE' }
-      );
-      fail();
-    } catch (e) {
-      expect(e.message).toBe(
-        'id token not issued by correct OpenID provider - expected: https://www.facebook.com | from: https://not.facebook.com'
-      );
-    }
-  });
-
-  // TODO: figure out a way to generate our own facebook signed tokens, perhaps with a parse facebook account
-  // and a private key
-  xit('(using client id as string) should throw error with invalid jwt clientId', async () => {
+  xit('should throw error with invalid jwt audience', async () => {
     try {
       await facebook.validateAuthData(
         {
           id: 'INSERT ID HERE',
           token: 'INSERT FACEBOOK TOKEN HERE',
         },
-        { clientId: 'secret' }
-      );
-      fail();
-    } catch (e) {
-      expect(e.message).toBe('jwt audience invalid. expected: secret');
-    }
-  });
-
-  // TODO: figure out a way to generate our own facebook signed tokens, perhaps with a parse facebook account
-  // and a private key
-  xit('(using client id as array) should throw error with invalid jwt clientId', async () => {
-    try {
-      await facebook.validateAuthData(
-        {
-          id: 'INSERT ID HERE',
-          token: 'INSERT FACEBOOK TOKEN HERE',
-        },
-        { clientId: ['secret'] }
+        { appIds: ['secret'] }
       );
       fail();
     } catch (e) {
@@ -1558,7 +1443,7 @@ describe('facebook limited auth adapter', () => {
           id: 'invalid user',
           token: 'INSERT FACEBOOK TOKEN HERE',
         },
-        { clientId: 'INSERT CLIENT ID HERE' }
+        { appIds: ['INSERT APP ID HERE'] }
       );
       fail();
     } catch (e) {
@@ -1569,7 +1454,7 @@ describe('facebook limited auth adapter', () => {
   it_id('c194d902-e697-46c9-a303-82c2d914473c')(it)('should throw error with with invalid user id (facebook.com)', async () => {
     const fakeClaim = {
       iss: 'https://www.facebook.com',
-      aud: 'invalid_client_id',
+      aud: 'invalid_app_id',
       sub: 'a_different_user_id',
     };
     const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
@@ -1581,7 +1466,7 @@ describe('facebook limited auth adapter', () => {
     try {
       await facebook.validateAuthData(
         { id: 'the_user_id', token: 'the_token' },
-        { clientId: 'secret' }
+        { appIds: ['secret'] }
       );
       fail();
     } catch (e) {
@@ -1589,12 +1474,12 @@ describe('facebook limited auth adapter', () => {
     }
   });
 
-  it('should throw error when clientId is not configured', async () => {
+  it('should throw error when appIds is not configured for Limited Login', async () => {
     try {
       await facebook.validateAuthData({ id: 'the_user_id', token: 'the_token' }, {});
       fail('should have thrown');
     } catch (e) {
-      expect(e.message).toBe('Facebook auth adapter requires a configured clientId.');
+      expect(e.message).toBe('Facebook auth adapter requires configured appIds.');
     }
   });
 });
