@@ -30,7 +30,7 @@ module.exports = [
     optionKey: 'readOnlyMasterKeyIps',
     changeNewDefault: '["127.0.0.1", "::1"]',
     solution: "Set 'readOnlyMasterKeyIps' to the IP addresses that should be allowed to use the read-only master key, or to '[\"127.0.0.1\", \"::1\"]' to restrict access to localhost.",
-  }, 
+  },
   {
     optionKey: 'mountPlayground',
     changeNewKey: '',
