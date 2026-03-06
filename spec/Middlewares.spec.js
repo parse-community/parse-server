@@ -7,6 +7,7 @@ const AppCachePut = (appId, config) =>
     ...config,
     maintenanceKeyIpsStore: new Map(),
     masterKeyIpsStore: new Map(),
+    readOnlyMasterKeyIpsStore: new Map(),
   });
 
 describe('middlewares', () => {
@@ -205,6 +206,55 @@ describe('middlewares', () => {
     fakeReq.headers['x-parse-master-key'] = 'masterKey';
     await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
     expect(fakeReq.auth.isMaster).toBe(true);
+  });
+
+  it('should not succeed and log if the ip does not belong to readOnlyMasterKeyIps list', async () => {
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'error').and.callFake(() => {});
+    AppCachePut(fakeReq.body._ApplicationId, {
+      masterKeyIps: ['0.0.0.0/0'],
+      readOnlyMasterKey: 'readOnlyMasterKey',
+      readOnlyMasterKeyIps: ['10.0.0.1'],
+    });
+    fakeReq.ip = '127.0.0.1';
+    fakeReq.headers['x-parse-application-id'] = fakeReq.body._ApplicationId;
+    fakeReq.headers['x-parse-master-key'] = 'readOnlyMasterKey';
+
+    const error = await middlewares.handleParseHeaders(fakeReq, fakeRes, () => {}).catch(e => e);
+
+    expect(error).toBeDefined();
+    expect(error.message).toEqual('unauthorized');
+    expect(logger.error).toHaveBeenCalledWith(
+      `Request using read-only master key rejected as the request IP address '127.0.0.1' is not set in Parse Server option 'readOnlyMasterKeyIps'.`
+    );
+  });
+
+  it('should succeed if the ip does belong to readOnlyMasterKeyIps list', async () => {
+    AppCachePut(fakeReq.body._ApplicationId, {
+      masterKeyIps: ['0.0.0.0/0'],
+      readOnlyMasterKey: 'readOnlyMasterKey',
+      readOnlyMasterKeyIps: ['10.0.0.1'],
+    });
+    fakeReq.ip = '10.0.0.1';
+    fakeReq.headers['x-parse-application-id'] = fakeReq.body._ApplicationId;
+    fakeReq.headers['x-parse-master-key'] = 'readOnlyMasterKey';
+    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
+    expect(fakeReq.auth.isMaster).toBe(true);
+    expect(fakeReq.auth.isReadOnly).toBe(true);
+  });
+
+  it('should allow any ip to use readOnlyMasterKey if readOnlyMasterKeyIps is 0.0.0.0/0', async () => {
+    AppCachePut(fakeReq.body._ApplicationId, {
+      masterKeyIps: ['0.0.0.0/0'],
+      readOnlyMasterKey: 'readOnlyMasterKey',
+      readOnlyMasterKeyIps: ['0.0.0.0/0'],
+    });
+    fakeReq.ip = '10.0.0.1';
+    fakeReq.headers['x-parse-application-id'] = fakeReq.body._ApplicationId;
+    fakeReq.headers['x-parse-master-key'] = 'readOnlyMasterKey';
+    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
+    expect(fakeReq.auth.isMaster).toBe(true);
+    expect(fakeReq.auth.isReadOnly).toBe(true);
   });
 
   it('can set trust proxy', async () => {

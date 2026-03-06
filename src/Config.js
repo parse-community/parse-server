@@ -118,6 +118,7 @@ export class Config {
     maintenanceKey,
     maintenanceKeyIps,
     readOnlyMasterKey,
+    readOnlyMasterKeyIps,
     allowHeaders,
     idempotencyOptions,
     fileUpload,
@@ -158,6 +159,7 @@ export class Config {
     this.validateSessionConfiguration(sessionLength, expireInactiveSessions);
     this.validateIps('masterKeyIps', masterKeyIps);
     this.validateIps('maintenanceKeyIps', maintenanceKeyIps);
+    this.validateIps('readOnlyMasterKeyIps', readOnlyMasterKeyIps);
     this.validateDefaultLimit(defaultLimit);
     this.validateMaxLimit(maxLimit);
     this.validateAllowHeaders(allowHeaders);

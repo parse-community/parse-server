@@ -270,6 +270,16 @@ export async function handleParseHeaders(req, res, next) {
     req.config.readOnlyMasterKey &&
     isReadOnlyMaster
   ) {
+    if (!checkIp(clientIp, req.config.readOnlyMasterKeyIps || [], req.config.readOnlyMasterKeyIpsStore)) {
+      const log = req.config?.loggerController || defaultLogger;
+      log.error(
+        `Request using read-only master key rejected as the request IP address '${clientIp}' is not set in Parse Server option 'readOnlyMasterKeyIps'.`
+      );
+      const error = new Error();
+      error.status = 403;
+      error.message = 'unauthorized';
+      throw error;
+    }
     req.auth = new auth.Auth({
       config: req.config,
       installationId: info.installationId,
