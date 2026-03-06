@@ -705,6 +705,39 @@ async function benchmarkConcurrentQueryMemory(name) {
 }
 
 /**
+ * Benchmark: Query $regex
+ *
+ * Measures a standard Parse.Query.find() with a $regex constraint.
+ * Each iteration uses a different regex to avoid database query cache hits.
+ */
+async function benchmarkQueryRegex(name) {
+  // Seed objects that will match the various regex patterns
+  const objects = [];
+  for (let i = 0; i < 1_000; i++) {
+    const obj = new Parse.Object('BenchmarkRegex');
+    obj.set('field', `BenchRegex_${i} data`);
+    objects.push(obj);
+  }
+  await Parse.Object.saveAll(objects);
+
+  let counter = 0;
+
+  const bases = ['^BenchRegex_', 'BenchRegex_', '[a-z]+_'];
+
+  return measureOperation({
+    name,
+    iterations: 1_000,
+    operation: async () => {
+      const idx = counter++;
+      const regex = bases[idx % bases.length] + idx;
+      const query = new Parse.Query('BenchmarkRegex');
+      query._addCondition('field', '$regex', regex);
+      await query.find();
+    },
+  });
+}
+
+/**
  * Benchmark: LiveQuery $regex end-to-end
  *
  * Measures the full round-trip of a LiveQuery subscription with a $regex constraint:
@@ -733,7 +766,7 @@ async function benchmarkLiveQueryRegex(name) {
 
   return measureOperation({
     name,
-    iterations: 30,
+    iterations: 500,
     operation: async () => {
       const idx = counter++;
       const pattern = patterns[idx % patterns.length];
@@ -786,6 +819,7 @@ async function runBenchmarks() {
       { name: 'Query.include (nested pointers)', fn: benchmarkQueryWithIncludeNested },
       { name: 'Query.find (large result, GC pressure)', fn: benchmarkLargeResultMemory },
       { name: 'Query.find (concurrent, GC pressure)', fn: benchmarkConcurrentQueryMemory },
+      { name: 'Query $regex', fn: benchmarkQueryRegex },
       { name: 'LiveQuery $regex', fn: benchmarkLiveQueryRegex },
     ];
 
