@@ -3,7 +3,7 @@
  *
  * @class GoogleAdapter
  * @param {Object} options - The adapter configuration options.
- * @param {string} options.clientId - Your Google application Client ID. Required for authentication.
+ * @param {string} options.clientId - Your Google application Client ID.
  * @param {number} [options.cacheMaxEntries] - Maximum number of JWKS cache entries. Default: 5.
  * @param {number} [options.cacheMaxAge] - Maximum age of JWKS cache entries in ms. Default: 3600000 (1 hour).
  *
