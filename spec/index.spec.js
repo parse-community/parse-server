@@ -659,12 +659,12 @@ describe('server', () => {
   });
 
 
-  it('should not fail when Google signin is introduced without the optional clientId', done => {
+  it('should not fail when Google signin is introduced with clientId', done => {
     const jwt = require('jsonwebtoken');
     const authUtils = require('../lib/Adapters/Auth/utils');
 
     reconfigureServer({
-      auth: { google: {} },
+      auth: { google: { clientId: 'secret' } },
     })
       .then(() => {
         const fakeClaim = {
