@@ -117,6 +117,23 @@ class CheckGroupServerConfig extends CheckGroup {
           }
         },
       }),
+      new Check({
+        title: 'Read-only master key IP range restricted',
+        warning:
+          'The read-only master key can be used from any IP address, which increases the attack surface if the key is compromised.',
+        solution:
+          "Change Parse Server configuration to 'readOnlyMasterKeyIps: [\"127.0.0.1\", \"::1\"]' to restrict access to localhost, or set it to a list of specific IP addresses.",
+        check: () => {
+          if (!config.readOnlyMasterKey) {
+            return;
+          }
+          const ips = config.readOnlyMasterKeyIps || [];
+          const wildcards = ['0.0.0.0/0', '0.0.0.0', '::/0', '::', '::0'];
+          if (ips.some(ip => wildcards.includes(ip))) {
+            throw 1;
+          }
+        },
+      }),
     ];
   }
 }

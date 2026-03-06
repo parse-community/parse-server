@@ -137,6 +137,7 @@ class ParseServer {
     this.config = Config.put(Object.assign({}, options, allControllers));
     this.config.masterKeyIpsStore = new Map();
     this.config.maintenanceKeyIpsStore = new Map();
+    this.config.readOnlyMasterKeyIpsStore = new Map();
     logging.setLogger(allControllers.loggerController);
   }
 

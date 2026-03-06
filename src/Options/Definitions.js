@@ -486,6 +486,12 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_READ_ONLY_MASTER_KEY',
     help: 'Read-only key, which has the same capabilities as MasterKey without writes',
   },
+  readOnlyMasterKeyIps: {
+    env: 'PARSE_SERVER_READ_ONLY_MASTER_KEY_IPS',
+    help: "(Optional) Restricts the use of read-only master key permissions to a list of IP addresses or ranges.<br><br>This option accepts a list of single IP addresses, for example `['10.0.0.1', '10.0.0.2']`. You can also use CIDR notation to specify an IP address range, for example `['10.0.1.0/24']`.<br><br><b>Special scenarios:</b><br>- Setting an empty array `[]` means that the read-only master key cannot be used even in Parse Server Cloud Code. This value cannot be set via an environment variable as there is no way to pass an empty array to Parse Server via an environment variable.<br>- Setting `['0.0.0.0/0', '::0']` means to allow any IPv4 and IPv6 address to use the read-only master key and effectively disables the IP filter.<br><br><b>Considerations:</b><br>- IPv4 and IPv6 addresses are not compared against each other. Each IP version (IPv4 and IPv6) needs to be considered separately. For example, `['0.0.0.0/0']` allows any IPv4 address and blocks every IPv6 address. Conversely, `['::0']` allows any IPv6 address and blocks every IPv4 address.<br>- Keep in mind that the IP version in use depends on the network stack of the environment in which Parse Server runs. A local environment may use a different IP version than a remote environment. For example, it's possible that locally the value `['0.0.0.0/0']` allows the request IP because the environment is using IPv4, but when Parse Server is deployed remotely the request IP is blocked because the remote environment is using IPv6.<br>- When setting the option via an environment variable the notation is a comma-separated string, for example `\"0.0.0.0/0,::0\"`.<br>- IPv6 zone indices (`%` suffix) are not supported, for example `fe80::1%eth0`, `fe80::1%1` or `::1%lo`.<br><br>Defaults to `['0.0.0.0/0', '::0']` which means that any IP address is allowed to use the read-only master key. It is recommended to set this option to `['127.0.0.1', '::1']` to restrict access to `localhost`.",
+    action: parsers.arrayParser,
+    default: ['0.0.0.0/0', '::0'],
+  },
   requestContextMiddleware: {
     env: 'PARSE_SERVER_REQUEST_CONTEXT_MIDDLEWARE',
     help: 'Options to customize the request context using inversion of control/dependency injection.',
