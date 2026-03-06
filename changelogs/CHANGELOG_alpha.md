@@ -1,3 +1,10 @@
+# [9.5.0-alpha.9](https://github.com/parse-community/parse-server/compare/9.5.0-alpha.8...9.5.0-alpha.9) (2026-03-06)
+
+
+### Bug Fixes
+
+* File metadata endpoint bypasses `beforeFind` / `afterFind` trigger authorization ([GHSA-hwx8-q9cg-mqmc](https://github.com/parse-community/parse-server/security/advisories/GHSA-hwx8-q9cg-mqmc)) ([#10106](https://github.com/parse-community/parse-server/issues/10106)) ([72e7707](https://github.com/parse-community/parse-server/commit/72e7707ac17b9df888cc20732583411544adcd36))
+
 # [9.5.0-alpha.8](https://github.com/parse-community/parse-server/compare/9.5.0-alpha.7...9.5.0-alpha.8) (2026-03-05)
 
 
