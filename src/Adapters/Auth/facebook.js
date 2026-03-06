@@ -52,8 +52,6 @@
  *   - `>= 6.5.6 < 7`
  *   - `>= 7.0.1`
  *
- * Secure authentication is recommended to ensure proper data protection and compliance with Facebook's guidelines.
- *
  * @see {@link https://developers.facebook.com/docs/facebook-login/limited-login/ Facebook Limited Login}
  * @see {@link https://developers.facebook.com/docs/facebook-login/facebook-login-for-business/ Facebook Login for Business}
  */
@@ -131,7 +129,14 @@ const getFacebookKeyByKeyId = async (keyId, cacheMaxEntries, cacheMaxAge) => {
   return key;
 };
 
-const verifyIdToken = async ({ token, id }, { clientId, cacheMaxEntries, cacheMaxAge }) => {
+const verifyIdToken = async ({ token, id }, { appIds, cacheMaxEntries, cacheMaxAge }) => {
+  if (!Array.isArray(appIds) || !appIds.length) {
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      'Facebook auth is not configured.'
+    );
+  }
+
   if (!token) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'id token is invalid for this user.');
   }
@@ -150,7 +155,7 @@ const verifyIdToken = async ({ token, id }, { clientId, cacheMaxEntries, cacheMa
     jwtClaims = jwt.verify(token, signingKey, {
       algorithms: ['RS256'],
       // the audience can be checked against a string, a regular expression or a list of strings and/or regular expressions.
-      audience: clientId,
+      audience: appIds,
     });
   } catch (exception) {
     const message = exception.message;
