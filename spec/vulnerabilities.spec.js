@@ -51,7 +51,8 @@ describe('Vulnerabilities', () => {
     });
 
     describe('legacy session upgrade for user with poisoned object ID', () => {
-      it('refuses legacy session upgrade for user with poisoned object ID', async () => {
+      // Legacy session tokens (_session_token on _User) are a MongoDB-only legacy feature
+      it_only_db('mongo')('refuses legacy session upgrade for user with poisoned object ID', async () => {
         const parseServer = await global.reconfigureServer();
         const databaseController = parseServer.config.databaseController;
         const poisonedId = 'role:legacy';
