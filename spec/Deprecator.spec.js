@@ -103,4 +103,50 @@ describe('Deprecator', () => {
       })
     );
   });
+
+  it('logs deprecation for removed key when option is set', async () => {
+    deprecations = [{ optionKey: 'exampleKey', changeNewKey: '', solution: 'Use something else.' }];
+
+    spyOn(Deprecator, '_getDeprecations').and.callFake(() => deprecations);
+    const logger = require('../lib/logger').logger;
+    const logSpy = spyOn(logger, 'warn').and.callFake(() => {});
+
+    await reconfigureServer({ exampleKey: true });
+    expect(logSpy).toHaveBeenCalledWith(
+      `DeprecationWarning: The Parse Server option '${deprecations[0].optionKey}' is deprecated and will be removed in a future version. ${deprecations[0].solution}`
+    );
+  });
+
+  it('does not log deprecation for removed key when option is not set', async () => {
+    deprecations = [{ optionKey: 'exampleKey', changeNewKey: '', solution: 'Use something else.' }];
+
+    spyOn(Deprecator, '_getDeprecations').and.callFake(() => deprecations);
+    const logSpy = spyOn(Deprecator, '_logOption').and.callFake(() => {});
+
+    await reconfigureServer();
+    expect(logSpy).not.toHaveBeenCalled();
+  });
+
+  it('logs deprecation for mountPlayground when set', async () => {
+    const logSpy = spyOn(Deprecator, '_logOption').and.callFake(() => {});
+
+    await reconfigureServer({ mountPlayground: true, mountGraphQL: true });
+    expect(logSpy).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        optionKey: 'mountPlayground',
+        changeNewKey: '',
+      })
+    );
+  });
+
+  it('does not log deprecation for mountPlayground when not set', async () => {
+    const logSpy = spyOn(Deprecator, '_logOption').and.callFake(() => {});
+
+    await reconfigureServer();
+    expect(logSpy).not.toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        optionKey: 'mountPlayground',
+      })
+    );
+  });
 });

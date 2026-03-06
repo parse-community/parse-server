@@ -1,3 +1,17 @@
+# [9.5.0-alpha.13](https://github.com/parse-community/parse-server/compare/9.5.0-alpha.12...9.5.0-alpha.13) (2026-03-06)
+
+
+### Features
+
+* Deprecate GraphQL Playground that exposes master key in HTTP response  ([#10112](https://github.com/parse-community/parse-server/issues/10112)) ([d54d800](https://github.com/parse-community/parse-server/commit/d54d800f596f1937701f5bd57c81104f102bc3ae))
+
+# [9.5.0-alpha.12](https://github.com/parse-community/parse-server/compare/9.5.0-alpha.11...9.5.0-alpha.12) (2026-03-06)
+
+
+### Features
+
+* Add server option `readOnlyMasterKeyIps` to restrict `readOnlyMasterKey` by IP ([#10115](https://github.com/parse-community/parse-server/issues/10115)) ([cbff6b4](https://github.com/parse-community/parse-server/commit/cbff6b42a0b4f02552457f04a8757ac2376d3e04))
+
 # [9.5.0-alpha.11](https://github.com/parse-community/parse-server/compare/9.5.0-alpha.10...9.5.0-alpha.11) (2026-03-06)
 
 
