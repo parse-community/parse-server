@@ -9,8 +9,8 @@ var RE2_CACHE_MAX = 1000;
 function compileSafeRegex(pattern, flags) {
   var key = flags + ':' + pattern;
   var cached = re2Cache.get(key);
-  if (cached !== undefined) return cached;
-  if (re2Cache.size >= RE2_CACHE_MAX) re2Cache.clear();
+  if (cached !== undefined) { return cached; }
+  if (re2Cache.size >= RE2_CACHE_MAX) { re2Cache.clear(); }
   try {
     var compiled = RE2JS.compile(pattern, flags);
     re2Cache.set(key, compiled);
@@ -313,9 +313,9 @@ function matchesKeyConstraints(object, key, constraints) {
         var regexString = typeof compareTo === 'object' ? compareTo.source : compareTo;
         var regexOptions = typeof compareTo === 'object' ? compareTo.flags : (constraints.$options || '');
         var re2Flags = 0;
-        if (regexOptions.includes('i')) re2Flags |= RE2JS.CASE_INSENSITIVE;
-        if (regexOptions.includes('m')) re2Flags |= RE2JS.MULTILINE;
-        if (regexOptions.includes('s')) re2Flags |= RE2JS.DOTALL;
+        if (regexOptions.includes('i')) { re2Flags |= RE2JS.CASE_INSENSITIVE; }
+        if (regexOptions.includes('m')) { re2Flags |= RE2JS.MULTILINE; }
+        if (regexOptions.includes('s')) { re2Flags |= RE2JS.DOTALL; }
         var re2 = compileSafeRegex(regexString, re2Flags);
         if (!re2 || !re2.matcher(object[key] || '').find()) {
           return false;
