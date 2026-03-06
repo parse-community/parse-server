@@ -23,6 +23,7 @@ const LOG_ITERATIONS = false;
 
 // Parse Server instance
 let parseServer;
+let httpServer;
 let mongoClient;
 let core;
 
@@ -48,6 +49,7 @@ async function initializeParseServer() {
     allowClientClassCreation: true,
     logLevel: 'error', // Minimal logging for performance
     verbose: false,
+    liveQuery: { classNames: ['BenchmarkLiveQuery'] },
   });
 
   app.use('/parse', parseServer.app);
@@ -703,6 +705,55 @@ async function benchmarkConcurrentQueryMemory(name) {
 }
 
 /**
+ * Benchmark: LiveQuery $regex end-to-end
+ *
+ * Measures the full round-trip of a LiveQuery subscription with a $regex constraint:
+ * subscribe with a unique regex pattern, save an object that matches, and measure
+ * the time until the LiveQuery event fires. Each iteration uses a different regex
+ * to avoid cache hits on the RE2JS compile step.
+ */
+async function benchmarkLiveQueryRegex(name) {
+  // Enable LiveQuery on the running server
+  const { default: ParseServer } = require('../lib/index.js');
+  await ParseServer.createLiveQueryServer(httpServer, {
+    appId: APP_ID,
+    masterKey: MASTER_KEY,
+    serverURL: SERVER_URL,
+  });
+  Parse.liveQueryServerURL = 'ws://localhost:1337';
+
+  let counter = 0;
+
+  // Cycle through different regex patterns to avoid RE2JS cache hits
+  const patterns = [
+    { base: '^BenchLQ_', fieldValue: i => `BenchLQ_${i} data` },
+    { base: 'benchfield_', fieldValue: i => `some benchfield_${i} here` },
+    { base: '[a-z]+_benchclass_', fieldValue: i => `abc_benchclass_${i}` },
+  ];
+
+  return measureOperation({
+    name,
+    iterations: 30,
+    operation: async () => {
+      const idx = counter++;
+      const pattern = patterns[idx % patterns.length];
+      const regex = pattern.base + idx;
+      const query = new Parse.Query('BenchmarkLiveQuery');
+      query._addCondition('field', '$regex', regex);
+      const subscription = await query.subscribe();
+      const eventPromise = new Promise(resolve => {
+        subscription.on('create', () => resolve());
+      });
+      const obj = new Parse.Object('BenchmarkLiveQuery');
+      obj.set('field', pattern.fieldValue(idx));
+      await obj.save();
+      await eventPromise;
+      subscription.unsubscribe();
+    },
+  });
+}
+
+/**
  * Run all benchmarks
  */
 async function runBenchmarks() {
@@ -715,6 +766,7 @@ async function runBenchmarks() {
     // Initialize Parse Server
     logInfo('Initializing Parse Server...');
     server = await initializeParseServer();
+    httpServer = server;
 
     // Wait for server to be ready
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -734,6 +786,7 @@ async function runBenchmarks() {
       { name: 'Query.include (nested pointers)', fn: benchmarkQueryWithIncludeNested },
       { name: 'Query.find (large result, GC pressure)', fn: benchmarkLargeResultMemory },
       { name: 'Query.find (concurrent, GC pressure)', fn: benchmarkConcurrentQueryMemory },
+      { name: 'LiveQuery $regex', fn: benchmarkLiveQueryRegex },
     ];
 
     // Run each benchmark with database cleanup
