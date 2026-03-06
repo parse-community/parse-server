@@ -26,4 +26,14 @@ module.exports = [
     changeNewDefault: 'true',
     solution: "Set 'pages.encodePageParamHeaders' to 'true' to URI-encode non-ASCII characters in page parameter headers.",
   },
+  {
+    optionKey: 'mountPlayground',
+    changeNewKey: '',
+    solution: "Use Parse Dashboard as GraphQL IDE or configure a third-party GraphQL client such as Apollo Sandbox, GraphiQL, or Insomnia with custom request headers.",
+  },
+  {
+    optionKey: 'playgroundPath',
+    changeNewKey: '',
+    solution: "Use Parse Dashboard as GraphQL IDE or configure a third-party GraphQL client such as Apollo Sandbox, GraphiQL, or Insomnia with custom request headers.",
+  },
 ];

@@ -459,7 +459,7 @@ class ParseServer {
       if (options.mountPlayground) {
         parseGraphQLServer.applyPlayground(app);
         logging.getLogger().warn(
-          'GraphQL Playground is enabled and exposes the master key in the browser. The playground is a developer tool and should not be used in production. Use Parse Dashboard for production environments.'
+          'GraphQL Playground is deprecated and will be removed in a future version. It exposes the master key in the browser. Use Parse Dashboard as GraphQL IDE or configure a third-party GraphQL client with custom request headers.'
         );
       }
     }
