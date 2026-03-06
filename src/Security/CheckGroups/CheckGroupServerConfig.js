@@ -128,7 +128,7 @@ class CheckGroupServerConfig extends CheckGroup {
             return;
           }
           const ips = config.readOnlyMasterKeyIps || [];
-          const wildcards = ['0.0.0.0/0', '::/0', '::', '::0'];
+          const wildcards = ['0.0.0.0/0', '0.0.0.0', '::/0', '::', '::0'];
           if (ips.some(ip => wildcards.includes(ip))) {
             throw 1;
           }
