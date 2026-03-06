@@ -748,7 +748,7 @@ async function benchmarkQueryRegex(name) {
 async function benchmarkLiveQueryRegex(name) {
   // Enable LiveQuery on the running server
   const { default: ParseServer } = require('../lib/index.js');
-  await ParseServer.createLiveQueryServer(httpServer, {
+  const liveQueryServer = await ParseServer.createLiveQueryServer(httpServer, {
     appId: APP_ID,
     masterKey: MASTER_KEY,
     serverURL: SERVER_URL,
@@ -764,26 +764,31 @@ async function benchmarkLiveQueryRegex(name) {
     { base: '[a-z]+_benchclass_', fieldValue: i => `abc_benchclass_${i}` },
   ];
 
-  return measureOperation({
-    name,
-    iterations: 500,
-    operation: async () => {
-      const idx = counter++;
-      const pattern = patterns[idx % patterns.length];
-      const regex = pattern.base + idx;
-      const query = new Parse.Query('BenchmarkLiveQuery');
-      query._addCondition('field', '$regex', regex);
-      const subscription = await query.subscribe();
-      const eventPromise = new Promise(resolve => {
-        subscription.on('create', () => resolve());
-      });
-      const obj = new Parse.Object('BenchmarkLiveQuery');
-      obj.set('field', pattern.fieldValue(idx));
-      await obj.save();
-      await eventPromise;
-      subscription.unsubscribe();
-    },
-  });
+  try {
+    return await measureOperation({
+      name,
+      iterations: 500,
+      operation: async () => {
+        const idx = counter++;
+        const pattern = patterns[idx % patterns.length];
+        const regex = pattern.base + idx;
+        const query = new Parse.Query('BenchmarkLiveQuery');
+        query._addCondition('field', '$regex', regex);
+        const subscription = await query.subscribe();
+        const eventPromise = new Promise(resolve => {
+          subscription.on('create', () => resolve());
+        });
+        const obj = new Parse.Object('BenchmarkLiveQuery');
+        obj.set('field', pattern.fieldValue(idx));
+        await obj.save();
+        await eventPromise;
+        subscription.unsubscribe();
+      },
+    });
+  } finally {
+    await liveQueryServer.shutdown();
+    Parse.liveQueryServerURL = undefined;
+  }
 }
 
 /**
