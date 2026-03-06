@@ -28,7 +28,7 @@ const getBlockList = (ipRangeList, store) => {
   if (store.get('blockList')) { return store.get('blockList'); }
   const blockList = new BlockList();
   ipRangeList.forEach(fullIp => {
-    if (fullIp === '::/0' || fullIp === '::') {
+    if (fullIp === '::/0' || fullIp === '::' || fullIp === '::0') {
       store.set('allowAllIpv6', true);
       return;
     }
