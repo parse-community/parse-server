@@ -1,3 +1,10 @@
+# [9.5.0-alpha.11](https://github.com/parse-community/parse-server/compare/9.5.0-alpha.10...9.5.0-alpha.11) (2026-03-06)
+
+
+### Bug Fixes
+
+* JWT audience validation bypass in Google, Apple, and Facebook authentication adapters ([GHSA-x6fw-778m-wr9v](https://github.com/parse-community/parse-server/security/advisories/GHSA-x6fw-778m-wr9v)) ([#10113](https://github.com/parse-community/parse-server/issues/10113)) ([9f8d3f3](https://github.com/parse-community/parse-server/commit/9f8d3f3d5591c17f9857bad035950fdff75d0ce6))
+
 # [9.5.0-alpha.10](https://github.com/parse-community/parse-server/compare/9.5.0-alpha.9...9.5.0-alpha.10) (2026-03-06)
 
 

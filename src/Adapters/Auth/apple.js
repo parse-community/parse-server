@@ -73,6 +73,13 @@ const getAppleKeyByKeyId = async (keyId, cacheMaxEntries, cacheMaxAge) => {
 };
 
 const verifyIdToken = async ({ token, id }, { clientId, cacheMaxEntries, cacheMaxAge }) => {
+  if (!clientId) {
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      'Apple auth is not configured.'
+    );
+  }
+
   if (!token) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `id token is invalid for this user.`);
   }
