@@ -731,7 +731,13 @@ export class FilesRouter {
         config,
         req.auth
       );
-      const data = await filesController.getMetadata(filename);
+      const data = await filesController.getMetadata(filename).catch(() => {
+        res.status(200);
+        res.json({});
+      });
+      if (!data) {
+        return;
+      }
       await triggers.maybeRunFileTrigger(
         triggers.Types.afterFind,
         { file },
