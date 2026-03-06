@@ -404,7 +404,7 @@ module.exports.ParseServerOptions = {
   },
   mountPlayground: {
     env: 'PARSE_SERVER_MOUNT_PLAYGROUND',
-    help: 'Mounts the GraphQL Playground which exposes the master key in the browser - never use this option in production',
+    help: 'Deprecated. Mounts the GraphQL Playground which is deprecated and will be removed in a future version. The playground exposes the master key in the browser. Use Parse Dashboard as GraphQL IDE or configure a third-party GraphQL client with custom request headers.',
     action: parsers.booleanParser,
     default: false,
   },
@@ -429,7 +429,7 @@ module.exports.ParseServerOptions = {
   },
   playgroundPath: {
     env: 'PARSE_SERVER_PLAYGROUND_PATH',
-    help: 'Mount path for the GraphQL Playground, defaults to /playground',
+    help: 'Deprecated. Mount path for the GraphQL Playground. The playground is deprecated and will be removed in a future version.',
     default: '/playground',
   },
   port: {

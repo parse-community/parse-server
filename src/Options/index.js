@@ -339,11 +339,11 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_GRAPHQL_PUBLIC_INTROSPECTION
   :DEFAULT: false */
   graphQLPublicIntrospection: ?boolean;
-  /* Mounts the GraphQL Playground which exposes the master key in the browser - never use this option in production
+  /* Deprecated. Mounts the GraphQL Playground which is deprecated and will be removed in a future version. The playground exposes the master key in the browser. Use Parse Dashboard as GraphQL IDE or configure a third-party GraphQL client with custom request headers.
   :ENV: PARSE_SERVER_MOUNT_PLAYGROUND
   :DEFAULT: false */
   mountPlayground: ?boolean;
-  /* Mount path for the GraphQL Playground, defaults to /playground
+  /* Deprecated. Mount path for the GraphQL Playground. The playground is deprecated and will be removed in a future version.
   :ENV: PARSE_SERVER_PLAYGROUND_PATH
   :DEFAULT: /playground */
   playgroundPath: ?string;

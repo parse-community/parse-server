@@ -77,11 +77,11 @@
  * @property {Union} middleware middleware for express server, can be string or function
  * @property {Boolean} mountGraphQL Mounts the GraphQL endpoint
  * @property {String} mountPath Mount path for the server, defaults to /parse
- * @property {Boolean} mountPlayground Mounts the GraphQL Playground which exposes the master key in the browser - never use this option in production
+ * @property {Boolean} mountPlayground Deprecated. Mounts the GraphQL Playground which is deprecated and will be removed in a future version. The playground exposes the master key in the browser. Use Parse Dashboard as GraphQL IDE or configure a third-party GraphQL client with custom request headers.
  * @property {Number} objectIdSize Sets the number of characters in generated object id's, default 10
  * @property {PagesOptions} pages The options for pages such as password reset and email verification.
  * @property {PasswordPolicyOptions} passwordPolicy The password policy for enforcing password related rules.
- * @property {String} playgroundPath Mount path for the GraphQL Playground, defaults to /playground
+ * @property {String} playgroundPath Deprecated. Mount path for the GraphQL Playground. The playground is deprecated and will be removed in a future version.
  * @property {Number} port The port to run the ParseServer, defaults to 1337.
  * @property {Boolean} preserveFileName Enable (or disable) the addition of a unique hash to the file names
  * @property {Boolean} preventLoginWithUnverifiedEmail Set to `true` to prevent a user from logging in if the email has not yet been verified and email verification is required. Supports a function with a return value of `true` or `false` for conditional prevention. The function receives a request object that includes `createdWith` to indicate whether the invocation is for `signup` or `login` and the used auth provider.<br><br>The `createdWith` values per scenario:<ul><li>Password signup: `{ action: 'signup', authProvider: 'password' }`</li><li>Auth provider signup: `{ action: 'signup', authProvider: '<provider>' }`</li><li>Password login: `{ action: 'login', authProvider: 'password' }`</li><li>Auth provider login: function not invoked; auth provider login bypasses email verification</li></ul>Default is `false`.<br>Requires option `verifyUserEmails: true`.
