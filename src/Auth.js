@@ -228,6 +228,11 @@ var getAuthForLegacySessionToken = async function ({ config, sessionToken, insta
       throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid legacy session token');
     }
     const obj = results[0];
+
+    if (typeof obj['objectId'] === 'string' && obj['objectId'].startsWith('role:')) {
+      throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid object ID.');
+    }
+
     obj.className = '_User';
     const userObject = Parse.Object.fromJSON(obj);
     return new Auth({

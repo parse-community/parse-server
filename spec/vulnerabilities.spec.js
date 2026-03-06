@@ -47,6 +47,35 @@ describe('Vulnerabilities', () => {
         ).toBeRejectedWith(new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid object ID.'));
         await new Parse.Query(Parse.User).find({ sessionToken: innocentUser.getSessionToken() });
       });
+
+    });
+
+    describe('legacy session upgrade for user with poisoned object ID', () => {
+      // Legacy session tokens (_session_token on _User) are a MongoDB-only legacy feature
+      it_only_db('mongo')('refuses legacy session upgrade for user with poisoned object ID', async () => {
+        const parseServer = await global.reconfigureServer();
+        const databaseController = parseServer.config.databaseController;
+        const poisonedId = 'role:legacy';
+        const legacyToken = 'legacy-poisoned-token';
+        // Create user with poisoned ID and legacy session token directly in DB
+        await databaseController.create('_User', {
+          objectId: poisonedId,
+          _session_token: legacyToken,
+        });
+        await expectAsync(
+          request({
+            method: 'POST',
+            url: 'http://localhost:8378/1/upgradeToRevocableSession',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Parse-Application-Id': 'test',
+              'X-Parse-REST-API-Key': 'rest',
+              'X-Parse-Session-Token': legacyToken,
+            },
+            body: JSON.stringify({}),
+          })
+        ).toBeRejected();
+      });
     });
   });
 
