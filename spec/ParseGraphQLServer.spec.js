@@ -920,6 +920,52 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
+        it('should block __type introspection inside inline fragment without master key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                query InlineFragmentBypass {
+                  ... on Query {
+                    __type(name: "User") {
+                      name
+                      kind
+                    }
+                  }
+                }
+              `,
+            });
+
+            fail('should have thrown an error');
+          } catch (e) {
+            expect(e.message).toEqual('Response not successful: Received status code 403');
+            expect(e.networkError.result.errors[0].message).toEqual('Introspection is not allowed');
+          }
+        });
+
+        it('should block __type introspection inside nested inline fragments without master key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                query NestedInlineFragmentBypass {
+                  ... on Query {
+                    ... {
+                      __type(name: "User") {
+                        name
+                        kind
+                      }
+                    }
+                  }
+                }
+              `,
+            });
+
+            fail('should have thrown an error');
+          } catch (e) {
+            expect(e.message).toEqual('Response not successful: Received status code 403');
+            expect(e.networkError.result.errors[0].message).toEqual('Introspection is not allowed');
+          }
+        });
+
         it('should allow __type introspection with master key', async () => {
           const introspection = await apolloClient.query({
             query: gql`

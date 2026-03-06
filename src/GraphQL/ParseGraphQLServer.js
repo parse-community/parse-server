@@ -16,25 +16,30 @@ import ParseGraphQLController, { ParseGraphQLConfig } from '../Controllers/Parse
 const hasTypeIntrospection = (query) => {
   try {
     const ast = parse(query);
-    // Check only root-level fields in the query
-    // Note: selection.name.value is the actual field name, so this correctly handles
-    // aliases like "myAlias: __type(...)" where name.value === "__type"
-    for (const definition of ast.definitions) {
-      if ((definition.kind === 'OperationDefinition' || definition.kind === 'FragmentDefinition') && definition.selectionSet) {
-        for (const selection of definition.selectionSet.selections) {
-          if (selection.kind === 'Field' && selection.name.value === '__type') {
-            // GraphQL's introspection __type field requires a 'name' argument
-            // This distinguishes it from potential user-defined __type fields
-            if (selection.arguments && selection.arguments.length > 0) {
-              return true;
-            }
+    const checkSelections = (selections) => {
+      for (const selection of selections) {
+        if (selection.kind === 'Field' && selection.name.value === '__type') {
+          if (selection.arguments && selection.arguments.length > 0) {
+            return true;
           }
+        }
+        if (selection.selectionSet) {
+          if (checkSelections(selection.selectionSet.selections)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+    for (const definition of ast.definitions) {
+      if (definition.selectionSet) {
+        if (checkSelections(definition.selectionSet.selections)) {
+          return true;
         }
       }
     }
     return false;
   } catch {
-    // If parsing fails, we assume it's not a valid query and let Apollo handle it
     return false;
   }
 };
