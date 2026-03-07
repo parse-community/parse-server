@@ -458,6 +458,10 @@ export class UsersRouter extends ClassesRouter {
       throw new Parse.Error(Parse.Error.EMAIL_MISSING, 'you must provide an email');
     }
 
+    if (token && typeof token !== 'string') {
+      throw new Parse.Error(Parse.Error.INVALID_VALUE, 'token must be a string');
+    }
+
     let userResults = null;
     let userData = null;
 
