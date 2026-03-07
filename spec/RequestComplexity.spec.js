@@ -8,7 +8,7 @@ describe('request complexity', () => {
   function buildNestedInQuery(depth, className = '_User') {
     let where = {};
     for (let i = 0; i < depth; i++) {
-      where = { field: { $inQuery: { className, where } } };
+      where = { username: { $inQuery: { className, where } } };
     }
     return where;
   }
@@ -16,7 +16,7 @@ describe('request complexity', () => {
   function buildNestedNotInQuery(depth, className = '_User') {
     let where = {};
     for (let i = 0; i < depth; i++) {
-      where = { field: { $notInQuery: { className, where } } };
+      where = { username: { $notInQuery: { className, where } } };
     }
     return where;
   }
@@ -24,7 +24,7 @@ describe('request complexity', () => {
   function buildNestedSelect(depth, className = '_User') {
     let where = {};
     for (let i = 0; i < depth; i++) {
-      where = { field: { $select: { query: { className, where }, key: 'objectId' } } };
+      where = { username: { $select: { query: { className, where }, key: 'username' } } };
     }
     return where;
   }
@@ -32,7 +32,7 @@ describe('request complexity', () => {
   function buildNestedDontSelect(depth, className = '_User') {
     let where = {};
     for (let i = 0; i < depth; i++) {
-      where = { field: { $dontSelect: { query: { className, where }, key: 'objectId' } } };
+      where = { username: { $dontSelect: { query: { className, where }, key: 'username' } } };
     }
     return where;
   }
