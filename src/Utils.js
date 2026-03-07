@@ -345,8 +345,13 @@ class Utils {
     const isKeyMatch = k => isMatch(k, key);
     const isValueMatch = v => isMatch(v, value);
     const stack = [obj];
+    const seen = new WeakSet();
     while (stack.length > 0) {
       const current = stack.pop();
+      if (seen.has(current)) {
+        continue;
+      }
+      seen.add(current);
       for (const [k, v] of Object.entries(current)) {
         if (key !== undefined && value === undefined && isKeyMatch(k)) {
           return true;

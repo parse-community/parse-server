@@ -271,6 +271,13 @@ describe('Vulnerabilities', () => {
         );
       });
 
+      it('handles circular references without infinite loop', () => {
+        const Utils = require('../lib/Utils');
+        const obj = { name: 'test', nested: { value: 1 } };
+        obj.nested.self = obj;
+        expect(Utils.objectContainsKeyValue(obj, 'nonexistent', undefined)).toBe(false);
+      });
+
       it('denies _bsontype:Code in file metadata after a sibling nested object', async () => {
         const str = 'Hello World!';
         const data = [];
