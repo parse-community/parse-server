@@ -5,7 +5,9 @@ function calculateQueryComplexity(document, fragments) {
   let totalFields = 0;
 
   function visitSelectionSet(selectionSet, depth, visitedFragments) {
-    if (!selectionSet) return;
+    if (!selectionSet) {
+      return;
+    }
     for (const selection of selectionSet.selections) {
       if (selection.kind === 'Field') {
         totalFields++;
@@ -20,7 +22,9 @@ function calculateQueryComplexity(document, fragments) {
         visitSelectionSet(selection.selectionSet, depth, visitedFragments);
       } else if (selection.kind === 'FragmentSpread') {
         const name = selection.name.value;
-        if (visitedFragments.has(name)) continue;
+        if (visitedFragments.has(name)) {
+          continue;
+        }
         visitedFragments.add(name);
         const fragment = fragments[name];
         if (fragment) {
@@ -49,10 +53,14 @@ function createComplexityValidationPlugin(getConfig) {
         }
 
         const config = getConfig();
-        if (!config) return;
+        if (!config) {
+          return;
+        }
 
         const { graphQLDepth, graphQLFields } = config;
-        if (graphQLDepth === -1 && graphQLFields === -1) return;
+        if (graphQLDepth === -1 && graphQLFields === -1) {
+          return;
+        }
 
         const fragments = {};
         for (const definition of requestContext.document.definitions) {

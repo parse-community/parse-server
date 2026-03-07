@@ -39,19 +39,9 @@ describe('graphql query complexity', () => {
     return response.json();
   }
 
-  function buildDeepQuery(depth) {
-    let query = '{ users { edges { node {';
-    let closing = '';
-    // Each 'users' nesting adds depth through edges > node
-    // Start at depth 4 for the base: users > edges > node > objectId
-    // We add more depth by nesting pointer fields won't work easily,
-    // so instead we build depth with repeated nested field selections
-    for (let i = 0; i < depth; i++) {
-      query += ` f${i} {`;
-      closing += ' }';
-    }
-    query += ' objectId' + closing + ' } } } }';
-    return query;
+  // Returns a query with depth 4: users(1) > edges(2) > node(3) > objectId(4)
+  function buildDeepQuery() {
+    return '{ users { edges { node { objectId } } } }';
   }
 
   function buildWideQuery(fieldCount) {
@@ -71,8 +61,7 @@ describe('graphql query complexity', () => {
       await setupGraphQL({
         requestComplexity: { graphQLDepth: 3 },
       });
-      // Depth: users(1) > edges(2) > node(3) > objectId(4) = depth 4
-      const result = await graphqlRequest('{ users { edges { node { objectId } } } }');
+      const result = await graphqlRequest(buildDeepQuery());
       expect(result.errors).toBeDefined();
       expect(result.errors[0].message).toMatch(
         /GraphQL query depth of \d+ exceeds maximum allowed depth of 3/
@@ -83,7 +72,7 @@ describe('graphql query complexity', () => {
       await setupGraphQL({
         requestComplexity: { graphQLDepth: 10 },
       });
-      const result = await graphqlRequest('{ users { edges { node { objectId } } } }');
+      const result = await graphqlRequest(buildDeepQuery());
       expect(result.errors).toBeUndefined();
     });
 
@@ -91,7 +80,7 @@ describe('graphql query complexity', () => {
       await setupGraphQL({
         requestComplexity: { graphQLDepth: 3 },
       });
-      const result = await graphqlRequest('{ users { edges { node { objectId } } } }', {
+      const result = await graphqlRequest(buildDeepQuery(), {
         ...headers,
         'X-Parse-Master-Key': 'test',
       });
@@ -102,7 +91,7 @@ describe('graphql query complexity', () => {
       await setupGraphQL({
         requestComplexity: { graphQLDepth: -1 },
       });
-      const result = await graphqlRequest('{ users { edges { node { objectId } } } }');
+      const result = await graphqlRequest(buildDeepQuery());
       expect(result.errors).toBeUndefined();
     });
   });
@@ -123,7 +112,7 @@ describe('graphql query complexity', () => {
       await setupGraphQL({
         requestComplexity: { graphQLFields: 200 },
       });
-      const result = await graphqlRequest('{ users { edges { node { objectId } } } }');
+      const result = await graphqlRequest(buildDeepQuery());
       expect(result.errors).toBeUndefined();
     });
 
