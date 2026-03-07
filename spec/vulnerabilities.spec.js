@@ -600,3 +600,41 @@ describe('Postgres regex sanitizater', () => {
     expect(response.data.results.length).toBe(0);
   });
 });
+
+describe('(GHSA-mf3j-86qx-cq5j) ReDoS via $regex in LiveQuery subscription', () => {
+  it('does not block event loop with catastrophic backtracking regex in LiveQuery', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['TestObject'] },
+      startLiveQueryServer: true,
+    });
+    const client = new Parse.LiveQueryClient({
+      applicationId: 'test',
+      serverURL: 'ws://localhost:1337',
+      javascriptKey: 'test',
+    });
+    client.open();
+    const query = new Parse.Query('TestObject');
+    // Set a catastrophic backtracking regex pattern directly
+    query._addCondition('field', '$regex', '(a+)+b');
+    const subscription = await client.subscribe(query);
+    // Create an object that would trigger regex evaluation
+    const obj = new Parse.Object('TestObject');
+    // With 30 'a's followed by 'c', an unprotected regex would hang for seconds
+    obj.set('field', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaac');
+    // Set a timeout to detect if the event loop is blocked
+    const timeout = 5000;
+    const start = Date.now();
+    const savePromise = obj.save();
+    const eventPromise = new Promise(resolve => {
+      subscription.on('create', () => resolve('matched'));
+      setTimeout(() => resolve('timeout'), timeout);
+    });
+    await savePromise;
+    const result = await eventPromise;
+    const elapsed = Date.now() - start;
+    // The regex should be rejected (not match), and the operation should complete quickly
+    expect(result).toBe('timeout');
+    expect(elapsed).toBeLessThan(timeout + 1000);
+    client.close();
+  });
+});

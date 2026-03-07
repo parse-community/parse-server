@@ -134,6 +134,18 @@ class CheckGroupServerConfig extends CheckGroup {
           }
         },
       }),
+      new Check({
+        title: 'LiveQuery regex timeout enabled',
+        warning:
+          'LiveQuery regex timeout is disabled. A malicious client can subscribe with a crafted $regex pattern that causes catastrophic backtracking, blocking the Node.js event loop and making the server unresponsive.',
+        solution:
+          "Change Parse Server configuration to 'liveQuery.regexTimeout: 100' to set a 100ms timeout for regex evaluation in LiveQuery.",
+        check: () => {
+          if (config.liveQuery?.classNames?.length > 0 && config.liveQuery?.regexTimeout === 0) {
+            throw 1;
+          }
+        },
+      }),
     ];
   }
 }

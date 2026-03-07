@@ -445,6 +445,118 @@ describe('matchesQuery', function () {
     expect(matchesQuery(player, q)).toBe(false);
   });
 
+  it('rejects $regex with catastrophic backtracking pattern (string)', function () {
+    const { setRegexTimeout } = require('../lib/LiveQuery/QueryTools');
+    setRegexTimeout(100);
+    try {
+      const player = {
+        id: new Id('Player', 'P1'),
+        name: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaac',
+      };
+
+      // (a+)+b - classic catastrophic backtracking pattern
+      let q = new Parse.Query('Player');
+      q._addCondition('name', '$regex', '(a+)+b');
+      expect(matchesQuery(player, q)).toBe(false);
+
+      // (a|a)+b - exponential alternation
+      q = new Parse.Query('Player');
+      q._addCondition('name', '$regex', '(a|a)+b');
+      expect(matchesQuery(player, q)).toBe(false);
+
+      // (a+){2,}b - nested quantifiers
+      q = new Parse.Query('Player');
+      q._addCondition('name', '$regex', '(a+){2,}b');
+      expect(matchesQuery(player, q)).toBe(false);
+    } finally {
+      setRegexTimeout(0);
+    }
+  });
+
+  it('rejects $regex with catastrophic backtracking pattern (RegExp object)', function () {
+    const { setRegexTimeout } = require('../lib/LiveQuery/QueryTools');
+    setRegexTimeout(100);
+    try {
+      const player = {
+        id: new Id('Player', 'P1'),
+        name: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaac',
+      };
+
+      const q = new Parse.Query('Player');
+      q.matches('name', /(a+)+b/);
+      expect(matchesQuery(player, q)).toBe(false);
+    } finally {
+      setRegexTimeout(0);
+    }
+  });
+
+  it('still matches safe $regex patterns with regexTimeout enabled', function () {
+    const { setRegexTimeout } = require('../lib/LiveQuery/QueryTools');
+    setRegexTimeout(100);
+    try {
+      const player = {
+        id: new Id('Player', 'P1'),
+        name: 'Player 1',
+      };
+
+      // Safe string regex
+      let q = new Parse.Query('Player');
+      q.startsWith('name', 'Play');
+      expect(matchesQuery(player, q)).toBe(true);
+
+      q = new Parse.Query('Player');
+      q.endsWith('name', ' 1');
+      expect(matchesQuery(player, q)).toBe(true);
+
+      q = new Parse.Query('Player');
+      q.contains('name', 'ayer');
+      expect(matchesQuery(player, q)).toBe(true);
+
+      // Safe RegExp object
+      q = new Parse.Query('Player');
+      q.matches('name', /Play.*/);
+      expect(matchesQuery(player, q)).toBe(true);
+
+      // Case-insensitive
+      q = new Parse.Query('Player');
+      q._addCondition('name', '$regex', 'player');
+      q._addCondition('name', '$options', 'i');
+      expect(matchesQuery(player, q)).toBe(true);
+    } finally {
+      setRegexTimeout(0);
+    }
+  });
+
+  it('matches $regex with backreferences when regexTimeout is enabled', function () {
+    const { setRegexTimeout } = require('../lib/LiveQuery/QueryTools');
+    setRegexTimeout(100);
+    try {
+      const player = {
+        id: new Id('Player', 'P1'),
+        name: 'aa',
+      };
+
+      const q = new Parse.Query('Player');
+      q._addCondition('name', '$regex', '(a)\\1');
+      expect(matchesQuery(player, q)).toBe(true);
+    } finally {
+      setRegexTimeout(0);
+    }
+  });
+
+  it('uses native RegExp when regexTimeout is 0 (disabled)', function () {
+    const { setRegexTimeout } = require('../lib/LiveQuery/QueryTools');
+    setRegexTimeout(0);
+    const player = {
+      id: new Id('Player', 'P1'),
+      name: 'Player 1',
+    };
+
+    const q = new Parse.Query('Player');
+    q.startsWith('name', 'Play');
+    expect(matchesQuery(player, q)).toBe(true);
+  });
+
   it('matches $nearSphere queries', function () {
     let q = new Parse.Query('Checkin');
     q.near('location', new Parse.GeoPoint(20, 20));

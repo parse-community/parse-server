@@ -844,6 +844,12 @@ module.exports.LiveQueryOptions = {
     env: 'PARSE_SERVER_LIVEQUERY_REDIS_URL',
     help: "parse-server's LiveQuery redisURL",
   },
+  regexTimeout: {
+    env: 'PARSE_SERVER_LIVEQUERY_REGEX_TIMEOUT',
+    help: 'Sets the maximum execution time in milliseconds for regular expression pattern matching in LiveQuery. This protects against Regular Expression Denial of Service (ReDoS) attacks where a malicious regex pattern could block the event loop. A regex that exceeds the timeout will be treated as non-matching.<br><br>The protection runs each regex evaluation in an isolated VM context with a timeout. This adds approximately 50 microseconds of overhead per regex evaluation. For most applications this is negligible, but it can add up if you have a very large number of LiveQuery subscriptions that use `$regex` on the same class. For example, 10,000 concurrent regex subscriptions would add approximately 500ms of processing time per object save event on that class.<br><br>Set to `0` to disable the timeout and use native regex evaluation without protection. Defaults to `100`.',
+    action: parsers.numberParser('regexTimeout'),
+    default: 100,
+  },
   wssAdapter: {
     env: 'PARSE_SERVER_LIVEQUERY_WSS_ADAPTER',
     help: 'Adapter module for the WebSocketServer',

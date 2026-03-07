@@ -1,3 +1,10 @@
+# [9.5.0-alpha.14](https://github.com/parse-community/parse-server/compare/9.5.0-alpha.13...9.5.0-alpha.14) (2026-03-07)
+
+
+### Bug Fixes
+
+* Regular Expression Denial of Service (ReDoS) via `$regex` query in LiveQuery ([GHSA-mf3j-86qx-cq5j](https://github.com/parse-community/parse-server/security/advisories/GHSA-mf3j-86qx-cq5j)) ([#10118](https://github.com/parse-community/parse-server/issues/10118)) ([5e113c2](https://github.com/parse-community/parse-server/commit/5e113c2128239b26551f77e127d0120502dc152a))
+
 # [9.5.0-alpha.13](https://github.com/parse-community/parse-server/compare/9.5.0-alpha.12...9.5.0-alpha.13) (2026-03-06)
 
 
