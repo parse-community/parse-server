@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
 
-function calculateQueryComplexity(document, fragments) {
+function calculateQueryComplexity(operation, fragments) {
   let maxDepth = 0;
   let totalFields = 0;
 
@@ -35,11 +35,7 @@ function calculateQueryComplexity(document, fragments) {
     }
   }
 
-  for (const definition of document.definitions) {
-    if (definition.kind === 'OperationDefinition') {
-      visitSelectionSet(definition.selectionSet, 0, new Set());
-    }
-  }
+  visitSelectionSet(operation.selectionSet, 0, new Set());
 
   return { depth: maxDepth, fields: totalFields };
 }
@@ -71,7 +67,7 @@ function createComplexityValidationPlugin(getConfig) {
         }
 
         const { depth, fields } = calculateQueryComplexity(
-          requestContext.document,
+          requestContext.operation,
           fragments
         );
 
