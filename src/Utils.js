@@ -344,16 +344,25 @@ class Utils {
     const isMatch = (a, b) => (typeof a === 'string' && new RegExp(b).test(a)) || a === b;
     const isKeyMatch = k => isMatch(k, key);
     const isValueMatch = v => isMatch(v, value);
-    for (const [k, v] of Object.entries(obj)) {
-      if (key !== undefined && value === undefined && isKeyMatch(k)) {
-        return true;
-      } else if (key === undefined && value !== undefined && isValueMatch(v)) {
-        return true;
-      } else if (key !== undefined && value !== undefined && isKeyMatch(k) && isValueMatch(v)) {
-        return true;
+    const stack = [obj];
+    const seen = new WeakSet();
+    while (stack.length > 0) {
+      const current = stack.pop();
+      if (seen.has(current)) {
+        continue;
       }
-      if (['[object Object]', '[object Array]'].includes(Object.prototype.toString.call(v))) {
-        return Utils.objectContainsKeyValue(v, key, value);
+      seen.add(current);
+      for (const [k, v] of Object.entries(current)) {
+        if (key !== undefined && value === undefined && isKeyMatch(k)) {
+          return true;
+        } else if (key === undefined && value !== undefined && isValueMatch(v)) {
+          return true;
+        } else if (key !== undefined && value !== undefined && isKeyMatch(k) && isValueMatch(v)) {
+          return true;
+        }
+        if (['[object Object]', '[object Array]'].includes(Object.prototype.toString.call(v))) {
+          stack.push(v);
+        }
       }
     }
     return false;
