@@ -9559,11 +9559,7 @@ describe('ParseGraphQLServer', () => {
             maxUploadSize: '1kb',
             requestComplexity: { includeDepth: 10 },
           });
-          parseGraphQLServer = new ParseGraphQLServer(parseServer, {
-            graphQLPath: '/graphql',
-            playgroundPath: '/playground',
-            subscriptionsPath: '/subscriptions',
-          });
+          await createGQLFromParseServer(parseServer);
           const team = new Parse.Object('Team');
           team.set('name', 'imATeam1');
           await team.save();
