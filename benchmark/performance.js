@@ -792,6 +792,38 @@ async function benchmarkLiveQueryRegex(name) {
 }
 
 /**
+ * Benchmark: Object.save with nested data (denylist scanning)
+ *
+ * Measures create latency for objects with deeply nested structures containing
+ * multiple sibling objects at each level. This exercises the requestKeywordDenylist
+ * scanner (objectContainsKeyValue) which must traverse all keys and nested values.
+ */
+async function benchmarkObjectCreateNestedDenylist(name) {
+  let counter = 0;
+
+  return measureOperation({
+    name,
+    iterations: 1_000,
+    operation: async () => {
+      const TestObject = Parse.Object.extend('BenchmarkDenylist');
+      const obj = new TestObject();
+      const idx = counter++;
+      obj.set('nested', {
+        meta1: { info: { detail: `value-${idx}` } },
+        meta2: { info: { detail: `value-${idx}` } },
+        meta3: { info: { detail: `value-${idx}` } },
+        tags: ['a', 'b', 'c'],
+        config: {
+          setting1: { enabled: true, params: { x: 1 } },
+          setting2: { enabled: false, params: { y: 2 } },
+        },
+      });
+      await obj.save();
+    },
+  });
+}
+
+/**
  * Run all benchmarks
  */
 async function runBenchmarks() {
@@ -824,6 +856,7 @@ async function runBenchmarks() {
       { name: 'Query.include (nested pointers)', fn: benchmarkQueryWithIncludeNested },
       { name: 'Query.find (large result, GC pressure)', fn: benchmarkLargeResultMemory },
       { name: 'Query.find (concurrent, GC pressure)', fn: benchmarkConcurrentQueryMemory },
+      { name: 'Object.save (nested data, denylist scan)', fn: benchmarkObjectCreateNestedDenylist },
       { name: 'Query $regex', fn: benchmarkQueryRegex },
       { name: 'LiveQuery $regex', fn: benchmarkLiveQueryRegex },
     ];
