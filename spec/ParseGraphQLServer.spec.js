@@ -9554,6 +9554,16 @@ describe('ParseGraphQLServer', () => {
         });
 
         it_only_db('mongo')('should support deep nested creation', async () => {
+          parseServer = await global.reconfigureServer({
+            maintenanceKey: 'test2',
+            maxUploadSize: '1kb',
+            requestComplexity: { includeDepth: 10 },
+          });
+          parseGraphQLServer = new ParseGraphQLServer(parseServer, {
+            graphQLPath: '/graphql',
+            playgroundPath: '/playground',
+            subscriptionsPath: '/subscriptions',
+          });
           const team = new Parse.Object('Team');
           team.set('name', 'imATeam1');
           await team.save();
