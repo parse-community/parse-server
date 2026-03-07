@@ -160,6 +160,91 @@ describe('Vulnerabilities', () => {
     });
   });
 
+  describe('(GHSA-5j86-7r7m-p8h6) Cloud function name prototype chain bypass', () => {
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+
+    it('rejects "constructor" as cloud function name', async () => {
+      const response = await request({
+        headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/constructor',
+        body: JSON.stringify({}),
+      }).catch(e => e);
+      expect(response.status).toBe(400);
+      const text = JSON.parse(response.text);
+      expect(text.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(text.error).toContain('Invalid function');
+    });
+
+    it('rejects "toString" as cloud function name', async () => {
+      const response = await request({
+        headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/toString',
+        body: JSON.stringify({}),
+      }).catch(e => e);
+      expect(response.status).toBe(400);
+      const text = JSON.parse(response.text);
+      expect(text.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(text.error).toContain('Invalid function');
+    });
+
+    it('rejects "valueOf" as cloud function name', async () => {
+      const response = await request({
+        headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/valueOf',
+        body: JSON.stringify({}),
+      }).catch(e => e);
+      expect(response.status).toBe(400);
+      const text = JSON.parse(response.text);
+      expect(text.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(text.error).toContain('Invalid function');
+    });
+
+    it('rejects "hasOwnProperty" as cloud function name', async () => {
+      const response = await request({
+        headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/hasOwnProperty',
+        body: JSON.stringify({}),
+      }).catch(e => e);
+      expect(response.status).toBe(400);
+      const text = JSON.parse(response.text);
+      expect(text.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(text.error).toContain('Invalid function');
+    });
+
+    it('rejects "__proto__.toString" as cloud function name', async () => {
+      const response = await request({
+        headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/__proto__.toString',
+        body: JSON.stringify({}),
+      }).catch(e => e);
+      expect(response.status).toBe(400);
+      const text = JSON.parse(response.text);
+      expect(text.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(text.error).toContain('Invalid function');
+    });
+
+    it('still executes a legitimately defined cloud function', async () => {
+      Parse.Cloud.define('legitimateFunction', () => 'hello');
+      const response = await request({
+        headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/legitimateFunction',
+        body: JSON.stringify({}),
+      });
+      expect(response.status).toBe(200);
+      expect(JSON.parse(response.text).result).toBe('hello');
+    });
+  });
+
   describe('Request denylist', () => {
     describe('(GHSA-q342-9w2p-57fp) Denylist bypass via sibling nested objects', () => {
       it('denies _bsontype:Code after a sibling nested object', async () => {
