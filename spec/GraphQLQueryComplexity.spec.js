@@ -147,6 +147,29 @@ describe('graphql query complexity', () => {
       );
     });
 
+    it('should count inline fragment fields toward depth and field limits', async () => {
+      await setupGraphQL({
+        requestComplexity: { graphQLFields: 3 },
+      });
+      // Inline fragment adds fields without increasing depth:
+      // users(1) > edges(2) > ... on UserConnection { edges(3) > node(4) }
+      const result = await graphqlRequest(`{
+        users {
+          edges {
+            ... on UserEdge {
+              node {
+                objectId
+              }
+            }
+          }
+        }
+      }`);
+      expect(result.errors).toBeDefined();
+      expect(result.errors[0].message).toMatch(
+        /Number of GraphQL fields \(\d+\) exceeds maximum allowed \(3\)/
+      );
+    });
+
     it('should allow unlimited fields when graphQLFields is -1', async () => {
       await setupGraphQL({
         requestComplexity: { graphQLFields: -1 },
