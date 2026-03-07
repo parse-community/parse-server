@@ -127,6 +127,26 @@ describe('graphql query complexity', () => {
       expect(result.errors).toBeUndefined();
     });
 
+    it('should count fragment fields at each spread location', async () => {
+      // With correct counting: 2 aliases (2) + 2×edges (2) + 2×node (2) + 2×objectId from fragment (2) = 8
+      // With incorrect counting (fragment once): 2 + 2 + 2 + 1 = 7
+      // Set limit to 7 so incorrect counting passes but correct counting rejects
+      await setupGraphQL({
+        requestComplexity: { graphQLFields: 7 },
+      });
+      const result = await graphqlRequest(`
+        fragment UserFields on User { objectId }
+        {
+          a1: users { edges { node { ...UserFields } } }
+          a2: users { edges { node { ...UserFields } } }
+        }
+      `);
+      expect(result.errors).toBeDefined();
+      expect(result.errors[0].message).toMatch(
+        /Number of GraphQL fields \(\d+\) exceeds maximum allowed \(7\)/
+      );
+    });
+
     it('should allow unlimited fields when graphQLFields is -1', async () => {
       await setupGraphQL({
         requestComplexity: { graphQLFields: -1 },

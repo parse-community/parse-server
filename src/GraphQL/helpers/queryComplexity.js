@@ -25,10 +25,11 @@ function calculateQueryComplexity(document, fragments) {
         if (visitedFragments.has(name)) {
           continue;
         }
-        visitedFragments.add(name);
         const fragment = fragments[name];
         if (fragment) {
-          visitSelectionSet(fragment.selectionSet, depth, visitedFragments);
+          const branchVisited = new Set(visitedFragments);
+          branchVisited.add(name);
+          visitSelectionSet(fragment.selectionSet, depth, branchVisited);
         }
       }
     }
