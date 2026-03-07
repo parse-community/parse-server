@@ -1,3 +1,26 @@
+# [9.5.0](https://github.com/parse-community/parse-server/compare/9.4.1...9.5.0) (2026-03-07)
+
+
+### Bug Fixes
+
+* `PagesRouter` path traversal allows reading files outside configured pages directory ([GHSA-hm3f-q6rw-m6wh](https://github.com/parse-community/parse-server/security/advisories/GHSA-hm3f-q6rw-m6wh)) ([#10104](https://github.com/parse-community/parse-server/issues/10104)) ([e772543](https://github.com/parse-community/parse-server/commit/e772543ad8d01bce83664566551893dffc5b8117))
+* Endpoint `/loginAs` allows `readOnlyMasterKey` to gain full read and write access as any user ([GHSA-79wj-8rqv-jvp5](https://github.com/parse-community/parse-server/security/advisories/GHSA-79wj-8rqv-jvp5)) ([#10098](https://github.com/parse-community/parse-server/issues/10098)) ([bc20945](https://github.com/parse-community/parse-server/commit/bc20945fc7cdb2e56d7c46d537d8f4baf7231303))
+* File creation and deletion bypasses `readOnlyMasterKey` write restriction ([GHSA-xfh7-phr7-gr2x](https://github.com/parse-community/parse-server/security/advisories/GHSA-xfh7-phr7-gr2x)) ([#10095](https://github.com/parse-community/parse-server/issues/10095)) ([036365a](https://github.com/parse-community/parse-server/commit/036365af6dedd10746327f46bf69408b5c56439e))
+* File metadata endpoint bypasses `beforeFind` / `afterFind` trigger authorization ([GHSA-hwx8-q9cg-mqmc](https://github.com/parse-community/parse-server/security/advisories/GHSA-hwx8-q9cg-mqmc)) ([#10106](https://github.com/parse-community/parse-server/issues/10106)) ([72e7707](https://github.com/parse-community/parse-server/commit/72e7707ac17b9df888cc20732583411544adcd36))
+* GraphQL `__type` introspection bypass via inline fragments when public introspection is disabled ([GHSA-q5q9-2rhp-33qw](https://github.com/parse-community/parse-server/security/advisories/GHSA-q5q9-2rhp-33qw)) ([#10111](https://github.com/parse-community/parse-server/issues/10111)) ([61261a5](https://github.com/parse-community/parse-server/commit/61261a5aa15c95a22a87a5a9c53077059ad49d15))
+* JWT audience validation bypass in Google, Apple, and Facebook authentication adapters ([GHSA-x6fw-778m-wr9v](https://github.com/parse-community/parse-server/security/advisories/GHSA-x6fw-778m-wr9v)) ([#10113](https://github.com/parse-community/parse-server/issues/10113)) ([9f8d3f3](https://github.com/parse-community/parse-server/commit/9f8d3f3d5591c17f9857bad035950fdff75d0ce6))
+* Malformed `$regex` query leaks database error details in API response ([GHSA-9cp7-3q5w-j92g](https://github.com/parse-community/parse-server/security/advisories/GHSA-9cp7-3q5w-j92g)) ([#10101](https://github.com/parse-community/parse-server/issues/10101)) ([9792d24](https://github.com/parse-community/parse-server/commit/9792d24b963f3b45e5ade2bbceb6f5c0b5d0251c))
+* Regular Expression Denial of Service (ReDoS) via `$regex` query in LiveQuery ([GHSA-mf3j-86qx-cq5j](https://github.com/parse-community/parse-server/security/advisories/GHSA-mf3j-86qx-cq5j)) ([#10118](https://github.com/parse-community/parse-server/issues/10118)) ([5e113c2](https://github.com/parse-community/parse-server/commit/5e113c2128239b26551f77e127d0120502dc152a))
+
+### Features
+
+* Add `Parse.File` option `maxUploadSize` to override the Parse Server option `maxUploadSize` per file upload ([#10093](https://github.com/parse-community/parse-server/issues/10093)) ([3d8807b](https://github.com/parse-community/parse-server/commit/3d8807b4eceafab92ac9c23516d564f5fce6cb8e))
+* Add security check for server option `mountPlayground` for GraphQL development ([#10103](https://github.com/parse-community/parse-server/issues/10103)) ([2ae5db1](https://github.com/parse-community/parse-server/commit/2ae5db142574b0e62f4263e2fa9a9831c966b478))
+* Add server option `readOnlyMasterKeyIps` to restrict `readOnlyMasterKey` by IP ([#10115](https://github.com/parse-community/parse-server/issues/10115)) ([cbff6b4](https://github.com/parse-community/parse-server/commit/cbff6b42a0b4f02552457f04a8757ac2376d3e04))
+* Add support for `Parse.File.setDirectory`, `setMetadata`, `setTags` with stream-based file upload ([#10092](https://github.com/parse-community/parse-server/issues/10092)) ([ca666b0](https://github.com/parse-community/parse-server/commit/ca666b02fcc2229180621a42694c0838f700c06d))
+* Allow to identify `readOnlyMasterKey` invocation of Cloud Function via `request.isReadOnly` ([#10100](https://github.com/parse-community/parse-server/issues/10100)) ([2c48751](https://github.com/parse-community/parse-server/commit/2c48751c6de36ec090ac6ab08e289876561ed324))
+* Deprecate GraphQL Playground that exposes master key in HTTP response  ([#10112](https://github.com/parse-community/parse-server/issues/10112)) ([d54d800](https://github.com/parse-community/parse-server/commit/d54d800f596f1937701f5bd57c81104f102bc3ae))
+
 ## [9.4.1](https://github.com/parse-community/parse-server/compare/9.4.0...9.4.1) (2026-03-04)
 
 
