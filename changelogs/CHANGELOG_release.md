@@ -1,3 +1,10 @@
+## [8.6.13](https://github.com/parse-community/parse-server/compare/8.6.12...8.6.13) (2026-03-07)
+
+
+### Bug Fixes
+
+* Denial of Service (DoS) and Cloud Function Dispatch Bypass via Prototype Chain Resolution ([GHSA-5j86-7r7m-p8h6](https://github.com/parse-community/parse-server/security/advisories/GHSA-5j86-7r7m-p8h6)) ([#10124](https://github.com/parse-community/parse-server/issues/10124)) ([5c2d60a](https://github.com/parse-community/parse-server/commit/5c2d60a2f3733ca3a4cb782d552ba38c526aee0b))
+
 ## [8.6.12](https://github.com/parse-community/parse-server/compare/8.6.11...8.6.12) (2026-03-07)
 
 
