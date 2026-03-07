@@ -173,6 +173,7 @@ jobs:
       - name: Compare benchmark results
         id: compare
         run: |
+          set -o pipefail
           node -e "
           const fs = require('fs');
 
