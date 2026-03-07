@@ -478,6 +478,31 @@ describe('Vulnerabilities', () => {
   });
 });
 
+describe('(GHSA-mf3j-86qx-cq5j) ReDoS via $regex in LiveQuery subscription', () => {
+  it('should prevent ReDoS via catastrophic backtracking in LiveQuery $regex', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+        regexTimeout: 100,
+      },
+      startLiveQueryServer: true,
+    });
+    const query = new Parse.Query('TestObject');
+    query.matches('field', /(a+)+b/);
+    const subscription = await query.subscribe();
+    const createPromise = new Promise(resolve => {
+      subscription.on('create', () => resolve('should_not_match'));
+      setTimeout(() => resolve('timeout'), 3000);
+    });
+    const obj = new Parse.Object('TestObject');
+    obj.set('field', 'a'.repeat(30));
+    await obj.save();
+    const result = await createPromise;
+    expect(result).toBe('timeout');
+    subscription.unsubscribe();
+  });
+});
+
 describe('Malformed $regex information disclosure', () => {
   it('should not leak database error internals for invalid regex pattern in class query', async () => {
     const logger = require('../lib/logger').default;
