@@ -135,6 +135,23 @@ class CheckGroupServerConfig extends CheckGroup {
         },
       }),
       new Check({
+        title: 'Request complexity limits enabled',
+        warning:
+          'One or more request complexity limits are disabled, which may allow denial-of-service attacks through deeply nested or excessively broad queries.',
+        solution:
+          "Ensure all properties in 'requestComplexity' are set to positive integers. Set to '-1' only if you have other mitigations in place.",
+        check: () => {
+          const rc = config.requestComplexity;
+          if (!rc) {
+            throw 1;
+          }
+          const values = [rc.includeDepth, rc.includeCount, rc.subqueryDepth, rc.graphQLDepth, rc.graphQLFields];
+          if (values.some(v => v === -1)) {
+            throw 1;
+          }
+        },
+      }),
+      new Check({
         title: 'LiveQuery regex timeout enabled',
         warning:
           'LiveQuery regex timeout is disabled. A malicious client can subscribe with a crafted $regex pattern that causes catastrophic backtracking, blocking the Node.js event loop and making the server unresponsive.',

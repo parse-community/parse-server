@@ -48,6 +48,7 @@ describe('Security Check Groups', () => {
       expect(group.checks()[5].checkState()).toBe(CheckState.success);
       expect(group.checks()[6].checkState()).toBe(CheckState.success);
       expect(group.checks()[8].checkState()).toBe(CheckState.success);
+      expect(group.checks()[9].checkState()).toBe(CheckState.success);
     });
 
     it('checks fail correctly', async () => {
@@ -59,6 +60,13 @@ describe('Security Check Groups', () => {
       config.mountPlayground = true;
       config.readOnlyMasterKey = 'someReadOnlyMasterKey';
       config.readOnlyMasterKeyIps = ['0.0.0.0/0'];
+      config.requestComplexity = {
+        includeDepth: -1,
+        includeCount: -1,
+        subqueryDepth: -1,
+        graphQLDepth: -1,
+        graphQLFields: -1,
+      };
       await reconfigureServer(config);
 
       const group = new CheckGroupServerConfig();
@@ -70,6 +78,7 @@ describe('Security Check Groups', () => {
       expect(group.checks()[5].checkState()).toBe(CheckState.fail);
       expect(group.checks()[6].checkState()).toBe(CheckState.fail);
       expect(group.checks()[8].checkState()).toBe(CheckState.fail);
+      expect(group.checks()[9].checkState()).toBe(CheckState.fail);
     });
 
     it_only_db('mongo')('checks succeed correctly (MongoDB specific)', async () => {
