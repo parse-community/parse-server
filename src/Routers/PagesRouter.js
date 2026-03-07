@@ -108,7 +108,8 @@ export class PagesRouter extends PromiseRouter {
   resendVerificationEmail(req) {
     const config = req.config;
     const username = req.body?.username;
-    const token = req.body?.token;
+    const rawToken = req.body?.token;
+    const token = rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
 
     if (!config) {
       this.invalidRequest();
