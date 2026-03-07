@@ -1,3 +1,10 @@
+## [8.6.14](https://github.com/parse-community/parse-server/compare/8.6.13...8.6.14) (2026-03-07)
+
+
+### Bug Fixes
+
+* NoSQL injection via token type in password reset and email verification endpoints ([GHSA-vgjh-hmwf-c588](https://github.com/parse-community/parse-server/security/advisories/GHSA-vgjh-hmwf-c588)) ([#10129](https://github.com/parse-community/parse-server/issues/10129)) ([88eed83](https://github.com/parse-community/parse-server/commit/88eed83ff818027a960274e1de30a487812a6db4))
+
 ## [8.6.13](https://github.com/parse-community/parse-server/compare/8.6.12...8.6.13) (2026-03-07)
 
 
