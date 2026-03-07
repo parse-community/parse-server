@@ -1,3 +1,10 @@
+## [9.5.1-alpha.1](https://github.com/parse-community/parse-server/compare/9.5.0...9.5.1-alpha.1) (2026-03-07)
+
+
+### Bug Fixes
+
+* Denylist `requestKeywordDenylist` keyword scan bypass through nested object placement ([GHSA-q342-9w2p-57fp](https://github.com/parse-community/parse-server/security/advisories/GHSA-q342-9w2p-57fp)) ([#10123](https://github.com/parse-community/parse-server/issues/10123)) ([4a44247](https://github.com/parse-community/parse-server/commit/4a44247a649a40ef3f1db8261a0e780080f494ba))
+
 # [9.5.0-alpha.14](https://github.com/parse-community/parse-server/compare/9.5.0-alpha.13...9.5.0-alpha.14) (2026-03-07)
 
 
