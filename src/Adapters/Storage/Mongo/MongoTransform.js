@@ -284,12 +284,8 @@ function transformQueryKeyValue(className, key, value, schema, count = false) {
       break;
     case '_rperm':
     case '_wperm':
-      return { key, value };
     case '_perishable_token':
     case '_email_verify_token':
-      if (typeof value !== 'string') {
-        throw new Parse.Error(Parse.Error.INVALID_VALUE, `${key} must be a string`);
-      }
       return { key, value };
     case '$or':
     case '$and':
