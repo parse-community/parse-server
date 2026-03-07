@@ -92,6 +92,7 @@
  * @property {Any} push Configuration for push, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#push-notifications
  * @property {RateLimitOptions[]} rateLimit Options to limit repeated requests to Parse Server APIs. This can be used to protect sensitive endpoints such as `/requestPasswordReset` from brute-force attacks or Parse Server as a whole from denial-of-service (DoS) attacks.<br><br>ℹ️ Mind the following limitations:<br>- rate limits applied per IP address; this limits protection against distributed denial-of-service (DDoS) attacks where many requests are coming from various IP addresses<br>- if multiple Parse Server instances are behind a load balancer or ran in a cluster, each instance will calculate it's own request rates, independent from other instances; this limits the applicability of this feature when using a load balancer and another rate limiting solution that takes requests across all instances into account may be more suitable<br>- this feature provides basic protection against denial-of-service attacks, but a more sophisticated solution works earlier in the request flow and prevents a malicious requests to even reach a server instance; it's therefore recommended to implement a solution according to architecture and user case.
  * @property {String} readOnlyMasterKey Read-only key, which has the same capabilities as MasterKey without writes
+ * @property {RequestComplexityOptions} requestComplexity Options to limit the complexity of requests to prevent abuse. Each option can be set to `-1` to disable.
  * @property {Function} requestContextMiddleware Options to customize the request context using inversion of control/dependency injection.
  * @property {RequestKeywordDenylist[]} requestKeywordDenylist An array of keys and values that are prohibited in database read and write requests to prevent potential security vulnerabilities. It is possible to specify only a key (`{"key":"..."}`), only a value (`{"value":"..."}`) or a key-value pair (`{"key":"...","value":"..."}`). The specification can use the following types: `boolean`, `numeric` or `string`, where `string` will be interpreted as a regex notation. Request data is deep-scanned for matching definitions to detect also any nested occurrences. Defaults are patterns that are likely to be used in malicious requests. Setting this option will override the default patterns.
  * @property {String} restAPIKey Key for REST calls
@@ -124,6 +125,15 @@
  * @property {String} requestPath The path of the API route to be rate limited. Route paths, in combination with a request method, define the endpoints at which requests can be made. Route paths can be strings, string patterns, or regular expression. See: https://expressjs.com/en/guide/routing.html
  * @property {Number} requestTimeWindow The window of time in milliseconds within which the number of requests set in `requestCount` can be made before the rate limit is applied.
  * @property {String} zone The type of rate limit to apply. The following types are supported:<ul><li>`global`: rate limit based on the number of requests made by all users</li><li>`ip`: rate limit based on the IP address of the request</li><li>`user`: rate limit based on the user ID of the request</li><li>`session`: rate limit based on the session token of the request</li></ul>Default is `ip`.
+ */
+
+/**
+ * @interface RequestComplexityOptions
+ * @property {Number} graphQLDepth Maximum depth of GraphQL field selections. Set to `-1` to disable. Default is `50`.
+ * @property {Number} graphQLFields Maximum number of field selections in a GraphQL query. Set to `-1` to disable. Default is `200`.
+ * @property {Number} includeCount Maximum number of include paths in a single query. Set to `-1` to disable. Default is `50`.
+ * @property {Number} includeDepth Maximum depth of include pointer chains (e.g. `a.b.c` = depth 3). Set to `-1` to disable. Default is `5`.
+ * @property {Number} subqueryDepth Maximum nesting depth of `$inQuery`, `$notInQuery`, `$select`, `$dontSelect` subqueries. Set to `-1` to disable. Default is `5`.
  */
 
 /**
