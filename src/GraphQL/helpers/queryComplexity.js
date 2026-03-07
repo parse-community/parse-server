@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import logger from '../../logger';
 
 function calculateQueryComplexity(operation, fragments) {
   let maxDepth = 0;
@@ -72,25 +73,23 @@ function createComplexityValidationPlugin(getConfig) {
         );
 
         if (graphQLDepth !== -1 && depth > graphQLDepth) {
-          throw new GraphQLError(
-            `GraphQL query depth of ${depth} exceeds maximum allowed depth of ${graphQLDepth}`,
-            {
-              extensions: {
-                http: { status: 400 },
-              },
-            }
-          );
+          const message = `GraphQL query depth of ${depth} exceeds maximum allowed depth of ${graphQLDepth}`;
+          logger.warn(message);
+          throw new GraphQLError(message, {
+            extensions: {
+              http: { status: 400 },
+            },
+          });
         }
 
         if (graphQLFields !== -1 && fields > graphQLFields) {
-          throw new GraphQLError(
-            `Number of GraphQL fields (${fields}) exceeds maximum allowed (${graphQLFields})`,
-            {
-              extensions: {
-                http: { status: 400 },
-              },
-            }
-          );
+          const message = `Number of GraphQL fields (${fields}) exceeds maximum allowed (${graphQLFields})`;
+          logger.warn(message);
+          throw new GraphQLError(message, {
+            extensions: {
+              http: { status: 400 },
+            },
+          });
         }
       },
     }),

@@ -3,6 +3,7 @@
 
 var SchemaController = require('./Controllers/SchemaController');
 var Parse = require('parse/node').Parse;
+var logger = require('./logger').default;
 const triggers = require('./triggers');
 const { continueWhile } = require('parse/lib/node/promiseUtils');
 const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt', 'ACL'];
@@ -467,10 +468,9 @@ _UnsafeRestQuery.prototype.checkSubqueryDepth = function () {
   }
   const depth = this.context._subqueryDepth || 0;
   if (depth > rc.subqueryDepth) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_QUERY,
-      `Subquery nesting depth exceeds maximum allowed depth of ${rc.subqueryDepth}`
-    );
+    const message = `Subquery nesting depth exceeds maximum allowed depth of ${rc.subqueryDepth}`;
+    logger.warn(message);
+    throw new Parse.Error(Parse.Error.INVALID_QUERY, message);
   }
 };
 
@@ -898,17 +898,15 @@ _UnsafeRestQuery.prototype.validateIncludeComplexity = function () {
   if (rc.includeDepth !== -1 && this.include && this.include.length > 0) {
     const maxDepth = Math.max(...this.include.map(path => path.length));
     if (maxDepth > rc.includeDepth) {
-      throw new Parse.Error(
-        Parse.Error.INVALID_QUERY,
-        `Include depth of ${maxDepth} exceeds maximum allowed depth of ${rc.includeDepth}`
-      );
+      const message = `Include depth of ${maxDepth} exceeds maximum allowed depth of ${rc.includeDepth}`;
+      logger.warn(message);
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, message);
     }
   }
   if (rc.includeCount !== -1 && this.include && this.include.length > rc.includeCount) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_QUERY,
-      `Number of include fields (${this.include.length}) exceeds maximum allowed (${rc.includeCount})`
-    );
+    const message = `Number of include fields (${this.include.length}) exceeds maximum allowed (${rc.includeCount})`;
+    logger.warn(message);
+    throw new Parse.Error(Parse.Error.INVALID_QUERY, message);
   }
 };
 
