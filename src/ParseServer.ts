@@ -9,6 +9,7 @@ var batch = require('./batch'),
   fs = require('fs');
 
 import { ParseServerOptions, LiveQueryServerOptions } from './Options';
+import { setRegexTimeout } from './LiveQuery/QueryTools';
 import defaults from './defaults';
 import * as logging from './logger';
 import Config from './Config';
@@ -139,6 +140,7 @@ class ParseServer {
     this.config.masterKeyIpsStore = new Map();
     this.config.maintenanceKeyIpsStore = new Map();
     logging.setLogger(allControllers.loggerController);
+    setRegexTimeout(options.liveQuery?.regexTimeout);
   }
 
   /**

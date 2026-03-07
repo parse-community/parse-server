@@ -4,6 +4,7 @@ const Id = require('../lib/LiveQuery/Id');
 const QueryTools = require('../lib/LiveQuery/QueryTools');
 const queryHash = QueryTools.queryHash;
 const matchesQuery = QueryTools.matchesQuery;
+const setRegexTimeout = QueryTools.setRegexTimeout;
 
 const Item = Parse.Object.extend('Item');
 
@@ -443,6 +444,103 @@ describe('matchesQuery', function () {
     expect(matchesQuery(player, q)).toBe(true);
     q.contains('name', 'h \\Q or');
     expect(matchesQuery(player, q)).toBe(false);
+  });
+
+  it('rejects $regex with catastrophic backtracking pattern (string)', function () {
+    setRegexTimeout(100);
+    try {
+      const player = {
+        id: new Id('Player', 'P1'),
+        name: 'a'.repeat(30),
+        score: 12,
+      };
+      // (a+)+b - classic catastrophic backtracking
+      expect(matchesQuery(player, { name: { $regex: '(a+)+b' } })).toBe(false);
+      // (a|a)+b - alternation variant
+      expect(matchesQuery(player, { name: { $regex: '(a|a)+b' } })).toBe(false);
+      // (a+){2,}b - quantifier variant
+      expect(matchesQuery(player, { name: { $regex: '(a+){2,}b' } })).toBe(false);
+    } finally {
+      setRegexTimeout(0);
+    }
+  });
+
+  it('rejects $regex with catastrophic backtracking pattern (RegExp object)', function () {
+    setRegexTimeout(100);
+    try {
+      const player = {
+        id: new Id('Player', 'P1'),
+        name: 'a'.repeat(30),
+        score: 12,
+      };
+      const q = new Parse.Query('Player');
+      q.matches('name', /(a+)+b/);
+      expect(matchesQuery(player, q)).toBe(false);
+    } finally {
+      setRegexTimeout(0);
+    }
+  });
+
+  it('still matches safe $regex patterns with regexTimeout enabled', function () {
+    setRegexTimeout(100);
+    try {
+      const player = {
+        id: new Id('Player', 'P1'),
+        name: 'Player 1',
+        score: 12,
+      };
+      // startsWith
+      let q = new Parse.Query('Player');
+      q.startsWith('name', 'Play');
+      expect(matchesQuery(player, q)).toBe(true);
+      // endsWith
+      q = new Parse.Query('Player');
+      q.endsWith('name', ' 1');
+      expect(matchesQuery(player, q)).toBe(true);
+      // contains
+      player.name = 'Android-7';
+      q = new Parse.Query('Player');
+      q.contains('name', 'd-7');
+      expect(matchesQuery(player, q)).toBe(true);
+      // matches
+      q = new Parse.Query('Player');
+      q.matches('name', /A.d/);
+      expect(matchesQuery(player, q)).toBe(true);
+      // case insensitive
+      q = new Parse.Query('Player');
+      q.matches('name', /android/i);
+      expect(matchesQuery(player, q)).toBe(true);
+    } finally {
+      setRegexTimeout(0);
+    }
+  });
+
+  it('matches $regex with backreferences when regexTimeout is enabled', function () {
+    setRegexTimeout(100);
+    try {
+      const player = {
+        id: new Id('Player', 'P1'),
+        name: 'aa',
+        score: 12,
+      };
+      expect(matchesQuery(player, { name: { $regex: '(a)\\1' } })).toBe(true);
+      player.name = 'ab';
+      expect(matchesQuery(player, { name: { $regex: '(a)\\1' } })).toBe(false);
+    } finally {
+      setRegexTimeout(0);
+    }
+  });
+
+  it('uses native RegExp when regexTimeout is 0 (disabled)', function () {
+    setRegexTimeout(0);
+    const player = {
+      id: new Id('Player', 'P1'),
+      name: 'Player 1',
+      score: 12,
+    };
+    const q = new Parse.Query('Player');
+    q.startsWith('name', 'Play');
+    expect(matchesQuery(player, q)).toBe(true);
   });
 
   it('matches $nearSphere queries', function () {

@@ -338,6 +338,45 @@ describe('Security Check', () => {
       }
     });
 
+    it('warns when LiveQuery regex timeout is disabled', async () => {
+      await reconfigureServer({
+        security: { enableCheck: true, enableCheckLog: true },
+        liveQuery: { classNames: ['TestObject'], regexTimeout: 0 },
+      });
+      const runner = new CheckRunner({ enableCheck: true });
+      const report = await runner.run();
+      const check = report.report.groups
+        .flatMap(g => g.checks)
+        .find(c => c.title === 'LiveQuery regex timeout enabled');
+      expect(check).toBeDefined();
+      expect(check.state).toBe(CheckState.fail);
+    });
+
+    it('passes when LiveQuery regex timeout is enabled', async () => {
+      await reconfigureServer({
+        security: { enableCheck: true, enableCheckLog: true },
+        liveQuery: { classNames: ['TestObject'], regexTimeout: 100 },
+      });
+      const runner = new CheckRunner({ enableCheck: true });
+      const report = await runner.run();
+      const check = report.report.groups
+        .flatMap(g => g.checks)
+        .find(c => c.title === 'LiveQuery regex timeout enabled');
+      expect(check.state).toBe(CheckState.success);
+    });
+
+    it('passes when LiveQuery is not configured', async () => {
+      await reconfigureServer({
+        security: { enableCheck: true, enableCheckLog: true },
+      });
+      const runner = new CheckRunner({ enableCheck: true });
+      const report = await runner.run();
+      const check = report.report.groups
+        .flatMap(g => g.checks)
+        .find(c => c.title === 'LiveQuery regex timeout enabled');
+      expect(check.state).toBe(CheckState.success);
+    });
+
     it('does update featuresRouter', async () => {
       let response = await request({
         url: 'http://localhost:8378/1/serverInfo',
