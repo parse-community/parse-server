@@ -245,6 +245,7 @@ jobs:
           console.log('');
           if (hasRegression) {
             console.log('⚠️ **Performance regressions detected.** Please review the changes.');
+            process.exitCode = 1;
           } else if (hasImprovement) {
             console.log('🚀 **Performance improvements detected!** Great work!');
           } else {
