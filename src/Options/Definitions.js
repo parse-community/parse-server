@@ -492,6 +492,13 @@ module.exports.ParseServerOptions = {
     action: parsers.arrayParser,
     default: ['0.0.0.0/0', '::0'],
   },
+  requestComplexity: {
+    env: 'PARSE_SERVER_REQUEST_COMPLEXITY',
+    help: 'Options to limit the complexity of requests to prevent denial-of-service attacks. Limits are enforced for all requests except those using the master or maintenance key. Each property can be set to `-1` to disable that specific limit.',
+    action: parsers.objectParser,
+    type: 'RequestComplexityOptions',
+    default: {},
+  },
   requestContextMiddleware: {
     env: 'PARSE_SERVER_REQUEST_CONTEXT_MIDDLEWARE',
     help: 'Options to customize the request context using inversion of control/dependency injection.',
@@ -652,6 +659,38 @@ module.exports.RateLimitOptions = {
     env: 'PARSE_SERVER_RATE_LIMIT_ZONE',
     help: 'The type of rate limit to apply. The following types are supported:<ul><li>`global`: rate limit based on the number of requests made by all users</li><li>`ip`: rate limit based on the IP address of the request</li><li>`user`: rate limit based on the user ID of the request</li><li>`session`: rate limit based on the session token of the request</li></ul>Default is `ip`.',
     default: 'ip',
+  },
+};
+module.exports.RequestComplexityOptions = {
+  graphQLDepth: {
+    env: 'PARSE_SERVER_REQUEST_COMPLEXITY_GRAPH_QLDEPTH',
+    help: 'Maximum depth of GraphQL field selections. Set to `-1` to disable. Default is `50`.',
+    action: parsers.numberParser('graphQLDepth'),
+    default: 50,
+  },
+  graphQLFields: {
+    env: 'PARSE_SERVER_REQUEST_COMPLEXITY_GRAPH_QLFIELDS',
+    help: 'Maximum number of field selections in a GraphQL query. Set to `-1` to disable. Default is `200`.',
+    action: parsers.numberParser('graphQLFields'),
+    default: 200,
+  },
+  includeCount: {
+    env: 'PARSE_SERVER_REQUEST_COMPLEXITY_INCLUDE_COUNT',
+    help: 'Maximum number of include paths in a single query. Set to `-1` to disable. Default is `50`.',
+    action: parsers.numberParser('includeCount'),
+    default: 50,
+  },
+  includeDepth: {
+    env: 'PARSE_SERVER_REQUEST_COMPLEXITY_INCLUDE_DEPTH',
+    help: 'Maximum depth of include pointer chains (e.g. `a.b.c` = depth 3). Set to `-1` to disable. Default is `5`.',
+    action: parsers.numberParser('includeDepth'),
+    default: 5,
+  },
+  subqueryDepth: {
+    env: 'PARSE_SERVER_REQUEST_COMPLEXITY_SUBQUERY_DEPTH',
+    help: 'Maximum nesting depth of `$inQuery`, `$notInQuery`, `$select`, `$dontSelect` subqueries. Set to `-1` to disable. Default is `5`.',
+    action: parsers.numberParser('subqueryDepth'),
+    default: 5,
   },
 };
 module.exports.SecurityOptions = {

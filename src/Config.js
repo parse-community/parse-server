@@ -18,6 +18,7 @@ import {
   PagesOptions,
   ParseServerOptions,
   SchemaOptions,
+  RequestComplexityOptions,
   SecurityOptions,
 } from './Options/Definitions';
 import ParseServer from './cloud-code/Parse.Server';
@@ -134,6 +135,7 @@ export class Config {
     databaseOptions,
     extendSessionOnUse,
     allowClientClassCreation,
+    requestComplexity,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -176,6 +178,7 @@ export class Config {
     this.validateDatabaseOptions(databaseOptions);
     this.validateCustomPages(customPages);
     this.validateAllowClientClassCreation(allowClientClassCreation);
+    this.validateRequestComplexity(requestComplexity);
   }
 
   static validateCustomPages(customPages) {
@@ -622,6 +625,31 @@ export class Config {
   static validateMaxLimit(maxLimit) {
     if (maxLimit <= 0) {
       throw 'Max limit must be a value greater than 0.';
+    }
+  }
+
+  static validateRequestComplexity(requestComplexity) {
+    if (requestComplexity == null) {
+      return;
+    }
+    if (typeof requestComplexity !== 'object' || Array.isArray(requestComplexity)) {
+      throw new Error('requestComplexity must be an object.');
+    }
+    const validKeys = Object.keys(RequestComplexityOptions);
+    for (const key of Object.keys(requestComplexity)) {
+      if (!validKeys.includes(key)) {
+        throw new Error(`requestComplexity contains unknown property '${key}'.`);
+      }
+    }
+    for (const key of validKeys) {
+      if (requestComplexity[key] !== undefined) {
+        const value = requestComplexity[key];
+        if (!Number.isInteger(value) || (value < 1 && value !== -1)) {
+          throw new Error(`requestComplexity.${key} must be a positive integer or -1 to disable.`);
+        }
+      } else {
+        requestComplexity[key] = RequestComplexityOptions[key].default;
+      }
     }
   }
 

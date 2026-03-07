@@ -356,6 +356,10 @@ export interface ParseServerOptions {
   schema: ?SchemaOptions;
   /* Callback when server has closed */
   serverCloseComplete: ?() => void;
+  /* Options to limit the complexity of requests to prevent denial-of-service attacks. Limits are enforced for all requests except those using the master or maintenance key. Each property can be set to `-1` to disable that specific limit.
+  :ENV: PARSE_SERVER_REQUEST_COMPLEXITY
+  :DEFAULT: {} */
+  requestComplexity: ?RequestComplexityOptions;
   /* The security options to identify and report weak security settings.
   :DEFAULT: {} */
   security: ?SecurityOptions;
@@ -409,6 +413,24 @@ export interface RateLimitOptions {
   Default is `ip`.
   :DEFAULT: ip */
   zone: ?string;
+}
+
+export interface RequestComplexityOptions {
+  /* Maximum depth of include pointer chains (e.g. `a.b.c` = depth 3). Set to `-1` to disable. Default is `5`.
+  :DEFAULT: 5 */
+  includeDepth: ?number;
+  /* Maximum number of include paths in a single query. Set to `-1` to disable. Default is `50`.
+  :DEFAULT: 50 */
+  includeCount: ?number;
+  /* Maximum nesting depth of `$inQuery`, `$notInQuery`, `$select`, `$dontSelect` subqueries. Set to `-1` to disable. Default is `5`.
+  :DEFAULT: 5 */
+  subqueryDepth: ?number;
+  /* Maximum depth of GraphQL field selections. Set to `-1` to disable. Default is `50`.
+  :DEFAULT: 50 */
+  graphQLDepth: ?number;
+  /* Maximum number of field selections in a GraphQL query. Set to `-1` to disable. Default is `200`.
+  :DEFAULT: 200 */
+  graphQLFields: ?number;
 }
 
 export interface SecurityOptions {

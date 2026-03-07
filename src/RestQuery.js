@@ -290,6 +290,9 @@ _UnsafeRestQuery.prototype.execute = function (executeOptions) {
       return this.handleIncludeAll();
     })
     .then(() => {
+      return this.validateIncludeComplexity();
+    })
+    .then(() => {
       return this.handleExcludeKeys();
     })
     .then(() => {
@@ -358,6 +361,9 @@ _UnsafeRestQuery.prototype.buildRestWhere = function () {
     })
     .then(() => {
       return this.validateClientClassCreation();
+    })
+    .then(() => {
+      return this.checkSubqueryDepth();
     })
     .then(() => {
       return this.replaceSelect();
@@ -451,6 +457,23 @@ function transformInQuery(inQueryObject, className, results) {
   }
 }
 
+_UnsafeRestQuery.prototype.checkSubqueryDepth = function () {
+  if (this.auth.isMaster || this.auth.isMaintenance) {
+    return;
+  }
+  const rc = this.config.requestComplexity;
+  if (!rc || rc.subqueryDepth === -1) {
+    return;
+  }
+  const depth = this.context._subqueryDepth || 0;
+  if (depth > rc.subqueryDepth) {
+    throw new Parse.Error(
+      Parse.Error.INVALID_QUERY,
+      `Subquery nesting depth exceeds maximum allowed depth of ${rc.subqueryDepth}`
+    );
+  }
+};
+
 // Replaces a $inQuery clause by running the subquery, if there is an
 // $inQuery clause.
 // The $inQuery clause turns into an $in with values that are just
@@ -478,6 +501,7 @@ _UnsafeRestQuery.prototype.replaceInQuery = async function () {
     additionalOptions.readPreference = this.restOptions.readPreference;
   }
 
+  const childContext = { ...this.context, _subqueryDepth: (this.context._subqueryDepth || 0) + 1 };
   const subquery = await RestQuery({
     method: RestQuery.Method.find,
     config: this.config,
@@ -485,7 +509,7 @@ _UnsafeRestQuery.prototype.replaceInQuery = async function () {
     className: inQueryValue.className,
     restWhere: inQueryValue.where,
     restOptions: additionalOptions,
-    context: this.context,
+    context: childContext,
   });
   return subquery.execute().then(response => {
     transformInQuery(inQueryObject, subquery.className, response.results);
@@ -538,6 +562,7 @@ _UnsafeRestQuery.prototype.replaceNotInQuery = async function () {
     additionalOptions.readPreference = this.restOptions.readPreference;
   }
 
+  const childContext = { ...this.context, _subqueryDepth: (this.context._subqueryDepth || 0) + 1 };
   const subquery = await RestQuery({
     method: RestQuery.Method.find,
     config: this.config,
@@ -545,7 +570,7 @@ _UnsafeRestQuery.prototype.replaceNotInQuery = async function () {
     className: notInQueryValue.className,
     restWhere: notInQueryValue.where,
     restOptions: additionalOptions,
-    context: this.context,
+    context: childContext,
   });
 
   return subquery.execute().then(response => {
@@ -611,6 +636,7 @@ _UnsafeRestQuery.prototype.replaceSelect = async function () {
     additionalOptions.readPreference = this.restOptions.readPreference;
   }
 
+  const childContext = { ...this.context, _subqueryDepth: (this.context._subqueryDepth || 0) + 1 };
   const subquery = await RestQuery({
     method: RestQuery.Method.find,
     config: this.config,
@@ -618,7 +644,7 @@ _UnsafeRestQuery.prototype.replaceSelect = async function () {
     className: selectValue.query.className,
     restWhere: selectValue.query.where,
     restOptions: additionalOptions,
-    context: this.context,
+    context: childContext,
   });
 
   return subquery.execute().then(response => {
@@ -674,6 +700,7 @@ _UnsafeRestQuery.prototype.replaceDontSelect = async function () {
     additionalOptions.readPreference = this.restOptions.readPreference;
   }
 
+  const childContext = { ...this.context, _subqueryDepth: (this.context._subqueryDepth || 0) + 1 };
   const subquery = await RestQuery({
     method: RestQuery.Method.find,
     config: this.config,
@@ -681,7 +708,7 @@ _UnsafeRestQuery.prototype.replaceDontSelect = async function () {
     className: dontSelectValue.query.className,
     restWhere: dontSelectValue.query.where,
     restOptions: additionalOptions,
-    context: this.context,
+    context: childContext,
   });
 
   return subquery.execute().then(response => {
@@ -858,6 +885,31 @@ _UnsafeRestQuery.prototype.handleIncludeAll = function () {
         this.keys = [...new Set([...this.keys, ...keyFields])];
       }
     });
+};
+
+_UnsafeRestQuery.prototype.validateIncludeComplexity = function () {
+  if (this.auth.isMaster || this.auth.isMaintenance) {
+    return;
+  }
+  const rc = this.config.requestComplexity;
+  if (!rc) {
+    return;
+  }
+  if (rc.includeDepth !== -1 && this.include && this.include.length > 0) {
+    const maxDepth = Math.max(...this.include.map(path => path.length));
+    if (maxDepth > rc.includeDepth) {
+      throw new Parse.Error(
+        Parse.Error.INVALID_QUERY,
+        `Include depth of ${maxDepth} exceeds maximum allowed depth of ${rc.includeDepth}`
+      );
+    }
+  }
+  if (rc.includeCount !== -1 && this.include && this.include.length > rc.includeCount) {
+    throw new Parse.Error(
+      Parse.Error.INVALID_QUERY,
+      `Number of include fields (${this.include.length}) exceeds maximum allowed (${rc.includeCount})`
+    );
+  }
 };
 
 // Updates property `this.keys` to contain all keys but the ones unselected.
