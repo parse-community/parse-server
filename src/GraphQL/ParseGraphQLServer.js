@@ -11,6 +11,7 @@ import requiredParameter from '../requiredParameter';
 import defaultLogger from '../logger';
 import { ParseGraphQLSchema } from './ParseGraphQLSchema';
 import ParseGraphQLController, { ParseGraphQLConfig } from '../Controllers/ParseGraphQLController';
+import { createComplexityValidationPlugin } from './helpers/queryComplexity';
 
 
 const hasTypeIntrospection = (query) => {
@@ -155,7 +156,7 @@ class ParseGraphQLServer {
           // We need always true introspection because apollo server have changing behavior based on the NODE_ENV variable
           // we delegate the introspection control to the IntrospectionControlPlugin
           introspection: true,
-          plugins: [ApolloServerPluginCacheControlDisabled(), IntrospectionControlPlugin(this.config.graphQLPublicIntrospection)],
+          plugins: [ApolloServerPluginCacheControlDisabled(), IntrospectionControlPlugin(this.config.graphQLPublicIntrospection), createComplexityValidationPlugin(() => this.parseServer.config.requestComplexity)],
           schema,
         });
         await apollo.start();
