@@ -390,6 +390,7 @@ describe('rest query', () => {
   });
 
   it('battle test parallel include with 100 nested includes', async () => {
+    await reconfigureServer({ requestComplexity: { includeCount: 200 } });
     const RootObject = Parse.Object.extend('RootObject');
     const Level1Object = Parse.Object.extend('Level1Object');
     const Level2Object = Parse.Object.extend('Level2Object');

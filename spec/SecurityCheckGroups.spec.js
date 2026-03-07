@@ -43,6 +43,7 @@ describe('Security Check Groups', () => {
       expect(group.checks()[2].checkState()).toBe(CheckState.success);
       expect(group.checks()[4].checkState()).toBe(CheckState.success);
       expect(group.checks()[5].checkState()).toBe(CheckState.success);
+      expect(group.checks()[7].checkState()).toBe(CheckState.success);
     });
 
     it('checks fail correctly', async () => {
@@ -50,6 +51,13 @@ describe('Security Check Groups', () => {
       config.security.enableCheckLog = true;
       config.allowClientClassCreation = true;
       config.graphQLPublicIntrospection = true;
+      config.requestComplexity = {
+        includeDepth: -1,
+        includeCount: -1,
+        subqueryDepth: -1,
+        graphQLDepth: -1,
+        graphQLFields: -1,
+      };
       await reconfigureServer(config);
 
       const group = new CheckGroupServerConfig();
@@ -59,6 +67,7 @@ describe('Security Check Groups', () => {
       expect(group.checks()[2].checkState()).toBe(CheckState.fail);
       expect(group.checks()[4].checkState()).toBe(CheckState.fail);
       expect(group.checks()[5].checkState()).toBe(CheckState.fail);
+      expect(group.checks()[7].checkState()).toBe(CheckState.fail);
     });
 
     it_only_db('mongo')('checks succeed correctly (MongoDB specific)', async () => {
