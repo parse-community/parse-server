@@ -2,6 +2,7 @@ var equalObjects = require('./equalObjects');
 var Id = require('./Id');
 var Parse = require('parse/node');
 var vm = require('vm');
+var logger = require('../logger').default;
 
 var regexTimeout = 0;
 var vmContext = vm.createContext(Object.create(null));
@@ -31,6 +32,7 @@ function safeRegexTest(pattern, flags, input) {
     return script.runInContext(vmContext, { timeout: regexTimeout });
   } catch (e) {
     if (e.code === 'ERR_SCRIPT_EXECUTION_TIMEOUT') {
+      logger.warn(`Regex timeout: pattern "${pattern}" with flags "${flags}" exceeded ${regexTimeout}ms limit`);
       return false;
     }
     throw e;
