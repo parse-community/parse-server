@@ -426,9 +426,11 @@ export interface RequestComplexityOptions {
   :DEFAULT: 5 */
   subqueryDepth: ?number;
   /* Maximum depth of GraphQL field selections. Set to `-1` to disable. Default is `50`.
+  :ENV: PARSE_SERVER_REQUEST_COMPLEXITY_GRAPHQL_DEPTH
   :DEFAULT: 50 */
   graphQLDepth: ?number;
   /* Maximum number of field selections in a GraphQL query. Set to `-1` to disable. Default is `200`.
+  :ENV: PARSE_SERVER_REQUEST_COMPLEXITY_GRAPHQL_FIELDS
   :DEFAULT: 200 */
   graphQLFields: ?number;
 }

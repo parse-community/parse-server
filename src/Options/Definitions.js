@@ -663,13 +663,13 @@ module.exports.RateLimitOptions = {
 };
 module.exports.RequestComplexityOptions = {
   graphQLDepth: {
-    env: 'PARSE_SERVER_REQUEST_COMPLEXITY_GRAPH_QLDEPTH',
+    env: 'PARSE_SERVER_REQUEST_COMPLEXITY_GRAPHQL_DEPTH',
     help: 'Maximum depth of GraphQL field selections. Set to `-1` to disable. Default is `50`.',
     action: parsers.numberParser('graphQLDepth'),
     default: 50,
   },
   graphQLFields: {
-    env: 'PARSE_SERVER_REQUEST_COMPLEXITY_GRAPH_QLFIELDS',
+    env: 'PARSE_SERVER_REQUEST_COMPLEXITY_GRAPHQL_FIELDS',
     help: 'Maximum number of field selections in a GraphQL query. Set to `-1` to disable. Default is `200`.',
     action: parsers.numberParser('graphQLFields'),
     default: 200,
