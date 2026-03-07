@@ -1,23 +1,39 @@
 var equalObjects = require('./equalObjects');
 var Id = require('./Id');
 var Parse = require('parse/node');
-var { RE2JS } = require('re2js');
+var vm = require('vm');
 
-var re2Cache = new Map();
-var RE2_CACHE_MAX = 1000;
+var regexTimeout = 0;
+var vmContext = vm.createContext(Object.create(null));
+var scriptCache = new Map();
+var SCRIPT_CACHE_MAX = 1000;
 
-function compileSafeRegex(pattern, flags) {
-  var key = flags + ':' + pattern;
-  var cached = re2Cache.get(key);
-  if (cached !== undefined) { return cached; }
-  if (re2Cache.size >= RE2_CACHE_MAX) { re2Cache.clear(); }
+function setRegexTimeout(ms) {
+  regexTimeout = ms;
+}
+
+function safeRegexTest(pattern, flags, input) {
+  if (!regexTimeout) {
+    var re = new RegExp(pattern, flags);
+    return re.test(input);
+  }
+  var cacheKey = flags + ':' + pattern;
+  var script = scriptCache.get(cacheKey);
+  if (!script) {
+    if (scriptCache.size >= SCRIPT_CACHE_MAX) { scriptCache.clear(); }
+    script = new vm.Script('new RegExp(pattern, flags).test(input)');
+    scriptCache.set(cacheKey, script);
+  }
+  vmContext.pattern = pattern;
+  vmContext.flags = flags;
+  vmContext.input = input;
   try {
-    var compiled = RE2JS.compile(pattern, flags);
-    re2Cache.set(key, compiled);
-    return compiled;
-  } catch {
-    re2Cache.set(key, null);
-    return null;
+    return script.runInContext(vmContext, { timeout: regexTimeout });
+  } catch (e) {
+    if (e.code === 'ERR_SCRIPT_EXECUTION_TIMEOUT') {
+      return false;
+    }
+    throw e;
   }
 }
 
@@ -310,14 +326,31 @@ function matchesKeyConstraints(object, key, constraints) {
         break;
       }
       case '$regex': {
-        var regexString = typeof compareTo === 'object' ? compareTo.source : compareTo;
-        var regexOptions = typeof compareTo === 'object' ? compareTo.flags : (constraints.$options || '');
-        var re2Flags = 0;
-        if (regexOptions.includes('i')) { re2Flags |= RE2JS.CASE_INSENSITIVE; }
-        if (regexOptions.includes('m')) { re2Flags |= RE2JS.MULTILINE; }
-        if (regexOptions.includes('s')) { re2Flags |= RE2JS.DOTALL; }
-        var re2 = compileSafeRegex(regexString, re2Flags);
-        if (!re2 || !re2.matcher(object[key] || '').find()) {
+        if (typeof compareTo === 'object') {
+          if (!safeRegexTest(compareTo.source, compareTo.flags, object[key])) {
+            return false;
+          }
+          break;
+        }
+        // JS doesn't support perl-style escaping
+        var expString = '';
+        var escapeEnd = -2;
+        var escapeStart = compareTo.indexOf('\\Q');
+        while (escapeStart > -1) {
+          // Add the unescaped portion
+          expString += compareTo.substring(escapeEnd + 2, escapeStart);
+          escapeEnd = compareTo.indexOf('\\E', escapeStart);
+          if (escapeEnd > -1) {
+            expString += compareTo
+              .substring(escapeStart + 2, escapeEnd)
+              .replace(/\\\\\\\\E/g, '\\E')
+              .replace(/\W/g, '\\$&');
+          }
+
+          escapeStart = compareTo.indexOf('\\Q', escapeEnd);
+        }
+        expString += compareTo.substring(Math.max(escapeStart, escapeEnd + 2));
+        if (!safeRegexTest(expString, constraints.$options || '', object[key])) {
           return false;
         }
         break;
@@ -401,6 +434,7 @@ function matchesKeyConstraints(object, key, constraints) {
 var QueryTools = {
   queryHash: queryHash,
   matchesQuery: matchesQuery,
+  setRegexTimeout: setRegexTimeout,
 };
 
 module.exports = QueryTools;
