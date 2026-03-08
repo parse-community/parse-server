@@ -83,6 +83,49 @@ function handleBatch(router, req) {
     req.config.publicServerURL
   );
 
+  // Check if batch sub-requests would exceed any configured rate limits.
+  // Count how many sub-requests target each rate-limited path and reject
+  // the entire batch if any path's count exceeds its requestCount.
+  const rateLimits = req.config.rateLimits || [];
+  for (const limit of rateLimits) {
+    // Skip rate limit if master key is used and includeMasterKey is not set
+    if (req.auth?.isMaster && !limit.includeMasterKey) {
+      continue;
+    }
+    // Skip rate limit for internal requests if includeInternalRequests is not set
+    if (req.config.ip === '127.0.0.1' && !limit.includeInternalRequests) {
+      continue;
+    }
+    const pathExp = limit.path;
+    let matchCount = 0;
+    for (const restRequest of req.body.requests) {
+      // Check if sub-request method matches the rate limit's requestMethods filter
+      if (limit.requestMethods) {
+        const method = restRequest.method?.toUpperCase();
+        if (Array.isArray(limit.requestMethods)) {
+          if (!limit.requestMethods.includes(method)) {
+            continue;
+          }
+        } else {
+          const regExp = new RegExp(limit.requestMethods);
+          if (!regExp.test(method)) {
+            continue;
+          }
+        }
+      }
+      const routablePath = makeRoutablePath(restRequest.path);
+      if (pathExp.test(routablePath)) {
+        matchCount++;
+      }
+    }
+    if (matchCount > limit.requestCount) {
+      throw new Parse.Error(
+        Parse.Error.CONNECTION_FAILED,
+        limit.errorResponseMessage || 'Batch request exceeds rate limit for endpoint'
+      );
+    }
+  }
+
   const batch = transactionRetries => {
     let initialPromise = Promise.resolve();
     if (req.body?.transaction === true) {
