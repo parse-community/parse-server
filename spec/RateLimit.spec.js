@@ -1,4 +1,12 @@
 const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter').default;
+const request = require('../lib/request');
+
+const headers = {
+  'Content-Type': 'application/json',
+  'X-Parse-Application-Id': 'test',
+  'X-Parse-REST-API-Key': 'rest',
+};
+
 describe('rate limit', () => {
   it('can limit cloud functions', async () => {
     Parse.Cloud.define('test', () => 'Abc');
@@ -486,6 +494,218 @@ describe('rate limit', () => {
         rateLimit: [{ requestTimeWindow: 3, requestCount: 1, path: 'abc', requestPath: 'a' }],
       })
     ).toBeRejectedWith(`Invalid rate limit option "path"`);
+  });
+  describe('batch', () => {
+    it('should reject batch request when sub-requests exceed rate limit for a path', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/classes/*',
+            requestTimeWindow: 10000,
+            requestCount: 2,
+            errorResponseMessage: 'Too many requests',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      const response = await request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/batch',
+        body: JSON.stringify({
+          requests: [
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value1' } },
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value2' } },
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value3' } },
+          ],
+        }),
+      }).catch(e => e);
+      expect(response.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many requests',
+      });
+    });
+
+    it('should allow batch request when sub-requests are within rate limit', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/classes/*',
+            requestTimeWindow: 10000,
+            requestCount: 5,
+            errorResponseMessage: 'Too many requests',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      const response = await request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/batch',
+        body: JSON.stringify({
+          requests: [
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value1' } },
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value2' } },
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value3' } },
+          ],
+        }),
+      });
+      expect(response.data.length).toBe(3);
+      expect(response.data[0].success).toBeDefined();
+    });
+
+    it('should reject batch when sub-requests for one rate-limited path exceed limit among mixed paths', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/login',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            errorResponseMessage: 'Too many login requests',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      await Parse.User.signUp('testuser', 'password');
+      const response = await request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/batch',
+        body: JSON.stringify({
+          requests: [
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value1' } },
+            { method: 'POST', path: '/1/login', body: { username: 'testuser', password: 'password' } },
+            { method: 'POST', path: '/1/login', body: { username: 'testuser', password: 'wrong' } },
+          ],
+        }),
+      }).catch(e => e);
+      expect(response.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many login requests',
+      });
+    });
+
+    it('should not reject batch when sub-requests target non-rate-limited paths', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/login',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            errorResponseMessage: 'Too many login requests',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      const response = await request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/batch',
+        body: JSON.stringify({
+          requests: [
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value1' } },
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value2' } },
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value3' } },
+          ],
+        }),
+      });
+      expect(response.data.length).toBe(3);
+      expect(response.data[0].success).toBeDefined();
+    });
+
+    it('should not count sub-requests whose method does not match requestMethods', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/classes/*',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            requestMethods: 'GET',
+            errorResponseMessage: 'Too many requests',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      // 3 POST sub-requests should NOT be counted against a GET-only rate limit
+      const response = await request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/batch',
+        body: JSON.stringify({
+          requests: [
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value1' } },
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value2' } },
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value3' } },
+          ],
+        }),
+      });
+      expect(response.data.length).toBe(3);
+      expect(response.data[0].success).toBeDefined();
+    });
+
+    it('should skip batch rate limit check for master key requests when includeMasterKey is false', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/classes/*',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            errorResponseMessage: 'Too many requests',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      // Master key requests should bypass rate limit (includeMasterKey defaults to false)
+      const masterHeaders = {
+        'Content-Type': 'application/json',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+      };
+      const response = await request({
+        method: 'POST',
+        headers: masterHeaders,
+        url: 'http://localhost:8378/1/batch',
+        body: JSON.stringify({
+          requests: [
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value1' } },
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value2' } },
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value3' } },
+          ],
+        }),
+      });
+      expect(response.data.length).toBe(3);
+      expect(response.data[0].success).toBeDefined();
+    });
+
+    it('should use configured errorResponseMessage when rejecting batch', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/classes/*',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            errorResponseMessage: 'Custom rate limit message',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      const response = await request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/batch',
+        body: JSON.stringify({
+          requests: [
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value1' } },
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value2' } },
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value3' } },
+          ],
+        }),
+      }).catch(e => e);
+      expect(response.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Custom rate limit message',
+      });
+    });
   });
   describe_only(() => {
     return process.env.PARSE_SERVER_TEST_CACHE === 'redis';
