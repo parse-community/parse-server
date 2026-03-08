@@ -849,7 +849,7 @@ _UnsafeRestQuery.prototype.denyProtectedFields = async function () {
     ) || [];
   const checkWhere = (where) => {
     for (const key of protectedFields) {
-      if (where[key]) {
+      if (key in where) {
         throw createSanitizedError(
           Parse.Error.OPERATION_FORBIDDEN,
           `This user is not allowed to query ${key} on class ${this.className}`,
