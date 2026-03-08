@@ -1,3 +1,10 @@
+## [8.6.20](https://github.com/parse-community/parse-server/compare/8.6.19...8.6.20) (2026-03-08)
+
+
+### Bug Fixes
+
+* Parse Server role escalation and CLP bypass via direct `_Join table write ([GHSA-5f92-jrq3-28rc](https://github.com/parse-community/parse-server/security/advisories/GHSA-5f92-jrq3-28rc)) ([#10142](https://github.com/parse-community/parse-server/issues/10142)) ([1c58ef7](https://github.com/parse-community/parse-server/commit/1c58ef787894dcb67623c0fb889820ee1d2ddf1b))
+
 ## [8.6.19](https://github.com/parse-community/parse-server/compare/8.6.18...8.6.19) (2026-03-08)
 
 
