@@ -1059,9 +1059,9 @@ module.exports.FileUploadOptions = {
   },
   fileExtensions: {
     env: 'PARSE_SERVER_FILE_UPLOAD_FILE_EXTENSIONS',
-    help: "Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML files are especially problematic as they may be used by an attacker who uploads a HTML form to look legitimate under your app's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^(?![xXsS]?[hH][tT][mM][lL]?$)` which allows any file extension except those MIME types that are mapped to `text/html` and are rendered as website by a web browser.",
+    help: "Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML and SVG files are especially problematic as they may be used by an attacker who uploads a HTML form or SVG image to look legitimate under your app's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^(?!([xXsS]?[hH][tT][mM][lL]?|[sS][vV][gG])$)` which allows any file extension except those that are rendered as website or active content by a web browser.",
     action: parsers.arrayParser,
-    default: ['^(?![xXsS]?[hH][tT][mM][lL]?$)'],
+    default: ['^(?!([xXsS]?[hH][tT][mM][lL]?|[sS][vV][gG])$)'],
   },
 };
 /* The available log levels for Parse Server logging. Valid values are:<br>- `'error'` - Error level (highest priority)<br>- `'warn'` - Warning level<br>- `'info'` - Info level (default)<br>- `'verbose'` - Verbose level<br>- `'debug'` - Debug level<br>- `'silly'` - Silly level (lowest priority) */

@@ -1461,6 +1461,38 @@ describe('Parse.File testing', () => {
       }
     });
 
+    it('default should block SVG files', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+        },
+      });
+      const headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      };
+      const svgContent = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>').toString('base64');
+      for (const extension of ['svg', 'SVG', 'Svg']) {
+        await expectAsync(
+          request({
+            method: 'POST',
+            headers: headers,
+            url: `http://localhost:8378/1/files/malicious.${extension}`,
+            body: JSON.stringify({
+              _ApplicationId: 'test',
+              _JavaScriptKey: 'test',
+              _ContentType: 'image/svg+xml',
+              base64: svgContent,
+            }),
+          }).catch(e => {
+            throw new Error(e.data.error);
+          })
+        ).toBeRejectedWith(
+          new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `File upload of extension ${extension} is disabled.`)
+        );
+      }
+    });
+
     it('works with a period in the file name', async () => {
       await reconfigureServer({
         fileUpload: {
