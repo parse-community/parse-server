@@ -183,7 +183,7 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_ALLOW_CUSTOM_OBJECT_ID
   :DEFAULT: false */
   allowCustomObjectId: ?boolean;
-  /* Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication
+  /* Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication<br><br>Provider names must start with a letter and contain only letters, digits, and underscores (`/^[A-Za-z][A-Za-z0-9_]*$/`). This is because each provider name is used to construct a database field (`_auth_data_<provider>`), which must comply with Parse Server's field naming rules.
   :ENV: PARSE_SERVER_AUTH_PROVIDERS */
   auth: ?{ [string]: AuthAdapter };
   /* Optional. Enables insecure authentication adapters. Insecure auth adapters are deprecated and will be removed in a future version. Defaults to `false`.

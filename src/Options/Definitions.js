@@ -102,7 +102,7 @@ module.exports.ParseServerOptions = {
   },
   auth: {
     env: 'PARSE_SERVER_AUTH_PROVIDERS',
-    help: 'Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication',
+    help: "Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication<br><br>Provider names must start with a letter and contain only letters, digits, and underscores (`/^[A-Za-z][A-Za-z0-9_]*$/`). This is because each provider name is used to construct a database field (`_auth_data_<provider>`), which must comply with Parse Server's field naming rules.",
     action: parsers.objectParser,
   },
   cacheAdapter: {
