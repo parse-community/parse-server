@@ -659,7 +659,8 @@ describe('google auth adapter', () => {
 
 describe('keycloak auth adapter', () => {
   const keycloak = require('../lib/Adapters/Auth/keycloak');
-  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+  const jwt = require('jsonwebtoken');
+  const authUtils = require('../lib/Adapters/Auth/utils');
 
   it('validateAuthData should fail without access token', async () => {
     const authData = {
@@ -704,17 +705,12 @@ describe('keycloak auth adapter', () => {
     }
   });
 
-  it('validateAuthData should fail connect error', async () => {
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.reject({
-        text: JSON.stringify({ error: 'hosting_error' }),
-      });
-    });
+  it('validateAuthData should fail without client-id', async () => {
     const options = {
       keycloak: {
         config: {
-          'auth-server-url': 'http://example.com',
-          realm: 'new',
+          'auth-server-url': 'https://auth.example.com',
+          realm: 'my-realm',
         },
       },
     };
@@ -727,84 +723,170 @@ describe('keycloak auth adapter', () => {
       await adapter.validateAuthData(authData, providerOptions);
       fail();
     } catch (e) {
-      expect(e.message).toBe('Could not connect to the authentication server');
+      expect(e.message).toBe('Keycloak auth is not configured. Missing client-id.');
     }
   });
 
-  it('validateAuthData should fail with error description', async () => {
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.reject({
-        text: JSON.stringify({ error_description: 'custom error message' }),
-      });
-    });
+  it('validateAuthData should fail with invalid JWT token', async () => {
     const options = {
       keycloak: {
         config: {
-          'auth-server-url': 'http://example.com',
-          realm: 'new',
+          'auth-server-url': 'https://auth.example.com',
+          realm: 'my-realm',
+          'client-id': 'parse-app',
         },
       },
     };
     const authData = {
       id: 'fakeid',
-      access_token: 'sometoken',
+      access_token: 'not-a-jwt',
     };
     const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     try {
       await adapter.validateAuthData(authData, providerOptions);
       fail();
     } catch (e) {
-      expect(e.message).toBe('custom error message');
+      expect(e.message).toBe('provided token does not decode as JWT');
     }
   });
 
-  it('validateAuthData should fail with invalid auth', async () => {
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({});
-    });
+  it('validateAuthData should fail with wrong issuer', async () => {
+    const fakeClaim = {
+      iss: 'https://evil.example.com/realms/my-realm',
+      azp: 'parse-app',
+      sub: 'fakeid',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
+    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
     const options = {
       keycloak: {
         config: {
-          'auth-server-url': 'http://example.com',
-          realm: 'new',
+          'auth-server-url': 'https://auth.example.com',
+          realm: 'my-realm',
+          'client-id': 'parse-app',
         },
       },
     };
     const authData = {
       id: 'fakeid',
-      access_token: 'sometoken',
+      access_token: 'fake.jwt.token',
     };
     const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     try {
       await adapter.validateAuthData(authData, providerOptions);
       fail();
     } catch (e) {
-      expect(e.message).toBe('Invalid authentication');
+      expect(e.message).toBe(
+        'access token not issued by correct provider - expected: https://auth.example.com/realms/my-realm | from: https://evil.example.com/realms/my-realm'
+      );
     }
   });
 
-  it('validateAuthData should fail with invalid groups', async () => {
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({
-        data: {
-          sub: 'fakeid',
-          roles: ['role1'],
-          groups: ['unknown'],
-        },
-      });
-    });
+  it('validateAuthData should fail with wrong azp (audience)', async () => {
+    const fakeClaim = {
+      iss: 'https://auth.example.com/realms/my-realm',
+      azp: 'other-app',
+      sub: 'fakeid',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
+    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
     const options = {
       keycloak: {
         config: {
-          'auth-server-url': 'http://example.com',
-          realm: 'new',
+          'auth-server-url': 'https://auth.example.com',
+          realm: 'my-realm',
+          'client-id': 'parse-app',
         },
       },
     };
     const authData = {
       id: 'fakeid',
-      access_token: 'sometoken',
+      access_token: 'fake.jwt.token',
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
+    try {
+      await adapter.validateAuthData(authData, providerOptions);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe(
+        'access token is not authorized for this client - expected: parse-app | from: other-app'
+      );
+    }
+  });
+
+  it('validateAuthData should fail with wrong sub', async () => {
+    const fakeClaim = {
+      iss: 'https://auth.example.com/realms/my-realm',
+      azp: 'parse-app',
+      sub: 'wrong-id',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
+    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    const options = {
+      keycloak: {
+        config: {
+          'auth-server-url': 'https://auth.example.com',
+          realm: 'my-realm',
+          'client-id': 'parse-app',
+        },
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'fake.jwt.token',
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
+    try {
+      await adapter.validateAuthData(authData, providerOptions);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('auth data is invalid for this user.');
+    }
+  });
+
+  it('validateAuthData should fail with invalid roles (JWT validation)', async () => {
+    const fakeClaim = {
+      iss: 'https://auth.example.com/realms/my-realm',
+      azp: 'parse-app',
+      sub: 'fakeid',
+      exp: Math.floor(Date.now() / 1000) + 3600,
       roles: ['role1'],
+      groups: ['group1'],
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
+    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    const options = {
+      keycloak: {
+        config: {
+          'auth-server-url': 'https://auth.example.com',
+          realm: 'my-realm',
+          'client-id': 'parse-app',
+        },
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'fake.jwt.token',
+      roles: ['wrong-role'],
       groups: ['group1'],
     };
     const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
@@ -816,29 +898,35 @@ describe('keycloak auth adapter', () => {
     }
   });
 
-  it('validateAuthData should fail with invalid roles', async () => {
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({
-        data: {
-          sub: 'fakeid',
-          roles: 'unknown',
-          groups: ['group1'],
-        },
-      });
-    });
+  it('validateAuthData should fail with invalid groups (JWT validation)', async () => {
+    const fakeClaim = {
+      iss: 'https://auth.example.com/realms/my-realm',
+      azp: 'parse-app',
+      sub: 'fakeid',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+      roles: ['role1'],
+      groups: ['group1'],
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
+    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
     const options = {
       keycloak: {
         config: {
-          'auth-server-url': 'http://example.com',
-          realm: 'new',
+          'auth-server-url': 'https://auth.example.com',
+          realm: 'my-realm',
+          'client-id': 'parse-app',
         },
       },
     };
     const authData = {
       id: 'fakeid',
-      access_token: 'sometoken',
+      access_token: 'fake.jwt.token',
       roles: ['role1'],
-      groups: ['group1'],
+      groups: ['wrong-group'],
     };
     const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     try {
@@ -849,39 +937,201 @@ describe('keycloak auth adapter', () => {
     }
   });
 
-  it('validateAuthData should handle authentication', async () => {
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({
-        data: {
-          sub: 'fakeid',
-          roles: ['role1'],
-          groups: ['group1'],
-        },
-      });
-    });
+  it('validateAuthData should handle successful authentication', async () => {
+    const fakeClaim = {
+      iss: 'https://auth.example.com/realms/my-realm',
+      azp: 'parse-app',
+      sub: 'fakeid',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+      roles: ['role1'],
+      groups: ['group1'],
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
+    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
     const options = {
       keycloak: {
         config: {
-          'auth-server-url': 'http://example.com',
-          realm: 'new',
+          'auth-server-url': 'https://auth.example.com',
+          realm: 'my-realm',
+          'client-id': 'parse-app',
         },
       },
     };
     const authData = {
       id: 'fakeid',
-      access_token: 'sometoken',
+      access_token: 'fake.jwt.token',
       roles: ['role1'],
       groups: ['group1'],
     };
     const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     await adapter.validateAuthData(authData, providerOptions);
-    expect(httpsRequest.get).toHaveBeenCalledWith({
-      host: 'http://example.com',
-      path: '/realms/new/protocol/openid-connect/userinfo',
-      headers: {
-        Authorization: 'Bearer sometoken',
+    expect(jwt.verify).toHaveBeenCalled();
+    expect(jwt.verify.calls.first().args[2].algorithms).toEqual(['RS256']);
+  });
+
+  it('validateAuthData should handle successful authentication without roles and groups', async () => {
+    const fakeClaim = {
+      iss: 'https://auth.example.com/realms/my-realm',
+      azp: 'parse-app',
+      sub: 'fakeid',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
+    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    const options = {
+      keycloak: {
+        config: {
+          'auth-server-url': 'https://auth.example.com',
+          realm: 'my-realm',
+          'client-id': 'parse-app',
+        },
       },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'fake.jwt.token',
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
+    await adapter.validateAuthData(authData, providerOptions);
+    expect(jwt.verify).toHaveBeenCalled();
+  });
+
+  it('validateAuthData should use hardcoded RS256 algorithm, not JWT header alg', async () => {
+    const fakeClaim = {
+      iss: 'https://auth.example.com/realms/my-realm',
+      azp: 'parse-app',
+      sub: 'fakeid',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    };
+    const fakeDecodedToken = { kid: '123', alg: 'none' };
+    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    const options = {
+      keycloak: {
+        config: {
+          'auth-server-url': 'https://auth.example.com',
+          realm: 'my-realm',
+          'client-id': 'parse-app',
+        },
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'fake.jwt.token',
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
+    await adapter.validateAuthData(authData, providerOptions);
+    expect(jwt.verify.calls.first().args[2].algorithms).toEqual(['RS256']);
+  });
+
+  it('validateAuthData should verify a real signed JWT end-to-end', async () => {
+    const crypto = require('crypto');
+    const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+      publicKeyEncoding: { type: 'spki', format: 'pem' },
+      privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
     });
+
+    const token = jwt.sign(
+      {
+        iss: 'https://auth.example.com/realms/my-realm',
+        azp: 'parse-app',
+        sub: 'user123',
+        roles: ['admin'],
+        groups: ['staff'],
+      },
+      privateKey,
+      { algorithm: 'RS256', keyid: 'test-key-1', expiresIn: '1h' }
+    );
+
+    // Only mock the JWKS key fetch — jwt.verify runs for real
+    spyOn(authUtils, 'getSigningKey').and.resolveTo({
+      kid: 'test-key-1',
+      publicKey: publicKey,
+    });
+
+    const options = {
+      keycloak: {
+        config: {
+          'auth-server-url': 'https://auth.example.com',
+          realm: 'my-realm',
+          'client-id': 'parse-app',
+        },
+      },
+    };
+    const authData = {
+      id: 'user123',
+      access_token: token,
+      roles: ['admin'],
+      groups: ['staff'],
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
+    const result = await adapter.validateAuthData(authData, providerOptions);
+    expect(result.sub).toBe('user123');
+    expect(result.azp).toBe('parse-app');
+    expect(result.iss).toBe('https://auth.example.com/realms/my-realm');
+  });
+
+  it('validateAuthData should reject a JWT signed with a different key', async () => {
+    const crypto = require('crypto');
+    const { privateKey } = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+      publicKeyEncoding: { type: 'spki', format: 'pem' },
+      privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+    });
+    const { publicKey: differentPublicKey } = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+      publicKeyEncoding: { type: 'spki', format: 'pem' },
+      privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+    });
+
+    const token = jwt.sign(
+      {
+        iss: 'https://auth.example.com/realms/my-realm',
+        azp: 'parse-app',
+        sub: 'user123',
+      },
+      privateKey,
+      { algorithm: 'RS256', keyid: 'test-key-1', expiresIn: '1h' }
+    );
+
+    // Return a different public key — signature verification should fail
+    spyOn(authUtils, 'getSigningKey').and.resolveTo({
+      kid: 'test-key-1',
+      publicKey: differentPublicKey,
+    });
+
+    const options = {
+      keycloak: {
+        config: {
+          'auth-server-url': 'https://auth.example.com',
+          realm: 'my-realm',
+          'client-id': 'parse-app',
+        },
+      },
+    };
+    const authData = {
+      id: 'user123',
+      access_token: token,
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
+    try {
+      await adapter.validateAuthData(authData, providerOptions);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('invalid signature');
+    }
   });
 });
 
