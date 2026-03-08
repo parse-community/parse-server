@@ -195,10 +195,17 @@ describe('AuthData Unique Index', () => {
 
     const results = await Promise.all(concurrentRequests);
     const successes = results.filter(r => r.success);
+    const failures = results.filter(r => !r.success);
 
     // All successes should reference the same user
     const uniqueObjectIds = new Set(successes.map(r => r.data.objectId));
     expect(uniqueObjectIds.size).toBe(1);
+
+    // Failures should be "this auth is already used" errors
+    for (const failure of failures) {
+      expect(failure.error.code).toBe(208);
+      expect(failure.error.error).toBe('this auth is already used');
+    }
 
     // Verify only one user exists in the database with this authData
     const query = new Parse.Query('_User');
