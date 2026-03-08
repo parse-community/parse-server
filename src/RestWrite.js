@@ -528,16 +528,6 @@ RestWrite.prototype.ensureUniqueAuthDataId = async function () {
 
   if (!hasAuthDataId) { return; }
 
-  // Ensure unique indexes exist for auth data providers to prevent race conditions.
-  // This handles providers that were not configured at server startup.
-  const adapter = this.config.database.adapter;
-  if (typeof adapter.ensureAuthDataUniqueness === 'function') {
-    const providers = Object.keys(this.data.authData).filter(
-      key => this.data.authData[key] && this.data.authData[key].id
-    );
-    await Promise.all(providers.map(provider => adapter.ensureAuthDataUniqueness(provider)));
-  }
-
   const r = await Auth.findUsersWithAuthData(this.config, this.data.authData);
   const results = this.filteredObjectsByACL(r);
   if (results.length > 1) {
