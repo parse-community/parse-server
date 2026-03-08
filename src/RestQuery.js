@@ -848,6 +848,9 @@ _UnsafeRestQuery.prototype.denyProtectedFields = async function () {
       this.findOptions
     ) || [];
   const checkWhere = (where) => {
+    if (typeof where !== 'object' || where === null) {
+      return;
+    }
     for (const key of protectedFields) {
       if (key in where) {
         throw createSanitizedError(

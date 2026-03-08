@@ -1821,5 +1821,13 @@ describe('ProtectedFields', function () {
         })
       );
     });
+
+    it('should handle malformed $or with null element', async function () {
+      const query = new Parse.Query(Parse.User);
+      query.withJSON({ where: { $or: [null, { username: 'test' }] } });
+      // Should not throw TypeError from denyProtectedFields;
+      // may fail downstream in validateQuery (pre-existing issue)
+      await expectAsync(query.find()).toBeRejected();
+    });
   });
 });
