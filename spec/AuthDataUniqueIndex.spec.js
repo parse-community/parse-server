@@ -1,6 +1,7 @@
 'use strict';
 
 const request = require('../lib/request');
+const Config = require('../lib/Config');
 
 describe('AuthData Unique Index', () => {
   const fakeAuthProvider = {
@@ -118,6 +119,58 @@ describe('AuthData Unique Index', () => {
     // Login again with same authData — should return same user
     const user2 = await Parse.User.logInWith('fakeAuthProvider', authPayload);
     expect(user2.id).toBe(user1.id);
+  });
+
+  it('should skip startup index creation when createIndexAuthDataUniqueness is false', async () => {
+    await reconfigureServer({
+      auth: { fakeAuthProvider },
+      databaseAdapter: undefined,
+      databaseOptions: { createIndexAuthDataUniqueness: false },
+    });
+    const config = Config.get('test');
+    const adapter = config.database.adapter;
+    const spy = spyOn(adapter, 'ensureAuthDataUniqueness').and.callThrough();
+
+    // Trigger performInitialization again to verify the option is respected
+    await config.database.performInitialization();
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('should handle calling ensureAuthDataUniqueness multiple times via cache', async () => {
+    const config = Config.get('test');
+    const adapter = config.database.adapter;
+
+    // First call creates the index
+    await adapter.ensureAuthDataUniqueness('fakeAuthProvider');
+    // Second call should be a cache hit (no DB call)
+    await adapter.ensureAuthDataUniqueness('fakeAuthProvider');
+    expect(adapter._authDataUniqueIndexes.has('fakeAuthProvider')).toBe(true);
+  });
+
+  it('should log warning when index creation fails due to existing duplicates', async () => {
+    const config = Config.get('test');
+    const adapter = config.database.adapter;
+
+    // Clear cache to force index creation attempt
+    if (adapter._authDataUniqueIndexes) {
+      adapter._authDataUniqueIndexes.clear();
+    }
+
+    // Spy on the adapter to simulate a duplicate value error
+    spyOn(adapter, 'ensureAuthDataUniqueness').and.callFake(() => {
+      return Promise.reject(
+        new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'duplicates exist')
+      );
+    });
+
+    const logSpy = spyOn(require('../lib/logger').logger, 'warn');
+
+    // Re-run performInitialization — should warn but not throw
+    await config.database.performInitialization();
+    expect(logSpy).toHaveBeenCalledWith(
+      jasmine.stringContaining('Unable to ensure uniqueness for auth data provider'),
+      jasmine.anything()
+    );
   });
 
   it('should prevent concurrent signups with same anonymous authData', async () => {

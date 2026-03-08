@@ -48,6 +48,7 @@ export const ParseServerDatabaseOptions = [
   'allowPublicExplain',
   'batchSize',
   'clientMetadata',
+  'createIndexAuthDataUniqueness',
   'createIndexRoleName',
   'createIndexUserEmail',
   'createIndexUserEmailCaseInsensitive',
