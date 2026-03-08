@@ -122,18 +122,19 @@ describe('AuthData Unique Index', () => {
   });
 
   it('should skip startup index creation when createIndexAuthDataUniqueness is false', async () => {
-    await reconfigureServer({
-      auth: { fakeAuthProvider },
-      databaseAdapter: undefined,
-      databaseOptions: { createIndexAuthDataUniqueness: false },
-    });
     const config = Config.get('test');
     const adapter = config.database.adapter;
     const spy = spyOn(adapter, 'ensureAuthDataUniqueness').and.callThrough();
 
-    // Trigger performInitialization again to verify the option is respected
+    // Temporarily set the option to false
+    const originalOptions = config.database.options.databaseOptions;
+    config.database.options.databaseOptions = { createIndexAuthDataUniqueness: false };
+
     await config.database.performInitialization();
     expect(spy).not.toHaveBeenCalled();
+
+    // Restore original options
+    config.database.options.databaseOptions = originalOptions;
   });
 
   it('should handle calling ensureAuthDataUniqueness multiple times via cache', async () => {
