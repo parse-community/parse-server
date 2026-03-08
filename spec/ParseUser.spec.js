@@ -430,8 +430,13 @@ describe('Parse.User testing', () => {
         },
       },
     };
-    const res = await request(options);
-    expect(res.data.objectId).not.toEqual(objectId);
+    try {
+      await request(options);
+      fail('should have thrown');
+    } catch (err) {
+      expect(err.data.code).toBe(208);
+      expect(err.data.error).toBe('this auth is already used');
+    }
   });
 
   it('user login with files', done => {
