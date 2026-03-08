@@ -1801,5 +1801,25 @@ describe('ProtectedFields', function () {
       expect(results.length).toBe(1);
       expect(results[0].id).toBe(user.id);
     });
+
+    it('should deny query on protected field with falsy value', async function () {
+      const query = new Parse.Query(Parse.User);
+      query.withJSON({ where: { email: null } });
+      await expectAsync(query.find()).toBeRejectedWith(
+        jasmine.objectContaining({
+          code: Parse.Error.OPERATION_FORBIDDEN,
+        })
+      );
+    });
+
+    it('should deny query on protected field with falsy value via $or', async function () {
+      const query = new Parse.Query(Parse.User);
+      query.withJSON({ where: { $or: [{ email: null }] } });
+      await expectAsync(query.find()).toBeRejectedWith(
+        jasmine.objectContaining({
+          code: Parse.Error.OPERATION_FORBIDDEN,
+        })
+      );
+    });
   });
 });
