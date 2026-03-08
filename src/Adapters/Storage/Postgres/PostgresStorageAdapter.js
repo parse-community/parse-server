@@ -1479,9 +1479,15 @@ export class PostgresStorageAdapter implements StorageAdapter {
           );
           err.underlyingError = error;
           if (error.constraint) {
-            const matches = error.constraint.match(/unique_([a-zA-Z]+)/);
-            if (matches && Array.isArray(matches)) {
-              err.userInfo = { duplicated_field: matches[1] };
+            // Check for authData unique index violations first
+            const authDataMatch = error.constraint.match(/_User_unique_authData_([a-zA-Z0-9_]+)_id/);
+            if (authDataMatch) {
+              err.userInfo = { duplicated_field: `_auth_data_${authDataMatch[1]}` };
+            } else {
+              const matches = error.constraint.match(/unique_([a-zA-Z]+)/);
+              if (matches && Array.isArray(matches)) {
+                err.userInfo = { duplicated_field: matches[1] };
+              }
             }
           }
           error = err;
@@ -2050,6 +2056,38 @@ export class PostgresStorageAdapter implements StorageAdapter {
         throw error;
       }
     });
+  }
+
+  // Creates a unique index on authData-><provider>->>'id' to prevent
+  // race conditions during concurrent signups with the same authData.
+  async ensureAuthDataUniqueness(provider: string) {
+    if (!this._authDataUniqueIndexes) {
+      this._authDataUniqueIndexes = new Set();
+    }
+    if (this._authDataUniqueIndexes.has(provider)) {
+      return;
+    }
+    const indexName = `_User_unique_authData_${provider}_id`;
+    const qs = `CREATE UNIQUE INDEX IF NOT EXISTS $1:name ON "_User" (("authData"->$2::text->>'id')) WHERE "authData"->$2::text->>'id' IS NOT NULL`;
+    await this._client.none(qs, [indexName, provider]).catch(error => {
+      if (
+        error.code === PostgresDuplicateRelationError &&
+        error.message.includes(indexName)
+      ) {
+        // Index already exists. Ignore error.
+      } else if (
+        error.code === PostgresUniqueIndexViolationError &&
+        error.message.includes(indexName)
+      ) {
+        throw new Parse.Error(
+          Parse.Error.DUPLICATE_VALUE,
+          'Tried to ensure field uniqueness for a class that already has duplicates.'
+        );
+      } else {
+        throw error;
+      }
+    });
+    this._authDataUniqueIndexes.add(provider);
   }
 
   // Executes a count.

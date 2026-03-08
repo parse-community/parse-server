@@ -1850,6 +1850,30 @@ class DatabaseController {
           throw error;
         });
     }
+    // Create unique indexes for authData providers to prevent race conditions
+    // during concurrent signups with the same authData
+    if (
+      databaseOptions.createIndexAuthDataUniqueness !== false &&
+      typeof this.adapter.ensureAuthDataUniqueness === 'function'
+    ) {
+      const authProviders = Object.keys(this.options.auth || {});
+      if (this.options.enableAnonymousUsers !== false) {
+        if (!authProviders.includes('anonymous')) {
+          authProviders.push('anonymous');
+        }
+      }
+      await Promise.all(
+        authProviders.map(provider =>
+          this.adapter.ensureAuthDataUniqueness(provider).catch(error => {
+            logger.warn(
+              `Unable to ensure uniqueness for auth data provider "${provider}": `,
+              error
+            );
+          })
+        )
+      );
+    }
+
     await this.adapter.updateSchemaWithIndexes();
   }
 

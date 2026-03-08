@@ -528,6 +528,16 @@ RestWrite.prototype.ensureUniqueAuthDataId = async function () {
 
   if (!hasAuthDataId) { return; }
 
+  // Ensure unique indexes exist for auth data providers to prevent race conditions.
+  // This handles providers that were not configured at server startup.
+  const adapter = this.config.database.adapter;
+  if (typeof adapter.ensureAuthDataUniqueness === 'function') {
+    const providers = Object.keys(this.data.authData).filter(
+      key => this.data.authData[key] && this.data.authData[key].id
+    );
+    await Promise.all(providers.map(provider => adapter.ensureAuthDataUniqueness(provider)));
+  }
+
   const r = await Auth.findUsersWithAuthData(this.config, this.data.authData);
   const results = this.filteredObjectsByACL(r);
   if (results.length > 1) {
@@ -1611,6 +1621,19 @@ RestWrite.prototype.runDatabaseOperation = function () {
       .catch(error => {
         if (this.className !== '_User' || error.code !== Parse.Error.DUPLICATE_VALUE) {
           throw error;
+        }
+
+        // Check if the duplicate key error is from an authData unique index
+        if (
+          error &&
+          error.userInfo &&
+          error.userInfo.duplicated_field &&
+          error.userInfo.duplicated_field.startsWith('_auth_data_')
+        ) {
+          throw new Parse.Error(
+            Parse.Error.ACCOUNT_ALREADY_LINKED,
+            'this auth is already used'
+          );
         }
 
         // Quick check, if we were able to infer the duplicated field name
