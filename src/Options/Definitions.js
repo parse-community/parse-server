@@ -1171,7 +1171,7 @@ module.exports.DatabaseOptions = {
   },
   createIndexAuthDataUniqueness: {
     env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_AUTH_DATA_UNIQUENESS',
-    help: 'Set to `true` to automatically create unique indexes on the authData fields of the _User collection for each configured auth provider on server start. These indexes prevent race conditions during concurrent signups with the same authData. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F When setting this option to `false` to manually create the indexes, keep in mind that the otherwise automatically created indexes may change in the future to be optimized for the internal usage by Parse Server.',
+    help: 'Set to `true` to automatically create unique indexes on the authData fields of the _User collection for each configured auth provider on server start, including `anonymous` when anonymous users are enabled. These indexes prevent race conditions during concurrent signups with the same authData. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F When setting this option to `false` to manually create the indexes, keep in mind that the otherwise automatically created indexes may change in the future to be optimized for the internal usage by Parse Server.',
     action: parsers.booleanParser,
     default: true,
   },
