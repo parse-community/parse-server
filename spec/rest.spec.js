@@ -953,6 +953,117 @@ describe('rest update', () => {
   });
 });
 
+describe('_Join table security', () => {
+  let config;
+
+  beforeEach(() => {
+    config = Config.get('test');
+  });
+
+  it('cannot create object in _Join table without masterKey', () => {
+    expect(() =>
+      rest.create(config, auth.nobody(config), '_Join:users:_Role', {
+        relatedId: 'someUserId',
+        owningId: 'someRoleId',
+      })
+    ).toThrowError(/Permission denied/);
+  });
+
+  it('cannot find objects in _Join table without masterKey', async () => {
+    await expectAsync(
+      rest.find(config, auth.nobody(config), '_Join:users:_Role', {})
+    ).toBeRejectedWith(
+      jasmine.objectContaining({
+        code: Parse.Error.OPERATION_FORBIDDEN,
+      })
+    );
+  });
+
+  it('cannot update object in _Join table without masterKey', () => {
+    expect(() =>
+      rest.update(config, auth.nobody(config), '_Join:users:_Role', { relatedId: 'someUserId' }, { owningId: 'newRoleId' })
+    ).toThrowError(/Permission denied/);
+  });
+
+  it('cannot delete object in _Join table without masterKey', () => {
+    expect(() =>
+      rest.del(config, auth.nobody(config), '_Join:users:_Role', 'someObjectId')
+    ).toThrowError(/Permission denied/);
+  });
+
+  it('cannot get object in _Join table without masterKey', async () => {
+    await expectAsync(
+      rest.get(config, auth.nobody(config), '_Join:users:_Role', 'someObjectId')
+    ).toBeRejectedWith(
+      jasmine.objectContaining({
+        code: Parse.Error.OPERATION_FORBIDDEN,
+      })
+    );
+  });
+
+  it('can find objects in _Join table with masterKey', async () => {
+    await expectAsync(
+      rest.find(config, auth.master(config), '_Join:users:_Role', {})
+    ).toBeResolved();
+  });
+
+  it('can find objects in _Join table with maintenance key', async () => {
+    await expectAsync(
+      rest.find(config, auth.maintenance(config), '_Join:users:_Role', {})
+    ).toBeResolved();
+  });
+
+  it('legitimate relation operations still work', async () => {
+    const role = new Parse.Role('admin', new Parse.ACL());
+    const user = await Parse.User.signUp('testuser', 'password123');
+    role.getUsers().add(user);
+    await role.save(null, { useMasterKey: true });
+    const result = await rest.find(config, auth.master(config), '_Join:users:_Role', {});
+    expect(result.results.length).toBe(1);
+  });
+
+  it('blocks _Join table access for any relation, not just _Role', () => {
+    expect(() =>
+      rest.create(config, auth.nobody(config), '_Join:viewers:ConfidentialDoc', {
+        relatedId: 'someUserId',
+        owningId: 'someDocId',
+      })
+    ).toThrowError(/Permission denied/);
+  });
+
+  it('cannot escalate role via direct _Join table write', async () => {
+    const role = new Parse.Role('superadmin', new Parse.ACL());
+    await role.save(null, { useMasterKey: true });
+    const user = await Parse.User.signUp('attacker', 'password123');
+    const sessionToken = user.getSessionToken();
+    const userAuth = await auth.getAuthForSessionToken({
+      config,
+      sessionToken,
+    });
+    expect(() =>
+      rest.create(config, userAuth, '_Join:users:_Role', {
+        relatedId: user.id,
+        owningId: role.id,
+      })
+    ).toThrowError(/Permission denied/);
+  });
+
+  it('cannot write to _Join table with read-only masterKey', () => {
+    expect(() =>
+      rest.create(config, auth.readOnly(config), '_Join:users:_Role', {
+        relatedId: 'someUserId',
+        owningId: 'someRoleId',
+      })
+    ).toThrowError(/Permission denied/);
+  });
+
+  it('can read _Join table with read-only masterKey', async () => {
+    await expectAsync(
+      rest.find(config, auth.readOnly(config), '_Join:users:_Role', {})
+    ).toBeResolved();
+  });
+});
+
 describe('read-only masterKey', () => {
   let loggerErrorSpy;
   let logger;

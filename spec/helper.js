@@ -258,6 +258,9 @@ global.afterEachFn = async () => {
         if (!className.startsWith('_')) {
           return true;
         }
+        if (className.startsWith('_Join:')) {
+          return true;
+        }
         return [
           '_User',
           '_Installation',

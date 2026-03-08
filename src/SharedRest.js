@@ -33,6 +33,15 @@ function enforceRoleSecurity(method, className, auth, config) {
     );
   }
 
+  // _Join tables are internal and must only be modified through relation operations
+  if (className.startsWith('_Join:') && !auth.isMaster && !auth.isMaintenance) {
+    throw createSanitizedError(
+      Parse.Error.OPERATION_FORBIDDEN,
+      `Clients aren't allowed to perform the ${method} operation on the ${className} collection.`,
+      config
+    );
+  }
+
   // readOnly masterKey is not allowed
   if (auth.isReadOnly && (method === 'delete' || method === 'create' || method === 'update')) {
     throw createSanitizedError(
