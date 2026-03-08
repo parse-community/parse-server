@@ -5,7 +5,7 @@
  * @param {Object} options - The adapter configuration options.
  * @param {string} options.tokenIntrospectionEndpointUrl - The URL of the token introspection endpoint. Required.
  * @param {boolean} options.oauth2 - Indicates that the request should be handled by the OAuth2 adapter. Required.
- * @param {string} [options.useridField] - The field in the introspection response that contains the user ID. Optional.
+ * @param {string} [options.useridField='sub'] - The field in the introspection response that contains the user ID. Defaults to `sub` per RFC 7662.
  * @param {string} [options.appidField] - The field in the introspection response that contains the app ID. Optional.
  * @param {string[]} [options.appIds] - List of allowed app IDs. Required if `appidField` is defined.
  * @param {string} [options.authorizationHeader] - The Authorization header value for the introspection request. Optional.
@@ -66,7 +66,7 @@ class OAuth2Adapter extends AuthAdapter {
     }
 
     this.tokenIntrospectionEndpointUrl = options.tokenIntrospectionEndpointUrl;
-    this.useridField = options.useridField;
+    this.useridField = options.useridField || 'sub';
     this.appidField = options.appidField;
     this.appIds = options.appIds;
     this.authorizationHeader = options.authorizationHeader;
