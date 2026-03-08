@@ -414,6 +414,35 @@ _UnsafeRestQuery.prototype.redirectClassNameForKey = function () {
     .then(newClassName => {
       this.className = newClassName;
       this.redirectClassName = newClassName;
+
+      // Re-apply security checks for the redirected class name, since the
+      // checks in the constructor and in rest.find ran against the original
+      // class name before the redirect.
+      if (!this.auth.isMaster) {
+        enforceRoleSecurity('find', this.className, this.auth, this.config);
+
+        if (this.className === '_Session') {
+          if (!this.auth.user) {
+            throw createSanitizedError(
+              Parse.Error.INVALID_SESSION_TOKEN,
+              'Invalid session token',
+              this.config
+            );
+          }
+          this.restWhere = {
+            $and: [
+              this.restWhere,
+              {
+                user: {
+                  __type: 'Pointer',
+                  className: '_User',
+                  objectId: this.auth.user.id,
+                },
+              },
+            ],
+          };
+        }
+      }
     });
 };
 

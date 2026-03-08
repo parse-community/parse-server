@@ -614,3 +614,104 @@ describe('RestQuery.each', () => {
     ]);
   });
 });
+
+describe('redirectClassNameForKey security', () => {
+  let config;
+
+  beforeEach(() => {
+    config = Config.get('test');
+  });
+
+  it('should scope _Session results to the current user when redirected via redirectClassNameForKey', async () => {
+    // Create two users with sessions (without logging out, to preserve sessions)
+    const user1 = await Parse.User.signUp('user1', 'password1');
+    const sessionToken1 = user1.getSessionToken();
+
+    // Sign up user2 via REST to avoid logging out user1
+    await request({
+      method: 'POST',
+      url: Parse.serverURL + '/users',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+      body: { username: 'user2', password: 'password2' },
+    });
+
+    // Create a public class with a relation field pointing to _Session
+    // (using masterKey to create the object and relation schema)
+    const obj = new Parse.Object('PublicData');
+    const relation = obj.relation('pivot');
+    // Add a fake pointer to _Session to establish the relation schema
+    relation.add(Parse.Object.fromJSON({ className: '_Session', objectId: 'fakeId' }));
+    await obj.save(null, { useMasterKey: true });
+
+    // Authenticated user queries with redirectClassNameForKey
+    const userAuth = await auth.getAuthForSessionToken({
+      config,
+      sessionToken: sessionToken1,
+    });
+    const result = await rest.find(config, userAuth, 'PublicData', {}, { redirectClassNameForKey: 'pivot' });
+
+    // Should only see user1's own session, not user2's
+    expect(result.results.length).toBe(1);
+    expect(result.results[0].user.objectId).toBe(user1.id);
+  });
+
+  it('should reject unauthenticated access to _Session via redirectClassNameForKey', async () => {
+    // Create a user so a session exists
+    await Parse.User.signUp('victim', 'password123');
+    await Parse.User.logOut();
+
+    // Create a public class with a relation to _Session
+    const obj = new Parse.Object('PublicData');
+    const relation = obj.relation('pivot');
+    relation.add(Parse.Object.fromJSON({ className: '_Session', objectId: 'fakeId' }));
+    await obj.save(null, { useMasterKey: true });
+
+    // Unauthenticated query with redirectClassNameForKey
+    await expectAsync(
+      rest.find(config, auth.nobody(config), 'PublicData', {}, { redirectClassNameForKey: 'pivot' })
+    ).toBeRejectedWith(
+      jasmine.objectContaining({ code: Parse.Error.INVALID_SESSION_TOKEN })
+    );
+  });
+
+  it('should block redirectClassNameForKey to master-only classes', async () => {
+    // Create a public class with a relation to _JobStatus (master-only)
+    const obj = new Parse.Object('PublicData');
+    const relation = obj.relation('jobPivot');
+    relation.add(Parse.Object.fromJSON({ className: '_JobStatus', objectId: 'fakeId' }));
+    await obj.save(null, { useMasterKey: true });
+
+    // Create a user for authenticated access
+    const user = await Parse.User.signUp('attacker', 'password123');
+    const sessionToken = user.getSessionToken();
+    const userAuth = await auth.getAuthForSessionToken({ config, sessionToken });
+
+    // Authenticated query should be blocked
+    await expectAsync(
+      rest.find(config, userAuth, 'PublicData', {}, { redirectClassNameForKey: 'jobPivot' })
+    ).toBeRejectedWith(
+      jasmine.objectContaining({ code: Parse.Error.OPERATION_FORBIDDEN })
+    );
+  });
+
+  it('should allow redirectClassNameForKey between regular classes', async () => {
+    // Create target class objects
+    const wheel1 = new Parse.Object('Wheel');
+    await wheel1.save();
+
+    // Create source class with relation to Wheel
+    const car = new Parse.Object('Car');
+    const relation = car.relation('wheels');
+    relation.add(wheel1);
+    await car.save();
+
+    // Query with redirectClassNameForKey should work normally
+    const result = await rest.find(config, auth.nobody(config), 'Car', {}, { redirectClassNameForKey: 'wheels' });
+    expect(result.results.length).toBe(1);
+    expect(result.results[0].objectId).toBe(wheel1.id);
+  });
+});
