@@ -523,7 +523,6 @@ RestWrite.prototype._throwIfAuthDataDuplicate = function (error) {
   ) {
     throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
   }
-  throw error;
 };
 
 // we need after before save to ensure that the developer
@@ -672,6 +671,7 @@ RestWrite.prototype.handleAuthData = async function (authData) {
             );
           } catch (error) {
             this._throwIfAuthDataDuplicate(error);
+            throw error;
           }
         }
       }
@@ -1594,7 +1594,10 @@ RestWrite.prototype.runDatabaseOperation = function () {
           false,
           this.validSchemaController
         )
-        .catch(error => this._throwIfAuthDataDuplicate(error))
+        .catch(error => {
+          this._throwIfAuthDataDuplicate(error);
+          throw error;
+        })
         .then(response => {
           response.updatedAt = this.updatedAt;
           this._updateResponseWithData(response, this.data);
