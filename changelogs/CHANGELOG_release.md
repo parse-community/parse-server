@@ -1,3 +1,10 @@
+## [8.6.21](https://github.com/parse-community/parse-server/compare/8.6.20...8.6.21) (2026-03-08)
+
+
+### Bug Fixes
+
+* Parse Server session token exfiltration via `redirectClassNameForKey` query parameter ([GHSA-6r2j-cxgf-495f](https://github.com/parse-community/parse-server/security/advisories/GHSA-6r2j-cxgf-495f)) ([#10144](https://github.com/parse-community/parse-server/issues/10144)) ([721abe8](https://github.com/parse-community/parse-server/commit/721abe8b7c76a3143936936a720d3782547d4d9c))
+
 ## [8.6.20](https://github.com/parse-community/parse-server/compare/8.6.19...8.6.20) (2026-03-08)
 
 
