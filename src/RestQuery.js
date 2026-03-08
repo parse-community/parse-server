@@ -847,15 +847,23 @@ _UnsafeRestQuery.prototype.denyProtectedFields = async function () {
       this.auth,
       this.findOptions
     ) || [];
-  for (const key of protectedFields) {
-    if (this.restWhere[key]) {
-      throw createSanitizedError(
-        Parse.Error.OPERATION_FORBIDDEN,
-        `This user is not allowed to query ${key} on class ${this.className}`,
-        this.config
-      );
+  const checkWhere = (where) => {
+    for (const key of protectedFields) {
+      if (where[key]) {
+        throw createSanitizedError(
+          Parse.Error.OPERATION_FORBIDDEN,
+          `This user is not allowed to query ${key} on class ${this.className}`,
+          this.config
+        );
+      }
     }
-  }
+    for (const op of ['$or', '$and', '$nor']) {
+      if (Array.isArray(where[op])) {
+        where[op].forEach(subQuery => checkWhere(subQuery));
+      }
+    }
+  };
+  checkWhere(this.restWhere);
 };
 
 // Augments this.response with all pointers on an object
