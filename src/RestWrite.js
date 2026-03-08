@@ -515,6 +515,17 @@ RestWrite.prototype.getUserId = function () {
 };
 
 // Developers are allowed to change authData via before save trigger
+RestWrite.prototype._throwIfAuthDataDuplicate = function (error) {
+  if (
+    this.className === '_User' &&
+    error?.code === Parse.Error.DUPLICATE_VALUE &&
+    error.userInfo?.duplicated_field?.startsWith('_auth_data_')
+  ) {
+    throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
+  }
+  throw error;
+};
+
 // we need after before save to ensure that the developer
 // is not currently duplicating auth data ID
 RestWrite.prototype.ensureUniqueAuthDataId = async function () {
@@ -652,12 +663,16 @@ RestWrite.prototype.handleAuthData = async function (authData) {
         // uses the `doNotSave` option. Just update the authData part
         // Then we're good for the user, early exit of sorts
         if (Object.keys(this.data.authData).length) {
-          await this.config.database.update(
-            this.className,
-            { objectId: this.data.objectId },
-            { authData: this.data.authData },
-            {}
-          );
+          try {
+            await this.config.database.update(
+              this.className,
+              { objectId: this.data.objectId },
+              { authData: this.data.authData },
+              {}
+            );
+          } catch (error) {
+            this._throwIfAuthDataDuplicate(error);
+          }
         }
       }
     }
@@ -1579,6 +1594,7 @@ RestWrite.prototype.runDatabaseOperation = function () {
           false,
           this.validSchemaController
         )
+        .catch(error => this._throwIfAuthDataDuplicate(error))
         .then(response => {
           response.updatedAt = this.updatedAt;
           this._updateResponseWithData(response, this.data);
@@ -1613,18 +1629,7 @@ RestWrite.prototype.runDatabaseOperation = function () {
           throw error;
         }
 
-        // Check if the duplicate key error is from an authData unique index
-        if (
-          error &&
-          error.userInfo &&
-          error.userInfo.duplicated_field &&
-          error.userInfo.duplicated_field.startsWith('_auth_data_')
-        ) {
-          throw new Parse.Error(
-            Parse.Error.ACCOUNT_ALREADY_LINKED,
-            'this auth is already used'
-          );
-        }
+        this._throwIfAuthDataDuplicate(error);
 
         // Quick check, if we were able to infer the duplicated field name
         if (error && error.userInfo && error.userInfo.duplicated_field === 'username') {
