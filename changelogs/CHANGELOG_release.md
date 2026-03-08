@@ -1,3 +1,10 @@
+## [8.6.22](https://github.com/parse-community/parse-server/compare/8.6.21...8.6.22) (2026-03-08)
+
+
+### Bug Fixes
+
+* Parse Server OAuth2 authentication adapter account takeover via identity spoofing ([GHSA-fr88-w35c-r596](https://github.com/parse-community/parse-server/security/advisories/GHSA-fr88-w35c-r596)) ([#10146](https://github.com/parse-community/parse-server/issues/10146)) ([238110b](https://github.com/parse-community/parse-server/commit/238110b5f63f47d9ef128bbd5d37795a85f31891))
+
 ## [8.6.21](https://github.com/parse-community/parse-server/compare/8.6.20...8.6.21) (2026-03-08)
 
 
