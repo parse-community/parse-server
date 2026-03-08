@@ -1308,4 +1308,88 @@ describe('ParseLiveQuery', function () {
     await new Promise(resolve => setTimeout(resolve, 100));
     expect(createSpy).toHaveBeenCalledTimes(1);
   });
+
+  describe('class level permissions', () => {
+    async function setPermissionsOnClass(className, permissions, doPut) {
+      const method = doPut ? 'PUT' : 'POST';
+      const response = await fetch(Parse.serverURL + '/schemas/' + className, {
+        method,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': Parse.masterKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          classLevelPermissions: permissions,
+        }),
+      });
+      const body = await response.json();
+      if (body.error) {
+        throw body;
+      }
+      return body;
+    }
+
+    it('delivers LiveQuery event to authenticated client when CLP allows find', async () => {
+      await reconfigureServer({
+        liveQuery: {
+          classNames: ['SecureChat'],
+        },
+        startLiveQueryServer: true,
+        verbose: false,
+        silent: true,
+      });
+
+      const user = new Parse.User();
+      user.setUsername('admin');
+      user.setPassword('password');
+      await user.signUp();
+
+      await setPermissionsOnClass('SecureChat', {
+        create: { '*': true },
+        find: { [user.id]: true },
+      });
+
+      // Subscribe as the authorized user
+      const query = new Parse.Query('SecureChat');
+      const subscription = await query.subscribe(user.getSessionToken());
+
+      const spy = jasmine.createSpy('create');
+      subscription.on('create', spy);
+
+      const obj = new Parse.Object('SecureChat');
+      obj.set('secret', 'data');
+      await obj.save(null, { useMasterKey: true });
+
+      await sleep(500);
+      expect(spy).toHaveBeenCalledTimes(1);
+    });
+
+    it('rejects LiveQuery subscription when CLP denies find at subscription time', async () => {
+      await reconfigureServer({
+        liveQuery: {
+          classNames: ['SecureChat'],
+        },
+        startLiveQueryServer: true,
+        verbose: false,
+        silent: true,
+      });
+
+      const user = new Parse.User();
+      user.setUsername('admin');
+      user.setPassword('password');
+      await user.signUp();
+
+      await setPermissionsOnClass('SecureChat', {
+        create: { '*': true },
+        find: { [user.id]: true },
+      });
+
+      // Log out so subscription is unauthenticated
+      await Parse.User.logOut();
+
+      const query = new Parse.Query('SecureChat');
+      await expectAsync(query.subscribe()).toBeRejected();
+    });
+  });
 });

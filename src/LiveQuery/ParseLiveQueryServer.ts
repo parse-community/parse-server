@@ -20,6 +20,7 @@ import {
 } from '../triggers';
 import { getAuthForSessionToken, Auth } from '../Auth';
 import { getCacheController, getDatabaseController } from '../Controllers';
+import Config from '../Config';
 import { LRUCache as LRU } from 'lru-cache';
 import UserRouter from '../Routers/UsersRouter';
 import DatabaseController from '../Controllers/DatabaseController';
@@ -590,39 +591,20 @@ class ParseLiveQueryServer {
     requestId?: number,
     op?: string
   ): Promise<any> {
-    // try to match on user first, less expensive than with roles
     const subscriptionInfo = client.getSubscriptionInfo(requestId);
     const aclGroup = ['*'];
-    let userId;
     if (typeof subscriptionInfo !== 'undefined') {
       const { userId } = await this.getAuthForSessionToken(subscriptionInfo.sessionToken);
       if (userId) {
         aclGroup.push(userId);
       }
     }
-    try {
-      await SchemaController.validatePermission(
-        classLevelPermissions,
-        object.className,
-        aclGroup,
-        op
-      );
-      return true;
-    } catch (e) {
-      logger.verbose(`Failed matching CLP for ${object.id} ${userId} ${e}`);
-      return false;
-    }
-    // TODO: handle roles permissions
-    // Object.keys(classLevelPermissions).forEach((key) => {
-    //   const perm = classLevelPermissions[key];
-    //   Object.keys(perm).forEach((key) => {
-    //     if (key.indexOf('role'))
-    //   });
-    // })
-    // // it's rejected here, check the roles
-    // var rolesQuery = new Parse.Query(Parse.Role);
-    // rolesQuery.equalTo("users", user);
-    // return rolesQuery.find({useMasterKey:true});
+    await SchemaController.validatePermission(
+      classLevelPermissions,
+      object.className,
+      aclGroup,
+      op
+    );
   }
 
   async _filterSensitiveData(
@@ -907,6 +889,33 @@ class ParseLiveQueryServer {
           return;
         }
       }
+      // Check CLP for subscribe operation
+      const appConfig = Config.get(this.config.appId);
+      const schemaController = await appConfig.database.loadSchema();
+      const classLevelPermissions = schemaController.getClassLevelPermissions(className);
+      const op = this._getCLPOperation(request.query);
+      const aclGroup = ['*'];
+      if (!authCalled) {
+        const auth = await this.getAuthFromClient(
+          client,
+          request.requestId,
+          request.sessionToken
+        );
+        authCalled = true;
+        if (auth && auth.user) {
+          request.user = auth.user;
+          aclGroup.push(auth.user.id);
+        }
+      } else if (request.user) {
+        aclGroup.push(request.user.id);
+      }
+      await SchemaController.validatePermission(
+        classLevelPermissions,
+        className,
+        aclGroup,
+        op
+      );
+
       // Get subscription from subscriptions, create one if necessary
       const subscriptionHash = queryHash(request.query);
       // Add className to subscriptions if necessary
