@@ -522,7 +522,7 @@ describe('rate limit', () => {
       }).catch(e => e);
       expect(response.data).toEqual({
         code: Parse.Error.CONNECTION_FAILED,
-        error: 'Batch request exceeds rate limit for endpoint',
+        error: 'Too many requests',
       });
     });
 
@@ -581,7 +581,101 @@ describe('rate limit', () => {
       }).catch(e => e);
       expect(response.data).toEqual({
         code: Parse.Error.CONNECTION_FAILED,
-        error: 'Batch request exceeds rate limit for endpoint',
+        error: 'Too many login requests',
+      });
+    });
+
+    it('should not count sub-requests whose method does not match requestMethods', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/classes/*path',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            requestMethods: 'GET',
+            errorResponseMessage: 'Too many requests',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      // 3 POST sub-requests should NOT be counted against a GET-only rate limit
+      const response = await request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/batch',
+        body: JSON.stringify({
+          requests: [
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value1' } },
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value2' } },
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value3' } },
+          ],
+        }),
+      });
+      expect(response.data.length).toBe(3);
+      expect(response.data[0].success).toBeDefined();
+    });
+
+    it('should skip batch rate limit check for master key requests when includeMasterKey is false', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/classes/*path',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            errorResponseMessage: 'Too many requests',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      // Master key requests should bypass rate limit (includeMasterKey defaults to false)
+      const masterHeaders = {
+        'Content-Type': 'application/json',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+      };
+      const response = await request({
+        method: 'POST',
+        headers: masterHeaders,
+        url: 'http://localhost:8378/1/batch',
+        body: JSON.stringify({
+          requests: [
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value1' } },
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value2' } },
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value3' } },
+          ],
+        }),
+      });
+      expect(response.data.length).toBe(3);
+      expect(response.data[0].success).toBeDefined();
+    });
+
+    it('should use configured errorResponseMessage when rejecting batch', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/classes/*path',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            errorResponseMessage: 'Custom rate limit message',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      const response = await request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/batch',
+        body: JSON.stringify({
+          requests: [
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value1' } },
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value2' } },
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value3' } },
+          ],
+        }),
+      }).catch(e => e);
+      expect(response.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Custom rate limit message',
       });
     });
 
