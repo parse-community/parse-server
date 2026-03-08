@@ -1,3 +1,10 @@
+## [8.6.23](https://github.com/parse-community/parse-server/compare/8.6.22...8.6.23) (2026-03-08)
+
+
+### Bug Fixes
+
+* Rate limit bypass via batch request endpoint ([GHSA-775h-3xrc-c228](https://github.com/parse-community/parse-server/security/advisories/GHSA-775h-3xrc-c228)) ([#10148](https://github.com/parse-community/parse-server/issues/10148)) ([48b94ae](https://github.com/parse-community/parse-server/commit/48b94aed12006b5f1e501c0de8284a9541e60b1b))
+
 ## [8.6.22](https://github.com/parse-community/parse-server/compare/8.6.21...8.6.22) (2026-03-08)
 
 
