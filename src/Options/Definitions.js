@@ -637,7 +637,7 @@ module.exports.RateLimitOptions = {
   },
   requestCount: {
     env: 'PARSE_SERVER_RATE_LIMIT_REQUEST_COUNT',
-    help: 'The number of requests that can be made per IP address within the time window set in `requestTimeWindow` before the rate limit is applied.',
+    help: 'The number of requests that can be made per IP address within the time window set in `requestTimeWindow` before the rate limit is applied. For batch requests, this also limits the number of sub-requests in a single batch that target this path; however, requests already consumed in the current time window are not counted against the batch, so the effective limit may be higher when combining individual and batch requests. Note that this is a basic server-level rate limit; for comprehensive protection, use a reverse proxy or WAF for rate limiting.',
     action: parsers.numberParser('requestCount'),
   },
   requestMethods: {

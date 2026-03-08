@@ -387,7 +387,7 @@ export interface RateLimitOptions {
   requestPath: string;
   /* The window of time in milliseconds within which the number of requests set in `requestCount` can be made before the rate limit is applied. */
   requestTimeWindow: ?number;
-  /* The number of requests that can be made per IP address within the time window set in `requestTimeWindow` before the rate limit is applied. */
+  /* The number of requests that can be made per IP address within the time window set in `requestTimeWindow` before the rate limit is applied. For batch requests, this also limits the number of sub-requests in a single batch that target this path; however, requests already consumed in the current time window are not counted against the batch, so the effective limit may be higher when combining individual and batch requests. Note that this is a basic server-level rate limit; for comprehensive protection, use a reverse proxy or WAF for rate limiting. */
   requestCount: ?number;
   /* The error message that should be returned in the body of the HTTP 429 response when the rate limit is hit. Default is `Too many requests.`.
   :DEFAULT: Too many requests. */

@@ -584,6 +584,7 @@ export const addRateLimit = (route, config, cloud) => {
   }
   config.rateLimits.push({
     path: pathToRegexp(route.requestPath),
+    requestCount: route.requestCount,
     handler: rateLimit({
       windowMs: route.requestTimeWindow,
       max: route.requestCount,
