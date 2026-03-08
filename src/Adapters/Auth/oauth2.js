@@ -66,7 +66,7 @@ class OAuth2Adapter extends AuthAdapter {
     }
 
     this.tokenIntrospectionEndpointUrl = options.tokenIntrospectionEndpointUrl;
-    this.useridField = options.useridField;
+    this.useridField = options.useridField || 'sub';
     this.appidField = options.appidField;
     this.appIds = options.appIds;
     this.authorizationHeader = options.authorizationHeader;
