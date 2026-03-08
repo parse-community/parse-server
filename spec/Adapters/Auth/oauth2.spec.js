@@ -128,6 +128,62 @@ describe('OAuth2Adapter', () => {
         adapter.validateAuthData(authData, null, validOptions)
       ).toBeRejectedWithError('OAuth2 access token is invalid for this user.');
     });
+
+    it('should default useridField to sub and reject mismatched user ID', async () => {
+      const adapterNoUseridField = new OAuth2Adapter.constructor();
+      adapterNoUseridField.validateOptions({
+        tokenIntrospectionEndpointUrl: 'https://provider.example.com/introspect',
+      });
+
+      const authData = { id: 'victim-user-id', access_token: 'attackerToken' };
+      const mockResponse = {
+        active: true,
+        sub: 'attacker-user-id',
+      };
+
+      mockFetch([
+        {
+          url: 'https://provider.example.com/introspect',
+          method: 'POST',
+          response: {
+            ok: true,
+            json: () => Promise.resolve(mockResponse),
+          },
+        },
+      ]);
+
+      await expectAsync(
+        adapterNoUseridField.validateAuthData(authData, null, {})
+      ).toBeRejectedWithError('OAuth2 access token is invalid for this user.');
+    });
+
+    it('should default useridField to sub and accept matching user ID', async () => {
+      const adapterNoUseridField = new OAuth2Adapter.constructor();
+      adapterNoUseridField.validateOptions({
+        tokenIntrospectionEndpointUrl: 'https://provider.example.com/introspect',
+      });
+
+      const authData = { id: 'user-id', access_token: 'validAccessToken' };
+      const mockResponse = {
+        active: true,
+        sub: 'user-id',
+      };
+
+      mockFetch([
+        {
+          url: 'https://provider.example.com/introspect',
+          method: 'POST',
+          response: {
+            ok: true,
+            json: () => Promise.resolve(mockResponse),
+          },
+        },
+      ]);
+
+      await expectAsync(
+        adapterNoUseridField.validateAuthData(authData, null, {})
+      ).toBeResolvedTo({});
+    });
   });
 
   describe('requestTokenInfo', () => {
@@ -278,6 +334,57 @@ describe('OAuth2Adapter', () => {
       const authData = { access_token: 'validAccessToken', id: 'user123' };
       await expectAsync(Parse.User.logInWith('mockOauth', { authData })).toBeRejectedWithError(
         'OAuth2: Invalid app ID.'
+      );
+    });
+
+    it('should reject account takeover when useridField is omitted and attacker uses their own token with victim ID', async () => {
+      await reconfigureServer({
+        auth: {
+          mockOauth: {
+            tokenIntrospectionEndpointUrl: 'https://provider.example.com/introspect',
+            authorizationHeader: 'Bearer validAuthToken',
+            oauth2: true,
+          },
+        },
+      });
+
+      // Victim signs up with their own valid token
+      mockFetch([
+        {
+          url: 'https://provider.example.com/introspect',
+          method: 'POST',
+          response: {
+            ok: true,
+            json: () => Promise.resolve({
+              active: true,
+              sub: 'victim-sub-id',
+            }),
+          },
+        },
+      ]);
+
+      const victimAuthData = { access_token: 'victimToken', id: 'victim-sub-id' };
+      const victim = await Parse.User.logInWith('mockOauth', { authData: victimAuthData });
+      expect(victim.id).toBeDefined();
+
+      // Attacker tries to log in with their own valid token but claims victim's ID
+      mockFetch([
+        {
+          url: 'https://provider.example.com/introspect',
+          method: 'POST',
+          response: {
+            ok: true,
+            json: () => Promise.resolve({
+              active: true,
+              sub: 'attacker-sub-id',
+            }),
+          },
+        },
+      ]);
+
+      const attackerAuthData = { access_token: 'attackerToken', id: 'victim-sub-id' };
+      await expectAsync(Parse.User.logInWith('mockOauth', { authData: attackerAuthData })).toBeRejectedWith(
+        new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'OAuth2 access token is invalid for this user.')
       );
     });
 
