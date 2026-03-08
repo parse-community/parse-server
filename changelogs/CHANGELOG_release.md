@@ -1,3 +1,10 @@
+## [8.6.19](https://github.com/parse-community/parse-server/compare/8.6.18...8.6.19) (2026-03-08)
+
+
+### Bug Fixes
+
+* Protected fields bypass via logical query operators ([GHSA-72hp-qff8-4pvv](https://github.com/parse-community/parse-server/security/advisories/GHSA-72hp-qff8-4pvv)) ([#10139](https://github.com/parse-community/parse-server/issues/10139)) ([2c11c61](https://github.com/parse-community/parse-server/commit/2c11c616cb911ceed322c8d4dd204de9a0abc323))
+
 ## [8.6.18](https://github.com/parse-community/parse-server/compare/8.6.17...8.6.18) (2026-03-08)
 
 
