@@ -908,6 +908,86 @@ describe('(GHSA-qpr4-jrj4-6f27) SQL Injection via sort dot-notation field name',
     expect(elapsed).toBeLessThan(3000);
   });
 
+  it_only_db('postgres')('does not execute injection via dollar-sign quoting bypass', async () => {
+    // PostgreSQL supports $$string$$ as alternative to 'string'
+    const obj = new Parse.Object('InjectionTest');
+    obj.set('data', { key: 'value' });
+    obj.set('name', 'original');
+    await obj.save();
+
+    await request({
+      method: 'GET',
+      url: 'http://localhost:8378/1/classes/InjectionTest',
+      headers,
+      qs: {
+        order: "data.x' ASC; UPDATE \"InjectionTest\" SET name = $$hacked$$ WHERE true--",
+      },
+    }).catch(() => {});
+
+    const verify = await new Parse.Query('InjectionTest').first();
+    expect(verify.get('name')).toBe('original');
+  });
+
+  it_only_db('postgres')('does not execute injection via tagged dollar quoting bypass', async () => {
+    // PostgreSQL supports $tag$string$tag$ as alternative to 'string'
+    const obj = new Parse.Object('InjectionTest');
+    obj.set('data', { key: 'value' });
+    obj.set('name', 'original');
+    await obj.save();
+
+    await request({
+      method: 'GET',
+      url: 'http://localhost:8378/1/classes/InjectionTest',
+      headers,
+      qs: {
+        order: "data.x' ASC; UPDATE \"InjectionTest\" SET name = $t$hacked$t$ WHERE true--",
+      },
+    }).catch(() => {});
+
+    const verify = await new Parse.Query('InjectionTest').first();
+    expect(verify.get('name')).toBe('original');
+  });
+
+  it_only_db('postgres')('does not execute injection via CHR() concatenation bypass', async () => {
+    // CHR(104)||CHR(97)||... builds 'hacked' without quotes
+    const obj = new Parse.Object('InjectionTest');
+    obj.set('data', { key: 'value' });
+    obj.set('name', 'original');
+    await obj.save();
+
+    await request({
+      method: 'GET',
+      url: 'http://localhost:8378/1/classes/InjectionTest',
+      headers,
+      qs: {
+        order: "data.x' ASC; UPDATE \"InjectionTest\" SET name = CHR(104)||CHR(97)||CHR(99)||CHR(107) WHERE true--",
+      },
+    }).catch(() => {});
+
+    const verify = await new Parse.Query('InjectionTest').first();
+    expect(verify.get('name')).toBe('original');
+  });
+
+  it_only_db('postgres')('does not execute injection via backslash escape bypass', async () => {
+    // Backslash before quote could interact with '' escaping in some configurations
+    const obj = new Parse.Object('InjectionTest');
+    obj.set('data', { key: 'value' });
+    obj.set('name', 'original');
+    await obj.save();
+
+    await request({
+      method: 'GET',
+      url: 'http://localhost:8378/1/classes/InjectionTest',
+      headers,
+      qs: {
+        order: "data.x\\' ASC; UPDATE \"InjectionTest\" SET name = 'hacked' WHERE true--",
+      },
+    }).catch(() => {});
+
+    const verify = await new Parse.Query('InjectionTest').first();
+    expect(verify.get('name')).toBe('original');
+  });
+
   it('allows valid dot-notation sort on object field', async () => {
     const obj = new Parse.Object('InjectionTest');
     obj.set('data', { key: 'value' });
