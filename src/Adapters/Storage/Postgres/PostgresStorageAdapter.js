@@ -1818,7 +1818,30 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
     const whereClause = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
     const qs = `UPDATE $1:name SET ${updatePatterns.join()} ${whereClause} RETURNING *`;
-    const promise = (transactionalSession ? transactionalSession.t : this._client).any(qs, values);
+    const promise = (transactionalSession ? transactionalSession.t : this._client)
+      .any(qs, values)
+      .catch(error => {
+        if (error.code === PostgresUniqueIndexViolationError) {
+          const err = new Parse.Error(
+            Parse.Error.DUPLICATE_VALUE,
+            'A duplicate value for a field with unique values was provided'
+          );
+          err.underlyingError = error;
+          if (error.constraint) {
+            const authDataMatch = error.constraint.match(/_User_unique_authData_([a-zA-Z0-9_]+)_id/);
+            if (authDataMatch) {
+              err.userInfo = { duplicated_field: `_auth_data_${authDataMatch[1]}` };
+            } else {
+              const matches = error.constraint.match(/unique_([a-zA-Z]+)/);
+              if (matches && Array.isArray(matches)) {
+                err.userInfo = { duplicated_field: matches[1] };
+              }
+            }
+          }
+          throw err;
+        }
+        throw error;
+      });
     if (transactionalSession) {
       transactionalSession.batch.push(promise);
     }
