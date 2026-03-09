@@ -1175,6 +1175,9 @@ describe('(GHSA-v5hf-f4c3-m5rv) Stored XSS via .svgz, .xht, .xml, .xsl, .xslt fi
     }
   });
 
+  // Headers are intentionally omitted below so that the middleware parses _ContentType
+  // from the JSON body and sets it as the content-type header. When X-Parse-Application-Id
+  // is sent as a header, the middleware skips body parsing and _ContentType is ignored.
   it('blocks extensionless upload with application/xhtml+xml content type', async () => {
     const xhtContent = Buffer.from(
       '<?xml version="1.0"?><html xmlns="http://www.w3.org/1999/xhtml"><body><script>alert(1)</script></body></html>'
