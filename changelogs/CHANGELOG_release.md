@@ -1,3 +1,10 @@
+## [8.6.28](https://github.com/parse-community/parse-server/compare/8.6.27...8.6.28) (2026-03-09)
+
+
+### Bug Fixes
+
+* SQL injection via dot-notation field name in PostgreSQL ([GHSA-qpr4-jrj4-6f27](https://github.com/parse-community/parse-server/security/advisories/GHSA-qpr4-jrj4-6f27)) ([#10160](https://github.com/parse-community/parse-server/issues/10160)) ([83f38fa](https://github.com/parse-community/parse-server/commit/83f38faab25d89e7bbe7c5c2087c5ee616479975))
+
 ## [8.6.27](https://github.com/parse-community/parse-server/compare/8.6.26...8.6.27) (2026-03-09)
 
 
