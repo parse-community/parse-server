@@ -860,6 +860,87 @@ describe('(GHSA-mf3j-86qx-cq5j) ReDoS via $regex in LiveQuery subscription', () 
   });
 });
 
+describe('(GHSA-qpr4-jrj4-6f27) SQL Injection via sort dot-notation field name', () => {
+  const headers = {
+    'Content-Type': 'application/json',
+    'X-Parse-Application-Id': 'test',
+    'X-Parse-REST-API-Key': 'rest',
+  };
+
+  it_only_db('postgres')('does not execute injected SQL via sort order dot-notation', async () => {
+    const obj = new Parse.Object('InjectionTest');
+    obj.set('data', { key: 'value' });
+    obj.set('name', 'original');
+    await obj.save();
+
+    // This payload would execute a stacked query if single quotes are not escaped
+    await request({
+      method: 'GET',
+      url: 'http://localhost:8378/1/classes/InjectionTest',
+      headers,
+      qs: {
+        order: "data.x' ASC; UPDATE \"InjectionTest\" SET name = 'hacked' WHERE true--",
+      },
+    }).catch(() => {});
+
+    // Verify the data was not modified by injected SQL
+    const verify = await new Parse.Query('InjectionTest').first();
+    expect(verify.get('name')).toBe('original');
+  });
+
+  it_only_db('postgres')('does not execute injected SQL via sort order with pg_sleep', async () => {
+    const obj = new Parse.Object('InjectionTest');
+    obj.set('data', { key: 'value' });
+    await obj.save();
+
+    const start = Date.now();
+    await request({
+      method: 'GET',
+      url: 'http://localhost:8378/1/classes/InjectionTest',
+      headers,
+      qs: {
+        order: "data.x' ASC; SELECT pg_sleep(3)--",
+      },
+    }).catch(() => {});
+    const elapsed = Date.now() - start;
+
+    // If injection succeeded, query would take >= 3 seconds
+    expect(elapsed).toBeLessThan(3000);
+  });
+
+  it('allows valid dot-notation sort on object field', async () => {
+    const obj = new Parse.Object('InjectionTest');
+    obj.set('data', { key: 'value' });
+    await obj.save();
+
+    const response = await request({
+      method: 'GET',
+      url: 'http://localhost:8378/1/classes/InjectionTest',
+      headers,
+      qs: {
+        order: 'data.key',
+      },
+    });
+    expect(response.status).toBe(200);
+  });
+
+  it('allows valid dot-notation with special characters in sub-field', async () => {
+    const obj = new Parse.Object('InjectionTest');
+    obj.set('data', { 'my-field': 'value' });
+    await obj.save();
+
+    const response = await request({
+      method: 'GET',
+      url: 'http://localhost:8378/1/classes/InjectionTest',
+      headers,
+      qs: {
+        order: 'data.my-field',
+      },
+    });
+    expect(response.status).toBe(200);
+  });
+});
+
 describe('(GHSA-3jmq-rrxf-gqrg) Stored XSS via file serving', () => {
   it('sets X-Content-Type-Options: nosniff on file GET response', async () => {
     const file = new Parse.File('hello.txt', [1, 2, 3], 'text/plain');

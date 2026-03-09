@@ -211,12 +211,12 @@ const handleDotFields = object => {
 const transformDotFieldToComponents = fieldName => {
   return fieldName.split('.').map((cmpt, index) => {
     if (index === 0) {
-      return `"${cmpt}"`;
+      return `"${cmpt.replace(/"/g, '""')}"`;
     }
     if (isArrayIndex(cmpt)) {
       return Number(cmpt);
     } else {
-      return `'${cmpt}'`;
+      return `'${cmpt.replace(/'/g, "''")}'`;
     }
   });
 };
