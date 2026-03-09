@@ -117,6 +117,11 @@ function validateAuthData(authData, options) {
     ? { url: options.url, tlsOptions: options.tlsOptions }
     : { url: options.url };
 
+  if (typeof authData.id !== 'string') {
+    return Promise.reject(
+      new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'LDAP: Wrong username or password')
+    );
+  }
   const client = ldapjs.createClient(clientOptions);
   const escapedId = escapeDN(authData.id);
   const userCn =
