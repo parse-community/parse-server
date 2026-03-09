@@ -93,6 +93,40 @@ describe('LDAP Injection Prevention', () => {
     });
   });
 
+  describe('authData validation', () => {
+    it('should reject missing authData.id', async done => {
+      const server = await mockLdapServer(port, 'uid=testuser, o=example');
+      const options = {
+        suffix: 'o=example',
+        url: `ldap://localhost:${port}`,
+        dn: 'uid={{id}}, o=example',
+      };
+      try {
+        await ldap.validateAuthData({ password: 'secret' }, options);
+        fail('Should have rejected missing id');
+      } catch (err) {
+        expect(err.message).toBe('LDAP: Wrong username or password');
+      }
+      server.close(done);
+    });
+
+    it('should reject non-string authData.id', async done => {
+      const server = await mockLdapServer(port, 'uid=testuser, o=example');
+      const options = {
+        suffix: 'o=example',
+        url: `ldap://localhost:${port}`,
+        dn: 'uid={{id}}, o=example',
+      };
+      try {
+        await ldap.validateAuthData({ id: 123, password: 'secret' }, options);
+        fail('Should have rejected non-string id');
+      } catch (err) {
+        expect(err.message).toBe('LDAP: Wrong username or password');
+      }
+      server.close(done);
+    });
+  });
+
   describe('DN injection prevention', () => {
     it('should prevent DN injection via comma in authData.id', async done => {
       // Mock server accepts the DN that would result from an unescaped injection
