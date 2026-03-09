@@ -3,7 +3,9 @@ const classesWithMasterOnlyAccess = [
   '_PushStatus',
   '_Hooks',
   '_GlobalConfig',
+  '_GraphQLConfig',
   '_JobSchedule',
+  '_Audience',
   '_Idempotency',
 ];
 const { createSanitizedError } = require('./Error');

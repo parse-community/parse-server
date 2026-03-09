@@ -812,6 +812,153 @@ describe('rest create', () => {
     expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining("Clients aren't allowed to perform the get operation on the _GlobalConfig collection."));
   });
 
+  it('should require master key for all volatile classes', () => {
+    // This test guards against drift between volatileClasses (SchemaController.js)
+    // and classesWithMasterOnlyAccess (SharedRest.js). If a new volatile class is
+    // added, it must also be added to classesWithMasterOnlyAccess and this test.
+    const volatileClasses = [
+      '_JobStatus',
+      '_PushStatus',
+      '_Hooks',
+      '_GlobalConfig',
+      '_GraphQLConfig',
+      '_JobSchedule',
+      '_Audience',
+      '_Idempotency',
+    ];
+    for (const className of volatileClasses) {
+      expect(() =>
+        rest.create(config, auth.nobody(config), className, {})
+      ).toThrowMatching(
+        e => e.code === Parse.Error.OPERATION_FORBIDDEN,
+        `Expected ${className} to require master key`
+      );
+    }
+  });
+
+  it('cannot find objects in _GraphQLConfig without masterKey', async () => {
+    await config.parseGraphQLController.updateGraphQLConfig({ enabledForClasses: ['_User'] });
+    await expectAsync(
+      rest.find(config, auth.nobody(config), '_GraphQLConfig', {})
+    ).toBeRejectedWith(
+      jasmine.objectContaining({ code: Parse.Error.OPERATION_FORBIDDEN })
+    );
+  });
+
+  it('cannot update object in _GraphQLConfig without masterKey', async () => {
+    await config.parseGraphQLController.updateGraphQLConfig({ enabledForClasses: ['_User'] });
+    expect(() =>
+      rest.update(config, auth.nobody(config), '_GraphQLConfig', '1', {
+        config: { enabledForClasses: [] },
+      })
+    ).toThrowMatching(e => e.code === Parse.Error.OPERATION_FORBIDDEN);
+  });
+
+  it('cannot delete object in _GraphQLConfig without masterKey', async () => {
+    await config.parseGraphQLController.updateGraphQLConfig({ enabledForClasses: ['_User'] });
+    expect(() =>
+      rest.del(config, auth.nobody(config), '_GraphQLConfig', '1')
+    ).toThrowMatching(e => e.code === Parse.Error.OPERATION_FORBIDDEN);
+  });
+
+  it('can perform operations on _GraphQLConfig with masterKey', async () => {
+    await config.parseGraphQLController.updateGraphQLConfig({ enabledForClasses: ['_User'] });
+    const found = await rest.find(config, auth.master(config), '_GraphQLConfig', {});
+    expect(found.results.length).toBeGreaterThan(0);
+    await rest.del(config, auth.master(config), '_GraphQLConfig', '1');
+    const afterDelete = await rest.find(config, auth.master(config), '_GraphQLConfig', {});
+    expect(afterDelete.results.length).toBe(0);
+  });
+
+  it('cannot create object in _Audience without masterKey', () => {
+    expect(() =>
+      rest.create(config, auth.nobody(config), '_Audience', {
+        name: 'test',
+        query: '{}',
+      })
+    ).toThrowMatching(e => e.code === Parse.Error.OPERATION_FORBIDDEN);
+  });
+
+  it('cannot find objects in _Audience without masterKey', async () => {
+    await expectAsync(
+      rest.find(config, auth.nobody(config), '_Audience', {})
+    ).toBeRejectedWith(
+      jasmine.objectContaining({ code: Parse.Error.OPERATION_FORBIDDEN })
+    );
+  });
+
+  it('cannot update object in _Audience without masterKey', async () => {
+    const obj = await rest.create(config, auth.master(config), '_Audience', {
+      name: 'test',
+      query: '{}',
+    });
+    expect(() =>
+      rest.update(config, auth.nobody(config), '_Audience', obj.response.objectId, {
+        name: 'updated',
+      })
+    ).toThrowMatching(e => e.code === Parse.Error.OPERATION_FORBIDDEN);
+  });
+
+  it('cannot delete object in _Audience without masterKey', async () => {
+    const obj = await rest.create(config, auth.master(config), '_Audience', {
+      name: 'test',
+      query: '{}',
+    });
+    expect(() =>
+      rest.del(config, auth.nobody(config), '_Audience', obj.response.objectId)
+    ).toThrowMatching(e => e.code === Parse.Error.OPERATION_FORBIDDEN);
+  });
+
+  it('can perform CRUD on _Audience with masterKey', async () => {
+    const obj = await rest.create(config, auth.master(config), '_Audience', {
+      name: 'test',
+      query: '{}',
+    });
+    expect(obj.response.objectId).toBeDefined();
+    const found = await rest.find(config, auth.master(config), '_Audience', {});
+    expect(found.results.length).toBeGreaterThan(0);
+    await rest.del(config, auth.master(config), '_Audience', obj.response.objectId);
+    const afterDelete = await rest.find(config, auth.master(config), '_Audience', {});
+    expect(afterDelete.results.length).toBe(0);
+  });
+
+  it('cannot access _GraphQLConfig via class route without masterKey', async () => {
+    await config.parseGraphQLController.updateGraphQLConfig({ enabledForClasses: ['_User'] });
+    try {
+      await request({
+        url: 'http://localhost:8378/1/classes/_GraphQLConfig',
+        json: true,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+      });
+      fail('should have thrown');
+    } catch (e) {
+      expect(e.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+    }
+  });
+
+  it('cannot access _Audience via class route without masterKey', async () => {
+    await rest.create(config, auth.master(config), '_Audience', {
+      name: 'test',
+      query: '{}',
+    });
+    try {
+      await request({
+        url: 'http://localhost:8378/1/classes/_Audience',
+        json: true,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+      });
+      fail('should have thrown');
+    } catch (e) {
+      expect(e.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+    }
+  });
+
   it('locks down session', done => {
     let currentUser;
     Parse.User.signUp('foo', 'bar')
