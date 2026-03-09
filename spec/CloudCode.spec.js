@@ -4453,6 +4453,39 @@ describe('Parse.File hooks', () => {
     expect(response.headers['content-disposition']).toBe(`attachment;filename=${file._name}`);
   });
 
+  it('can set custom response headers in afterFind', async () => {
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
+    await file.save({ useMasterKey: true });
+    Parse.Cloud.afterFind(Parse.File, req => {
+      req.responseHeaders['X-Custom-Header'] = 'custom-value';
+    });
+    const response = await request({
+      url: file.url(),
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      },
+    });
+    expect(response.headers['x-custom-header']).toBe('custom-value');
+    expect(response.headers['x-content-type-options']).toBe('nosniff');
+  });
+
+  it('can override default response headers in afterFind', async () => {
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
+    await file.save({ useMasterKey: true });
+    Parse.Cloud.afterFind(Parse.File, req => {
+      delete req.responseHeaders['X-Content-Type-Options'];
+    });
+    const response = await request({
+      url: file.url(),
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      },
+    });
+    expect(response.headers['x-content-type-options']).toBeUndefined();
+  });
+
   it('beforeFind blocks metadata endpoint', async () => {
     const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     await file.save({ useMasterKey: true });

@@ -188,7 +188,12 @@ export class FilesRouter {
         contentType = mime.getType(filename);
       }
 
+      const defaultResponseHeaders = { 'X-Content-Type-Options': 'nosniff' };
+
       if (isFileStreamable(req, filesController)) {
+        for (const [key, value] of Object.entries(defaultResponseHeaders)) {
+          res.set(key, value);
+        }
         filesController.handleFileStream(config, filename, req, res, contentType).catch(() => {
           res.status(404);
           res.set('Content-Type', 'text/plain');
@@ -208,7 +213,7 @@ export class FilesRouter {
       file = new Parse.File(filename, { base64: data.toString('base64') }, contentType);
       const afterFind = await triggers.maybeRunFileTrigger(
         triggers.Types.afterFind,
-        { file, forceDownload: false },
+        { file, forceDownload: false, responseHeaders: { ...defaultResponseHeaders } },
         config,
         req.auth
       );
@@ -223,6 +228,11 @@ export class FilesRouter {
       res.set('Content-Length', data.length);
       if (afterFind.forceDownload) {
         res.set('Content-Disposition', `attachment;filename=${afterFind.file._name}`);
+      }
+      if (afterFind.responseHeaders) {
+        for (const [key, value] of Object.entries(afterFind.responseHeaders)) {
+          res.set(key, value);
+        }
       }
       res.end(data);
     } catch (e) {

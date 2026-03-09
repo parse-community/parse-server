@@ -1076,6 +1076,9 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
       if (request.forceDownload) {
         fileObject.forceDownload = true;
       }
+      if (request.responseHeaders) {
+        fileObject.responseHeaders = request.responseHeaders;
+      }
       logTriggerSuccessBeforeHook(
         triggerType,
         'Parse.File',

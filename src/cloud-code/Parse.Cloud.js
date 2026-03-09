@@ -757,6 +757,8 @@ module.exports = ParseCloud;
  * @property {String} triggerName The name of the trigger (`beforeSave`, `afterSave`)
  * @property {Object} log The current logger inside Parse Server.
  * @property {Object} config The Parse Server config.
+ * @property {Boolean} forceDownload (afterFind only) If set to `true`, the file response will include a `Content-Disposition: attachment` header, prompting the browser to download the file instead of displaying it inline.
+ * @property {Object} responseHeaders (afterFind only) The headers that will be set on the file response. By default contains `{ 'X-Content-Type-Options': 'nosniff' }`. Modify this object to add, change, or remove response headers.
  */
 
 /**

@@ -858,4 +858,34 @@ describe('(GHSA-mf3j-86qx-cq5j) ReDoS via $regex in LiveQuery subscription', () 
     expect(elapsed).toBeLessThan(timeout + 1000);
     client.close();
   });
+
+  describe('(GHSA-3jmq-rrxf-gqrg) Stored XSS via file serving', () => {
+    it('sets X-Content-Type-Options: nosniff on file GET response', async () => {
+      const file = new Parse.File('hello.txt', [1, 2, 3], 'text/plain');
+      await file.save({ useMasterKey: true });
+      const response = await request({
+        url: file.url(),
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+      });
+      expect(response.headers['x-content-type-options']).toBe('nosniff');
+    });
+
+    it('sets X-Content-Type-Options: nosniff on streaming file GET response', async () => {
+      const file = new Parse.File('hello.txt', [1, 2, 3], 'text/plain');
+      await file.save({ useMasterKey: true });
+      const response = await request({
+        url: file.url(),
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'Range': 'bytes=0-2',
+        },
+      });
+      expect(response.headers['x-content-type-options']).toBe('nosniff');
+    });
+
+  });
 });
