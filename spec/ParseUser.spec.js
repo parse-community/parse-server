@@ -337,7 +337,7 @@ describe('Parse.User testing', () => {
     expect(newUser).not.toBeUndefined();
   });
 
-  it('should be let masterKey lock user out with authData', async () => {
+  it_only_db('mongo')('should reject duplicate authData when masterKey locks user out (mongo)', async () => {
     const response = await request({
       method: 'POST',
       url: 'http://localhost:8378/1/classes/_User',
@@ -353,15 +353,13 @@ describe('Parse.User testing', () => {
     });
     const body = response.data;
     const objectId = body.objectId;
-    const sessionToken = body.sessionToken;
-    expect(sessionToken).toBeDefined();
+    expect(body.sessionToken).toBeDefined();
     expect(objectId).toBeDefined();
     const user = new Parse.User();
     user.id = objectId;
     const ACL = new Parse.ACL();
     user.setACL(ACL);
     await user.save(null, { useMasterKey: true });
-    // update the user
     const options = {
       method: 'POST',
       url: `http://localhost:8378/1/classes/_User/`,
@@ -377,8 +375,61 @@ describe('Parse.User testing', () => {
         },
       },
     };
-    const res = await request(options);
-    expect(res.data.objectId).not.toEqual(objectId);
+    try {
+      await request(options);
+      fail('should have thrown');
+    } catch (err) {
+      expect(err.data.code).toBe(208);
+      expect(err.data.error).toBe('this auth is already used');
+    }
+  });
+
+  it_only_db('postgres')('should reject duplicate authData when masterKey locks user out (postgres)', async () => {
+    await reconfigureServer();
+    const response = await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/_User',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+      body: {
+        key: 'value',
+        authData: { anonymous: { id: '00000000-0000-0000-0000-000000000001' } },
+      },
+    });
+    const body = response.data;
+    const objectId = body.objectId;
+    expect(body.sessionToken).toBeDefined();
+    expect(objectId).toBeDefined();
+    const user = new Parse.User();
+    user.id = objectId;
+    const ACL = new Parse.ACL();
+    user.setACL(ACL);
+    await user.save(null, { useMasterKey: true });
+    const options = {
+      method: 'POST',
+      url: `http://localhost:8378/1/classes/_User/`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+      body: {
+        key: 'otherValue',
+        authData: {
+          anonymous: { id: '00000000-0000-0000-0000-000000000001' },
+        },
+      },
+    };
+    try {
+      await request(options);
+      fail('should have thrown');
+    } catch (err) {
+      expect(err.data.code).toBe(208);
+      expect(err.data.error).toBe('this auth is already used');
+    }
   });
 
   it('user login with files', done => {

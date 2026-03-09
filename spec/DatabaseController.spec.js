@@ -415,6 +415,11 @@ describe('DatabaseController', function () {
           email_1: { email: 1 },
           _email_verify_token: { _email_verify_token: 1 },
           _perishable_token: { _perishable_token: 1 },
+          _auth_data_custom_id: { '_auth_data_custom.id': 1 },
+          _auth_data_facebook_id: { '_auth_data_facebook.id': 1 },
+          _auth_data_myoauth_id: { '_auth_data_myoauth.id': 1 },
+          _auth_data_shortLivedAuth_id: { '_auth_data_shortLivedAuth.id': 1 },
+          _auth_data_anonymous_id: { '_auth_data_anonymous.id': 1 },
         });
       }
     );
@@ -441,6 +446,11 @@ describe('DatabaseController', function () {
           email_1: { email: 1 },
           _email_verify_token: { _email_verify_token: 1 },
           _perishable_token: { _perishable_token: 1 },
+          _auth_data_custom_id: { '_auth_data_custom.id': 1 },
+          _auth_data_facebook_id: { '_auth_data_facebook.id': 1 },
+          _auth_data_myoauth_id: { '_auth_data_myoauth.id': 1 },
+          _auth_data_shortLivedAuth_id: { '_auth_data_shortLivedAuth.id': 1 },
+          _auth_data_anonymous_id: { '_auth_data_anonymous.id': 1 },
         });
       }
     );

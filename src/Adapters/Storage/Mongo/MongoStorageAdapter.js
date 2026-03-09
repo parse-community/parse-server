@@ -530,6 +530,13 @@ export class MongoStorageAdapter implements StorageAdapter {
             if (matches && Array.isArray(matches)) {
               err.userInfo = { duplicated_field: matches[1] };
             }
+            // Check for authData unique index violations
+            if (!err.userInfo) {
+              const authDataMatch = error.message.match(/index:\s+(_auth_data_[a-zA-Z0-9_]+_id)/);
+              if (authDataMatch) {
+                err.userInfo = { duplicated_field: authDataMatch[1] };
+              }
+            }
           }
           throw err;
         }
@@ -605,10 +612,27 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(result => mongoObjectToParseObject(className, result, schema))
       .catch(error => {
         if (error.code === 11000) {
-          throw new Parse.Error(
+          logger.error('Duplicate key error:', error.message);
+          const err = new Parse.Error(
             Parse.Error.DUPLICATE_VALUE,
             'A duplicate value for a field with unique values was provided'
           );
+          err.underlyingError = error;
+          if (error.message) {
+            const matches = error.message.match(
+              /index:[\sa-zA-Z0-9_\-\.]+\$?([a-zA-Z_-]+)_1/
+            );
+            if (matches && Array.isArray(matches)) {
+              err.userInfo = { duplicated_field: matches[1] };
+            }
+            if (!err.userInfo) {
+              const authDataMatch = error.message.match(/index:\s+(_auth_data_[a-zA-Z0-9_]+_id)/);
+              if (authDataMatch) {
+                err.userInfo = { duplicated_field: authDataMatch[1] };
+              }
+            }
+          }
+          throw err;
         }
         throw error;
       })
@@ -758,6 +782,32 @@ export class MongoStorageAdapter implements StorageAdapter {
             Parse.Error.DUPLICATE_VALUE,
             'Tried to ensure field uniqueness for a class that already has duplicates.'
           );
+        }
+        throw error;
+      })
+      .catch(err => this.handleError(err));
+  }
+
+  // Creates a unique sparse index on _auth_data_<provider>.id to prevent
+  // race conditions during concurrent signups with the same authData.
+  ensureAuthDataUniqueness(provider: string) {
+    return this._adaptiveCollection('_User')
+      .then(collection =>
+        collection._mongoCollection.createIndex(
+          { [`_auth_data_${provider}.id`]: 1 },
+          { unique: true, sparse: true, background: true, name: `_auth_data_${provider}_id` }
+        )
+      )
+      .catch(error => {
+        if (error.code === 11000) {
+          throw new Parse.Error(
+            Parse.Error.DUPLICATE_VALUE,
+            'Tried to ensure field uniqueness for a class that already has duplicates.'
+          );
+        }
+        // Ignore "index already exists with same name" or "index already exists with different options"
+        if (error.code === 85 || error.code === 86) {
+          return;
         }
         throw error;
       })
