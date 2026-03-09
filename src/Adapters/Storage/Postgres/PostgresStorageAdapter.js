@@ -1223,6 +1223,9 @@ export class PostgresStorageAdapter implements StorageAdapter {
     const now = new Date().getTime();
     const helpers = this._pgp.helpers;
     debug('deleteAllClasses');
+    if (this._authDataUniqueIndexes) {
+      this._authDataUniqueIndexes.clear();
+    }
     if (this._client?.$pool.ended) {
       return;
     }
