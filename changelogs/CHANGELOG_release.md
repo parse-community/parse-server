@@ -1,3 +1,10 @@
+## [8.6.27](https://github.com/parse-community/parse-server/compare/8.6.26...8.6.27) (2026-03-09)
+
+
+### Bug Fixes
+
+*  LiveQuery `regexTimeout` default value not applied ([#10157](https://github.com/parse-community/parse-server/issues/10157)) ([94c4f52](https://github.com/parse-community/parse-server/commit/94c4f523e02be6d82f006cbacb18bec5a1de7f2e))
+
 ## [8.6.26](https://github.com/parse-community/parse-server/compare/8.6.25...8.6.26) (2026-03-09)
 
 
