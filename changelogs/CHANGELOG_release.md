@@ -1,3 +1,10 @@
+## [8.6.29](https://github.com/parse-community/parse-server/compare/8.6.28...8.6.29) (2026-03-09)
+
+
+### Bug Fixes
+
+* SQL injection via `Increment` operation on nested object field in PostgreSQL ([GHSA-q3vj-96h2-gwvg](https://github.com/parse-community/parse-server/security/advisories/GHSA-q3vj-96h2-gwvg)) ([#10163](https://github.com/parse-community/parse-server/issues/10163)) ([c92022f](https://github.com/parse-community/parse-server/commit/c92022f1ff12b119d7a6a807426925ce7d52e5ab))
+
 ## [8.6.28](https://github.com/parse-community/parse-server/compare/8.6.27...8.6.28) (2026-03-09)
 
 
