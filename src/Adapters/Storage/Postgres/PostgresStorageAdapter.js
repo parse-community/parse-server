@@ -1223,9 +1223,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
     const now = new Date().getTime();
     const helpers = this._pgp.helpers;
     debug('deleteAllClasses');
-    if (this._authDataUniqueIndexes) {
-      this._authDataUniqueIndexes.clear();
-    }
     if (this._client?.$pool.ended) {
       return;
     }
@@ -2087,12 +2084,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
   // Creates a unique index on authData-><provider>->>'id' to prevent
   // race conditions during concurrent signups with the same authData.
   async ensureAuthDataUniqueness(provider: string) {
-    if (!this._authDataUniqueIndexes) {
-      this._authDataUniqueIndexes = new Set();
-    }
-    if (this._authDataUniqueIndexes.has(provider)) {
-      return;
-    }
     const indexName = `_User_unique_authData_${provider}_id`;
     const qs = `CREATE UNIQUE INDEX IF NOT EXISTS $1:name ON "_User" (("authData"->$2::text->>'id')) WHERE "authData"->$2::text->>'id' IS NOT NULL`;
     await this._client.none(qs, [indexName, provider]).catch(error => {
@@ -2113,7 +2104,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
         throw error;
       }
     });
-    this._authDataUniqueIndexes.add(provider);
   }
 
   // Executes a count.

@@ -844,12 +844,6 @@ export class MongoStorageAdapter implements StorageAdapter {
   // Creates a unique sparse index on _auth_data_<provider>.id to prevent
   // race conditions during concurrent signups with the same authData.
   ensureAuthDataUniqueness(provider: string) {
-    if (!this._authDataUniqueIndexes) {
-      this._authDataUniqueIndexes = new Set();
-    }
-    if (this._authDataUniqueIndexes.has(provider)) {
-      return Promise.resolve();
-    }
     return this._adaptiveCollection('_User')
       .then(collection =>
         collection._mongoCollection.createIndex(
@@ -857,9 +851,6 @@ export class MongoStorageAdapter implements StorageAdapter {
           { unique: true, sparse: true, background: true, name: `_auth_data_${provider}_id` }
         )
       )
-      .then(() => {
-        this._authDataUniqueIndexes.add(provider);
-      })
       .catch(error => {
         if (error.code === 11000) {
           throw new Parse.Error(
@@ -869,7 +860,6 @@ export class MongoStorageAdapter implements StorageAdapter {
         }
         // Ignore "index already exists with same name" or "index already exists with different options"
         if (error.code === 85 || error.code === 86) {
-          this._authDataUniqueIndexes.add(provider);
           return;
         }
         throw error;

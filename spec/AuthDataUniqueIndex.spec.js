@@ -137,25 +137,18 @@ describe('AuthData Unique Index', () => {
     config.database.options.databaseOptions = originalOptions;
   });
 
-  it('should handle calling ensureAuthDataUniqueness multiple times via cache', async () => {
+  it('should handle calling ensureAuthDataUniqueness multiple times (idempotent)', async () => {
     const config = Config.get('test');
     const adapter = config.database.adapter;
 
-    // First call creates the index
+    // Both calls should succeed (index creation is idempotent)
     await adapter.ensureAuthDataUniqueness('fakeAuthProvider');
-    // Second call should be a cache hit (no DB call)
     await adapter.ensureAuthDataUniqueness('fakeAuthProvider');
-    expect(adapter._authDataUniqueIndexes.has('fakeAuthProvider')).toBe(true);
   });
 
   it('should log warning when index creation fails due to existing duplicates', async () => {
     const config = Config.get('test');
     const adapter = config.database.adapter;
-
-    // Clear cache to force index creation attempt
-    if (adapter._authDataUniqueIndexes) {
-      adapter._authDataUniqueIndexes.clear();
-    }
 
     // Spy on the adapter to simulate a duplicate value error
     spyOn(adapter, 'ensureAuthDataUniqueness').and.callFake(() => {
