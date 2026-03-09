@@ -1,3 +1,10 @@
+## [8.6.30](https://github.com/parse-community/parse-server/compare/8.6.29...8.6.30) (2026-03-09)
+
+
+### Bug Fixes
+
+* Stored XSS via file upload of HTML-renderable file types ([GHSA-v5hf-f4c3-m5rv](https://github.com/parse-community/parse-server/security/advisories/GHSA-v5hf-f4c3-m5rv)) ([#10164](https://github.com/parse-community/parse-server/issues/10164)) ([90936f9](https://github.com/parse-community/parse-server/commit/90936f9ca2d6d4a886b5549a8cdfabda98fcc168))
+
 ## [8.6.29](https://github.com/parse-community/parse-server/compare/8.6.28...8.6.29) (2026-03-09)
 
 
