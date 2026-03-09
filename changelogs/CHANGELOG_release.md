@@ -1,3 +1,10 @@
+## [8.6.24](https://github.com/parse-community/parse-server/compare/8.6.23...8.6.24) (2026-03-09)
+
+
+### Bug Fixes
+
+* Concurrent signup with same authentication creates duplicate users ([#10150](https://github.com/parse-community/parse-server/issues/10150)) ([fac8f33](https://github.com/parse-community/parse-server/commit/fac8f338ecdfeffcaed21d7e0729e2cf1ea9947d))
+
 ## [8.6.23](https://github.com/parse-community/parse-server/compare/8.6.22...8.6.23) (2026-03-08)
 
 
