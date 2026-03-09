@@ -1049,3 +1049,91 @@ describe('(GHSA-3jmq-rrxf-gqrg) Stored XSS via file serving', () => {
     expect(response.headers['x-content-type-options']).toBe('nosniff');
   });
 });
+
+describe('(GHSA-q3vj-96h2-gwvg) SQL Injection via Increment amount on nested Object field', () => {
+  const headers = {
+    'Content-Type': 'application/json',
+    'X-Parse-Application-Id': 'test',
+    'X-Parse-REST-API-Key': 'rest',
+  };
+
+  it('rejects non-number Increment amount on nested object field', async () => {
+    const obj = new Parse.Object('IncrTest');
+    obj.set('stats', { counter: 0 });
+    await obj.save();
+
+    const response = await request({
+      method: 'PUT',
+      url: `http://localhost:8378/1/classes/IncrTest/${obj.id}`,
+      headers,
+      body: JSON.stringify({
+        'stats.counter': { __op: 'Increment', amount: '1' },
+      }),
+    }).catch(e => e);
+
+    expect(response.status).toBe(400);
+    const text = JSON.parse(response.text);
+    expect(text.code).toBe(Parse.Error.INVALID_JSON);
+  });
+
+  it_only_db('postgres')('does not execute injected SQL via Increment amount with pg_sleep', async () => {
+    const obj = new Parse.Object('IncrTest');
+    obj.set('stats', { counter: 0 });
+    await obj.save();
+
+    const start = Date.now();
+    await request({
+      method: 'PUT',
+      url: `http://localhost:8378/1/classes/IncrTest/${obj.id}`,
+      headers,
+      body: JSON.stringify({
+        'stats.counter': { __op: 'Increment', amount: '0+(SELECT 1 FROM pg_sleep(3))' },
+      }),
+    }).catch(() => {});
+    const elapsed = Date.now() - start;
+
+    // If injection succeeded, query would take >= 3 seconds
+    expect(elapsed).toBeLessThan(3000);
+  });
+
+  it_only_db('postgres')('does not execute injected SQL via Increment amount for data exfiltration', async () => {
+    const obj = new Parse.Object('IncrTest');
+    obj.set('stats', { counter: 0 });
+    await obj.save();
+
+    await request({
+      method: 'PUT',
+      url: `http://localhost:8378/1/classes/IncrTest/${obj.id}`,
+      headers,
+      body: JSON.stringify({
+        'stats.counter': {
+          __op: 'Increment',
+          amount: '0+(SELECT ascii(substr(current_database(),1,1)))',
+        },
+      }),
+    }).catch(() => {});
+
+    // Verify counter was not modified by injected SQL
+    const verify = await new Parse.Query('IncrTest').get(obj.id);
+    expect(verify.get('stats').counter).toBe(0);
+  });
+
+  it('allows valid numeric Increment on nested object field', async () => {
+    const obj = new Parse.Object('IncrTest');
+    obj.set('stats', { counter: 5 });
+    await obj.save();
+
+    const response = await request({
+      method: 'PUT',
+      url: `http://localhost:8378/1/classes/IncrTest/${obj.id}`,
+      headers,
+      body: JSON.stringify({
+        'stats.counter': { __op: 'Increment', amount: 3 },
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    const verify = await new Parse.Query('IncrTest').get(obj.id);
+    expect(verify.get('stats').counter).toBe(8);
+  });
+});
