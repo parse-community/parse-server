@@ -390,7 +390,7 @@ describe('Parse.User testing', () => {
     expect(newUser).not.toBeUndefined();
   });
 
-  it_only_db('mongo')('should reject duplicate authData when masterKey locks user out', async () => {
+  it_only_db('mongo')('should reject duplicate authData when masterKey locks user out (mongo)', async () => {
     const response = await request({
       method: 'POST',
       url: 'http://localhost:8378/1/classes/_User',
@@ -437,7 +437,7 @@ describe('Parse.User testing', () => {
     }
   });
 
-  it_only_db('postgres')('should reject duplicate authData when masterKey locks user out', async () => {
+  it_only_db('postgres')('should reject duplicate authData when masterKey locks user out (postgres)', async () => {
     await reconfigureServer();
     const response = await request({
       method: 'POST',
