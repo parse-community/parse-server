@@ -1175,6 +1175,56 @@ describe('(GHSA-v5hf-f4c3-m5rv) Stored XSS via .svgz, .xht, .xml, .xsl, .xslt fi
     }
   });
 
+  it('blocks extensionless upload with application/xhtml+xml content type', async () => {
+    const xhtContent = Buffer.from(
+      '<?xml version="1.0"?><html xmlns="http://www.w3.org/1999/xhtml"><body><script>alert(1)</script></body></html>'
+    ).toString('base64');
+    await expectAsync(
+      request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/files/payload',
+        body: JSON.stringify({
+          _ApplicationId: 'test',
+          _JavaScriptKey: 'test',
+          _ContentType: 'application/xhtml+xml',
+          base64: xhtContent,
+        }),
+      }).catch(e => {
+        throw new Error(e.data.error);
+      })
+    ).toBeRejectedWith(
+      new Parse.Error(
+        Parse.Error.FILE_SAVE_ERROR,
+        'File upload of extension xhtml+xml is disabled.'
+      )
+    );
+  });
+
+  it('blocks extensionless upload with application/xslt+xml content type', async () => {
+    const xsltContent = Buffer.from(
+      '<?xml version="1.0"?><xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"></xsl:stylesheet>'
+    ).toString('base64');
+    await expectAsync(
+      request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/files/payload',
+        body: JSON.stringify({
+          _ApplicationId: 'test',
+          _JavaScriptKey: 'test',
+          _ContentType: 'application/xslt+xml',
+          base64: xsltContent,
+        }),
+      }).catch(e => {
+        throw new Error(e.data.error);
+      })
+    ).toBeRejectedWith(
+      new Parse.Error(
+        Parse.Error.FILE_SAVE_ERROR,
+        'File upload of extension xslt+xml is disabled.'
+      )
+    );
+  });
+
   it('still allows common file types', async () => {
     for (const type of ['txt', 'png', 'jpg', 'gif', 'pdf', 'doc']) {
       const file = new Parse.File(`file.${type}`, { base64: 'ParseA==' });
