@@ -557,6 +557,16 @@ describe('matchesQuery', function () {
     expect(matchesQuery(player, q)).toBe(true);
   });
 
+  it('applies default regexTimeout when liveQuery is configured without explicit regexTimeout', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['Player'] },
+    });
+    // Verify the default value is applied by checking the config
+    const Config = require('../lib/Config');
+    const config = Config.get('test');
+    expect(config.liveQuery.regexTimeout).toBe(100);
+  });
+
   it('matches $nearSphere queries', function () {
     let q = new Parse.Query('Checkin');
     q.near('location', new Parse.GeoPoint(20, 20));

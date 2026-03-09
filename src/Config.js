@@ -14,6 +14,7 @@ import {
   DatabaseOptions,
   FileUploadOptions,
   IdempotencyOptions,
+  LiveQueryOptions,
   LogLevels,
   PagesOptions,
   ParseServerOptions,
@@ -136,6 +137,7 @@ export class Config {
     extendSessionOnUse,
     allowClientClassCreation,
     requestComplexity,
+    liveQuery,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -179,6 +181,7 @@ export class Config {
     this.validateCustomPages(customPages);
     this.validateAllowClientClassCreation(allowClientClassCreation);
     this.validateRequestComplexity(requestComplexity);
+    this.validateLiveQueryOptions(liveQuery);
   }
 
   static validateCustomPages(customPages) {
@@ -703,6 +706,17 @@ export class Config {
       databaseOptions.allowPublicExplain = DatabaseOptions.allowPublicExplain.default;
     } else if (typeof databaseOptions.allowPublicExplain !== 'boolean') {
       throw `Parse Server option 'databaseOptions.allowPublicExplain' must be a boolean.`;
+    }
+  }
+
+  static validateLiveQueryOptions(liveQuery) {
+    if (liveQuery == undefined) {
+      return;
+    }
+    if (liveQuery.regexTimeout === undefined) {
+      liveQuery.regexTimeout = LiveQueryOptions.regexTimeout.default;
+    } else if (typeof liveQuery.regexTimeout !== 'number') {
+      throw `liveQuery.regexTimeout must be a number`;
     }
   }
 
