@@ -884,7 +884,7 @@ describe('(GHSA-qpr4-jrj4-6f27) SQL Injection via sort dot-notation field name',
     }).catch(() => {});
 
     // Verify the data was not modified by injected SQL
-    const verify = await new Parse.Query('InjectionTest').first();
+    const verify = await new Parse.Query('InjectionTest').get(obj.id);
     expect(verify.get('name')).toBe('original');
   });
 
