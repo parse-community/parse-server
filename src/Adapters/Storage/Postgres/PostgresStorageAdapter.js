@@ -1735,13 +1735,19 @@ export class PostgresStorageAdapter implements StorageAdapter {
           .map(k => k.split('.')[1]);
 
         let incrementPatterns = '';
+        const incrementValues = [];
         if (keysToIncrement.length > 0) {
           incrementPatterns =
             ' || ' +
             keysToIncrement
               .map(c => {
                 const amount = fieldValue[c].amount;
-                return `CONCAT('{"${c}":', COALESCE($${index}:name->>'${c}','0')::int + ${amount}, '}')::jsonb`;
+                if (typeof amount !== 'number') {
+                  throw new Parse.Error(Parse.Error.INVALID_JSON, 'incrementing must provide a number');
+                }
+                incrementValues.push(amount);
+                const amountIndex = index + incrementValues.length;
+                return `CONCAT('{"${c}":', COALESCE($${index}:name->>'${c}','0')::int + $${amountIndex}, '}')::jsonb`;
               })
               .join(' || ');
           // Strip the keys
@@ -1764,7 +1770,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
           .map(k => k.split('.')[1]);
 
         const deletePatterns = keysToDelete.reduce((p: string, c: string, i: number) => {
-          return p + ` - '$${index + 1 + i}:value'`;
+          return p + ` - '$${index + 1 + incrementValues.length + i}:value'`;
         }, '');
         // Override Object
         let updateObject = "'{}'::jsonb";
@@ -1774,11 +1780,11 @@ export class PostgresStorageAdapter implements StorageAdapter {
           updateObject = `COALESCE($${index}:name, '{}'::jsonb)`;
         }
         updatePatterns.push(
-          `$${index}:name = (${updateObject} ${deletePatterns} ${incrementPatterns} || $${index + 1 + keysToDelete.length
+          `$${index}:name = (${updateObject} ${deletePatterns} ${incrementPatterns} || $${index + 1 + incrementValues.length + keysToDelete.length
           }::jsonb )`
         );
-        values.push(fieldName, ...keysToDelete, JSON.stringify(fieldValue));
-        index += 2 + keysToDelete.length;
+        values.push(fieldName, ...incrementValues, ...keysToDelete, JSON.stringify(fieldValue));
+        index += 2 + incrementValues.length + keysToDelete.length;
       } else if (
         Array.isArray(fieldValue) &&
         schema.fields[fieldName] &&
