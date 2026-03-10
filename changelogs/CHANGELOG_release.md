@@ -1,3 +1,10 @@
+## [8.6.35](https://github.com/parse-community/parse-server/compare/8.6.34...8.6.35) (2026-03-10)
+
+
+### Bug Fixes
+
+* Protected fields bypass via LiveQuery subscription WHERE clause ([GHSA-j7mm-f4rv-6q6q](https://github.com/parse-community/parse-server/security/advisories/GHSA-j7mm-f4rv-6q6q)) ([#10176](https://github.com/parse-community/parse-server/issues/10176)) ([dfc7e69](https://github.com/parse-community/parse-server/commit/dfc7e69b95c719589d267f50935d8660e2201a8c))
+
 ## [8.6.34](https://github.com/parse-community/parse-server/compare/8.6.33...8.6.34) (2026-03-10)
 
 
