@@ -1383,3 +1383,206 @@ describe('(GHSA-gqpp-xgvh-9h7h) SQL Injection via dot-notation sub-key name in I
     expect(verify.get('stats').counter).toBe(7);
   });
 });
+
+describe('(GHSA-r2m8-pxm9-9c4g) Protected fields WHERE clause bypass via dot-notation on object-type fields', () => {
+  let obj;
+
+  beforeEach(async () => {
+    const schema = new Parse.Schema('SecretClass');
+    schema.addObject('secretObj');
+    schema.addString('publicField');
+    schema.setCLP({
+      find: { '*': true },
+      get: { '*': true },
+      create: { '*': true },
+      update: { '*': true },
+      delete: { '*': true },
+      addField: {},
+      protectedFields: { '*': ['secretObj'] },
+    });
+    await schema.save();
+
+    obj = new Parse.Object('SecretClass');
+    obj.set('secretObj', { apiKey: 'SENSITIVE_KEY_123', score: 42 });
+    obj.set('publicField', 'visible');
+    await obj.save(null, { useMasterKey: true });
+  });
+
+  it('should deny query with dot-notation on protected field in where clause', async () => {
+    const res = await request({
+      method: 'GET',
+      url: `${Parse.serverURL}/classes/SecretClass`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      qs: { where: JSON.stringify({ 'secretObj.apiKey': 'SENSITIVE_KEY_123' }) },
+    }).catch(e => e);
+    expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+    expect(res.data.error).toBe('Permission denied');
+  });
+
+  it('should deny query with dot-notation on protected field in $or', async () => {
+    const res = await request({
+      method: 'GET',
+      url: `${Parse.serverURL}/classes/SecretClass`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      qs: {
+        where: JSON.stringify({
+          $or: [{ 'secretObj.apiKey': 'SENSITIVE_KEY_123' }, { 'secretObj.apiKey': 'other' }],
+        }),
+      },
+    }).catch(e => e);
+    expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+    expect(res.data.error).toBe('Permission denied');
+  });
+
+  it('should deny query with dot-notation on protected field in $and', async () => {
+    const res = await request({
+      method: 'GET',
+      url: `${Parse.serverURL}/classes/SecretClass`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      qs: {
+        where: JSON.stringify({
+          $and: [{ 'secretObj.apiKey': 'SENSITIVE_KEY_123' }, { publicField: 'visible' }],
+        }),
+      },
+    }).catch(e => e);
+    expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+    expect(res.data.error).toBe('Permission denied');
+  });
+
+  it('should deny query with dot-notation on protected field in $nor', async () => {
+    const res = await request({
+      method: 'GET',
+      url: `${Parse.serverURL}/classes/SecretClass`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      qs: {
+        where: JSON.stringify({
+          $nor: [{ 'secretObj.apiKey': 'WRONG' }],
+        }),
+      },
+    }).catch(e => e);
+    expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+    expect(res.data.error).toBe('Permission denied');
+  });
+
+  it('should deny query with deeply nested dot-notation on protected field', async () => {
+    const res = await request({
+      method: 'GET',
+      url: `${Parse.serverURL}/classes/SecretClass`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      qs: { where: JSON.stringify({ 'secretObj.nested.deep.key': 'value' }) },
+    }).catch(e => e);
+    expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+    expect(res.data.error).toBe('Permission denied');
+  });
+
+  it('should deny sort on protected field via dot-notation', async () => {
+    const res = await request({
+      method: 'GET',
+      url: `${Parse.serverURL}/classes/SecretClass`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      qs: { order: 'secretObj.score' },
+    }).catch(e => e);
+    expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+    expect(res.data.error).toBe('Permission denied');
+  });
+
+  it('should deny sort on protected field directly', async () => {
+    const res = await request({
+      method: 'GET',
+      url: `${Parse.serverURL}/classes/SecretClass`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      qs: { order: 'secretObj' },
+    }).catch(e => e);
+    expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+    expect(res.data.error).toBe('Permission denied');
+  });
+
+  it('should deny descending sort on protected field via dot-notation', async () => {
+    const res = await request({
+      method: 'GET',
+      url: `${Parse.serverURL}/classes/SecretClass`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      qs: { order: '-secretObj.score' },
+    }).catch(e => e);
+    expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+    expect(res.data.error).toBe('Permission denied');
+  });
+
+  it('should still allow queries on non-protected fields', async () => {
+    const response = await request({
+      method: 'GET',
+      url: `${Parse.serverURL}/classes/SecretClass`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      qs: { where: JSON.stringify({ publicField: 'visible' }) },
+    });
+    expect(response.data.results.length).toBe(1);
+    expect(response.data.results[0].publicField).toBe('visible');
+    expect(response.data.results[0].secretObj).toBeUndefined();
+  });
+
+  it('should still allow sort on non-protected fields', async () => {
+    const response = await request({
+      method: 'GET',
+      url: `${Parse.serverURL}/classes/SecretClass`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      qs: { order: 'publicField' },
+    });
+    expect(response.data.results.length).toBe(1);
+  });
+
+  it('should still allow master key to query protected fields with dot-notation', async () => {
+    const response = await request({
+      method: 'GET',
+      url: `${Parse.serverURL}/classes/SecretClass`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
+      },
+      qs: { where: JSON.stringify({ 'secretObj.apiKey': 'SENSITIVE_KEY_123' }) },
+    });
+    expect(response.data.results.length).toBe(1);
+  });
+
+  it('should still block direct query on protected field (existing behavior)', async () => {
+    const res = await request({
+      method: 'GET',
+      url: `${Parse.serverURL}/classes/SecretClass`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      qs: { where: JSON.stringify({ secretObj: { apiKey: 'SENSITIVE_KEY_123' } }) },
+    }).catch(e => e);
+    expect(res.status).toBe(400);
+  });
+});
