@@ -880,11 +880,12 @@ _UnsafeRestQuery.prototype.denyProtectedFields = async function () {
     if (typeof where !== 'object' || where === null) {
       return;
     }
-    for (const key of protectedFields) {
-      if (key in where) {
+    for (const whereKey of Object.keys(where)) {
+      const rootField = whereKey.split('.')[0];
+      if (protectedFields.includes(whereKey) || protectedFields.includes(rootField)) {
         throw createSanitizedError(
           Parse.Error.OPERATION_FORBIDDEN,
-          `This user is not allowed to query ${key} on class ${this.className}`,
+          `This user is not allowed to query ${whereKey} on class ${this.className}`,
           this.config
         );
       }
@@ -896,6 +897,20 @@ _UnsafeRestQuery.prototype.denyProtectedFields = async function () {
     }
   };
   checkWhere(this.restWhere);
+
+  // Check sort keys against protected fields
+  if (this.findOptions.sort) {
+    for (const sortKey of Object.keys(this.findOptions.sort)) {
+      const rootField = sortKey.split('.')[0];
+      if (protectedFields.includes(sortKey) || protectedFields.includes(rootField)) {
+        throw createSanitizedError(
+          Parse.Error.OPERATION_FORBIDDEN,
+          `This user is not allowed to sort by ${sortKey} on class ${this.className}`,
+          this.config
+        );
+      }
+    }
+  }
 };
 
 // Augments this.response with all pointers on an object
