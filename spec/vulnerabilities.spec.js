@@ -1633,13 +1633,17 @@ describe('(GHSA-j7mm-f4rv-6q6q) Protected fields bypass via LiveQuery dot-notati
   it('should reject LiveQuery subscription with dot-notation on protected field in where clause', async () => {
     const query = new Parse.Query('SecretClass');
     query._addCondition('secretObj.apiKey', '$eq', 'SENSITIVE_KEY_123');
-    await expectAsync(query.subscribe()).toBeRejected();
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+    );
   });
 
   it('should reject LiveQuery subscription with protected field directly in where clause', async () => {
     const query = new Parse.Query('SecretClass');
     query.exists('secretObj');
-    await expectAsync(query.subscribe()).toBeRejected();
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+    );
   });
 
   it('should reject LiveQuery subscription with protected field in $or', async () => {
@@ -1648,26 +1652,34 @@ describe('(GHSA-j7mm-f4rv-6q6q) Protected fields bypass via LiveQuery dot-notati
     const q2 = new Parse.Query('SecretClass');
     q2._addCondition('secretObj.apiKey', '$eq', 'other');
     const query = Parse.Query.or(q1, q2);
-    await expectAsync(query.subscribe()).toBeRejected();
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+    );
   });
 
   it('should reject LiveQuery subscription with protected field in $nor', async () => {
     // Build $nor manually since Parse SDK doesn't expose it directly
     const query = new Parse.Query('SecretClass');
     query._where = { $nor: [{ 'secretObj.apiKey': 'SENSITIVE_KEY_123' }] };
-    await expectAsync(query.subscribe()).toBeRejected();
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+    );
   });
 
   it('should reject LiveQuery subscription with $regex on protected field (boolean oracle)', async () => {
     const query = new Parse.Query('SecretClass');
     query._addCondition('secretObj.apiKey', '$regex', '^S');
-    await expectAsync(query.subscribe()).toBeRejected();
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+    );
   });
 
   it('should reject LiveQuery subscription with deeply nested dot-notation on protected field', async () => {
     const query = new Parse.Query('SecretClass');
     query._addCondition('secretObj.nested.deep.key', '$eq', 'value');
-    await expectAsync(query.subscribe()).toBeRejected();
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+    );
   });
 
   it('should allow LiveQuery subscription on non-protected fields and strip protected fields from response', async () => {
@@ -1716,7 +1728,9 @@ describe('(GHSA-j7mm-f4rv-6q6q) Protected fields bypass via LiveQuery dot-notati
 
     const query = new Parse.Query('SecretClass');
     query._addCondition('secretObj.apiKey', '$eq', 'SENSITIVE_KEY_123');
-    await expectAsync(query.subscribe(user.getSessionToken())).toBeRejected();
+    await expectAsync(query.subscribe(user.getSessionToken())).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+    );
   });
 
   it('should not reject when role-only protection exists without * entry', async () => {
