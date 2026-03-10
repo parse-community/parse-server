@@ -1588,6 +1588,197 @@ describe('(GHSA-r2m8-pxm9-9c4g) Protected fields WHERE clause bypass via dot-not
   });
 });
 
+describe('(GHSA-j7mm-f4rv-6q6q) Protected fields bypass via LiveQuery dot-notation WHERE', () => {
+  let obj;
+
+  beforeEach(async () => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    await reconfigureServer({
+      liveQuery: { classNames: ['SecretClass'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const config = Config.get(Parse.applicationId);
+    const schemaController = await config.database.loadSchema();
+    await schemaController.addClassIfNotExists(
+      'SecretClass',
+      { secretObj: { type: 'Object' }, publicField: { type: 'String' } },
+    );
+    await schemaController.updateClass(
+      'SecretClass',
+      {},
+      {
+        find: { '*': true },
+        get: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+        protectedFields: { '*': ['secretObj'] },
+      }
+    );
+
+    obj = new Parse.Object('SecretClass');
+    obj.set('secretObj', { apiKey: 'SENSITIVE_KEY_123', score: 42 });
+    obj.set('publicField', 'visible');
+    await obj.save(null, { useMasterKey: true });
+  });
+
+  afterEach(async () => {
+    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+    if (client) {
+      await client.close();
+    }
+  });
+
+  it('should reject LiveQuery subscription with dot-notation on protected field in where clause', async () => {
+    const query = new Parse.Query('SecretClass');
+    query._addCondition('secretObj.apiKey', '$eq', 'SENSITIVE_KEY_123');
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+    );
+  });
+
+  it('should reject LiveQuery subscription with protected field directly in where clause', async () => {
+    const query = new Parse.Query('SecretClass');
+    query.exists('secretObj');
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+    );
+  });
+
+  it('should reject LiveQuery subscription with protected field in $or', async () => {
+    const q1 = new Parse.Query('SecretClass');
+    q1._addCondition('secretObj.apiKey', '$eq', 'SENSITIVE_KEY_123');
+    const q2 = new Parse.Query('SecretClass');
+    q2._addCondition('secretObj.apiKey', '$eq', 'other');
+    const query = Parse.Query.or(q1, q2);
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+    );
+  });
+
+  it('should reject LiveQuery subscription with protected field in $and', async () => {
+    // Build $and manually since Parse SDK doesn't expose it directly
+    const query = new Parse.Query('SecretClass');
+    query._where = { $and: [{ 'secretObj.apiKey': 'SENSITIVE_KEY_123' }, { publicField: 'visible' }] };
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+    );
+  });
+
+  it('should reject LiveQuery subscription with protected field in $nor', async () => {
+    // Build $nor manually since Parse SDK doesn't expose it directly
+    const query = new Parse.Query('SecretClass');
+    query._where = { $nor: [{ 'secretObj.apiKey': 'SENSITIVE_KEY_123' }] };
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+    );
+  });
+
+  it('should reject LiveQuery subscription with $regex on protected field (boolean oracle)', async () => {
+    const query = new Parse.Query('SecretClass');
+    query._addCondition('secretObj.apiKey', '$regex', '^S');
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+    );
+  });
+
+  it('should reject LiveQuery subscription with deeply nested dot-notation on protected field', async () => {
+    const query = new Parse.Query('SecretClass');
+    query._addCondition('secretObj.nested.deep.key', '$eq', 'value');
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+    );
+  });
+
+  it('should allow LiveQuery subscription on non-protected fields and strip protected fields from response', async () => {
+    const query = new Parse.Query('SecretClass');
+    query.exists('publicField');
+    const subscription = await query.subscribe();
+    await Promise.all([
+      new Promise(resolve => {
+        subscription.on('update', object => {
+          expect(object.get('secretObj')).toBeUndefined();
+          expect(object.get('publicField')).toBe('updated');
+          resolve();
+        });
+      }),
+      obj.save({ publicField: 'updated' }, { useMasterKey: true }),
+    ]);
+  });
+
+  it('should reject admin user querying protected field when both * and role protect it', async () => {
+    const config = Config.get(Parse.applicationId);
+    const schemaController = await config.database.loadSchema();
+    await schemaController.updateClass(
+      'SecretClass',
+      {},
+      {
+        find: { '*': true },
+        get: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+        protectedFields: { '*': ['secretObj'], 'role:admin': ['secretObj'] },
+      }
+    );
+
+    const user = new Parse.User();
+    user.setUsername('adminuser');
+    user.setPassword('password');
+    await user.signUp();
+
+    const roleACL = new Parse.ACL();
+    roleACL.setPublicReadAccess(true);
+    const role = new Parse.Role('admin', roleACL);
+    role.getUsers().add(user);
+    await role.save(null, { useMasterKey: true });
+
+    const query = new Parse.Query('SecretClass');
+    query._addCondition('secretObj.apiKey', '$eq', 'SENSITIVE_KEY_123');
+    await expectAsync(query.subscribe(user.getSessionToken())).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+    );
+  });
+
+  it('should not reject when role-only protection exists without * entry', async () => {
+    const config = Config.get(Parse.applicationId);
+    const schemaController = await config.database.loadSchema();
+    await schemaController.updateClass(
+      'SecretClass',
+      {},
+      {
+        find: { '*': true },
+        get: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+        protectedFields: { 'role:admin': ['secretObj'] },
+      }
+    );
+
+    const user = new Parse.User();
+    user.setUsername('adminuser2');
+    user.setPassword('password');
+    await user.signUp();
+
+    const roleACL = new Parse.ACL();
+    roleACL.setPublicReadAccess(true);
+    const role = new Parse.Role('admin', roleACL);
+    role.getUsers().add(user);
+    await role.save(null, { useMasterKey: true });
+
+    const query = new Parse.Query('SecretClass');
+    query._addCondition('secretObj.apiKey', '$eq', 'SENSITIVE_KEY_123');
+    const subscription = await query.subscribe(user.getSessionToken());
+    expect(subscription).toBeDefined();
+  });
+});
+
 describe('(GHSA-w54v-hf9p-8856) User enumeration via email verification endpoint', () => {
   let sendVerificationEmail;
 
