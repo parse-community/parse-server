@@ -1403,7 +1403,7 @@ describe('(GHSA-gqpp-xgvh-9h7h) SQL Injection via dot-notation sub-key name in I
     // This causes a database error, NOT SQL injection. If injection succeeded,
     // the query would take >= 3 seconds due to pg_sleep.
     expect(elapsed).toBeLessThan(3000);
-    // Database error means no data modification at all
+    // Invalid JSONB cast fails the UPDATE, so the row is not modified
     const verify = await new Parse.Query('SubKeyTest').get(obj.id);
     expect(verify.get('stats')).toEqual({ counter: 0 });
   });
