@@ -87,7 +87,7 @@ function validateClassNameForTriggers(className, type) {
   return className;
 }
 
-const _triggerStore = {};
+const _triggerStore = Object.create(null);
 
 const Category = {
   Functions: 'Functions',
