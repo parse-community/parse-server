@@ -1,4 +1,5 @@
 const request = require('../lib/request');
+const Config = require('../lib/Config');
 
 describe('Vulnerabilities', () => {
   describe('(GHSA-8xq9-g7ch-35hg) Custom object ID allows to acquire role privilege', () => {
@@ -1584,5 +1585,205 @@ describe('(GHSA-r2m8-pxm9-9c4g) Protected fields WHERE clause bypass via dot-not
       qs: { where: JSON.stringify({ secretObj: { apiKey: 'SENSITIVE_KEY_123' } }) },
     }).catch(e => e);
     expect(res.status).toBe(400);
+  });
+});
+
+describe('(GHSA-w54v-hf9p-8856) User enumeration via email verification endpoint', () => {
+  let sendVerificationEmail;
+
+  async function createTestUsers() {
+    const user = new Parse.User();
+    user.setUsername('testuser');
+    user.setPassword('password123');
+    user.set('email', 'unverified@example.com');
+    await user.signUp();
+
+    const user2 = new Parse.User();
+    user2.setUsername('verifieduser');
+    user2.setPassword('password123');
+    user2.set('email', 'verified@example.com');
+    await user2.signUp();
+    const config = Config.get(Parse.applicationId);
+    await config.database.update(
+      '_User',
+      { username: 'verifieduser' },
+      { emailVerified: true }
+    );
+  }
+
+  describe('default (emailVerifySuccessOnInvalidEmail: true)', () => {
+    beforeEach(async () => {
+      sendVerificationEmail = jasmine.createSpy('sendVerificationEmail');
+      await reconfigureServer({
+        appName: 'test',
+        publicServerURL: 'http://localhost:8378/1',
+        verifyUserEmails: true,
+        emailAdapter: {
+          sendVerificationEmail,
+          sendPasswordResetEmail: () => Promise.resolve(),
+          sendMail: () => {},
+        },
+      });
+      await createTestUsers();
+    });
+    it('returns success for non-existent email', async () => {
+      const response = await request({
+        url: 'http://localhost:8378/1/verificationEmailRequest',
+        method: 'POST',
+        body: { email: 'nonexistent@example.com' },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+      });
+      expect(response.status).toBe(200);
+      expect(response.data).toEqual({});
+    });
+
+    it('returns success for already verified email', async () => {
+      const response = await request({
+        url: 'http://localhost:8378/1/verificationEmailRequest',
+        method: 'POST',
+        body: { email: 'verified@example.com' },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+      });
+      expect(response.status).toBe(200);
+      expect(response.data).toEqual({});
+    });
+
+    it('returns success for unverified email', async () => {
+      sendVerificationEmail.calls.reset();
+      const response = await request({
+        url: 'http://localhost:8378/1/verificationEmailRequest',
+        method: 'POST',
+        body: { email: 'unverified@example.com' },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+      });
+      expect(response.status).toBe(200);
+      expect(response.data).toEqual({});
+      await jasmine.timeout();
+      expect(sendVerificationEmail).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not send verification email for non-existent email', async () => {
+      sendVerificationEmail.calls.reset();
+      await request({
+        url: 'http://localhost:8378/1/verificationEmailRequest',
+        method: 'POST',
+        body: { email: 'nonexistent@example.com' },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+      });
+      expect(sendVerificationEmail).not.toHaveBeenCalled();
+    });
+
+    it('does not send verification email for already verified email', async () => {
+      sendVerificationEmail.calls.reset();
+      await request({
+        url: 'http://localhost:8378/1/verificationEmailRequest',
+        method: 'POST',
+        body: { email: 'verified@example.com' },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+      });
+      expect(sendVerificationEmail).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('opt-out (emailVerifySuccessOnInvalidEmail: false)', () => {
+    beforeEach(async () => {
+      sendVerificationEmail = jasmine.createSpy('sendVerificationEmail');
+      await reconfigureServer({
+        appName: 'test',
+        publicServerURL: 'http://localhost:8378/1',
+        verifyUserEmails: true,
+        emailVerifySuccessOnInvalidEmail: false,
+        emailAdapter: {
+          sendVerificationEmail,
+          sendPasswordResetEmail: () => Promise.resolve(),
+          sendMail: () => {},
+        },
+      });
+      await createTestUsers();
+    });
+
+    it('returns error for non-existent email', async () => {
+      const response = await request({
+        url: 'http://localhost:8378/1/verificationEmailRequest',
+        method: 'POST',
+        body: { email: 'nonexistent@example.com' },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+      }).catch(e => e);
+      expect(response.data.code).toBe(Parse.Error.EMAIL_NOT_FOUND);
+    });
+
+    it('returns error for already verified email', async () => {
+      const response = await request({
+        url: 'http://localhost:8378/1/verificationEmailRequest',
+        method: 'POST',
+        body: { email: 'verified@example.com' },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+      }).catch(e => e);
+      expect(response.data.code).toBe(Parse.Error.OTHER_CAUSE);
+      expect(response.data.error).toBe('Email verified@example.com is already verified.');
+    });
+
+    it('sends verification email for unverified email', async () => {
+      sendVerificationEmail.calls.reset();
+      await request({
+        url: 'http://localhost:8378/1/verificationEmailRequest',
+        method: 'POST',
+        body: { email: 'unverified@example.com' },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+      });
+      await jasmine.timeout();
+      expect(sendVerificationEmail).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('rejects invalid emailVerifySuccessOnInvalidEmail values', async () => {
+    const invalidValues = [[], {}, 0, 1, '', 'string'];
+    for (const value of invalidValues) {
+      await expectAsync(
+        reconfigureServer({
+          appName: 'test',
+          publicServerURL: 'http://localhost:8378/1',
+          verifyUserEmails: true,
+          emailVerifySuccessOnInvalidEmail: value,
+          emailAdapter: {
+            sendVerificationEmail: () => {},
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => {},
+          },
+        })
+      ).toBeRejectedWith('emailVerifySuccessOnInvalidEmail must be a boolean value');
+    }
   });
 });

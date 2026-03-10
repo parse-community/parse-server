@@ -547,8 +547,13 @@ export class UsersRouter extends ClassesRouter {
       );
     }
 
+    const verifyEmailSuccessOnInvalidEmail = req.config.emailVerifySuccessOnInvalidEmail ?? true;
+
     const results = await req.config.database.find('_User', { email: email }, {}, Auth.maintenance(req.config));
     if (!results.length || results.length < 1) {
+      if (verifyEmailSuccessOnInvalidEmail) {
+        return { response: {} };
+      }
       throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, `No user found with email ${email}`);
     }
     const user = results[0];
@@ -557,6 +562,9 @@ export class UsersRouter extends ClassesRouter {
     delete user.password;
 
     if (user.emailVerified) {
+      if (verifyEmailSuccessOnInvalidEmail) {
+        return { response: {} };
+      }
       throw new Parse.Error(Parse.Error.OTHER_CAUSE, `Email ${email} is already verified.`);
     }
 
