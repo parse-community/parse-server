@@ -152,6 +152,30 @@ class CheckGroupServerConfig extends CheckGroup {
         },
       }),
       new Check({
+        title: 'Password reset endpoint user enumeration mitigated',
+        warning:
+          'The password reset endpoint returns distinct error responses for invalid email addresses, which allows attackers to enumerate registered users.',
+        solution:
+          "Change Parse Server configuration to 'passwordPolicy.resetPasswordSuccessOnInvalidEmail: true'.",
+        check: () => {
+          if (config.passwordPolicy?.resetPasswordSuccessOnInvalidEmail === false) {
+            throw 1;
+          }
+        },
+      }),
+      new Check({
+        title: 'Email verification endpoint user enumeration mitigated',
+        warning:
+          'The email verification endpoint returns distinct error responses for invalid email addresses, which allows attackers to enumerate registered users.',
+        solution:
+          "Change Parse Server configuration to 'emailVerifySuccessOnInvalidEmail: true'.",
+        check: () => {
+          if (config.emailVerifySuccessOnInvalidEmail === false) {
+            throw 1;
+          }
+        },
+      }),
+      new Check({
         title: 'LiveQuery regex timeout enabled',
         warning:
           'LiveQuery regex timeout is disabled. A malicious client can subscribe with a crafted $regex pattern that causes catastrophic backtracking, blocking the Node.js event loop and making the server unresponsive.',

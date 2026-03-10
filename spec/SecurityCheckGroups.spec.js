@@ -49,6 +49,8 @@ describe('Security Check Groups', () => {
       expect(group.checks()[6].checkState()).toBe(CheckState.success);
       expect(group.checks()[8].checkState()).toBe(CheckState.success);
       expect(group.checks()[9].checkState()).toBe(CheckState.success);
+      expect(group.checks()[10].checkState()).toBe(CheckState.success);
+      expect(group.checks()[11].checkState()).toBe(CheckState.success);
     });
 
     it('checks fail correctly', async () => {
@@ -67,6 +69,10 @@ describe('Security Check Groups', () => {
         graphQLDepth: -1,
         graphQLFields: -1,
       };
+      config.passwordPolicy = {
+        resetPasswordSuccessOnInvalidEmail: false,
+      };
+      config.emailVerifySuccessOnInvalidEmail = false;
       await reconfigureServer(config);
 
       const group = new CheckGroupServerConfig();
@@ -79,6 +85,8 @@ describe('Security Check Groups', () => {
       expect(group.checks()[6].checkState()).toBe(CheckState.fail);
       expect(group.checks()[8].checkState()).toBe(CheckState.fail);
       expect(group.checks()[9].checkState()).toBe(CheckState.fail);
+      expect(group.checks()[10].checkState()).toBe(CheckState.fail);
+      expect(group.checks()[11].checkState()).toBe(CheckState.fail);
     });
 
     it_only_db('mongo')('checks succeed correctly (MongoDB specific)', async () => {
