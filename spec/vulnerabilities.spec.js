@@ -1769,6 +1769,13 @@ describe('(GHSA-j7mm-f4rv-6q6q) Protected fields bypass via LiveQuery dot-notati
     await expectAsync(query.subscribe()).toBeRejected();
   });
 
+  it('should reject LiveQuery subscription with protected field in $nor', async () => {
+    // Build $nor manually since Parse SDK doesn't expose it directly
+    const query = new Parse.Query('SecretClass');
+    query._where = { $nor: [{ 'secretObj.apiKey': 'SENSITIVE_KEY_123' }] };
+    await expectAsync(query.subscribe()).toBeRejected();
+  });
+
   it('should reject LiveQuery subscription with $regex on protected field (boolean oracle)', async () => {
     const query = new Parse.Query('SecretClass');
     query._addCondition('secretObj.apiKey', '$regex', '^S');
