@@ -1,3 +1,10 @@
+## [8.6.32](https://github.com/parse-community/parse-server/compare/8.6.31...8.6.32) (2026-03-10)
+
+
+### Bug Fixes
+
+* Protected fields bypass via dot-notation in query and sort ([GHSA-r2m8-pxm9-9c4g](https://github.com/parse-community/parse-server/security/advisories/GHSA-r2m8-pxm9-9c4g)) ([#10168](https://github.com/parse-community/parse-server/issues/10168)) ([1787db3](https://github.com/parse-community/parse-server/commit/1787db3244acca5ced180eb9814e1cfad364d826))
+
 ## [8.6.31](https://github.com/parse-community/parse-server/compare/8.6.30...8.6.31) (2026-03-10)
 
 
