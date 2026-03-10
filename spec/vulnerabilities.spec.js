@@ -1706,6 +1706,102 @@ describe('(GHSA-r2m8-pxm9-9c4g) Protected fields WHERE clause bypass via dot-not
   });
 });
 
+describe('(GHSA-j7mm-f4rv-6q6q) Protected fields bypass via LiveQuery dot-notation WHERE', () => {
+  let obj;
+
+  beforeEach(async () => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    await reconfigureServer({
+      liveQuery: { classNames: ['SecretClass'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const config = Config.get(Parse.applicationId);
+    const schemaController = await config.database.loadSchema();
+    await schemaController.addClassIfNotExists(
+      'SecretClass',
+      { secretObj: { type: 'Object' }, publicField: { type: 'String' } },
+    );
+    await schemaController.updateClass(
+      'SecretClass',
+      {},
+      {
+        find: { '*': true },
+        get: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+        protectedFields: { '*': ['secretObj'] },
+      }
+    );
+
+    obj = new Parse.Object('SecretClass');
+    obj.set('secretObj', { apiKey: 'SENSITIVE_KEY_123', score: 42 });
+    obj.set('publicField', 'visible');
+    await obj.save(null, { useMasterKey: true });
+  });
+
+  afterEach(async () => {
+    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+    await client.close();
+  });
+
+  it('should reject LiveQuery subscription with dot-notation on protected field in where clause', async () => {
+    const query = new Parse.Query('SecretClass');
+    query._addCondition('secretObj.apiKey', '$eq', 'SENSITIVE_KEY_123');
+    await expectAsync(query.subscribe()).toBeRejected();
+  });
+
+  it('should reject LiveQuery subscription with protected field directly in where clause', async () => {
+    const query = new Parse.Query('SecretClass');
+    query.exists('secretObj');
+    await expectAsync(query.subscribe()).toBeRejected();
+  });
+
+  it('should reject LiveQuery subscription with protected field in $or', async () => {
+    const q1 = new Parse.Query('SecretClass');
+    q1._addCondition('secretObj.apiKey', '$eq', 'SENSITIVE_KEY_123');
+    const q2 = new Parse.Query('SecretClass');
+    q2._addCondition('secretObj.apiKey', '$eq', 'other');
+    const query = Parse.Query.or(q1, q2);
+    await expectAsync(query.subscribe()).toBeRejected();
+  });
+
+  it('should reject LiveQuery subscription with $regex on protected field (boolean oracle)', async () => {
+    const query = new Parse.Query('SecretClass');
+    query._addCondition('secretObj.apiKey', '$regex', '^S');
+    await expectAsync(query.subscribe()).toBeRejected();
+  });
+
+  it('should reject LiveQuery subscription with deeply nested dot-notation on protected field', async () => {
+    const query = new Parse.Query('SecretClass');
+    query._addCondition('secretObj.nested.deep.key', '$eq', 'value');
+    await expectAsync(query.subscribe()).toBeRejected();
+  });
+
+  it('should allow LiveQuery subscription on non-protected fields and strip protected fields from response', async () => {
+    const query = new Parse.Query('SecretClass');
+    query.exists('publicField');
+    const subscription = await query.subscribe();
+    await Promise.all([
+      new Promise(resolve => {
+        subscription.on('update', object => {
+          expect(object.get('secretObj')).toBeUndefined();
+          expect(object.get('publicField')).toBe('updated');
+          resolve();
+        });
+      }),
+      obj.save({ publicField: 'updated' }, { useMasterKey: true }),
+    ]);
+  });
+
+  // Note: master key bypass is inherently tested by the `!client.hasMasterKey` guard
+  // in the implementation. Testing master key LiveQuery requires configuring keyPairs
+  // in the LiveQuery server config, which is not part of the default test setup.
+});
+
 describe('(GHSA-w54v-hf9p-8856) User enumeration via email verification endpoint', () => {
   let sendVerificationEmail;
 

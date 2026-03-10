@@ -916,6 +916,41 @@ class ParseLiveQueryServer {
         op
       );
 
+      // Check protected fields in WHERE clause
+      if (!client.hasMasterKey) {
+        const auth = request.user ? { user: request.user, userRoles: [] } : {};
+        const protectedFields =
+          appConfig.database.addProtectedFields(
+            classLevelPermissions,
+            className,
+            request.query.where,
+            aclGroup,
+            auth
+          ) || [];
+        if (protectedFields.length > 0 && request.query.where) {
+          const checkWhere = (where: any) => {
+            if (typeof where !== 'object' || where === null) {
+              return;
+            }
+            for (const whereKey of Object.keys(where)) {
+              const rootField = whereKey.split('.')[0];
+              if (protectedFields.includes(whereKey) || protectedFields.includes(rootField)) {
+                throw new Parse.Error(
+                  Parse.Error.OPERATION_FORBIDDEN,
+                  'Permission denied'
+                );
+              }
+            }
+            for (const op of ['$or', '$and', '$nor']) {
+              if (Array.isArray(where[op])) {
+                where[op].forEach((subQuery: any) => checkWhere(subQuery));
+              }
+            }
+          };
+          checkWhere(request.query.where);
+        }
+      }
+
       // Get subscription from subscriptions, create one if necessary
       const subscriptionHash = queryHash(request.query);
       // Add className to subscriptions if necessary
