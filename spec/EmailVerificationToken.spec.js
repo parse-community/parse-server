@@ -1085,6 +1085,7 @@ describe('Email Verification Token Expiration:', () => {
       emailAdapter: emailAdapter,
       emailVerifyTokenValidityDuration: 5, // 5 seconds
       publicServerURL: 'http://localhost:8378/1',
+      emailVerifySuccessOnInvalidEmail: false,
     });
     user.setUsername('no_new_verification_token_once_verified');
     user.setPassword('expiringToken');
@@ -1131,6 +1132,7 @@ describe('Email Verification Token Expiration:', () => {
       emailAdapter: emailAdapter,
       emailVerifyTokenValidityDuration: 5, // 5 seconds
       publicServerURL: 'http://localhost:8378/1',
+      emailVerifySuccessOnInvalidEmail: false,
     });
     const response = await request({
       url: 'http://localhost:8378/1/verificationEmailRequest',
