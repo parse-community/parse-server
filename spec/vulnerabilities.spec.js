@@ -245,6 +245,53 @@ describe('Vulnerabilities', () => {
     });
   });
 
+  describe('(GHSA-3v4q-4q9g-x83q) Prototype pollution via application ID in trigger store', () => {
+    const prototypeProperties = ['constructor', 'toString', 'valueOf', 'hasOwnProperty', '__proto__'];
+
+    for (const prop of prototypeProperties) {
+      it(`rejects "${prop}" as application ID in cloud function call`, async () => {
+        const response = await request({
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Parse-Application-Id': prop,
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          method: 'POST',
+          url: 'http://localhost:8378/1/functions/testFunction',
+          body: JSON.stringify({}),
+        }).catch(e => e);
+        expect(response.status).toBe(403);
+      });
+
+      it(`rejects "${prop}" as application ID with arbitrary API key in cloud function call`, async () => {
+        const response = await request({
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Parse-Application-Id': prop,
+            'X-Parse-REST-API-Key': 'ANY_KEY',
+          },
+          method: 'POST',
+          url: 'http://localhost:8378/1/functions/testFunction',
+          body: JSON.stringify({}),
+        }).catch(e => e);
+        expect(response.status).toBe(403);
+      });
+
+      it(`rejects "${prop}" as application ID in class query`, async () => {
+        const response = await request({
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Parse-Application-Id': prop,
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          method: 'GET',
+          url: 'http://localhost:8378/1/classes/TestClass',
+        }).catch(e => e);
+        expect(response.status).toBe(403);
+      });
+    }
+  });
+
   describe('Request denylist', () => {
     describe('(GHSA-q342-9w2p-57fp) Denylist bypass via sibling nested objects', () => {
       it('denies _bsontype:Code after a sibling nested object', async () => {
