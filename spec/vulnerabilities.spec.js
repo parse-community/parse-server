@@ -1775,6 +1775,7 @@ describe('(GHSA-w54v-hf9p-8856) User enumeration via email verification endpoint
     });
 
     it('returns success for unverified email', async () => {
+      sendVerificationEmail.calls.reset();
       const response = await request({
         url: 'http://localhost:8378/1/verificationEmailRequest',
         method: 'POST',
@@ -1787,6 +1788,8 @@ describe('(GHSA-w54v-hf9p-8856) User enumeration via email verification endpoint
       });
       expect(response.status).toBe(200);
       expect(response.data).toEqual({});
+      await jasmine.timeout();
+      expect(sendVerificationEmail).toHaveBeenCalledTimes(1);
     });
 
     it('does not send verification email for non-existent email', async () => {
@@ -1863,6 +1866,22 @@ describe('(GHSA-w54v-hf9p-8856) User enumeration via email verification endpoint
         },
       }).catch(e => e);
       expect(response.status).not.toBe(200);
+    });
+
+    it('sends verification email for unverified email', async () => {
+      sendVerificationEmail.calls.reset();
+      await request({
+        url: 'http://localhost:8378/1/verificationEmailRequest',
+        method: 'POST',
+        body: { email: 'unverified@example.com' },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+      });
+      await jasmine.timeout();
+      expect(sendVerificationEmail).toHaveBeenCalledTimes(1);
     });
   });
 
