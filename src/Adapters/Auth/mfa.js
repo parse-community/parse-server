@@ -157,8 +157,13 @@ class MFAAdapter extends AuthAdapter {
       if (!secret) {
         return saveResponse;
       }
-      if (recovery[0] === token || recovery[1] === token) {
-        return saveResponse;
+      const recoveryIndex = recovery.indexOf(token);
+      if (recoveryIndex >= 0) {
+        const updatedRecovery = [...recovery];
+        updatedRecovery.splice(recoveryIndex, 1);
+        return {
+          save: { ...auth.mfa, recovery: updatedRecovery },
+        };
       }
       const totp = new TOTP({
         algorithm: this.algorithm,
