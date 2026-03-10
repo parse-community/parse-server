@@ -1281,3 +1281,105 @@ describe('(GHSA-v5hf-f4c3-m5rv) Stored XSS via .svgz, .xht, .xml, .xsl, .xslt fi
     }
   });
 });
+
+describe('(GHSA-gqpp-xgvh-9h7h) SQL Injection via dot-notation sub-key name in Increment operation', () => {
+  const headers = {
+    'Content-Type': 'application/json',
+    'X-Parse-Application-Id': 'test',
+    'X-Parse-REST-API-Key': 'rest',
+  };
+
+  it_only_db('postgres')('does not execute injected SQL via single quote in sub-key name', async () => {
+    const obj = new Parse.Object('SubKeyTest');
+    obj.set('stats', { counter: 0 });
+    await obj.save();
+
+    const start = Date.now();
+    await request({
+      method: 'PUT',
+      url: `http://localhost:8378/1/classes/SubKeyTest/${obj.id}`,
+      headers,
+      body: JSON.stringify({
+        "stats.x' || (SELECT pg_sleep(3))::text || '": { __op: 'Increment', amount: 1 },
+      }),
+    }).catch(() => {});
+    const elapsed = Date.now() - start;
+
+    // If injection succeeded, query would take >= 3 seconds
+    expect(elapsed).toBeLessThan(3000);
+    // The escaped payload becomes a harmless literal key; original data is untouched
+    const verify = await new Parse.Query('SubKeyTest').get(obj.id);
+    expect(verify.get('stats').counter).toBe(0);
+  });
+
+  it_only_db('postgres')('does not execute injected SQL via double quote in sub-key name', async () => {
+    const obj = new Parse.Object('SubKeyTest');
+    obj.set('stats', { counter: 0 });
+    await obj.save();
+
+    const start = Date.now();
+    await request({
+      method: 'PUT',
+      url: `http://localhost:8378/1/classes/SubKeyTest/${obj.id}`,
+      headers,
+      body: JSON.stringify({
+        'stats.x" || (SELECT pg_sleep(3))::text || "': { __op: 'Increment', amount: 1 },
+      }),
+    }).catch(() => {});
+    const elapsed = Date.now() - start;
+
+    // Double quotes break JSON structure inside the CONCAT, producing invalid JSONB.
+    // This causes a database error, NOT SQL injection. If injection succeeded,
+    // the query would take >= 3 seconds due to pg_sleep.
+    expect(elapsed).toBeLessThan(3000);
+    // Invalid JSONB cast fails the UPDATE, so the row is not modified
+    const verify = await new Parse.Query('SubKeyTest').get(obj.id);
+    expect(verify.get('stats')).toEqual({ counter: 0 });
+  });
+
+  it_only_db('postgres')('does not execute injected SQL via double quote crafted as valid JSONB in sub-key name', async () => {
+    const obj = new Parse.Object('SubKeyTest');
+    obj.set('stats', { counter: 0 });
+    await obj.save();
+
+    // This payload uses double quotes to craft a sub-key that produces valid JSONB
+    // (e.g. '{"x":0,"evil":1}') instead of breaking JSON structure. Even so, both
+    // interpolation sites are inside single-quoted SQL strings, so double quotes
+    // cannot escape the SQL context — no arbitrary SQL execution is possible.
+    const start = Date.now();
+    await request({
+      method: 'PUT',
+      url: `http://localhost:8378/1/classes/SubKeyTest/${obj.id}`,
+      headers,
+      body: JSON.stringify({
+        'stats.x":0,"pg_sleep(3)': { __op: 'Increment', amount: 1 },
+      }),
+    }).catch(() => {});
+    const elapsed = Date.now() - start;
+
+    expect(elapsed).toBeLessThan(3000);
+    // Double quotes craft valid JSONB with extra keys, but no SQL injection occurs;
+    // original counter is untouched
+    const verify = await new Parse.Query('SubKeyTest').get(obj.id);
+    expect(verify.get('stats').counter).toBe(0);
+  });
+
+  it_only_db('postgres')('allows valid Increment on nested object field with normal sub-key', async () => {
+    const obj = new Parse.Object('SubKeyTest');
+    obj.set('stats', { counter: 5 });
+    await obj.save();
+
+    const response = await request({
+      method: 'PUT',
+      url: `http://localhost:8378/1/classes/SubKeyTest/${obj.id}`,
+      headers,
+      body: JSON.stringify({
+        'stats.counter': { __op: 'Increment', amount: 2 },
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    const verify = await new Parse.Query('SubKeyTest').get(obj.id);
+    expect(verify.get('stats').counter).toBe(7);
+  });
+});
