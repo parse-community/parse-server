@@ -197,6 +197,7 @@ export class Config {
     _publicServerURL,
     emailVerifyTokenValidityDuration,
     emailVerifyTokenReuseIfValid,
+    emailVerifySuccessOnInvalidEmail,
   }) {
     const emailAdapter = userController.adapter;
     if (verifyUserEmails) {
@@ -206,6 +207,7 @@ export class Config {
         publicServerURL: publicServerURL || _publicServerURL,
         emailVerifyTokenValidityDuration,
         emailVerifyTokenReuseIfValid,
+        emailVerifySuccessOnInvalidEmail,
       });
     }
   }
@@ -456,7 +458,7 @@ export class Config {
       }
 
       if (
-        passwordPolicy.resetPasswordSuccessOnInvalidEmail &&
+        passwordPolicy.resetPasswordSuccessOnInvalidEmail !== undefined &&
         typeof passwordPolicy.resetPasswordSuccessOnInvalidEmail !== 'boolean'
       ) {
         throw 'resetPasswordSuccessOnInvalidEmail must be a boolean value';
@@ -503,6 +505,7 @@ export class Config {
     publicServerURL,
     emailVerifyTokenValidityDuration,
     emailVerifyTokenReuseIfValid,
+    emailVerifySuccessOnInvalidEmail,
   }) {
     if (!emailAdapter) {
       throw 'An emailAdapter is required for e-mail verification and password resets.';
@@ -523,6 +526,9 @@ export class Config {
     }
     if (emailVerifyTokenReuseIfValid && !emailVerifyTokenValidityDuration) {
       throw 'You cannot use emailVerifyTokenReuseIfValid without emailVerifyTokenValidityDuration';
+    }
+    if (emailVerifySuccessOnInvalidEmail !== undefined && typeof emailVerifySuccessOnInvalidEmail !== 'boolean') {
+      throw 'emailVerifySuccessOnInvalidEmail must be a boolean value';
     }
   }
 
