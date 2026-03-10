@@ -159,7 +159,7 @@ class MFAAdapter extends AuthAdapter {
       if (!secret) {
         return saveResponse;
       }
-      const recoveryIndex = recovery.indexOf(token);
+      const recoveryIndex = recovery?.indexOf(token) ?? -1;
       if (recoveryIndex >= 0) {
         const updatedRecovery = [...recovery];
         updatedRecovery.splice(recoveryIndex, 1);
