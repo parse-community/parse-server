@@ -1865,7 +1865,8 @@ describe('(GHSA-w54v-hf9p-8856) User enumeration via email verification endpoint
           'Content-Type': 'application/json',
         },
       }).catch(e => e);
-      expect(response.status).not.toBe(200);
+      expect(response.data.code).toBe(Parse.Error.OTHER_CAUSE);
+      expect(response.data.error).toBe('Email verified@example.com is already verified.');
     });
 
     it('sends verification email for unverified email', async () => {
