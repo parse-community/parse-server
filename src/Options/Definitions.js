@@ -54,7 +54,7 @@ module.exports.SchemaOptions = {
 module.exports.ParseServerOptions = {
   accountLockout: {
     env: 'PARSE_SERVER_ACCOUNT_LOCKOUT',
-    help: 'The account lockout policy for failed login attempts.',
+    help: "The account lockout policy for failed login attempts.<br><br>Note: Setting a user's ACL to an empty object `{}` via master key is a separate mechanism that only prevents new logins; it does not invalidate existing session tokens. To immediately revoke a user's access, destroy their sessions via master key in addition to setting the ACL.",
     action: parsers.objectParser,
     type: 'AccountLockoutOptions',
   },

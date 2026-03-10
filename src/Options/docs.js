@@ -12,7 +12,7 @@
 
 /**
  * @interface ParseServerOptions
- * @property {AccountLockoutOptions} accountLockout The account lockout policy for failed login attempts.
+ * @property {AccountLockoutOptions} accountLockout The account lockout policy for failed login attempts.<br><br>Note: Setting a user's ACL to an empty object `{}` via master key is a separate mechanism that only prevents new logins; it does not invalidate existing session tokens. To immediately revoke a user's access, destroy their sessions via master key in addition to setting the ACL.
  * @property {Boolean} allowClientClassCreation Enable (or disable) client class creation, defaults to false
  * @property {Boolean} allowCustomObjectId Enable (or disable) custom objectId
  * @property {Boolean} allowExpiredAuthDataToken Allow a user to log in even if the 3rd party authentication token that was used to sign in to their account has expired. If this is set to `false`, then the token will be validated every time the user signs in to their account. This refers to the token that is stored in the `_User.authData` field. Defaults to `false`.

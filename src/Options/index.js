@@ -251,7 +251,9 @@ export interface ParseServerOptions {
     | boolean
     | (SendEmailVerificationRequest => boolean | Promise<boolean>)
   );
-  /* The account lockout policy for failed login attempts. */
+  /* The account lockout policy for failed login attempts.
+  <br><br>
+  Note: Setting a user's ACL to an empty object `{}` via master key is a separate mechanism that only prevents new logins; it does not invalidate existing session tokens. To immediately revoke a user's access, destroy their sessions via master key in addition to setting the ACL. */
   accountLockout: ?AccountLockoutOptions;
   /* The password policy for enforcing password related rules. */
   passwordPolicy: ?PasswordPolicyOptions;
