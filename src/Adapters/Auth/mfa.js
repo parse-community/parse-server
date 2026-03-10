@@ -39,6 +39,8 @@
  *   - Requires a secret key for setup.
  *   - Validates the user's OTP against a time-based one-time password (TOTP) generated using the secret key.
  *   - Supports configurable digits, period, and algorithm for TOTP generation.
+ *   - Generates two single-use recovery codes during enrollment. Each recovery code can be used once
+ *     in place of a TOTP token and is consumed after use.
  *
  * ## MFA Payload
  * The adapter requires the following `authData` fields:
