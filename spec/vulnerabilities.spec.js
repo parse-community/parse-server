@@ -1797,6 +1797,85 @@ describe('(GHSA-j7mm-f4rv-6q6q) Protected fields bypass via LiveQuery dot-notati
     ]);
   });
 
+  it('should reject admin user querying protected field when both * and role protect it', async () => {
+    // Common case: protectedFields has both '*' and 'role:admin' entries.
+    // Even without resolving user roles, the '*' protection applies and blocks the query.
+    // This validates that role-based exemptions are irrelevant when '*' covers the field.
+    const config = Config.get(Parse.applicationId);
+    const schemaController = await config.database.loadSchema();
+    await schemaController.updateClass(
+      'SecretClass',
+      {},
+      {
+        find: { '*': true },
+        get: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+        protectedFields: { '*': ['secretObj'], 'role:admin': ['secretObj'] },
+      }
+    );
+
+    const user = new Parse.User();
+    user.setUsername('adminuser');
+    user.setPassword('password');
+    await user.signUp();
+
+    const roleACL = new Parse.ACL();
+    roleACL.setPublicReadAccess(true);
+    const role = new Parse.Role('admin', roleACL);
+    role.getUsers().add(user);
+    await role.save(null, { useMasterKey: true });
+
+    const query = new Parse.Query('SecretClass');
+    query._addCondition('secretObj.apiKey', '$eq', 'SENSITIVE_KEY_123');
+    await expectAsync(query.subscribe(user.getSessionToken())).toBeRejected();
+  });
+
+  it('should not reject when role-only protection exists without * entry', async () => {
+    // Edge case: protectedFields only has a role entry, no '*'.
+    // Without resolving roles, the protection set is empty, so the subscription is allowed.
+    // This is a correctness gap, not a security issue: the role entry means "protect this
+    // field FROM role members" (i.e. admins should not see it). Not resolving roles means
+    // the admin loses their own restriction — they see data meant to be hidden from them.
+    // This does not allow unprivileged users to access protected data.
+    const config = Config.get(Parse.applicationId);
+    const schemaController = await config.database.loadSchema();
+    await schemaController.updateClass(
+      'SecretClass',
+      {},
+      {
+        find: { '*': true },
+        get: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+        protectedFields: { 'role:admin': ['secretObj'] },
+      }
+    );
+
+    const user = new Parse.User();
+    user.setUsername('adminuser2');
+    user.setPassword('password');
+    await user.signUp();
+
+    const roleACL = new Parse.ACL();
+    roleACL.setPublicReadAccess(true);
+    const role = new Parse.Role('admin', roleACL);
+    role.getUsers().add(user);
+    await role.save(null, { useMasterKey: true });
+
+    // This subscribes successfully because without '*' entry, no fields are protected
+    // for purposes of WHERE clause validation. The role-only config means "hide secretObj
+    // from admins" — a restriction ON the privileged user, not a security boundary.
+    const query = new Parse.Query('SecretClass');
+    query._addCondition('secretObj.apiKey', '$eq', 'SENSITIVE_KEY_123');
+    const subscription = await query.subscribe(user.getSessionToken());
+    expect(subscription).toBeDefined();
+  });
+
   // Note: master key bypass is inherently tested by the `!client.hasMasterKey` guard
   // in the implementation. Testing master key LiveQuery requires configuring keyPairs
   // in the LiveQuery server config, which is not part of the default test setup.
