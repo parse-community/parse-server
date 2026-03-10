@@ -263,6 +263,20 @@ describe('Vulnerabilities', () => {
         expect(response.status).toBe(403);
       });
 
+      it(`rejects "${prop}" as application ID with arbitrary API key in cloud function call`, async () => {
+        const response = await request({
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Parse-Application-Id': prop,
+            'X-Parse-REST-API-Key': 'ANY_KEY',
+          },
+          method: 'POST',
+          url: 'http://localhost:8378/1/functions/testFunction',
+          body: JSON.stringify({}),
+        }).catch(e => e);
+        expect(response.status).toBe(403);
+      });
+
       it(`rejects "${prop}" as application ID in class query`, async () => {
         const response = await request({
           headers: {
