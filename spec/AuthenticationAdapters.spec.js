@@ -1913,6 +1913,60 @@ describe('OTP TOTP auth adatper', () => {
     );
   });
 
+  it('consumes recovery code after use', async () => {
+    const user = await Parse.User.signUp('username', 'password');
+    const OTPAuth = require('otpauth');
+    const secret = new OTPAuth.Secret();
+    const totp = new OTPAuth.TOTP({
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
+    const token = totp.generate();
+    await user.save(
+      { authData: { mfa: { secret: secret.base32, token } } },
+      { sessionToken: user.getSessionToken() }
+    );
+    // Get recovery codes from stored auth data
+    await user.fetch({ useMasterKey: true });
+    const recoveryCode = user.get('authData').mfa.recovery[0];
+    // First login with recovery code should succeed
+    await request({
+      headers,
+      method: 'POST',
+      url: 'http://localhost:8378/1/login',
+      body: JSON.stringify({
+        username: 'username',
+        password: 'password',
+        authData: {
+          mfa: {
+            token: recoveryCode,
+          },
+        },
+      }),
+    });
+    // Second login with same recovery code should fail (code consumed)
+    await expectAsync(
+      request({
+        headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/login',
+        body: JSON.stringify({
+          username: 'username',
+          password: 'password',
+          authData: {
+            mfa: {
+              token: recoveryCode,
+            },
+          },
+        }),
+      }).catch(e => {
+        throw e.data;
+      })
+    ).toBeRejectedWith({ code: Parse.Error.SCRIPT_FAILED, error: 'Invalid MFA token' });
+  });
+
   it('future logins reject incorrect TOTP token', async () => {
     const user = await Parse.User.signUp('username', 'password');
     const OTPAuth = require('otpauth');

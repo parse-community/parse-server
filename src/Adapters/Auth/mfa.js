@@ -39,6 +39,8 @@
  *   - Requires a secret key for setup.
  *   - Validates the user's OTP against a time-based one-time password (TOTP) generated using the secret key.
  *   - Supports configurable digits, period, and algorithm for TOTP generation.
+ *   - Generates two single-use recovery codes during enrollment. Each recovery code can be used once
+ *     in place of a TOTP token and is consumed after use.
  *
  * ## MFA Payload
  * The adapter requires the following `authData` fields:
@@ -157,8 +159,13 @@ class MFAAdapter extends AuthAdapter {
       if (!secret) {
         return saveResponse;
       }
-      if (recovery[0] === token || recovery[1] === token) {
-        return saveResponse;
+      const recoveryIndex = recovery?.indexOf(token) ?? -1;
+      if (recoveryIndex >= 0) {
+        const updatedRecovery = [...recovery];
+        updatedRecovery.splice(recoveryIndex, 1);
+        return {
+          save: { ...auth.mfa, recovery: updatedRecovery },
+        };
       }
       const totp = new TOTP({
         algorithm: this.algorithm,
