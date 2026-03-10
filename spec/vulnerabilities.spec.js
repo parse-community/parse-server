@@ -1775,6 +1775,15 @@ describe('(GHSA-j7mm-f4rv-6q6q) Protected fields bypass via LiveQuery dot-notati
     );
   });
 
+  it('should reject LiveQuery subscription with protected field in $and', async () => {
+    // Build $and manually since Parse SDK doesn't expose it directly
+    const query = new Parse.Query('SecretClass');
+    query._where = { $and: [{ 'secretObj.apiKey': 'SENSITIVE_KEY_123' }, { publicField: 'visible' }] };
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+    );
+  });
+
   it('should reject LiveQuery subscription with protected field in $nor', async () => {
     // Build $nor manually since Parse SDK doesn't expose it directly
     const query = new Parse.Query('SecretClass');
