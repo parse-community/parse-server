@@ -197,6 +197,12 @@ module.exports.ParseServerOptions = {
     help: 'Adapter module for email sending',
     action: parsers.moduleOrObjectParser,
   },
+  emailVerifySuccessOnInvalidEmail: {
+    env: 'PARSE_SERVER_EMAIL_VERIFY_SUCCESS_ON_INVALID_EMAIL',
+    help: 'Set to `true` if a request to verify the email should return a success response even if the provided email address is invalid, or `false` if the request should return an error response if the email address is invalid.<br><br>Default is `true`.<br>Requires option `verifyUserEmails: true`.',
+    action: parsers.booleanParser,
+    default: true,
+  },
   emailVerifyTokenReuseIfValid: {
     env: 'PARSE_SERVER_EMAIL_VERIFY_TOKEN_REUSE_IF_VALID',
     help: 'Set to `true` if a email verification token should be reused in case another token is requested but there is a token that is still valid, i.e. has not expired. This avoids the often observed issue that a user requests multiple emails and does not know which link contains a valid token because each newly generated token would invalidate the previous token.<br><br>Default is `false`.<br>Requires option `verifyUserEmails: true`.',
