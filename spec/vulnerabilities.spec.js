@@ -1378,6 +1378,9 @@ describe('(GHSA-gqpp-xgvh-9h7h) SQL Injection via dot-notation sub-key name in I
 
     // If injection succeeded, query would take >= 3 seconds
     expect(elapsed).toBeLessThan(3000);
+    // The escaped payload becomes a harmless literal key; original data is untouched
+    const verify = await new Parse.Query('SubKeyTest').get(obj.id);
+    expect(verify.get('stats').counter).toBe(0);
   });
 
   it_only_db('postgres')('does not execute injected SQL via double quote in sub-key name', async () => {
@@ -1400,6 +1403,9 @@ describe('(GHSA-gqpp-xgvh-9h7h) SQL Injection via dot-notation sub-key name in I
     // This causes a database error, NOT SQL injection. If injection succeeded,
     // the query would take >= 3 seconds due to pg_sleep.
     expect(elapsed).toBeLessThan(3000);
+    // Database error means no data modification at all
+    const verify = await new Parse.Query('SubKeyTest').get(obj.id);
+    expect(verify.get('stats')).toEqual({ counter: 0 });
   });
 
   it_only_db('postgres')('does not execute injected SQL via double quote crafted as valid JSONB in sub-key name', async () => {
@@ -1423,6 +1429,10 @@ describe('(GHSA-gqpp-xgvh-9h7h) SQL Injection via dot-notation sub-key name in I
     const elapsed = Date.now() - start;
 
     expect(elapsed).toBeLessThan(3000);
+    // Double quotes craft valid JSONB with extra keys, but no SQL injection occurs;
+    // original counter is untouched
+    const verify = await new Parse.Query('SubKeyTest').get(obj.id);
+    expect(verify.get('stats').counter).toBe(0);
   });
 
   it_only_db('postgres')('allows valid Increment on nested object field with normal sub-key', async () => {
