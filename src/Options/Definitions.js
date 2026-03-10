@@ -199,7 +199,7 @@ module.exports.ParseServerOptions = {
   },
   emailVerifySuccessOnInvalidEmail: {
     env: 'PARSE_SERVER_EMAIL_VERIFY_SUCCESS_ON_INVALID_EMAIL',
-    help: 'Set to `true` if a request to verify the email should return a success response even if the provided email address is invalid, or `false` if the request should return an error response if the email address is invalid.<br><br>Default is `true`.<br>Requires option `verifyUserEmails: true`.',
+    help: 'Set to `true` if a request to verify the email should return a success response even if the provided email address does not belong to a verifiable account, for example because it is unknown or already verified, or `false` if the request should return an error response in those cases.<br><br>Default is `true`.<br>Requires option `verifyUserEmails: true`.',
     action: parsers.booleanParser,
     default: true,
   },
