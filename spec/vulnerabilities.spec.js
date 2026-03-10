@@ -1745,7 +1745,9 @@ describe('(GHSA-j7mm-f4rv-6q6q) Protected fields bypass via LiveQuery dot-notati
 
   afterEach(async () => {
     const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
-    await client.close();
+    if (client) {
+      await client.close();
+    }
   });
 
   it('should reject LiveQuery subscription with dot-notation on protected field in where clause', async () => {
