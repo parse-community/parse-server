@@ -1887,7 +1887,7 @@ describe('(GHSA-w54v-hf9p-8856) User enumeration via email verification endpoint
   });
 
   it('rejects invalid emailVerifySuccessOnInvalidEmail values', async () => {
-    const invalidValues = [[], {}, 1, 'string'];
+    const invalidValues = [[], {}, 0, 1, '', 'string'];
     for (const value of invalidValues) {
       await expectAsync(
         reconfigureServer({

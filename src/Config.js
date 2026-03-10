@@ -459,7 +459,7 @@ export class Config {
       }
 
       if (
-        passwordPolicy.resetPasswordSuccessOnInvalidEmail &&
+        passwordPolicy.resetPasswordSuccessOnInvalidEmail !== undefined &&
         typeof passwordPolicy.resetPasswordSuccessOnInvalidEmail !== 'boolean'
       ) {
         throw 'resetPasswordSuccessOnInvalidEmail must be a boolean value';
@@ -529,7 +529,7 @@ export class Config {
     if (emailVerifyTokenReuseIfValid && !emailVerifyTokenValidityDuration) {
       throw 'You cannot use emailVerifyTokenReuseIfValid without emailVerifyTokenValidityDuration';
     }
-    if (emailVerifySuccessOnInvalidEmail && typeof emailVerifySuccessOnInvalidEmail !== 'boolean') {
+    if (emailVerifySuccessOnInvalidEmail !== undefined && typeof emailVerifySuccessOnInvalidEmail !== 'boolean') {
       throw 'emailVerifySuccessOnInvalidEmail must be a boolean value';
     }
   }
