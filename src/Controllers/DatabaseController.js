@@ -122,8 +122,8 @@ const validateQuery = (
     }
     if (
       !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/) &&
-      ((!specialQueryKeys.includes(key) && !isMaster && !update) ||
-        (update && isMaster && !specialMasterQueryKeys.includes(key)))
+      !specialQueryKeys.includes(key) &&
+      !(isMaster && specialMasterQueryKeys.includes(key))
     ) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${key}`);
     }
