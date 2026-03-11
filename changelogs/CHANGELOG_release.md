@@ -1,3 +1,10 @@
+## [8.6.37](https://github.com/parse-community/parse-server/compare/8.6.36...8.6.37) (2026-03-11)
+
+
+### Bug Fixes
+
+* OAuth2 adapter shares mutable state across providers via singleton instance ([GHSA-2cjm-2gwv-m892](https://github.com/parse-community/parse-server/security/advisories/GHSA-2cjm-2gwv-m892)) ([#10184](https://github.com/parse-community/parse-server/issues/10184)) ([6afa431](https://github.com/parse-community/parse-server/commit/6afa4315ea691d8fe36ed39f00fb50fd8affb691))
+
 ## [8.6.36](https://github.com/parse-community/parse-server/compare/8.6.35...8.6.36) (2026-03-11)
 
 
