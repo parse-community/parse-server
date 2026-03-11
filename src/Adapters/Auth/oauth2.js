@@ -72,7 +72,7 @@ class OAuth2Adapter extends AuthAdapter {
     this.authorizationHeader = options.authorizationHeader;
   }
 
-  async validateAppId(authData) {
+  async validateAppId(appIds, authData) {
     if (!this.appidField) {
       return;
     }
