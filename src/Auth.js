@@ -433,6 +433,10 @@ const findUsersWithAuthData = async (config, authData, beforeFind) => {
         return null;
       }
 
+      if (typeof providerAuthData.id !== 'string') {
+        throw new Parse.Error(Parse.Error.INVALID_VALUE, `Invalid authData id for provider '${provider}'.`);
+      }
+
       return { [`authData.${provider}.id`]: providerAuthData.id };
     })
   );
