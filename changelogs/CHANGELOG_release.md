@@ -1,3 +1,10 @@
+## [8.6.38](https://github.com/parse-community/parse-server/compare/8.6.37...8.6.38) (2026-03-11)
+
+
+### Bug Fixes
+
+* Account takeover via operator injection in authentication data identifier ([GHSA-5fw2-8jcv-xh87](https://github.com/parse-community/parse-server/security/advisories/GHSA-5fw2-8jcv-xh87)) ([#10186](https://github.com/parse-community/parse-server/issues/10186)) ([93425df](https://github.com/parse-community/parse-server/commit/93425df2bc9368eab89644c93fa9ef481c043e3a))
+
 ## [8.6.37](https://github.com/parse-community/parse-server/compare/8.6.36...8.6.37) (2026-03-11)
 
 
