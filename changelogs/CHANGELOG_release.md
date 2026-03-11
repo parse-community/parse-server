@@ -1,3 +1,10 @@
+## [8.6.39](https://github.com/parse-community/parse-server/compare/8.6.38...8.6.39) (2026-03-11)
+
+
+### Bug Fixes
+
+* OAuth2 adapter app ID validation sends wrong token to introspection endpoint ([GHSA-69xg-f649-w5g2](https://github.com/parse-community/parse-server/security/advisories/GHSA-69xg-f649-w5g2)) ([#10188](https://github.com/parse-community/parse-server/issues/10188)) ([fd6f6a6](https://github.com/parse-community/parse-server/commit/fd6f6a6ea9df631a63702d24496046ecccc610d6))
+
 ## [8.6.38](https://github.com/parse-community/parse-server/compare/8.6.37...8.6.38) (2026-03-11)
 
 
