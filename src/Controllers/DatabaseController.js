@@ -22,40 +22,6 @@ import type { ParseServerOptions } from '../Options';
 import type { QueryOptions, FullQueryOptions } from '../Adapters/Storage/StorageAdapter';
 import { createSanitizedError } from '../Error';
 
-function addWriteACL(query, acl) {
-  const newQuery = _.cloneDeep(query);
-  //Can't be any existing '_wperm' query, we don't allow client queries on that, no need to $and
-  newQuery._wperm = { $in: [null, ...acl] };
-  return newQuery;
-}
-
-function addReadACL(query, acl) {
-  const newQuery = _.cloneDeep(query);
-  //Can't be any existing '_rperm' query, we don't allow client queries on that, no need to $and
-  newQuery._rperm = { $in: [null, '*', ...acl] };
-  return newQuery;
-}
-
-// Transforms a REST API formatted ACL object to our two-field mongo format.
-const transformObjectACL = ({ ACL, ...result }) => {
-  if (!ACL) {
-    return result;
-  }
-
-  result._wperm = [];
-  result._rperm = [];
-
-  for (const entry in ACL) {
-    if (ACL[entry].read) {
-      result._rperm.push(entry);
-    }
-    if (ACL[entry].write) {
-      result._wperm.push(entry);
-    }
-  }
-  return result;
-};
-
 // Query operators that always pass validation regardless of auth level.
 const queryOperators = ['$and', '$or', '$nor'];
 
@@ -110,6 +76,40 @@ const specialMasterQueryKeys = [
   ...queryOperators,
   ...Object.keys(internalFields).filter(k => internalFields[k].masterRead),
 ];
+
+function addWriteACL(query, acl) {
+  const newQuery = _.cloneDeep(query);
+  //Can't be any existing '_wperm' query, we don't allow client queries on that, no need to $and
+  newQuery._wperm = { $in: [null, ...acl] };
+  return newQuery;
+}
+
+function addReadACL(query, acl) {
+  const newQuery = _.cloneDeep(query);
+  //Can't be any existing '_rperm' query, we don't allow client queries on that, no need to $and
+  newQuery._rperm = { $in: [null, '*', ...acl] };
+  return newQuery;
+}
+
+// Transforms a REST API formatted ACL object to our two-field mongo format.
+const transformObjectACL = ({ ACL, ...result }) => {
+  if (!ACL) {
+    return result;
+  }
+
+  result._wperm = [];
+  result._rperm = [];
+
+  for (const entry in ACL) {
+    if (ACL[entry].read) {
+      result._rperm.push(entry);
+    }
+    if (ACL[entry].write) {
+      result._wperm.push(entry);
+    }
+  }
+  return result;
+};
 
 const validateQuery = (
   query: any,
