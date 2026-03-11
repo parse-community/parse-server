@@ -56,17 +56,59 @@ const transformObjectACL = ({ ACL, ...result }) => {
   return result;
 };
 
-const specialQueryKeys = ['$and', '$or', '$nor', '_rperm', '_wperm'];
+// Query operators that always pass validation regardless of auth level.
+const queryOperators = ['$and', '$or', '$nor'];
+
+// Registry of internal fields with access permissions.
+// Internal fields are never directly writable by clients, so clientWrite is omitted.
+// - clientRead: any client can use this field in queries
+// - masterRead: master key can use this field in queries
+// - masterWrite: master key can use this field in updates
+const internalFields = {
+  _rperm:                         { clientRead: true,  masterRead: true,  masterWrite: true  },
+  _wperm:                         { clientRead: true,  masterRead: true,  masterWrite: true  },
+  _hashed_password:               { clientRead: false, masterRead: false, masterWrite: true  },
+  _email_verify_token:            { clientRead: false, masterRead: true,  masterWrite: true  },
+  _perishable_token:              { clientRead: false, masterRead: true,  masterWrite: true  },
+  _perishable_token_expires_at:   { clientRead: false, masterRead: true,  masterWrite: true  },
+  _email_verify_token_expires_at: { clientRead: false, masterRead: true,  masterWrite: true  },
+  _failed_login_count:            { clientRead: false, masterRead: true,  masterWrite: true  },
+  _account_lockout_expires_at:    { clientRead: false, masterRead: true,  masterWrite: true  },
+  _password_changed_at:           { clientRead: false, masterRead: true,  masterWrite: true  },
+  _password_history:              { clientRead: false, masterRead: true,  masterWrite: true  },
+  _tombstone:                     { clientRead: false, masterRead: true,  masterWrite: false },
+  _session_token:                 { clientRead: false, masterRead: true,  masterWrite: false },
+  /////////////////////////////////////////////////////////////////////////////////////////////
+  // The following fields are not accessed by their _-prefixed name through the API;
+  // they are mapped to REST-level names in the adapter layer or handled through
+  // separate code paths.
+  /////////////////////////////////////////////////////////////////////////////////////////////
+  // System fields (mapped to REST-level names):
+  // _id (objectId)
+  // _created_at (createdAt)
+  // _updated_at (updatedAt)
+  // _last_used (lastUsed)
+  // _expiresAt (expiresAt)
+  /////////////////////////////////////////////////////////////////////////////////////////////
+  // Legacy ACL format: mapped to/from _rperm/_wperm
+  // _acl
+  /////////////////////////////////////////////////////////////////////////////////////////////
+  // Schema metadata: not data fields, used only for schema configuration
+  // _metadata
+  // _client_permissions
+  /////////////////////////////////////////////////////////////////////////////////////////////
+  // Dynamic auth data fields: used only in projections and updates, not in queries
+  // _auth_data_<provider>
+};
+
+// Derived access lists
+const specialQueryKeys = [
+  ...queryOperators,
+  ...Object.keys(internalFields).filter(k => internalFields[k].clientRead),
+];
 const specialMasterQueryKeys = [
-  ...specialQueryKeys,
-  '_email_verify_token',
-  '_perishable_token',
-  '_tombstone',
-  '_email_verify_token_expires_at',
-  '_failed_login_count',
-  '_account_lockout_expires_at',
-  '_password_changed_at',
-  '_password_history',
+  ...queryOperators,
+  ...Object.keys(internalFields).filter(k => internalFields[k].masterRead),
 ];
 
 const validateQuery = (
@@ -250,17 +292,7 @@ const filterSensitiveData = (
 //   acl:  a list of strings. If the object to be updated has an ACL,
 //         one of the provided strings must provide the caller with
 //         write permissions.
-const specialKeysForUpdate = [
-  '_hashed_password',
-  '_perishable_token',
-  '_email_verify_token',
-  '_email_verify_token_expires_at',
-  '_account_lockout_expires_at',
-  '_failed_login_count',
-  '_perishable_token_expires_at',
-  '_password_changed_at',
-  '_password_history',
-];
+const specialKeysForUpdate = Object.keys(internalFields).filter(k => internalFields[k].masterWrite);
 
 const isSpecialUpdateKey = key => {
   return specialKeysForUpdate.indexOf(key) >= 0;
