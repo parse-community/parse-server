@@ -220,6 +220,129 @@ describe('Regex Vulnerabilities', () => {
     });
   });
 
+  describe('on authData id operator injection', () => {
+    it('should reject $regex operator in anonymous authData id on login', async () => {
+      // Create a victim anonymous user with a known ID prefix
+      const victimId = 'victim_' + Date.now();
+      const signupRes = await request({
+        url: `${serverURL}/users`,
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          ...keys,
+          _method: 'POST',
+          authData: { anonymous: { id: victimId } },
+        }),
+      });
+      expect(signupRes.data.objectId).toBeDefined();
+
+      // Attacker tries to login with $regex to match the victim
+      try {
+        await request({
+          url: `${serverURL}/users`,
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            ...keys,
+            _method: 'POST',
+            authData: { anonymous: { id: { $regex: '^victim_' } } },
+          }),
+        });
+        fail('should not allow $regex in authData id');
+      } catch (e) {
+        expect(e.data.code).toEqual(Parse.Error.INVALID_VALUE);
+      }
+    });
+
+    it('should reject $ne operator in anonymous authData id on login', async () => {
+      const victimId = 'victim_ne_' + Date.now();
+      await request({
+        url: `${serverURL}/users`,
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          ...keys,
+          _method: 'POST',
+          authData: { anonymous: { id: victimId } },
+        }),
+      });
+
+      try {
+        await request({
+          url: `${serverURL}/users`,
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            ...keys,
+            _method: 'POST',
+            authData: { anonymous: { id: { $ne: 'nonexistent' } } },
+          }),
+        });
+        fail('should not allow $ne in authData id');
+      } catch (e) {
+        expect(e.data.code).toEqual(Parse.Error.INVALID_VALUE);
+      }
+    });
+
+    it('should reject $exists operator in anonymous authData id on login', async () => {
+      const victimId = 'victim_exists_' + Date.now();
+      await request({
+        url: `${serverURL}/users`,
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          ...keys,
+          _method: 'POST',
+          authData: { anonymous: { id: victimId } },
+        }),
+      });
+
+      try {
+        await request({
+          url: `${serverURL}/users`,
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            ...keys,
+            _method: 'POST',
+            authData: { anonymous: { id: { $exists: true } } },
+          }),
+        });
+        fail('should not allow $exists in authData id');
+      } catch (e) {
+        expect(e.data.code).toEqual(Parse.Error.INVALID_VALUE);
+      }
+    });
+
+    it('should allow valid string authData id for anonymous login', async () => {
+      const userId = 'valid_anon_' + Date.now();
+      const signupRes = await request({
+        url: `${serverURL}/users`,
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          ...keys,
+          _method: 'POST',
+          authData: { anonymous: { id: userId } },
+        }),
+      });
+      expect(signupRes.data.objectId).toBeDefined();
+
+      // Same ID should successfully log in
+      const loginRes = await request({
+        url: `${serverURL}/users`,
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          ...keys,
+          _method: 'POST',
+          authData: { anonymous: { id: userId } },
+        }),
+      });
+      expect(loginRes.data.objectId).toEqual(signupRes.data.objectId);
+    });
+  });
+
   describe('on resend verification email', () => {
     // The PagesRouter uses express.urlencoded({ extended: false }) which does not parse
     // nested objects (e.g. token[$regex]=^.), so the HTTP layer already blocks object injection.
@@ -352,5 +475,46 @@ describe('Regex Vulnerabilities', () => {
       const userAgain = await Parse.User.logIn('someemail@somedomain.com', 'newpassword');
       expect(userAgain.id).toEqual(objectId);
     });
+  });
+});
+
+describe('Regex Vulnerabilities - authData operator injection with custom adapter', () => {
+  it('should reject non-string authData id for custom auth adapter on login', async () => {
+    await reconfigureServer({
+      auth: {
+        myAdapter: {
+          validateAuthData: () => Promise.resolve(),
+          validateAppId: () => Promise.resolve(),
+        },
+      },
+    });
+
+    const victimId = 'adapter_victim_' + Date.now();
+    await request({
+      url: `${serverURL}/users`,
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        ...keys,
+        _method: 'POST',
+        authData: { myAdapter: { id: victimId, token: 'valid' } },
+      }),
+    });
+
+    try {
+      await request({
+        url: `${serverURL}/users`,
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          ...keys,
+          _method: 'POST',
+          authData: { myAdapter: { id: { $regex: '^adapter_victim_' }, token: 'valid' } },
+        }),
+      });
+      fail('should not allow $regex in custom adapter authData id');
+    } catch (e) {
+      expect(e.data.code).toEqual(Parse.Error.INVALID_VALUE);
+    }
   });
 });
