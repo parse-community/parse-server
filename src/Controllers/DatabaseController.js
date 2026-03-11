@@ -61,12 +61,14 @@ const specialMasterQueryKeys = [
   ...specialQueryKeys,
   '_email_verify_token',
   '_perishable_token',
+  '_perishable_token_expires_at',
   '_tombstone',
   '_email_verify_token_expires_at',
   '_failed_login_count',
   '_account_lockout_expires_at',
   '_password_changed_at',
   '_password_history',
+  '_session_token',
 ];
 
 const validateQuery = (
@@ -122,8 +124,8 @@ const validateQuery = (
     }
     if (
       !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/) &&
-      ((!specialQueryKeys.includes(key) && !isMaster && !update) ||
-        (update && isMaster && !specialMasterQueryKeys.includes(key)))
+      !specialQueryKeys.includes(key) &&
+      !(isMaster && specialMasterQueryKeys.includes(key))
     ) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${key}`);
     }

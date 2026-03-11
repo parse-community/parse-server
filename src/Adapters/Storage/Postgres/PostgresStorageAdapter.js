@@ -225,7 +225,7 @@ const transformDotFieldToComponents = fieldName => {
 
 const transformDotField = fieldName => {
   if (fieldName.indexOf('.') === -1) {
-    return `"${fieldName}"`;
+    return `"${fieldName.replace(/"/g, '""')}"`;
   }
   const components = transformDotFieldToComponents(fieldName);
   let name = components.slice(0, components.length - 1).join('->');
@@ -760,11 +760,16 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
         }
       }
 
-      const name = transformDotField(fieldName);
       regex = processRegexPattern(regex);
 
-      patterns.push(`$${index}:raw ${operator} '$${index + 1}:raw'`);
-      values.push(name, regex);
+      if (fieldName.indexOf('.') >= 0) {
+        const name = transformDotField(fieldName);
+        patterns.push(`$${index}:raw ${operator} '$${index + 1}:raw'`);
+        values.push(name, regex);
+      } else {
+        patterns.push(`$${index}:name ${operator} '$${index + 1}:raw'`);
+        values.push(fieldName, regex);
+      }
       index += 2;
     }
 
