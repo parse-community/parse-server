@@ -337,6 +337,42 @@ describe('OAuth2Adapter', () => {
       );
     });
 
+    it('should send the correct access token to the introspection endpoint during app ID validation', async () => {
+      const capturedTokens = [];
+      const originalFetch = global.fetch;
+      try {
+        global.fetch = async (url, options) => {
+          if (typeof url === 'string' && url === 'https://provider.com/introspect') {
+            const body = options?.body?.toString() || '';
+            const token = new URLSearchParams(body).get('token');
+            capturedTokens.push(token);
+            return {
+              ok: true,
+              json: () => Promise.resolve({
+                active: true,
+                sub: 'user123',
+                aud: 'valid-app-id',
+              }),
+            };
+          }
+          return originalFetch(url, options);
+        };
+
+        const authData = { access_token: 'myRealAccessToken', id: 'user123' };
+        const user = await Parse.User.logInWith('mockOauth', { authData });
+        expect(user.id).toBeDefined();
+
+        // With appidField configured, validateAppId and validateAuthData both call requestTokenInfo.
+        // Both should receive the actual access token, not 'undefined' from argument mismatch.
+        expect(capturedTokens.length).toBeGreaterThanOrEqual(2);
+        for (const token of capturedTokens) {
+          expect(token).toBe('myRealAccessToken');
+        }
+      } finally {
+        global.fetch = originalFetch;
+      }
+    });
+
     it('should reject account takeover when useridField is omitted and attacker uses their own token with victim ID', async () => {
       await reconfigureServer({
         auth: {
