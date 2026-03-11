@@ -2326,5 +2326,44 @@ describe('(GHSA-c442-97qw-j6c6) SQL Injection via $regex query operator field na
       }).catch(e => e);
       expect(response.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
     });
+
+    describe('non-master key cannot update internal fields', () => {
+      const internalFields = [
+        '_rperm',
+        '_wperm',
+        '_hashed_password',
+        '_email_verify_token',
+        '_perishable_token',
+        '_perishable_token_expires_at',
+        '_email_verify_token_expires_at',
+        '_failed_login_count',
+        '_account_lockout_expires_at',
+        '_password_changed_at',
+        '_password_history',
+        '_tombstone',
+        '_session_token',
+      ];
+
+      for (const field of internalFields) {
+        it(`rejects non-master key updating ${field}`, async () => {
+          const user = new Parse.User();
+          user.setUsername(`updatetest_${field}`);
+          user.setPassword('password123');
+          await user.signUp();
+          const response = await request({
+            method: 'PUT',
+            url: `${serverURL}/classes/_User/${user.id}`,
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Parse-Application-Id': 'test',
+              'X-Parse-REST-API-Key': 'rest',
+              'X-Parse-Session-Token': user.getSessionToken(),
+            },
+            body: JSON.stringify({ [field]: 'malicious_value' }),
+          }).catch(e => e);
+          expect(response.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+        });
+      }
+    });
   });
 });
