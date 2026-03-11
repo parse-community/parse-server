@@ -1978,3 +1978,258 @@ describe('(GHSA-w54v-hf9p-8856) User enumeration via email verification endpoint
     }
   });
 });
+
+describe('(GHSA-c442-97qw-j6c6) SQL Injection via $regex query operator field name in PostgreSQL adapter', () => {
+  const headers = {
+    'Content-Type': 'application/json',
+    'X-Parse-Application-Id': 'test',
+    'X-Parse-REST-API-Key': 'rest',
+    'X-Parse-Master-Key': 'test',
+  };
+  const serverURL = 'http://localhost:8378/1';
+
+  beforeEach(async () => {
+    const obj = new Parse.Object('TestClass');
+    obj.set('playerName', 'Alice');
+    obj.set('score', 100);
+    await obj.save(null, { useMasterKey: true });
+  });
+
+  it('rejects field names containing double quotes in $regex query with master key', async () => {
+    const maliciousField = 'playerName" OR 1=1 --';
+    const response = await request({
+      method: 'GET',
+      url: `${serverURL}/classes/TestClass`,
+      headers,
+      qs: {
+        where: JSON.stringify({
+          [maliciousField]: { $regex: 'x' },
+        }),
+      },
+    }).catch(e => e);
+    expect(response.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+  });
+
+  it('rejects field names containing single quotes in $regex query with master key', async () => {
+    const maliciousField = "playerName' OR '1'='1";
+    const response = await request({
+      method: 'GET',
+      url: `${serverURL}/classes/TestClass`,
+      headers,
+      qs: {
+        where: JSON.stringify({
+          [maliciousField]: { $regex: 'x' },
+        }),
+      },
+    }).catch(e => e);
+    expect(response.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+  });
+
+  it('rejects field names containing semicolons in $regex query with master key', async () => {
+    const maliciousField = 'playerName; DROP TABLE "TestClass" --';
+    const response = await request({
+      method: 'GET',
+      url: `${serverURL}/classes/TestClass`,
+      headers,
+      qs: {
+        where: JSON.stringify({
+          [maliciousField]: { $regex: 'x' },
+        }),
+      },
+    }).catch(e => e);
+    expect(response.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+  });
+
+  it('rejects field names containing parentheses in $regex query with master key', async () => {
+    const maliciousField = 'playerName" ~ \'x\' OR (SELECT 1) --';
+    const response = await request({
+      method: 'GET',
+      url: `${serverURL}/classes/TestClass`,
+      headers,
+      qs: {
+        where: JSON.stringify({
+          [maliciousField]: { $regex: 'x' },
+        }),
+      },
+    }).catch(e => e);
+    expect(response.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+  });
+
+  it('allows legitimate $regex query with master key', async () => {
+    const response = await request({
+      method: 'GET',
+      url: `${serverURL}/classes/TestClass`,
+      headers,
+      qs: {
+        where: JSON.stringify({
+          playerName: { $regex: 'Ali' },
+        }),
+      },
+    });
+    expect(response.data.results.length).toBe(1);
+    expect(response.data.results[0].playerName).toBe('Alice');
+  });
+
+  it('allows legitimate $regex query with dot notation and master key', async () => {
+    const obj = new Parse.Object('TestClass');
+    obj.set('metadata', { tag: 'hello-world' });
+    await obj.save(null, { useMasterKey: true });
+    const response = await request({
+      method: 'GET',
+      url: `${serverURL}/classes/TestClass`,
+      headers,
+      qs: {
+        where: JSON.stringify({
+          'metadata.tag': { $regex: 'hello' },
+        }),
+      },
+    });
+    expect(response.data.results.length).toBe(1);
+    expect(response.data.results[0].metadata.tag).toBe('hello-world');
+  });
+
+  it('allows legitimate $regex query without master key', async () => {
+    const response = await request({
+      method: 'GET',
+      url: `${serverURL}/classes/TestClass`,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      qs: {
+        where: JSON.stringify({
+          playerName: { $regex: 'Ali' },
+        }),
+      },
+    });
+    expect(response.data.results.length).toBe(1);
+    expect(response.data.results[0].playerName).toBe('Alice');
+  });
+
+  it('rejects field names with SQL injection via non-$regex operators with master key', async () => {
+    const maliciousField = 'playerName" OR 1=1 --';
+    const response = await request({
+      method: 'GET',
+      url: `${serverURL}/classes/TestClass`,
+      headers,
+      qs: {
+        where: JSON.stringify({
+          [maliciousField]: { $exists: true },
+        }),
+      },
+    }).catch(e => e);
+    expect(response.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+  });
+
+  describe('validateQuery key name enforcement', () => {
+    const maliciousField = 'field"; DROP TABLE test --';
+    const noMasterHeaders = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+
+    it('rejects malicious field name in find without master key', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/classes/TestClass`,
+        headers: noMasterHeaders,
+        qs: {
+          where: JSON.stringify({ [maliciousField]: 'value' }),
+        },
+      }).catch(e => e);
+      expect(response.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+    });
+
+    it('rejects malicious field name in find with master key', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/classes/TestClass`,
+        headers,
+        qs: {
+          where: JSON.stringify({ [maliciousField]: 'value' }),
+        },
+      }).catch(e => e);
+      expect(response.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+    });
+
+    it('allows master key to query whitelisted internal field _email_verify_token', async () => {
+      await reconfigureServer({
+        verifyUserEmails: true,
+        emailAdapter: {
+          sendVerificationEmail: () => Promise.resolve(),
+          sendPasswordResetEmail: () => Promise.resolve(),
+          sendMail: () => {},
+        },
+        appName: 'test',
+        publicServerURL: 'http://localhost:8378/1',
+      });
+      const user = new Parse.User();
+      user.setUsername('testuser');
+      user.setPassword('testpass');
+      user.setEmail('test@example.com');
+      await user.signUp();
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/classes/_User`,
+        headers,
+        qs: {
+          where: JSON.stringify({ _email_verify_token: { $exists: true } }),
+        },
+      });
+      expect(response.data.results.length).toBeGreaterThan(0);
+    });
+
+    it('rejects non-master key querying internal field _email_verify_token', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/classes/_User`,
+        headers: noMasterHeaders,
+        qs: {
+          where: JSON.stringify({ _email_verify_token: { $exists: true } }),
+        },
+      }).catch(e => e);
+      expect(response.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+    });
+
+    describe('non-master key cannot update internal fields', () => {
+      const internalFields = [
+        '_rperm',
+        '_wperm',
+        '_hashed_password',
+        '_email_verify_token',
+        '_perishable_token',
+        '_perishable_token_expires_at',
+        '_email_verify_token_expires_at',
+        '_failed_login_count',
+        '_account_lockout_expires_at',
+        '_password_changed_at',
+        '_password_history',
+        '_tombstone',
+        '_session_token',
+      ];
+
+      for (const field of internalFields) {
+        it(`rejects non-master key updating ${field}`, async () => {
+          const user = new Parse.User();
+          user.setUsername(`updatetest_${field}`);
+          user.setPassword('password123');
+          await user.signUp();
+          const response = await request({
+            method: 'PUT',
+            url: `${serverURL}/classes/_User/${user.id}`,
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Parse-Application-Id': 'test',
+              'X-Parse-REST-API-Key': 'rest',
+              'X-Parse-Session-Token': user.getSessionToken(),
+            },
+            body: JSON.stringify({ [field]: 'malicious_value' }),
+          }).catch(e => e);
+          expect(response.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+        });
+      }
+    });
+  });
+});
