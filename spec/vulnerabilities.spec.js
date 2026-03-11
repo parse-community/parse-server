@@ -2366,4 +2366,94 @@ describe('(GHSA-c442-97qw-j6c6) SQL Injection via $regex query operator field na
       }
     });
   });
+
+  describe('(GHSA-2cjm-2gwv-m892) OAuth2 adapter singleton shares mutable state across providers', () => {
+    it('should return isolated adapter instances for different OAuth2 providers', () => {
+      const { loadAuthAdapter } = require('../lib/Adapters/Auth/index');
+
+      const authOptions = {
+        providerA: {
+          oauth2: true,
+          tokenIntrospectionEndpointUrl: 'https://a.example.com/introspect',
+          useridField: 'sub',
+          appidField: 'aud',
+          appIds: ['appA'],
+        },
+        providerB: {
+          oauth2: true,
+          tokenIntrospectionEndpointUrl: 'https://b.example.com/introspect',
+          useridField: 'sub',
+          appidField: 'aud',
+          appIds: ['appB'],
+        },
+      };
+
+      const resultA = loadAuthAdapter('providerA', authOptions);
+      const resultB = loadAuthAdapter('providerB', authOptions);
+
+      // Adapters must be different instances to prevent cross-contamination
+      expect(resultA.adapter).not.toBe(resultB.adapter);
+
+      // After loading providerB, providerA's config must still be intact
+      expect(resultA.adapter.tokenIntrospectionEndpointUrl).toBe('https://a.example.com/introspect');
+      expect(resultA.adapter.appIds).toEqual(['appA']);
+      expect(resultB.adapter.tokenIntrospectionEndpointUrl).toBe('https://b.example.com/introspect');
+      expect(resultB.adapter.appIds).toEqual(['appB']);
+    });
+
+    it('should not allow concurrent OAuth2 auth requests to cross-contaminate provider config', async () => {
+      await reconfigureServer({
+        auth: {
+          oauthProviderA: {
+            oauth2: true,
+            tokenIntrospectionEndpointUrl: 'https://a.example.com/introspect',
+            useridField: 'sub',
+            appidField: 'aud',
+            appIds: ['appA'],
+          },
+          oauthProviderB: {
+            oauth2: true,
+            tokenIntrospectionEndpointUrl: 'https://b.example.com/introspect',
+            useridField: 'sub',
+            appidField: 'aud',
+            appIds: ['appB'],
+          },
+        },
+      });
+
+      // Provider A: valid token with appA audience
+      // Provider B: valid token with appB audience
+      mockFetch([
+        {
+          url: 'https://a.example.com/introspect',
+          method: 'POST',
+          response: {
+            ok: true,
+            json: () => Promise.resolve({ active: true, sub: 'user1', aud: 'appA' }),
+          },
+        },
+        {
+          url: 'https://b.example.com/introspect',
+          method: 'POST',
+          response: {
+            ok: true,
+            json: () => Promise.resolve({ active: true, sub: 'user2', aud: 'appB' }),
+          },
+        },
+      ]);
+
+      // Both providers should authenticate independently without cross-contamination
+      const [userA, userB] = await Promise.all([
+        Parse.User.logInWith('oauthProviderA', {
+          authData: { id: 'user1', access_token: 'tokenA' },
+        }),
+        Parse.User.logInWith('oauthProviderB', {
+          authData: { id: 'user2', access_token: 'tokenB' },
+        }),
+      ]);
+
+      expect(userA.id).toBeDefined();
+      expect(userB.id).toBeDefined();
+    });
+  });
 });
