@@ -4,8 +4,7 @@ import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@as-integrations/express5';
 import { ApolloServerPluginCacheControlDisabled } from '@apollo/server/plugin/disabled';
 import express from 'express';
-import { execute, subscribe, GraphQLError, parse } from 'graphql';
-import { SubscriptionServer } from 'subscriptions-transport-ws';
+import { GraphQLError, parse } from 'graphql';
 import { handleParseErrors, handleParseHeaders, handleParseSession } from '../middlewares';
 import requiredParameter from '../requiredParameter';
 import defaultLogger from '../logger';
@@ -257,23 +256,6 @@ class ParseGraphQLServer {
           </script>`
         );
         res.end();
-      }
-    );
-  }
-
-  createSubscriptions(server) {
-    SubscriptionServer.create(
-      {
-        execute,
-        subscribe,
-        onOperation: async (_message, params, webSocket) =>
-          Object.assign({}, params, await this._getGraphQLOptions(webSocket.upgradeReq)),
-      },
-      {
-        server,
-        path:
-          this.config.subscriptionsPath ||
-          requiredParameter('You must provide a config.subscriptionsPath to createSubscriptions!'),
       }
     );
   }

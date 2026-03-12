@@ -1,5 +1,10 @@
+const http = require('http');
+const express = require('express');
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+const ws = require('ws');
 const request = require('../lib/request');
 const Config = require('../lib/Config');
+const { ParseGraphQLServer } = require('../lib/GraphQL/ParseGraphQLServer');
 
 describe('Vulnerabilities', () => {
   describe('(GHSA-8xq9-g7ch-35hg) Custom object ID allows to acquire role privilege', () => {
@@ -2454,6 +2459,102 @@ describe('(GHSA-c442-97qw-j6c6) SQL Injection via $regex query operator field na
 
       expect(userA.id).toBeDefined();
       expect(userB.id).toBeDefined();
+    });
+  });
+
+  describe('(GHSA-p2x3-8689-cwpg) GraphQL WebSocket middleware bypass', () => {
+    let httpServer;
+    const gqlPort = 13399;
+
+    const gqlHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Javascript-Key': 'test',
+      'Content-Type': 'application/json',
+    };
+
+    async function setupGraphQLServer(serverOptions = {}, graphQLOptions = {}) {
+      if (httpServer) {
+        await new Promise(resolve => httpServer.close(resolve));
+      }
+      const server = await reconfigureServer(serverOptions);
+      const expressApp = express();
+      httpServer = http.createServer(expressApp);
+      expressApp.use('/parse', server.app);
+      const parseGraphQLServer = new ParseGraphQLServer(server, {
+        graphQLPath: '/graphql',
+        ...graphQLOptions,
+      });
+      parseGraphQLServer.applyGraphQL(expressApp);
+      await new Promise(resolve => httpServer.listen({ port: gqlPort }, resolve));
+      return parseGraphQLServer;
+    }
+
+    async function gqlRequest(query, headers = gqlHeaders) {
+      const response = await fetch(`http://localhost:${gqlPort}/graphql`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ query }),
+      });
+      return { status: response.status, body: await response.json().catch(() => null) };
+    }
+
+    afterEach(async () => {
+      if (httpServer) {
+        await new Promise(resolve => httpServer.close(resolve));
+        httpServer = null;
+      }
+    });
+
+    it('should not have createSubscriptions method', async () => {
+      const pgServer = await setupGraphQLServer();
+      expect(pgServer.createSubscriptions).toBeUndefined();
+    });
+
+    it('should not accept WebSocket connections on /subscriptions path', async () => {
+      await setupGraphQLServer();
+      const connectionResult = await new Promise((resolve) => {
+        const socket = new ws(`ws://localhost:${gqlPort}/subscriptions`);
+        socket.on('open', () => {
+          socket.close();
+          resolve('connected');
+        });
+        socket.on('error', () => {
+          resolve('refused');
+        });
+        setTimeout(() => {
+          socket.close();
+          resolve('timeout');
+        }, 2000);
+      });
+      expect(connectionResult).not.toBe('connected');
+    });
+
+    it('HTTP GraphQL should still work with API key', async () => {
+      await setupGraphQLServer();
+      const result = await gqlRequest('{ health }');
+      expect(result.status).toBe(200);
+      expect(result.body?.data?.health).toBeTruthy();
+    });
+
+    it('HTTP GraphQL should still reject requests without API key', async () => {
+      await setupGraphQLServer();
+      const result = await gqlRequest('{ health }', { 'Content-Type': 'application/json' });
+      expect(result.status).toBe(403);
+    });
+
+    it('HTTP introspection control should still work', async () => {
+      await setupGraphQLServer({}, { graphQLPublicIntrospection: false });
+      const result = await gqlRequest('{ __schema { types { name } } }');
+      expect(result.body?.errors).toBeDefined();
+      expect(result.body.errors[0].message).toContain('Introspection is not allowed');
+    });
+
+    it('HTTP complexity limits should still work', async () => {
+      await setupGraphQLServer({ requestComplexity: { graphQLFields: 5 } });
+      const fields = Array.from({ length: 10 }, (_, i) => `f${i}: health`).join(' ');
+      const result = await gqlRequest(`{ ${fields} }`);
+      expect(result.body?.errors).toBeDefined();
+      expect(result.body.errors[0].message).toMatch(/exceeds maximum allowed/);
     });
   });
 });

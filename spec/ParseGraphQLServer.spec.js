@@ -3,21 +3,16 @@ const express = require('express');
 const req = require('../lib/request');
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const FormData = require('form-data');
-const ws = require('ws');
 require('./helper');
 const { updateCLP } = require('./support/dev');
 
 const pluralize = require('pluralize');
-const { getMainDefinition } = require('@apollo/client/utilities');
 const createUploadLink = (...args) => import('apollo-upload-client/createUploadLink.mjs').then(({ default: fn }) => fn(...args));
-const { SubscriptionClient } = require('subscriptions-transport-ws');
-const { WebSocketLink } = require('@apollo/client/link/ws');
 const { mergeSchemas } = require('@graphql-tools/schema');
 const {
   ApolloClient,
   InMemoryCache,
   ApolloLink,
-  split,
   createHttpLink,
 } = require('@apollo/client/core');
 const gql = require('graphql-tag');
@@ -58,7 +53,6 @@ describe('ParseGraphQLServer', () => {
     parseGraphQLServer = new ParseGraphQLServer(parseServer, {
       graphQLPath: '/graphql',
       playgroundPath: '/playground',
-      subscriptionsPath: '/subscriptions',
     });
 
     const logger = require('../lib/logger').default;
@@ -238,16 +232,6 @@ describe('ParseGraphQLServer', () => {
         })
       ).not.toThrow();
       expect(useCount).toBeGreaterThan(0);
-    });
-  });
-
-  describe('createSubscriptions', () => {
-    it('should require initialization with config.subscriptionsPath', () => {
-      expect(() =>
-        new ParseGraphQLServer(parseServer, {
-          graphQLPath: 'graphql',
-        }).createSubscriptions({})
-      ).toThrow('You must provide a config.subscriptionsPath to createSubscriptions!');
     });
   });
 
@@ -467,41 +451,23 @@ describe('ParseGraphQLServer', () => {
       parseGraphQLServer = new ParseGraphQLServer(_parseServer, {
         graphQLPath: '/graphql',
         playgroundPath: '/playground',
-        subscriptionsPath: '/subscriptions',
         ...parseGraphQLServerOptions,
       });
       parseGraphQLServer.applyGraphQL(expressApp);
       parseGraphQLServer.applyPlayground(expressApp);
-      parseGraphQLServer.createSubscriptions(httpServer);
       await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
     }
 
     beforeEach(async () => {
       await createGQLFromParseServer(parseServer);
 
-      const subscriptionClient = new SubscriptionClient(
-        'ws://localhost:13377/subscriptions',
-        {
-          reconnect: true,
-          connectionParams: headers,
-        },
-        ws
-      );
-      const wsLink = new WebSocketLink(subscriptionClient);
       const httpLink = await createUploadLink({
         uri: 'http://localhost:13377/graphql',
         fetch,
         headers,
       });
       apolloClient = new ApolloClient({
-        link: split(
-          ({ query }) => {
-            const { kind, operation } = getMainDefinition(query);
-            return kind === 'OperationDefinition' && operation === 'subscription';
-          },
-          wsLink,
-          httpLink
-        ),
+        link: httpLink,
         cache: new InMemoryCache(),
         defaultOptions: {
           query: {
