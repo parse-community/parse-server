@@ -1,3 +1,10 @@
+## [8.6.40](https://github.com/parse-community/parse-server/compare/8.6.39...8.6.40) (2026-03-12)
+
+
+### Bug Fixes
+
+* GraphQL WebSocket endpoint bypasses security middleware ([GHSA-p2x3-8689-cwpg](https://github.com/parse-community/parse-server/security/advisories/GHSA-p2x3-8689-cwpg)) ([#10190](https://github.com/parse-community/parse-server/issues/10190)) ([21330d1](https://github.com/parse-community/parse-server/commit/21330d146c68b57a930a58b8a8cd9fbf09436cf3))
+
 ## [8.6.39](https://github.com/parse-community/parse-server/compare/8.6.38...8.6.39) (2026-03-11)
 
 
