@@ -176,7 +176,8 @@ export class FilesRouter {
       } else if (contentType && contentType.includes('/')) {
         extension = contentType.split('/')[1];
       }
-      extension = extension?.split(' ')?.join('');
+      // Strip MIME parameters (e.g. ";charset=utf-8") and whitespace
+      extension = extension?.split(';')[0]?.replace(/\s+/g, '');
 
       if (extension && !isValidExtension(extension)) {
         next(
