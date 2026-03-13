@@ -1195,7 +1195,7 @@ RestWrite.prototype.handleSession = function () {
   if (!this.query && !this.auth.isMaster && !this.auth.isMaintenance) {
     const additionalSessionData = {};
     for (var key in this.data) {
-      if (key === 'objectId' || key === 'user') {
+      if (key === 'objectId' || key === 'user' || key === 'sessionToken' || key === 'expiresAt' || key === 'createdWith') {
         continue;
       }
       additionalSessionData[key] = this.data[key];
