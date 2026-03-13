@@ -1347,6 +1347,7 @@ describe('(GHSA-42ph-pf9q-cr72) Stored XSS filter bypass via parameterized Conte
     const dangerousContentTypes = [
       'application/xhtml+xml;charset=utf-8',
       'application/xhtml+xml; charset=utf-8',
+      'application/xhtml+xml\t;charset=utf-8',
       'image/svg+xml;charset=utf-8',
       'application/xml;charset=utf-8',
       'text/html;charset=utf-8',

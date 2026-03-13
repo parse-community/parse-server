@@ -369,7 +369,7 @@ export class FilesRouter {
         extension = contentType.split('/')[1];
       }
       // Strip MIME parameters (e.g. ";charset=utf-8") and whitespace
-      extension = extension?.split(';')[0]?.split(' ')?.join('');
+      extension = extension?.split(';')[0]?.replace(/\s+/g, '');
 
       if (extension && !isValidExtension(extension)) {
         next(
