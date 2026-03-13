@@ -1,3 +1,10 @@
+## [8.6.41](https://github.com/parse-community/parse-server/compare/8.6.40...8.6.41) (2026-03-13)
+
+
+### Bug Fixes
+
+* Stored XSS filter bypass via Content-Type MIME parameter and missing XML extension blocklist entries ([GHSA-42ph-pf9q-cr72](https://github.com/parse-community/parse-server/security/advisories/GHSA-42ph-pf9q-cr72)) ([#10192](https://github.com/parse-community/parse-server/issues/10192)) ([c7599c5](https://github.com/parse-community/parse-server/commit/c7599c577a02b97eb5e76d4e20517b0283ae73c8))
+
 ## [8.6.40](https://github.com/parse-community/parse-server/compare/8.6.39...8.6.40) (2026-03-12)
 
 
