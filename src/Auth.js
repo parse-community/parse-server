@@ -133,8 +133,13 @@ const getAuthForSessionToken = async function ({
 }) {
   cacheController = cacheController || (config && config.cacheController);
   if (cacheController) {
-    const userJSON = await cacheController.user.get(sessionToken);
-    if (userJSON) {
+    const cached = await cacheController.user.get(sessionToken);
+    if (cached) {
+      const { expiresAt: cachedExpiresAt, ...userJSON } = cached;
+      if (cachedExpiresAt && new Date(cachedExpiresAt) < new Date()) {
+        cacheController.user.del(sessionToken);
+        throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token is expired.');
+      }
       const cachedUser = Parse.Object.fromJSON(userJSON);
       renewSessionIfNeeded({ config, sessionToken });
       return Promise.resolve(
@@ -195,7 +200,7 @@ const getAuthForSessionToken = async function ({
   obj['className'] = '_User';
   obj['sessionToken'] = sessionToken;
   if (cacheController) {
-    cacheController.user.put(sessionToken, obj);
+    cacheController.user.put(sessionToken, { ...obj, expiresAt: expiresAt?.toISOString() });
   }
   renewSessionIfNeeded({ config, session, sessionToken });
   const userObject = Parse.Object.fromJSON(obj);

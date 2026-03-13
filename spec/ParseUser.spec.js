@@ -3318,6 +3318,47 @@ describe('Parse.User testing', () => {
     expect(session.get('expiresAt')).toEqual(expiresAt);
   });
 
+  it('should reject expired session token even when served from cache', async () => {
+    // Use a 1-second session length with a 5-second cache TTL (default)
+    // so the session expires while the cache entry is still alive
+    await reconfigureServer({ sessionLength: 1 });
+
+    // Sign up user — creates a session with expiresAt = now + 1 second
+    const user = await Parse.User.signUp('cacheuser', 'somepass');
+    const sessionToken = user.getSessionToken();
+
+    // Make an authenticated request to prime the user cache
+    await request({
+      method: 'GET',
+      url: 'http://localhost:8378/1/users/me',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': sessionToken,
+      },
+    });
+
+    // Wait for the session to expire (1 second), but cache entry (5s TTL) is still alive
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    // This request should be served from cache but still reject the expired session
+    try {
+      await request({
+        method: 'GET',
+        url: 'http://localhost:8378/1/users/me',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': sessionToken,
+        },
+      });
+      fail('Should have rejected expired session token from cache');
+    } catch (error) {
+      expect(error.data.code).toEqual(209);
+      expect(error.data.error).toEqual('Session token is expired.');
+    }
+  });
+
   it('should not create extraneous session tokens', done => {
     const config = Config.get(Parse.applicationId);
     config.database
