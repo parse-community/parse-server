@@ -2424,3 +2424,90 @@ describe('(GHSA-c442-97qw-j6c6) SQL Injection via $regex query operator field na
     });
   });
 });
+
+describe('(GHSA-42ph-pf9q-cr72) Stored XSS filter bypass via parameterized Content-Type and additional XML extensions', () => {
+  const headers = {
+    'X-Parse-Application-Id': 'test',
+    'X-Parse-REST-API-Key': 'rest',
+  };
+
+  beforeEach(async () => {
+    await reconfigureServer({
+      fileUpload: {
+        enableForPublic: true,
+      },
+    });
+  });
+
+  for (const { ext, contentType } of [
+    { ext: 'xsd', contentType: 'application/xml' },
+    { ext: 'rng', contentType: 'application/xml' },
+    { ext: 'rdf', contentType: 'application/rdf+xml' },
+    { ext: 'owl', contentType: 'application/rdf+xml' },
+    { ext: 'mathml', contentType: 'application/mathml+xml' },
+  ]) {
+    it(`blocks .${ext} file upload by default`, async () => {
+      const content = Buffer.from(
+        '<?xml version="1.0"?><html xmlns="http://www.w3.org/1999/xhtml"><body><script>alert(1)</script></body></html>'
+      ).toString('base64');
+      for (const extension of [ext, ext.toUpperCase(), ext[0].toUpperCase() + ext.slice(1)]) {
+        await expectAsync(
+          request({
+            method: 'POST',
+            headers,
+            url: `http://localhost:8378/1/files/malicious.${extension}`,
+            body: JSON.stringify({
+              _ApplicationId: 'test',
+              _JavaScriptKey: 'test',
+              _ContentType: contentType,
+              base64: content,
+            }),
+          }).catch(e => {
+            throw new Error(e.data.error);
+          })
+        ).toBeRejectedWith(
+          new Parse.Error(
+            Parse.Error.FILE_SAVE_ERROR,
+            `File upload of extension ${extension} is disabled.`
+          )
+        );
+      }
+    });
+  }
+
+  it('blocks extensionless upload with parameterized Content-Type that bypasses regex', async () => {
+    const content = Buffer.from(
+      '<?xml version="1.0"?><html xmlns="http://www.w3.org/1999/xhtml"><body><script>alert(1)</script></body></html>'
+    ).toString('base64');
+    // MIME parameters like ;charset=utf-8 should not bypass the extension filter
+    const dangerousContentTypes = [
+      'application/xhtml+xml;charset=utf-8',
+      'application/xhtml+xml; charset=utf-8',
+      'application/xhtml+xml\t;charset=utf-8',
+      'image/svg+xml;charset=utf-8',
+      'application/xml;charset=utf-8',
+      'text/html;charset=utf-8',
+      'application/xslt+xml;charset=utf-8',
+      'application/rdf+xml;charset=utf-8',
+      'application/mathml+xml;charset=utf-8',
+    ];
+    for (const contentType of dangerousContentTypes) {
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/files/payload',
+          body: JSON.stringify({
+            _ApplicationId: 'test',
+            _JavaScriptKey: 'test',
+            _ContentType: contentType,
+            base64: content,
+          }),
+        }).catch(e => {
+          throw new Error(e.data.error);
+        })
+      ).toBeRejectedWith(jasmine.objectContaining({
+        message: jasmine.stringMatching(/File upload of extension .+ is disabled/),
+      }));
+    }
+  });
+});
