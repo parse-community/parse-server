@@ -169,4 +169,91 @@ describe('Parse.Session', () => {
     expect(first.get('user').id).toBe(firstUser);
     expect(second.get('user').id).toBe(secondUser);
   });
+
+  it('should ignore sessionToken when creating a session via POST /classes/_Session', async () => {
+    const user = await Parse.User.signUp('sessionuser', 'password');
+    const sessionToken = user.getSessionToken();
+
+    const response = await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/_Session',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': sessionToken,
+        'Content-Type': 'application/json',
+      },
+      body: {
+        sessionToken: 'r:ATTACKER_CONTROLLED_TOKEN',
+      },
+    });
+
+    // The returned session should have a server-generated token, not the attacker's
+    expect(response.data.sessionToken).not.toBe('r:ATTACKER_CONTROLLED_TOKEN');
+    expect(response.data.sessionToken).toMatch(/^r:/);
+  });
+
+  it('should ignore expiresAt when creating a session via POST /classes/_Session', async () => {
+    const user = await Parse.User.signUp('sessionuser2', 'password');
+    const sessionToken = user.getSessionToken();
+    const farFuture = new Date('2099-12-31T23:59:59.000Z');
+
+    await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/_Session',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': sessionToken,
+        'Content-Type': 'application/json',
+      },
+      body: {
+        expiresAt: { __type: 'Date', iso: farFuture.toISOString() },
+      },
+    });
+
+    // Fetch the newly created session and verify expiresAt is server-generated, not 2099
+    const sessions = await request({
+      method: 'GET',
+      url: 'http://localhost:8378/1/classes/_Session',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+      },
+    });
+    const newSession = sessions.data.results.find(s => s.sessionToken !== sessionToken);
+    const expiresAt = new Date(newSession.expiresAt.iso);
+    expect(expiresAt.getFullYear()).not.toBe(2099);
+  });
+
+  it('should ignore createdWith when creating a session via POST /classes/_Session', async () => {
+    const user = await Parse.User.signUp('sessionuser3', 'password');
+    const sessionToken = user.getSessionToken();
+
+    await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/_Session',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': sessionToken,
+        'Content-Type': 'application/json',
+      },
+      body: {
+        createdWith: { action: 'attacker', authProvider: 'evil' },
+      },
+    });
+
+    const sessions = await request({
+      method: 'GET',
+      url: 'http://localhost:8378/1/classes/_Session',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+      },
+    });
+    const newSession = sessions.data.results.find(s => s.sessionToken !== sessionToken);
+    expect(newSession.createdWith.action).toBe('create');
+    expect(newSession.createdWith.authProvider).toBeUndefined();
+  });
 });
