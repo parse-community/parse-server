@@ -646,6 +646,53 @@ describe('ParseLiveQuery', function () {
     );
   });
 
+  it('rejects subscription with invalid $regex pattern', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const query = new Parse.Query('TestObject');
+    query._where = { foo: { $regex: '[invalid' } };
+    await expectAsync(query.subscribe()).toBeRejectedWithError(/Invalid regular expression/);
+  });
+
+  it('does not crash server when subscription has invalid $regex and object is saved', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    // Create a valid subscription first
+    const object = new TestObject();
+    object.set('foo', 'bar');
+    await object.save();
+
+    const validQuery = new Parse.Query('TestObject');
+    validQuery.equalTo('objectId', object.id);
+    const validSubscription = await validQuery.subscribe();
+
+    // Verify valid subscription still works after an object update
+    const updatePromise = new Promise(resolve => {
+      validSubscription.on('update', obj => {
+        expect(obj.get('foo')).toBe('baz');
+        resolve();
+      });
+    });
+
+    object.set('foo', 'baz');
+    await object.save();
+    await updatePromise;
+  });
+
   it('can handle mutate beforeSubscribe query', async done => {
     await reconfigureServer({
       liveQuery: {

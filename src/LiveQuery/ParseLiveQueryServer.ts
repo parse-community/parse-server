@@ -190,7 +190,13 @@ class ParseLiveQueryServer {
     }
 
     for (const subscription of classSubscriptions.values()) {
-      const isSubscriptionMatched = this._matchesSubscription(deletedParseObject, subscription);
+      let isSubscriptionMatched;
+      try {
+        isSubscriptionMatched = this._matchesSubscription(deletedParseObject, subscription);
+      } catch (e) {
+        logger.error(`Failed matching subscription for class ${className}: ${e.message}`);
+        continue;
+      }
       if (!isSubscriptionMatched) {
         continue;
       }
@@ -286,14 +292,21 @@ class ParseLiveQueryServer {
       return;
     }
     for (const subscription of classSubscriptions.values()) {
-      const isOriginalSubscriptionMatched = this._matchesSubscription(
-        originalParseObject,
-        subscription
-      );
-      const isCurrentSubscriptionMatched = this._matchesSubscription(
-        currentParseObject,
-        subscription
-      );
+      let isOriginalSubscriptionMatched;
+      let isCurrentSubscriptionMatched;
+      try {
+        isOriginalSubscriptionMatched = this._matchesSubscription(
+          originalParseObject,
+          subscription
+        );
+        isCurrentSubscriptionMatched = this._matchesSubscription(
+          currentParseObject,
+          subscription
+        );
+      } catch (e) {
+        logger.error(`Failed matching subscription for class ${className}: ${e.message}`);
+        continue;
+      }
       for (const [clientId, requestIds] of _.entries(subscription.clientRequestIds)) {
         const client = this.clients.get(clientId);
         if (typeof client === 'undefined') {
@@ -518,6 +531,41 @@ class ParseLiveQueryServer {
       clients: this.clients.size,
       subscriptions: this.subscriptions.size,
     });
+  }
+
+  _validateQueryConstraints(where: any): void {
+    if (typeof where !== 'object' || where === null) {
+      return;
+    }
+    for (const key of Object.keys(where)) {
+      const constraint = where[key];
+      if (typeof constraint === 'object' && constraint !== null) {
+        if (constraint.$regex !== undefined) {
+          const pattern = typeof constraint.$regex === 'object'
+            ? constraint.$regex.source
+            : constraint.$regex;
+          const flags = typeof constraint.$regex === 'object'
+            ? constraint.$regex.flags
+            : constraint.$options || '';
+          try {
+            new RegExp(pattern, flags);
+          } catch (e) {
+            throw new Parse.Error(
+              Parse.Error.INVALID_QUERY,
+              `Invalid regular expression: ${e.message}`
+            );
+          }
+        }
+        for (const op of ['$or', '$and', '$nor']) {
+          if (Array.isArray(constraint[op])) {
+            constraint[op].forEach((subQuery: any) => this._validateQueryConstraints(subQuery));
+          }
+        }
+        if (Array.isArray(where[key])) {
+          where[key].forEach((subQuery: any) => this._validateQueryConstraints(subQuery));
+        }
+      }
+    }
   }
 
   _matchesSubscription(parseObject: any, subscription: any): boolean {
@@ -950,6 +998,9 @@ class ParseLiveQueryServer {
           checkWhere(request.query.where);
         }
       }
+
+      // Validate regex patterns in the subscription query
+      this._validateQueryConstraints(request.query.where);
 
       // Get subscription from subscriptions, create one if necessary
       const subscriptionHash = queryHash(request.query);
