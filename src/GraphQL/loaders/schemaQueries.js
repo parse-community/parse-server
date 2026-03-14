@@ -3,7 +3,7 @@ import Parse from 'parse/node';
 import { GraphQLNonNull, GraphQLList } from 'graphql';
 import { transformToGraphQL } from '../transformers/schemaFields';
 import * as schemaTypes from './schemaTypes';
-import { enforceMasterKeyAccess } from '../parseGraphQLUtils';
+import { enforceMasterKeyAccess, cloneArgs } from '../parseGraphQLUtils';
 
 const getClass = async (name, schema) => {
   try {
@@ -28,7 +28,7 @@ const load = parseGraphQLSchema => {
       type: new GraphQLNonNull(schemaTypes.CLASS),
       resolve: async (_source, args, context) => {
         try {
-          const { name } = structuredClone(args);
+          const { name } = cloneArgs(args);
           const { config, auth } = context;
 
           enforceMasterKeyAccess(auth, config);
