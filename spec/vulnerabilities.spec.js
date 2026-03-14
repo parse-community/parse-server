@@ -2747,3 +2747,22 @@ describe('(GHSA-c442-97qw-j6c6) SQL Injection via $regex query operator field na
     });
   });
 });
+
+describe('(GHSA-9xp9-j92r-p88v) Stack overflow process crash via deeply nested query operators', () => {
+  it('rejects deeply nested $or query', async () => {
+    const auth = require('../lib/Auth');
+    const rest = require('../lib/rest');
+    const config = Config.get('test');
+    let where = { username: 'test' };
+    for (let i = 0; i < 15; i++) {
+      where = { $or: [where, { username: 'test' }] };
+    }
+    await expectAsync(
+      rest.find(config, auth.nobody(config), '_User', where)
+    ).toBeRejectedWith(
+      jasmine.objectContaining({
+        message: jasmine.stringMatching(/Query condition nesting depth exceeds maximum allowed depth/),
+      })
+    );
+  });
+});

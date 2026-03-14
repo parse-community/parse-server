@@ -113,10 +113,19 @@ const validateQuery = (
   query: any,
   isMaster: boolean,
   isMaintenance: boolean,
-  update: boolean
+  update: boolean,
+  options: ?ParseServerOptions,
+  _depth: number = 0
 ): void => {
   if (isMaintenance) {
     isMaster = true;
+  }
+  const rc = options?.requestComplexity;
+  if (!isMaster && rc && rc.queryDepth !== -1 && _depth > rc.queryDepth) {
+    throw new Parse.Error(
+      Parse.Error.INVALID_QUERY,
+      `Query condition nesting depth exceeds maximum allowed depth of ${rc.queryDepth}`
+    );
   }
   if (query.ACL) {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
@@ -124,7 +133,7 @@ const validateQuery = (
 
   if (query.$or) {
     if (query.$or instanceof Array) {
-      query.$or.forEach(value => validateQuery(value, isMaster, isMaintenance, update));
+      query.$or.forEach(value => validateQuery(value, isMaster, isMaintenance, update, options, _depth + 1));
     } else {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $or format - use an array value.');
     }
@@ -132,7 +141,7 @@ const validateQuery = (
 
   if (query.$and) {
     if (query.$and instanceof Array) {
-      query.$and.forEach(value => validateQuery(value, isMaster, isMaintenance, update));
+      query.$and.forEach(value => validateQuery(value, isMaster, isMaintenance, update, options, _depth + 1));
     } else {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $and format - use an array value.');
     }
@@ -140,7 +149,7 @@ const validateQuery = (
 
   if (query.$nor) {
     if (query.$nor instanceof Array && query.$nor.length > 0) {
-      query.$nor.forEach(value => validateQuery(value, isMaster, isMaintenance, update));
+      query.$nor.forEach(value => validateQuery(value, isMaster, isMaintenance, update, options, _depth + 1));
     } else {
       throw new Parse.Error(
         Parse.Error.INVALID_QUERY,
@@ -581,7 +590,7 @@ class DatabaseController {
           if (acl) {
             query = addWriteACL(query, acl);
           }
-          validateQuery(query, isMaster, false, true);
+          validateQuery(query, isMaster, false, true, this.options);
           return schemaController
             .getOneSchema(className, true)
             .catch(error => {
@@ -829,7 +838,7 @@ class DatabaseController {
         if (acl) {
           query = addWriteACL(query, acl);
         }
-        validateQuery(query, isMaster, false, false);
+        validateQuery(query, isMaster, false, false, this.options);
         return schemaController
           .getOneSchema(className)
           .catch(error => {
@@ -1340,7 +1349,7 @@ class DatabaseController {
                   query = addReadACL(query, aclGroup);
                 }
               }
-              validateQuery(query, isMaster, isMaintenance, false);
+              validateQuery(query, isMaster, isMaintenance, false, this.options);
               if (count) {
                 if (!classExists) {
                   return 0;
