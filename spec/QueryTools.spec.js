@@ -553,6 +553,49 @@ describe('matchesQuery', function () {
     expect(config.liveQuery.regexTimeout).toBe(100);
   });
 
+  it('does not throw on invalid $regex pattern', function () {
+    const player = {
+      id: new Id('Player', 'P1'),
+      name: 'Player 1',
+    };
+
+    // Invalid regex syntax should not throw, just return false
+    const q = new Parse.Query('Player');
+    q._where = { name: { $regex: '[invalid' } };
+    expect(() => matchesQuery(player, q)).not.toThrow();
+    expect(matchesQuery(player, q)).toBe(false);
+  });
+
+  it('does not throw on invalid $regex pattern with regexTimeout enabled', function () {
+    const { setRegexTimeout } = require('../lib/LiveQuery/QueryTools');
+    setRegexTimeout(100);
+    try {
+      const player = {
+        id: new Id('Player', 'P1'),
+        name: 'Player 1',
+      };
+
+      const q = new Parse.Query('Player');
+      q._where = { name: { $regex: '[invalid' } };
+      expect(() => matchesQuery(player, q)).not.toThrow();
+      expect(matchesQuery(player, q)).toBe(false);
+    } finally {
+      setRegexTimeout(0);
+    }
+  });
+
+  it('does not throw on invalid $regex flags', function () {
+    const player = {
+      id: new Id('Player', 'P1'),
+      name: 'Player 1',
+    };
+
+    const q = new Parse.Query('Player');
+    q._where = { name: { $regex: 'valid', $options: 'xyz' } };
+    expect(() => matchesQuery(player, q)).not.toThrow();
+    expect(matchesQuery(player, q)).toBe(false);
+  });
+
   it('matches $nearSphere queries', function () {
     let q = new Parse.Query('Checkin');
     q.near('location', new Parse.GeoPoint(20, 20));

@@ -646,6 +646,82 @@ describe('ParseLiveQuery', function () {
     );
   });
 
+  it('rejects subscription with invalid $regex pattern', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const query = new Parse.Query('TestObject');
+    query._where = { foo: { $regex: '[invalid' } };
+    await expectAsync(query.subscribe()).toBeRejectedWithError(/Invalid regular expression/);
+  });
+
+  it('rejects subscription with non-string $regex value', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const query = new Parse.Query('TestObject');
+    query._where = { foo: { $regex: 123 } };
+    await expectAsync(query.subscribe()).toBeRejectedWithError(
+      /\$regex must be a string or RegExp/
+    );
+  });
+
+  it('does not crash server when subscription matching throws and other subscriptions still work', async () => {
+    const server = await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const object = new TestObject();
+    object.set('foo', 'bar');
+    await object.save();
+
+    // Create a valid subscription
+    const validQuery = new Parse.Query('TestObject');
+    validQuery.equalTo('objectId', object.id);
+    const validSubscription = await validQuery.subscribe();
+
+    // Inject a malformed subscription directly into the LiveQuery server
+    // to bypass subscribe-time validation and test the try-catch in _onAfterSave
+    const lqServer = server.liveQueryServer;
+    const Subscription = require('../lib/LiveQuery/Subscription').Subscription;
+    const badSubscription = new Subscription('TestObject', { foo: { $regex: '[invalid' } });
+    badSubscription.addClientSubscription('fakeClientId', 'fakeRequestId');
+    const classSubscriptions = lqServer.subscriptions.get('TestObject');
+    classSubscriptions.set('bad-hash', badSubscription);
+
+    // Verify the valid subscription still receives updates despite the bad subscription
+    const updatePromise = new Promise(resolve => {
+      validSubscription.on('update', obj => {
+        expect(obj.get('foo')).toBe('baz');
+        resolve();
+      });
+    });
+
+    object.set('foo', 'baz');
+    await object.save();
+    await updatePromise;
+
+    // Clean up the injected subscription
+    classSubscriptions.delete('bad-hash');
+  });
+
   it('can handle mutate beforeSubscribe query', async done => {
     await reconfigureServer({
       liveQuery: {
