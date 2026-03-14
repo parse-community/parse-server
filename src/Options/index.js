@@ -366,8 +366,7 @@ export interface ParseServerOptions {
   /* Callback when server has closed */
   serverCloseComplete: ?() => void;
   /* Options to limit the complexity of requests to prevent denial-of-service attacks. Limits are enforced for all requests except those using the master or maintenance key. Each property can be set to `-1` to disable that specific limit.
-  :ENV: PARSE_SERVER_REQUEST_COMPLEXITY
-  :DEFAULT: {} */
+  :ENV: PARSE_SERVER_REQUEST_COMPLEXITY */
   requestComplexity: ?RequestComplexityOptions;
   /* The security options to identify and report weak security settings.
   :DEFAULT: {} */
