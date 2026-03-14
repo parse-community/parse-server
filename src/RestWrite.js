@@ -3,7 +3,6 @@
 // This could be either a "create" or an "update".
 
 var SchemaController = require('./Controllers/SchemaController');
-var deepcopy = require('deepcopy');
 
 const Auth = require('./Auth');
 const Utils = require('./Utils');
@@ -75,8 +74,8 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
 
   // Processing this operation may mutate our data, so we operate on a
   // copy
-  this.query = deepcopy(query);
-  this.data = deepcopy(data);
+  this.query = structuredClone(query);
+  this.data = structuredClone(data);
   // We never change originalData, so we do not need a deep copy
   this.originalData = originalData;
 
@@ -377,10 +376,10 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function () {
         JSON.stringify(schema.classLevelPermissions.ACL) !==
           JSON.stringify({ '*': { read: true, write: true } })
       ) {
-        const acl = deepcopy(schema.classLevelPermissions.ACL);
+        const acl = structuredClone(schema.classLevelPermissions.ACL);
         if (acl.currentUser) {
           if (this.auth.user?.id) {
-            acl[this.auth.user?.id] = deepcopy(acl.currentUser);
+            acl[this.auth.user?.id] = structuredClone(acl.currentUser);
           }
           delete acl.currentUser;
         }
@@ -617,7 +616,7 @@ RestWrite.prototype.handleAuthData = async function (authData) {
         // Run beforeLogin hook before storing any updates
         // to authData on the db; changes to userResult
         // will be ignored.
-        await this.runBeforeLoginTrigger(deepcopy(userResult));
+        await this.runBeforeLoginTrigger(structuredClone(userResult));
 
         // If we are in login operation via authData
         // we need to be sure that the user has provided
@@ -1788,7 +1787,7 @@ RestWrite.prototype.sanitizedData = function () {
       delete data[key];
     }
     return data;
-  }, deepcopy(this.data));
+  }, structuredClone(this.data));
   return Parse._decode(undefined, data);
 };
 
@@ -1838,7 +1837,7 @@ RestWrite.prototype.buildParseObjects = function () {
       delete data[key];
     }
     return data;
-  }, deepcopy(this.data));
+  }, structuredClone(this.data));
 
   const sanitized = this.sanitizedData();
   for (const attribute of readOnlyAttributes) {

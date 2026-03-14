@@ -30,7 +30,6 @@
     "bcryptjs": "3.0.3",
     "commander": "14.0.3",
     "cors": "2.8.6",
-    "deepcopy": "2.1.0",
     "express": "5.2.1",
     "express-rate-limit": "8.2.1",
     "follow-redirects": "1.15.9",

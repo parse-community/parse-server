@@ -353,12 +353,23 @@ describe('Vulnerabilities', () => {
       });
 
       it('denies __proto__ after a sibling nested object', async () => {
-        // Cannot test via HTTP because deepcopy() strips __proto__ before the denylist
-        // check runs. Test objectContainsKeyValue directly with a JSON.parse'd object
-        // that preserves __proto__ as an own property.
-        const Utils = require('../lib/Utils');
-        const data = JSON.parse('{"profile": {"name": "alice"}, "__proto__": {"isAdmin": true}}');
-        expect(Utils.objectContainsKeyValue(data, '__proto__', undefined)).toBe(true);
+        const headers = {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        };
+        const response = await request({
+          headers,
+          method: 'POST',
+          url: 'http://localhost:8378/1/classes/PP',
+          body: JSON.stringify(
+            JSON.parse('{"profile": {"name": "alice"}, "__proto__": {"isAdmin": true}}')
+          ),
+        }).catch(e => e);
+        expect(response.status).toBe(400);
+        const text = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+        expect(text.code).toBe(Parse.Error.INVALID_KEY_NAME);
+        expect(text.error).toContain('__proto__');
       });
 
       it('denies constructor after a sibling nested object', async () => {
@@ -2642,6 +2653,97 @@ describe('(GHSA-c442-97qw-j6c6) SQL Injection via $regex query operator field na
       const result = await gqlRequest(`{ ${fields} }`);
       expect(result.body?.errors).toBeDefined();
       expect(result.body.errors[0].message).toMatch(/exceeds maximum allowed/);
+    });
+  });
+
+  describe('(GHSA-9ccr-fpp6-78qf) Schema poisoning via __proto__ bypassing requestKeywordDenylist and addField CLP', () => {
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+
+    it('rejects __proto__ in request body via HTTP', async () => {
+      const response = await request({
+        headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/classes/ProtoTest',
+        body: JSON.stringify(JSON.parse('{"name":"test","__proto__":{"injected":"value"}}')),
+      }).catch(e => e);
+      expect(response.status).toBe(400);
+      const text = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+      expect(text.code).toBe(Parse.Error.INVALID_KEY_NAME);
+      expect(text.error).toContain('__proto__');
+    });
+
+    it('does not add fields to a locked schema via __proto__', async () => {
+      const schema = new Parse.Schema('LockedSchema');
+      schema.addString('name');
+      schema.setCLP({
+        find: { '*': true },
+        get: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+      });
+      await schema.save();
+
+      // Attempt to inject a field via __proto__
+      const response = await request({
+        headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/classes/LockedSchema',
+        body: JSON.stringify(JSON.parse('{"name":"test","__proto__":{"newField":"bypassed"}}')),
+      }).catch(e => e);
+
+      // Should be rejected by denylist
+      expect(response.status).toBe(400);
+
+      // Verify schema was not modified
+      const schemaResponse = await request({
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+        },
+        method: 'GET',
+        url: 'http://localhost:8378/1/schemas/LockedSchema',
+      });
+      const fields = schemaResponse.data.fields;
+      expect(fields.newField).toBeUndefined();
+    });
+
+    it('does not cause schema type conflict via __proto__', async () => {
+      const schema = new Parse.Schema('TypeConflict');
+      schema.addString('name');
+      schema.addString('score');
+      schema.setCLP({
+        find: { '*': true },
+        get: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+      });
+      await schema.save();
+
+      // Attempt to inject 'score' as Number via __proto__
+      const response = await request({
+        headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/classes/TypeConflict',
+        body: JSON.stringify(JSON.parse('{"name":"test","__proto__":{"score":42}}')),
+      }).catch(e => e);
+
+      // Should be rejected by denylist
+      expect(response.status).toBe(400);
+
+      // Verify 'score' field is still String type
+      const obj = new Parse.Object('TypeConflict');
+      obj.set('name', 'valid');
+      obj.set('score', 'string-value');
+      await obj.save();
+      expect(obj.get('score')).toBe('string-value');
     });
   });
 });

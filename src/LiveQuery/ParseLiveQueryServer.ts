@@ -25,7 +25,7 @@ import { LRUCache as LRU } from 'lru-cache';
 import UserRouter from '../Routers/UsersRouter';
 import DatabaseController from '../Controllers/DatabaseController';
 import { isDeepStrictEqual } from 'util';
-import deepcopy from 'deepcopy';
+
 
 class ParseLiveQueryServer {
   server: any;
@@ -585,7 +585,7 @@ class ParseLiveQueryServer {
     if (!parseObject) {
       return false;
     }
-    return matchesQuery(deepcopy(parseObject), subscription.query);
+    return matchesQuery(structuredClone(parseObject), subscription.query);
   }
 
   async _clearCachedRoles(userId: string) {
