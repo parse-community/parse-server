@@ -541,12 +541,20 @@ class ParseLiveQueryServer {
       const constraint = where[key];
       if (typeof constraint === 'object' && constraint !== null) {
         if (constraint.$regex !== undefined) {
-          const pattern = typeof constraint.$regex === 'object'
-            ? constraint.$regex.source
-            : constraint.$regex;
-          const flags = typeof constraint.$regex === 'object'
-            ? constraint.$regex.flags
-            : constraint.$options || '';
+          const regex = constraint.$regex;
+          const isRegExpLike =
+            regex !== null &&
+            typeof regex === 'object' &&
+            typeof regex.source === 'string' &&
+            typeof regex.flags === 'string';
+          if (typeof regex !== 'string' && !isRegExpLike) {
+            throw new Parse.Error(
+              Parse.Error.INVALID_QUERY,
+              'Invalid regular expression: $regex must be a string or RegExp'
+            );
+          }
+          const pattern = isRegExpLike ? regex.source : regex;
+          const flags = isRegExpLike ? regex.flags : constraint.$options || '';
           try {
             new RegExp(pattern, flags);
           } catch (e) {
@@ -558,11 +566,15 @@ class ParseLiveQueryServer {
         }
         for (const op of ['$or', '$and', '$nor']) {
           if (Array.isArray(constraint[op])) {
-            constraint[op].forEach((subQuery: any) => this._validateQueryConstraints(subQuery));
+            constraint[op].forEach((subQuery: any) => {
+              this._validateQueryConstraints(subQuery);
+            });
           }
         }
         if (Array.isArray(where[key])) {
-          where[key].forEach((subQuery: any) => this._validateQueryConstraints(subQuery));
+          where[key].forEach((subQuery: any) => {
+            this._validateQueryConstraints(subQuery);
+          });
         }
       }
     }

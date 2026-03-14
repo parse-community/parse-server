@@ -583,16 +583,19 @@ describe('matchesQuery', function () {
   it('does not throw on invalid $regex pattern with regexTimeout enabled', function () {
     const { setRegexTimeout } = require('../lib/LiveQuery/QueryTools');
     setRegexTimeout(100);
-    const player = {
-      id: new Id('Player', 'P1'),
-      name: 'Player 1',
-    };
+    try {
+      const player = {
+        id: new Id('Player', 'P1'),
+        name: 'Player 1',
+      };
 
-    const q = new Parse.Query('Player');
-    q._where = { name: { $regex: '[invalid' } };
-    expect(() => matchesQuery(player, q)).not.toThrow();
-    expect(matchesQuery(player, q)).toBe(false);
-    setRegexTimeout(0);
+      const q = new Parse.Query('Player');
+      q._where = { name: { $regex: '[invalid' } };
+      expect(() => matchesQuery(player, q)).not.toThrow();
+      expect(matchesQuery(player, q)).toBe(false);
+    } finally {
+      setRegexTimeout(0);
+    }
   });
 
   it('does not throw on invalid $regex flags', function () {
