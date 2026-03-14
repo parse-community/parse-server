@@ -2615,7 +2615,10 @@ describe('(GHSA-42ph-pf9q-cr72) Stored XSS filter bypass via parameterized Conte
 });
 
 describe('(GHSA-9xp9-j92r-p88v) Stack overflow process crash via deeply nested query operators', () => {
-  it('rejects deeply nested $or query', async () => {
+  it('rejects deeply nested $or query when queryDepth is set', async () => {
+    await reconfigureServer({
+      requestComplexity: { queryDepth: 10 },
+    });
     const auth = require('../lib/Auth');
     const rest = require('../lib/rest');
     const config = Config.get('test');

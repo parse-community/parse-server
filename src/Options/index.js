@@ -406,8 +406,8 @@ export interface RequestComplexityOptions {
   /* Maximum nesting depth of `$inQuery`, `$notInQuery`, `$select`, `$dontSelect` subqueries. Set to `-1` to disable. Default is `5`.
   :DEFAULT: 5 */
   subqueryDepth: ?number;
-  /* Maximum nesting depth of `$or`, `$and`, `$nor` query operators. Set to `-1` to disable. Default is `10`.
-  :DEFAULT: 10 */
+  /* Maximum nesting depth of `$or`, `$and`, `$nor` query operators. Set to `-1` to disable. Default is `-1`.
+  :DEFAULT: -1 */
   queryDepth: ?number;
   /* Maximum depth of GraphQL field selections. Set to `-1` to disable. Default is `50`.
   :ENV: PARSE_SERVER_REQUEST_COMPLEXITY_GRAPHQL_DEPTH
