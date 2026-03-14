@@ -14,28 +14,29 @@ function setRegexTimeout(ms) {
 }
 
 function safeRegexTest(pattern, flags, input) {
-  if (!regexTimeout) {
-    var re = new RegExp(pattern, flags);
-    return re.test(input);
-  }
-  var cacheKey = flags + ':' + pattern;
-  var script = scriptCache.get(cacheKey);
-  if (!script) {
-    if (scriptCache.size >= SCRIPT_CACHE_MAX) { scriptCache.clear(); }
-    script = new vm.Script('new RegExp(pattern, flags).test(input)');
-    scriptCache.set(cacheKey, script);
-  }
-  vmContext.pattern = pattern;
-  vmContext.flags = flags;
-  vmContext.input = input;
   try {
+    if (!regexTimeout) {
+      var re = new RegExp(pattern, flags);
+      return re.test(input);
+    }
+    var cacheKey = flags + ':' + pattern;
+    var script = scriptCache.get(cacheKey);
+    if (!script) {
+      if (scriptCache.size >= SCRIPT_CACHE_MAX) { scriptCache.clear(); }
+      script = new vm.Script('new RegExp(pattern, flags).test(input)');
+      scriptCache.set(cacheKey, script);
+    }
+    vmContext.pattern = pattern;
+    vmContext.flags = flags;
+    vmContext.input = input;
     return script.runInContext(vmContext, { timeout: regexTimeout });
   } catch (e) {
     if (e.code === 'ERR_SCRIPT_EXECUTION_TIMEOUT') {
       logger.warn(`Regex timeout: pattern "${pattern}" with flags "${flags}" exceeded ${regexTimeout}ms limit`);
-      return false;
+    } else {
+      logger.warn(`Invalid regex: pattern "${pattern}" with flags "${flags}": ${e.message}`);
     }
-    throw e;
+    return false;
   }
 }
 
