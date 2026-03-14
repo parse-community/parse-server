@@ -138,7 +138,7 @@ describe('request complexity', () => {
       expect(config.requestComplexity.includeDepth).toBe(3);
       expect(config.requestComplexity.includeCount).toBe(50);
       expect(config.requestComplexity.subqueryDepth).toBe(5);
-      expect(config.requestComplexity.queryDepth).toBe(10);
+      expect(config.requestComplexity.queryDepth).toBe(-1);
       expect(config.requestComplexity.graphQLDepth).toBe(50);
       expect(config.requestComplexity.graphQLFields).toBe(200);
     });
@@ -150,7 +150,7 @@ describe('request complexity', () => {
         includeDepth: 5,
         includeCount: 50,
         subqueryDepth: 5,
-        queryDepth: 10,
+        queryDepth: -1,
         graphQLDepth: 50,
         graphQLFields: 200,
       });
