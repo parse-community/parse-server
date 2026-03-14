@@ -116,8 +116,30 @@ describe('request complexity', () => {
       expect(config.requestComplexity.graphQLFields).toBe(200);
     });
 
-    it('should apply full defaults when not configured', async () => {
+    it('should have requestComplexity undefined when not configured', async () => {
       await reconfigureServer({});
+      const config = Config.get('test');
+      expect(config.requestComplexity).toBeUndefined();
+    });
+
+    it('should apply no limits when requestComplexity is undefined', async () => {
+      await reconfigureServer({});
+      const config = Config.get('test');
+      expect(config.requestComplexity).toBeUndefined();
+
+      const where = buildNestedInQuery(15);
+      await expectAsync(
+        rest.find(config, auth.nobody(config), '_User', where)
+      ).toBeResolved();
+
+      const includes = Array.from({ length: 100 }, (_, i) => `field${i}`).join(',');
+      await expectAsync(
+        rest.find(config, auth.nobody(config), '_User', {}, { include: includes })
+      ).toBeResolved();
+    });
+
+    it('should apply full defaults when empty object is passed', async () => {
+      await reconfigureServer({ requestComplexity: {} });
       const config = Config.get('test');
       expect(config.requestComplexity).toEqual({
         includeDepth: 5,
@@ -126,6 +148,18 @@ describe('request complexity', () => {
         graphQLDepth: 50,
         graphQLFields: 200,
       });
+    });
+
+    it('should log deprecation warning when requestComplexity is not set', async () => {
+      const Deprecator = require('../lib/Deprecator/Deprecator');
+      const logSpy = spyOn(Deprecator, '_logOption').and.callThrough();
+      await reconfigureServer({});
+      expect(logSpy).toHaveBeenCalledWith(
+        jasmine.objectContaining({
+          optionKey: 'requestComplexity',
+          changeNewDefault: jasmine.stringMatching(/includeDepth.*10/),
+        })
+      );
     });
   });
 

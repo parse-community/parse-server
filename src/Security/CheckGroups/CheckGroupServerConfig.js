@@ -143,7 +143,7 @@ class CheckGroupServerConfig extends CheckGroup {
         check: () => {
           const rc = config.requestComplexity;
           if (!rc) {
-            throw 1;
+            return;
           }
           const values = [rc.includeDepth, rc.includeCount, rc.subqueryDepth, rc.graphQLDepth, rc.graphQLFields];
           if (values.some(v => v === -1)) {

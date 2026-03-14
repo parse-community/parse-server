@@ -41,4 +41,9 @@ module.exports = [
     changeNewKey: '',
     solution: "Use Parse Dashboard as GraphQL IDE or configure a third-party GraphQL client such as Apollo Sandbox, GraphiQL, or Insomnia with custom request headers.",
   },
+  {
+    optionKey: 'requestComplexity',
+    changeNewDefault: '{"includeDepth":10,"includeCount":100,"subqueryDepth":10,"graphQLDepth":20,"graphQLFields":200}',
+    solution: "Set 'requestComplexity' to the limits you want to enforce, or to the above object to opt-in to the future default behavior.",
+  },
 ];
