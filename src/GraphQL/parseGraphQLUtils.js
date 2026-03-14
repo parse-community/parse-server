@@ -55,3 +55,11 @@ export const extractKeysAndInclude = selectedFields => {
 export const getParseClassMutationConfig = function (parseClassConfig) {
   return (parseClassConfig && parseClassConfig.mutation) || {};
 };
+
+export function cloneArgs(args) {
+  try {
+    return structuredClone(args);
+  } catch {
+    return JSON.parse(JSON.stringify(args));
+  }
+}
