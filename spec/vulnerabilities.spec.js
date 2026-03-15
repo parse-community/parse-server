@@ -2816,37 +2816,56 @@ describe('(GHSA-fjxm-vhvc-gcmj) LiveQuery Operator Type Confusion', () => {
 
   // Integration test: verify that a LiveQuery subscription with type-confused
   // operators does not crash the server and other subscriptions continue working
-  it('server does not crash and other subscriptions work when type-confused subscription exists', async () => {
-    // First subscribe with a malformed query via manual client
-    const malClient = new Parse.LiveQueryClient({
-      applicationId: 'test',
-      serverURL: 'ws://localhost:1337',
-      javascriptKey: 'test',
-    });
-    malClient.open();
-    const malformedQuery = new Parse.Query('TestObject');
-    malformedQuery._where = { name: { $in: { x: 1 } } };
-    await malClient.subscribe(malformedQuery);
-
-    // Then subscribe with a valid query using the default client
-    const validQuery = new Parse.Query('TestObject');
-    validQuery.equalTo('name', 'test');
-    const validSubscription = await validQuery.subscribe();
-
-    try {
-      const createPromise = new Promise(resolve => {
-        validSubscription.on('create', object => {
-          expect(object.get('name')).toBe('test');
-          resolve();
-        });
+  describe('LiveQuery integration', () => {
+    beforeEach(async () => {
+      Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+      await reconfigureServer({
+        liveQuery: { classNames: ['TestObject'] },
+        startLiveQueryServer: true,
+        verbose: false,
+        silent: true,
       });
+    });
 
-      const obj = new Parse.Object('TestObject');
-      obj.set('name', 'test');
-      await obj.save();
-      await createPromise;
-    } finally {
-      malClient.close();
-    }
+    afterEach(async () => {
+      const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+      if (client) {
+        await client.close();
+      }
+    });
+
+    it('server does not crash and other subscriptions work when type-confused subscription exists', async () => {
+      // First subscribe with a malformed query via manual client
+      const malClient = new Parse.LiveQueryClient({
+        applicationId: 'test',
+        serverURL: 'ws://localhost:1337',
+        javascriptKey: 'test',
+      });
+      malClient.open();
+      const malformedQuery = new Parse.Query('TestObject');
+      malformedQuery._where = { name: { $in: { x: 1 } } };
+      await malClient.subscribe(malformedQuery);
+
+      // Then subscribe with a valid query using the default client
+      const validQuery = new Parse.Query('TestObject');
+      validQuery.equalTo('name', 'test');
+      const validSubscription = await validQuery.subscribe();
+
+      try {
+        const createPromise = new Promise(resolve => {
+          validSubscription.on('create', object => {
+            expect(object.get('name')).toBe('test');
+            resolve();
+          });
+        });
+
+        const obj = new Parse.Object('TestObject');
+        obj.set('name', 'test');
+        await obj.save();
+        await createPromise;
+      } finally {
+        malClient.close();
+      }
+    });
   });
 });
