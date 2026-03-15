@@ -285,7 +285,9 @@ describe('Parse.Session', () => {
         },
         body: JSON.stringify({}),
       }).catch(e => e);
-      expect(response.status).not.toBe(500);
+      expect(response.status).toBeGreaterThanOrEqual(400);
+      expect(response.status).toBeLessThan(500);
+      expect(response.data?.code).toBeDefined();
     });
   });
 
@@ -313,7 +315,9 @@ describe('Parse.Session', () => {
           'X-Parse-REST-API-Key': 'rest',
         },
       }).catch(e => e);
-      expect(response.status).not.toBe(500);
+      expect(response.status).toBeGreaterThanOrEqual(400);
+      expect(response.status).toBeLessThan(500);
+      expect(response.data?.code).toBeDefined();
     });
   });
 });
