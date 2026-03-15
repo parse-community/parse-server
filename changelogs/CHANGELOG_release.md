@@ -1,3 +1,10 @@
+## [8.6.46](https://github.com/parse-community/parse-server/compare/8.6.45...8.6.46) (2026-03-15)
+
+
+### Bug Fixes
+
+* Revert accidental breaking default values for query complexity limits ([#10206](https://github.com/parse-community/parse-server/issues/10206)) ([a3a57c1](https://github.com/parse-community/parse-server/commit/a3a57c15077d0c9c902fd444de986915b942ab2f))
+
 ## [8.6.45](https://github.com/parse-community/parse-server/compare/8.6.44...8.6.45) (2026-03-15)
 
 
