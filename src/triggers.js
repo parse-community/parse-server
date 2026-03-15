@@ -109,6 +109,9 @@ function getStore(category, name, applicationId) {
   _triggerStore[applicationId] = _triggerStore[applicationId] || baseStore();
   let store = _triggerStore[applicationId][category];
   for (const component of path) {
+    if (!Object.prototype.hasOwnProperty.call(store, component)) {
+      return createStore();
+    }
     store = store[component];
     if (!store) {
       return createStore();
@@ -137,6 +140,9 @@ function remove(category, name, applicationId) {
 function get(category, name, applicationId) {
   const lastComponent = name.split('.').splice(-1);
   const store = getStore(category, name, applicationId);
+  if (!Object.prototype.hasOwnProperty.call(store, lastComponent)) {
+    return undefined;
+  }
   return store[lastComponent];
 }
 
