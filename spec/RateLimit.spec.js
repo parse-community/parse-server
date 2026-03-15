@@ -434,6 +434,73 @@ describe('rate limit', () => {
         new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
       );
     });
+
+    it('should rate limit per user independently with user zone', async () => {
+      await reconfigureServer({
+        rateLimit: {
+          requestPath: '/functions/*path',
+          requestTimeWindow: 10000,
+          requestCount: 1,
+          errorResponseMessage: 'Too many requests',
+          includeInternalRequests: true,
+          zone: Parse.Server.RateLimitZone.user,
+        },
+      });
+      Parse.Cloud.define('test', () => 'Abc');
+      // Sign up two different users using REST API to avoid destroying sessions
+      const res1 = await request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/users',
+        body: JSON.stringify({ username: 'user1', password: 'password' }),
+      });
+      const sessionToken1 = res1.data.sessionToken;
+      const res2 = await request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/users',
+        body: JSON.stringify({ username: 'user2', password: 'password' }),
+      });
+      const sessionToken2 = res2.data.sessionToken;
+      // User 1 makes a request — should succeed
+      const result1 = await request({
+        method: 'POST',
+        headers: { ...headers, 'X-Parse-Session-Token': sessionToken1 },
+        url: 'http://localhost:8378/1/functions/test',
+        body: JSON.stringify({}),
+      });
+      expect(result1.data.result).toBe('Abc');
+      // User 2 makes a request — should also succeed (independent rate limit per user)
+      const result2 = await request({
+        method: 'POST',
+        headers: { ...headers, 'X-Parse-Session-Token': sessionToken2 },
+        url: 'http://localhost:8378/1/functions/test',
+        body: JSON.stringify({}),
+      });
+      expect(result2.data.result).toBe('Abc');
+      // User 1 makes another request — should be rate limited
+      const result3 = await request({
+        method: 'POST',
+        headers: { ...headers, 'X-Parse-Session-Token': sessionToken1 },
+        url: 'http://localhost:8378/1/functions/test',
+        body: JSON.stringify({}),
+      }).catch(e => e);
+      expect(result3.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many requests',
+      });
+      // User 2 makes another request — should also be rate limited
+      const result4 = await request({
+        method: 'POST',
+        headers: { ...headers, 'X-Parse-Session-Token': sessionToken2 },
+        url: 'http://localhost:8378/1/functions/test',
+        body: JSON.stringify({}),
+      }).catch(e => e);
+      expect(result4.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many requests',
+      });
+    });
   });
 
   it('can validate rateLimit', async () => {
@@ -676,6 +743,94 @@ describe('rate limit', () => {
       expect(response.data).toEqual({
         code: Parse.Error.CONNECTION_FAILED,
         error: 'Custom rate limit message',
+      });
+    });
+
+    it('should enforce rate limit across direct requests and batch sub-requests', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/classes/*path',
+            requestTimeWindow: 10000,
+            requestCount: 2,
+            errorResponseMessage: 'Too many requests',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      // First direct request — should succeed (count: 1)
+      const obj = new Parse.Object('MyObject');
+      await obj.save();
+      // Batch with 1 sub-request — should succeed (count: 2)
+      const response1 = await request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/batch',
+        body: JSON.stringify({
+          requests: [
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value1' } },
+          ],
+        }),
+      });
+      expect(response1.data.length).toBe(1);
+      expect(response1.data[0].success).toBeDefined();
+      // Another batch with 1 sub-request — should be rate limited (count would be 3)
+      const response2 = await request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/batch',
+        body: JSON.stringify({
+          requests: [
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value2' } },
+          ],
+        }),
+      }).catch(e => e);
+      expect(response2.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many requests',
+      });
+    });
+
+    it('should enforce rate limit for multiple batch requests in same window', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/classes/*path',
+            requestTimeWindow: 10000,
+            requestCount: 2,
+            errorResponseMessage: 'Too many requests',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      // First batch with 2 sub-requests — should succeed (count: 2)
+      const response1 = await request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/batch',
+        body: JSON.stringify({
+          requests: [
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value1' } },
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value2' } },
+          ],
+        }),
+      });
+      expect(response1.data.length).toBe(2);
+      expect(response1.data[0].success).toBeDefined();
+      // Second batch with 1 sub-request — should be rate limited (count would be 3)
+      const response2 = await request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/batch',
+        body: JSON.stringify({
+          requests: [
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value3' } },
+          ],
+        }),
+      }).catch(e => e);
+      expect(response2.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many requests',
       });
     });
 

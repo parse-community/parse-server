@@ -63,7 +63,7 @@ function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
 
 // Returns a promise for a {response} object.
 // TODO: pass along auth correctly
-function handleBatch(router, req) {
+async function handleBatch(router, req) {
   if (!Array.isArray(req.body?.requests)) {
     throw new Parse.Error(Parse.Error.INVALID_JSON, 'requests must be an array');
   }
@@ -83,46 +83,37 @@ function handleBatch(router, req) {
     req.config.publicServerURL
   );
 
-  // Check if batch sub-requests would exceed any configured rate limits.
-  // Count how many sub-requests target each rate-limited path and reject
-  // the entire batch if any path's count exceeds its requestCount.
+  // Enforce rate limits for each batch sub-request by invoking the
+  // rate limit handler. This ensures sub-requests consume tokens from
+  // the same window state as direct requests.
   const rateLimits = req.config.rateLimits || [];
-  for (const limit of rateLimits) {
-    // Skip rate limit if master key is used and includeMasterKey is not set
-    if (req.auth?.isMaster && !limit.includeMasterKey) {
-      continue;
-    }
-    // Skip rate limit for internal requests if includeInternalRequests is not set
-    if (req.config.ip === '127.0.0.1' && !limit.includeInternalRequests) {
-      continue;
-    }
-    const pathExp = limit.path.regexp || limit.path;
-    let matchCount = 0;
-    for (const restRequest of req.body.requests) {
-      // Check if sub-request method matches the rate limit's requestMethods filter
-      if (limit.requestMethods) {
-        const method = restRequest.method?.toUpperCase();
-        if (Array.isArray(limit.requestMethods)) {
-          if (!limit.requestMethods.includes(method)) {
-            continue;
-          }
-        } else {
-          const regExp = new RegExp(limit.requestMethods);
-          if (!regExp.test(method)) {
-            continue;
-          }
-        }
+  for (const restRequest of req.body.requests) {
+    const routablePath = makeRoutablePath(restRequest.path);
+    for (const limit of rateLimits) {
+      const pathExp = limit.path.regexp || limit.path;
+      if (!pathExp.test(routablePath)) {
+        continue;
       }
-      const routablePath = makeRoutablePath(restRequest.path);
-      if (pathExp.test(routablePath)) {
-        matchCount++;
+      const fakeReq = {
+        ip: req.ip || req.config?.ip || '127.0.0.1',
+        method: (restRequest.method || 'GET').toUpperCase(),
+        config: req.config,
+        auth: req.auth,
+        info: req.info,
+      };
+      const fakeRes = { setHeader() {} };
+      try {
+        await limit.handler(fakeReq, fakeRes, err => {
+          if (err) {
+            throw err;
+          }
+        });
+      } catch {
+        throw new Parse.Error(
+          Parse.Error.CONNECTION_FAILED,
+          limit.errorResponseMessage || 'Too many requests'
+        );
       }
-    }
-    if (matchCount > limit.requestCount) {
-      throw new Parse.Error(
-        Parse.Error.CONNECTION_FAILED,
-        limit.errorResponseMessage || 'Batch request exceeds rate limit for endpoint'
-      );
     }
   }
 

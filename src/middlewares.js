@@ -650,7 +650,7 @@ export const addRateLimit = (route, config, cloud) => {
           if (!request.auth) {
             await new Promise(resolve => handleParseSession(request, null, resolve));
           }
-          if (request.auth?.user?.id && request.zone === 'user') {
+          if (request.auth?.user?.id && route.zone === 'user') {
             return request.auth.user.id;
           }
         }
