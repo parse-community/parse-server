@@ -136,23 +136,23 @@ describe('request complexity', () => {
       });
       const config = Config.get('test');
       expect(config.requestComplexity.includeDepth).toBe(3);
-      expect(config.requestComplexity.includeCount).toBe(50);
-      expect(config.requestComplexity.subqueryDepth).toBe(5);
+      expect(config.requestComplexity.includeCount).toBe(-1);
+      expect(config.requestComplexity.subqueryDepth).toBe(-1);
       expect(config.requestComplexity.queryDepth).toBe(-1);
-      expect(config.requestComplexity.graphQLDepth).toBe(50);
-      expect(config.requestComplexity.graphQLFields).toBe(200);
+      expect(config.requestComplexity.graphQLDepth).toBe(-1);
+      expect(config.requestComplexity.graphQLFields).toBe(-1);
     });
 
     it('should apply full defaults when not configured', async () => {
       await reconfigureServer({});
       const config = Config.get('test');
       expect(config.requestComplexity).toEqual({
-        includeDepth: 5,
-        includeCount: 50,
-        subqueryDepth: 5,
+        includeDepth: -1,
+        includeCount: -1,
+        subqueryDepth: -1,
         queryDepth: -1,
-        graphQLDepth: 50,
-        graphQLFields: 200,
+        graphQLDepth: -1,
+        graphQLFields: -1,
       });
     });
   });
