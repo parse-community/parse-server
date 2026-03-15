@@ -84,7 +84,7 @@ export class PagesRouter extends PromiseRouter {
   verifyEmail(req) {
     const config = req.config;
     const { token: rawToken } = req.query;
-    const token = rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
+    const token = typeof rawToken === 'string' ? rawToken : undefined;
 
     if (!config) {
       this.invalidRequest();
@@ -109,7 +109,7 @@ export class PagesRouter extends PromiseRouter {
     const config = req.config;
     const username = req.body?.username;
     const rawToken = req.body?.token;
-    const token = rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
+    const token = typeof rawToken === 'string' ? rawToken : undefined;
 
     if (!config) {
       this.invalidRequest();
@@ -151,7 +151,7 @@ export class PagesRouter extends PromiseRouter {
     }
 
     const { token: rawToken } = req.query;
-    const token = rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
+    const token = typeof rawToken === 'string' ? rawToken : undefined;
 
     if (!token) {
       return this.goToPage(req, pages.passwordResetLinkInvalid);
@@ -180,7 +180,7 @@ export class PagesRouter extends PromiseRouter {
     }
 
     const { new_password, token: rawToken } = req.body || {};
-    const token = rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
+    const token = typeof rawToken === 'string' ? rawToken : undefined;
 
     if ((!token || !new_password) && req.xhr === false) {
       return this.goToPage(req, pages.passwordResetLinkInvalid);

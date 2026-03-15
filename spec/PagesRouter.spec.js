@@ -990,6 +990,56 @@ describe('Pages Router', () => {
           await fs.rm(baseDir, { recursive: true, force: true });
         }
       });
+
+      it('rejects non-string token in verifyEmail', async () => {
+        await reconfigureServer(config);
+        const url = `${config.publicServerURL}/apps/test/verify_email?token[toString]=abc`;
+        const response = await request({
+          url: url,
+          followRedirects: false,
+        }).catch(e => e);
+        expect(response.status).not.toBe(500);
+      });
+
+      it('rejects non-string token in requestResetPassword', async () => {
+        await reconfigureServer(config);
+        const url = `${config.publicServerURL}/apps/test/request_password_reset?token[toString]=abc`;
+        const response = await request({
+          url: url,
+          followRedirects: false,
+        }).catch(e => e);
+        expect(response.status).not.toBe(500);
+      });
+
+      it('rejects non-string token in resetPassword via POST', async () => {
+        await reconfigureServer(config);
+        const url = `${config.publicServerURL}/apps/test/request_password_reset`;
+        const response = await request({
+          method: 'POST',
+          url: url,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: { token: { toString: 'abc' }, new_password: 'newpass123' },
+          followRedirects: false,
+        }).catch(e => e);
+        expect(response.status).not.toBe(500);
+      });
+
+      it('rejects non-string token in resendVerificationEmail via POST', async () => {
+        await reconfigureServer(config);
+        const url = `${config.publicServerURL}/apps/test/resend_verification_email`;
+        const response = await request({
+          method: 'POST',
+          url: url,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: { token: { toString: 'abc' } },
+          followRedirects: false,
+        }).catch(e => e);
+        expect(response.status).not.toBe(500);
+      });
     });
 
     describe('custom route', () => {
