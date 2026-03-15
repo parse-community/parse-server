@@ -37,7 +37,14 @@ describe('Security Check Groups', () => {
       config.mountPlayground = false;
       config.readOnlyMasterKey = 'someReadOnlyMasterKey';
       config.readOnlyMasterKeyIps = ['127.0.0.1', '::1'];
-      config.requestComplexity = { queryDepth: 10 };
+      config.requestComplexity = {
+        includeDepth: 5,
+        includeCount: 50,
+        subqueryDepth: 5,
+        queryDepth: 10,
+        graphQLDepth: 50,
+        graphQLFields: 200,
+      };
       await reconfigureServer(config);
 
       const group = new CheckGroupServerConfig();

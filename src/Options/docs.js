@@ -130,12 +130,12 @@
 
 /**
  * @interface RequestComplexityOptions
- * @property {Number} graphQLDepth Maximum depth of GraphQL field selections. Set to `-1` to disable. Default is `50`.
- * @property {Number} graphQLFields Maximum number of field selections in a GraphQL query. Set to `-1` to disable. Default is `200`.
- * @property {Number} includeCount Maximum number of include paths in a single query. Set to `-1` to disable. Default is `50`.
- * @property {Number} includeDepth Maximum depth of include pointer chains (e.g. `a.b.c` = depth 3). Set to `-1` to disable. Default is `5`.
+ * @property {Number} graphQLDepth Maximum depth of GraphQL field selections. Set to `-1` to disable. Default is `-1`.
+ * @property {Number} graphQLFields Maximum number of field selections in a GraphQL query. Set to `-1` to disable. Default is `-1`.
+ * @property {Number} includeCount Maximum number of include paths in a single query. Set to `-1` to disable. Default is `-1`.
+ * @property {Number} includeDepth Maximum depth of include pointer chains (e.g. `a.b.c` = depth 3). Set to `-1` to disable. Default is `-1`.
  * @property {Number} queryDepth Maximum nesting depth of `$or`, `$and`, `$nor` query operators. Set to `-1` to disable. Default is `-1`.
- * @property {Number} subqueryDepth Maximum nesting depth of `$inQuery`, `$notInQuery`, `$select`, `$dontSelect` subqueries. Set to `-1` to disable. Default is `5`.
+ * @property {Number} subqueryDepth Maximum nesting depth of `$inQuery`, `$notInQuery`, `$select`, `$dontSelect` subqueries. Set to `-1` to disable. Default is `-1`.
  */
 
 /**

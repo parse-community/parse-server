@@ -670,27 +670,27 @@ module.exports.RateLimitOptions = {
 module.exports.RequestComplexityOptions = {
   graphQLDepth: {
     env: 'PARSE_SERVER_REQUEST_COMPLEXITY_GRAPHQL_DEPTH',
-    help: 'Maximum depth of GraphQL field selections. Set to `-1` to disable. Default is `50`.',
+    help: 'Maximum depth of GraphQL field selections. Set to `-1` to disable. Default is `-1`.',
     action: parsers.numberParser('graphQLDepth'),
-    default: 50,
+    default: -1,
   },
   graphQLFields: {
     env: 'PARSE_SERVER_REQUEST_COMPLEXITY_GRAPHQL_FIELDS',
-    help: 'Maximum number of field selections in a GraphQL query. Set to `-1` to disable. Default is `200`.',
+    help: 'Maximum number of field selections in a GraphQL query. Set to `-1` to disable. Default is `-1`.',
     action: parsers.numberParser('graphQLFields'),
-    default: 200,
+    default: -1,
   },
   includeCount: {
     env: 'PARSE_SERVER_REQUEST_COMPLEXITY_INCLUDE_COUNT',
-    help: 'Maximum number of include paths in a single query. Set to `-1` to disable. Default is `50`.',
+    help: 'Maximum number of include paths in a single query. Set to `-1` to disable. Default is `-1`.',
     action: parsers.numberParser('includeCount'),
-    default: 50,
+    default: -1,
   },
   includeDepth: {
     env: 'PARSE_SERVER_REQUEST_COMPLEXITY_INCLUDE_DEPTH',
-    help: 'Maximum depth of include pointer chains (e.g. `a.b.c` = depth 3). Set to `-1` to disable. Default is `5`.',
+    help: 'Maximum depth of include pointer chains (e.g. `a.b.c` = depth 3). Set to `-1` to disable. Default is `-1`.',
     action: parsers.numberParser('includeDepth'),
-    default: 5,
+    default: -1,
   },
   queryDepth: {
     env: 'PARSE_SERVER_REQUEST_COMPLEXITY_QUERY_DEPTH',
@@ -700,9 +700,9 @@ module.exports.RequestComplexityOptions = {
   },
   subqueryDepth: {
     env: 'PARSE_SERVER_REQUEST_COMPLEXITY_SUBQUERY_DEPTH',
-    help: 'Maximum nesting depth of `$inQuery`, `$notInQuery`, `$select`, `$dontSelect` subqueries. Set to `-1` to disable. Default is `5`.',
+    help: 'Maximum nesting depth of `$inQuery`, `$notInQuery`, `$select`, `$dontSelect` subqueries. Set to `-1` to disable. Default is `-1`.',
     action: parsers.numberParser('subqueryDepth'),
-    default: 5,
+    default: -1,
   },
 };
 module.exports.SecurityOptions = {

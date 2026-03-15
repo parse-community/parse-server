@@ -425,25 +425,25 @@ export interface RateLimitOptions {
 }
 
 export interface RequestComplexityOptions {
-  /* Maximum depth of include pointer chains (e.g. `a.b.c` = depth 3). Set to `-1` to disable. Default is `5`.
-  :DEFAULT: 5 */
+  /* Maximum depth of include pointer chains (e.g. `a.b.c` = depth 3). Set to `-1` to disable. Default is `-1`.
+  :DEFAULT: -1 */
   includeDepth: ?number;
-  /* Maximum number of include paths in a single query. Set to `-1` to disable. Default is `50`.
-  :DEFAULT: 50 */
+  /* Maximum number of include paths in a single query. Set to `-1` to disable. Default is `-1`.
+  :DEFAULT: -1 */
   includeCount: ?number;
-  /* Maximum nesting depth of `$inQuery`, `$notInQuery`, `$select`, `$dontSelect` subqueries. Set to `-1` to disable. Default is `5`.
-  :DEFAULT: 5 */
+  /* Maximum nesting depth of `$inQuery`, `$notInQuery`, `$select`, `$dontSelect` subqueries. Set to `-1` to disable. Default is `-1`.
+  :DEFAULT: -1 */
   subqueryDepth: ?number;
   /* Maximum nesting depth of `$or`, `$and`, `$nor` query operators. Set to `-1` to disable. Default is `-1`.
   :DEFAULT: -1 */
   queryDepth: ?number;
-  /* Maximum depth of GraphQL field selections. Set to `-1` to disable. Default is `50`.
+  /* Maximum depth of GraphQL field selections. Set to `-1` to disable. Default is `-1`.
   :ENV: PARSE_SERVER_REQUEST_COMPLEXITY_GRAPHQL_DEPTH
-  :DEFAULT: 50 */
+  :DEFAULT: -1 */
   graphQLDepth: ?number;
-  /* Maximum number of field selections in a GraphQL query. Set to `-1` to disable. Default is `200`.
+  /* Maximum number of field selections in a GraphQL query. Set to `-1` to disable. Default is `-1`.
   :ENV: PARSE_SERVER_REQUEST_COMPLEXITY_GRAPHQL_FIELDS
-  :DEFAULT: 200 */
+  :DEFAULT: -1 */
   graphQLFields: ?number;
 }
 
