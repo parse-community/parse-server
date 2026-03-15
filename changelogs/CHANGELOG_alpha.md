@@ -1,3 +1,10 @@
+# [9.6.0-alpha.25](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.24...9.6.0-alpha.25) (2026-03-15)
+
+
+### Bug Fixes
+
+* Validate token type in PagesRouter to prevent type confusion errors ([#10212](https://github.com/parse-community/parse-server/issues/10212)) ([386a989](https://github.com/parse-community/parse-server/commit/386a989bd2d5b9a48e4830a87ecb01f8ef22d903))
+
 # [9.6.0-alpha.24](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.23...9.6.0-alpha.24) (2026-03-15)
 
 
