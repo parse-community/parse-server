@@ -2816,7 +2816,7 @@ describe('(GHSA-fjxm-vhvc-gcmj) LiveQuery Operator Type Confusion', () => {
 
   // Integration test: verify that a LiveQuery subscription with type-confused
   // operators does not crash the server and other subscriptions continue working
-  it('server does not crash and other subscriptions work when type-confused subscription exists', async done => {
+  it('server does not crash and other subscriptions work when type-confused subscription exists', async () => {
     // First subscribe with a malformed query via manual client
     const malClient = new Parse.LiveQueryClient({
       applicationId: 'test',
@@ -2833,16 +2833,20 @@ describe('(GHSA-fjxm-vhvc-gcmj) LiveQuery Operator Type Confusion', () => {
     validQuery.equalTo('name', 'test');
     const validSubscription = await validQuery.subscribe();
 
-    validSubscription.on('create', object => {
-      // The valid subscription should still receive events
-      expect(object.get('name')).toBe('test');
-      malClient.close();
-      done();
-    });
+    try {
+      const createPromise = new Promise(resolve => {
+        validSubscription.on('create', object => {
+          expect(object.get('name')).toBe('test');
+          resolve();
+        });
+      });
 
-    // Trigger an event
-    const obj = new Parse.Object('TestObject');
-    obj.set('name', 'test');
-    await obj.save();
+      const obj = new Parse.Object('TestObject');
+      obj.set('name', 'test');
+      await obj.save();
+      await createPromise;
+    } finally {
+      malClient.close();
+    }
   });
 });
