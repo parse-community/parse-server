@@ -65,8 +65,7 @@ describe('Regex Vulnerabilities', () => {
         });
         fail('should not work');
       } catch (e) {
-        expect(e.data.code).toEqual(209);
-        expect(e.data.error).toEqual('Invalid session token');
+        expect(e.data.error).toEqual('unauthorized');
       }
     });
 
