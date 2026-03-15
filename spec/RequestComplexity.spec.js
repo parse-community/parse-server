@@ -242,6 +242,93 @@ describe('request complexity', () => {
         rest.find(config, auth.nobody(config), '_User', where)
       ).toBeResolved();
     });
+
+    it('should allow multiple sibling $inQuery at same depth within limit', async () => {
+      await reconfigureServer({
+        requestComplexity: { subqueryDepth: 1 },
+      });
+      config = Config.get('test');
+      // Multiple sibling $inQuery operators in $or, each at depth 1 — within the limit
+      const where = {
+        $or: [
+          { username: { $inQuery: { className: '_User', where: { username: 'a' } } } },
+          { username: { $inQuery: { className: '_User', where: { username: 'b' } } } },
+          { username: { $inQuery: { className: '_User', where: { username: 'c' } } } },
+        ],
+      };
+      await expectAsync(
+        rest.find(config, auth.nobody(config), '_User', where)
+      ).toBeResolved();
+    });
+
+    it('should reject sibling $inQuery when nested beyond depth limit', async () => {
+      await reconfigureServer({
+        requestComplexity: { subqueryDepth: 1 },
+      });
+      config = Config.get('test');
+      // Each sibling contains a nested $inQuery at depth 2 — exceeds limit
+      const where = {
+        $or: [
+          {
+            username: {
+              $inQuery: {
+                className: '_User',
+                where: { username: { $inQuery: { className: '_User', where: {} } } },
+              },
+            },
+          },
+          {
+            username: {
+              $inQuery: {
+                className: '_User',
+                where: { username: { $inQuery: { className: '_User', where: {} } } },
+              },
+            },
+          },
+        ],
+      };
+      await expectAsync(
+        rest.find(config, auth.nobody(config), '_User', where)
+      ).toBeRejectedWith(
+        jasmine.objectContaining({
+          message: jasmine.stringMatching(/Subquery nesting depth exceeds maximum allowed depth of 1/),
+        })
+      );
+    });
+
+    it('should allow multiple sibling $notInQuery at same depth within limit', async () => {
+      await reconfigureServer({
+        requestComplexity: { subqueryDepth: 1 },
+      });
+      config = Config.get('test');
+      const where = {
+        $or: [
+          { username: { $notInQuery: { className: '_User', where: { username: 'a' } } } },
+          { username: { $notInQuery: { className: '_User', where: { username: 'b' } } } },
+          { username: { $notInQuery: { className: '_User', where: { username: 'c' } } } },
+        ],
+      };
+      await expectAsync(
+        rest.find(config, auth.nobody(config), '_User', where)
+      ).toBeResolved();
+    });
+
+    it('should allow mixed sibling $inQuery and $notInQuery at same depth within limit', async () => {
+      await reconfigureServer({
+        requestComplexity: { subqueryDepth: 1 },
+      });
+      config = Config.get('test');
+      const where = {
+        $or: [
+          { username: { $inQuery: { className: '_User', where: { username: 'a' } } } },
+          { username: { $notInQuery: { className: '_User', where: { username: 'b' } } } },
+          { username: { $inQuery: { className: '_User', where: { username: 'c' } } } },
+        ],
+      };
+      await expectAsync(
+        rest.find(config, auth.nobody(config), '_User', where)
+      ).toBeResolved();
+    });
   });
 
   describe('query depth', () => {

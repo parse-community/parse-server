@@ -178,4 +178,38 @@ describe('graphql query complexity', () => {
       expect(result.errors).toBeUndefined();
     });
   });
+
+  describe('where argument breadth', () => {
+    it('should enforce depth and field limits regardless of where argument breadth', async () => {
+      await setupGraphQL({
+        requestComplexity: { graphQLDepth: 3, graphQLFields: 200, subqueryDepth: 1 },
+      });
+      // The GraphQL where argument may contain many OR branches, but the
+      // complexity check correctly measures the selection set depth/fields,
+      // not the where variable content. A query exceeding graphQLDepth is
+      // rejected even when the where argument is simple.
+      const result = await graphqlRequest(buildDeepQuery());
+      expect(result.errors).toBeDefined();
+      expect(result.errors[0].message).toMatch(
+        /GraphQL query depth of \d+ exceeds maximum allowed depth of 3/
+      );
+    });
+
+    it('should allow query with wide where argument when selection set is within limits', async () => {
+      await setupGraphQL({
+        requestComplexity: { graphQLDepth: 10, graphQLFields: 200, subqueryDepth: 1 },
+      });
+
+      const obj = new Parse.Object('TestItem');
+      obj.set('name', 'test');
+      await obj.save();
+
+      // Wide where with many OR branches — complexity check measures selection
+      // set depth and field count, not where argument structure
+      const orBranches = Array.from({ length: 20 }, (_, i) => `{ name: { equalTo: "test${i}" } }`).join(', ');
+      const query = `{ testItems(where: { OR: [${orBranches}] }) { edges { node { objectId } } } }`;
+      const result = await graphqlRequest(query);
+      expect(result.errors).toBeUndefined();
+    });
+  });
 });
