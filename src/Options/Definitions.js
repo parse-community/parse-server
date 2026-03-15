@@ -745,6 +745,13 @@ module.exports.RequestComplexityOptions = {
     action: parsers.numberParser('includeDepth'),
     default: 5,
   },
+  queryDepth: {
+    env: 'PARSE_SERVER_REQUEST_COMPLEXITY_QUERY_DEPTH',
+    help:
+      'Maximum nesting depth of `$or`, `$and`, `$nor` query operators. Set to `-1` to disable. Default is `-1`.',
+    action: parsers.numberParser('queryDepth'),
+    default: -1,
+  },
   subqueryDepth: {
     env: 'PARSE_SERVER_REQUEST_COMPLEXITY_SUBQUERY_DEPTH',
     help:

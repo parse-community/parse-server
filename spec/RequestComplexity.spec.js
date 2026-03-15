@@ -37,6 +37,30 @@ describe('request complexity', () => {
     return where;
   }
 
+  function buildNestedOrQuery(depth) {
+    let where = { username: 'test' };
+    for (let i = 0; i < depth; i++) {
+      where = { $or: [where, { username: 'test' }] };
+    }
+    return where;
+  }
+
+  function buildNestedAndQuery(depth) {
+    let where = { username: 'test' };
+    for (let i = 0; i < depth; i++) {
+      where = { $and: [where, { username: 'test' }] };
+    }
+    return where;
+  }
+
+  function buildNestedNorQuery(depth) {
+    let where = { username: 'test' };
+    for (let i = 0; i < depth; i++) {
+      where = { $nor: [where, { username: 'test' }] };
+    }
+    return where;
+  }
+
   describe('config validation', () => {
     it('should accept valid requestComplexity config', async () => {
       await expectAsync(
@@ -45,6 +69,7 @@ describe('request complexity', () => {
             includeDepth: 10,
             includeCount: 100,
             subqueryDepth: 5,
+            queryDepth: 10,
             graphQLDepth: 15,
             graphQLFields: 300,
           },
@@ -59,6 +84,7 @@ describe('request complexity', () => {
             includeDepth: -1,
             includeCount: -1,
             subqueryDepth: -1,
+            queryDepth: -1,
             graphQLDepth: -1,
             graphQLFields: -1,
           },
@@ -112,6 +138,7 @@ describe('request complexity', () => {
       expect(config.requestComplexity.includeDepth).toBe(3);
       expect(config.requestComplexity.includeCount).toBe(50);
       expect(config.requestComplexity.subqueryDepth).toBe(5);
+      expect(config.requestComplexity.queryDepth).toBe(-1);
       expect(config.requestComplexity.graphQLDepth).toBe(50);
       expect(config.requestComplexity.graphQLFields).toBe(200);
     });
@@ -123,6 +150,7 @@ describe('request complexity', () => {
         includeDepth: 5,
         includeCount: 50,
         subqueryDepth: 5,
+        queryDepth: -1,
         graphQLDepth: 50,
         graphQLFields: 200,
       });
@@ -210,6 +238,106 @@ describe('request complexity', () => {
       });
       config = Config.get('test');
       const where = buildNestedInQuery(15);
+      await expectAsync(
+        rest.find(config, auth.nobody(config), '_User', where)
+      ).toBeResolved();
+    });
+  });
+
+  describe('query depth', () => {
+    let config;
+
+    beforeEach(async () => {
+      await reconfigureServer({
+        requestComplexity: { queryDepth: 3 },
+      });
+      config = Config.get('test');
+    });
+
+    it('should allow $or within depth limit', async () => {
+      const where = buildNestedOrQuery(3);
+      await expectAsync(
+        rest.find(config, auth.nobody(config), '_User', where)
+      ).toBeResolved();
+    });
+
+    it('should reject $or exceeding depth limit', async () => {
+      const where = buildNestedOrQuery(4);
+      await expectAsync(
+        rest.find(config, auth.nobody(config), '_User', where)
+      ).toBeRejectedWith(
+        jasmine.objectContaining({
+          message: jasmine.stringMatching(/Query condition nesting depth exceeds maximum allowed depth of 3/),
+        })
+      );
+    });
+
+    it('should reject $and exceeding depth limit', async () => {
+      const where = buildNestedAndQuery(4);
+      await expectAsync(
+        rest.find(config, auth.nobody(config), '_User', where)
+      ).toBeRejectedWith(
+        jasmine.objectContaining({
+          message: jasmine.stringMatching(/Query condition nesting depth exceeds maximum allowed depth of 3/),
+        })
+      );
+    });
+
+    it('should reject $nor exceeding depth limit', async () => {
+      const where = buildNestedNorQuery(4);
+      await expectAsync(
+        rest.find(config, auth.nobody(config), '_User', where)
+      ).toBeRejectedWith(
+        jasmine.objectContaining({
+          message: jasmine.stringMatching(/Query condition nesting depth exceeds maximum allowed depth of 3/),
+        })
+      );
+    });
+
+    it('should reject mixed nested operators exceeding depth limit', async () => {
+      // $or > $and > $nor > $or = depth 4
+      const where = {
+        $or: [
+          {
+            $and: [
+              {
+                $nor: [
+                  { $or: [{ username: 'a' }, { username: 'b' }] },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+      await expectAsync(
+        rest.find(config, auth.nobody(config), '_User', where)
+      ).toBeRejectedWith(
+        jasmine.objectContaining({
+          message: jasmine.stringMatching(/Query condition nesting depth exceeds maximum allowed depth of 3/),
+        })
+      );
+    });
+
+    it('should allow with master key even when exceeding limit', async () => {
+      const where = buildNestedOrQuery(4);
+      await expectAsync(
+        rest.find(config, auth.master(config), '_User', where)
+      ).toBeResolved();
+    });
+
+    it('should allow with maintenance key even when exceeding limit', async () => {
+      const where = buildNestedOrQuery(4);
+      await expectAsync(
+        rest.find(config, auth.maintenance(config), '_User', where)
+      ).toBeResolved();
+    });
+
+    it('should allow unlimited when queryDepth is -1', async () => {
+      await reconfigureServer({
+        requestComplexity: { queryDepth: -1 },
+      });
+      config = Config.get('test');
+      const where = buildNestedOrQuery(15);
       await expectAsync(
         rest.find(config, auth.nobody(config), '_User', where)
       ).toBeResolved();
