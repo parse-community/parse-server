@@ -251,6 +251,71 @@ describe('Vulnerabilities', () => {
     });
   });
 
+  describe('(GHSA-4263-jgmp-7pf4) Cloud function prototype chain dispatch via registered function', () => {
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+
+    beforeEach(() => {
+      Parse.Cloud.define('legitimateFunction', () => 'ok');
+    });
+
+    it('rejects prototype chain traversal from a registered function name', async () => {
+      const response = await request({
+        headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/legitimateFunction.__proto__.__proto__.constructor',
+        body: JSON.stringify({}),
+      }).catch(e => e);
+      expect(response.status).toBe(400);
+      const text = JSON.parse(response.text);
+      expect(text.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(text.error).toContain('Invalid function');
+    });
+
+    it('rejects prototype chain traversal via single __proto__ from a registered function', async () => {
+      const response = await request({
+        headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/legitimateFunction.__proto__.constructor',
+        body: JSON.stringify({}),
+      }).catch(e => e);
+      expect(response.status).toBe(400);
+      const text = JSON.parse(response.text);
+      expect(text.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(text.error).toContain('Invalid function');
+    });
+
+    it('does not crash the server when prototype chain traversal is attempted', async () => {
+      const maliciousNames = [
+        'legitimateFunction.__proto__.__proto__.constructor',
+        'legitimateFunction.__proto__.constructor',
+        'legitimateFunction.constructor',
+        'legitimateFunction.__proto__',
+      ];
+      for (const name of maliciousNames) {
+        const response = await request({
+          headers,
+          method: 'POST',
+          url: `http://localhost:8378/1/functions/${encodeURIComponent(name)}`,
+          body: JSON.stringify({}),
+        }).catch(e => e);
+        expect(response.status).toBe(400);
+      }
+      // Verify server is still responsive after all attempts
+      const healthResponse = await request({
+        headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/legitimateFunction',
+        body: JSON.stringify({}),
+      });
+      expect(healthResponse.status).toBe(200);
+      expect(JSON.parse(healthResponse.text).result).toBe('ok');
+    });
+  });
+
   describe('(GHSA-3v4q-4q9g-x83q) Prototype pollution via application ID in trigger store', () => {
     const prototypeProperties = ['constructor', 'toString', 'valueOf', 'hasOwnProperty', '__proto__'];
 
