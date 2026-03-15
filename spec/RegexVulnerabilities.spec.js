@@ -345,10 +345,10 @@ describe('Regex Vulnerabilities', () => {
   describe('on resend verification email', () => {
     // The PagesRouter uses express.urlencoded({ extended: false }) which does not parse
     // nested objects (e.g. token[$regex]=^.), so the HTTP layer already blocks object injection.
-    // The toString() guard in resendVerificationEmail() is defense-in-depth in case the
-    // body parser configuration changes. These tests verify the guard works correctly
+    // Non-string tokens are rejected (treated as undefined) to prevent both NoSQL injection
+    // and type confusion errors. These tests verify the guard works correctly
     // by directly testing the PagesRouter method.
-    it('should sanitize non-string token to string via toString()', async () => {
+    it('should reject non-string token as undefined', async () => {
       const { PagesRouter } = require('../lib/Routers/PagesRouter');
       const router = new PagesRouter();
       const goToPage = spyOn(router, 'goToPage').and.returnValue(Promise.resolve());
@@ -363,10 +363,9 @@ describe('Regex Vulnerabilities', () => {
         },
       };
       await router.resendVerificationEmail(req);
-      // The token passed to userController.resendVerificationEmail should be a string
+      // Non-string token should be treated as undefined
       const passedToken = resendSpy.calls.first().args[2];
-      expect(typeof passedToken).toEqual('string');
-      expect(passedToken).toEqual('[object Object]');
+      expect(passedToken).toBeUndefined();
     });
 
     it('should pass through valid string token unchanged', async () => {
