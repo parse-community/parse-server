@@ -2769,3 +2769,103 @@ describe('(GHSA-9xp9-j92r-p88v) Stack overflow process crash via deeply nested q
     );
   });
 });
+
+describe('(GHSA-fjxm-vhvc-gcmj) LiveQuery Operator Type Confusion', () => {
+  const matchesQuery = require('../lib/LiveQuery/QueryTools').matchesQuery;
+
+  // Unit tests: matchesQuery receives the raw where clause (not {className, where})
+  // just as _matchesSubscription passes subscription.query (the where clause)
+  describe('matchesQuery with type-confused operators', () => {
+    it('$in with object instead of array throws', () => {
+      const object = { className: 'TestObject', objectId: 'obj1', name: 'abc' };
+      const where = { name: { $in: { x: 1 } } };
+      expect(() => matchesQuery(object, where)).toThrow();
+    });
+
+    it('$nin with object instead of array throws', () => {
+      const object = { className: 'TestObject', objectId: 'obj1', name: 'abc' };
+      const where = { name: { $nin: { x: 1 } } };
+      expect(() => matchesQuery(object, where)).toThrow();
+    });
+
+    it('$containedBy with object instead of array throws', () => {
+      const object = { className: 'TestObject', objectId: 'obj1', name: ['abc'] };
+      const where = { name: { $containedBy: { x: 1 } } };
+      expect(() => matchesQuery(object, where)).toThrow();
+    });
+
+    it('$containedBy with missing field throws', () => {
+      const object = { className: 'TestObject', objectId: 'obj1' };
+      const where = { name: { $containedBy: ['abc', 'xyz'] } };
+      expect(() => matchesQuery(object, where)).toThrow();
+    });
+
+    it('$all with object field value throws', () => {
+      const object = { className: 'TestObject', objectId: 'obj1', name: { x: 1 } };
+      const where = { name: { $all: ['abc'] } };
+      expect(() => matchesQuery(object, where)).toThrow();
+    });
+
+    it('$in with valid array does not throw', () => {
+      const object = { className: 'TestObject', objectId: 'obj1', name: 'abc' };
+      const where = { name: { $in: ['abc', 'xyz'] } };
+      expect(() => matchesQuery(object, where)).not.toThrow();
+      expect(matchesQuery(object, where)).toBe(true);
+    });
+  });
+
+  // Integration test: verify that a LiveQuery subscription with type-confused
+  // operators does not crash the server and other subscriptions continue working
+  describe('LiveQuery integration', () => {
+    beforeEach(async () => {
+      Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+      await reconfigureServer({
+        liveQuery: { classNames: ['TestObject'] },
+        startLiveQueryServer: true,
+        verbose: false,
+        silent: true,
+      });
+    });
+
+    afterEach(async () => {
+      const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+      if (client) {
+        await client.close();
+      }
+    });
+
+    it('server does not crash and other subscriptions work when type-confused subscription exists', async () => {
+      // First subscribe with a malformed query via manual client
+      const malClient = new Parse.LiveQueryClient({
+        applicationId: 'test',
+        serverURL: 'ws://localhost:1337',
+        javascriptKey: 'test',
+      });
+      malClient.open();
+      const malformedQuery = new Parse.Query('TestObject');
+      malformedQuery._where = { name: { $in: { x: 1 } } };
+      await malClient.subscribe(malformedQuery);
+
+      // Then subscribe with a valid query using the default client
+      const validQuery = new Parse.Query('TestObject');
+      validQuery.equalTo('name', 'test');
+      const validSubscription = await validQuery.subscribe();
+
+      try {
+        const createPromise = new Promise(resolve => {
+          validSubscription.on('create', object => {
+            expect(object.get('name')).toBe('test');
+            resolve();
+          });
+        });
+
+        const obj = new Parse.Object('TestObject');
+        obj.set('name', 'test');
+        await obj.save();
+        await createPromise;
+      } finally {
+        malClient.close();
+      }
+    });
+  });
+});
