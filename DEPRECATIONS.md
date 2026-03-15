@@ -21,6 +21,7 @@ The following is a list of deprecations, according to the [Deprecation Policy](h
 | DEPPS15 | Config option `readOnlyMasterKeyIps` defaults to `['127.0.0.1', '::1']`                      | [#10115](https://github.com/parse-community/parse-server/pull/10115)   | 9.5.0 (2026)                    | 10.0.0 (2027)                   | deprecated            | -     |
 | DEPPS16 | Remove config option `mountPlayground`                                                       | [#10110](https://github.com/parse-community/parse-server/issues/10110) | 9.5.0 (2026)                    | 10.0.0 (2027)                   | deprecated            | -     |
 | DEPPS17 | Remove config option `playgroundPath`                                                        | [#10110](https://github.com/parse-community/parse-server/issues/10110) | 9.5.0 (2026)                    | 10.0.0 (2027)                   | deprecated            | -     |
+| DEPPS18 | Config option `requestComplexity` limits enabled by default                                  | [#10207](https://github.com/parse-community/parse-server/pull/10207)   | 9.6.0 (2026)                    | 10.0.0 (2027)                   | deprecated            | -     |
 
 [i_deprecation]: ## "The version and date of the deprecation."
 [i_change]: ## "The version and date of the planned change."

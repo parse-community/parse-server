@@ -149,4 +149,55 @@ describe('Deprecator', () => {
       })
     );
   });
+
+  it('logs deprecation for requestComplexity limits when not set', async () => {
+    const logSpy = spyOn(Deprecator, '_logOption').and.callFake(() => {});
+
+    await reconfigureServer();
+    const keys = [
+      'requestComplexity.includeDepth',
+      'requestComplexity.includeCount',
+      'requestComplexity.subqueryDepth',
+      'requestComplexity.queryDepth',
+      'requestComplexity.graphQLDepth',
+      'requestComplexity.graphQLFields',
+    ];
+    for (const key of keys) {
+      expect(logSpy).toHaveBeenCalledWith(
+        jasmine.objectContaining({
+          optionKey: key,
+        })
+      );
+    }
+  });
+
+  it('does not log deprecation for requestComplexity limits when explicitly set', async () => {
+    const logSpy = spyOn(Deprecator, '_logOption').and.callFake(() => {});
+
+    await reconfigureServer({
+      requestComplexity: {
+        includeDepth: 10,
+        includeCount: 100,
+        subqueryDepth: 10,
+        queryDepth: 10,
+        graphQLDepth: 20,
+        graphQLFields: 200,
+      },
+    });
+    const keys = [
+      'requestComplexity.includeDepth',
+      'requestComplexity.includeCount',
+      'requestComplexity.subqueryDepth',
+      'requestComplexity.queryDepth',
+      'requestComplexity.graphQLDepth',
+      'requestComplexity.graphQLFields',
+    ];
+    for (const key of keys) {
+      expect(logSpy).not.toHaveBeenCalledWith(
+        jasmine.objectContaining({
+          optionKey: key,
+        })
+      );
+    }
+  });
 });
