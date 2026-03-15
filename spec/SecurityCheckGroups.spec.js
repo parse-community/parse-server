@@ -34,6 +34,7 @@ describe('Security Check Groups', () => {
       config.allowClientClassCreation = false;
       config.enableInsecureAuthAdapters = false;
       config.graphQLPublicIntrospection = false;
+      config.requestComplexity = { queryDepth: 10 };
       await reconfigureServer(config);
 
       const group = new CheckGroupServerConfig();
@@ -57,6 +58,7 @@ describe('Security Check Groups', () => {
         includeDepth: -1,
         includeCount: -1,
         subqueryDepth: -1,
+        queryDepth: -1,
         graphQLDepth: -1,
         graphQLFields: -1,
       };
