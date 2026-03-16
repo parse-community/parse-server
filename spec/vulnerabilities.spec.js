@@ -2933,4 +2933,86 @@ describe('(GHSA-fjxm-vhvc-gcmj) LiveQuery Operator Type Confusion', () => {
       }
     });
   });
+
+  describe('(GHSA-r3xq-68wh-gwvh) Password reset single-use token bypass via concurrent requests', () => {
+    let sendPasswordResetEmail;
+
+    beforeAll(async () => {
+      sendPasswordResetEmail = jasmine.createSpy('sendPasswordResetEmail');
+      await reconfigureServer({
+        appName: 'test',
+        publicServerURL: 'http://localhost:8378/1',
+        emailAdapter: {
+          sendVerificationEmail: () => Promise.resolve(),
+          sendPasswordResetEmail,
+          sendMail: () => {},
+        },
+      });
+    });
+
+    it('rejects concurrent password resets using the same token', async () => {
+      const user = new Parse.User();
+      user.setUsername('resetuser');
+      user.setPassword('originalPass1!');
+      user.setEmail('resetuser@example.com');
+      await user.signUp();
+
+      await Parse.User.requestPasswordReset('resetuser@example.com');
+
+      // Get the perishable token directly from the database
+      const config = Config.get('test');
+      const results = await config.database.adapter.find(
+        '_User',
+        { fields: {} },
+        { username: 'resetuser' },
+        { limit: 1 }
+      );
+      const token = results[0]._perishable_token;
+      expect(token).toBeDefined();
+
+      // Send two concurrent password reset requests with different passwords
+      const resetRequest = password =>
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/apps/test/request_password_reset',
+          body: `new_password=${encodeURIComponent(password)}&token=${encodeURIComponent(token)}`,
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          followRedirects: false,
+        });
+
+      const [resultA, resultB] = await Promise.allSettled([
+        resetRequest('PasswordA1!'),
+        resetRequest('PasswordB1!'),
+      ]);
+
+      // Exactly one request should succeed and one should fail
+      const succeeded = [resultA, resultB].filter(r => r.status === 'fulfilled');
+      const failed = [resultA, resultB].filter(r => r.status === 'rejected');
+      expect(succeeded.length).toBe(1);
+      expect(failed.length).toBe(1);
+
+      // The failed request should indicate invalid token
+      expect(failed[0].reason.text).toContain(
+        'Failed to reset password: username / email / token is invalid'
+      );
+
+      // The token should be consumed
+      const afterResults = await config.database.adapter.find(
+        '_User',
+        { fields: {} },
+        { username: 'resetuser' },
+        { limit: 1 }
+      );
+      expect(afterResults[0]._perishable_token).toBeUndefined();
+
+      // Verify login works with the winning password
+      const winningPassword =
+        succeeded[0] === resultA ? 'PasswordA1!' : 'PasswordB1!';
+      const loggedIn = await Parse.User.logIn('resetuser', winningPassword);
+      expect(loggedIn.getUsername()).toBe('resetuser');
+    });
+  });
 });
