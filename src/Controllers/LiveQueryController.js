@@ -9,7 +9,7 @@ export class LiveQueryController {
     // If config is empty, we just assume no classs needs to be registered as LiveQuery
     if (!config || !config.classNames) {
       this.classNames = new Set();
-    } else if (config.classNames instanceof Array) {
+    } else if (Array.isArray(config.classNames)) {
       const classNames = config.classNames.map(name => {
         const _name = getClassName(name);
         return new RegExp(`^${_name}$`);

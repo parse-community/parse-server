@@ -132,7 +132,7 @@ const validateQuery = (
   }
 
   if (query.$or) {
-    if (query.$or instanceof Array) {
+    if (Array.isArray(query.$or)) {
       query.$or.forEach(value => validateQuery(value, isMaster, isMaintenance, update, options, _depth + 1));
     } else {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $or format - use an array value.');
@@ -140,7 +140,7 @@ const validateQuery = (
   }
 
   if (query.$and) {
-    if (query.$and instanceof Array) {
+    if (Array.isArray(query.$and)) {
       query.$and.forEach(value => validateQuery(value, isMaster, isMaintenance, update, options, _depth + 1));
     } else {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $and format - use an array value.');
@@ -148,7 +148,7 @@ const validateQuery = (
   }
 
   if (query.$nor) {
-    if (query.$nor instanceof Array && query.$nor.length > 0) {
+    if (Array.isArray(query.$nor) && query.$nor.length > 0) {
       query.$nor.forEach(value => validateQuery(value, isMaster, isMaintenance, update, options, _depth + 1));
     } else {
       throw new Parse.Error(
@@ -323,19 +323,19 @@ const flattenUpdateOperatorsForCreate = object => {
           object[key] = object[key].amount;
           break;
         case 'Add':
-          if (!(object[key].objects instanceof Array)) {
+          if (!Array.isArray(object[key].objects)) {
             throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
           }
           object[key] = object[key].objects;
           break;
         case 'AddUnique':
-          if (!(object[key].objects instanceof Array)) {
+          if (!Array.isArray(object[key].objects)) {
             throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
           }
           object[key] = object[key].objects;
           break;
         case 'Remove':
-          if (!(object[key].objects instanceof Array)) {
+          if (!Array.isArray(object[key].objects)) {
             throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
           }
           object[key] = [];

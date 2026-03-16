@@ -347,7 +347,7 @@ export class Config {
     }
     if (pages.customRoutes === undefined) {
       pages.customRoutes = PagesOptions.customRoutes.default;
-    } else if (!(pages.customRoutes instanceof Array)) {
+    } else if (!Array.isArray(pages.customRoutes)) {
       throw 'Parse Server option pages.customRoutes must be an array.';
     }
     if (pages.encodePageParamHeaders === undefined) {
@@ -370,7 +370,7 @@ export class Config {
     }
     if (!idempotencyOptions.paths) {
       idempotencyOptions.paths = IdempotencyOptions.paths.default;
-    } else if (!(idempotencyOptions.paths instanceof Array)) {
+    } else if (!Array.isArray(idempotencyOptions.paths)) {
       throw 'idempotency paths must be of an array of strings';
     }
   }
@@ -537,7 +537,7 @@ export class Config {
 
   static validateFileUploadOptions(fileUpload) {
     try {
-      if (fileUpload == null || typeof fileUpload !== 'object' || fileUpload instanceof Array) {
+      if (fileUpload == null || typeof fileUpload !== 'object' || Array.isArray(fileUpload)) {
         throw 'fileUpload must be an object value.';
       }
     } catch (e) {

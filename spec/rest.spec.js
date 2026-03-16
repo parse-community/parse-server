@@ -278,7 +278,7 @@ describe('rest create', () => {
       .then(results => {
         expect(results.length).toEqual(1);
         const mob = results[0];
-        expect(mob.array instanceof Array).toBe(true);
+        expect(Array.isArray(mob.array)).toBe(true);
         expect(typeof mob.object).toBe('object');
         expect(mob.date.__type).toBe('Date');
         expect(new Date(mob.date.iso).getTime()).toBe(now.getTime());

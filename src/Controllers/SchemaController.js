@@ -1579,7 +1579,7 @@ function getType(obj: any): ?(SchemaField | string) {
 // also gets the appropriate type for $ operators.
 // Returns null if the type is unknown.
 function getObjectType(obj): ?(SchemaField | string) {
-  if (obj instanceof Array) {
+  if (Array.isArray(obj)) {
     return 'Array';
   }
   if (obj.__type) {

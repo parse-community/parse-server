@@ -76,6 +76,10 @@ module.exports = [
           selector: "BinaryExpression[operator='instanceof'][right.name='Buffer']",
           message: "Use Buffer.isBuffer() instead of instanceof Buffer (cross-realm safe).",
         },
+        {
+          selector: "BinaryExpression[operator='instanceof'][right.name='Array']",
+          message: "Use Array.isArray() instead of instanceof Array (cross-realm safe).",
+        },
       ]
     },
   },
