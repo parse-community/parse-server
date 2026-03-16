@@ -333,6 +333,7 @@ describe('Utils', () => {
     });
     it('should return true for a cross-realm Map', () => {
       const crossRealmMap = vm.runInNewContext('new Map()');
+      // eslint-disable-next-line no-restricted-syntax -- intentional: proving instanceof fails cross-realm
       expect(crossRealmMap instanceof Map).toBe(false);
       expect(Utils.isMap(crossRealmMap)).toBe(true);
     });

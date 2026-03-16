@@ -498,7 +498,7 @@ class Utils {
   static getCircularReplacer() {
     const seen = new WeakSet();
     return (key, value) => {
-      if (value instanceof Map) {
+      if (Utils.isMap(value)) {
         return Object.fromEntries(value);
       }
       if (value instanceof Set) {
