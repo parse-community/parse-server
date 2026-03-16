@@ -3010,6 +3010,56 @@ describe('(GHSA-fjxm-vhvc-gcmj) LiveQuery Operator Type Confusion', () => {
     });
   });
 
+  describe('authData dot-notation injection and login crash', () => {
+    it('rejects dotted update key that targets authData sub-field', async () => {
+      const user = new Parse.User();
+      user.setUsername('dotuser');
+      user.setPassword('pass1234');
+      await user.signUp();
+
+      const res = await request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/users/${user.id}`,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': user.getSessionToken(),
+        },
+        body: JSON.stringify({ 'authData.anonymous".id': 'injected' }),
+      }).catch(e => e);
+      expect(res.status).toBe(400);
+    });
+
+    it('login does not crash when stored authData has unknown provider', async () => {
+      const user = new Parse.User();
+      user.setUsername('dotuser2');
+      user.setPassword('pass1234');
+      await user.signUp();
+      await Parse.User.logOut();
+
+      // Inject unknown provider directly in database to simulate corrupted data
+      const config = Config.get('test');
+      await config.database.update(
+        '_User',
+        { objectId: user.id },
+        { authData: { unknown_provider: { id: 'bad' } } }
+      );
+
+      // Login should not crash with 500
+      const login = await request({
+        method: 'GET',
+        url: `http://localhost:8378/1/login?username=dotuser2&password=pass1234`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+      }).catch(e => e);
+      expect(login.status).toBe(200);
+      expect(login.data.sessionToken).toBeDefined();
+    });
+  });
+
   describe('(GHSA-r3xq-68wh-gwvh) Password reset single-use token bypass via concurrent requests', () => {
     let sendPasswordResetEmail;
 
