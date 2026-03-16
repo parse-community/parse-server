@@ -468,13 +468,10 @@ RestWrite.prototype.validateAuthData = function () {
     }
   }
 
-  if (
-    !hasAuthData ||
-    !Object.prototype.hasOwnProperty.call(this.data, 'authData')
-  ) {
+  if (!Object.prototype.hasOwnProperty.call(this.data, 'authData')) {
     // Nothing to validate here
     return;
-  } else if (Object.prototype.hasOwnProperty.call(this.data, 'authData') && !this.data.authData) {
+  } else if (!this.data.authData) {
     // Handle saving authData to null
     throw new Parse.Error(
       Parse.Error.UNSUPPORTED_SERVICE,
@@ -483,14 +480,16 @@ RestWrite.prototype.validateAuthData = function () {
   }
 
   var providers = Object.keys(authData);
-  if (providers.length > 0) {
-    const canHandleAuthData = providers.some(provider => {
-      const providerAuthData = authData[provider] || {};
-      return !!Object.keys(providerAuthData).length;
-    });
-    if (canHandleAuthData || hasUsernameAndPassword || this.auth.isMaster || this.getUserId()) {
-      return this.handleAuthData(authData);
-    }
+  if (!providers.length) {
+    // Empty authData object, nothing to validate
+    return;
+  }
+  const canHandleAuthData = providers.some(provider => {
+    const providerAuthData = authData[provider] || {};
+    return !!Object.keys(providerAuthData).length;
+  });
+  if (canHandleAuthData || hasUsernameAndPassword || this.auth.isMaster || this.getUserId()) {
+    return this.handleAuthData(authData);
   }
   throw new Parse.Error(
     Parse.Error.UNSUPPORTED_SERVICE,

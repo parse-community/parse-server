@@ -2935,66 +2935,56 @@ describe('(GHSA-fjxm-vhvc-gcmj) LiveQuery Operator Type Confusion', () => {
   });
 
   describe('(GHSA-wjqw-r9x4-j59v) Empty authData session issuance bypass', () => {
+    const signupHeaders = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+
     it('rejects signup with empty authData and no credentials', async () => {
       await reconfigureServer({ enableAnonymousUsers: false });
-      await expectAsync(
-        request({
-          method: 'POST',
-          url: 'http://localhost:8378/1/users',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Parse-Application-Id': 'test',
-            'X-Parse-REST-API-Key': 'rest',
-          },
-          body: JSON.stringify({ authData: {} }),
-        })
-      ).toBeRejected();
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        headers: signupHeaders,
+        body: JSON.stringify({ authData: {} }),
+      }).catch(e => e);
+      expect(res.status).toBe(400);
+      expect(res.data.code).toBe(Parse.Error.USERNAME_MISSING);
     });
 
     it('rejects signup with empty authData and no credentials when anonymous users enabled', async () => {
       await reconfigureServer({ enableAnonymousUsers: true });
-      await expectAsync(
-        request({
-          method: 'POST',
-          url: 'http://localhost:8378/1/users',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Parse-Application-Id': 'test',
-            'X-Parse-REST-API-Key': 'rest',
-          },
-          body: JSON.stringify({ authData: {} }),
-        })
-      ).toBeRejected();
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        headers: signupHeaders,
+        body: JSON.stringify({ authData: {} }),
+      }).catch(e => e);
+      expect(res.status).toBe(400);
+      expect(res.data.code).toBe(Parse.Error.USERNAME_MISSING);
     });
 
     it('rejects signup with authData containing only empty provider data and no credentials', async () => {
-      await expectAsync(
-        request({
-          method: 'POST',
-          url: 'http://localhost:8378/1/users',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Parse-Application-Id': 'test',
-            'X-Parse-REST-API-Key': 'rest',
-          },
-          body: JSON.stringify({ authData: { bogus: {} } }),
-        })
-      ).toBeRejected();
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        headers: signupHeaders,
+        body: JSON.stringify({ authData: { bogus: {} } }),
+      }).catch(e => e);
+      expect(res.status).toBe(400);
+      expect(res.data.code).toBe(Parse.Error.USERNAME_MISSING);
     });
 
     it('rejects signup with authData containing null provider data and no credentials', async () => {
-      await expectAsync(
-        request({
-          method: 'POST',
-          url: 'http://localhost:8378/1/users',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Parse-Application-Id': 'test',
-            'X-Parse-REST-API-Key': 'rest',
-          },
-          body: JSON.stringify({ authData: { bogus: null } }),
-        })
-      ).toBeRejected();
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        headers: signupHeaders,
+        body: JSON.stringify({ authData: { bogus: null } }),
+      }).catch(e => e);
+      expect(res.status).toBe(400);
+      expect(res.data.code).toBe(Parse.Error.USERNAME_MISSING);
     });
 
     it('allows signup with empty authData when username and password are provided', async () => {
