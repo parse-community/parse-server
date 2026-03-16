@@ -120,7 +120,7 @@ export async function handleParseHeaders(req, res, next) {
 
   if (!info.appId || !AppCache.get(info.appId)) {
     // See if we can find the app id on the body.
-    if (req.body instanceof Buffer) {
+    if (Buffer.isBuffer(req.body)) {
       // The only chance to find the app id is if this is a file
       // upload that actually is a JSON body. So try to parse it.
       // https://github.com/parse-community/parse-server/issues/6589
