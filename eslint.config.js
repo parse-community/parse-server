@@ -68,6 +68,10 @@ module.exports = [
           selector: "BinaryExpression[operator='instanceof'][right.name='Object']",
           message: "Use Utils.isObject() instead of instanceof Object (cross-realm safe).",
         },
+        {
+          selector: "BinaryExpression[operator='instanceof'][right.name='Set']",
+          message: "Use Utils.isSet() instead of instanceof Set (cross-realm safe).",
+        },
       ]
     },
   },

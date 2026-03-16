@@ -505,7 +505,7 @@ class Utils {
       if (Utils.isMap(value)) {
         return Object.fromEntries(value);
       }
-      if (value instanceof Set) {
+      if (Utils.isSet(value)) {
         return Array.from(value);
       }
       if (typeof value === 'object' && value !== null) {

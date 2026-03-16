@@ -351,6 +351,7 @@ describe('Utils', () => {
     });
     it('should return true for a cross-realm Set', () => {
       const crossRealmSet = vm.runInNewContext('new Set()');
+      // eslint-disable-next-line no-restricted-syntax -- intentional: proving instanceof fails cross-realm
       expect(crossRealmSet instanceof Set).toBe(false);
       expect(Utils.isSet(crossRealmSet)).toBe(true);
     });
