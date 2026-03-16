@@ -187,17 +187,15 @@ const transformInteriorValue = restValue => {
   }
   // Handle atomic values
   var value = transformInteriorAtom(restValue);
-  if (value !== CannotTransform) {
-    if (value && typeof value === 'object') {
-      if (value instanceof Date) {
-        return value;
-      }
-      if (value instanceof Array) {
-        value = value.map(transformInteriorValue);
-      } else {
-        value = mapValues(value, transformInteriorValue);
-      }
-    }
+
+  // If cannot transform, return it
+  // transformInteriorAtom doesn't return CannotTransform, just in case
+  if (value === CannotTransform) {
+    return value;
+  }
+
+  // If the value was mutated (thus transformed), return it
+  if (value !== restValue) {
     return value;
   }
 
