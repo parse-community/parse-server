@@ -452,8 +452,14 @@ RestWrite.prototype.validateAuthData = function () {
   const authData = this.data.authData;
   const hasUsernameAndPassword =
     typeof this.data.username === 'string' && typeof this.data.password === 'string';
+  const hasAuthData =
+    authData &&
+    Object.keys(authData).some(provider => {
+      const providerData = authData[provider];
+      return providerData && typeof providerData === 'object' && Object.keys(providerData).length;
+    });
 
-  if (!this.query && !authData) {
+  if (!this.query && !hasAuthData) {
     if (typeof this.data.username !== 'string' || _.isEmpty(this.data.username)) {
       throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'bad or missing username');
     }
@@ -463,7 +469,7 @@ RestWrite.prototype.validateAuthData = function () {
   }
 
   if (
-    (authData && !Object.keys(authData).length) ||
+    !hasAuthData ||
     !Object.prototype.hasOwnProperty.call(this.data, 'authData')
   ) {
     // Nothing to validate here

@@ -2934,6 +2934,85 @@ describe('(GHSA-fjxm-vhvc-gcmj) LiveQuery Operator Type Confusion', () => {
     });
   });
 
+  describe('(GHSA-wjqw-r9x4-j59v) Empty authData session issuance bypass', () => {
+    it('rejects signup with empty authData and no credentials', async () => {
+      await reconfigureServer({ enableAnonymousUsers: false });
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/users',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          body: JSON.stringify({ authData: {} }),
+        })
+      ).toBeRejected();
+    });
+
+    it('rejects signup with empty authData and no credentials when anonymous users enabled', async () => {
+      await reconfigureServer({ enableAnonymousUsers: true });
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/users',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          body: JSON.stringify({ authData: {} }),
+        })
+      ).toBeRejected();
+    });
+
+    it('rejects signup with authData containing only empty provider data and no credentials', async () => {
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/users',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          body: JSON.stringify({ authData: { bogus: {} } }),
+        })
+      ).toBeRejected();
+    });
+
+    it('rejects signup with authData containing null provider data and no credentials', async () => {
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/users',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          body: JSON.stringify({ authData: { bogus: null } }),
+        })
+      ).toBeRejected();
+    });
+
+    it('allows signup with empty authData when username and password are provided', async () => {
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        body: JSON.stringify({ username: 'emptyauth', password: 'pass1234', authData: {} }),
+      });
+      expect(res.data.objectId).toBeDefined();
+      expect(res.data.sessionToken).toBeDefined();
+    });
+  });
+
   describe('(GHSA-r3xq-68wh-gwvh) Password reset single-use token bypass via concurrent requests', () => {
     let sendPasswordResetEmail;
 
