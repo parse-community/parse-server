@@ -6,6 +6,7 @@
 
 const path = require('path');
 const fs = require('fs').promises;
+const { types } = require('util');
 
 /**
  * The general purpose utilities.
@@ -120,12 +121,71 @@ class Utils {
   }
 
   /**
-   * Determines whether an object is a Promise.
-   * @param {any} object The object to validate.
-   * @returns {Boolean} Returns true if the object is a promise.
+   * Realm-safe check for Date.
+   * @param {any} value The value to check.
+   * @returns {Boolean} Returns true if the value is a Date.
    */
-  static isPromise(object) {
-    return object instanceof Promise;
+  static isDate(value) {
+    return types.isDate(value);
+  }
+
+  /**
+   * Realm-safe check for RegExp.
+   * @param {any} value The value to check.
+   * @returns {Boolean} Returns true if the value is a RegExp.
+   */
+  static isRegExp(value) {
+    return types.isRegExp(value);
+  }
+
+  /**
+   * Realm-safe check for Map.
+   * @param {any} value The value to check.
+   * @returns {Boolean} Returns true if the value is a Map.
+   */
+  static isMap(value) {
+    return types.isMap(value);
+  }
+
+  /**
+   * Realm-safe check for Set.
+   * @param {any} value The value to check.
+   * @returns {Boolean} Returns true if the value is a Set.
+   */
+  static isSet(value) {
+    return types.isSet(value);
+  }
+
+  /**
+   * Realm-safe check for native Error.
+   * @param {any} value The value to check.
+   * @returns {Boolean} Returns true if the value is a native Error.
+   */
+  static isNativeError(value) {
+    return types.isNativeError(value);
+  }
+
+  /**
+   * Realm-safe check for Promise (duck-typed as thenable).
+   * Guards against Object.prototype pollution by ensuring `then` is not
+   * inherited solely from Object.prototype.
+   * @param {any} value The value to check.
+   * @returns {Boolean} Returns true if the value is a Promise or thenable.
+   */
+  static isPromise(value) {
+    if (value == null || typeof value.then !== 'function') {
+      return false;
+    }
+    return Object.getPrototypeOf(value) !== Object.prototype || Object.prototype.hasOwnProperty.call(value, 'then');
+  }
+
+  /**
+   * Realm-safe check for object (non-null, typeof object).
+   * @param {any} value The value to check.
+   * @returns {Boolean} Returns true if the value is a non-null object.
+   */
+  static isObject(value) {
+    return typeof value === 'object' && value !== null;
   }
 
   /**
