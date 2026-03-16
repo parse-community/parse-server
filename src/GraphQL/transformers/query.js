@@ -200,7 +200,7 @@ const transformQueryConstraintInputToParse = (
         }
         break;
       case 'polygon':
-        if (fieldValue instanceof Array) {
+        if (Array.isArray(fieldValue)) {
           fieldValue.forEach(geoPoint => {
             if (typeof geoPoint === 'object' && !geoPoint.__type) {
               geoPoint.__type = 'GeoPoint';

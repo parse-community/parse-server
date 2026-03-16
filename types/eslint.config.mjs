@@ -19,6 +19,13 @@ export default tseslint.config({
     '@typescript-eslint/no-unsafe-call': 'off',
     "@typescript-eslint/no-explicit-any": "off",
     "@typescript-eslint/no-unsafe-return": "off",
+    'no-restricted-syntax': [
+      'error',
+      {
+        selector: "BinaryExpression[operator='instanceof'][right.name='Array']",
+        message: 'Use Array.isArray() instead of instanceof Array (cross-realm safe).',
+      },
+    ],
   },
   languageOptions: {
     parser: tseslint.parser,

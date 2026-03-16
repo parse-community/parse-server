@@ -1,6 +1,7 @@
 const Config = require('../lib/Config');
 const DatabaseController = require('../lib/Controllers/DatabaseController.js');
 const validateQuery = DatabaseController._validateQuery;
+const vm = require('vm');
 
 describe('DatabaseController', function () {
   describe('validateQuery', function () {
@@ -53,6 +54,33 @@ describe('DatabaseController', function () {
 
     it('should accept valid queries', done => {
       expect(() => validateQuery({ $or: [{ a: 1 }, { b: 2 }] })).not.toThrow();
+      done();
+    });
+
+    it('should accept cross-realm arrays for $or', done => {
+      const query = {
+        $or: vm.runInNewContext('[{ a: 1 }, { b: 2 }]'),
+      };
+      expect(Array.isArray(query.$or)).toBe(true);
+      expect(() => validateQuery(query)).not.toThrow();
+      done();
+    });
+
+    it('should accept cross-realm arrays for $and', done => {
+      const query = {
+        $and: vm.runInNewContext('[{ a: 1 }, { b: 2 }]'),
+      };
+      expect(Array.isArray(query.$and)).toBe(true);
+      expect(() => validateQuery(query)).not.toThrow();
+      done();
+    });
+
+    it('should accept cross-realm arrays for $nor', done => {
+      const query = {
+        $nor: vm.runInNewContext('[{ a: 1 }]'),
+      };
+      expect(Array.isArray(query.$nor)).toBe(true);
+      expect(() => validateQuery(query)).not.toThrow();
       done();
     });
   });

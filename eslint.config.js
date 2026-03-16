@@ -41,6 +41,13 @@ module.exports = [
       curly: ["error", "all"],
       "block-spacing": ["error", "always"],
       "no-unused-vars": "off",
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "BinaryExpression[operator='instanceof'][right.name='Array']",
+          message: "Use Array.isArray() instead of instanceof Array (cross-realm safe).",
+        },
+      ],
       "no-console": "warn"
     },
   },

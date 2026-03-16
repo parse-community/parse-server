@@ -243,7 +243,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       .then(results => {
         expect(results.length).toEqual(1);
         const mob = results[0];
-        expect(mob.array instanceof Array).toBe(true);
+        expect(Array.isArray(mob.array)).toBe(true);
         expect(typeof mob.object).toBe('object');
         expect(mob.date instanceof Date).toBe(true);
         return adapter.find('MyClass', schema, {}, {});
@@ -251,7 +251,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       .then(results => {
         expect(results.length).toEqual(1);
         const mob = results[0];
-        expect(mob.array instanceof Array).toBe(true);
+        expect(Array.isArray(mob.array)).toBe(true);
         expect(typeof mob.object).toBe('object');
         expect(mob.date.__type).toBe('Date');
         expect(mob.date.iso).toBe('2016-05-26T20:55:01.154Z');
@@ -376,7 +376,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       })
       .then(results => {
         const mob = results;
-        expect(mob.array instanceof Array).toBe(true);
+        expect(Array.isArray(mob.array)).toBe(true);
         expect(typeof mob.object).toBe('object');
         expect(mob.date.__type).toBe('Date');
         expect(mob.date.iso).toBe('2016-05-26T20:55:01.154Z');
@@ -385,7 +385,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       .then(results => {
         expect(results.length).toEqual(1);
         const mob = results[0];
-        expect(mob.array instanceof Array).toBe(true);
+        expect(Array.isArray(mob.array)).toBe(true);
         expect(typeof mob.object).toBe('object');
         expect(mob.date instanceof Date).toBe(true);
         done();
