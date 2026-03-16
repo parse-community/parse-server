@@ -526,7 +526,7 @@ const checkIfUserHasProvidedConfiguredProvidersForLogin = (
   const savedUserProviders = Object.keys(userAuthData)
     .map(provider => {
       const validator = config.authDataManager.getValidatorForProvider(provider);
-      if (!validator) {
+      if (!validator || !validator.adapter) {
         return null;
       }
       return { name: provider, adapter: validator.adapter };

@@ -3075,6 +3075,7 @@ describe('(GHSA-fjxm-vhvc-gcmj) LiveQuery Operator Type Confusion', () => {
           challengeData: { anonymous: { token: '123456' } },
         }),
       }).catch(e => e);
+      expect(res.status).toBeGreaterThanOrEqual(400);
       expect(res.status).toBeLessThan(500);
     });
 
@@ -3092,6 +3093,7 @@ describe('(GHSA-fjxm-vhvc-gcmj) LiveQuery Operator Type Confusion', () => {
           challengeData: { anonymous: { token: '123456' } },
         }),
       }).catch(e => e);
+      expect(res.status).toBeGreaterThanOrEqual(400);
       expect(res.status).toBeLessThan(500);
     });
   });
