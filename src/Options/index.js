@@ -141,6 +141,19 @@ export interface ParseServerOptions {
   convertUsernameToLowercase: ?boolean;
   /* Full path to your cloud code main.js */
   cloud: ?string;
+  /* Shell command to spawn an external cloud code process (ParseCloud/1.0 protocol) */
+  cloudCodeCommand: ?string;
+  /* Key for authenticating external cloud code process requests. Required when cloudCodeCommand is set. */
+  webhookKey: ?string;
+  /* Options for the external cloud code process adapter */
+  cloudCodeOptions: ?{
+    startupTimeout: ?number,
+    healthCheckInterval: ?number,
+    shutdownTimeout: ?number,
+    maxRestartDelay: ?number,
+  };
+  /* Array of CloudCodeAdapter instances for BYO cloud code integration */
+  cloudCodeAdapters: ?Array<Object>;
   /* A collection prefix for the classes
   :DEFAULT: '' */
   collectionPrefix: ?string;
@@ -158,8 +171,6 @@ export interface ParseServerOptions {
   restAPIKey: ?string;
   /* Read-only key, which has the same capabilities as MasterKey without writes */
   readOnlyMasterKey: ?string;
-  /* Key sent with outgoing webhook calls */
-  webhookKey: ?string;
   /* Key for your files */
   fileKey: ?string;
   /* Enable (or disable) the addition of a unique hash to the file names

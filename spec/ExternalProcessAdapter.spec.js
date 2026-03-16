@@ -1,0 +1,70 @@
+// spec/ExternalProcessAdapter.spec.js
+const { ExternalProcessAdapter } = require('../lib/cloud-code/adapters/ExternalProcessAdapter');
+const { CloudCodeManager } = require('../lib/cloud-code/CloudCodeManager');
+const http = require('http');
+
+function createMockCloudServer(manifest, port) {
+  return new Promise((resolve) => {
+    const server = http.createServer((req, res) => {
+      if (req.url === '/' && req.method === 'GET') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(manifest));
+      } else if (req.url === '/health' && req.method === 'GET') {
+        res.writeHead(200);
+        res.end('OK');
+      } else if (req.url.startsWith('/functions/') && req.method === 'POST') {
+        let body = '';
+        req.on('data', d => body += d);
+        req.on('end', () => {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: 'external-result' }));
+        });
+      } else {
+        res.writeHead(404);
+        res.end();
+      }
+    });
+    server.listen(port, () => resolve(server));
+  });
+}
+
+describe('ExternalProcessAdapter', () => {
+  it('has name "external-process"', () => {
+    const adapter = new ExternalProcessAdapter('echo test', 'secret-key');
+    expect(adapter.name).toBe('external-process');
+  });
+
+  it('requires webhookKey', () => {
+    expect(() => new ExternalProcessAdapter('echo test', '')).toThrowError(/webhookKey/);
+  });
+
+  it('shutdown resolves cleanly when no process started', async () => {
+    const adapter = new ExternalProcessAdapter('echo test', 'key');
+    await expectAsync(adapter.shutdown()).toBeResolved();
+  });
+
+  it('spawns process and reads manifest', async () => {
+    const manager = new CloudCodeManager();
+    const port = 19876;
+    const server = await createMockCloudServer(
+      { protocol: 'ParseCloud/1.0', hooks: { functions: [{ name: 'ext-fn' }], triggers: [], jobs: [] } },
+      port
+    );
+
+    try {
+      const cmd = `node -e "process.stdout.write('PARSE_CLOUD_READY:${port}\\n'); setTimeout(() => {}, 60000)"`;
+      const adapter = new ExternalProcessAdapter(cmd, 'test-key', {
+        startupTimeout: 5000,
+        healthCheckInterval: 0,
+      });
+      const registry = manager.createRegistry(adapter.name);
+      await adapter.initialize(registry, { appId: 'test', masterKey: 'mk', serverURL: 'http://localhost' });
+
+      expect(manager.getFunction('ext-fn')).toBeDefined();
+
+      await adapter.shutdown();
+    } finally {
+      server.close();
+    }
+  }, 10000);
+});

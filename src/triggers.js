@@ -1,6 +1,12 @@
 // triggers.js
 import Parse from 'parse/node';
 import { logger } from './logger';
+import AppCache from './cache';
+
+function getManager(applicationId) {
+  const cached = AppCache.get(applicationId || Parse.applicationId);
+  return cached && cached.cloudCodeManager;
+}
 
 export const Types = {
   beforeLogin: 'beforeLogin',
@@ -147,41 +153,89 @@ function get(category, name, applicationId) {
 }
 
 export function addFunction(functionName, handler, validationHandler, applicationId) {
+  const manager = getManager(applicationId);
+  if (manager) {
+    manager.defineFunction(functionName, handler, 'legacy', validationHandler);
+    return;
+  }
   add(Category.Functions, functionName, handler, applicationId);
   add(Category.Validators, functionName, validationHandler, applicationId);
 }
 
 export function addJob(jobName, handler, applicationId) {
+  const manager = getManager(applicationId);
+  if (manager) {
+    manager.defineJob(jobName, handler, 'legacy');
+    return;
+  }
   add(Category.Jobs, jobName, handler, applicationId);
 }
 
 export function addTrigger(type, className, handler, applicationId, validationHandler) {
+  const manager = getManager(applicationId);
+  if (manager) {
+    manager.defineTrigger(className, type, handler, 'legacy', validationHandler);
+    return;
+  }
   validateClassNameForTriggers(className, type);
   add(Category.Triggers, `${type}.${className}`, handler, applicationId);
   add(Category.Validators, `${type}.${className}`, validationHandler, applicationId);
 }
 
 export function addConnectTrigger(type, handler, applicationId, validationHandler) {
+  const manager = getManager(applicationId);
+  if (manager) {
+    manager.defineTrigger(ConnectClassName, type, handler, 'legacy', validationHandler);
+    return;
+  }
   add(Category.Triggers, `${type}.${ConnectClassName}`, handler, applicationId);
   add(Category.Validators, `${type}.${ConnectClassName}`, validationHandler, applicationId);
 }
 
 export function addLiveQueryEventHandler(handler, applicationId) {
+  const manager = getManager(applicationId);
+  if (manager) {
+    manager.defineLiveQueryHandler(handler, 'legacy');
+    return;
+  }
   applicationId = applicationId || Parse.applicationId;
   _triggerStore[applicationId] = _triggerStore[applicationId] || baseStore();
   _triggerStore[applicationId].LiveQuery.push(handler);
 }
 
 export function removeFunction(functionName, applicationId) {
+  const manager = getManager(applicationId);
+  if (manager) {
+    manager.removeFunction(functionName);
+    return;
+  }
   remove(Category.Functions, functionName, applicationId);
 }
 
 export function removeTrigger(type, className, applicationId) {
+  const manager = getManager(applicationId);
+  if (manager) {
+    manager.removeTrigger(className, type);
+    return;
+  }
   remove(Category.Triggers, `${type}.${className}`, applicationId);
 }
 
 export function _unregisterAll() {
-  Object.keys(_triggerStore).forEach(appId => delete _triggerStore[appId]);
+  // Clear managers from AppCache entries
+  const appCacheStore = AppCache.cache;
+  if (appCacheStore) {
+    Object.keys(appCacheStore).forEach(appId => {
+      const manager = getManager(appId);
+      if (manager) {
+        manager.clearAll();
+      }
+    });
+  }
+  // Clear legacy trigger store
+  Object.keys(_triggerStore).forEach(appId => {
+    delete _triggerStore[appId];
+  });
 }
 
 export function toJSONwithObjects(object, className) {
@@ -212,6 +266,11 @@ export function getTrigger(className, triggerType, applicationId) {
   if (!applicationId) {
     throw 'Missing ApplicationID';
   }
+  const manager = getManager(applicationId);
+  if (manager) {
+    const entry = manager.getTrigger(className, triggerType);
+    return entry ? entry.handler : undefined;
+  }
   return get(Category.Triggers, `${triggerType}.${className}`, applicationId);
 }
 
@@ -227,14 +286,27 @@ export async function runTrigger(trigger, name, request, auth) {
 }
 
 export function triggerExists(className: string, type: string, applicationId: string): boolean {
+  const manager = getManager(applicationId);
+  if (manager) {
+    return manager.triggerExists(className, type);
+  }
   return getTrigger(className, type, applicationId) != undefined;
 }
 
 export function getFunction(functionName, applicationId) {
+  const manager = getManager(applicationId);
+  if (manager) {
+    const entry = manager.getFunction(functionName);
+    return entry ? entry.handler : undefined;
+  }
   return get(Category.Functions, functionName, applicationId);
 }
 
 export function getFunctionNames(applicationId) {
+  const manager = getManager(applicationId);
+  if (manager) {
+    return manager.getFunctionNames();
+  }
   const store =
     (_triggerStore[applicationId] && _triggerStore[applicationId][Category.Functions]) || {};
   const functionNames = [];
@@ -256,10 +328,19 @@ export function getFunctionNames(applicationId) {
 }
 
 export function getJob(jobName, applicationId) {
+  const manager = getManager(applicationId);
+  if (manager) {
+    const entry = manager.getJob(jobName);
+    return entry ? entry.handler : undefined;
+  }
   return get(Category.Jobs, jobName, applicationId);
 }
 
 export function getJobs(applicationId) {
+  const mgr = getManager(applicationId);
+  if (mgr) {
+    return mgr.getJobsObject();
+  }
   var manager = _triggerStore[applicationId];
   if (manager && manager.Jobs) {
     return manager.Jobs;
@@ -268,6 +349,10 @@ export function getJobs(applicationId) {
 }
 
 export function getValidator(functionName, applicationId) {
+  const manager = getManager(applicationId);
+  if (manager) {
+    return manager.getValidator(functionName);
+  }
   return get(Category.Validators, functionName, applicationId);
 }
 
@@ -1032,6 +1117,11 @@ export function inflate(data, restObject) {
 }
 
 export function runLiveQueryEventHandlers(data, applicationId = Parse.applicationId) {
+  const manager = getManager(applicationId);
+  if (manager) {
+    manager.runLiveQueryEventHandlers(data);
+    return;
+  }
   if (!_triggerStore || !_triggerStore[applicationId] || !_triggerStore[applicationId].LiveQuery) {
     return;
   }

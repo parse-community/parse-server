@@ -130,6 +130,16 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_CLOUD',
     help: 'Full path to your cloud code main.js',
   },
+  cloudCodeAdapters: {
+    help: 'Array of CloudCodeAdapter instances for BYO cloud code integration',
+  },
+  cloudCodeCommand: {
+    env: 'PARSE_SERVER_CLOUD_CODE_COMMAND',
+    help: 'Shell command to spawn an external cloud code process (ParseCloud/1.0 protocol)',
+  },
+  cloudCodeOptions: {
+    help: 'Options for the external cloud code process adapter',
+  },
   cluster: {
     env: 'PARSE_SERVER_CLUSTER',
     help: 'Run with cluster, optionally set the number of processes default to os.cpus().length',
@@ -616,7 +626,7 @@ module.exports.ParseServerOptions = {
   },
   webhookKey: {
     env: 'PARSE_SERVER_WEBHOOK_KEY',
-    help: 'Key sent with outgoing webhook calls',
+    help: 'Webhook key for authenticating external cloud code process requests. Required when cloudCodeCommand is set.',
   },
 };
 module.exports.RateLimitOptions = {

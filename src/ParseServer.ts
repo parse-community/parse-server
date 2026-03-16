@@ -46,6 +46,9 @@ import Deprecator from './Deprecator/Deprecator';
 import { DefinedSchemas } from './SchemaMigrations/DefinedSchemas';
 import OptionsDefinitions from './Options/Definitions';
 import { resolvingPromise, Connections } from './TestUtils';
+import { CloudCodeManager } from './cloud-code/CloudCodeManager';
+import { resolveAdapters } from './cloud-code/resolveAdapters';
+import { AppCache } from './cache';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -184,24 +187,34 @@ class ParseServer {
       }
       startupPromises.push(liveQueryController.connect());
       await Promise.all(startupPromises);
-      if (cloud) {
+      const adapters = resolveAdapters({
+        cloud,
+        cloudCodeCommand: this.config.cloudCodeCommand,
+        webhookKey: this.config.webhookKey,
+        cloudCodeOptions: this.config.cloudCodeOptions,
+        cloudCodeAdapters: this.config.cloudCodeAdapters,
+      });
+
+      if (adapters.length > 0) {
         addParseCloud();
-        if (typeof cloud === 'function') {
-          await Promise.resolve(cloud(Parse));
-        } else if (typeof cloud === 'string') {
-          let json;
-          if (process.env.npm_package_json) {
-            json = require(process.env.npm_package_json);
-          }
-          if (process.env.npm_package_type === 'module' || json?.type === 'module') {
-            await import(path.resolve(process.cwd(), cloud));
-          } else {
-            require(path.resolve(process.cwd(), cloud));
-          }
-        } else {
-          throw "argument 'cloud' must either be a string or a function";
+        const cloudManager = new CloudCodeManager();
+
+        // CRITICAL: Store on this.config BEFORE adapter initialization.
+        // this.config flows into AppCache via Config.put() later in start().
+        // We must also store it on AppCache NOW so the facade can find it
+        // during LegacyAdapter.initialize() → Parse.Cloud.define() → triggers.addFunction().
+        this.config.cloudCodeManager = cloudManager;
+        const appId = this.config.appId;
+        const cached = AppCache.get(appId);
+        if (cached) {
+          cached.cloudCodeManager = cloudManager;
         }
-        await new Promise(resolve => setTimeout(resolve, 10));
+
+        await cloudManager.initialize(adapters, {
+          appId,
+          masterKey: this.config.masterKey,
+          serverURL: this.config.serverURL || `http://localhost:${this.config.port}${this.config.mountPath || '/parse'}`,
+        });
       }
       if (security && security.enableCheck && security.enableCheckLog) {
         new CheckRunner(security).run();
