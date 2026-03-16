@@ -1,3 +1,10 @@
+# [9.6.0-alpha.31](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.30...9.6.0-alpha.31) (2026-03-16)
+
+
+### Bug Fixes
+
+* Validate authData provider values in challenge endpoint ([#10224](https://github.com/parse-community/parse-server/issues/10224)) ([e5e1f5b](https://github.com/parse-community/parse-server/commit/e5e1f5bbc008c869614a13ab540f72af57adda8f))
+
 # [9.6.0-alpha.30](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.29...9.6.0-alpha.30) (2026-03-16)
 
 
