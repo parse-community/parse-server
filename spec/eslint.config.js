@@ -85,6 +85,10 @@ module.exports = [
           selector: "BinaryExpression[operator='instanceof'][right.name='Map']",
           message: "Use Utils.isMap() instead of instanceof Map (cross-realm safe).",
         },
+        {
+          selector: "BinaryExpression[operator='instanceof'][right.name='Object']",
+          message: "Use Utils.isObject() instead of instanceof Object (cross-realm safe).",
+        },
       ],
     },
   },

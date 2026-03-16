@@ -430,6 +430,7 @@ describe('Utils', () => {
     });
     it('should return true for a cross-realm object', () => {
       const crossRealmObj = vm.runInNewContext('({ a: 1 })');
+      // eslint-disable-next-line no-restricted-syntax -- intentional: proving instanceof fails cross-realm
       expect(crossRealmObj instanceof Object).toBe(false);
       expect(Utils.isObject(crossRealmObj)).toBe(true);
     });

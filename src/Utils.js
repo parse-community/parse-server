@@ -180,9 +180,13 @@ class Utils {
   }
 
   /**
-   * Realm-safe check for object (non-null, typeof object).
+   * Realm-safe check for object type. Uses `typeof` instead of `instanceof Object`
+   * which fails across realms. Returns true for any non-null value where
+   * `typeof` is `'object'`, including plain objects, arrays, dates, maps, sets,
+   * regex, and boxed primitives (e.g. `new String()`). Returns false for `null`,
+   * `undefined`, unboxed primitives, and functions.
    * @param {any} value The value to check.
-   * @returns {Boolean} Returns true if the value is a non-null object.
+   * @returns {Boolean} Returns true if the value is a non-null object type.
    */
   static isObject(value) {
     return typeof value === 'object' && value !== null;

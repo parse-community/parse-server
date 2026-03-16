@@ -1,4 +1,5 @@
 import AppCache from './cache';
+import Utils from './Utils';
 import Parse from 'parse/node';
 import auth from './Auth';
 import Config from './Config';
@@ -178,7 +179,7 @@ export async function handleParseHeaders(req, res, next) {
         delete req.body._MasterKey;
       }
       if (req.body._context) {
-        if (req.body._context instanceof Object) {
+        if (Utils.isObject(req.body._context)) {
           info.context = req.body._context;
         } else {
           try {

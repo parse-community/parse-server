@@ -331,7 +331,7 @@ describe('miscellaneous', () => {
         expect(Utils.isDate(obj2.get('date'))).toBe(true);
         expect(obj2.get('array') instanceof Array).toBe(true);
         expect(obj2.get('object') instanceof Array).toBe(false);
-        expect(obj2.get('object') instanceof Object).toBe(true);
+        expect(Utils.isObject(obj2.get('object'))).toBe(true);
         done();
       });
   });
