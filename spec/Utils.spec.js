@@ -389,6 +389,7 @@ describe('Utils', () => {
     });
     it('should return true for a cross-realm Promise', () => {
       const crossRealmPromise = vm.runInNewContext('Promise.resolve()');
+      // eslint-disable-next-line no-restricted-syntax -- intentional: proving instanceof fails cross-realm
       expect(crossRealmPromise instanceof Promise).toBe(false);
       expect(Utils.isPromise(crossRealmPromise)).toBe(true);
     });
