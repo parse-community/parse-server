@@ -3010,6 +3010,44 @@ describe('(GHSA-fjxm-vhvc-gcmj) LiveQuery Operator Type Confusion', () => {
     });
   });
 
+  describe('challenge endpoint authData provider value validation', () => {
+    it('rejects challenge request with null provider value without 500', async () => {
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/challenge',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        body: JSON.stringify({
+          authData: { anonymous: null },
+          challengeData: { anonymous: { token: '123456' } },
+        }),
+      }).catch(e => e);
+      expect(res.status).toBeGreaterThanOrEqual(400);
+      expect(res.status).toBeLessThan(500);
+    });
+
+    it('rejects challenge request with non-object provider value without 500', async () => {
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/challenge',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        body: JSON.stringify({
+          authData: { anonymous: 'string_value' },
+          challengeData: { anonymous: { token: '123456' } },
+        }),
+      }).catch(e => e);
+      expect(res.status).toBeGreaterThanOrEqual(400);
+      expect(res.status).toBeLessThan(500);
+    });
+  });
+
   describe('(GHSA-r3xq-68wh-gwvh) Password reset single-use token bypass via concurrent requests', () => {
     let sendPasswordResetEmail;
 
