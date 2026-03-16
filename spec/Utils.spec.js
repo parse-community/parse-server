@@ -315,6 +315,7 @@ describe('Utils', () => {
     });
     it('should return true for a cross-realm RegExp', () => {
       const crossRealmRegExp = vm.runInNewContext('/test/');
+      // eslint-disable-next-line no-restricted-syntax -- intentional: proving instanceof fails cross-realm
       expect(crossRealmRegExp instanceof RegExp).toBe(false);
       expect(Utils.isRegExp(crossRealmRegExp)).toBe(true);
     });
@@ -370,6 +371,7 @@ describe('Utils', () => {
     });
     it('should return true for a cross-realm Error', () => {
       const crossRealmError = vm.runInNewContext('new Error("test")');
+      // eslint-disable-next-line no-restricted-syntax -- intentional: proving instanceof fails cross-realm
       expect(crossRealmError instanceof Error).toBe(false);
       expect(Utils.isNativeError(crossRealmError)).toBe(true);
     });

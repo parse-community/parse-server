@@ -12,6 +12,7 @@ const request = require('../lib/request');
 const passwordCrypto = require('../lib/password');
 const Config = require('../lib/Config');
 const cryptoUtils = require('../lib/cryptoUtils');
+const Utils = require('../lib/Utils');
 
 
 describe('allowExpiredAuthDataToken option', () => {
@@ -1128,9 +1129,9 @@ describe('Parse.User testing', () => {
 
           equal(userInMemory.id, id, 'id should be set');
 
-          expect(userInMemory.updatedAt instanceof Date).toBe(true);
+          expect(Utils.isDate(userInMemory.updatedAt)).toBe(true);
 
-          ok(userInMemory.createdAt instanceof Date);
+          ok(Utils.isDate(userInMemory.createdAt));
 
           ok(userInMemory.getSessionToken(), 'user should have a sessionToken after saving');
 
@@ -1167,9 +1168,9 @@ describe('Parse.User testing', () => {
 
           equal(userFromDisk.id, id, 'id should be set on userFromDisk');
 
-          ok(userFromDisk.updatedAt instanceof Date);
+          ok(Utils.isDate(userFromDisk.updatedAt));
 
-          ok(userFromDisk.createdAt instanceof Date);
+          ok(Utils.isDate(userFromDisk.createdAt));
 
           ok(userFromDisk.getSessionToken(), 'userFromDisk should have a sessionToken');
 

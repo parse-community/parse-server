@@ -9,6 +9,7 @@ const request = require('../lib/request');
 const ParseServerRESTController = require('../lib/ParseServerRESTController').ParseServerRESTController;
 const ParseServer = require('../lib/ParseServer').default;
 const Deprecator = require('../lib/Deprecator/Deprecator').default;
+const Utils = require('../lib/Utils');
 
 const masterKeyHeaders = {
   'X-Parse-Application-Id': 'test',
@@ -1452,8 +1453,8 @@ describe('Parse.Query testing', () => {
         ok(result);
         equal(result.id, objectId);
         equal(result.get('foo'), 'bar');
-        ok(result.createdAt instanceof Date);
-        ok(result.updatedAt instanceof Date);
+        ok(Utils.isDate(result.createdAt));
+        ok(Utils.isDate(result.updatedAt));
         done();
       });
     });
@@ -3902,7 +3903,7 @@ describe('Parse.Query testing', () => {
         objs => {
           expect(objs.length).toBe(1);
           expect(objs[0].get('child').get('hello')).toEqual('world');
-          expect(objs[0].createdAt instanceof Date).toBe(true);
+          expect(Utils.isDate(objs[0].createdAt)).toBe(true);
           done();
         },
         () => {

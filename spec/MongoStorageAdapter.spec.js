@@ -6,6 +6,7 @@ const databaseURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDataba
 const request = require('../lib/request');
 const Config = require('../lib/Config');
 const TestUtils = require('../lib/TestUtils');
+const Utils = require('../lib/Utils');
 
 const fakeClient = {
   s: { options: { dbName: null } },
@@ -245,7 +246,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         const mob = results[0];
         expect(mob.array instanceof Array).toBe(true);
         expect(typeof mob.object).toBe('object');
-        expect(mob.date instanceof Date).toBe(true);
+        expect(Utils.isDate(mob.date)).toBe(true);
         return adapter.find('MyClass', schema, {}, {});
       })
       .then(results => {
@@ -278,9 +279,9 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     }).save();
     const adapter = Config.get(Parse.applicationId).database.adapter;
     const [object] = await adapter._rawFind('MyClass', {});
-    expect(object.date instanceof Date).toBeTrue();
-    expect(object.bar.date instanceof Date).toBeTrue();
-    expect(object.foo.test.date instanceof Date).toBeTrue();
+    expect(Utils.isDate(object.date)).toBeTrue();
+    expect(Utils.isDate(object.bar.date)).toBeTrue();
+    expect(Utils.isDate(object.foo.test.date)).toBeTrue();
   });
 
   it('handles nested dates in array ', async () => {
@@ -297,13 +298,13 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     }).save();
     const adapter = Config.get(Parse.applicationId).database.adapter;
     const [object] = await adapter._rawFind('MyClass', {});
-    expect(object.date[0] instanceof Date).toBeTrue();
-    expect(object.bar.date[0] instanceof Date).toBeTrue();
-    expect(object.foo.test.date[0] instanceof Date).toBeTrue();
+    expect(Utils.isDate(object.date[0])).toBeTrue();
+    expect(Utils.isDate(object.bar.date[0])).toBeTrue();
+    expect(Utils.isDate(object.foo.test.date[0])).toBeTrue();
     const obj = await new Parse.Query('MyClass').first({ useMasterKey: true });
-    expect(obj.get('date')[0] instanceof Date).toBeTrue();
-    expect(obj.get('bar').date[0] instanceof Date).toBeTrue();
-    expect(obj.get('foo').test.date[0] instanceof Date).toBeTrue();
+    expect(Utils.isDate(obj.get('date')[0])).toBeTrue();
+    expect(Utils.isDate(obj.get('bar').date[0])).toBeTrue();
+    expect(Utils.isDate(obj.get('foo').test.date[0])).toBeTrue();
   });
 
   it('upserts with $setOnInsert', async () => {
@@ -387,7 +388,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         const mob = results[0];
         expect(mob.array instanceof Array).toBe(true);
         expect(typeof mob.object).toBe('object');
-        expect(mob.date instanceof Date).toBe(true);
+        expect(Utils.isDate(mob.date)).toBe(true);
         done();
       })
       .catch(error => {
