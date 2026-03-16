@@ -603,7 +603,7 @@ class DatabaseController {
             })
             .then(schema => {
               Object.keys(update).forEach(fieldName => {
-                if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
+                if (fieldName.match(/^authData\./)) {
                   throw new Parse.Error(
                     Parse.Error.INVALID_KEY_NAME,
                     `Invalid field name for update: ${fieldName}`

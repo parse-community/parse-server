@@ -452,8 +452,14 @@ RestWrite.prototype.validateAuthData = function () {
   const authData = this.data.authData;
   const hasUsernameAndPassword =
     typeof this.data.username === 'string' && typeof this.data.password === 'string';
+  const hasAuthData =
+    authData &&
+    Object.keys(authData).some(provider => {
+      const providerData = authData[provider];
+      return providerData && typeof providerData === 'object' && Object.keys(providerData).length;
+    });
 
-  if (!this.query && !authData) {
+  if (!this.query && !hasAuthData) {
     if (typeof this.data.username !== 'string' || _.isEmpty(this.data.username)) {
       throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'bad or missing username');
     }
@@ -462,13 +468,10 @@ RestWrite.prototype.validateAuthData = function () {
     }
   }
 
-  if (
-    (authData && !Object.keys(authData).length) ||
-    !Object.prototype.hasOwnProperty.call(this.data, 'authData')
-  ) {
+  if (!Object.prototype.hasOwnProperty.call(this.data, 'authData')) {
     // Nothing to validate here
     return;
-  } else if (Object.prototype.hasOwnProperty.call(this.data, 'authData') && !this.data.authData) {
+  } else if (!this.data.authData) {
     // Handle saving authData to null
     throw new Parse.Error(
       Parse.Error.UNSUPPORTED_SERVICE,
@@ -477,14 +480,16 @@ RestWrite.prototype.validateAuthData = function () {
   }
 
   var providers = Object.keys(authData);
-  if (providers.length > 0) {
-    const canHandleAuthData = providers.some(provider => {
-      const providerAuthData = authData[provider] || {};
-      return !!Object.keys(providerAuthData).length;
-    });
-    if (canHandleAuthData || hasUsernameAndPassword || this.auth.isMaster || this.getUserId()) {
-      return this.handleAuthData(authData);
-    }
+  if (!providers.length) {
+    // Empty authData object, nothing to validate
+    return;
+  }
+  const canHandleAuthData = providers.some(provider => {
+    const providerAuthData = authData[provider] || {};
+    return !!Object.keys(providerAuthData).length;
+  });
+  if (canHandleAuthData || hasUsernameAndPassword || this.auth.isMaster || this.getUserId()) {
+    return this.handleAuthData(authData);
   }
   throw new Parse.Error(
     Parse.Error.UNSUPPORTED_SERVICE,

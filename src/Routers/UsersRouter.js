@@ -614,7 +614,16 @@ export class UsersRouter extends ClassesRouter {
         );
       }
 
-      if (Object.keys(authData).filter(key => authData[key].id).length > 1) {
+      for (const key of Object.keys(authData)) {
+        if (authData[key] !== null && (typeof authData[key] !== 'object' || Array.isArray(authData[key]))) {
+          throw new Parse.Error(
+            Parse.Error.OTHER_CAUSE,
+            `authData.${key} should be an object.`
+          );
+        }
+      }
+
+      if (Object.keys(authData).filter(key => authData[key] && authData[key].id).length > 1) {
         throw new Parse.Error(
           Parse.Error.OTHER_CAUSE,
           'You cannot provide more than one authData provider with an id.'
@@ -628,7 +637,7 @@ export class UsersRouter extends ClassesRouter {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'User not found.');
         }
         // Find the provider used to find the user
-        const provider = Object.keys(authData).find(key => authData[key].id);
+        const provider = Object.keys(authData).find(key => authData[key] && authData[key].id);
 
         parseUser = Parse.User.fromJSON({ className: '_User', ...results[0] });
         request = getRequestObject(undefined, req.auth, parseUser, parseUser, req.config);

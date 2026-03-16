@@ -523,10 +523,15 @@ const checkIfUserHasProvidedConfiguredProvidersForLogin = (
   userAuthData = {},
   config
 ) => {
-  const savedUserProviders = Object.keys(userAuthData).map(provider => ({
-    name: provider,
-    adapter: config.authDataManager.getValidatorForProvider(provider).adapter,
-  }));
+  const savedUserProviders = Object.keys(userAuthData)
+    .map(provider => {
+      const validator = config.authDataManager.getValidatorForProvider(provider);
+      if (!validator || !validator.adapter) {
+        return null;
+      }
+      return { name: provider, adapter: validator.adapter };
+    })
+    .filter(Boolean);
 
   const hasProvidedASoloProvider = savedUserProviders.some(
     provider =>

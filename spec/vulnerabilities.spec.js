@@ -2934,6 +2934,82 @@ describe('(GHSA-fjxm-vhvc-gcmj) LiveQuery Operator Type Confusion', () => {
     });
   });
 
+  describe('(GHSA-wjqw-r9x4-j59v) Empty authData session issuance bypass', () => {
+    const signupHeaders = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+
+    it('rejects signup with empty authData and no credentials', async () => {
+      await reconfigureServer({ enableAnonymousUsers: false });
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        headers: signupHeaders,
+        body: JSON.stringify({ authData: {} }),
+      }).catch(e => e);
+      expect(res.status).toBe(400);
+      expect(res.data.code).toBe(Parse.Error.USERNAME_MISSING);
+    });
+
+    it('rejects signup with empty authData and no credentials when anonymous users enabled', async () => {
+      await reconfigureServer({ enableAnonymousUsers: true });
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        headers: signupHeaders,
+        body: JSON.stringify({ authData: {} }),
+      }).catch(e => e);
+      expect(res.status).toBe(400);
+      expect(res.data.code).toBe(Parse.Error.USERNAME_MISSING);
+    });
+
+    it('rejects signup with authData containing only empty provider data and no credentials', async () => {
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        headers: signupHeaders,
+        body: JSON.stringify({ authData: { bogus: {} } }),
+      }).catch(e => e);
+      expect(res.status).toBe(400);
+      expect(res.data.code).toBe(Parse.Error.USERNAME_MISSING);
+    });
+
+    it('rejects signup with authData containing null provider data and no credentials', async () => {
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        headers: signupHeaders,
+        body: JSON.stringify({ authData: { bogus: null } }),
+      }).catch(e => e);
+      expect(res.status).toBe(400);
+      expect(res.data.code).toBe(Parse.Error.USERNAME_MISSING);
+    });
+
+    it('rejects signup with non-object authData provider value even when credentials are provided', async () => {
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        headers: signupHeaders,
+        body: JSON.stringify({ username: 'bogusauth', password: 'pass1234', authData: { bogus: 'x' } }),
+      }).catch(e => e);
+      expect(res.status).toBe(400);
+      expect(res.data.code).toBe(Parse.Error.UNSUPPORTED_SERVICE);
+    });
+
+    it('allows signup with empty authData when username and password are provided', async () => {
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        headers: signupHeaders,
+        body: JSON.stringify({ username: 'emptyauth', password: 'pass1234', authData: {} }),
+      });
+      expect(res.data.objectId).toBeDefined();
+      expect(res.data.sessionToken).toBeDefined();
+    });
+  });
+
   describe('(GHSA-r3xq-68wh-gwvh) Password reset single-use token bypass via concurrent requests', () => {
     let sendPasswordResetEmail;
 
