@@ -2987,15 +2987,22 @@ describe('(GHSA-fjxm-vhvc-gcmj) LiveQuery Operator Type Confusion', () => {
       expect(res.data.code).toBe(Parse.Error.USERNAME_MISSING);
     });
 
+    it('rejects signup with non-object authData provider value even when credentials are provided', async () => {
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        headers: signupHeaders,
+        body: JSON.stringify({ username: 'bogusauth', password: 'pass1234', authData: { bogus: 'x' } }),
+      }).catch(e => e);
+      expect(res.status).toBe(400);
+      expect(res.data.code).toBe(Parse.Error.UNSUPPORTED_SERVICE);
+    });
+
     it('allows signup with empty authData when username and password are provided', async () => {
       const res = await request({
         method: 'POST',
         url: 'http://localhost:8378/1/users',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-REST-API-Key': 'rest',
-        },
+        headers: signupHeaders,
         body: JSON.stringify({ username: 'emptyauth', password: 'pass1234', authData: {} }),
       });
       expect(res.data.objectId).toBeDefined();
