@@ -1,3 +1,10 @@
+## [8.6.48](https://github.com/parse-community/parse-server/compare/8.6.47...8.6.48) (2026-03-16)
+
+
+### Bug Fixes
+
+* Password reset token single-use bypass via concurrent requests ([GHSA-r3xq-68wh-gwvh](https://github.com/parse-community/parse-server/security/advisories/GHSA-r3xq-68wh-gwvh)) ([#10217](https://github.com/parse-community/parse-server/issues/10217)) ([83b4de0](https://github.com/parse-community/parse-server/commit/83b4de0b7ce722fac0ecbb5fe815e3da8fb6b8a0))
+
 ## [8.6.47](https://github.com/parse-community/parse-server/compare/8.6.46...8.6.47) (2026-03-15)
 
 
