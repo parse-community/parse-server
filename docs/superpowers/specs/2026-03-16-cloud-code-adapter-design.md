@@ -26,15 +26,16 @@ Parse Server's cloud code system (`Parse.Cloud.define`, `Parse.Cloud.beforeSave`
 | Hot reload | Startup-only for v1 | Simpler implementation; can be added later |
 | Registry API | Adapters only (no public registry) | Clean boundary, single integration point |
 | Implementation location | In parse-server directly | Core server functionality |
-| Webhook key | Explicitly configured (required) | No auto-generation, no persistence question |
+| Webhook key | Explicitly configured (required) | No auto-generation, no persistence question. Diverges from proposal which offered auto-generation. |
 | Language | TypeScript | Type safety throughout |
 | Architecture | Replace triggers.js entirely | CloudCodeManager becomes single source of truth |
+| applicationId scoping | One CloudCodeManager per app | Stored on `Config`, mirrors existing `_triggerStore[applicationId]` pattern |
 
 ## 3. Architecture
 
 ### 3.1 CloudCodeManager — The New Core
 
-`CloudCodeManager` replaces `triggers.js` as the single source of truth for all hook registration, lookup, and execution.
+`CloudCodeManager` replaces `triggers.js` as the single source of truth for all hook registration, lookup, and execution. One instance exists per `applicationId`, stored on the app's `Config` object.
 
 ```typescript
 class CloudCodeManager {
@@ -50,20 +51,29 @@ class CloudCodeManager {
   defineFunction(source: string, name: string, handler: CloudFunctionHandler, validator?: ValidatorHandler): void;
   defineTrigger(source: string, className: string, triggerName: TriggerName, handler: CloudTriggerHandler, validator?: ValidatorHandler): void;
   defineJob(source: string, name: string, handler: CloudJobHandler): void;
+  defineLiveQueryHandler(source: string, handler: LiveQueryHandler): void;
   unregisterAll(source: string): void;
 
   // Lookup (consumed by routers, rest of Parse Server)
-  getFunction(name: string, applicationId: string): CloudFunctionHandler | undefined;
-  getTrigger(className: string, triggerType: string, applicationId: string): CloudTriggerHandler | undefined;
-  getJob(name: string, applicationId: string): CloudJobHandler | undefined;
-  getFunctionNames(applicationId: string): string[];
-  getValidator(functionName: string, applicationId: string): ValidatorHandler | undefined;
+  getFunction(name: string): CloudFunctionHandler | undefined;
+  getTrigger(className: string, triggerType: string): CloudTriggerHandler | undefined;
+  triggerExists(className: string, triggerType: string): boolean;
+  getJob(name: string): CloudJobHandler | undefined;
+  getJobs(): Map<string, CloudJobHandler>;
+  getFunctionNames(): string[];
+  getValidator(functionName: string): ValidatorHandler | undefined;
 
-  // Execution (replaces maybeRunTrigger, maybeRunValidator)
+  // Execution (replaces maybeRunTrigger, maybeRunValidator, and specialized variants)
   async runTrigger(triggerType: string, auth: Auth, parseObject: ParseObject, ...): Promise<any>;
+  async runQueryTrigger(triggerType: string, className: string, query: any, ...): Promise<any>;
+  async runFileTrigger(triggerType: string, file: any, ...): Promise<any>;
+  async runGlobalConfigTrigger(triggerType: string, config: any, ...): Promise<any>;
   async runValidator(request: any, functionName: string, auth: Auth): Promise<void>;
+  async runLiveQueryEventHandlers(data: any): void;
 }
 ```
+
+Since the manager is scoped per-app, lookup methods no longer need an `applicationId` parameter.
 
 ### 3.2 HookStore
 
@@ -106,6 +116,7 @@ interface CloudCodeRegistry {
   defineFunction(name: string, handler: CloudFunctionHandler, validator?: ValidatorHandler): void;
   defineTrigger(className: string, triggerName: TriggerName, handler: CloudTriggerHandler, validator?: ValidatorHandler): void;
   defineJob(name: string, handler: CloudJobHandler): void;
+  defineLiveQueryHandler(handler: LiveQueryHandler): void;
 }
 
 type TriggerName =
@@ -113,10 +124,22 @@ type TriggerName =
   | 'beforeDelete' | 'afterDelete'
   | 'beforeFind' | 'afterFind'
   | 'beforeLogin' | 'afterLogin' | 'afterLogout'
-  | 'beforeConnect' | 'beforeSubscribe' | 'afterEvent'
-  | 'beforeSaveFile' | 'afterSaveFile'
-  | 'beforeDeleteFile' | 'afterDeleteFile';
+  | 'beforePasswordResetRequest'
+  | 'beforeConnect' | 'beforeSubscribe' | 'afterEvent';
 ```
+
+**Virtual classNames for special trigger targets:**
+
+File and Config triggers use standard trigger names (`beforeSave`, `afterSave`, etc.) with virtual classNames:
+
+| Target | Virtual className | Example registration |
+|--------|-------------------|---------------------|
+| `Parse.File` | `@File` | `defineTrigger('@File', 'beforeSave', handler)` |
+| `Parse.Config` | `@Config` | `defineTrigger('@Config', 'beforeSave', handler)` |
+| `beforeConnect` | `@Connect` | `defineTrigger('@Connect', 'beforeConnect', handler)` |
+| `beforeSubscribe` | class name | `defineTrigger('Todo', 'beforeSubscribe', handler)` |
+
+This matches the existing internal storage pattern in `triggers.js` where `getClassName(Parse.File)` returns `'@File'`. The LegacyAdapter maps `Parse.Cloud.beforeSaveFile(handler)` to `defineTrigger('@File', 'beforeSave', handler)`, and `Parse.Cloud.beforeConnect(handler)` to `defineTrigger('@Connect', 'beforeConnect', handler)`.
 
 ## 4. Built-in Adapter Implementations
 
@@ -169,7 +192,7 @@ Wraps `cloudCodeCommand: 'swift run CloudCode'`.
 - `initialize()` spawns child process with environment variables, waits for `PARSE_CLOUD_READY:<port>` on stdout, fetches manifest via `GET http://localhost:<port>/`, registers bridge handlers.
 - `isHealthy()` calls `GET http://localhost:<port>/health`.
 - `shutdown()` sends `SIGTERM`, waits `shutdownTimeout`, then `SIGKILL`.
-- Crash recovery: unregisters hooks, restarts with exponential backoff (1s, 2s, 4s, 8s, capped at `maxRestartDelay`).
+- Crash recovery: the `CloudCodeManager` calls `unregisterAll(adapter.name)` internally, then the adapter restarts with exponential backoff (1s, 2s, 4s, 8s, capped at `maxRestartDelay`).
 
 **Environment variables passed to child process:**
 
@@ -269,6 +292,7 @@ function resolveAdapters(options: ParseServerOptions): CloudCodeAdapter[] {
 | `RestQuery.js` | `getTrigger`, `maybeRunTrigger` | Import from `CloudCodeManager` |
 | `UsersRouter.js` | `getTrigger` (login/logout) | Import from `CloudCodeManager` |
 | `FilesRouter.js` | `getTrigger` (file triggers) | Import from `CloudCodeManager` |
+| `GlobalConfigRouter.js` | `maybeRunGlobalConfigTrigger` | Import from `CloudCodeManager` |
 | `LiveQuery/` | `getTrigger`, `maybeRunTrigger`, connect/subscribe | Import from `CloudCodeManager` |
 | `Config.js` | Validates cloud config | Updated for new options |
 
@@ -307,7 +331,17 @@ class LegacyAdapter implements CloudCodeAdapter {
 
 ### 6.4 Utility Functions
 
-Pure data transformation helpers from `triggers.js` (`getRequestObject()`, `getResponseObject()`, `resolveError()`, `toJSONwithObjects()`) move to `src/cloud-code/request-utils.ts`. They have no dependency on the hook store.
+Pure data transformation helpers from `triggers.js` move to `src/cloud-code/request-utils.ts`. They have no dependency on the hook store:
+
+- `getRequestObject()`, `getResponseObject()` — build request/response objects for trigger handlers
+- `getRequestQueryObject()` — build request for query triggers
+- `resolveError()` — normalize error responses
+- `toJSONwithObjects()` — serialize with Parse object preservation
+- `inflate()` — inflate REST data into Parse Objects (used by `RestWrite.js`)
+
+### 6.5 Validators and Rate Limiting
+
+Validators (including `requireUser`, `requireMaster`, `fields`, `rateLimit`) are supported only through the `LegacyAdapter`. Non-legacy adapters (InProcess, External) handle validation within their own process — Parse Server does not apply server-side validators for hooks registered by these adapters. Rate limiting middleware integration (`addRateLimit`) is handled by the `LegacyAdapter` during `initialize()`, preserving existing behavior.
 
 ## 7. Request/Response Bridge
 
