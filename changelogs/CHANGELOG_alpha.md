@@ -1,3 +1,10 @@
+# [9.6.0-alpha.29](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.28...9.6.0-alpha.29) (2026-03-16)
+
+
+### Bug Fixes
+
+* Empty authData bypasses credential requirement on signup ([GHSA-wjqw-r9x4-j59v](https://github.com/parse-community/parse-server/security/advisories/GHSA-wjqw-r9x4-j59v)) ([#10219](https://github.com/parse-community/parse-server/issues/10219)) ([5dcbf41](https://github.com/parse-community/parse-server/commit/5dcbf41249f1b67c72296934bc4f8538f3b1d821))
+
 # [9.6.0-alpha.28](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.27...9.6.0-alpha.28) (2026-03-16)
 
 
