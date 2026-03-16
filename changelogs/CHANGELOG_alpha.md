@@ -1,3 +1,10 @@
+# [9.6.0-alpha.30](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.29...9.6.0-alpha.30) (2026-03-16)
+
+
+### Bug Fixes
+
+* Block dot-notation updates to authData sub-fields and harden login provider checks ([#10223](https://github.com/parse-community/parse-server/issues/10223)) ([12c24c6](https://github.com/parse-community/parse-server/commit/12c24c6c6c578219703aaea186625f8f36c0d020))
+
 # [9.6.0-alpha.29](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.28...9.6.0-alpha.29) (2026-03-16)
 
 
