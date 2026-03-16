@@ -73,6 +73,10 @@ module.exports = [
           selector: "BinaryExpression[operator='instanceof'][right.name='RegExp']",
           message: "Use Utils.isRegExp() instead of instanceof RegExp (cross-realm safe).",
         },
+        {
+          selector: "BinaryExpression[operator='instanceof'][right.name='Error']",
+          message: "Use Utils.isNativeError() instead of instanceof Error (cross-realm safe).",
+        },
       ],
     },
   },

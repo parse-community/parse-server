@@ -1,6 +1,7 @@
 // triggers.js
 import Parse from 'parse/node';
 import { logger } from './logger';
+import Utils from './Utils';
 
 export const Types = {
   beforeLogin: 'beforeLogin',
@@ -712,7 +713,7 @@ export function resolveError(message, defaultOpts) {
     return new Parse.Error(code, message);
   }
   const error = new Parse.Error(code, message.message || message);
-  if (message instanceof Error) {
+  if (Utils.isNativeError(message)) {
     error.stack = message.stack;
   }
   return error;

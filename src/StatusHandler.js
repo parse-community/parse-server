@@ -1,4 +1,5 @@
 import { md5Hash, newObjectId } from './cryptoUtils';
+import Utils from './Utils';
 import { KeyPromiseQueue } from './KeyPromiseQueue';
 import { logger } from './logger';
 import rest from './rest';
@@ -113,7 +114,7 @@ export function jobStatusHandler(config) {
     if (message && typeof message === 'string') {
       update.message = message;
     }
-    if (message instanceof Error && typeof message.message === 'string') {
+    if (Utils.isNativeError(message) && typeof message.message === 'string') {
       update.message = message.message;
     }
     return handler.update({ objectId }, update);
