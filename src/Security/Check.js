@@ -42,7 +42,7 @@ class Check {
 
   async run() {
     // Get check as synchronous or asynchronous function
-    const check = this.check instanceof Promise ? await this.check : this.check;
+    const check = Utils.isPromise(this.check) ? await this.check : this.check;
 
     // Run check
     try {

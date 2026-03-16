@@ -444,7 +444,7 @@ export class PagesRouter extends PromiseRouter {
         : Object.prototype.toString.call(this.pagesConfig.placeholders) === '[object Object]'
           ? this.pagesConfig.placeholders
           : {};
-    if (configPlaceholders instanceof Promise) {
+    if (Utils.isPromise(configPlaceholders)) {
       configPlaceholders = await configPlaceholders;
     }
 

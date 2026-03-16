@@ -308,7 +308,7 @@ const isValidSimpleObject = function (obj): boolean {
     !Array.isArray(obj) &&
     obj !== null &&
     Utils.isDate(obj) !== true &&
-    obj instanceof Promise !== true
+    Utils.isPromise(obj) !== true
   );
 };
 
