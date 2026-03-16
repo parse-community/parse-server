@@ -69,6 +69,10 @@ module.exports = [
           selector: "BinaryExpression[operator='instanceof'][right.name='Date']",
           message: "Use Utils.isDate() instead of instanceof Date (cross-realm safe).",
         },
+        {
+          selector: "BinaryExpression[operator='instanceof'][right.name='RegExp']",
+          message: "Use Utils.isRegExp() instead of instanceof RegExp (cross-realm safe).",
+        },
       ],
     },
   },

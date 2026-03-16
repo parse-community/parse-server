@@ -24,6 +24,7 @@ import {
 } from './Options/Definitions';
 import ParseServer from './cloud-code/Parse.Server';
 import Deprecator from './Deprecator/Deprecator';
+import Utils from './Utils';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -420,7 +421,7 @@ export class Config {
       if (passwordPolicy.validatorPattern) {
         if (typeof passwordPolicy.validatorPattern === 'string') {
           passwordPolicy.validatorPattern = new RegExp(passwordPolicy.validatorPattern);
-        } else if (!(passwordPolicy.validatorPattern instanceof RegExp)) {
+        } else if (!Utils.isRegExp(passwordPolicy.validatorPattern)) {
           throw 'passwordPolicy.validatorPattern must be a regex string or RegExp object.';
         }
       }

@@ -137,7 +137,7 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
 };
 
 const isRegex = value => {
-  return value && value instanceof RegExp;
+  return value && Utils.isRegExp(value);
 };
 
 const isStartsWithRegex = value => {
