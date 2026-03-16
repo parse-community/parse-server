@@ -41,7 +41,14 @@ module.exports = [
       curly: ["error", "all"],
       "block-spacing": ["error", "always"],
       "no-unused-vars": "off",
-      "no-console": "warn"
+      "no-console": "warn",
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "BinaryExpression[operator='instanceof'][right.name='Date']",
+          message: "Use Utils.isDate() instead of instanceof Date (cross-realm safe).",
+        },
+      ]
     },
   },
 ];

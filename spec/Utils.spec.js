@@ -295,6 +295,7 @@ describe('Utils', () => {
     });
     it('should return true for a cross-realm Date', () => {
       const crossRealmDate = vm.runInNewContext('new Date()');
+      // eslint-disable-next-line no-restricted-syntax -- intentional: proving instanceof fails cross-realm
       expect(crossRealmDate instanceof Date).toBe(false);
       expect(Utils.isDate(crossRealmDate)).toBe(true);
     });

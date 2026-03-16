@@ -189,7 +189,7 @@ const transformInteriorValue = restValue => {
   var value = transformInteriorAtom(restValue);
   if (value !== CannotTransform) {
     if (value && typeof value === 'object') {
-      if (value instanceof Date) {
+      if (Utils.isDate(value)) {
         return value;
       }
       if (value instanceof Array) {
@@ -218,7 +218,7 @@ const transformInteriorValue = restValue => {
 const valueAsDate = value => {
   if (typeof value === 'string') {
     return new Date(value);
-  } else if (value instanceof Date) {
+  } else if (Utils.isDate(value)) {
     return value;
   }
   return false;
@@ -565,7 +565,7 @@ function CannotTransform() {}
 
 const transformInteriorAtom = atom => {
   // TODO: check validity harder for the __type-defined types
-  if (typeof atom === 'object' && atom && !(atom instanceof Date) && atom.__type === 'Pointer') {
+  if (typeof atom === 'object' && atom && !Utils.isDate(atom) && atom.__type === 'Pointer') {
     return {
       __type: 'Pointer',
       className: atom.className,
@@ -606,7 +606,7 @@ function transformTopLevelAtom(atom, field) {
     case 'function':
       throw new Parse.Error(Parse.Error.INVALID_JSON, `cannot transform value: ${atom}`);
     case 'object':
-      if (atom instanceof Date) {
+      if (Utils.isDate(atom)) {
         // Technically dates are not rest format, but, it seems pretty
         // clear what they should be transformed to, so let's just do it.
         return atom;
@@ -1057,7 +1057,7 @@ const nestedMongoObjectToNestedParseObject = mongoObject => {
         return mongoObject.map(nestedMongoObjectToNestedParseObject);
       }
 
-      if (mongoObject instanceof Date) {
+      if (Utils.isDate(mongoObject)) {
         return Parse._encode(mongoObject);
       }
 
@@ -1076,7 +1076,7 @@ const nestedMongoObjectToNestedParseObject = mongoObject => {
       if (
         Object.prototype.hasOwnProperty.call(mongoObject, '__type') &&
         mongoObject.__type == 'Date' &&
-        mongoObject.iso instanceof Date
+        Utils.isDate(mongoObject.iso)
       ) {
         mongoObject.iso = mongoObject.iso.toJSON();
         return mongoObject;
@@ -1120,7 +1120,7 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
         return mongoObject.map(nestedMongoObjectToNestedParseObject);
       }
 
-      if (mongoObject instanceof Date) {
+      if (Utils.isDate(mongoObject)) {
         return Parse._encode(mongoObject);
       }
 

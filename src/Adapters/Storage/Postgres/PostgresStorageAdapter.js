@@ -1696,7 +1696,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         updatePatterns.push(`$${index}:name = $${index + 1}`);
         values.push(fieldName, toPostgresValue(fieldValue));
         index += 2;
-      } else if (fieldValue instanceof Date) {
+      } else if (Utils.isDate(fieldValue)) {
         updatePatterns.push(`$${index}:name = $${index + 1}`);
         values.push(fieldName, fieldValue);
         index += 2;
@@ -2057,7 +2057,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       if (object[fieldName] === null) {
         delete object[fieldName];
       }
-      if (object[fieldName] instanceof Date) {
+      if (Utils.isDate(object[fieldName])) {
         object[fieldName] = {
           __type: 'Date',
           iso: object[fieldName].toISOString(),
