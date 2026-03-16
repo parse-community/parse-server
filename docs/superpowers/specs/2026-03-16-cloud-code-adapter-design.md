@@ -61,16 +61,24 @@ class CloudCodeManager {
   getJob(name: string): CloudJobHandler | undefined;
   getJobs(): Map<string, CloudJobHandler>;
   getFunctionNames(): string[];
-  getValidator(functionName: string): ValidatorHandler | undefined;
+  getValidator(key: string): ValidatorHandler | undefined;
+  // key is a function name or `${triggerType}.${className}` for trigger validators
 
   // Execution (replaces maybeRunTrigger, maybeRunValidator, and specialized variants)
+  // runTrigger also subsumes maybeRunAfterFindTrigger (className + triggerType lookup)
   async runTrigger(triggerType: string, auth: Auth, parseObject: ParseObject, ...): Promise<any>;
   async runQueryTrigger(triggerType: string, className: string, query: any, ...): Promise<any>;
   async runFileTrigger(triggerType: string, file: any, ...): Promise<any>;
   async runGlobalConfigTrigger(triggerType: string, config: any, ...): Promise<any>;
   async runValidator(request: any, functionName: string, auth: Auth): Promise<void>;
-  async runLiveQueryEventHandlers(data: any): void;
+  runLiveQueryEventHandlers(data: any): void; // synchronous, matches existing behavior
 }
+```
+
+**Registration validation:** `defineTrigger()` enforces className/triggerType rules for all adapters (not just Legacy):
+- No `beforeSave` on `_PushStatus`
+- `beforeLogin`/`afterLogin`/`beforePasswordResetRequest` only on `_User`
+- `afterLogout` only on `_Session`
 ```
 
 Since the manager is scoped per-app, lookup methods no longer need an `applicationId` parameter.
@@ -335,6 +343,7 @@ Pure data transformation helpers from `triggers.js` move to `src/cloud-code/requ
 
 - `getRequestObject()`, `getResponseObject()` — build request/response objects for trigger handlers
 - `getRequestQueryObject()` — build request for query triggers
+- `getRequestFileObject()` — build request for file triggers
 - `resolveError()` — normalize error responses
 - `toJSONwithObjects()` — serialize with Parse object preservation
 - `inflate()` — inflate REST data into Parse Objects (used by `RestWrite.js`)
