@@ -998,4 +998,118 @@ describe('matchesQuery', function () {
     expect(matchesQuery(obj2, q)).toBe(true);
     expect(matchesQuery(obj3, q)).toBe(false);
   });
+
+  it('terminates catastrophic backtracking regex within regexTimeout (GHSA-qxh4-6wmx-rhg9)', function () {
+    const { setRegexTimeout } = require('../lib/LiveQuery/QueryTools');
+    setRegexTimeout(100);
+    try {
+      const object = {
+        id: new Id('Post', 'P1'),
+        title: 'aaaaaaaaaaaaaaaaaaaaaaaaaab',
+      };
+
+      // (a+)+$ is a classic catastrophic backtracking pattern
+      const q = new Parse.Query('Post');
+      q._where = { title: { $regex: '(a+)+$' } };
+
+      const start = Date.now();
+      // With timeout protection, the regex should be terminated and return false
+      const result = matchesQuery(object, q);
+      const elapsed = Date.now() - start;
+
+      expect(result).toBe(false);
+      // Should complete within a reasonable time (timeout + overhead), not hang
+      expect(elapsed).toBeLessThan(5000);
+    } finally {
+      setRegexTimeout(0);
+    }
+  });
+
+  it('applies default regexTimeout of 100ms protecting against ReDoS (GHSA-qxh4-6wmx-rhg9)', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['Post'] },
+    });
+    const Config = require('../lib/Config');
+    const config = Config.get('test');
+    // Default regexTimeout is 100ms, providing ReDoS protection out-of-the-box
+    expect(config.liveQuery.regexTimeout).toBe(100);
+    expect(config.liveQuery.regexTimeout).toBeGreaterThan(0);
+  });
+
+  it('does not leak regex context between sequential evaluations with shared vmContext (GHSA-v88r-ghm9-267f)', function () {
+    const { setRegexTimeout } = require('../lib/LiveQuery/QueryTools');
+    setRegexTimeout(100);
+    try {
+      // Simulate the scenario from the advisory:
+      // Client A subscribes to { secretField: { $regex: "^admin" } }
+      // Client B subscribes to { publicField: { $regex: ".*" } }
+
+      // Object with a secretField that should only match Client A's subscription
+      const object = {
+        id: new Id('Data', 'D1'),
+        secretField: 'admin_secret_data',
+        publicField: 'public_data',
+      };
+
+      // Client A's query: should match because secretField starts with "admin"
+      const queryA = new Parse.Query('Data');
+      queryA._where = { secretField: { $regex: '^admin' } };
+
+      // Client B's query: should match because publicField matches .*
+      const queryB = new Parse.Query('Data');
+      queryB._where = { publicField: { $regex: '.*' } };
+
+      // Evaluate both queries sequentially (as the LiveQuery server does)
+      const resultA = matchesQuery(object, queryA);
+      const resultB = matchesQuery(object, queryB);
+
+      // Both should match correctly — no cross-contamination
+      expect(resultA).toBe(true);
+      expect(resultB).toBe(true);
+
+      // Now test the inverse: object that should NOT match Client A
+      const object2 = {
+        id: new Id('Data', 'D2'),
+        secretField: 'user_regular_data',
+        publicField: 'public_data',
+      };
+
+      const resultA2 = matchesQuery(object2, queryA);
+      const resultB2 = matchesQuery(object2, queryB);
+
+      // Client A should NOT match (secretField doesn't start with "admin")
+      // Client B should still match
+      expect(resultA2).toBe(false);
+      expect(resultB2).toBe(true);
+    } finally {
+      setRegexTimeout(0);
+    }
+  });
+
+  it('does not cross-contaminate regex results across different field evaluations with regexTimeout (GHSA-v88r-ghm9-267f)', function () {
+    const { setRegexTimeout } = require('../lib/LiveQuery/QueryTools');
+    setRegexTimeout(100);
+    try {
+      // Multiple subscriptions with different regex patterns evaluated against
+      // different objects in rapid succession — the advisory claims the shared
+      // vmContext causes pattern/input from one call to leak into another
+      const subscriptions = [
+        { where: { field: { $regex: '^secret' } }, object: { id: new Id('X', '1'), field: 'secret_value' }, expected: true },
+        { where: { field: { $regex: '^public' } }, object: { id: new Id('X', '2'), field: 'public_value' }, expected: true },
+        { where: { field: { $regex: '^secret' } }, object: { id: new Id('X', '3'), field: 'public_value' }, expected: false },
+        { where: { field: { $regex: '^public' } }, object: { id: new Id('X', '4'), field: 'secret_value' }, expected: false },
+        { where: { field: { $regex: '^admin' } }, object: { id: new Id('X', '5'), field: 'admin_panel' }, expected: true },
+        { where: { field: { $regex: '^admin' } }, object: { id: new Id('X', '6'), field: 'user_panel' }, expected: false },
+      ];
+
+      for (const sub of subscriptions) {
+        const q = new Parse.Query('X');
+        q._where = sub.where;
+        const result = matchesQuery(sub.object, q);
+        expect(result).toBe(sub.expected);
+      }
+    } finally {
+      setRegexTimeout(0);
+    }
+  });
 });
