@@ -70,7 +70,9 @@ describe('ExternalProcessAdapter', () => {
       if (adapter) {
         await adapter.shutdown();
       }
-      server.close();
+      await new Promise((resolve, reject) => {
+        server.close(err => (err ? reject(err) : resolve()));
+      });
     }
   }, 10000);
 });

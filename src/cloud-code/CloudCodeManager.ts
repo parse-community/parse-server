@@ -306,12 +306,9 @@ export class CloudCodeManager {
   }
 
   async healthCheck(): Promise<boolean> {
-    for (const adapter of this.adapters) {
-      const healthy = await adapter.isHealthy();
-      if (!healthy) {
-        return false;
-      }
-    }
-    return true;
+    const results = await Promise.allSettled(
+      this.adapters.map(adapter => adapter.isHealthy())
+    );
+    return results.every(r => r.status === 'fulfilled' && r.value === true);
   }
 }
