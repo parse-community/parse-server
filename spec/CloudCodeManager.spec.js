@@ -475,6 +475,47 @@ describe('CloudCodeManager', () => {
       expect(manager.getFunction('adapterFunc').source).toBe('test-adapter');
     });
 
+    it('rolls back failed adapter and previously-initialized adapters', async () => {
+      const shutdownCalls = [];
+      const adapterA = {
+        name: 'adapter-a',
+        initialize: async (registry) => {
+          registry.defineFunction('funcFromA', () => {});
+        },
+        isHealthy: async () => true,
+        shutdown: async () => { shutdownCalls.push('a'); },
+      };
+      const adapterB = {
+        name: 'adapter-b',
+        initialize: async () => { throw new Error('adapter-b failed'); },
+        isHealthy: async () => true,
+        shutdown: async () => { shutdownCalls.push('b'); },
+      };
+      const config = { appId: 'testApp', masterKey: 'key', serverURL: 'http://localhost:1337/parse' };
+      await expectAsync(manager.initialize([adapterA, adapterB], config)).toBeRejectedWithError('adapter-b failed');
+      expect(manager.getFunction('funcFromA')).toBeNull();
+      expect(shutdownCalls).toContain('a');
+      expect(shutdownCalls).toContain('b');
+      // manager should have no adapters left — healthCheck with no adapters returns true
+      const healthy = await manager.healthCheck();
+      expect(healthy).toBe(true);
+    });
+
+    it('rolls back partial registrations from the failing adapter', async () => {
+      const adapter = {
+        name: 'partial-adapter',
+        initialize: async (registry) => {
+          registry.defineFunction('partialFunc', () => {});
+          throw new Error('partial failure');
+        },
+        isHealthy: async () => true,
+        shutdown: async () => {},
+      };
+      const config = { appId: 'testApp', masterKey: 'key', serverURL: 'http://localhost:1337/parse' };
+      await expectAsync(manager.initialize([adapter], config)).toBeRejectedWithError('partial failure');
+      expect(manager.getFunction('partialFunc')).toBeNull();
+    });
+
     it('throws when two adapters have the same name', async () => {
       const adapterA = {
         name: 'duplicate',
@@ -506,6 +547,47 @@ describe('CloudCodeManager', () => {
       await manager.initialize([adapter], config);
       await manager.shutdown();
       expect(calls).toEqual(['shutdown']);
+    });
+
+    it('continues shutting down other adapters when one fails', async () => {
+      const shutdownCalls = [];
+      const adapterA = {
+        name: 'adapter-a',
+        initialize: async () => {},
+        isHealthy: async () => true,
+        shutdown: async () => {
+          shutdownCalls.push('a');
+          throw new Error('shutdown-a failed');
+        },
+      };
+      const adapterB = {
+        name: 'adapter-b',
+        initialize: async () => {},
+        isHealthy: async () => true,
+        shutdown: async () => { shutdownCalls.push('b'); },
+      };
+      const config = { appId: 'testApp', masterKey: 'key', serverURL: 'http://localhost:1337/parse' };
+      await manager.initialize([adapterA, adapterB], config);
+      await manager.shutdown();
+      expect(shutdownCalls).toContain('a');
+      expect(shutdownCalls).toContain('b');
+    });
+
+    it('clears all registrations after shutdown', async () => {
+      const adapter = {
+        name: 'adapter-a',
+        initialize: async (registry) => {
+          registry.defineFunction('myFunc', () => {});
+        },
+        isHealthy: async () => true,
+        shutdown: async () => {},
+      };
+      const config = { appId: 'testApp', masterKey: 'key', serverURL: 'http://localhost:1337/parse' };
+      await manager.initialize([adapter], config);
+      expect(manager.getFunction('myFunc')).not.toBeNull();
+      await manager.shutdown();
+      expect(manager.getFunction('myFunc')).toBeNull();
+      expect(manager.getFunctionNames()).toEqual([]);
     });
   });
 

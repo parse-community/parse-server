@@ -124,4 +124,99 @@ describe('InProcessAdapter', () => {
     const adapter = new InProcessAdapter(cloud);
     expect(await adapter.isHealthy()).toBe(true);
   });
+
+  it('beforeSave trigger with request.object calls applyBeforeSaveResponse', async () => {
+    const cloud = createMockCloudCode(
+      { protocol: 'ParseCloud/1.0', hooks: { functions: [], triggers: [{ className: 'Todo', triggerName: 'beforeSave' }], jobs: [] } },
+      { 'trigger:beforeSave.Todo': () => ({ success: { field1: 'value1' } }) }
+    );
+    const adapter = new InProcessAdapter(cloud);
+    const registry = manager.createRegistry(adapter.name);
+    await adapter.initialize(registry, { appId: 'test', masterKey: 'mk', serverURL: 'http://localhost' });
+
+    const entry = manager.getTrigger('Todo', 'beforeSave');
+    const request = {
+      object: { set: jasmine.createSpy('set'), toJSON: () => ({}) },
+      master: false,
+      ip: '',
+      headers: {},
+    };
+    const result = await entry.handler(request);
+    expect(result).toBeUndefined();
+    expect(request.object.set).toHaveBeenCalledWith('field1', 'value1');
+  });
+
+  it('beforeSave trigger without request.object returns webhookResponseToResult', async () => {
+    const cloud = createMockCloudCode(
+      { protocol: 'ParseCloud/1.0', hooks: { functions: [], triggers: [{ className: '@File', triggerName: 'beforeSave' }], jobs: [] } },
+      { 'trigger:beforeSave.@File': () => ({ success: { name: 'test.txt' } }) }
+    );
+    const adapter = new InProcessAdapter(cloud);
+    const registry = manager.createRegistry(adapter.name);
+    await adapter.initialize(registry, { appId: 'test', masterKey: 'mk', serverURL: 'http://localhost' });
+
+    const entry = manager.getTrigger('@File', 'beforeSave');
+    const request = {
+      file: { name: 'test.txt' },
+      master: false,
+      ip: '',
+      headers: {},
+    };
+    const result = await entry.handler(request);
+    expect(result).toEqual({ name: 'test.txt' });
+  });
+
+  it('beforeSave trigger without request.object returning empty object returns undefined', async () => {
+    const cloud = createMockCloudCode(
+      { protocol: 'ParseCloud/1.0', hooks: { functions: [], triggers: [{ className: '@File', triggerName: 'beforeSave' }], jobs: [] } },
+      { 'trigger:beforeSave.@File': () => ({ success: {} }) }
+    );
+    const adapter = new InProcessAdapter(cloud);
+    const registry = manager.createRegistry(adapter.name);
+    await adapter.initialize(registry, { appId: 'test', masterKey: 'mk', serverURL: 'http://localhost' });
+
+    const entry = manager.getTrigger('@File', 'beforeSave');
+    const request = {
+      file: { name: 'test.txt' },
+      master: false,
+      ip: '',
+      headers: {},
+    };
+    const result = await entry.handler(request);
+    expect(result).toBeUndefined();
+  });
+
+  it('non-beforeSave trigger returns webhookResponseToResult', async () => {
+    const cloud = createMockCloudCode(
+      { protocol: 'ParseCloud/1.0', hooks: { functions: [], triggers: [{ className: 'Todo', triggerName: 'afterSave' }], jobs: [] } },
+      { 'trigger:afterSave.Todo': () => ({ success: { saved: true } }) }
+    );
+    const adapter = new InProcessAdapter(cloud);
+    const registry = manager.createRegistry(adapter.name);
+    await adapter.initialize(registry, { appId: 'test', masterKey: 'mk', serverURL: 'http://localhost' });
+
+    const entry = manager.getTrigger('Todo', 'afterSave');
+    const result = await entry.handler({ object: { toJSON: () => ({}) }, master: false, ip: '', headers: {} });
+    expect(result).toEqual({ saved: true });
+  });
+
+  it('bridge handler dispatches job and returns result', async () => {
+    const cloud = createMockCloudCode(
+      { protocol: 'ParseCloud/1.0', hooks: { functions: [], triggers: [], jobs: [{ name: 'cleanup' }] } },
+      { 'job:cleanup': () => ({ success: 'done' }) }
+    );
+    const adapter = new InProcessAdapter(cloud);
+    const registry = manager.createRegistry(adapter.name);
+    await adapter.initialize(registry, { appId: 'test', masterKey: 'mk', serverURL: 'http://localhost' });
+
+    const entry = manager.getJob('cleanup');
+    const result = await entry.handler({ params: {}, master: true, ip: '', headers: {} });
+    expect(result).toBe('done');
+  });
+
+  it('shutdown resolves cleanly', async () => {
+    const cloud = createMockCloudCode({ protocol: 'ParseCloud/1.0', hooks: { functions: [], triggers: [], jobs: [] } });
+    const adapter = new InProcessAdapter(cloud);
+    await expectAsync(adapter.shutdown()).toBeResolved();
+  });
 });
