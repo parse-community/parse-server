@@ -113,7 +113,7 @@
   "scripts": {
     "ci:check": "node ./ci/ciCheck.js",
     "ci:checkNodeEngine": "node ./ci/nodeEngineCheck.js",
-    "docs": "jsdoc -c ./jsdoc-conf.json",
+    "docs": "node resources/generateDocs.js && jsdoc -c ./jsdoc-conf.json",
     "lint": "eslint --cache ./ --flag unstable_config_lookup_from_file",
     "lint-fix": "eslint --fix --cache ./ --flag unstable_config_lookup_from_file",
     "build": "babel src/ -d lib/ --copy-files --extensions '.ts,.js'",
