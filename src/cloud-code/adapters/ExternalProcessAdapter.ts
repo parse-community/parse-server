@@ -79,7 +79,7 @@ function httpPost(url: string, body: Record<string, unknown>, webhookKey: string
 }
 
 export class ExternalProcessAdapter implements CloudCodeAdapter {
-  readonly name = 'external-process';
+  readonly name: string;
   private command: string;
   private webhookKey: string;
   private options: Required<CloudCodeOptions>;
@@ -87,13 +87,14 @@ export class ExternalProcessAdapter implements CloudCodeAdapter {
   private port: number = 0;
   private healthInterval: ReturnType<typeof setInterval> | null = null;
 
-  constructor(command: string, webhookKey: string, options?: CloudCodeOptions) {
+  constructor(command: string, webhookKey: string, options?: CloudCodeOptions, name?: string) {
     if (!webhookKey) {
       throw new Error('webhookKey is required for ExternalProcessAdapter');
     }
     this.command = command;
     this.webhookKey = webhookKey;
     this.options = { ...DEFAULT_OPTIONS, ...options };
+    this.name = name || `external-process-${webhookKey.slice(0, 8)}`;
   }
 
   async initialize(registry: CloudCodeRegistry, config: ParseServerConfig): Promise<void> {

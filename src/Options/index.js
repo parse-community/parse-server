@@ -152,7 +152,7 @@ export interface ParseServerOptions {
   :DEFAULT: false */
   convertUsernameToLowercase: ?boolean;
   /* Full path to your cloud code main.js, a cloud code function, or an object implementing getRouter() for in-process cloud code */
-  cloud: ?(string | Object);
+  cloud: ?(string | Function | { getRouter: Function });
   /* Shell command to spawn an external cloud code process (ParseCloud/1.0 protocol) */
   cloudCodeCommand: ?string;
   /* Key for authenticating external cloud code process requests. Required when cloudCodeCommand is set. */

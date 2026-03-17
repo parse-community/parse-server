@@ -30,9 +30,14 @@ function createMockCloudServer(manifest) {
 }
 
 describe('ExternalProcessAdapter', () => {
-  it('has name "external-process"', () => {
+  it('derives name from webhookKey by default', () => {
     const adapter = new ExternalProcessAdapter('echo test', 'secret-key');
-    expect(adapter.name).toBe('external-process');
+    expect(adapter.name).toBe('external-process-secret-k');
+  });
+
+  it('accepts a custom name', () => {
+    const adapter = new ExternalProcessAdapter('echo test', 'secret-key', undefined, 'my-adapter');
+    expect(adapter.name).toBe('my-adapter');
   });
 
   it('requires webhookKey', () => {

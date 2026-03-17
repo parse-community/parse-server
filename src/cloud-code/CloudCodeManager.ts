@@ -273,6 +273,16 @@ export class CloudCodeManager {
         } catch {
           // Ignore shutdown errors during initialization rollback
         }
+        // Roll back all previously-initialized adapters
+        for (const prev of [...this.adapters].reverse()) {
+          this.unregisterAll(prev.name);
+          try {
+            await prev.shutdown();
+          } catch {
+            // Ignore shutdown errors during rollback
+          }
+        }
+        this.adapters.length = 0;
         throw error;
       }
       this.adapters.push(adapter);

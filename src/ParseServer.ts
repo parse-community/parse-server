@@ -289,6 +289,14 @@ class ParseServer {
     if (this.liveQueryServer) {
       promises.push(this.liveQueryServer.shutdown());
     }
+    if (this.config.cloudCodeManager) {
+      promises.push(
+        this.config.cloudCodeManager.shutdown().catch(error => {
+          // eslint-disable-next-line no-console
+          console.error('Error while shutting down CloudCodeManager', error);
+        })
+      );
+    }
     await Promise.all(promises);
     connections.destroyAll();
     await Promise.all([serverClosePromise, liveQueryServerClosePromise]);

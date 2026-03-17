@@ -36,7 +36,11 @@ export class InProcessAdapter implements CloudCodeAdapter {
             applyBeforeSaveResponse(request, response);
             return;
           }
-          return webhookResponseToResult(response);
+          const result = webhookResponseToResult(response);
+          if (result && typeof result === 'object' && Object.keys(result).length === 0) {
+            return;
+          }
+          return result;
         }
         return webhookResponseToResult(response);
       });
