@@ -231,7 +231,7 @@ describe('CloudCodeManager', () => {
       manager.defineJob('job1', () => {}, 'source-a');
       manager.defineJob('job2', () => {}, 'source-a');
       const jobs = manager.getJobs();
-      expect(jobs instanceof Map).toBe(true);
+      expect(jobs).toBeInstanceOf(Map);
       expect(jobs.size).toBe(2);
       expect(jobs.has('job1')).toBe(true);
       expect(jobs.has('job2')).toBe(true);
