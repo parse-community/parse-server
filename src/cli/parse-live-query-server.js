@@ -1,9 +1,9 @@
-import definitions from './definitions/parse-live-query-server';
-import runner from './utils/runner';
+import runnerZod from './utils/runner-zod';
 import { ParseServer } from '../index';
+import { LiveQueryServerOptionsSchema } from '../Options/schemas/LiveQueryOptions';
 
-runner({
-  definitions,
+runnerZod({
+  schema: LiveQueryServerOptionsSchema,
   start: function (program, options, logOptions) {
     logOptions();
     ParseServer.createLiveQueryServer(undefined, options);

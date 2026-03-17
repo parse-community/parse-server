@@ -467,8 +467,11 @@ describe('server', () => {
   });
 
   it('should set default masterKeyIps for IPv4 and IPv6 localhost', () => {
-    const definitions = require('../lib/Options/Definitions.js');
-    expect(definitions.ParseServerOptions.masterKeyIps.default).toEqual(['127.0.0.1', '::1']);
+    const { ParseServerOptionsSchema } = require('../lib/Options/schemas/ParseServerOptions');
+    const defaults = ParseServerOptionsSchema.parse({
+      appId: 'x', masterKey: 'x', maintenanceKey: 'x', serverURL: 'http://x',
+    });
+    expect(defaults.masterKeyIps).toEqual(['127.0.0.1', '::1']);
   });
 
   it('should load a middleware', done => {

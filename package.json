@@ -60,7 +60,8 @@
     "uuid": "11.1.0",
     "winston": "3.19.0",
     "winston-daily-rotate-file": "5.0.0",
-    "ws": "8.18.2"
+    "ws": "8.18.2",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@actions/core": "3.0.0",
@@ -112,8 +113,6 @@
   "scripts": {
     "ci:check": "node ./ci/ciCheck.js",
     "ci:checkNodeEngine": "node ./ci/nodeEngineCheck.js",
-    "ci:definitionsCheck": "node ./ci/definitionsCheck.js",
-    "definitions": "node ./resources/buildConfigDefinitions.js && prettier --write 'src/Options/*.js'",
     "docs": "jsdoc -c ./jsdoc-conf.json",
     "lint": "eslint --cache ./ --flag unstable_config_lookup_from_file",
     "lint-fix": "eslint --fix --cache ./ --flag unstable_config_lookup_from_file",

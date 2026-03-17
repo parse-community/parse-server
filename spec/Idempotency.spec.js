@@ -1,6 +1,7 @@
 'use strict';
 const Config = require('../lib/Config');
-const Definitions = require('../lib/Options/Definitions');
+const { IdempotencyOptionsSchema } = require('../lib/Options/schemas/IdempotencyOptions');
+const idempotencyDefaults = IdempotencyOptionsSchema.parse({});
 const request = require('../lib/request');
 const rest = require('../lib/rest');
 const auth = require('../lib/Auth');
@@ -261,10 +262,10 @@ describe('Idempotency', () => {
   it('should use default configuration when none is set', async () => {
     await setup({});
     expect(Config.get(Parse.applicationId).idempotencyOptions.ttl).toBe(
-      Definitions.IdempotencyOptions.ttl.default
+      idempotencyDefaults.ttl
     );
-    expect(Config.get(Parse.applicationId).idempotencyOptions.paths).toBe(
-      Definitions.IdempotencyOptions.paths.default
+    expect(Config.get(Parse.applicationId).idempotencyOptions.paths).toEqual(
+      idempotencyDefaults.paths
     );
   });
 

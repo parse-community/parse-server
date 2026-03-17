@@ -9,7 +9,10 @@ import rest from './rest';
 import MongoStorageAdapter from './Adapters/Storage/Mongo/MongoStorageAdapter';
 import PostgresStorageAdapter from './Adapters/Storage/Postgres/PostgresStorageAdapter';
 import rateLimit from 'express-rate-limit';
-import { RateLimitOptions } from './Options/Definitions';
+import { schemaToLegacyDefinitions } from './Options/schemaUtils';
+import { RateLimitOptionsSchema } from './Options/schemas/RateLimitOptions';
+
+const RateLimitOptions = schemaToLegacyDefinitions(RateLimitOptionsSchema);
 import { pathToRegexp } from 'path-to-regexp';
 import RedisStore from 'rate-limit-redis';
 import { createClient } from 'redis';

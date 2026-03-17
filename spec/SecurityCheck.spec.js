@@ -3,7 +3,8 @@
 const Utils = require('../lib/Utils');
 const Config = require('../lib/Config');
 const request = require('../lib/request');
-const Definitions = require('../lib/Options/Definitions');
+const { SecurityOptionsSchema } = require('../lib/Options/schemas/SecurityOptions');
+const securityDefaults = SecurityOptionsSchema.parse({});
 const { Check, CheckState } = require('../lib/Security/Check');
 const CheckGroup = require('../lib/Security/CheckGroup');
 const CheckRunner = require('../lib/Security/CheckRunner');
@@ -82,10 +83,10 @@ describe('Security Check', () => {
     it('uses default configuration when none is set', async () => {
       await reconfigureServerWithSecurityConfig({});
       expect(Config.get(Parse.applicationId).security.enableCheck).toBe(
-        Definitions.SecurityOptions.enableCheck.default
+        securityDefaults.enableCheck
       );
       expect(Config.get(Parse.applicationId).security.enableCheckLog).toBe(
-        Definitions.SecurityOptions.enableCheckLog.default
+        securityDefaults.enableCheckLog
       );
     });
 

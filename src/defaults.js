@@ -1,12 +1,14 @@
-import { nullParser } from './Options/parsers';
-const { ParseServerOptions, DatabaseOptions } = require('./Options/Definitions');
+import { extractSchemaDefaults } from './Options/schemaUtils';
+import { ParseServerOptionsSchema } from './Options/schemas/ParseServerOptions';
+import { DatabaseOptionsSchema } from './Options/schemas/DatabaseOptions';
+
 const logsFolder = (() => {
   let folder = './logs/';
   if (typeof process !== 'undefined' && process.env.TESTING === '1') {
     folder = './test_logs/';
   }
   if (process.env.PARSE_SERVER_LOGS_FOLDER) {
-    folder = nullParser(process.env.PARSE_SERVER_LOGS_FOLDER);
+    folder = process.env.PARSE_SERVER_LOGS_FOLDER === 'null' ? null : process.env.PARSE_SERVER_LOGS_FOLDER;
   }
   return folder;
 })();
@@ -16,13 +18,7 @@ const { verbose, level } = (() => {
   return { verbose, level: verbose ? 'verbose' : undefined };
 })();
 
-const DefinitionDefaults = Object.keys(ParseServerOptions).reduce((memo, key) => {
-  const def = ParseServerOptions[key];
-  if (Object.prototype.hasOwnProperty.call(def, 'default')) {
-    memo[key] = def.default;
-  }
-  return memo;
-}, {});
+const DefinitionDefaults = extractSchemaDefaults(ParseServerOptionsSchema);
 
 const computedDefaults = {
   jsonLogs: process.env.JSON_LOGS || false,
@@ -34,13 +30,7 @@ const computedDefaults = {
 export default Object.assign({}, DefinitionDefaults, computedDefaults);
 export const DefaultMongoURI = DefinitionDefaults.databaseURI;
 
-export const DatabaseOptionDefaults = Object.keys(DatabaseOptions).reduce((memo, key) => {
-  const def = DatabaseOptions[key];
-  if (Object.prototype.hasOwnProperty.call(def, 'default')) {
-    memo[key] = def.default;
-  }
-  return memo;
-}, {});
+export const DatabaseOptionDefaults = extractSchemaDefaults(DatabaseOptionsSchema);
 
 // Parse Server-specific database options that should be filtered out
 // before passing to MongoDB client

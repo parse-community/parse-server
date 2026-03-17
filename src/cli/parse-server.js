@@ -1,9 +1,9 @@
 /* eslint-disable no-console */
 import ParseServer from '../index';
-import definitions from './definitions/parse-server';
 import cluster from 'cluster';
 import os from 'os';
-import runner from './utils/runner';
+import runnerZod from './utils/runner-zod';
+import { ParseServerOptionsSchema } from '../Options/schemas/ParseServerOptions';
 
 const help = function () {
   console.log('  Get Started guide:');
@@ -27,8 +27,8 @@ const help = function () {
   console.log('');
 };
 
-runner({
-  definitions,
+runnerZod({
+  schema: ParseServerOptionsSchema,
   help,
   usage: '[options] <path/to/configuration.json>',
   start: function (program, options, logOptions) {

@@ -44,7 +44,9 @@ import { SecurityRouter } from './Routers/SecurityRouter';
 import CheckRunner from './Security/CheckRunner';
 import Deprecator from './Deprecator/Deprecator';
 import { DefinedSchemas } from './SchemaMigrations/DefinedSchemas';
-import OptionsDefinitions from './Options/Definitions';
+import { validateConfig } from './Options/validateConfig';
+import { warnInapplicableOptions } from './Options/schemaUtils';
+import { ParseServerOptionsSchema } from './Options/schemas/ParseServerOptions';
 import { resolvingPromise, Connections } from './TestUtils';
 
 // Mutate the Parse object to add the Cloud Code handlers
@@ -69,59 +71,25 @@ class ParseServer {
     // Scan for deprecated Parse Server options
     Deprecator.scanParseServerOptions(options);
 
-    const interfaces = JSON.parse(JSON.stringify(OptionsDefinitions));
+    // Validate and apply defaults via Zod schema
+    const validated = validateConfig(options);
 
-    function getValidObject(root) {
-      const result = {};
-      for (const key in root) {
-        if (Object.prototype.hasOwnProperty.call(root[key], 'type')) {
-          if (root[key].type.endsWith('[]')) {
-            result[key] = [getValidObject(interfaces[root[key].type.slice(0, -2)])];
-          } else {
-            result[key] = getValidObject(interfaces[root[key].type]);
-          }
-        } else {
-          result[key] = '';
-        }
-      }
-      return result;
-    }
+    // Copy validated values back to options object (preserving reference for consumers)
+    Object.keys(validated).forEach(key => {
+      options[key] = validated[key];
+    });
 
-    const optionsBlueprint = getValidObject(interfaces['ParseServerOptions']);
+    // Apply special defaults and backwards compatibility that go beyond Zod schema defaults
+    injectSpecialDefaults(options);
 
-    function validateKeyNames(original, ref, name = '') {
-      let result = [];
-      const prefix = name + (name !== '' ? '.' : '');
-      for (const key in original) {
-        if (!Object.prototype.hasOwnProperty.call(ref, key)) {
-          result.push(prefix + key);
-        } else {
-          if (ref[key] === '') { continue; }
-          let res = [];
-          if (Array.isArray(original[key]) && Array.isArray(ref[key])) {
-            const type = ref[key][0];
-            original[key].forEach((item, idx) => {
-              if (typeof item === 'object' && item !== null) {
-                res = res.concat(validateKeyNames(item, type, prefix + key + `[${idx}]`));
-              }
-            });
-          } else if (typeof original[key] === 'object' && typeof ref[key] === 'object') {
-            res = validateKeyNames(original[key], ref[key], prefix + key);
-          }
-          result = result.concat(res);
-        }
-      }
-      return result;
-    }
-
-    const diff = validateKeyNames(options, optionsBlueprint);
-    if (diff.length > 0) {
+    // Warn about options that only apply to CLI context (#8432/#8300)
+    warnInapplicableOptions(options, 'api', ParseServerOptionsSchema, (msg) => {
       const logger = (logging as any).logger;
-      logger.error(`Invalid key(s) found in Parse Server configuration: ${diff.join(', ')}`);
-    }
+      if (logger) {
+        logger.warn(msg);
+      }
+    });
 
-    // Set option defaults
-    injectDefaults(options);
     const {
       appId = requiredParameter('You must provide an appId!'),
       masterKey = requiredParameter('You must provide a masterKey!'),
@@ -131,7 +99,6 @@ class ParseServer {
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
-    Config.validateOptions(options);
     const allControllers = controllers.getControllers(options);
 
     (options as any).state = 'initialized';
@@ -595,16 +562,18 @@ function addParseCloud() {
   global.Parse = Parse;
 }
 
-function injectDefaults(options: ParseServerOptions) {
-  Object.keys(defaults).forEach(key => {
-    if (!Object.prototype.hasOwnProperty.call(options, key)) {
-      options[key] = defaults[key];
-    }
-  });
-
-  // Inject defaults for database options; only when no explicit database adapter is set,
-  // because an explicit adapter manages its own options and passing databaseOptions alongside
-  // it would cause a conflict error in getDatabaseController.
+/**
+ * Applies special defaults and backwards compatibility logic that goes beyond
+ * what Zod schema defaults can handle. Zod handles all simple field defaults;
+ * this function handles:
+ * - Database option defaults (conditional on databaseAdapter)
+ * - serverURL derivation from port + mountPath
+ * - appId special character warning
+ * - userSensitiveFields backwards compatibility
+ * - protectedFields deep merge with defaults
+ */
+function injectSpecialDefaults(options: ParseServerOptions) {
+  // Inject defaults for database options; only when no explicit database adapter is set
   if (!options.databaseAdapter) {
     if (options.databaseOptions == null) {
       options.databaseOptions = {};
@@ -646,10 +615,6 @@ function injectDefaults(options: ParseServerOptions) {
       new Set([...(defaults.userSensitiveFields || []), ...(options.userSensitiveFields || [])])
     );
 
-    // If the options.protectedFields is unset,
-    // it'll be assigned the default above.
-    // Here, protect against the case where protectedFields
-    // is set, but doesn't have _User.
     if (!('_User' in options.protectedFields)) {
       options.protectedFields = Object.assign({ _User: [] }, options.protectedFields);
     }
