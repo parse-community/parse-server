@@ -305,6 +305,10 @@ export interface ParseServerOptions {
   /* Enables the default express error handler for all errors
   :DEFAULT: false */
   enableExpressErrorHandler: ?boolean;
+  /* Deprecated. Enables the legacy product purchase API including the `_Product` class and the `/validate_purchase` endpoint. This is an undocumented, unmaintained legacy feature inherited from the original Parse platform that may not function as expected. We strongly advise against using it. It will be removed in a future major version.
+  :ENV: PARSE_SERVER_ENABLE_PRODUCT_PURCHASE_LEGACY_API
+  :DEFAULT: true */
+  enableProductPurchaseLegacyApi: ?boolean;
   /* Sets the number of characters in generated object id's, default 10
   :DEFAULT: 10 */
   objectIdSize: ?number;

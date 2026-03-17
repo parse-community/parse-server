@@ -238,6 +238,12 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  enableProductPurchaseLegacyApi: {
+    env: 'PARSE_SERVER_ENABLE_PRODUCT_PURCHASE_LEGACY_API',
+    help: 'Deprecated. Enables the legacy product purchase API including the `_Product` class and the `/validate_purchase` endpoint. This is an undocumented, unmaintained legacy feature inherited from the original Parse platform that may not function as expected. We strongly advise against using it. It will be removed in a future major version.',
+    action: parsers.booleanParser,
+    default: true,
+  },
   enableSanitizedErrorResponse: {
     env: 'PARSE_SERVER_ENABLE_SANITIZED_ERROR_RESPONSE',
     help: 'If set to `true`, error details are removed from error messages in responses to client requests, and instead a generic error message is sent. Default is `true`.',

@@ -345,7 +345,7 @@ class ParseServer {
     }
     api.use(middlewares.handleParseSession);
     this.applyRequestContextMiddleware(api, options);
-    const appRouter = ParseServer.promiseRouter({ appId });
+    const appRouter = ParseServer.promiseRouter({ appId, options });
     api.use(appRouter.expressRouter());
 
     api.use(middlewares.handleParseErrors);
@@ -378,7 +378,7 @@ class ParseServer {
     return api;
   }
 
-  static promiseRouter({ appId }) {
+  static promiseRouter({ appId, options }) {
     const routers = [
       new ClassesRouter(),
       new UsersRouter(),
@@ -390,7 +390,6 @@ class ParseServer {
       new SchemasRouter(),
       new PushRouter(),
       new LogsRouter(),
-      new IAPValidationRouter(),
       new FeaturesRouter(),
       new GlobalConfigRouter(),
       new GraphQLRouter(),
@@ -401,6 +400,10 @@ class ParseServer {
       new AggregateRouter(),
       new SecurityRouter(),
     ];
+
+    if (options?.enableProductPurchaseLegacyApi !== false) {
+      routers.push(new IAPValidationRouter());
+    }
 
     const routes = routers.reduce((memo, router) => {
       return memo.concat(router.routes);
