@@ -160,6 +160,12 @@ const validateQuery = (
 
   Object.keys(query).forEach(key => {
     if (query && query[key] && query[key].$regex) {
+      if (typeof query[key].$regex !== 'string') {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, '$regex value must be a string');
+      }
+      if (query[key].$options !== undefined && typeof query[key].$options !== 'string') {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, '$options value must be a string');
+      }
       if (typeof query[key].$options === 'string') {
         if (!query[key].$options.match(/^[imxsu]+$/)) {
           throw new Parse.Error(

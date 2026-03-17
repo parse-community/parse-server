@@ -593,4 +593,93 @@ describe('batch', () => {
       });
     });
   }
+
+  describe('subrequest path type validation', () => {
+    it('rejects object path in batch subrequest with proper error instead of 500', async () => {
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/batch',
+          headers,
+          body: JSON.stringify({
+            requests: [{ method: 'GET', path: { invalid: true } }],
+          }),
+        })
+      ).toBeRejectedWith(
+        jasmine.objectContaining({ status: 400 })
+      );
+    });
+
+    it('rejects numeric path in batch subrequest', async () => {
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/batch',
+          headers,
+          body: JSON.stringify({
+            requests: [{ method: 'GET', path: 123 }],
+          }),
+        })
+      ).toBeRejectedWith(
+        jasmine.objectContaining({ status: 400 })
+      );
+    });
+
+    it('rejects array path in batch subrequest', async () => {
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/batch',
+          headers,
+          body: JSON.stringify({
+            requests: [{ method: 'GET', path: ['/1/classes/Test'] }],
+          }),
+        })
+      ).toBeRejectedWith(
+        jasmine.objectContaining({ status: 400 })
+      );
+    });
+
+    it('rejects null path in batch subrequest', async () => {
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/batch',
+          headers,
+          body: JSON.stringify({
+            requests: [{ method: 'GET', path: null }],
+          }),
+        })
+      ).toBeRejectedWith(
+        jasmine.objectContaining({ status: 400 })
+      );
+    });
+
+    it('rejects boolean path in batch subrequest', async () => {
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/batch',
+          headers,
+          body: JSON.stringify({
+            requests: [{ method: 'GET', path: true }],
+          }),
+        })
+      ).toBeRejectedWith(
+        jasmine.objectContaining({ status: 400 })
+      );
+    });
+
+    it('still accepts valid string path in batch subrequest', async () => {
+      const result = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/batch',
+        headers,
+        body: JSON.stringify({
+          requests: [{ method: 'GET', path: '/1/classes/TestClass' }],
+        }),
+      });
+      expect(result.data).toEqual(jasmine.any(Array));
+    });
+  });
 });
