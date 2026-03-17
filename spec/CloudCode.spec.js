@@ -51,7 +51,7 @@ describe('Cloud Code', () => {
 
   it('cloud code must be valid type', async () => {
     spyOn(console, 'error').and.callFake(() => { });
-    await expectAsync(reconfigureServer({ cloud: true })).toBeRejectedWith(
+    await expectAsync(reconfigureServer({ cloud: true })).toBeRejectedWithError(
       "argument 'cloud' must either be a string or a function"
     );
   });
