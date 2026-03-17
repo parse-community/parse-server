@@ -52,7 +52,9 @@ function deepMerge(
         sourceVal as Record<string, unknown>
       );
     } else if (isPlainObject(sourceVal)) {
-      target[key] = structuredClone(sourceVal);
+      const clone: Record<string, unknown> = {};
+      deepMerge(clone, sourceVal as Record<string, unknown>);
+      target[key] = clone;
     } else {
       target[key] = sourceVal;
     }

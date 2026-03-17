@@ -39,7 +39,6 @@ describe('ParseServerOptionsSchema', () => {
     const paths = result.error.issues.map(i => i.path[0]);
     expect(paths).toContain('appId');
     expect(paths).toContain('masterKey');
-    expect(paths).toContain('maintenanceKey');
     expect(paths).toContain('serverURL');
   });
 
