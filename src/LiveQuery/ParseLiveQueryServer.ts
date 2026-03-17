@@ -427,7 +427,7 @@ class ParseLiveQueryServer {
               subscription.query
             );
             currentParseObject = res.object;
-            originalParseObject = res.original;
+            originalParseObject = res.original ?? null;
             const functionName = 'push' + res.event.charAt(0).toUpperCase() + res.event.slice(1);
             if (client[functionName]) {
               client[functionName](requestId, currentParseObject, originalParseObject);
