@@ -2,6 +2,7 @@
 import Parse from 'parse/node';
 import { logger } from './logger';
 import AppCache from './cache';
+import Utils from './Utils';
 
 function getManager(applicationId) {
   const cached = AppCache.get(applicationId || Parse.applicationId);
@@ -797,7 +798,7 @@ export function resolveError(message, defaultOpts) {
     return new Parse.Error(code, message);
   }
   const error = new Parse.Error(code, message.message || message);
-  if (message instanceof Error) {
+  if (Utils.isNativeError(message)) {
     error.stack = message.stack;
   }
   return error;

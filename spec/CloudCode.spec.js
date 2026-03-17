@@ -5,6 +5,7 @@ const ParseServer = require('../lib/index').ParseServer;
 const request = require('../lib/request');
 const InMemoryCacheAdapter = require('../lib/Adapters/Cache/InMemoryCacheAdapter')
   .InMemoryCacheAdapter;
+const Utils = require('../lib/Utils');
 
 const mockAdapter = {
   createFile: async filename => ({
@@ -1272,15 +1273,15 @@ describe('Cloud Code', () => {
 
   it('test cloud function request params types', function (done) {
     Parse.Cloud.define('params', function (req) {
-      expect(req.params.date instanceof Date).toBe(true);
+      expect(Utils.isDate(req.params.date)).toBe(true);
       expect(req.params.date.getTime()).toBe(1463907600000);
-      expect(req.params.dateList[0] instanceof Date).toBe(true);
+      expect(Utils.isDate(req.params.dateList[0])).toBe(true);
       expect(req.params.dateList[0].getTime()).toBe(1463907600000);
-      expect(req.params.complexStructure.date[0] instanceof Date).toBe(true);
+      expect(Utils.isDate(req.params.complexStructure.date[0])).toBe(true);
       expect(req.params.complexStructure.date[0].getTime()).toBe(1463907600000);
-      expect(req.params.complexStructure.deepDate.date[0] instanceof Date).toBe(true);
+      expect(Utils.isDate(req.params.complexStructure.deepDate.date[0])).toBe(true);
       expect(req.params.complexStructure.deepDate.date[0].getTime()).toBe(1463907600000);
-      expect(req.params.complexStructure.deepDate2[0].date instanceof Date).toBe(true);
+      expect(Utils.isDate(req.params.complexStructure.deepDate2[0].date)).toBe(true);
       expect(req.params.complexStructure.deepDate2[0].date.getTime()).toBe(1463907600000);
       // Regression for #2294
       expect(req.params.file instanceof Parse.File).toBe(true);

@@ -434,7 +434,7 @@ export class FilesRouter {
     }
 
     // Dispatch to the appropriate handler based on whether the body was buffered
-    if (req.body instanceof Buffer) {
+    if (Buffer.isBuffer(req.body)) {
       return this._handleBufferedUpload(req, res, next);
     }
     return this._handleStreamUpload(req, res, next);

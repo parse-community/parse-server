@@ -5,6 +5,7 @@ const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fet
 const FormData = require('form-data');
 require('./helper');
 const { updateCLP } = require('./support/dev');
+const Utils = require('../lib/Utils');
 
 const pluralize = require('pluralize');
 const createUploadLink = (...args) => import('apollo-upload-client/createUploadLink.mjs').then(({ default: fn }) => fn(...args));
@@ -8476,15 +8477,15 @@ describe('ParseGraphQLServer', () => {
 
         it('should accept different params', done => {
           Parse.Cloud.define('hello', async req => {
-            expect(req.params.date instanceof Date).toBe(true);
+            expect(Utils.isDate(req.params.date)).toBe(true);
             expect(req.params.date.getTime()).toBe(1463907600000);
-            expect(req.params.dateList[0] instanceof Date).toBe(true);
+            expect(Utils.isDate(req.params.dateList[0])).toBe(true);
             expect(req.params.dateList[0].getTime()).toBe(1463907600000);
-            expect(req.params.complexStructure.date[0] instanceof Date).toBe(true);
+            expect(Utils.isDate(req.params.complexStructure.date[0])).toBe(true);
             expect(req.params.complexStructure.date[0].getTime()).toBe(1463907600000);
-            expect(req.params.complexStructure.deepDate.date[0] instanceof Date).toBe(true);
+            expect(Utils.isDate(req.params.complexStructure.deepDate.date[0])).toBe(true);
             expect(req.params.complexStructure.deepDate.date[0].getTime()).toBe(1463907600000);
-            expect(req.params.complexStructure.deepDate2[0].date instanceof Date).toBe(true);
+            expect(Utils.isDate(req.params.complexStructure.deepDate2[0].date)).toBe(true);
             expect(req.params.complexStructure.deepDate2[0].date.getTime()).toBe(1463907600000);
             // Regression for #2294
             expect(req.params.file instanceof Parse.File).toBe(true);

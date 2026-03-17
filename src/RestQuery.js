@@ -1223,7 +1223,7 @@ function includePath(config, auth, response, path, context, restOptions = {}) {
 // Path is a list of fields to search into.
 // Returns a list of pointers in REST format.
 function findPointers(object, path) {
-  if (object instanceof Array) {
+  if (Array.isArray(object)) {
     return object.map(x => findPointers(x, path)).flat();
   }
 
@@ -1252,7 +1252,7 @@ function findPointers(object, path) {
 // Returns something analogous to object, but with the appropriate
 // pointers inflated.
 function replacePointers(object, path, replace) {
-  if (object instanceof Array) {
+  if (Array.isArray(object)) {
     return object
       .map(obj => replacePointers(obj, path, replace))
       .filter(obj => typeof obj !== 'undefined');
@@ -1291,7 +1291,7 @@ function findObjectWithKey(root, key) {
   if (typeof root !== 'object') {
     return;
   }
-  if (root instanceof Array) {
+  if (Array.isArray(root)) {
     for (var item of root) {
       const answer = findObjectWithKey(item, key);
       if (answer) {

@@ -337,7 +337,7 @@ function normalize(obj) {
   if (obj === null || typeof obj !== 'object') {
     return JSON.stringify(obj);
   }
-  if (obj instanceof Array) {
+  if (Array.isArray(obj)) {
     return '[' + obj.map(normalize).join(', ') + ']';
   }
   let answer = '{';

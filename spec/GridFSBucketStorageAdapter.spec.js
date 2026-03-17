@@ -103,12 +103,12 @@ describe_only_db('mongo')('GridFSBucket', () => {
     ).toEqual(1);
     expect(notRotated.length).toEqual(0);
     let result = await encryptedAdapter.getFileData(fileName1);
-    expect(result instanceof Buffer).toBe(true);
+    expect(Buffer.isBuffer(result)).toBe(true);
     expect(result.toString('utf-8')).toEqual(data1);
     const encryptedData1 = await unencryptedAdapter.getFileData(fileName1);
     expect(encryptedData1.toString('utf-8')).not.toEqual(unencryptedResult1);
     result = await encryptedAdapter.getFileData(fileName2);
-    expect(result instanceof Buffer).toBe(true);
+    expect(Buffer.isBuffer(result)).toBe(true);
     expect(result.toString('utf-8')).toEqual(data2);
     const encryptedData2 = await unencryptedAdapter.getFileData(fileName2);
     expect(encryptedData2.toString('utf-8')).not.toEqual(unencryptedResult2);
@@ -146,7 +146,7 @@ describe_only_db('mongo')('GridFSBucket', () => {
     ).toEqual(1);
     expect(notRotated.length).toEqual(0);
     let result = await encryptedAdapter.getFileData(fileName1);
-    expect(result instanceof Buffer).toBe(true);
+    expect(Buffer.isBuffer(result)).toBe(true);
     expect(result.toString('utf-8')).toEqual(data1);
     let decryptionError1;
     let encryptedData1;
@@ -158,7 +158,7 @@ describe_only_db('mongo')('GridFSBucket', () => {
     expect(decryptionError1).toMatch('Error');
     expect(encryptedData1).toBeUndefined();
     result = await encryptedAdapter.getFileData(fileName2);
-    expect(result instanceof Buffer).toBe(true);
+    expect(Buffer.isBuffer(result)).toBe(true);
     expect(result.toString('utf-8')).toEqual(data2);
     let decryptionError2;
     let encryptedData2;
@@ -203,7 +203,7 @@ describe_only_db('mongo')('GridFSBucket', () => {
     ).toEqual(1);
     expect(notRotated.length).toEqual(0);
     let result = await unEncryptedAdapter.getFileData(fileName1);
-    expect(result instanceof Buffer).toBe(true);
+    expect(Buffer.isBuffer(result)).toBe(true);
     expect(result.toString('utf-8')).toEqual(data1);
     let decryptionError1;
     let encryptedData1;
@@ -215,7 +215,7 @@ describe_only_db('mongo')('GridFSBucket', () => {
     expect(decryptionError1).toMatch('Error');
     expect(encryptedData1).toBeUndefined();
     result = await unEncryptedAdapter.getFileData(fileName2);
-    expect(result instanceof Buffer).toBe(true);
+    expect(Buffer.isBuffer(result)).toBe(true);
     expect(result.toString('utf-8')).toEqual(data2);
     let decryptionError2;
     let encryptedData2;
@@ -271,7 +271,7 @@ describe_only_db('mongo')('GridFSBucket', () => {
       }).length
     ).toEqual(0);
     let result = await encryptedAdapter.getFileData(fileName1);
-    expect(result instanceof Buffer).toBe(true);
+    expect(Buffer.isBuffer(result)).toBe(true);
     expect(result.toString('utf-8')).toEqual(data1);
     let decryptionError1;
     let encryptedData1;
@@ -283,7 +283,7 @@ describe_only_db('mongo')('GridFSBucket', () => {
     expect(decryptionError1).toMatch('Error');
     expect(encryptedData1).toBeUndefined();
     result = await encryptedAdapter.getFileData(fileName2);
-    expect(result instanceof Buffer).toBe(true);
+    expect(Buffer.isBuffer(result)).toBe(true);
     expect(result.toString('utf-8')).toEqual(data2);
     let decryptionError2;
     let encryptedData2;
@@ -338,7 +338,7 @@ describe_only_db('mongo')('GridFSBucket', () => {
       }).length
     ).toEqual(1);
     let result = await encryptedAdapter.getFileData(fileName1);
-    expect(result instanceof Buffer).toBe(true);
+    expect(Buffer.isBuffer(result)).toBe(true);
     expect(result.toString('utf-8')).toEqual(data1);
     let decryptionError1;
     let encryptedData1;
@@ -350,7 +350,7 @@ describe_only_db('mongo')('GridFSBucket', () => {
     expect(decryptionError1).toMatch('Error');
     expect(encryptedData1).toBeUndefined();
     result = await encryptedAdapter.getFileData(fileName2);
-    expect(result instanceof Buffer).toBe(true);
+    expect(Buffer.isBuffer(result)).toBe(true);
     expect(result.toString('utf-8')).toEqual(data2);
     let decryptionError2;
     let encryptedData2;

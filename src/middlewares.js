@@ -1,4 +1,5 @@
 import AppCache from './cache';
+import Utils from './Utils';
 import Parse from 'parse/node';
 import auth from './Auth';
 import Config from './Config';
@@ -119,7 +120,7 @@ export async function handleParseHeaders(req, res, next) {
 
   if (!info.appId || !AppCache.get(info.appId)) {
     // See if we can find the app id on the body.
-    if (req.body instanceof Buffer) {
+    if (Buffer.isBuffer(req.body)) {
       // The only chance to find the app id is if this is a file
       // upload that actually is a JSON body. So try to parse it.
       // https://github.com/parse-community/parse-server/issues/6589
@@ -178,7 +179,7 @@ export async function handleParseHeaders(req, res, next) {
         delete req.body._MasterKey;
       }
       if (req.body._context) {
-        if (req.body._context instanceof Object) {
+        if (Utils.isObject(req.body._context)) {
           info.context = req.body._context;
         } else {
           try {

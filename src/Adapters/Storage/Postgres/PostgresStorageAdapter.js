@@ -572,7 +572,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
 
     if (fieldValue.$containedBy) {
       const arr = fieldValue.$containedBy;
-      if (!(arr instanceof Array)) {
+      if (!Array.isArray(arr)) {
         throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $containedBy: should be an array`);
       }
 
@@ -654,7 +654,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
 
     if (fieldValue.$geoWithin && fieldValue.$geoWithin.$centerSphere) {
       const centerSphere = fieldValue.$geoWithin.$centerSphere;
-      if (!(centerSphere instanceof Array) || centerSphere.length < 2) {
+      if (!Array.isArray(centerSphere) || centerSphere.length < 2) {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
           'bad $geoWithin value; $centerSphere should be an array of Parse.GeoPoint and distance'
@@ -662,7 +662,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       }
       // Get point, convert to geo point if necessary and validate
       let point = centerSphere[0];
-      if (point instanceof Array && point.length === 2) {
+      if (Array.isArray(point) && point.length === 2) {
         point = new Parse.GeoPoint(point[1], point[0]);
       } else if (!GeoPointCoder.isValidJSON(point)) {
         throw new Parse.Error(
@@ -699,7 +699,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
           );
         }
         points = polygon.coordinates;
-      } else if (polygon instanceof Array) {
+      } else if (Array.isArray(polygon)) {
         if (polygon.length < 3) {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
@@ -715,7 +715,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       }
       points = points
         .map(point => {
-          if (point instanceof Array && point.length === 2) {
+          if (Array.isArray(point) && point.length === 2) {
             Parse.GeoPoint._validate(point[1], point[0]);
             return `(${point[0]}, ${point[1]})`;
           }
@@ -1696,7 +1696,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         updatePatterns.push(`$${index}:name = $${index + 1}`);
         values.push(fieldName, toPostgresValue(fieldValue));
         index += 2;
-      } else if (fieldValue instanceof Date) {
+      } else if (Utils.isDate(fieldValue)) {
         updatePatterns.push(`$${index}:name = $${index + 1}`);
         values.push(fieldName, fieldValue);
         index += 2;
@@ -2057,7 +2057,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       if (object[fieldName] === null) {
         delete object[fieldName];
       }
-      if (object[fieldName] instanceof Date) {
+      if (Utils.isDate(object[fieldName])) {
         object[fieldName] = {
           __type: 'Date',
           iso: object[fieldName].toISOString(),

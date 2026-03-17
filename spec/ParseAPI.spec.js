@@ -7,6 +7,7 @@ const Parse = require('parse/node');
 const Config = require('../lib/Config');
 const SchemaController = require('../lib/Controllers/SchemaController');
 const { destroyAllDataPermanently } = require('../lib/TestUtils');
+const Utils = require('../lib/Utils');
 
 const userSchema = SchemaController.convertSchemaToAdapterSchema({
   className: '_User',
@@ -327,10 +328,10 @@ describe('miscellaneous', () => {
         return obj2.fetch();
       })
       .then(obj2 => {
-        expect(obj2.get('date') instanceof Date).toBe(true);
-        expect(obj2.get('array') instanceof Array).toBe(true);
-        expect(obj2.get('object') instanceof Array).toBe(false);
-        expect(obj2.get('object') instanceof Object).toBe(true);
+        expect(Utils.isDate(obj2.get('date'))).toBe(true);
+        expect(Array.isArray(obj2.get('array'))).toBe(true);
+        expect(Array.isArray(obj2.get('object'))).toBe(false);
+        expect(Utils.isObject(obj2.get('object'))).toBe(true);
         done();
       });
   });

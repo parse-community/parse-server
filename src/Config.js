@@ -24,6 +24,7 @@ import {
 } from './Options/Definitions';
 import ParseServer from './cloud-code/Parse.Server';
 import Deprecator from './Deprecator/Deprecator';
+import Utils from './Utils';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -346,7 +347,7 @@ export class Config {
     }
     if (pages.customRoutes === undefined) {
       pages.customRoutes = PagesOptions.customRoutes.default;
-    } else if (!(pages.customRoutes instanceof Array)) {
+    } else if (!Array.isArray(pages.customRoutes)) {
       throw 'Parse Server option pages.customRoutes must be an array.';
     }
     if (pages.encodePageParamHeaders === undefined) {
@@ -369,7 +370,7 @@ export class Config {
     }
     if (!idempotencyOptions.paths) {
       idempotencyOptions.paths = IdempotencyOptions.paths.default;
-    } else if (!(idempotencyOptions.paths instanceof Array)) {
+    } else if (!Array.isArray(idempotencyOptions.paths)) {
       throw 'idempotency paths must be of an array of strings';
     }
   }
@@ -420,7 +421,7 @@ export class Config {
       if (passwordPolicy.validatorPattern) {
         if (typeof passwordPolicy.validatorPattern === 'string') {
           passwordPolicy.validatorPattern = new RegExp(passwordPolicy.validatorPattern);
-        } else if (!(passwordPolicy.validatorPattern instanceof RegExp)) {
+        } else if (!Utils.isRegExp(passwordPolicy.validatorPattern)) {
           throw 'passwordPolicy.validatorPattern must be a regex string or RegExp object.';
         }
       }
@@ -536,7 +537,7 @@ export class Config {
 
   static validateFileUploadOptions(fileUpload) {
     try {
-      if (fileUpload == null || typeof fileUpload !== 'object' || fileUpload instanceof Array) {
+      if (fileUpload == null || typeof fileUpload !== 'object' || Array.isArray(fileUpload)) {
         throw 'fileUpload must be an object value.';
       }
     } catch (e) {

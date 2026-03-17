@@ -2,6 +2,7 @@
 import { format as formatUrl, parse as parseUrl } from '../../../vendor/mongodbUrl';
 import type { QueryOptions, QueryType, SchemaType, StorageClass } from '../StorageAdapter';
 import { StorageAdapter } from '../StorageAdapter';
+import Utils from '../../../Utils';
 import MongoCollection from './MongoCollection';
 import MongoSchemaCollection from './MongoSchemaCollection';
 import {
@@ -18,7 +19,6 @@ import Parse from 'parse/node';
 import _ from 'lodash';
 import defaults, { ParseServerDatabaseOptions } from '../../../defaults';
 import logger from '../../../logger';
-import Utils from '../../../Utils';
 
 // @flow-disable-next
 const mongodb = require('mongodb');
@@ -1110,7 +1110,7 @@ export class MongoStorageAdapter implements StorageAdapter {
    * @returns {any} The original value if not convertible to Date, or a Date object if it is.
    */
   _convertToDate(value: any): any {
-    if (value instanceof Date) {
+    if (Utils.isDate(value)) {
       return value;
     }
     if (typeof value === 'string') {

@@ -5,6 +5,12 @@ var vm = require('vm');
 var logger = require('../logger').default;
 
 var regexTimeout = 0;
+// IMPORTANT: vmContext is shared across all calls for performance (vm.createContext() is expensive).
+// This is safe because safeRegexTest is synchronous — setting the context properties and calling
+// runInContext happen in the same event loop tick with no interruption possible. Do NOT add any
+// asynchronous operations (await, callbacks, promises) between setting vmContext properties and
+// calling script.runInContext, as this would allow other calls to overwrite the context values
+// and cause cross-contamination between regex evaluations.
 var vmContext = vm.createContext(Object.create(null));
 var scriptCache = new Map();
 var SCRIPT_CACHE_MAX = 1000;
@@ -13,6 +19,7 @@ function setRegexTimeout(ms) {
   regexTimeout = ms;
 }
 
+// IMPORTANT: This function must remain synchronous. See vmContext comment above.
 function safeRegexTest(pattern, flags, input) {
   try {
     if (!regexTimeout) {
