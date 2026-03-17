@@ -5,15 +5,15 @@ export const PagesRouteSchema = z
   .object({
     handler: option(z.any(), {
       env: 'PARSE_SERVER_PAGES_ROUTE_HANDLER',
-      help: 'The route handler function.',
+      help: 'The Express route handler function for this custom page route.',
     }),
     method: option(z.string(), {
       env: 'PARSE_SERVER_PAGES_ROUTE_METHOD',
-      help: 'The HTTP method for the route.',
+      help: "The HTTP method for this custom page route (e.g. 'GET', 'POST').",
     }),
     path: option(z.string(), {
       env: 'PARSE_SERVER_PAGES_ROUTE_PATH',
-      help: 'The path for the route.',
+      help: 'The URL path for this custom page route.',
     }),
   })
   .loose();
@@ -24,35 +24,35 @@ export const PagesCustomUrlsOptionsSchema = z
   .object({
     emailVerificationLinkExpired: option(z.string().optional(), {
       env: 'PARSE_SERVER_PAGES_CUSTOM_URL_EMAIL_VERIFICATION_LINK_EXPIRED',
-      help: 'Custom URL for expired email verification link.',
+      help: 'Redirect URL shown when a user clicks an expired email verification link.',
     }),
     emailVerificationLinkInvalid: option(z.string().optional(), {
       env: 'PARSE_SERVER_PAGES_CUSTOM_URL_EMAIL_VERIFICATION_LINK_INVALID',
-      help: 'Custom URL for invalid email verification link.',
+      help: 'Redirect URL shown when a user clicks an invalid email verification link.',
     }),
     emailVerificationSendFail: option(z.string().optional(), {
       env: 'PARSE_SERVER_PAGES_CUSTOM_URL_EMAIL_VERIFICATION_SEND_FAIL',
-      help: 'Custom URL for email verification send failure.',
+      help: 'Redirect URL shown when sending the email verification email fails.',
     }),
     emailVerificationSendSuccess: option(z.string().optional(), {
       env: 'PARSE_SERVER_PAGES_CUSTOM_URL_EMAIL_VERIFICATION_SEND_SUCCESS',
-      help: 'Custom URL for email verification send success.',
+      help: 'Redirect URL shown when a re-send verification email request succeeds.',
     }),
     emailVerificationSuccess: option(z.string().optional(), {
       env: 'PARSE_SERVER_PAGES_CUSTOM_URL_EMAIL_VERIFICATION_SUCCESS',
-      help: 'Custom URL for email verification success.',
+      help: 'Redirect URL shown after successful email verification.',
     }),
     passwordReset: option(z.string().optional(), {
       env: 'PARSE_SERVER_PAGES_CUSTOM_URL_PASSWORD_RESET',
-      help: 'Custom URL for password reset.',
+      help: 'URL of the custom password reset form page.',
     }),
     passwordResetLinkInvalid: option(z.string().optional(), {
       env: 'PARSE_SERVER_PAGES_CUSTOM_URL_PASSWORD_RESET_LINK_INVALID',
-      help: 'Custom URL for invalid password reset link.',
+      help: 'Redirect URL shown when a user clicks an invalid password reset link.',
     }),
     passwordResetSuccess: option(z.string().optional(), {
       env: 'PARSE_SERVER_PAGES_CUSTOM_URL_PASSWORD_RESET_SUCCESS',
-      help: 'Custom URL for password reset success.',
+      help: 'Redirect URL shown after a successful password reset.',
     }),
   })
   .loose();
@@ -63,43 +63,43 @@ export const PagesOptionsSchema = z
   .object({
     customRoutes: option(z.array(PagesRouteSchema).default([]), {
       env: 'PARSE_SERVER_PAGES_CUSTOM_ROUTES',
-      help: 'Custom routes for pages.',
+      help: 'Array of custom Express routes to add to the pages router.',
     }),
     customUrls: option(PagesCustomUrlsOptionsSchema.default({}), {
       env: 'PARSE_SERVER_PAGES_CUSTOM_URLS',
-      help: 'Custom URLs for pages.',
+      help: 'Custom redirect URLs for email verification and password reset page flows.',
     }),
     enableLocalization: option(z.boolean().default(false), {
       env: 'PARSE_SERVER_PAGES_ENABLE_LOCALIZATION',
-      help: 'Enable localization for pages.',
+      help: "Enable localized page templates based on the user's locale.",
     }),
     encodePageParamHeaders: option(z.boolean().default(false), {
       env: 'PARSE_SERVER_PAGES_ENCODE_PAGE_PARAM_HEADERS',
-      help: 'Encode page parameters in headers.',
+      help: 'Encode page parameters in HTTP headers for custom page routing.',
     }),
     forceRedirect: option(z.boolean().default(false), {
       env: 'PARSE_SERVER_PAGES_FORCE_REDIRECT',
-      help: 'Force redirect for pages.',
+      help: 'Always redirect to custom URLs instead of rendering built-in pages.',
     }),
     localizationFallbackLocale: option(z.string().default('en'), {
       env: 'PARSE_SERVER_PAGES_LOCALIZATION_FALLBACK_LOCALE',
-      help: 'Fallback locale for localization.',
+      help: "Default locale used when the user's locale is not available.",
     }),
     localizationJsonPath: option(z.string().optional(), {
       env: 'PARSE_SERVER_PAGES_LOCALIZATION_JSON_PATH',
-      help: 'Path to localization JSON files.',
+      help: 'Path to the directory containing localization JSON files.',
     }),
     pagesEndpoint: option(z.string().default('apps'), {
       env: 'PARSE_SERVER_PAGES_PAGES_ENDPOINT',
-      help: 'The pages endpoint.',
+      help: 'The URL path prefix for all server-rendered pages.',
     }),
     pagesPath: option(z.string().optional(), {
       env: 'PARSE_SERVER_PAGES_PAGES_PATH',
-      help: 'Path to pages directory.',
+      help: 'Path to the directory containing custom page templates.',
     }),
     placeholders: option(z.record(z.string(), z.any()).default({}), {
       env: 'PARSE_SERVER_PAGES_PLACEHOLDERS',
-      help: 'Placeholders for page templates.',
+      help: 'Key-value pairs for template variable substitution in page templates.',
     }),
   })
   .loose();
@@ -110,43 +110,43 @@ export const CustomPagesOptionsSchema = z
   .object({
     choosePassword: option(z.string().optional(), {
       env: 'PARSE_SERVER_CUSTOM_PAGES_CHOOSE_PASSWORD',
-      help: 'Custom page URL for choosing a password.',
+      help: 'URL of the custom page where users choose a new password.',
     }),
     expiredVerificationLink: option(z.string().optional(), {
       env: 'PARSE_SERVER_CUSTOM_PAGES_EXPIRED_VERIFICATION_LINK',
-      help: 'Custom page URL for expired verification link.',
+      help: 'URL of the custom page shown when an email verification link has expired.',
     }),
     invalidLink: option(z.string().optional(), {
       env: 'PARSE_SERVER_CUSTOM_PAGES_INVALID_LINK',
-      help: 'Custom page URL for invalid link.',
+      help: 'URL of the custom page shown for any invalid link.',
     }),
     invalidPasswordResetLink: option(z.string().optional(), {
       env: 'PARSE_SERVER_CUSTOM_PAGES_INVALID_PASSWORD_RESET_LINK',
-      help: 'Custom page URL for invalid password reset link.',
+      help: 'URL of the custom page shown when a password reset link is invalid.',
     }),
     invalidVerificationLink: option(z.string().optional(), {
       env: 'PARSE_SERVER_CUSTOM_PAGES_INVALID_VERIFICATION_LINK',
-      help: 'Custom page URL for invalid verification link.',
+      help: 'URL of the custom page shown when an email verification link is invalid.',
     }),
     linkSendFail: option(z.string().optional(), {
       env: 'PARSE_SERVER_CUSTOM_PAGES_LINK_SEND_FAIL',
-      help: 'Custom page URL for link send failure.',
+      help: 'URL of the custom page shown when sending a verification or reset email fails.',
     }),
     linkSendSuccess: option(z.string().optional(), {
       env: 'PARSE_SERVER_CUSTOM_PAGES_LINK_SEND_SUCCESS',
-      help: 'Custom page URL for link send success.',
+      help: 'URL of the custom page shown when sending a verification or reset email succeeds.',
     }),
     parseFrameURL: option(z.string().optional(), {
       env: 'PARSE_SERVER_CUSTOM_PAGES_PARSE_FRAME_URL',
-      help: 'URL for the Parse frame.',
+      help: 'URL loaded in an iframe on built-in pages, used for Parse Dashboard integration.',
     }),
     passwordResetSuccess: option(z.string().optional(), {
       env: 'PARSE_SERVER_CUSTOM_PAGES_PASSWORD_RESET_SUCCESS',
-      help: 'Custom page URL for password reset success.',
+      help: 'URL of the custom page shown after a successful password reset.',
     }),
     verifyEmailSuccess: option(z.string().optional(), {
       env: 'PARSE_SERVER_CUSTOM_PAGES_VERIFY_EMAIL_SUCCESS',
-      help: 'Custom page URL for email verification success.',
+      help: 'URL of the custom page shown after successful email verification.',
     }),
   })
   .loose();

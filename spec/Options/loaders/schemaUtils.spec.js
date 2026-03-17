@@ -5,7 +5,7 @@ const {
   getAllOptionMeta,
   buildEnvMap,
   coerceValue,
-} = require('../../../src/Options/schemaUtils');
+} = require('../../../lib/Options/schemaUtils');
 
 describe('schemaUtils', () => {
   describe('option() and getOptionMeta()', () => {

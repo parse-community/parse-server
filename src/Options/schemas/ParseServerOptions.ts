@@ -14,7 +14,7 @@ import { LogLevelsSchema } from './LogLevels';
 import { DatabaseOptionsSchema } from './DatabaseOptions';
 
 /** Schema for adapter fields that accept a module path string, config object, or class instance. */
-const adapterSchema = z.union([z.string(), z.record(z.any()), z.custom<any>()]).optional();
+const adapterSchema = z.union([z.string(), z.record(z.string(), z.any()), z.custom<any>(() => true)]).optional();
 
 /** Validates an array of IP addresses, supporting CIDR notation. */
 const ipArraySchema = (fieldName: string) =>
@@ -68,7 +68,7 @@ export const ParseServerOptionsSchema = z.object({
     env: 'PARSE_SERVER_APP_NAME',
     help: 'The display name of your app, used in email templates and verification links.',
   }),
-  auth: option(z.record(z.any()).optional(), {
+  auth: option(z.record(z.string(), z.any()).optional(), {
     env: 'PARSE_SERVER_AUTH_PROVIDERS',
     help: 'Configuration for 3rd party authentication providers such as Google, Facebook, or Apple.',
   }),
@@ -109,7 +109,7 @@ export const ParseServerOptionsSchema = z.object({
     env: 'PARSE_SERVER_CONVERT_USERNAME_TO_LOWERCASE',
     help: 'Automatically convert usernames to lowercase on signup and login.',
   }),
-  customPages: option(CustomPagesOptionsSchema.default({}), {
+  customPages: option(CustomPagesOptionsSchema.optional(), {
     env: 'PARSE_SERVER_CUSTOM_PAGES',
     help: 'Custom page URLs for password reset and email verification user-facing pages.',
   }),
@@ -201,7 +201,7 @@ export const ParseServerOptionsSchema = z.object({
     env: 'PARSE_SERVER_FILES_ADAPTER',
     help: 'Adapter module for file storage, such as S3 or GridFS.',
   }),
-  fileUpload: option(FileUploadOptionsSchema.default({}), {
+  fileUpload: option(FileUploadOptionsSchema.optional(), {
     env: 'PARSE_SERVER_FILE_UPLOAD_OPTIONS',
     help: 'Options for controlling file upload permissions and allowed file types.',
   }),
@@ -221,7 +221,7 @@ export const ParseServerOptionsSchema = z.object({
     env: 'PARSE_SERVER_HOST',
     help: 'The hostname or IP address the server binds to.',
   }),
-  idempotencyOptions: option(IdempotencyOptionsSchema.default({}), {
+  idempotencyOptions: option(IdempotencyOptionsSchema.optional(), {
     env: 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS',
     help: 'Options for request idempotency to prevent duplicate operations from retried requests.',
   }),
@@ -249,7 +249,7 @@ export const ParseServerOptionsSchema = z.object({
     env: 'PARSE_SERVER_LOG_LEVEL',
     help: 'Sets the minimum log level for output (e.g. error, warn, info, verbose, debug, silly).',
   }),
-  logLevels: option(LogLevelsSchema.default({}), {
+  logLevels: option(LogLevelsSchema.optional(), {
     env: 'PARSE_SERVER_LOG_LEVELS',
     help: 'Override log levels for specific internal events like cloud function results and triggers.',
   }),
@@ -288,59 +288,59 @@ export const ParseServerOptionsSchema = z.object({
   }),
   maxUploadSize: option(z.string().default('20mb'), {
     env: 'PARSE_SERVER_MAX_UPLOAD_SIZE',
-    help: 'Max upload file size',
+    help: "Maximum file upload size (e.g. '20mb', '1gb').",
   }),
   middleware: option(z.any().optional(), {
     env: 'PARSE_SERVER_MIDDLEWARE',
-    help: 'Express middleware',
+    help: 'Custom Express middleware function applied to all Parse Server routes.',
   }),
   mountGraphQL: option(z.boolean().default(false), {
     env: 'PARSE_SERVER_MOUNT_GRAPHQL',
-    help: 'Mount GraphQL endpoint',
+    help: 'Enable the GraphQL API endpoint alongside the REST API.',
   }),
   mountPath: option(z.string().default('/parse'), {
     env: 'PARSE_SERVER_MOUNT_PATH',
-    help: 'Server mount path',
+    help: "The URL path where the Parse REST API is mounted (e.g. '/parse').",
   }),
   mountPlayground: option(z.boolean().default(false), {
     env: 'PARSE_SERVER_MOUNT_PLAYGROUND',
-    help: 'Deprecated: mount GraphQL Playground',
+    help: 'Deprecated. Enable the GraphQL Playground IDE at the playground path.',
   }),
   objectIdSize: option(z.number().default(10), {
     env: 'PARSE_SERVER_OBJECT_ID_SIZE',
-    help: 'Characters in generated object IDs',
+    help: 'Number of characters in auto-generated object IDs. Default is 10.',
   }),
-  pages: option(PagesOptionsSchema.default({}), {
+  pages: option(PagesOptionsSchema.optional(), {
     env: 'PARSE_SERVER_PAGES',
-    help: 'Pages options',
+    help: 'Configuration for server-rendered pages like password reset and email verification forms.',
   }),
   passwordPolicy: option(PasswordPolicyOptionsSchema.optional(), {
     env: 'PARSE_SERVER_PASSWORD_POLICY',
-    help: 'Password policy',
+    help: 'Password policy rules such as minimum strength, history, and expiration.',
   }),
   playgroundPath: option(z.string().default('/playground'), {
     env: 'PARSE_SERVER_PLAYGROUND_PATH',
-    help: 'Deprecated: GraphQL Playground path',
+    help: 'Deprecated. URL path for the GraphQL Playground IDE.',
   }),
   port: option(z.number().default(1337), {
     env: 'PORT',
-    help: 'Port to run on',
+    help: 'The port number the server listens on.',
   }),
   preserveFileName: option(z.boolean().default(false), {
     env: 'PARSE_SERVER_PRESERVE_FILE_NAME',
-    help: 'Preserve original file names',
+    help: 'Keep original file names when uploading, instead of generating random names.',
   }),
   preventLoginWithUnverifiedEmail: option(z.union([z.boolean(), z.custom<Function>(v => typeof v === 'function')]).default(false), {
     env: 'PARSE_SERVER_PREVENT_LOGIN_WITH_UNVERIFIED_EMAIL',
-    help: 'Prevent login with unverified email',
+    help: 'Reject login attempts from users whose email has not been verified. Can be a function for custom logic.',
   }),
   preventSignupWithUnverifiedEmail: option(z.boolean().default(false), {
     env: 'PARSE_SERVER_PREVENT_SIGNUP_WITH_UNVERIFIED_EMAIL',
-    help: 'Prevent signup with unverified email',
+    help: 'Reject signup attempts if the email cannot be verified.',
   }),
-  protectedFields: option(z.record(z.any()).default({ _User: { '*': ['email'] } }), {
+  protectedFields: option(z.record(z.string(), z.any()).default({ _User: { '*': ['email'] } }), {
     env: 'PARSE_SERVER_PROTECTED_FIELDS',
-    help: 'Protected fields for non-authorized users',
+    help: 'Fields hidden from API responses for non-authorized users, keyed by class name and access level.',
   }),
   publicServerURL: option(z.union([
     z.string().refine(v => v.startsWith('http://') || v.startsWith('https://'), {
@@ -349,32 +349,32 @@ export const ParseServerOptionsSchema = z.object({
     z.custom<Function>(v => typeof v === 'function'),
   ]).optional(), {
     env: 'PARSE_PUBLIC_SERVER_URL',
-    help: 'Public URL to Parse Server',
+    help: 'The public-facing URL of the server, used in email links and verification URLs. Must start with http:// or https://.',
     dynamic: true,
   }),
-  push: option(z.record(z.any()).optional(), {
+  push: option(z.record(z.string(), z.any()).optional(), {
     env: 'PARSE_SERVER_PUSH',
-    help: 'Push config',
+    help: 'Configuration for push notification providers such as APNs and FCM.',
   }),
   rateLimit: option(z.array(RateLimitOptionsSchema).default([]), {
     env: 'PARSE_SERVER_RATE_LIMIT',
-    help: 'Rate limit options',
+    help: 'Rate limiting rules to throttle requests by IP, user, or session.',
   }),
   readOnlyMasterKey: option(z.string().optional(), {
     env: 'PARSE_SERVER_READ_ONLY_MASTER_KEY',
-    help: 'Read-only master key',
+    help: 'A master key that only allows read operations, useful for dashboards and monitoring.',
   }),
   readOnlyMasterKeyIps: option(ipArraySchema('readOnlyMasterKeyIps').default(['0.0.0.0/0', '::0']), {
     env: 'PARSE_SERVER_READ_ONLY_MASTER_KEY_IPS',
-    help: 'IPs for read-only master key',
+    help: 'IP addresses allowed to use the read-only master key.',
   }),
-  requestComplexity: option(RequestComplexityOptionsSchema.default({}), {
+  requestComplexity: option(RequestComplexityOptionsSchema.optional(), {
     env: 'PARSE_SERVER_REQUEST_COMPLEXITY',
-    help: 'Request complexity limits',
+    help: 'Limits on query complexity to prevent expensive operations, such as include depth and subquery nesting.',
   }),
   requestContextMiddleware: option(z.any().optional(), {
     env: 'PARSE_SERVER_REQUEST_CONTEXT_MIDDLEWARE',
-    help: 'Request context middleware',
+    help: 'Middleware to inject custom context into every Parse request before processing.',
   }),
   requestKeywordDenylist: option(
     z.array(z.any()).default([
@@ -384,89 +384,89 @@ export const ParseServerOptionsSchema = z.object({
     ]),
     {
       env: 'PARSE_SERVER_REQUEST_KEYWORD_DENYLIST',
-      help: 'Keyword denylist for requests',
+      help: 'Blocked keywords in request payloads to prevent injection attacks like prototype pollution.',
     }
   ),
   restAPIKey: option(z.string().optional(), {
     env: 'PARSE_SERVER_REST_API_KEY',
-    help: 'Key for REST calls',
+    help: 'Key used to authenticate REST API requests.',
   }),
   revokeSessionOnPasswordReset: option(z.boolean().default(true), {
     env: 'PARSE_SERVER_REVOKE_SESSION_ON_PASSWORD_RESET',
-    help: 'Revoke sessions on password reset',
+    help: 'Invalidate all active sessions when a user resets their password.',
   }),
   scheduledPush: option(z.boolean().default(false), {
     env: 'PARSE_SERVER_SCHEDULED_PUSH',
-    help: 'Enable push scheduling',
+    help: 'Allow push notifications to be scheduled for future delivery.',
   }),
   schema: option(SchemaOptionsSchema.optional(), {
     env: 'PARSE_SERVER_SCHEMA',
-    help: 'Schema options',
+    help: 'Schema migration options, including class definitions and migration callbacks.',
   }),
-  security: option(SecurityOptionsSchema.default({}), {
+  security: option(SecurityOptionsSchema.optional(), {
     env: 'PARSE_SERVER_SECURITY',
-    help: 'Security options',
+    help: 'Security check options to audit the server configuration for common vulnerabilities.',
   }),
   sendUserEmailVerification: option(z.union([z.boolean(), z.custom<Function>(v => typeof v === 'function')]).default(true), {
     env: 'PARSE_SERVER_SEND_USER_EMAIL_VERIFICATION',
-    help: 'Send verification email',
+    help: 'Send a verification email when a user signs up or changes their email. Can be a function for custom logic.',
   }),
   serverCloseComplete: option(z.any().optional(), {
     env: 'PARSE_SERVER_SERVER_CLOSE_COMPLETE',
-    help: 'Callback when server closed',
+    help: 'Callback function called after the server has fully shut down.',
   }),
   serverURL: option(z.string(), {
     env: 'PARSE_SERVER_URL',
-    help: 'URL to Parse Server',
+    help: 'The URL where Parse Server is accessible, used for internal requests.',
   }),
   sessionLength: option(z.number().min(1, 'Session length must be a value greater than 0.').default(31536000), {
     env: 'PARSE_SERVER_SESSION_LENGTH',
-    help: 'Session duration in seconds',
+    help: 'Duration in seconds before a session token expires. Default is 1 year.',
   }),
   silent: option(z.boolean().optional(), {
     env: 'SILENT',
-    help: 'Disable console output',
+    help: 'Suppress all console output from the server.',
   }),
   startLiveQueryServer: option(z.boolean().optional(), {
     env: 'PARSE_SERVER_START_LIVE_QUERY_SERVER',
-    help: 'Start LiveQuery server',
+    help: 'Automatically start a LiveQuery WebSocket server alongside the HTTP server.',
     applicableTo: ['cli'],
   }),
   trustProxy: option(z.any().default([]), {
     env: 'PARSE_SERVER_TRUST_PROXY',
-    help: 'Trust proxy settings',
+    help: 'Express trust proxy setting for running behind a reverse proxy or load balancer.',
   }),
   userSensitiveFields: option(z.array(z.string()).optional(), {
     env: 'PARSE_SERVER_USER_SENSITIVE_FIELDS',
-    help: 'Deprecated: user sensitive fields',
+    help: 'Deprecated. Use protectedFields instead. List of user fields excluded from API responses.',
   }),
   verbose: option(z.boolean().optional(), {
     env: 'VERBOSE',
-    help: 'Enable verbose logging',
+    help: 'Enable verbose logging, printing all configuration options on startup.',
   }),
   verifyServerUrl: option(z.boolean().default(true), {
     env: 'PARSE_SERVER_VERIFY_SERVER_URL',
-    help: 'Verify server URL on launch',
+    help: 'Verify that the serverURL is reachable when the server launches.',
   }),
   verifyUserEmails: option(z.union([z.boolean(), z.custom<Function>(v => typeof v === 'function')]).default(false), {
     env: 'PARSE_SERVER_VERIFY_USER_EMAILS',
-    help: 'Require email verification',
+    help: 'Require users to verify their email address before they can log in. Can be a function for custom logic.',
   }),
   webhookKey: option(z.string().optional(), {
     env: 'PARSE_SERVER_WEBHOOK_KEY',
-    help: 'Key for outgoing webhooks',
+    help: 'Key sent with outgoing webhook requests for authentication.',
   }),
 }).superRefine((data, ctx) => {
   if (data.masterKey && data.readOnlyMasterKey && data.masterKey === data.readOnlyMasterKey) {
     ctx.addIssue({
-      code: z.ZodIssueCode.custom,
+      code: 'custom',
       message: 'masterKey and readOnlyMasterKey should be different',
       path: ['readOnlyMasterKey'],
     });
   }
   if (data.masterKey && data.maintenanceKey && data.masterKey === data.maintenanceKey) {
     ctx.addIssue({
-      code: z.ZodIssueCode.custom,
+      code: 'custom',
       message: 'masterKey and maintenanceKey should be different',
       path: ['maintenanceKey'],
     });

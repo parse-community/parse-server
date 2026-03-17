@@ -49,7 +49,7 @@ export const DatabaseOptionsSchema = z
       env: 'PARSE_SERVER_DATABASE_AUTH_MECHANISM',
       help: "MongoDB authentication mechanism (e.g. 'SCRAM-SHA-256', 'MONGODB-X509').",
     }),
-    authMechanismProperties: option(z.record(z.any()).optional(), {
+    authMechanismProperties: option(z.record(z.string(), z.any()).optional(), {
       env: 'PARSE_SERVER_DATABASE_AUTH_MECHANISM_PROPERTIES',
       help: 'Additional properties for the selected MongoDB authentication mechanism.',
     }),
@@ -231,47 +231,47 @@ export const DatabaseOptionsSchema = z
     }),
     srvServiceName: option(z.string().optional(), {
       env: 'PARSE_SERVER_DATABASE_SRV_SERVICE_NAME',
-      help: 'SRV service name',
+      help: 'Custom SRV service name when using a mongodb+srv:// connection string.',
     }),
     ssl: option(z.boolean().optional(), {
       env: 'PARSE_SERVER_DATABASE_SSL',
-      help: 'Enable SSL/TLS',
+      help: 'Enable SSL/TLS encryption for the database connection.',
     }),
     tls: option(z.boolean().optional(), {
       env: 'PARSE_SERVER_DATABASE_TLS',
-      help: 'Enable TLS',
+      help: 'Enable TLS encryption for the database connection (alias for ssl).',
     }),
     tlsAllowInvalidCertificates: option(z.boolean().optional(), {
       env: 'PARSE_SERVER_DATABASE_TLS_ALLOW_INVALID_CERTIFICATES',
-      help: 'Allow invalid certificates',
+      help: 'Accept server certificates that fail validation, such as self-signed certificates.',
     }),
     tlsAllowInvalidHostnames: option(z.boolean().optional(), {
       env: 'PARSE_SERVER_DATABASE_TLS_ALLOW_INVALID_HOSTNAMES',
-      help: 'Allow invalid hostnames',
+      help: 'Accept server certificates where the hostname does not match the certificate.',
     }),
     tlsCAFile: option(z.string().optional(), {
       env: 'PARSE_SERVER_DATABASE_TLS_CAFILE',
-      help: 'CA file path',
+      help: "Path to the Certificate Authority file for verifying the server's TLS certificate.",
     }),
     tlsCertificateKeyFile: option(z.string().optional(), {
       env: 'PARSE_SERVER_DATABASE_TLS_CERTIFICATE_KEY_FILE',
-      help: 'Client cert/key file',
+      help: 'Path to the client certificate and private key file for mutual TLS authentication.',
     }),
     tlsCertificateKeyFilePassword: option(z.string().optional(), {
       env: 'PARSE_SERVER_DATABASE_TLS_CERTIFICATE_KEY_FILE_PASSWORD',
-      help: 'Client cert key password',
+      help: 'Password to decrypt the client certificate private key file.',
     }),
     tlsInsecure: option(z.boolean().optional(), {
       env: 'PARSE_SERVER_DATABASE_TLS_INSECURE',
-      help: 'Disable certificate validations',
+      help: 'Disable all TLS certificate validation. Not recommended for production.',
     }),
     waitQueueTimeoutMS: option(z.number().optional(), {
       env: 'PARSE_SERVER_DATABASE_WAIT_QUEUE_TIMEOUT_MS',
-      help: 'Wait queue timeout',
+      help: 'Timeout in milliseconds for a request waiting for an available connection from the pool.',
     }),
     zlibCompressionLevel: option(z.number().optional(), {
       env: 'PARSE_SERVER_DATABASE_ZLIB_COMPRESSION_LEVEL',
-      help: 'Zlib compression level (0-9)',
+      help: 'Zlib compression level from 0 (no compression) to 9 (maximum compression).',
     }),
   })
   .loose();
@@ -282,27 +282,27 @@ export const LogLevelSchema = z
   .object({
     debug: option(z.string(), {
       env: 'PARSE_SERVER_LOG_LEVEL_DEBUG',
-      help: 'Debug level',
+      help: 'The log output target for debug level messages.',
     }),
     error: option(z.string(), {
       env: 'PARSE_SERVER_LOG_LEVEL_ERROR',
-      help: 'Error level',
+      help: 'The log output target for error level messages.',
     }),
     info: option(z.string(), {
       env: 'PARSE_SERVER_LOG_LEVEL_INFO',
-      help: 'Info level',
+      help: 'The log output target for info level messages.',
     }),
     silly: option(z.string(), {
       env: 'PARSE_SERVER_LOG_LEVEL_SILLY',
-      help: 'Silly level',
+      help: 'The log output target for silly (most verbose) level messages.',
     }),
     verbose: option(z.string(), {
       env: 'PARSE_SERVER_LOG_LEVEL_VERBOSE',
-      help: 'Verbose level',
+      help: 'The log output target for verbose level messages.',
     }),
     warn: option(z.string(), {
       env: 'PARSE_SERVER_LOG_LEVEL_WARN',
-      help: 'Warning level',
+      help: 'The log output target for warning level messages.',
     }),
   })
   .loose();

@@ -1,4 +1,4 @@
-const { mergeConfigs } = require('../../../src/Options/loaders/mergeConfig');
+const { mergeConfigs } = require('../../../lib/Options/loaders/mergeConfig');
 
 describe('mergeConfig', () => {
   it('merges flat objects with later sources winning', () => {

@@ -576,7 +576,7 @@ function injectSpecialDefaults(options: ParseServerOptions) {
   // Inject defaults for database options; only when no explicit database adapter is set
   if (!options.databaseAdapter) {
     if (options.databaseOptions == null) {
-      options.databaseOptions = {};
+      (options as any).databaseOptions = {};
     }
     if (typeof options.databaseOptions === 'object' && !Array.isArray(options.databaseOptions)) {
       Object.keys(DatabaseOptionDefaults).forEach(key => {

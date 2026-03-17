@@ -115,10 +115,10 @@ function unwrapToObject(schema: z.ZodTypeAny): z.ZodObject<z.ZodRawShape> | null
     return schema;
   }
   if (schema instanceof z.ZodOptional || schema instanceof z.ZodNullable) {
-    return unwrapToObject(schema.unwrap());
+    return unwrapToObject(schema.unwrap() as z.ZodTypeAny);
   }
   if (schema instanceof z.ZodDefault) {
-    return unwrapToObject(schema.removeDefault());
+    return unwrapToObject(schema.removeDefault() as z.ZodTypeAny);
   }
   return null;
 }
@@ -195,10 +195,10 @@ export function coerceValue(value: string, fieldSchema: z.ZodTypeAny): unknown {
  */
 function unwrapType(schema: z.ZodTypeAny): z.ZodTypeAny {
   if (schema instanceof z.ZodOptional || schema instanceof z.ZodNullable) {
-    return unwrapType(schema.unwrap());
+    return unwrapType(schema.unwrap() as z.ZodTypeAny);
   }
   if (schema instanceof z.ZodDefault) {
-    return unwrapType(schema.removeDefault());
+    return unwrapType(schema.removeDefault() as z.ZodTypeAny);
   }
   return schema;
 }

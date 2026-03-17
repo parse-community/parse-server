@@ -1,4 +1,4 @@
-const { validateConfig } = require('../../src/Options/validateConfig');
+const { validateConfig } = require('../../lib/Options/validateConfig');
 
 const validConfig = {
   appId: 'myApp',

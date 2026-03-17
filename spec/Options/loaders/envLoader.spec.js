@@ -1,6 +1,6 @@
 const { z } = require('zod');
-const { option } = require('../../../src/Options/schemaUtils');
-const { loadFromEnv } = require('../../../src/Options/loaders/envLoader');
+const { option } = require('../../../lib/Options/schemaUtils');
+const { loadFromEnv } = require('../../../lib/Options/loaders/envLoader');
 
 describe('envLoader', () => {
   it('loads flat env vars into options', () => {

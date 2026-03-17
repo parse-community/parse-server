@@ -1,7 +1,7 @@
 const { Command } = require('commander');
 const { z } = require('zod');
-const { option } = require('../../../src/Options/schemaUtils');
-const { registerSchemaOptions, extractCliOptions } = require('../../../src/Options/loaders/cliLoader');
+const { option } = require('../../../lib/Options/schemaUtils');
+const { registerSchemaOptions, extractCliOptions } = require('../../../lib/Options/loaders/cliLoader');
 
 describe('cliLoader', () => {
   let program;

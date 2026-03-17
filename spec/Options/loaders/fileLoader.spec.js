@@ -1,5 +1,5 @@
 const path = require('path');
-const { loadFromFile } = require('../../../src/Options/loaders/fileLoader');
+const { loadFromFile } = require('../../../lib/Options/loaders/fileLoader');
 
 describe('fileLoader', () => {
   const configDir = path.join(__dirname, '../../configs');

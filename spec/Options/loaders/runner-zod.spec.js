@@ -1,15 +1,15 @@
 const { z } = require('zod');
-const { option } = require('../../../src/Options/schemaUtils');
+const { option } = require('../../../lib/Options/schemaUtils');
 const path = require('path');
 
 // We test the core logic of the Zod runner by importing and using
 // the individual loaders that it composes, since the runner itself
 // calls process.argv/process.env/process.exit which are hard to test.
 
-const { loadFromEnv } = require('../../../src/Options/loaders/envLoader');
-const { loadFromFile } = require('../../../src/Options/loaders/fileLoader');
-const { mergeConfigs } = require('../../../src/Options/loaders/mergeConfig');
-const { registerSchemaOptions } = require('../../../src/Options/loaders/cliLoader');
+const { loadFromEnv } = require('../../../lib/Options/loaders/envLoader');
+const { loadFromFile } = require('../../../lib/Options/loaders/fileLoader');
+const { mergeConfigs } = require('../../../lib/Options/loaders/mergeConfig');
+const { registerSchemaOptions } = require('../../../lib/Options/loaders/cliLoader');
 const { Command } = require('commander');
 
 describe('Zod runner integration', () => {
@@ -140,7 +140,7 @@ describe('Zod runner integration', () => {
   });
 
   describe('end-to-end with ParseServerOptionsSchema', () => {
-    const { ParseServerOptionsSchema } = require('../../../src/Options/schemas/ParseServerOptions');
+    const { ParseServerOptionsSchema } = require('../../../lib/Options/schemas/ParseServerOptions');
 
     it('loads Parse Server config from env vars', () => {
       const envOptions = loadFromEnv(ParseServerOptionsSchema, {

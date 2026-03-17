@@ -5,8 +5,8 @@ const {
   getOptionGroups,
   warnInapplicableOptions,
   getAllOptionMeta,
-} = require('../../src/Options/schemaUtils');
-const { ParseServerOptionsSchema } = require('../../src/Options/schemas/ParseServerOptions');
+} = require('../../lib/Options/schemaUtils');
+const { ParseServerOptionsSchema } = require('../../lib/Options/schemas/ParseServerOptions');
 
 describe('Phase 4: Advanced Features', () => {
 

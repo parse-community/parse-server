@@ -1,25 +1,25 @@
-const { buildEnvMap } = require('../../../src/Options/schemaUtils');
+const { buildEnvMap } = require('../../../lib/Options/schemaUtils');
 
 // Import all Zod schemas
-const { ParseServerOptionsSchema } = require('../../../src/Options/schemas/ParseServerOptions');
-const { SchemaOptionsSchema } = require('../../../src/Options/schemas/SchemaOptions');
-const { AccountLockoutOptionsSchema } = require('../../../src/Options/schemas/AccountLockoutOptions');
-const { PasswordPolicyOptionsSchema } = require('../../../src/Options/schemas/PasswordPolicyOptions');
-const { FileUploadOptionsSchema } = require('../../../src/Options/schemas/FileUploadOptions');
-const { IdempotencyOptionsSchema } = require('../../../src/Options/schemas/IdempotencyOptions');
-const { SecurityOptionsSchema } = require('../../../src/Options/schemas/SecurityOptions');
-const { RequestComplexityOptionsSchema } = require('../../../src/Options/schemas/RequestComplexityOptions');
+const { ParseServerOptionsSchema } = require('../../../lib/Options/schemas/ParseServerOptions');
+const { SchemaOptionsSchema } = require('../../../lib/Options/schemas/SchemaOptions');
+const { AccountLockoutOptionsSchema } = require('../../../lib/Options/schemas/AccountLockoutOptions');
+const { PasswordPolicyOptionsSchema } = require('../../../lib/Options/schemas/PasswordPolicyOptions');
+const { FileUploadOptionsSchema } = require('../../../lib/Options/schemas/FileUploadOptions');
+const { IdempotencyOptionsSchema } = require('../../../lib/Options/schemas/IdempotencyOptions');
+const { SecurityOptionsSchema } = require('../../../lib/Options/schemas/SecurityOptions');
+const { RequestComplexityOptionsSchema } = require('../../../lib/Options/schemas/RequestComplexityOptions');
 const {
   PagesOptionsSchema,
   CustomPagesOptionsSchema,
-} = require('../../../src/Options/schemas/PagesOptions');
+} = require('../../../lib/Options/schemas/PagesOptions');
 const {
   LiveQueryOptionsSchema,
   LiveQueryServerOptionsSchema,
-} = require('../../../src/Options/schemas/LiveQueryOptions');
-const { RateLimitOptionsSchema } = require('../../../src/Options/schemas/RateLimitOptions');
-const { LogLevelsSchema } = require('../../../src/Options/schemas/LogLevels');
-const { DatabaseOptionsSchema } = require('../../../src/Options/schemas/DatabaseOptions');
+} = require('../../../lib/Options/schemas/LiveQueryOptions');
+const { RateLimitOptionsSchema } = require('../../../lib/Options/schemas/RateLimitOptions');
+const { LogLevelsSchema } = require('../../../lib/Options/schemas/LogLevels');
+const { DatabaseOptionsSchema } = require('../../../lib/Options/schemas/DatabaseOptions');
 
 describe('ParseServerOptionsSchema', () => {
   it('validates a minimal valid config', () => {
