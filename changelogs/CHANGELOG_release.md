@@ -1,3 +1,10 @@
+## [8.6.50](https://github.com/parse-community/parse-server/compare/8.6.49...8.6.50) (2026-03-17)
+
+
+### Bug Fixes
+
+* Protected fields leak via LiveQuery afterEvent trigger ([GHSA-5hmj-jcgp-6hff](https://github.com/parse-community/parse-server/security/advisories/GHSA-5hmj-jcgp-6hff)) ([#10233](https://github.com/parse-community/parse-server/issues/10233)) ([743324e](https://github.com/parse-community/parse-server/commit/743324e71fa2a6693bea78c4589cf2211b210eb6))
+
 ## [8.6.49](https://github.com/parse-community/parse-server/compare/8.6.48...8.6.49) (2026-03-16)
 
 
