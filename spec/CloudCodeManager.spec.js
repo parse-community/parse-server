@@ -550,6 +550,7 @@ describe('CloudCodeManager', () => {
     });
 
     it('continues shutting down other adapters when one fails', async () => {
+      spyOn(console, 'error').and.callFake(() => {});
       const shutdownCalls = [];
       const adapterA = {
         name: 'adapter-a',

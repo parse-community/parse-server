@@ -43,9 +43,17 @@ describe('LegacyAdapter', () => {
   });
 
   it('initialize with a valid cloud code file path loads the file', async () => {
-    const filePath = path.resolve(__dirname, 'cloud/cloudCodeRelativeFile.js');
-    const adapter = new LegacyAdapter(filePath);
-    await expectAsync(adapter.initialize(mockRegistry, mockConfig)).toBeResolved();
+    // Use a minimal temp file that doesn't register global cloud functions
+    const fs = require('fs');
+    const tmpFile = path.resolve(__dirname, '_legacyAdapterTestTemp.js');
+    fs.writeFileSync(tmpFile, 'module.exports = {};');
+    try {
+      const adapter = new LegacyAdapter(tmpFile);
+      await expectAsync(adapter.initialize(mockRegistry, mockConfig)).toBeResolved();
+    } finally {
+      fs.unlinkSync(tmpFile);
+      delete require.cache[require.resolve(tmpFile)];
+    }
   });
 
   it('initialize with a non-existent path throws', async () => {
