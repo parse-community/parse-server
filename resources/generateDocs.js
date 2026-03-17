@@ -59,6 +59,9 @@ function getJSDocType(schema) {
   // Arrays
   if (schema instanceof z.ZodArray) {
     const inner = getJSDocType(schema.element);
+    if (inner === '*') {
+      return 'Array';
+    }
     return `${inner}[]`;
   }
 
@@ -72,7 +75,7 @@ function getJSDocType(schema) {
 
   // Unions
   if (schema instanceof z.ZodUnion) {
-    const options = schema._def.options || [];
+    const options = schema._zod?.def?.options || schema._def?.options || [];
     const types = options
       .map(opt => getJSDocType(opt))
       .filter((t, i, arr) => arr.indexOf(t) === i); // dedupe
@@ -126,7 +129,8 @@ function generateJSDoc(name, schema) {
   for (const key of Object.keys(shape).sort()) {
     const fieldMeta = meta.get(key);
     const help = fieldMeta?.help || '';
-    const type = getTypeName(shape[key], key);
+    // Use docType override if available, otherwise derive from Zod schema
+    const type = fieldMeta?.docType || getTypeName(shape[key], key);
     doc += ` * @property {${type}} ${key} ${help}\n`;
   }
   doc += ` */\n`;

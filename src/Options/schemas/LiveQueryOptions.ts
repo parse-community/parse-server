@@ -10,6 +10,7 @@ export const LiveQueryOptionsSchema = z
     pubSubAdapter: option(z.any().optional(), {
       env: 'PARSE_SERVER_LIVEQUERY_PUB_SUB_ADAPTER',
       help: 'Adapter module for pub/sub messaging between the API server and LiveQuery server.',
+      docType: 'Adapter<PubSubAdapter>',
     }),
     redisOptions: option(z.record(z.string(), z.any()).optional(), {
       env: 'PARSE_SERVER_LIVEQUERY_REDIS_OPTIONS',
@@ -26,6 +27,7 @@ export const LiveQueryOptionsSchema = z
     wssAdapter: option(z.any().optional(), {
       env: 'PARSE_SERVER_LIVEQUERY_WSS_ADAPTER',
       help: 'Custom WebSocket server adapter for the LiveQuery server.',
+      docType: 'Adapter<WSSAdapter>',
     }),
   })
   .loose();
@@ -61,6 +63,7 @@ export const LiveQueryServerOptionsSchema = z
     pubSubAdapter: option(z.any().optional(), {
       env: 'PARSE_LIVE_QUERY_SERVER_PUB_SUB_ADAPTER',
       help: 'Adapter module for pub/sub messaging in the standalone LiveQuery server.',
+      docType: 'Adapter<PubSubAdapter>',
     }),
     redisOptions: option(z.record(z.string(), z.any()).optional(), {
       env: 'PARSE_LIVE_QUERY_SERVER_REDIS_OPTIONS',
@@ -81,6 +84,7 @@ export const LiveQueryServerOptionsSchema = z
     wssAdapter: option(z.any().optional(), {
       env: 'PARSE_LIVE_QUERY_SERVER_WSS_ADAPTER',
       help: 'Custom WebSocket server adapter for the standalone LiveQuery server.',
+      docType: 'Adapter<WSSAdapter>',
     }),
   })
   .loose();

@@ -55,10 +55,12 @@ export const ParseServerOptionsSchema = z.object({
   allowOrigin: option(z.array(z.string()).optional(), {
     env: 'PARSE_SERVER_ALLOW_ORIGIN',
     help: 'Sets the allowed origins for CORS requests to the server.',
+    docType: 'String|String[]',
   }),
   analyticsAdapter: option(adapterSchema, {
     env: 'PARSE_SERVER_ANALYTICS_ADAPTER',
     help: 'Adapter module for handling analytics events from clients.',
+    docType: 'Adapter<AnalyticsAdapter>',
   }),
   appId: option(z.string(), {
     env: 'PARSE_SERVER_APPLICATION_ID',
@@ -75,6 +77,7 @@ export const ParseServerOptionsSchema = z.object({
   cacheAdapter: option(adapterSchema, {
     env: 'PARSE_SERVER_CACHE_ADAPTER',
     help: 'Adapter module for caching query results and schema data.',
+    docType: 'Adapter<CacheAdapter>',
   }),
   cacheMaxSize: option(z.number().default(10000), {
     env: 'PARSE_SERVER_CACHE_MAX_SIZE',
@@ -116,6 +119,7 @@ export const ParseServerOptionsSchema = z.object({
   databaseAdapter: option(adapterSchema, {
     env: 'PARSE_SERVER_DATABASE_ADAPTER',
     help: 'Adapter module for the database connection, overrides databaseURI.',
+    docType: 'Adapter<StorageAdapter>',
   }),
   databaseOptions: option(DatabaseOptionsSchema.optional(), {
     env: 'PARSE_SERVER_DATABASE_OPTIONS',
@@ -140,6 +144,7 @@ export const ParseServerOptionsSchema = z.object({
   emailAdapter: option(adapterSchema, {
     env: 'PARSE_SERVER_EMAIL_ADAPTER',
     help: 'Adapter module for sending emails, required for password reset and email verification.',
+    docType: 'Adapter<MailAdapter>',
   }),
   emailVerifySuccessOnInvalidEmail: option(z.boolean().default(true), {
     env: 'PARSE_SERVER_EMAIL_VERIFY_SUCCESS_ON_INVALID_EMAIL',
@@ -200,6 +205,7 @@ export const ParseServerOptionsSchema = z.object({
   filesAdapter: option(adapterSchema, {
     env: 'PARSE_SERVER_FILES_ADAPTER',
     help: 'Adapter module for file storage, such as S3 or GridFS.',
+    docType: 'Adapter<FilesAdapter>',
   }),
   fileUpload: option(FileUploadOptionsSchema.optional(), {
     env: 'PARSE_SERVER_FILE_UPLOAD_OPTIONS',
@@ -244,6 +250,7 @@ export const ParseServerOptionsSchema = z.object({
   loggerAdapter: option(adapterSchema, {
     env: 'PARSE_SERVER_LOGGER_ADAPTER',
     help: 'Adapter module for custom log transport, replacing the default Winston file logger.',
+    docType: 'Adapter<LoggerAdapter>',
   }),
   logLevel: option(z.string().optional(), {
     env: 'PARSE_SERVER_LOG_LEVEL',

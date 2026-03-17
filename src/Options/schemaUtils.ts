@@ -14,6 +14,8 @@ export interface OptionMeta {
   applicableTo?: Array<'cli' | 'api'>;
   /** Whether this option accepts a dynamic (function) value with TTL caching. */
   dynamic?: boolean;
+  /** Override the JSDoc type string for documentation (e.g. 'Adapter<AnalyticsAdapter>'). */
+  docType?: string;
 }
 
 export interface DeprecationInfo {
@@ -24,14 +26,18 @@ export interface DeprecationInfo {
 }
 
 /**
- * Registry mapping Zod schemas to their option metadata.
- * Uses a WeakMap so schemas can be garbage collected.
+ * Symbol used to tag schemas with a unique metadata ID.
+ * This avoids key collisions when the same schema instance is reused
+ * across multiple fields (e.g. a shared adapterSchema).
  */
-const metaRegistry = new WeakMap<z.ZodTypeAny, OptionMeta>();
+const META_ID = Symbol('optionMetaId');
+let nextMetaId = 0;
+const metaRegistry = new Map<number, OptionMeta>();
 
 /**
  * Wraps a Zod schema with option metadata (env var name, help text, etc.).
- * The metadata is stored in a WeakMap and can be retrieved with `getOptionMeta()`.
+ * Each call creates a lightweight wrapper via `.describe()` so shared schema
+ * instances get distinct metadata per field.
  *
  * Usage:
  * ```ts
@@ -44,8 +50,11 @@ const metaRegistry = new WeakMap<z.ZodTypeAny, OptionMeta>();
  * ```
  */
 export function option<T extends z.ZodTypeAny>(schema: T, meta: OptionMeta): T {
-  metaRegistry.set(schema, meta);
-  return schema;
+  const tagged = schema.describe(meta.help) as T;
+  const id = nextMetaId++;
+  (tagged as any)[META_ID] = id;
+  metaRegistry.set(id, meta);
+  return tagged;
 }
 
 /**
@@ -53,7 +62,9 @@ export function option<T extends z.ZodTypeAny>(schema: T, meta: OptionMeta): T {
  * Returns undefined if no metadata was attached.
  */
 export function getOptionMeta(schema: z.ZodTypeAny): OptionMeta | undefined {
-  return metaRegistry.get(schema);
+  const id = (schema as any)[META_ID];
+  if (id === undefined) return undefined;
+  return metaRegistry.get(id);
 }
 
 /**
@@ -152,8 +163,8 @@ export function coerceValue(value: string, fieldSchema: z.ZodTypeAny): unknown {
       } catch {
         // Not valid JSON
       }
-      // Return original value so Zod validation fails upstream
-      return value;
+      // Fall back to CSV splitting
+      return value.split(',');
     }
     return value;
   }

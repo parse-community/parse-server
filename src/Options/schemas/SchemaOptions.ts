@@ -14,6 +14,7 @@ export const SchemaOptionsSchema = z
     definitions: option(z.array(z.any()).default([]), {
       env: 'PARSE_SERVER_SCHEMA_DEFINITIONS',
       help: 'Array of schema definitions in REST format, used to configure classes, fields, indexes, and CLPs.',
+      docType: 'Any',
     }),
     deleteExtraFields: option(z.boolean().default(false), {
       env: 'PARSE_SERVER_SCHEMA_DELETE_EXTRA_FIELDS',

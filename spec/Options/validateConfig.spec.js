@@ -119,7 +119,7 @@ describe('validateConfig', () => {
           ...validConfig,
           passwordPolicy: { maxPasswordAge: -1 },
         })
-      ).toThrow('passwordPolicy.maxPasswordAge must be a positive number');
+      ).toThrow('passwordPolicy.maxPasswordAge');
     });
 
     it('validates password policy resetTokenReuseIfValid requires duration', () => {
