@@ -10,7 +10,7 @@ import type { ConfigValidator } from './ConfigValidator';
  * on assembled controller state.
  */
 export class ControllerValidator implements ConfigValidator {
-  validate(config: Record<string, any>): void {
+  validate(config: Record<string, unknown>): void {
     if (config.verifyUserEmails) {
       this.validateEmailVerificationDependencies(config);
     }
@@ -20,8 +20,9 @@ export class ControllerValidator implements ConfigValidator {
    * When email verification is enabled, an email adapter, app name,
    * and publicServerURL must all be configured.
    */
-  private validateEmailVerificationDependencies(config: Record<string, any>): void {
-    const emailAdapter = config.userController?.adapter;
+  private validateEmailVerificationDependencies(config: Record<string, unknown>): void {
+    const userController = config.userController as Record<string, unknown> | undefined;
+    const emailAdapter = userController?.adapter;
     if (!emailAdapter) {
       throw new Error('An emailAdapter is required for e-mail verification and password resets.');
     }

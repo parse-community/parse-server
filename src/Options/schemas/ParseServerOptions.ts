@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isIP } from 'net';
 import { option } from '../schemaUtils';
 import { SchemaOptionsSchema } from './SchemaOptions';
 import { AccountLockoutOptionsSchema } from './AccountLockoutOptions';
@@ -20,10 +21,9 @@ const adapterSchema = z.union([z.string(), z.record(z.string(), z.any()), z.cust
 const ipArraySchema = (fieldName: string) =>
   z.array(z.string()).refine(
     ips => {
-      const net = require('net');
       return ips.every(ip => {
         const bare = ip.includes('/') ? ip.split('/')[0] : ip;
-        return net.isIP(bare);
+        return isIP(bare);
       });
     },
     {
@@ -468,6 +468,13 @@ export const ParseServerOptionsSchema = z.object({
     ctx.addIssue({
       code: 'custom',
       message: 'masterKey and maintenanceKey should be different',
+      path: ['maintenanceKey'],
+    });
+  }
+  if (data.maintenanceKey && data.readOnlyMasterKey && data.maintenanceKey === data.readOnlyMasterKey) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'maintenanceKey and readOnlyMasterKey should be different',
       path: ['maintenanceKey'],
     });
   }

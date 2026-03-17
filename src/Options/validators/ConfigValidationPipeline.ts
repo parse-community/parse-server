@@ -20,7 +20,7 @@ export class ConfigValidationPipeline implements ConfigValidator {
     this.validators = validators;
   }
 
-  validate(config: Record<string, any>): void {
+  validate(config: Record<string, unknown>): void {
     for (const validator of this.validators) {
       validator.validate(config);
     }

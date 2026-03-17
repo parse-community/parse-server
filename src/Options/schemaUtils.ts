@@ -146,14 +146,14 @@ export function coerceValue(value: string, fieldSchema: z.ZodTypeAny): unknown {
 
   if (innerType instanceof z.ZodArray) {
     if (typeof value === 'string') {
-      // Try JSON array first, fall back to CSV
       try {
         const parsed = JSON.parse(value);
         if (Array.isArray(parsed)) return parsed;
       } catch {
-        // Not JSON, treat as CSV
+        // Not valid JSON
       }
-      return value.split(',');
+      // Return original value so Zod validation fails upstream
+      return value;
     }
     return value;
   }
@@ -171,7 +171,8 @@ export function coerceValue(value: string, fieldSchema: z.ZodTypeAny): unknown {
 
   if (innerType instanceof z.ZodUnion) {
     // For union types, try each branch
-    const options = (innerType as z.ZodUnion<[z.ZodTypeAny, ...z.ZodTypeAny[]]>)._def.options;
+    const unionDef = innerType as z.ZodUnion<[z.ZodTypeAny, ...z.ZodTypeAny[]]>;
+    const options = (unionDef as any)._zod?.def?.options ?? (unionDef as any)._def.options;
     for (const opt of options) {
       const inner = unwrapType(opt);
       // Skip function types for string coercion

@@ -5,7 +5,7 @@ export const AccountLockoutOptionsSchema = z
   .object({
     duration: option(
       z.number()
-        .min(1, 'Account lockout duration should be greater than 0')
+        .gt(0, 'Account lockout duration should be greater than 0')
         .max(99999, 'Account lockout duration should be less than 100000')
         .optional(),
       {

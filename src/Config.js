@@ -63,13 +63,13 @@ export class Config {
       })
     );
 
-    const cachedConfig = AppCache.get(this.appId);
+    const cachedConfig = AppCache.get(this.applicationId);
     if (cachedConfig) {
       const updatedConfig = { ...cachedConfig };
       asyncKeys.forEach(key => {
         updatedConfig[key] = this[key];
       });
-      AppCache.put(this.appId, updatedConfig);
+      AppCache.put(this.applicationId, updatedConfig);
     }
   }
 

@@ -8,7 +8,7 @@ export const PasswordPolicyOptionsSchema = z
       help: 'Reject passwords that contain the username as a substring.',
     }),
     maxPasswordAge: option(
-      z.number().min(0, 'passwordPolicy.maxPasswordAge must be a positive number').optional(),
+      z.number().min(0, 'passwordPolicy.maxPasswordAge must be a non-negative number').optional(),
       {
         env: 'PARSE_SERVER_PASSWORD_POLICY_MAX_PASSWORD_AGE',
         help: 'Maximum number of days a password remains valid before the user must change it.',

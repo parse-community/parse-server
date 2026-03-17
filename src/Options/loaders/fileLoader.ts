@@ -18,6 +18,12 @@ export function loadFromFile(filePath: string): Record<string, unknown> {
   let options: Record<string, unknown>;
 
   if (jsonConfig.apps) {
+    if (!Array.isArray(jsonConfig.apps)) {
+      throw new Error('The "apps" property must be an array');
+    }
+    if (jsonConfig.apps.length === 0) {
+      throw new Error('The "apps" array must contain at least one configuration');
+    }
     if (jsonConfig.apps.length > 1) {
       throw new Error('Multiple apps are not supported');
     }

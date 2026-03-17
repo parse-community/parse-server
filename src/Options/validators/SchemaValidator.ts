@@ -13,7 +13,7 @@ export class SchemaValidator implements ConfigValidator {
     this.schema = schema;
   }
 
-  validate(config: Record<string, any>): void {
+  validate(config: Record<string, unknown>): void {
     const result = this.schema.safeParse(config);
     if (!result.success) {
       const messages = result.error.issues.map(issue => {
@@ -23,10 +23,11 @@ export class SchemaValidator implements ConfigValidator {
       throw new Error(`Parse Server configuration error:\n${messages.join('\n')}`);
     }
 
-    // Copy validated + defaulted values back to config
+    // Replace config contents with only schema-approved keys
     const validated = result.data;
-    for (const key of Object.keys(validated)) {
-      config[key] = validated[key];
+    for (const key of Object.keys(config)) {
+      delete config[key];
     }
+    Object.assign(config, validated);
   }
 }

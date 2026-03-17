@@ -106,7 +106,7 @@ describe('envLoader', () => {
 
   it('coerces object env vars from JSON', () => {
     const schema = z.object({
-      push: option(z.record(z.unknown()).optional(), {
+      push: option(z.record(z.string(), z.unknown()).optional(), {
         env: 'PARSE_SERVER_PUSH',
         help: 'Push config',
       }),

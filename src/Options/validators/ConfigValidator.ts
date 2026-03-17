@@ -9,5 +9,5 @@ export interface ConfigValidator {
    * @param config - The configuration object to validate
    * @throws Error if validation fails
    */
-  validate(config: Record<string, any>): void;
+  validate(config: Record<string, unknown>): void;
 }

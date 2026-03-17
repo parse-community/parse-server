@@ -32,6 +32,13 @@ function deepMerge(
   source: Record<string, unknown>
 ): void {
   for (const key of Object.keys(source)) {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+      continue;
+    }
+    if (!Object.prototype.hasOwnProperty.call(source, key)) {
+      continue;
+    }
+
     const sourceVal = source[key];
     const targetVal = target[key];
 
@@ -44,6 +51,8 @@ function deepMerge(
         targetVal as Record<string, unknown>,
         sourceVal as Record<string, unknown>
       );
+    } else if (isPlainObject(sourceVal)) {
+      target[key] = structuredClone(sourceVal);
     } else {
       target[key] = sourceVal;
     }

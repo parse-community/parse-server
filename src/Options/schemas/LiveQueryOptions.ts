@@ -5,7 +5,7 @@ export const LiveQueryOptionsSchema = z
   .object({
     classNames: option(z.array(z.string()).optional(), {
       env: 'PARSE_SERVER_LIVEQUERY_CLASSNAMES',
-      help: 'Parse class names that support LiveQuery subscriptions. Only listed classes will accept subscriptions.',
+      help: 'Parse class names for which the LiveQuery server will publish events. Only listed classes will emit LiveQuery events server-side.',
     }),
     pubSubAdapter: option(z.any().optional(), {
       env: 'PARSE_SERVER_LIVEQUERY_PUB_SUB_ADAPTER',

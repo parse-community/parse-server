@@ -53,7 +53,7 @@ export function extractCliOptions(
  * Checks if a Zod schema field is optional or has a default value.
  */
 function isOptionalOrDefaulted(schema: z.ZodTypeAny): boolean {
-  if (schema instanceof z.ZodOptional || schema instanceof z.ZodNullable) {
+  if (schema instanceof z.ZodOptional) {
     return true;
   }
   if (schema instanceof z.ZodDefault) {

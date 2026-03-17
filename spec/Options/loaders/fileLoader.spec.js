@@ -29,6 +29,32 @@ describe('fileLoader', () => {
     }
   });
 
+  it('throws for empty apps array', () => {
+    const fs = require('fs');
+    const emptyAppsPath = path.join(configDir, 'CLIConfigEmptyApps.json');
+    fs.writeFileSync(emptyAppsPath, JSON.stringify({ apps: [] }));
+    try {
+      expect(() => loadFromFile(emptyAppsPath)).toThrow(
+        'The "apps" array must contain at least one configuration'
+      );
+    } finally {
+      fs.unlinkSync(emptyAppsPath);
+    }
+  });
+
+  it('throws for apps that is not an array', () => {
+    const fs = require('fs');
+    const nonArrayAppsPath = path.join(configDir, 'CLIConfigNonArrayApps.json');
+    fs.writeFileSync(nonArrayAppsPath, JSON.stringify({ apps: {} }));
+    try {
+      expect(() => loadFromFile(nonArrayAppsPath)).toThrow(
+        'The "apps" property must be an array'
+      );
+    } finally {
+      fs.unlinkSync(nonArrayAppsPath);
+    }
+  });
+
   it('resolves relative paths', () => {
     const result = loadFromFile('./spec/configs/CLIConfig.json');
     expect(result.arg1).toBe('my_app');

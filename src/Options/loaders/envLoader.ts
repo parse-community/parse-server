@@ -42,8 +42,12 @@ function setNestedValue(obj: Record<string, unknown>, path: string[], value: unk
   let current: Record<string, unknown> = obj;
   for (let i = 0; i < path.length - 1; i++) {
     const key = path[i];
-    if (current[key] === undefined || typeof current[key] !== 'object') {
+    if (current[key] === undefined) {
       current[key] = {};
+    } else if (current[key] === null || typeof current[key] !== 'object' || Array.isArray(current[key])) {
+      throw new Error(
+        `Environment variable path collision at "${path.slice(0, i + 1).join('.')}": expected an object but found ${Array.isArray(current[key]) ? 'an array' : typeof current[key]}`
+      );
     }
     current = current[key] as Record<string, unknown>;
   }

@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import path from 'path';
 import { Command } from 'commander';
 import { z } from 'zod';
 import { loadFromEnv } from '../../Options/loaders/envLoader';
@@ -92,7 +93,7 @@ export default function runnerZod({ schema, help, usage, start }: RunnerZodOptio
   if (program.args.length > 0) {
     try {
       fileOptions = loadFromFile(program.args[0]);
-      console.log(`Configuration loaded from ${require('path').resolve(program.args[0])}`);
+      console.log(`Configuration loaded from ${path.resolve(program.args[0])}`);
     } catch (e: any) {
       console.error(`Error loading config file: ${e.message}`);
       process.exit(1);
