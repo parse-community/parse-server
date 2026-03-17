@@ -275,11 +275,11 @@ export function getTrigger(className, triggerType, applicationId) {
   return get(Category.Triggers, `${triggerType}.${className}`, applicationId);
 }
 
-export async function runTrigger(trigger, name, request, auth) {
+export async function runTrigger(trigger, name, request, auth, applicationId) {
   if (!trigger) {
     return;
   }
-  await maybeRunValidator(request, name, auth);
+  await maybeRunValidator(request, name, auth, applicationId);
   if (request.skipWithMasterKey) {
     return;
   }
@@ -803,8 +803,9 @@ export function resolveError(message, defaultOpts) {
   }
   return error;
 }
-export function maybeRunValidator(request, functionName, auth) {
-  const theValidator = getValidator(functionName, Parse.applicationId);
+export function maybeRunValidator(request, functionName, auth, applicationId) {
+  applicationId = applicationId || (request.config && request.config.applicationId) || Parse.applicationId;
+  const theValidator = getValidator(functionName, applicationId);
   if (!theValidator) {
     return;
   }

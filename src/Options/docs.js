@@ -26,10 +26,10 @@
  * @property {Number} cacheMaxSize Sets the maximum size for the in memory cache, defaults to 10000
  * @property {Number} cacheTTL Sets the TTL for the in memory cache (in ms), defaults to 5000 (5 seconds)
  * @property {String} clientKey Key for iOS, MacOS, tvOS clients
- * @property {String} cloud Full path to your cloud code main.js
- * @property {Object} cloudCodeAdapters Array of CloudCodeAdapter instances for BYO cloud code integration
+ * @property {Union} cloud Full path to your cloud code main.js, a cloud code function, or an object implementing getRouter() for in-process cloud code
+ * @property {CloudCodeAdapter[]} cloudCodeAdapters Array of CloudCodeAdapter instances for BYO cloud code integration
  * @property {String} cloudCodeCommand Shell command to spawn an external cloud code process (ParseCloud/1.0 protocol)
- * @property {Object} cloudCodeOptions Options for the external cloud code process adapter
+ * @property {CloudCodeOptions} cloudCodeOptions Options for the external cloud code process adapter: startupTimeout, healthCheckInterval, shutdownTimeout, maxRestartDelay
  * @property {Number|Boolean} cluster Run with cluster, optionally set the number of processes default to os.cpus().length
  * @property {String} collectionPrefix A collection prefix for the classes
  * @property {Boolean} convertEmailToLowercase Optional. If set to `true`, the `email` property of a user is automatically converted to lowercase before being stored in the database. Consequently, queries must match the case as stored in the database, which would be lowercase in this scenario. If `false`, the `email` property is stored as set, without any case modifications. Default is `false`.

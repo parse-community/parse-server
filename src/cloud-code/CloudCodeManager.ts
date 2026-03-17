@@ -262,15 +262,37 @@ export class CloudCodeManager {
 
     for (const adapter of adapters) {
       const registry = this.createRegistry(adapter.name);
-      await adapter.initialize(registry, config);
+      try {
+        await adapter.initialize(registry, config);
+      } catch (error) {
+        // Roll back any partial registrations from this adapter
+        this.unregisterAll(adapter.name);
+        // Attempt graceful shutdown of the failed adapter
+        try {
+          await adapter.shutdown();
+        } catch {
+          // Ignore shutdown errors during initialization rollback
+        }
+        throw error;
+      }
       this.adapters.push(adapter);
     }
   }
 
   async shutdown(): Promise<void> {
+    const errors: Array<{ name: string; error: unknown }> = [];
     for (const adapter of this.adapters) {
-      await adapter.shutdown();
+      try {
+        await adapter.shutdown();
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error(`Error shutting down adapter "${adapter.name}":`, error);
+        errors.push({ name: adapter.name, error });
+      }
     }
+    // Clear all manager state regardless of individual shutdown failures
+    this.adapters.length = 0;
+    this.clearAll();
   }
 
   async healthCheck(): Promise<boolean> {

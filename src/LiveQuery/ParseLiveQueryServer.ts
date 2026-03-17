@@ -232,7 +232,7 @@ class ParseLiveQueryServer {
               installationId: client.installationId,
               sendEvent: true,
             };
-            const trigger = getTrigger(className, 'afterEvent', Parse.applicationId);
+            const trigger = getTrigger(className, 'afterEvent', this.config.appId);
             if (trigger) {
               const auth = await this.getAuthFromClient(client, requestId);
               if (auth && auth.user) {
@@ -241,7 +241,7 @@ class ParseLiveQueryServer {
               if (res.object) {
                 res.object = Parse.Object.fromJSON(res.object);
               }
-              await runTrigger(trigger, `afterEvent.${className}`, res, auth);
+              await runTrigger(trigger, `afterEvent.${className}`, res, auth, this.config.appId);
             }
             if (!res.sendEvent) {
               return;
@@ -388,7 +388,7 @@ class ParseLiveQueryServer {
               installationId: client.installationId,
               sendEvent: true,
             };
-            const trigger = getTrigger(className, 'afterEvent', Parse.applicationId);
+            const trigger = getTrigger(className, 'afterEvent', this.config.appId);
             if (trigger) {
               if (res.object) {
                 res.object = Parse.Object.fromJSON(res.object);
@@ -400,7 +400,7 @@ class ParseLiveQueryServer {
               if (auth && auth.user) {
                 res.user = auth.user;
               }
-              await runTrigger(trigger, `afterEvent.${className}`, res, auth);
+              await runTrigger(trigger, `afterEvent.${className}`, res, auth, this.config.appId);
             }
             if (!res.sendEvent) {
               return;
@@ -845,13 +845,13 @@ class ParseLiveQueryServer {
         installationId: request.installationId,
         user: undefined,
       };
-      const trigger = getTrigger('@Connect', 'beforeConnect', Parse.applicationId);
+      const trigger = getTrigger('@Connect', 'beforeConnect', this.config.appId);
       if (trigger) {
         const auth = await this.getAuthFromClient(client, request.requestId, req.sessionToken);
         if (auth && auth.user) {
           req.user = auth.user;
         }
-        await runTrigger(trigger, `beforeConnect.@Connect`, req, auth);
+        await runTrigger(trigger, `beforeConnect.@Connect`, req, auth, this.config.appId);
       }
       parseWebsocket.clientId = clientId;
       this.clients.set(parseWebsocket.clientId, client);
@@ -908,7 +908,7 @@ class ParseLiveQueryServer {
     const className = request.query.className;
     let authCalled = false;
     try {
-      const trigger = getTrigger(className, 'beforeSubscribe', Parse.applicationId);
+      const trigger = getTrigger(className, 'beforeSubscribe', this.config.appId);
       if (trigger) {
         const auth = await this.getAuthFromClient(client, request.requestId, request.sessionToken);
         authCalled = true;
@@ -919,7 +919,7 @@ class ParseLiveQueryServer {
         const parseQuery = new Parse.Query(className);
         parseQuery.withJSON(request.query);
         request.query = parseQuery;
-        await runTrigger(trigger, `beforeSubscribe.${className}`, request, auth);
+        await runTrigger(trigger, `beforeSubscribe.${className}`, request, auth, this.config.appId);
 
         const query = request.query.toJSON();
         request.query = query;

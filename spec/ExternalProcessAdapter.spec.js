@@ -3,8 +3,8 @@ const { ExternalProcessAdapter } = require('../lib/cloud-code/adapters/ExternalP
 const { CloudCodeManager } = require('../lib/cloud-code/CloudCodeManager');
 const http = require('http');
 
-function createMockCloudServer(manifest, port) {
-  return new Promise((resolve) => {
+function createMockCloudServer(manifest) {
+  return new Promise((resolve, reject) => {
     const server = http.createServer((req, res) => {
       if (req.url === '/' && req.method === 'GET') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -24,7 +24,8 @@ function createMockCloudServer(manifest, port) {
         res.end();
       }
     });
-    server.listen(port, () => resolve(server));
+    server.on('error', (err) => reject(err));
+    server.listen(0, () => resolve({ server, port: server.address().port }));
   });
 }
 
@@ -45,15 +46,14 @@ describe('ExternalProcessAdapter', () => {
 
   it('spawns process and reads manifest', async () => {
     const manager = new CloudCodeManager();
-    const port = 19876;
-    const server = await createMockCloudServer(
-      { protocol: 'ParseCloud/1.0', hooks: { functions: [{ name: 'ext-fn' }], triggers: [], jobs: [] } },
-      port
+    const { server, port } = await createMockCloudServer(
+      { protocol: 'ParseCloud/1.0', hooks: { functions: [{ name: 'ext-fn' }], triggers: [], jobs: [] } }
     );
 
+    let adapter;
     try {
       const cmd = `node -e "process.stdout.write('PARSE_CLOUD_READY:${port}\\n'); setTimeout(() => {}, 60000)"`;
-      const adapter = new ExternalProcessAdapter(cmd, 'test-key', {
+      adapter = new ExternalProcessAdapter(cmd, 'test-key', {
         startupTimeout: 5000,
         healthCheckInterval: 0,
       });
@@ -61,9 +61,10 @@ describe('ExternalProcessAdapter', () => {
       await adapter.initialize(registry, { appId: 'test', masterKey: 'mk', serverURL: 'http://localhost' });
 
       expect(manager.getFunction('ext-fn')).toBeDefined();
-
-      await adapter.shutdown();
     } finally {
+      if (adapter) {
+        await adapter.shutdown();
+      }
       server.close();
     }
   }, 10000);

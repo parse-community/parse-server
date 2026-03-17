@@ -196,6 +196,9 @@ class ParseServer {
       });
 
       if (adapters.length > 0) {
+        // Re-invoke addParseCloud() so Parse.Cloud methods are available
+        // before cloud code adapters initialize (the module-level call may
+        // run before Parse.applicationId is set).
         addParseCloud();
         const cloudManager = new CloudCodeManager();
 

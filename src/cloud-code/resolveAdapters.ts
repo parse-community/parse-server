@@ -16,7 +16,7 @@ export function resolveAdapters(options: any): CloudCodeAdapter[] {
     } else if (typeof options.cloud === 'string' || typeof options.cloud === 'function') {
       adapters.push(new LegacyAdapter(options.cloud));
     } else {
-      throw "argument 'cloud' must either be a string or a function";
+      throw new Error("argument 'cloud' must either be a string or a function");
     }
   }
 
