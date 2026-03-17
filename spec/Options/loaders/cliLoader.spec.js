@@ -89,6 +89,14 @@ describe('cliLoader', () => {
       expect(result.verbose).toBe(true);
     });
 
+    it('treats boolean flags without explicit values as true', () => {
+      registerSchemaOptions(program, schema);
+      program.parse(['node', 'test', '--appId', 'x', '--verbose'], { from: 'user' });
+
+      const result = extractCliOptions(program, schema);
+      expect(result.verbose).toBe(true);
+    });
+
     it('coerces CSV arrays', () => {
       registerSchemaOptions(program, schema);
       program.parse(

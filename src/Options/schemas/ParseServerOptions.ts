@@ -15,7 +15,13 @@ import { LogLevelsSchema } from './LogLevels';
 import { DatabaseOptionsSchema } from './DatabaseOptions';
 
 /** Schema for adapter fields that accept a module path string, config object, or class instance. */
-const adapterSchema = z.union([z.string(), z.record(z.string(), z.any()), z.custom<any>(() => true)]).optional();
+const adapterSchema = z.union([
+  z.string(),
+  z.record(z.string(), z.any()),
+  // Deliberately permissive: adapters may be runtime class instances or other
+  // non-serializable values that stricter Zod validators would reject.
+  z.custom<any>(() => true),
+]).optional();
 
 /** Validates an array of IP addresses, supporting CIDR notation. */
 const ipArraySchema = (fieldName: string) =>

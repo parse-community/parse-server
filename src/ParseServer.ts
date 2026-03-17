@@ -65,7 +65,15 @@ class ParseServer {
   liveQueryServer: any;
   /**
    * @constructor
-   * @param {ParseServerOptions} options the parse server initialization options
+   * @param {ParseServerOptions} options the parse server initialization options.
+   *
+   * **Note:** The `options` object is modified in-place. {@link validateConfig} is
+   * called to validate and apply schema defaults, and the resulting values are
+   * written back onto `options` to preserve the original reference for consumers
+   * (e.g. middleware, controllers) that hold a pointer to this object.
+   *
+   * Callers should pass a shallow clone if they need to retain the original
+   * unmodified options object.
    */
   constructor(options: ParseServerOptions) {
     // Scan for deprecated Parse Server options
@@ -615,9 +623,7 @@ function injectSpecialDefaults(options: ParseServerOptions) {
       new Set([...(defaults.userSensitiveFields || []), ...(options.userSensitiveFields || [])])
     );
 
-    if (!('_User' in options.protectedFields)) {
-      options.protectedFields = Object.assign({ _User: [] }, options.protectedFields);
-    }
+    options.protectedFields['_User'] = options.protectedFields['_User'] || {};
 
     options.protectedFields['_User']['*'] = Array.from(
       new Set([...(options.protectedFields['_User']['*'] || []), ...userSensitiveFields])

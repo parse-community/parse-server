@@ -171,7 +171,43 @@ describe('Phase 4: Advanced Features', () => {
       const dynamicKeys = getDynamicKeys(ParseServerOptionsSchema);
       expect(dynamicKeys).toContain('publicServerURL');
       expect(dynamicKeys).toContain('masterKey');
-      // These are the keys that Config.transformConfiguration will handle
+    });
+
+    it('transformConfiguration renames function-valued dynamic keys with underscore prefix', () => {
+      const Config = require('../../lib/Config');
+      const dynamicFn = () => 'https://example.com';
+      const config = {
+        appId: 'test-app',
+        publicServerURL: dynamicFn,
+        masterKey: 'static-value',
+      };
+
+      Config.transformConfiguration(config);
+
+      // Function-valued dynamic key should be renamed to _publicServerURL
+      expect(config._publicServerURL).toBe(dynamicFn);
+      expect(config.publicServerURL).toBeUndefined();
+
+      // Non-function dynamic key should remain unchanged
+      expect(config.masterKey).toBe('static-value');
+      expect(config._masterKey).toBeUndefined();
+
+      // Non-dynamic key should remain unchanged
+      expect(config.appId).toBe('test-app');
+    });
+
+    it('transformConfiguration leaves non-dynamic function values untouched', () => {
+      const Config = require('../../lib/Config');
+      const customFn = () => 'value';
+      const config = {
+        appId: customFn,
+      };
+
+      Config.transformConfiguration(config);
+
+      // appId is not a dynamic key, so it should not be renamed even if it is a function
+      expect(config.appId).toBe(customFn);
+      expect(config._appId).toBeUndefined();
     });
   });
 });

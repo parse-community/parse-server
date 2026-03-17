@@ -3,8 +3,7 @@ import { option } from '../schemaUtils';
 
 export const PagesRouteSchema = z
   .object({
-    handler: option(z.any(), {
-      env: 'PARSE_SERVER_PAGES_ROUTE_HANDLER',
+    handler: option(z.function(), {
       help: 'The Express route handler function for this custom page route.',
     }),
     method: option(z.string(), {

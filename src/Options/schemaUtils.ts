@@ -163,8 +163,6 @@ export function coerceValue(value: string, fieldSchema: z.ZodTypeAny): unknown {
       } catch {
         // Not valid JSON
       }
-      // Fall back to CSV splitting
-      return value.split(',');
     }
     return value;
   }
