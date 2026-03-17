@@ -80,6 +80,27 @@ describe('Phase 4: Advanced Features', () => {
       }
     });
 
+    it('covers every schema key and contains no unknown keys', () => {
+      const groups = getOptionGroups();
+      const schemaKeys = new Set(Object.keys(ParseServerOptionsSchema.shape));
+
+      // Collect all keys referenced by any group
+      const groupedKeys = new Set();
+      for (const group of groups) {
+        for (const key of group.keys) {
+          groupedKeys.add(key);
+        }
+      }
+
+      // Every schema key must appear in at least one group
+      const missingFromGroups = [...schemaKeys].filter(k => !groupedKeys.has(k));
+      expect(missingFromGroups).toEqual([]);
+
+      // No group key should reference a key absent from the schema
+      const extraInGroups = [...groupedKeys].filter(k => !schemaKeys.has(k));
+      expect(extraInGroups).toEqual([]);
+    });
+
     it('each group has name, description, and keys', () => {
       const groups = getOptionGroups();
       for (const group of groups) {

@@ -82,7 +82,12 @@ class ParseServer {
     // Validate and apply defaults via Zod schema
     const validated = validateConfig(options);
 
-    // Copy validated values back to options object (preserving reference for consumers)
+    // Copy validated values back to options object (preserving reference for consumers).
+    // First remove all existing own properties so stale keys (e.g. unknown keys
+    // stripped by Zod) don't linger on the object.
+    Object.keys(options).forEach(key => {
+      delete options[key];
+    });
     Object.keys(validated).forEach(key => {
       options[key] = validated[key];
     });
@@ -95,6 +100,8 @@ class ParseServer {
       const logger = (logging as any).logger;
       if (logger) {
         logger.warn(msg);
+      } else {
+        console.warn(msg);
       }
     });
 

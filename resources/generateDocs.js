@@ -151,7 +151,7 @@ function generateJSDoc(name, schema) {
     const fieldMeta = meta.get(key);
     const help = fieldMeta?.help || '';
     // Use docType override if available, otherwise derive from Zod schema
-    const type = fieldMeta?.docType || getTypeName(shape[key], key);
+    const type = fieldMeta?.docType || getTypeName(shape[key]);
     doc += ` * @property {${type}} ${key} ${help}\n`;
   }
   doc += ` */\n`;

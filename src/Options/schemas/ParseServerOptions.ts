@@ -96,6 +96,7 @@ export const ParseServerOptionsSchema = z.object({
   clientKey: option(z.string().optional(), {
     env: 'PARSE_SERVER_CLIENT_KEY',
     help: 'Key used to authenticate requests from iOS, macOS, and tvOS clients.',
+    sensitive: true,
   }),
   cloud: option(z.string().optional(), {
     env: 'PARSE_SERVER_CLOUD',
@@ -146,6 +147,7 @@ export const ParseServerOptionsSchema = z.object({
   dotNetKey: option(z.string().optional(), {
     env: 'PARSE_SERVER_DOT_NET_KEY',
     help: 'Key used to authenticate requests from Unity and .NET SDK clients.',
+    sensitive: true,
   }),
   emailAdapter: option(adapterSchema, {
     env: 'PARSE_SERVER_EMAIL_ADAPTER',
@@ -207,6 +209,7 @@ export const ParseServerOptionsSchema = z.object({
   fileKey: option(z.string().optional(), {
     env: 'PARSE_SERVER_FILE_KEY',
     help: 'Key used by the files adapter for file access control.',
+    sensitive: true,
   }),
   filesAdapter: option(adapterSchema, {
     env: 'PARSE_SERVER_FILES_ADAPTER',
@@ -240,6 +243,7 @@ export const ParseServerOptionsSchema = z.object({
   javascriptKey: option(z.string().optional(), {
     env: 'PARSE_SERVER_JAVASCRIPT_KEY',
     help: 'Key used to authenticate requests from the JavaScript SDK.',
+    sensitive: true,
   }),
   jsonLogs: option(z.boolean().optional(), {
     env: 'JSON_LOGS',
@@ -270,7 +274,7 @@ export const ParseServerOptionsSchema = z.object({
     env: 'PARSE_SERVER_LOGS_FOLDER',
     help: 'Directory path where log files are stored.',
   }),
-  maintenanceKey: option(z.string(), {
+  maintenanceKey: option(z.string().optional(), {
     env: 'PARSE_SERVER_MAINTENANCE_KEY',
     help: 'A key for maintenance operations like clearing caches. Must differ from masterKey.',
   }),
@@ -282,6 +286,7 @@ export const ParseServerOptionsSchema = z.object({
     env: 'PARSE_SERVER_MASTER_KEY',
     help: 'The master key grants unrestricted access to all data and operations. Keep it secret. Can be a function for rotation.',
     dynamic: true,
+    sensitive: true,
   }),
   masterKeyIps: option(ipArraySchema('masterKeyIps').default(['127.0.0.1', '::1']), {
     env: 'PARSE_SERVER_MASTER_KEY_IPS',
@@ -403,6 +408,7 @@ export const ParseServerOptionsSchema = z.object({
   restAPIKey: option(z.string().optional(), {
     env: 'PARSE_SERVER_REST_API_KEY',
     help: 'Key used to authenticate REST API requests.',
+    sensitive: true,
   }),
   revokeSessionOnPasswordReset: option(z.boolean().default(true), {
     env: 'PARSE_SERVER_REVOKE_SESSION_ON_PASSWORD_RESET',
@@ -472,14 +478,14 @@ export const ParseServerOptionsSchema = z.object({
 }).superRefine((data, ctx) => {
   if (data.masterKey && data.readOnlyMasterKey && data.masterKey === data.readOnlyMasterKey) {
     ctx.addIssue({
-      code: 'custom',
+      code: z.ZodIssueCode.custom,
       message: 'masterKey and readOnlyMasterKey should be different',
       path: ['readOnlyMasterKey'],
     });
   }
   if (data.masterKey && data.maintenanceKey && data.masterKey === data.maintenanceKey) {
     ctx.addIssue({
-      code: 'custom',
+      code: z.ZodIssueCode.custom,
       message: 'masterKey and maintenanceKey should be different',
       path: ['maintenanceKey'],
     });

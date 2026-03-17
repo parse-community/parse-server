@@ -1,4 +1,6 @@
 const path = require('path');
+const os = require('os');
+const fs = require('fs');
 const { loadFromFile } = require('../../../lib/Options/loaders/fileLoader');
 
 describe('fileLoader', () => {
@@ -16,47 +18,47 @@ describe('fileLoader', () => {
   });
 
   it('throws for multiple apps', () => {
-    // CLIConfigApps.json has a single app; test with a custom fixture
-    const multiAppPath = path.join(configDir, 'CLIConfigMultipleApps.json');
-    // Write a temp fixture
-    const fs = require('fs');
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'parse-test-'));
+    const multiAppPath = path.join(tempDir, 'CLIConfigMultipleApps.json');
     const multiApp = { apps: [{ arg1: 'a' }, { arg1: 'b' }] };
     fs.writeFileSync(multiAppPath, JSON.stringify(multiApp));
     try {
       expect(() => loadFromFile(multiAppPath)).toThrow('Multiple apps are not supported');
     } finally {
-      fs.unlinkSync(multiAppPath);
+      fs.rmSync(tempDir, { recursive: true, force: true });
     }
   });
 
   it('throws for empty apps array', () => {
-    const fs = require('fs');
-    const emptyAppsPath = path.join(configDir, 'CLIConfigEmptyApps.json');
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'parse-test-'));
+    const emptyAppsPath = path.join(tempDir, 'CLIConfigEmptyApps.json');
     fs.writeFileSync(emptyAppsPath, JSON.stringify({ apps: [] }));
     try {
       expect(() => loadFromFile(emptyAppsPath)).toThrow(
         'The "apps" array must contain at least one configuration'
       );
     } finally {
-      fs.unlinkSync(emptyAppsPath);
+      fs.rmSync(tempDir, { recursive: true, force: true });
     }
   });
 
   it('throws for apps that is not an array', () => {
-    const fs = require('fs');
-    const nonArrayAppsPath = path.join(configDir, 'CLIConfigNonArrayApps.json');
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'parse-test-'));
+    const nonArrayAppsPath = path.join(tempDir, 'CLIConfigNonArrayApps.json');
     fs.writeFileSync(nonArrayAppsPath, JSON.stringify({ apps: {} }));
     try {
       expect(() => loadFromFile(nonArrayAppsPath)).toThrow(
         'The "apps" property must be an array'
       );
     } finally {
-      fs.unlinkSync(nonArrayAppsPath);
+      fs.rmSync(tempDir, { recursive: true, force: true });
     }
   });
 
   it('resolves relative paths', () => {
-    const result = loadFromFile('./spec/configs/CLIConfig.json');
+    const absolutePath = path.join(configDir, 'CLIConfig.json');
+    const relativePath = path.relative(process.cwd(), absolutePath);
+    const result = loadFromFile(relativePath);
     expect(result.arg1).toBe('my_app');
   });
 });

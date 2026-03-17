@@ -16,6 +16,8 @@ export interface OptionMeta {
   dynamic?: boolean;
   /** Override the JSDoc type string for documentation (e.g. 'Adapter<AnalyticsAdapter>'). */
   docType?: string;
+  /** Whether this option contains sensitive data that should be redacted in logs. */
+  sensitive?: boolean;
 }
 
 export interface DeprecationInfo {
@@ -102,6 +104,13 @@ export function buildEnvMap(
     const currentPath = [...parentPath, key];
 
     if (meta?.env) {
+      const existing = envMap.get(meta.env);
+      if (existing) {
+        throw new Error(
+          `Duplicate environment variable key "${meta.env}" found: ` +
+            `"${existing.path.join('.')}" and "${currentPath.join('.')}"`
+        );
+      }
       envMap.set(meta.env, { path: currentPath, fieldSchema: zodField });
     }
 
@@ -110,6 +119,13 @@ export function buildEnvMap(
     if (innerSchema) {
       const nestedMap = buildEnvMap(innerSchema, currentPath);
       for (const [envKey, value] of nestedMap) {
+        const existing = envMap.get(envKey);
+        if (existing) {
+          throw new Error(
+            `Duplicate environment variable key "${envKey}" found: ` +
+              `"${existing.path.join('.')}" and "${value.path.join('.')}"`
+          );
+        }
         envMap.set(envKey, value);
       }
     }
@@ -156,15 +172,20 @@ export function coerceValue(value: string, fieldSchema: z.ZodTypeAny): unknown {
   }
 
   if (innerType instanceof z.ZodArray) {
-    if (typeof value === 'string') {
-      try {
-        const parsed = JSON.parse(value);
-        if (Array.isArray(parsed)) return parsed;
-      } catch {
-        // Not valid JSON
-      }
+    if (typeof value !== 'string') {
+      return value;
     }
-    return value;
+    // Try JSON array first
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    } catch {
+      // Not valid JSON — fall through to CSV
+    }
+    // Fall back to comma-separated values
+    return value.split(',');
   }
 
   if (innerType instanceof z.ZodObject || innerType instanceof z.ZodRecord) {
@@ -217,19 +238,17 @@ function unwrapType(schema: z.ZodTypeAny): z.ZodTypeAny {
 
 /**
  * Gets the default value from a Zod schema field, if any.
- * Handles Zod v3 (typeName) and v4 (type) internal representations.
+ * Uses instanceof checks consistent with unwrapType/unwrapToObject.
  * Unwraps optional/nullable wrappers.
  */
 export function getSchemaDefault(schema: z.ZodTypeAny): unknown {
-  if (!schema || !(schema as any)._def) return undefined;
-  const def = (schema as any)._def;
-  const type = def.type || def.typeName;
-  if (type === 'default' || type === 'ZodDefault') {
-    const val = def.defaultValue;
+  if (!schema) return undefined;
+  if (schema instanceof z.ZodDefault) {
+    const val = (schema as any).def.defaultValue;
     return typeof val === 'function' ? val() : val;
   }
-  if (type === 'optional' || type === 'nullable' || type === 'ZodOptional' || type === 'ZodNullable') {
-    return getSchemaDefault(def.innerType);
+  if (schema instanceof z.ZodOptional || schema instanceof z.ZodNullable) {
+    return getSchemaDefault(schema.unwrap() as z.ZodTypeAny);
   }
   return undefined;
 }
@@ -282,6 +301,21 @@ export function getDynamicKeys(schema: z.ZodObject<z.ZodRawShape>): string[] {
   const allMeta = getAllOptionMeta(schema);
   for (const [key, meta] of allMeta) {
     if (meta.dynamic) {
+      result.push(key);
+    }
+  }
+  return result;
+}
+
+/**
+ * Returns a list of field names marked as sensitive in schema metadata.
+ * Sensitive fields should be redacted when logging configuration values.
+ */
+export function getSensitiveOptionKeys(schema: z.ZodObject<z.ZodRawShape>): string[] {
+  const result: string[] = [];
+  const allMeta = getAllOptionMeta(schema);
+  for (const [key, meta] of allMeta) {
+    if (meta.sensitive) {
       result.push(key);
     }
   }

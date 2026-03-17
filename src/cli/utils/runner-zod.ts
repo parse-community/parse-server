@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import fs from 'fs';
 import path from 'path';
 import { Command } from 'commander';
 import { z } from 'zod';
@@ -7,13 +8,16 @@ import { loadFromFile } from '../../Options/loaders/fileLoader';
 import { registerSchemaOptions, extractCliOptions } from '../../Options/loaders/cliLoader';
 import { mergeConfigs } from '../../Options/loaders/mergeConfig';
 import Deprecator from '../../Deprecator/Deprecator';
-import { getAllOptionMeta } from '../../Options/schemaUtils';
+import { getAllOptionMeta, getSensitiveOptionKeys } from '../../Options/schemaUtils';
 
-function logStartupOptions(options: Record<string, any>) {
+const FALLBACK_KEYS_TO_REDACT = ['databaseAdapter', 'databaseURI', 'masterKey', 'maintenanceKey', 'push'];
+
+function logStartupOptions(options: Record<string, any>, schema?: z.ZodObject<z.ZodRawShape>) {
   if (!options.verbose) {
     return;
   }
-  const keysToRedact = ['databaseAdapter', 'databaseURI', 'masterKey', 'maintenanceKey', 'push'];
+  const sensitiveKeys = schema ? getSensitiveOptionKeys(schema) : [];
+  const keysToRedact = sensitiveKeys.length > 0 ? sensitiveKeys : FALLBACK_KEYS_TO_REDACT;
   for (const key in options) {
     let value = options[key];
     if (keysToRedact.includes(key)) {
@@ -91,11 +95,16 @@ export default function runnerZod({ schema, help, usage, start }: RunnerZodOptio
   // Load from config file (first positional arg)
   let fileOptions: Record<string, any> = {};
   if (program.args.length > 0) {
+    const configFilePath = path.resolve(program.args[0]);
+    if (!fs.existsSync(configFilePath)) {
+      console.error(`Config file not found: ${configFilePath}`);
+      process.exit(1);
+    }
     try {
       fileOptions = loadFromFile(program.args[0]);
-      console.log(`Configuration loaded from ${path.resolve(program.args[0])}`);
+      console.log(`Configuration loaded from ${configFilePath}`);
     } catch (e: any) {
-      console.error(`Error loading config file: ${e.message}`);
+      console.error(`Error parsing config file ${configFilePath}: ${e.message}`);
       process.exit(1);
     }
   }
@@ -124,7 +133,7 @@ export default function runnerZod({ schema, help, usage, start }: RunnerZodOptio
   const options = result.data as Record<string, any>;
 
   start(program, options, function () {
-    logStartupOptions(options);
+    logStartupOptions(options, schema);
   });
 }
 /* eslint-enable no-console */
