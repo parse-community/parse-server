@@ -59,6 +59,18 @@ type SendEmailVerificationRequest = {
   user: any,
   master?: boolean,
 };
+type CloudCodeOptions = {
+  startupTimeout?: number,
+  healthCheckInterval?: number,
+  shutdownTimeout?: number,
+  maxRestartDelay?: number,
+};
+type CloudCodeAdapter = {
+  name: string,
+  initialize(registry: any, config: any): Promise<void>,
+  isHealthy(): Promise<boolean>,
+  shutdown(): Promise<void>,
+};
 
 export interface ParseServerOptions {
   /* Your Parse Application ID
@@ -139,16 +151,16 @@ export interface ParseServerOptions {
   /* Optional. If set to `true`, the `username` property of a user is automatically converted to lowercase before being stored in the database. Consequently, queries must match the case as stored in the database, which would be lowercase in this scenario. If `false`, the `username` property is stored as set, without any case modifications. Default is `false`.
   :DEFAULT: false */
   convertUsernameToLowercase: ?boolean;
-  /* Full path to your cloud code main.js */
-  cloud: ?string;
+  /* Full path to your cloud code main.js, a cloud code function, or an object implementing getRouter() for in-process cloud code */
+  cloud: ?(string | Object);
   /* Shell command to spawn an external cloud code process (ParseCloud/1.0 protocol) */
   cloudCodeCommand: ?string;
   /* Key for authenticating external cloud code process requests. Required when cloudCodeCommand is set. */
   webhookKey: ?string;
-  /* Options for the external cloud code process adapter */
-  cloudCodeOptions: ?Object;
+  /* Options for the external cloud code process adapter: startupTimeout, healthCheckInterval, shutdownTimeout, maxRestartDelay */
+  cloudCodeOptions: ?CloudCodeOptions;
   /* Array of CloudCodeAdapter instances for BYO cloud code integration */
-  cloudCodeAdapters: ?Object;
+  cloudCodeAdapters: ?(CloudCodeAdapter[]);
   /* A collection prefix for the classes
   :DEFAULT: '' */
   collectionPrefix: ?string;

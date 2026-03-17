@@ -128,12 +128,12 @@ module.exports.ParseServerOptions = {
   },
   cloud: {
     env: 'PARSE_SERVER_CLOUD',
-    help: 'Full path to your cloud code main.js',
+    help: 'Full path to your cloud code main.js, a cloud code function, or an object implementing getRouter() for in-process cloud code',
   },
   cloudCodeAdapters: {
     env: 'PARSE_SERVER_CLOUD_CODE_ADAPTERS',
     help: 'Array of CloudCodeAdapter instances for BYO cloud code integration',
-    action: parsers.objectParser,
+    action: parsers.arrayParser,
   },
   cloudCodeCommand: {
     env: 'PARSE_SERVER_CLOUD_CODE_COMMAND',
@@ -141,7 +141,7 @@ module.exports.ParseServerOptions = {
   },
   cloudCodeOptions: {
     env: 'PARSE_SERVER_CLOUD_CODE_OPTIONS',
-    help: 'Options for the external cloud code process adapter',
+    help: 'Options for the external cloud code process adapter: startupTimeout, healthCheckInterval, shutdownTimeout, maxRestartDelay',
     action: parsers.objectParser,
   },
   cluster: {

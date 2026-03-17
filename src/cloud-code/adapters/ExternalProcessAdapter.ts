@@ -18,13 +18,24 @@ const DEFAULT_OPTIONS: Required<CloudCodeOptions> = {
   maxRestartDelay: 30000,
 };
 
+const HTTP_TIMEOUT = 10000;
+
 function httpGet(url: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    http.get(url, (res) => {
+    const req = http.get(url, (res) => {
+      if (res.statusCode === undefined || res.statusCode < 200 || res.statusCode >= 300) {
+        res.resume();
+        reject(new Error(`HTTP GET ${url} returned status ${res.statusCode}`));
+        return;
+      }
       let data = '';
       res.on('data', (chunk) => data += chunk);
       res.on('end', () => resolve(data));
-    }).on('error', reject);
+    });
+    req.setTimeout(HTTP_TIMEOUT, () => {
+      req.destroy(new Error(`HTTP GET ${url} timed out after ${HTTP_TIMEOUT}ms`));
+    });
+    req.on('error', reject);
   });
 }
 
@@ -43,6 +54,11 @@ function httpPost(url: string, body: Record<string, unknown>, webhookKey: string
         'X-Parse-Webhook-Key': webhookKey,
       },
     }, (res) => {
+      if (res.statusCode === undefined || res.statusCode < 200 || res.statusCode >= 300) {
+        res.resume();
+        reject(new Error(`HTTP POST ${url} returned status ${res.statusCode}`));
+        return;
+      }
       let data = '';
       res.on('data', (chunk) => data += chunk);
       res.on('end', () => {
@@ -52,6 +68,9 @@ function httpPost(url: string, body: Record<string, unknown>, webhookKey: string
           reject(new Error(`Invalid JSON from cloud code process: ${data}`));
         }
       });
+    });
+    req.setTimeout(HTTP_TIMEOUT, () => {
+      req.destroy(new Error(`HTTP POST ${url} timed out after ${HTTP_TIMEOUT}ms`));
     });
     req.on('error', reject);
     req.write(payload);
@@ -79,8 +98,13 @@ export class ExternalProcessAdapter implements CloudCodeAdapter {
 
   async initialize(registry: CloudCodeRegistry, config: ParseServerConfig): Promise<void> {
     this.port = await this.spawnAndWaitForReady(config);
-    const manifest = await this.fetchManifest();
-    this.registerFromManifest(registry, manifest);
+    try {
+      const manifest = await this.fetchManifest();
+      this.registerFromManifest(registry, manifest);
+    } catch (err) {
+      await this.shutdown();
+      throw err;
+    }
 
     if (this.options.healthCheckInterval > 0) {
       this.healthInterval = setInterval(() => this.checkHealth(), this.options.healthCheckInterval);
@@ -90,7 +114,8 @@ export class ExternalProcessAdapter implements CloudCodeAdapter {
   async isHealthy(): Promise<boolean> {
     try {
       const response = await httpGet(`http://localhost:${this.port}/health`);
-      return response === 'OK' || response.includes('ok');
+      const trimmed = response.trim();
+      return trimmed === 'OK' || trimmed === 'ok';
     } catch {
       return false;
     }
@@ -190,6 +215,9 @@ export class ExternalProcessAdapter implements CloudCodeAdapter {
           this.webhookKey
         );
         if (triggerName === 'beforeSave') {
+          if (request.file || className === 'File') {
+            return webhookResponseToResult(response);
+          }
           applyBeforeSaveResponse(request, response);
           return;
         }

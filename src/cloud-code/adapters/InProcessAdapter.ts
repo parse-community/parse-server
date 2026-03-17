@@ -32,8 +32,11 @@ export class InProcessAdapter implements CloudCodeAdapter {
         const body = requestToWebhookBody(request);
         const response = await router.dispatchTrigger(className, triggerName, body);
         if (triggerName === 'beforeSave') {
-          applyBeforeSaveResponse(request, response);
-          return;
+          if (request.object) {
+            applyBeforeSaveResponse(request, response);
+            return;
+          }
+          return webhookResponseToResult(response);
         }
         return webhookResponseToResult(response);
       });

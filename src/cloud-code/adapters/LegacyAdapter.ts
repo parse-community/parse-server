@@ -21,16 +21,16 @@ export class LegacyAdapter implements CloudCodeAdapter {
       await Promise.resolve(this.cloud(Parse));
     } else if (typeof this.cloud === 'string') {
       const path = require('path');
+      const url = require('url');
       const resolved = path.resolve(process.cwd(), this.cloud);
       try {
-        const pkg = require(path.resolve(process.cwd(), 'package.json'));
-        if (process.env.npm_package_type === 'module' || pkg?.type === 'module') {
-          await import(resolved);
-        } else {
-          require(resolved);
-        }
-      } catch {
         require(resolved);
+      } catch (err: any) {
+        if (err?.code === 'ERR_REQUIRE_ESM') {
+          await import(url.pathToFileURL(resolved).href);
+        } else {
+          throw err;
+        }
       }
     }
   }

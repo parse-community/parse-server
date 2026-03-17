@@ -196,7 +196,12 @@ class ParseServer {
       });
 
       if (adapters.length > 0) {
-        addParseCloud();
+        // Re-invoke addParseCloud with the concrete appId so that Parse.Cloud
+        // methods (define, beforeSave, etc.) bind the correct appId in their
+        // closure. The module-level call (no appId) uses a lazy fallback to
+        // Parse.applicationId; this call upgrades it to a fixed binding before
+        // cloud code adapters run.
+        addParseCloud(this.config.appId);
         const cloudManager = new CloudCodeManager();
 
         // CRITICAL: Store on this.config BEFORE adapter initialization.
@@ -590,16 +595,19 @@ class ParseServer {
   }
 }
 
-function addParseCloud() {
-  const ParseCloud = require('./cloud-code/Parse.Cloud');
+function addParseCloud(appId?: string) {
+  const { createParseCloud } = require('./cloud-code/Parse.Cloud');
   const ParseServer = require('./cloud-code/Parse.Server');
+  const ParseCloud = createParseCloud(appId);
   Object.defineProperty(Parse, 'Server', {
     get() {
-      const conf = Config.get(Parse.applicationId);
+      const resolvedAppId = appId || Parse.applicationId;
+      const conf = Config.get(resolvedAppId);
       return { ...conf, ...ParseServer };
     },
     set(newVal) {
-      newVal.appId = Parse.applicationId;
+      const resolvedAppId = appId || Parse.applicationId;
+      newVal.appId = resolvedAppId;
       Config.put(newVal);
     },
     configurable: true,
