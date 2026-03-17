@@ -310,7 +310,7 @@ ParseCloud.beforeLogin = function (handler, validationHandler) {
   triggers.addTrigger(triggers.Types.beforeLogin, className, handler, Parse.applicationId);
   if (validationHandler && validationHandler.rateLimit) {
     addRateLimit(
-      { requestPath: `/login`, requestMethods: 'POST', ...validationHandler.rateLimit },
+      { requestPath: `/login`, requestMethods: ['POST', 'GET'], ...validationHandler.rateLimit },
       Parse.applicationId,
       true
     );

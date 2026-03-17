@@ -482,8 +482,10 @@ export function allowCrossDomain(appId) {
 
 export function allowMethodOverride(req, res, next) {
   if (req.method === 'POST' && req.body?._method) {
-    req.originalMethod = req.method;
-    req.method = req.body._method;
+    if (typeof req.body._method === 'string') {
+      req.originalMethod = req.method;
+      req.method = req.body._method;
+    }
     delete req.body._method;
   }
   next();
@@ -626,13 +628,17 @@ export const addRateLimit = (route, config, cloud) => {
           return false;
         }
         if (route.requestMethods) {
+          const methodsToCheck = new Set([request.method]);
+          if (request._batchOriginalMethod) {
+            methodsToCheck.add(request._batchOriginalMethod);
+          }
           if (Array.isArray(route.requestMethods)) {
-            if (!route.requestMethods.includes(request.method)) {
+            if (!route.requestMethods.some(m => methodsToCheck.has(m))) {
               return true;
             }
           } else {
             const regExp = new RegExp(route.requestMethods);
-            if (!regExp.test(request.method)) {
+            if (![...methodsToCheck].some(m => regExp.test(m))) {
               return true;
             }
           }
