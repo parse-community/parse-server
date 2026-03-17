@@ -3092,3 +3092,133 @@ describe('(GHSA-fjxm-vhvc-gcmj) LiveQuery Operator Type Confusion', () => {
     });
   });
 });
+
+describe('(GHSA-5hmj-jcgp-6hff) Protected fields leak via LiveQuery afterEvent trigger', () => {
+  let obj;
+
+  beforeEach(async () => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    await reconfigureServer({
+      liveQuery: { classNames: ['SecretClass'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    Parse.Cloud.afterLiveQueryEvent('SecretClass', () => {});
+    const config = Config.get(Parse.applicationId);
+    const schemaController = await config.database.loadSchema();
+    await schemaController.addClassIfNotExists('SecretClass', {
+      secretField: { type: 'String' },
+      publicField: { type: 'String' },
+    });
+    await schemaController.updateClass(
+      'SecretClass',
+      {},
+      {
+        find: { '*': true },
+        get: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+        protectedFields: { '*': ['secretField'] },
+      }
+    );
+    obj = new Parse.Object('SecretClass');
+    obj.set('secretField', 'SENSITIVE_DATA');
+    obj.set('publicField', 'visible');
+    await obj.save(null, { useMasterKey: true });
+  });
+
+  afterEach(async () => {
+    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+    if (client) {
+      await client.close();
+    }
+  });
+
+  it('should not leak protected fields on update event when afterEvent trigger is registered', async () => {
+    const query = new Parse.Query('SecretClass');
+    const subscription = await query.subscribe();
+    await Promise.all([
+      new Promise(resolve => {
+        subscription.on('update', (object, original) => {
+          expect(object.get('secretField')).toBeUndefined();
+          expect(object.get('publicField')).toBe('updated');
+          expect(original.get('secretField')).toBeUndefined();
+          expect(original.get('publicField')).toBe('visible');
+          resolve();
+        });
+      }),
+      obj.save({ publicField: 'updated' }, { useMasterKey: true }),
+    ]);
+  });
+
+  it('should not leak protected fields on create event when afterEvent trigger is registered', async () => {
+    const query = new Parse.Query('SecretClass');
+    const subscription = await query.subscribe();
+    await Promise.all([
+      new Promise(resolve => {
+        subscription.on('create', object => {
+          expect(object.get('secretField')).toBeUndefined();
+          expect(object.get('publicField')).toBe('new');
+          resolve();
+        });
+      }),
+      new Parse.Object('SecretClass').save(
+        { secretField: 'SECRET', publicField: 'new' },
+        { useMasterKey: true }
+      ),
+    ]);
+  });
+
+  it('should not leak protected fields on delete event when afterEvent trigger is registered', async () => {
+    const query = new Parse.Query('SecretClass');
+    const subscription = await query.subscribe();
+    await Promise.all([
+      new Promise(resolve => {
+        subscription.on('delete', object => {
+          expect(object.get('secretField')).toBeUndefined();
+          expect(object.get('publicField')).toBe('visible');
+          resolve();
+        });
+      }),
+      obj.destroy({ useMasterKey: true }),
+    ]);
+  });
+
+  it('should not leak protected fields on enter event when afterEvent trigger is registered', async () => {
+    const query = new Parse.Query('SecretClass');
+    query.equalTo('publicField', 'match');
+    const subscription = await query.subscribe();
+    await Promise.all([
+      new Promise(resolve => {
+        subscription.on('enter', (object, original) => {
+          expect(object.get('secretField')).toBeUndefined();
+          expect(object.get('publicField')).toBe('match');
+          expect(original.get('secretField')).toBeUndefined();
+          resolve();
+        });
+      }),
+      obj.save({ publicField: 'match' }, { useMasterKey: true }),
+    ]);
+  });
+
+  it('should not leak protected fields on leave event when afterEvent trigger is registered', async () => {
+    const query = new Parse.Query('SecretClass');
+    query.equalTo('publicField', 'visible');
+    const subscription = await query.subscribe();
+    await Promise.all([
+      new Promise(resolve => {
+        subscription.on('leave', (object, original) => {
+          expect(object.get('secretField')).toBeUndefined();
+          expect(object.get('publicField')).toBe('changed');
+          expect(original.get('secretField')).toBeUndefined();
+          expect(original.get('publicField')).toBe('visible');
+          resolve();
+        });
+      }),
+      obj.save({ publicField: 'changed' }, { useMasterKey: true }),
+    ]);
+  });
+});
