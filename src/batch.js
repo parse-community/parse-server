@@ -68,7 +68,7 @@ async function handleBatch(router, req) {
     throw new Parse.Error(Parse.Error.INVALID_JSON, 'requests must be an array');
   }
   for (const restRequest of req.body.requests) {
-    if (typeof restRequest.path !== 'string') {
+    if (!restRequest || typeof restRequest !== 'object' || typeof restRequest.path !== 'string') {
       throw new Parse.Error(Parse.Error.INVALID_JSON, 'batch request path must be a string');
     }
   }
