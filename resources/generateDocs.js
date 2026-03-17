@@ -2,10 +2,11 @@
  * Generates lib/Options/docs.js from Zod schema metadata.
  * This replaces the old buildConfigDefinitions.js docs generation.
  *
- * Run: node resources/generateDocs.js
+ * Run: npm run build && node resources/generateDocs.js
  * Or via: npm run docs (called automatically before jsdoc)
+ * Note: `npm run build` must be run first so that lib/ is up-to-date.
  */
-const { getAllOptionMeta, getSchemaDefault } = require('../lib/Options/schemaUtils');
+const { getAllOptionMeta } = require('../lib/Options/schemaUtils');
 const { ParseServerOptionsSchema } = require('../lib/Options/schemas/ParseServerOptions');
 const { SchemaOptionsSchema } = require('../lib/Options/schemas/SchemaOptions');
 const { AccountLockoutOptionsSchema } = require('../lib/Options/schemas/AccountLockoutOptions');
@@ -41,7 +42,9 @@ const { z } = require('zod');
  * Maps a Zod schema field to a JSDoc type string.
  */
 function getJSDocType(schema) {
-  if (!schema) return '*';
+  if (!schema) {
+    return '*';
+  }
 
   // Unwrap wrappers
   if (schema instanceof z.ZodOptional || schema instanceof z.ZodNullable) {
@@ -52,9 +55,15 @@ function getJSDocType(schema) {
   }
 
   // Primitives
-  if (schema instanceof z.ZodString) return 'String';
-  if (schema instanceof z.ZodNumber) return 'Number';
-  if (schema instanceof z.ZodBoolean) return 'Boolean';
+  if (schema instanceof z.ZodString) {
+    return 'String';
+  }
+  if (schema instanceof z.ZodNumber) {
+    return 'Number';
+  }
+  if (schema instanceof z.ZodBoolean) {
+    return 'Boolean';
+  }
 
   // Arrays
   if (schema instanceof z.ZodArray) {
@@ -71,7 +80,9 @@ function getJSDocType(schema) {
   }
 
   // Records
-  if (schema instanceof z.ZodRecord) return 'Object';
+  if (schema instanceof z.ZodRecord) {
+    return 'Object';
+  }
 
   // Unions
   if (schema instanceof z.ZodUnion) {
@@ -101,22 +112,32 @@ function getJSDocType(schema) {
  */
 const schemaNameMap = new Map();
 
-function getTypeName(schema, key) {
+function getTypeName(schema) {
   // Unwrap to the core type
   let core = schema;
-  if (core instanceof z.ZodOptional || core instanceof z.ZodNullable) core = core.unwrap();
-  if (core instanceof z.ZodDefault) core = core.removeDefault();
+  if (core instanceof z.ZodOptional || core instanceof z.ZodNullable) {
+    core = core.unwrap();
+  }
+  if (core instanceof z.ZodDefault) {
+    core = core.removeDefault();
+  }
   const coreType = core._def?.type || core._def?.typeName;
-  if (coreType === 'effects' || coreType === 'ZodEffects') core = core._def.schema;
+  if (coreType === 'effects' || coreType === 'ZodEffects') {
+    core = core._def.schema;
+  }
 
   // Check if this is a known named schema
   const name = schemaNameMap.get(core);
-  if (name) return name;
+  if (name) {
+    return name;
+  }
 
   // For arrays of known schemas
   if (core instanceof z.ZodArray) {
     const elemName = schemaNameMap.get(core.element);
-    if (elemName) return `${elemName}[]`;
+    if (elemName) {
+      return `${elemName}[]`;
+    }
   }
 
   return getJSDocType(schema);
@@ -168,4 +189,5 @@ for (const [name, schema] of schemas) {
 const output = schemas.map(([name, schema]) => generateJSDoc(name, schema)).join('\n');
 const outPath = path.resolve(__dirname, '../lib/Options/docs.js');
 fs.writeFileSync(outPath, output);
+// eslint-disable-next-line no-console
 console.log(`Generated ${outPath}`);
