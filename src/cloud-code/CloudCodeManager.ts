@@ -161,7 +161,7 @@ export class CloudCodeManager {
     return this.jobs.get(name) ?? null;
   }
 
-  getJobs(): Map<string, JobEntry> {
+  getJobs(): ReadonlyMap<string, JobEntry> {
     return this.jobs;
   }
 
@@ -181,7 +181,12 @@ export class CloudCodeManager {
 
   runLiveQueryEventHandlers(data: unknown): void {
     for (const entry of this.liveQueryHandlers) {
-      entry.handler(data);
+      try {
+        entry.handler(data);
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error(`LiveQuery handler from "${entry.source}" threw:`, error);
+      }
     }
   }
 
