@@ -249,6 +249,7 @@ class ParseLiveQueryServer {
             if (res.object && typeof res.object.toJSON === 'function') {
               deletedParseObject = toJSONwithObjects(res.object, res.object.className || className);
             }
+            res.object = deletedParseObject;
             await this._filterSensitiveData(
               classLevelPermissions,
               res,
@@ -257,6 +258,7 @@ class ParseLiveQueryServer {
               op,
               subscription.query
             );
+            deletedParseObject = res.object;
             client.pushDelete(requestId, deletedParseObject);
           } catch (e) {
             const error = resolveError(e);
@@ -414,6 +416,8 @@ class ParseLiveQueryServer {
                 res.original.className || className
               );
             }
+            res.object = currentParseObject;
+            res.original = originalParseObject;
             await this._filterSensitiveData(
               classLevelPermissions,
               res,
@@ -422,6 +426,8 @@ class ParseLiveQueryServer {
               op,
               subscription.query
             );
+            currentParseObject = res.object;
+            originalParseObject = res.original ?? null;
             const functionName = 'push' + res.event.charAt(0).toUpperCase() + res.event.slice(1);
             if (client[functionName]) {
               client[functionName](requestId, currentParseObject, originalParseObject);
