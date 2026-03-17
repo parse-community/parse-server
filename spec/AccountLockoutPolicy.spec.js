@@ -1,7 +1,8 @@
 'use strict';
 
 const Config = require('../lib/Config');
-const Definitions = require('../lib/Options/Definitions');
+const { AccountLockoutOptionsSchema } = require('../lib/Options/schemas/AccountLockoutOptions');
+const accountLockoutDefaults = AccountLockoutOptionsSchema.parse({});
 const request = require('../lib/request');
 
 const loginWithWrongCredentialsShouldFail = function (username, password) {
@@ -390,7 +391,7 @@ describe('lockout with password reset option', () => {
 
     const parseConfig = Config.get(Parse.applicationId);
     expect(parseConfig.accountLockout.unlockOnPasswordReset).toBe(
-      Definitions.AccountLockoutOptions.unlockOnPasswordReset.default
+      accountLockoutDefaults.unlockOnPasswordReset
     );
   });
 

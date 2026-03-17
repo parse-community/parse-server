@@ -7,7 +7,8 @@ const mustache = require('mustache');
 const Utils = require('../lib/Utils');
 const { Page } = require('../lib/Page');
 const Config = require('../lib/Config');
-const Definitions = require('../lib/Options/Definitions');
+const { PagesOptionsSchema } = require('../lib/Options/schemas/PagesOptions');
+const pagesDefaults = PagesOptionsSchema.parse({});
 const UserController = require('../lib/Controllers/UserController').UserController;
 const {
   PagesRouter,
@@ -206,29 +207,29 @@ describe('Pages Router', () => {
       it('uses default configuration when none is set', async () => {
         await reconfigureServerWithPagesConfig({});
         expect(Config.get(Parse.applicationId).pages.enableLocalization).toBe(
-          Definitions.PagesOptions.enableLocalization.default
+          pagesDefaults.enableLocalization
         );
         expect(Config.get(Parse.applicationId).pages.localizationJsonPath).toBe(
-          Definitions.PagesOptions.localizationJsonPath.default
+          pagesDefaults.localizationJsonPath
         );
         expect(Config.get(Parse.applicationId).pages.localizationFallbackLocale).toBe(
-          Definitions.PagesOptions.localizationFallbackLocale.default
+          pagesDefaults.localizationFallbackLocale
         );
         expect(Config.get(Parse.applicationId).pages.placeholders).toBe(
-          Definitions.PagesOptions.placeholders.default
+          pagesDefaults.placeholders
         );
         expect(Config.get(Parse.applicationId).pages.forceRedirect).toBe(
-          Definitions.PagesOptions.forceRedirect.default
+          pagesDefaults.forceRedirect
         );
         expect(Config.get(Parse.applicationId).pages.pagesPath).toBeUndefined();
         expect(Config.get(Parse.applicationId).pages.pagesEndpoint).toBe(
-          Definitions.PagesOptions.pagesEndpoint.default
+          pagesDefaults.pagesEndpoint
         );
         expect(Config.get(Parse.applicationId).pages.customUrls).toBe(
-          Definitions.PagesOptions.customUrls.default
+          pagesDefaults.customUrls
         );
         expect(Config.get(Parse.applicationId).pages.customRoutes).toBe(
-          Definitions.PagesOptions.customRoutes.default
+          pagesDefaults.customRoutes
         );
       });
 

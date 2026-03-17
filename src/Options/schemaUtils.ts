@@ -1,0 +1,498 @@
+import { z } from 'zod';
+
+/**
+ * Metadata attached to each Zod schema field describing its config behavior.
+ */
+export interface OptionMeta {
+  /** Environment variable name (e.g. 'PARSE_SERVER_APPLICATION_ID'). Null means not settable via env. */
+  env?: string | null;
+  /** Help text for CLI and documentation. */
+  help: string;
+  /** Deprecation info if this option is deprecated. */
+  deprecated?: DeprecationInfo;
+  /** Which startup methods this option applies to. */
+  applicableTo?: Array<'cli' | 'api'>;
+  /** Whether this option accepts a dynamic (function) value with TTL caching. */
+  dynamic?: boolean;
+  /** Override the JSDoc type string for documentation (e.g. 'Adapter<AnalyticsAdapter>'). */
+  docType?: string;
+  /** Whether this option contains sensitive data that should be redacted in logs. */
+  sensitive?: boolean;
+}
+
+export interface DeprecationInfo {
+  /** The option that replaces this one, if any. */
+  replacement?: string;
+  /** Message to display when the deprecated option is used. */
+  message: string;
+}
+
+/**
+ * Symbol used to tag schemas with a unique metadata ID.
+ * This avoids key collisions when the same schema instance is reused
+ * across multiple fields (e.g. a shared adapterSchema).
+ */
+const META_ID = Symbol('optionMetaId');
+let nextMetaId = 0;
+const metaRegistry = new Map<number, OptionMeta>();
+
+/**
+ * Wraps a Zod schema with option metadata (env var name, help text, etc.).
+ * Each call creates a lightweight wrapper via `.describe()` so shared schema
+ * instances get distinct metadata per field.
+ *
+ * Usage:
+ * ```ts
+ * const schema = z.object({
+ *   appId: option(z.string(), {
+ *     env: 'PARSE_SERVER_APPLICATION_ID',
+ *     help: 'Your Parse Application ID',
+ *   }),
+ * });
+ * ```
+ */
+export function option<T extends z.ZodTypeAny>(schema: T, meta: OptionMeta): T {
+  const tagged = schema.describe(meta.help) as T;
+  const id = nextMetaId++;
+  (tagged as any)[META_ID] = id;
+  metaRegistry.set(id, meta);
+  return tagged;
+}
+
+/**
+ * Retrieves the option metadata for a Zod schema field.
+ * Returns undefined if no metadata was attached.
+ */
+export function getOptionMeta(schema: z.ZodTypeAny): OptionMeta | undefined {
+  const id = (schema as any)[META_ID];
+  if (id === undefined) return undefined;
+  return metaRegistry.get(id);
+}
+
+/**
+ * Extracts all option metadata from a Zod object schema.
+ * Returns a map of field name -> OptionMeta.
+ */
+export function getAllOptionMeta(
+  schema: z.ZodObject<z.ZodRawShape>
+): Map<string, OptionMeta> {
+  const result = new Map<string, OptionMeta>();
+  const shape = schema.shape;
+  for (const [key, fieldSchema] of Object.entries(shape)) {
+    const meta = getOptionMeta(fieldSchema as z.ZodTypeAny);
+    if (meta) {
+      result.set(key, meta);
+    }
+  }
+  return result;
+}
+
+/**
+ * Builds a reverse map from environment variable names to option paths.
+ * Supports nested schemas by recursing into fields whose Zod type is a ZodObject.
+ */
+export function buildEnvMap(
+  schema: z.ZodObject<z.ZodRawShape>,
+  parentPath: string[] = []
+): Map<string, { path: string[]; fieldSchema: z.ZodTypeAny }> {
+  const envMap = new Map<string, { path: string[]; fieldSchema: z.ZodTypeAny }>();
+  const shape = schema.shape;
+
+  for (const [key, fieldSchema] of Object.entries(shape)) {
+    const zodField = fieldSchema as z.ZodTypeAny;
+    const meta = getOptionMeta(zodField);
+    const currentPath = [...parentPath, key];
+
+    if (meta?.env) {
+      const existing = envMap.get(meta.env);
+      if (existing) {
+        throw new Error(
+          `Duplicate environment variable key "${meta.env}" found: ` +
+            `"${existing.path.join('.')}" and "${currentPath.join('.')}"`
+        );
+      }
+      envMap.set(meta.env, { path: currentPath, fieldSchema: zodField });
+    }
+
+    // Recurse into nested ZodObject schemas
+    const innerSchema = unwrapToObject(zodField);
+    if (innerSchema) {
+      const nestedMap = buildEnvMap(innerSchema, currentPath);
+      for (const [envKey, value] of nestedMap) {
+        const existing = envMap.get(envKey);
+        if (existing) {
+          throw new Error(
+            `Duplicate environment variable key "${envKey}" found: ` +
+              `"${existing.path.join('.')}" and "${value.path.join('.')}"`
+          );
+        }
+        envMap.set(envKey, value);
+      }
+    }
+  }
+
+  return envMap;
+}
+
+/**
+ * Unwraps optional/default/nullable wrappers to find an inner ZodObject, if any.
+ */
+function unwrapToObject(schema: z.ZodTypeAny): z.ZodObject<z.ZodRawShape> | null {
+  if (schema instanceof z.ZodObject) {
+    return schema;
+  }
+  if (schema instanceof z.ZodOptional || schema instanceof z.ZodNullable) {
+    return unwrapToObject(schema.unwrap() as z.ZodTypeAny);
+  }
+  if (schema instanceof z.ZodDefault) {
+    return unwrapToObject(schema.removeDefault() as z.ZodTypeAny);
+  }
+  return null;
+}
+
+/**
+ * Coerces a string value (from env var or CLI) to the appropriate type
+ * based on the Zod schema field type.
+ */
+export function coerceValue(value: string, fieldSchema: z.ZodTypeAny): unknown {
+  const innerType = unwrapType(fieldSchema);
+
+  if (innerType instanceof z.ZodNumber) {
+    const num = Number(value);
+    if (isNaN(num)) {
+      throw new Error(`Expected a number, got "${value}"`);
+    }
+    return num;
+  }
+
+  if (innerType instanceof z.ZodBoolean) {
+    if (value === 'true' || value === '1') return true;
+    if (value === 'false' || value === '0') return false;
+    throw new Error(`Expected a boolean ('true', 'false', '1', '0'), got "${value}"`);
+  }
+
+  if (innerType instanceof z.ZodArray) {
+    if (typeof value !== 'string') {
+      return value;
+    }
+    // Try JSON array first
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    } catch {
+      // Not valid JSON — fall through to CSV
+    }
+    // Fall back to comma-separated values
+    return value.split(',');
+  }
+
+  if (innerType instanceof z.ZodObject || innerType instanceof z.ZodRecord) {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        throw new Error(`Expected valid JSON for object value, got "${value}"`);
+      }
+    }
+    return value;
+  }
+
+  if (innerType instanceof z.ZodUnion) {
+    // For union types, try each branch
+    const unionDef = innerType as z.ZodUnion<[z.ZodTypeAny, ...z.ZodTypeAny[]]>;
+    const options = (unionDef as any)._zod?.def?.options ?? (unionDef as any)._def.options;
+    for (const opt of options) {
+      const inner = unwrapType(opt);
+      // Skip function types for string coercion
+      if (inner instanceof z.ZodFunction) continue;
+      try {
+        return coerceValue(value, opt);
+      } catch {
+        continue;
+      }
+    }
+    // If nothing else matched, return as string
+    return value;
+  }
+
+  // Default: return as string
+  return value;
+}
+
+/**
+ * Unwraps optional/default/nullable wrappers to find the inner type.
+ */
+function unwrapType(schema: z.ZodTypeAny): z.ZodTypeAny {
+  if (schema instanceof z.ZodOptional || schema instanceof z.ZodNullable) {
+    return unwrapType(schema.unwrap() as z.ZodTypeAny);
+  }
+  if (schema instanceof z.ZodDefault) {
+    return unwrapType(schema.removeDefault() as z.ZodTypeAny);
+  }
+  return schema;
+}
+
+// --- Default Extraction ---
+
+/**
+ * Gets the default value from a Zod schema field, if any.
+ * Uses instanceof checks consistent with unwrapType/unwrapToObject.
+ * Unwraps optional/nullable wrappers.
+ */
+export function getSchemaDefault(schema: z.ZodTypeAny): unknown {
+  if (!schema) return undefined;
+  if (schema instanceof z.ZodDefault) {
+    const val = (schema as any).def.defaultValue;
+    return typeof val === 'function' ? val() : val;
+  }
+  if (schema instanceof z.ZodOptional || schema instanceof z.ZodNullable) {
+    return getSchemaDefault(schema.unwrap() as z.ZodTypeAny);
+  }
+  return undefined;
+}
+
+/**
+ * Extracts all default values from a Zod object schema.
+ * Returns a plain object with only the keys that have defaults.
+ */
+export function extractSchemaDefaults(
+  schema: z.ZodObject<z.ZodRawShape>
+): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, fieldSchema] of Object.entries(schema.shape)) {
+    const def = getSchemaDefault(fieldSchema as z.ZodTypeAny);
+    if (def !== undefined) {
+      result[key] = def;
+    }
+  }
+  return result;
+}
+
+/**
+ * Converts a Zod object schema into a Definitions-compatible format.
+ * Each key maps to `{ default: value }` if the field has a default.
+ * Used by Config.js and middlewares.js for backwards compatibility.
+ */
+export function schemaToLegacyDefinitions(
+  schema: z.ZodObject<z.ZodRawShape>
+): Record<string, { default?: unknown }> {
+  const result: Record<string, { default?: unknown }> = {};
+  for (const [key, fieldSchema] of Object.entries(schema.shape)) {
+    const entry: { default?: unknown } = {};
+    const def = getSchemaDefault(fieldSchema as z.ZodTypeAny);
+    if (def !== undefined) {
+      entry.default = def;
+    }
+    result[key] = entry;
+  }
+  return result;
+}
+
+// --- Phase 4: Advanced Features ---
+
+/**
+ * Returns a list of field names marked as dynamic in schema metadata.
+ * Dynamic fields accept function values that are resolved at runtime with TTL caching.
+ */
+export function getDynamicKeys(schema: z.ZodObject<z.ZodRawShape>): string[] {
+  const result: string[] = [];
+  const allMeta = getAllOptionMeta(schema);
+  for (const [key, meta] of allMeta) {
+    if (meta.dynamic) {
+      result.push(key);
+    }
+  }
+  return result;
+}
+
+/**
+ * Returns a list of field names marked as sensitive in schema metadata.
+ * Sensitive fields should be redacted when logging configuration values.
+ */
+export function getSensitiveOptionKeys(schema: z.ZodObject<z.ZodRawShape>): string[] {
+  const result: string[] = [];
+  const allMeta = getAllOptionMeta(schema);
+  for (const [key, meta] of allMeta) {
+    if (meta.sensitive) {
+      result.push(key);
+    }
+  }
+  return result;
+}
+
+/**
+ * Option group definition for organizing options in documentation and CLI help.
+ */
+export interface OptionGroup {
+  /** Display name for the group. */
+  name: string;
+  /** Description of the group. */
+  description: string;
+  /** Keys of options belonging to this group. */
+  keys: string[];
+}
+
+/**
+ * Returns the logical option groups for ParseServerOptions.
+ * Groups organize the flat option namespace into categories for
+ * documentation, CLI --help output, and option discovery (#7069).
+ */
+export function getOptionGroups(): OptionGroup[] {
+  return [
+    {
+      name: 'Core',
+      description: 'Essential server configuration',
+      keys: [
+        'appId', 'masterKey', 'masterKeyTtl', 'maintenanceKey', 'serverURL',
+        'publicServerURL', 'port', 'host', 'mountPath', 'databaseURI',
+        'cloud', 'verbose', 'silent', 'logLevel', 'logLevels', 'logsFolder',
+        'jsonLogs', 'maxLogFiles',
+      ],
+    },
+    {
+      name: 'Keys',
+      description: 'API keys for client and server access',
+      keys: [
+        'clientKey', 'javascriptKey', 'restAPIKey', 'dotNetKey', 'webhookKey',
+        'fileKey', 'encryptionKey', 'readOnlyMasterKey',
+      ],
+    },
+    {
+      name: 'Security',
+      description: 'Security and access control',
+      keys: [
+        'masterKeyIps', 'maintenanceKeyIps', 'readOnlyMasterKeyIps',
+        'enforcePrivateUsers', 'security', 'requestKeywordDenylist',
+        'enableInsecureAuthAdapters', 'allowExpiredAuthDataToken',
+        'protectedFields', 'userSensitiveFields', 'trustProxy',
+      ],
+    },
+    {
+      name: 'Users & Auth',
+      description: 'User authentication and email verification',
+      keys: [
+        'auth', 'enableAnonymousUsers', 'verifyUserEmails', 'sendUserEmailVerification',
+        'preventLoginWithUnverifiedEmail', 'preventSignupWithUnverifiedEmail',
+        'emailVerifyTokenValidityDuration', 'emailVerifyTokenReuseIfValid',
+        'emailVerifySuccessOnInvalidEmail', 'accountLockout', 'passwordPolicy',
+        'convertEmailToLowercase', 'convertUsernameToLowercase',
+      ],
+    },
+    {
+      name: 'Sessions',
+      description: 'Session management',
+      keys: [
+        'sessionLength', 'expireInactiveSessions', 'extendSessionOnUse',
+        'revokeSessionOnPasswordReset',
+      ],
+    },
+    {
+      name: 'Database',
+      description: 'Database connection and options',
+      keys: [
+        'databaseAdapter', 'databaseOptions', 'collectionPrefix',
+        'enableCollationCaseComparison', 'objectIdSize', 'allowCustomObjectId',
+      ],
+    },
+    {
+      name: 'Files',
+      description: 'File storage and upload',
+      keys: [
+        'filesAdapter', 'fileUpload', 'maxUploadSize', 'preserveFileName',
+      ],
+    },
+    {
+      name: 'API Behavior',
+      description: 'API features and limits',
+      keys: [
+        'defaultLimit', 'maxLimit', 'allowClientClassCreation', 'allowHeaders',
+        'allowOrigin', 'directAccess', 'idempotencyOptions', 'rateLimit',
+        'requestComplexity', 'enableSanitizedErrorResponse',
+        'enableExpressErrorHandler', 'middleware', 'requestContextMiddleware',
+      ],
+    },
+    {
+      name: 'GraphQL',
+      description: 'GraphQL configuration',
+      keys: [
+        'mountGraphQL', 'graphQLPath', 'graphQLSchema',
+        'graphQLPublicIntrospection', 'mountPlayground', 'playgroundPath',
+      ],
+    },
+    {
+      name: 'LiveQuery',
+      description: 'Real-time query subscriptions',
+      keys: [
+        'liveQuery', 'liveQueryServerOptions', 'startLiveQueryServer',
+      ],
+    },
+    {
+      name: 'Push & Email',
+      description: 'Push notifications and email',
+      keys: [
+        'push', 'scheduledPush', 'emailAdapter',
+      ],
+    },
+    {
+      name: 'Pages',
+      description: 'Custom pages for password reset and email verification',
+      keys: [
+        'pages', 'customPages',
+      ],
+    },
+    {
+      name: 'Adapters',
+      description: 'Pluggable adapter modules',
+      keys: [
+        'analyticsAdapter', 'cacheAdapter', 'loggerAdapter',
+        'cacheMaxSize', 'cacheTTL',
+      ],
+    },
+    {
+      name: 'Schema',
+      description: 'Schema migration and management',
+      keys: ['schema'],
+    },
+    {
+      name: 'Server Lifecycle',
+      description: 'Server startup and clustering',
+      keys: [
+        'cluster', 'serverCloseComplete', 'verifyServerUrl', 'appName',
+        'enableProductPurchaseLegacyApi',
+      ],
+    },
+  ];
+}
+
+/**
+ * Validates that options marked with `applicableTo` are used in the
+ * correct startup context. Logs a warning for options used outside
+ * their applicable context.
+ *
+ * @param options - The parsed config object
+ * @param context - The current startup context ('cli' or 'api')
+ * @param schema - The Zod schema with option metadata
+ * @param logger - Logger function for warnings (defaults to console.warn)
+ */
+export function warnInapplicableOptions(
+  options: Record<string, any>,
+  context: 'cli' | 'api',
+  schema: z.ZodObject<z.ZodRawShape>,
+  logger: (msg: string) => void = console.warn
+): void {
+  const allMeta = getAllOptionMeta(schema);
+  for (const [key, meta] of allMeta) {
+    if (
+      meta.applicableTo &&
+      !meta.applicableTo.includes(context) &&
+      options[key] !== undefined
+    ) {
+      logger(
+        `Warning: The option '${key}' is only applicable when using Parse Server via ` +
+        `${meta.applicableTo.join(' or ')}. It has no effect in the current '${context}' context.`
+      );
+    }
+  }
+}
