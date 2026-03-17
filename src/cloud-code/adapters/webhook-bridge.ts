@@ -1,4 +1,4 @@
-import { Parse } from 'parse/node';
+import Parse from 'parse/node';
 import type { WebhookResponse } from '../types';
 
 export function requestToWebhookBody(request: any): Record<string, unknown> {

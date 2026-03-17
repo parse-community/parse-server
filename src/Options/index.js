@@ -146,14 +146,9 @@ export interface ParseServerOptions {
   /* Key for authenticating external cloud code process requests. Required when cloudCodeCommand is set. */
   webhookKey: ?string;
   /* Options for the external cloud code process adapter */
-  cloudCodeOptions: ?{
-    startupTimeout: ?number,
-    healthCheckInterval: ?number,
-    shutdownTimeout: ?number,
-    maxRestartDelay: ?number,
-  };
+  cloudCodeOptions: ?Object;
   /* Array of CloudCodeAdapter instances for BYO cloud code integration */
-  cloudCodeAdapters: ?Array<Object>;
+  cloudCodeAdapters: ?Object;
   /* A collection prefix for the classes
   :DEFAULT: '' */
   collectionPrefix: ?string;

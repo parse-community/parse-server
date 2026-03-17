@@ -1,6 +1,6 @@
 // src/cloud-code/adapters/ExternalProcessAdapter.ts
 import { spawn, ChildProcess } from 'child_process';
-import http from 'http';
+import * as http from 'http';
 import type {
   CloudCodeAdapter,
   CloudCodeRegistry,

@@ -7,15 +7,21 @@ function createMockCloudCode(manifest, handlers = {}) {
       return {
         getManifest() { return manifest; },
         async dispatchFunction(name, body) {
-          if (handlers[`function:${name}`]) return handlers[`function:${name}`](body);
+          if (handlers[`function:${name}`]) {
+            return handlers[`function:${name}`](body);
+          }
           return { success: null };
         },
         async dispatchTrigger(className, triggerName, body) {
-          if (handlers[`trigger:${triggerName}.${className}`]) return handlers[`trigger:${triggerName}.${className}`](body);
+          if (handlers[`trigger:${triggerName}.${className}`]) {
+            return handlers[`trigger:${triggerName}.${className}`](body);
+          }
           return { success: {} };
         },
         async dispatchJob(name, body) {
-          if (handlers[`job:${name}`]) return handlers[`job:${name}`](body);
+          if (handlers[`job:${name}`]) {
+            return handlers[`job:${name}`](body);
+          }
           return { success: null };
         },
       };
