@@ -455,13 +455,7 @@ export class PagesRouter extends PromiseRouter {
 
     // Add placeholders in header to allow parsing for programmatic use
     // of response, instead of having to parse the HTML content.
-    const encode = this.pagesConfig.encodePageParamHeaders;
-    const headers = Object.entries(params).reduce((m, p) => {
-      if (p[1] !== undefined) {
-        m[`${pageParamHeaderPrefix}${p[0].toLowerCase()}`] = encode ? encodeURIComponent(p[1]) : p[1];
-      }
-      return m;
-    }, {});
+    const headers = this.composePageParamHeaders(params);
 
     return { text: data, headers: headers };
   }
@@ -556,6 +550,29 @@ export class PagesRouter extends PromiseRouter {
   }
 
   /**
+   * Composes page parameter headers from the given parameters. Control
+   * characters are always stripped from header values to prevent
+   * ERR_INVALID_CHAR errors. Values are URI-encoded if the
+   * `encodePageParamHeaders` option is enabled.
+   * @param {Object} params The parameters to include in the headers.
+   * @returns {Object} The headers object.
+   */
+  composePageParamHeaders(params) {
+    const encode = this.pagesConfig.encodePageParamHeaders;
+    return Object.entries(params).reduce((m, p) => {
+      if (p[1] !== undefined) {
+        let value = encode ? encodeURIComponent(p[1]) : p[1];
+        if (typeof value === 'string') {
+          // eslint-disable-next-line no-control-regex
+          value = value.replace(/[\x00-\x1f\x7f]/g, '');
+        }
+        m[`${pageParamHeaderPrefix}${p[0].toLowerCase()}`] = value;
+      }
+      return m;
+    }, {});
+  }
+
+  /**
    * Creates a response with http redirect.
    * @param {Object} req The express request.
    * @param {String} path The path of the file to return.
@@ -578,13 +595,7 @@ export class PagesRouter extends PromiseRouter {
 
     // Add parameters to header to allow parsing for programmatic use
     // of response, instead of having to parse the HTML content.
-    const encode = this.pagesConfig.encodePageParamHeaders;
-    const headers = Object.entries(params).reduce((m, p) => {
-      if (p[1] !== undefined) {
-        m[`${pageParamHeaderPrefix}${p[0].toLowerCase()}`] = encode ? encodeURIComponent(p[1]) : p[1];
-      }
-      return m;
-    }, {});
+    const headers = this.composePageParamHeaders(params);
 
     return {
       status: 303,

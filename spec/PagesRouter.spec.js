@@ -1040,6 +1040,32 @@ describe('Pages Router', () => {
         }).catch(e => e);
         expect(response.status).not.toBe(500);
       });
+
+      it('does not return 500 when page parameter contains CRLF characters', async () => {
+        await reconfigureServer(config);
+        const crlf = 'abc\r\nX-Injected: 1';
+        const url = `${config.publicServerURL}/apps/choose_password?appId=test&token=${encodeURIComponent(crlf)}&username=testuser`;
+        const response = await request({
+          url: url,
+          followRedirects: false,
+        }).catch(e => e);
+        expect(response.status).not.toBe(500);
+        expect(response.status).toBe(200);
+      });
+
+      it('does not return 500 when page parameter contains CRLF characters in redirect response', async () => {
+        await reconfigureServer(config);
+        const crlf = 'abc\r\nX-Injected: 1';
+        const url = `${config.publicServerURL}/apps/test/resend_verification_email`;
+        const response = await request({
+          method: 'POST',
+          url: url,
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `username=${encodeURIComponent(crlf)}`,
+          followRedirects: false,
+        }).catch(e => e);
+        expect(response.status).not.toBe(500);
+      });
     });
 
     describe('custom route', () => {
