@@ -956,7 +956,7 @@ describe('ParseLiveQuery', function () {
     await expectAsync(query.subscribe()).toBeRejectedWith(new Error('Invalid session token'));
   });
 
-  it_id('4ccc9508-ae6a-46ec-932a-9f5e49ab3b9e')(it)('handle invalid websocket payload length', async done => {
+  it_id('4ccc9508-ae6a-46ec-932a-9f5e49ab3b9e')(it)('handle invalid websocket payload length', async () => {
     await reconfigureServer({
       liveQuery: {
         classNames: ['TestObject'],
@@ -982,15 +982,18 @@ describe('ParseLiveQuery', function () {
     const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
     client.socket._socket.write(Buffer.from([0x89, 0xfe]));
 
-    subscription.on('update', async object => {
-      expect(object.get('foo')).toBe('bar');
-      done();
+    const updatePromise = new Promise(resolve => {
+      subscription.on('update', updatedObject => {
+        expect(updatedObject.get('foo')).toBe('bar');
+        resolve();
+      });
     });
     // Wait for Websocket timeout to reconnect
-    setTimeout(async () => {
-      object.set({ foo: 'bar' });
-      await object.save();
-    }, 1000);
+    await sleep(1000);
+    object.set({ foo: 'bar' });
+    await object.save();
+
+    await updatePromise;
   });
 
   it_id('39a9191f-26dd-4e05-a379-297a67928de8')(it)('should execute live query update on email validation', async done => {
