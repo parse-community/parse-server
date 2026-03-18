@@ -205,16 +205,14 @@ describe('rest query', () => {
       '_password_changed_at',
       '_password_history',
     ];
-    await Promise.all([
-      ...internalFields.map(field =>
-        expectAsync(new Parse.Query(Parse.User).exists(field).find()).toBeRejectedWith(
-          new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${field}`)
-        )
-      ),
-      ...internalFields.map(field =>
-        new Parse.Query(Parse.User).exists(field).find({ useMasterKey: true })
-      ),
-    ]);
+    for (const field of internalFields) {
+      await expectAsync(
+        new Parse.Query(Parse.User).exists(field).find()
+      ).toBeRejectedWith(
+        new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${field}`)
+      );
+      await new Parse.Query(Parse.User).exists(field).find({ useMasterKey: true });
+    }
   });
 
   it('query protected field', async () => {
