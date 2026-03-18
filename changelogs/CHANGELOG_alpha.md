@@ -1,3 +1,17 @@
+# [9.6.0-alpha.38](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.37...9.6.0-alpha.38) (2026-03-18)
+
+
+### Bug Fixes
+
+* Sanitize control characters in page parameter response headers ([#10237](https://github.com/parse-community/parse-server/issues/10237)) ([337ffd6](https://github.com/parse-community/parse-server/commit/337ffd65ccf94495a54cd883c5e8fa7a3892606c))
+
+# [9.6.0-alpha.37](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.36...9.6.0-alpha.37) (2026-03-18)
+
+
+### Bug Fixes
+
+* Security fix fast-xml-parser from 5.5.5 to 5.5.6 ([#10235](https://github.com/parse-community/parse-server/issues/10235)) ([f521576](https://github.com/parse-community/parse-server/commit/f521576143336334aad2cbac82c3f368afe8f706))
+
 # [9.6.0-alpha.36](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.35...9.6.0-alpha.36) (2026-03-18)
 
 
