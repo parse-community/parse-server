@@ -120,12 +120,16 @@ export class PagesRouter extends PromiseRouter {
     }
 
     const userController = config.userController;
+    const suppressError = config.emailVerifySuccessOnInvalidEmail ?? true;
 
     return userController.resendVerificationEmail(username, req, token).then(
       () => {
         return this.goToPage(req, pages.emailVerificationSendSuccess);
       },
       () => {
+        if (suppressError) {
+          return this.goToPage(req, pages.emailVerificationSendSuccess);
+        }
         return this.goToPage(req, pages.emailVerificationSendFail);
       }
     );

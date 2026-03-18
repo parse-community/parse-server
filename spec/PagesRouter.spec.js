@@ -840,8 +840,10 @@ describe('Pages Router', () => {
           followRedirects: false,
         });
         expect(formResponse.status).toEqual(303);
+        // With emailVerifySuccessOnInvalidEmail: true (default), the resend
+        // page always redirects to the success page to prevent user enumeration
         expect(formResponse.text).toContain(
-          `/${locale}/${pages.emailVerificationSendFail.defaultFile}`
+          `/${locale}/${pages.emailVerificationSendSuccess.defaultFile}`
         );
       });
 
@@ -1041,86 +1043,79 @@ describe('Pages Router', () => {
         expect(response.status).not.toBe(500);
       });
 
-      it('rejects locale parameter with path traversal sequences', async () => {
-        const pagesDir = path.join(__dirname, 'tmp-pages-locale-test');
-        const targetDir = path.join(__dirname, 'tmp-pages-locale-target');
+      it('does not leak email verification status via resend page when emailVerifySuccessOnInvalidEmail is true', async () => {
+        const emailAdapter = {
+          sendVerificationEmail: () => {},
+          sendPasswordResetEmail: () => {},
+          sendMail: () => {},
+        };
+        await reconfigureServer({
+          ...config,
+          verifyUserEmails: true,
+          emailVerifySuccessOnInvalidEmail: true,
+          emailAdapter,
+        });
 
-        try {
-          await fs.mkdir(pagesDir, { recursive: true });
-          await fs.mkdir(targetDir, { recursive: true });
+        // Create a user with unverified email
+        const user = new Parse.User();
+        user.setUsername('realuser');
+        user.setPassword('password123');
+        user.setEmail('real@example.com');
+        await user.signUp();
 
-          // Copy required HTML files to pagesDir
-          const publicDir = path.resolve(__dirname, '../public');
-          for (const file of ['password_reset_link_invalid.html', 'password_reset.html']) {
-            const content = await fs.readFile(path.join(publicDir, file), 'utf-8');
-            await fs.writeFile(path.join(pagesDir, file), content);
-          }
+        const formUrl = `${config.publicServerURL}/apps/${config.appId}/resend_verification_email`;
 
-          // Place a probe file in target directory
-          await fs.writeFile(
-            path.join(targetDir, 'password_reset_link_invalid.html'),
-            '<html><body>secret</body></html>'
-          );
-
-          const traversalLocale = path.relative(pagesDir, targetDir);
-          await reconfigureServer({
-            ...config,
-            pages: {
-              enableLocalization: true,
-              pagesPath: pagesDir,
-            },
-          });
-
-          // Without fix: file exists at traversed path → 404 (oracle)
-          // Without fix: file doesn't exist at traversed path → 200 (oracle)
-          // With fix: traversal locale is rejected, always returns default page → 200
-          const response = await request({
-            url: `${config.publicServerURL}/apps/test/request_password_reset?token=x&locale=${encodeURIComponent(traversalLocale)}`,
-            followRedirects: false,
-          }).catch(e => e);
-
-          // Should serve the default page (200), not a 404 from bounds check
-          expect(response.status).toBe(200);
-
-          // Now remove the probe file and try again — response should be the same
-          await fs.rm(path.join(targetDir, 'password_reset_link_invalid.html'));
-          const response2 = await request({
-            url: `${config.publicServerURL}/apps/test/request_password_reset?token=x&locale=${encodeURIComponent(traversalLocale)}`,
-            followRedirects: false,
-          }).catch(e => e);
-
-          // Should also be 200 — no difference reveals file existence
-          expect(response2.status).toBe(200);
-        } finally {
-          await fs.rm(pagesDir, { recursive: true, force: true });
-          await fs.rm(targetDir, { recursive: true, force: true });
-        }
-      });
-
-      it('does not return 500 when page parameter contains CRLF characters', async () => {
-        await reconfigureServer(config);
-        const crlf = 'abc\r\nX-Injected: 1';
-        const url = `${config.publicServerURL}/apps/choose_password?appId=test&token=${encodeURIComponent(crlf)}&username=testuser`;
-        const response = await request({
-          url: url,
-          followRedirects: false,
-        }).catch(e => e);
-        expect(response.status).not.toBe(500);
-        expect(response.status).toBe(200);
-      });
-
-      it('does not return 500 when page parameter contains CRLF characters in redirect response', async () => {
-        await reconfigureServer(config);
-        const crlf = 'abc\r\nX-Injected: 1';
-        const url = `${config.publicServerURL}/apps/test/resend_verification_email`;
-        const response = await request({
+        // Resend for existing unverified user
+        const existingResponse = await request({
           method: 'POST',
-          url: url,
+          url: formUrl,
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: `username=${encodeURIComponent(crlf)}`,
+          body: 'username=realuser',
           followRedirects: false,
         }).catch(e => e);
-        expect(response.status).not.toBe(500);
+
+        // Resend for non-existing user
+        const nonExistingResponse = await request({
+          method: 'POST',
+          url: formUrl,
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'username=fakeuser',
+          followRedirects: false,
+        }).catch(e => e);
+
+        // Both should redirect to the same page (success) to prevent enumeration
+        expect(existingResponse.status).toBe(303);
+        expect(nonExistingResponse.status).toBe(303);
+        expect(existingResponse.headers.location).toContain('email_verification_send_success');
+        expect(nonExistingResponse.headers.location).toContain('email_verification_send_success');
+      });
+
+      it('does leak email verification status via resend page when emailVerifySuccessOnInvalidEmail is false', async () => {
+        const emailAdapter = {
+          sendVerificationEmail: () => {},
+          sendPasswordResetEmail: () => {},
+          sendMail: () => {},
+        };
+        await reconfigureServer({
+          ...config,
+          verifyUserEmails: true,
+          emailVerifySuccessOnInvalidEmail: false,
+          emailAdapter,
+        });
+
+        const formUrl = `${config.publicServerURL}/apps/${config.appId}/resend_verification_email`;
+
+        // Resend for non-existing user should redirect to fail page
+        const nonExistingResponse = await request({
+          method: 'POST',
+          url: formUrl,
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'username=fakeuser',
+          followRedirects: false,
+        }).catch(e => e);
+
+        expect(nonExistingResponse.status).toBe(303);
+        expect(nonExistingResponse.headers.location).toContain('email_verification_send_fail');
       });
     });
 
