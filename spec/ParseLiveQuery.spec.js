@@ -988,6 +988,7 @@ describe('ParseLiveQuery', function () {
         resolve();
       });
     });
+    // Wait for Websocket timeout to reconnect
     await new Promise(resolve => setTimeout(resolve, 1000));
     object.set({ foo: 'bar' });
     await object.save();
