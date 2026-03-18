@@ -1,3 +1,10 @@
+# [9.6.0-alpha.37](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.36...9.6.0-alpha.37) (2026-03-18)
+
+
+### Bug Fixes
+
+* Security fix fast-xml-parser from 5.5.5 to 5.5.6 ([#10235](https://github.com/parse-community/parse-server/issues/10235)) ([f521576](https://github.com/parse-community/parse-server/commit/f521576143336334aad2cbac82c3f368afe8f706))
+
 # [9.6.0-alpha.36](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.35...9.6.0-alpha.36) (2026-03-18)
 
 
