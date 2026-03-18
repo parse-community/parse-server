@@ -1,3 +1,10 @@
+# [9.6.0-alpha.38](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.37...9.6.0-alpha.38) (2026-03-18)
+
+
+### Bug Fixes
+
+* Sanitize control characters in page parameter response headers ([#10237](https://github.com/parse-community/parse-server/issues/10237)) ([337ffd6](https://github.com/parse-community/parse-server/commit/337ffd65ccf94495a54cd883c5e8fa7a3892606c))
+
 # [9.6.0-alpha.37](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.36...9.6.0-alpha.37) (2026-03-18)
 
 
