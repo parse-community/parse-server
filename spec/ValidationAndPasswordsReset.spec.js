@@ -740,7 +740,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     });
   });
 
-  it('redirects you to link send fail page if you try to resend a link for a nonexistant user', done => {
+  it('redirects you to link send success page if you try to resend a link for a nonexistent user', done => {
     reconfigureServer({
       appName: 'emailing app',
       verifyUserEmails: true,
@@ -760,7 +760,9 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         },
       }).then(response => {
         expect(response.status).toEqual(303);
-        expect(response.text).toContain('email_verification_send_fail.html');
+        // With emailVerifySuccessOnInvalidEmail: true (default), the resend
+        // page redirects to success to prevent user enumeration
+        expect(response.text).toContain('email_verification_send_success.html');
         done();
       });
     });
