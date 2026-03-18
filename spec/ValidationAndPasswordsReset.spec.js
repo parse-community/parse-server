@@ -768,6 +768,33 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     });
   });
 
+  it('redirects you to link send fail page if you try to resend a link for a nonexistent user with emailVerifySuccessOnInvalidEmail disabled', done => {
+    reconfigureServer({
+      appName: 'emailing app',
+      verifyUserEmails: true,
+      emailVerifySuccessOnInvalidEmail: false,
+      emailAdapter: {
+        sendVerificationEmail: () => Promise.resolve(),
+        sendPasswordResetEmail: () => Promise.resolve(),
+        sendMail: () => {},
+      },
+      publicServerURL: 'http://localhost:8378/1',
+    }).then(() => {
+      request({
+        url: 'http://localhost:8378/1/apps/test/resend_verification_email',
+        method: 'POST',
+        followRedirects: false,
+        body: {
+          username: 'sadfasga',
+        },
+      }).then(response => {
+        expect(response.status).toEqual(303);
+        expect(response.text).toContain('email_verification_send_fail.html');
+        done();
+      });
+    });
+  });
+
   it('does not update email verified if you use an invalid token', done => {
     const user = new Parse.User();
     const emailAdapter = {
