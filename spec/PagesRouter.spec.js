@@ -1040,6 +1040,62 @@ describe('Pages Router', () => {
         }).catch(e => e);
         expect(response.status).not.toBe(500);
       });
+
+      it('rejects locale parameter with path traversal sequences', async () => {
+        const pagesDir = path.join(__dirname, 'tmp-pages-locale-test');
+        const targetDir = path.join(__dirname, 'tmp-pages-locale-target');
+
+        try {
+          await fs.mkdir(pagesDir, { recursive: true });
+          await fs.mkdir(targetDir, { recursive: true });
+
+          // Copy required HTML files to pagesDir
+          const publicDir = path.resolve(__dirname, '../public');
+          for (const file of ['password_reset_link_invalid.html', 'password_reset.html']) {
+            const content = await fs.readFile(path.join(publicDir, file), 'utf-8');
+            await fs.writeFile(path.join(pagesDir, file), content);
+          }
+
+          // Place a probe file in target directory
+          await fs.writeFile(
+            path.join(targetDir, 'password_reset_link_invalid.html'),
+            '<html><body>secret</body></html>'
+          );
+
+          const traversalLocale = path.relative(pagesDir, targetDir);
+          await reconfigureServer({
+            ...config,
+            pages: {
+              enableLocalization: true,
+              pagesPath: pagesDir,
+            },
+          });
+
+          // Without fix: file exists at traversed path → 404 (oracle)
+          // Without fix: file doesn't exist at traversed path → 200 (oracle)
+          // With fix: traversal locale is rejected, always returns default page → 200
+          const response = await request({
+            url: `${config.publicServerURL}/apps/test/request_password_reset?token=x&locale=${encodeURIComponent(traversalLocale)}`,
+            followRedirects: false,
+          }).catch(e => e);
+
+          // Should serve the default page (200), not a 404 from bounds check
+          expect(response.status).toBe(200);
+
+          // Now remove the probe file and try again — response should be the same
+          await fs.rm(path.join(targetDir, 'password_reset_link_invalid.html'));
+          const response2 = await request({
+            url: `${config.publicServerURL}/apps/test/request_password_reset?token=x&locale=${encodeURIComponent(traversalLocale)}`,
+            followRedirects: false,
+          }).catch(e => e);
+
+          // Should also be 200 — no difference reveals file existence
+          expect(response2.status).toBe(200);
+        } finally {
+          await fs.rm(pagesDir, { recursive: true, force: true });
+          await fs.rm(targetDir, { recursive: true, force: true });
+        }
+      });
     });
 
     describe('custom route', () => {
@@ -1418,15 +1474,17 @@ describe('Pages Router', () => {
       expect(response.text).toContain('&lt;img');
     });
 
-    it('should escape XSS in locale parameter', async () => {
+    it('should reject XSS payload in locale parameter', async () => {
       const xssLocale = '"><svg/onload=alert(1)>';
       const response = await request({
         url: `http://localhost:8378/1/apps/choose_password?locale=${encodeURIComponent(xssLocale)}&appId=test`,
       });
 
       expect(response.status).toBe(200);
+      // Invalid locale is rejected by format validation, so the XSS
+      // payload never reaches the page content
       expect(response.text).not.toContain('<svg/onload=alert(1)>');
-      expect(response.text).toContain('&quot;&gt;&lt;svg');
+      expect(response.text).not.toContain('&quot;&gt;&lt;svg');
     });
 
     it('should handle legitimate usernames with quotes correctly', async () => {
