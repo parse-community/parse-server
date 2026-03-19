@@ -72,7 +72,7 @@ module.exports.ParseServerOptions = {
   },
   allowExpiredAuthDataToken: {
     env: 'PARSE_SERVER_ALLOW_EXPIRED_AUTH_DATA_TOKEN',
-    help: 'Allow a user to log in even if the 3rd party authentication token that was used to sign in to their account has expired. If this is set to `false`, then the token will be validated every time the user signs in to their account. This refers to the token that is stored in the `_User.authData` field. Defaults to `false`.',
+    help: 'Deprecated. This option will be removed in a future version. Auth providers are always validated on login. On update, if this is set to `true`, auth providers are only re-validated when the auth data has changed. If this is set to `false`, auth providers are re-validated on every update. Defaults to `false`.',
     action: parsers.booleanParser,
     default: false,
   },

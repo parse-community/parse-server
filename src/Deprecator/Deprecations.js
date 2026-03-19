@@ -79,6 +79,6 @@ module.exports = [
   {
     optionKey: 'allowExpiredAuthDataToken',
     changeNewKey: '',
-    solution: "This option has a limited effect since auth providers are now always validated on login regardless of this setting. Set 'allowExpiredAuthDataToken' to 'false' or remove the option to accept the future removal.",
+    solution: "Auth providers are always validated on login regardless of this setting. Set 'allowExpiredAuthDataToken' to 'false' or remove the option to accept the future removal.",
   },
 ];
