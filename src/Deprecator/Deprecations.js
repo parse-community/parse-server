@@ -19,4 +19,9 @@ module.exports = [
   { optionKey: 'encodeParseObjectInCloudFunction', changeNewDefault: 'true' },
   { optionKey: 'enableInsecureAuthAdapters', changeNewDefault: 'false' },
   { optionKey: 'databaseOptions.allowPublicExplain', changeNewDefault: 'false' },
+  {
+    optionKey: 'allowExpiredAuthDataToken',
+    changeNewKey: '',
+    solution: "Auth providers are always validated on login regardless of this setting. Set 'allowExpiredAuthDataToken' to 'false' or remove the option to accept the future removal.",
+  },
 ];
