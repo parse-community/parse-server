@@ -1,3 +1,10 @@
+## [8.6.52](https://github.com/parse-community/parse-server/compare/8.6.51...8.6.52) (2026-03-19)
+
+
+### Bug Fixes
+
+* Auth provider validation bypass on login via partial authData ([GHSA-pfj7-wv7c-22pr](https://github.com/parse-community/parse-server/security/advisories/GHSA-pfj7-wv7c-22pr)) ([#10247](https://github.com/parse-community/parse-server/issues/10247)) ([8d7df56](https://github.com/parse-community/parse-server/commit/8d7df5639c4a35768fe8b78b4580b30e8a74721c))
+
 ## [8.6.51](https://github.com/parse-community/parse-server/compare/8.6.50...8.6.51) (2026-03-19)
 
 
