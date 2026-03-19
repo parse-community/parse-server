@@ -1,3 +1,10 @@
+## [8.6.51](https://github.com/parse-community/parse-server/compare/8.6.50...8.6.51) (2026-03-19)
+
+
+### Bug Fixes
+
+* Email verification resend page leaks user existence (GHSA-h29g-q5c2-9h4f) ([#10243](https://github.com/parse-community/parse-server/issues/10243)) ([967aa57](https://github.com/parse-community/parse-server/commit/967aa57732202009b2389ce9ecb3130d53d657e5))
+
 ## [8.6.50](https://github.com/parse-community/parse-server/compare/8.6.49...8.6.50) (2026-03-17)
 
 
