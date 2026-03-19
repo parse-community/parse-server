@@ -3600,6 +3600,73 @@ describe('afterFind hooks', () => {
     expect(calledBefore).toBe(true);
     expect(calledAfter).toBe(true);
   });
+
+  it('toJSONwithObjects should serialize pending ACL to plain JSON, not a ParseACL instance', () => {
+    const { toJSONwithObjects } = require('../lib/triggers');
+
+    const obj = Parse.Object.fromJSON({
+      className: 'Test',
+      objectId: 'test123',
+      ACL: { '*': { read: true }, 'role:admin': { read: true, write: true } },
+      name: 'original',
+    });
+
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    acl.setRoleWriteAccess('admin', true);
+    obj.setACL(acl);
+
+    const json = toJSONwithObjects(obj, 'Test');
+
+    expect(json.ACL).toBeDefined();
+    expect(json.ACL instanceof Parse.ACL).toBe(false);
+    expect(json.ACL.constructor).toBe(Object);
+    expect(json.ACL['*']).toEqual({ read: true });
+    expect(json.ACL['role:admin']).toEqual({ write: true });
+  });
+
+  it('should return valid ACL with directAccess enabled when afterFind hook calls setACL()', async () => {
+    const ParseServerRESTController =
+      require('../lib/ParseServerRESTController').ParseServerRESTController;
+    const DirectParseServer = require('../lib/ParseServer').default;
+
+    await reconfigureServer({ directAccess: true });
+
+    Parse.CoreManager.setRESTController(
+      ParseServerRESTController(
+        Parse.applicationId,
+        DirectParseServer.promiseRouter({ appId: Parse.applicationId })
+      )
+    );
+
+    Parse.Cloud.afterFind('DirectAccessACL', req => {
+      req.objects.forEach(obj => {
+        obj.setACL(obj.getACL());
+        obj.set('touched', true);
+      });
+      return req.objects;
+    });
+
+    const obj = new Parse.Object('DirectAccessACL');
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    acl.setRoleWriteAccess('admin', true);
+    obj.setACL(acl);
+    obj.set('value', 42);
+    await obj.save(null, { useMasterKey: true });
+
+    const query = new Parse.Query('DirectAccessACL');
+    const result = await query.first({ useMasterKey: true });
+
+    expect(result).toBeDefined();
+    expect(result.get('value')).toBe(42);
+    expect(result.get('touched')).toBe(true);
+
+    const resultACL = result.getACL();
+    expect(resultACL).toBeDefined();
+    expect(resultACL.getPublicReadAccess()).toBe(true);
+    expect(resultACL.getRoleWriteAccess('admin')).toBe(true);
+  });
 });
 
 describe('beforeLogin hook', () => {
