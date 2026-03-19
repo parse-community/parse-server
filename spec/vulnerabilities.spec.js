@@ -3221,4 +3221,131 @@ describe('(GHSA-5hmj-jcgp-6hff) Protected fields leak via LiveQuery afterEvent t
       obj.save({ publicField: 'changed' }, { useMasterKey: true }),
     ]);
   });
+
+  describe('(GHSA-pfj7-wv7c-22pr) AuthData subset validation bypass with allowExpiredAuthDataToken', () => {
+    let validatorSpy;
+
+    const testAdapter = {
+      validateAppId: () => Promise.resolve(),
+      validateAuthData: () => Promise.resolve(),
+    };
+
+    beforeEach(async () => {
+      validatorSpy = spyOn(testAdapter, 'validateAuthData').and.resolveTo({});
+      await reconfigureServer({
+        auth: { testAdapter },
+        allowExpiredAuthDataToken: true,
+      });
+    });
+
+    it('validates authData on login when incoming data is a strict subset of stored data', async () => {
+      // Sign up a user with full authData (id + access_token)
+      const user = new Parse.User();
+      await user.save({
+        authData: { testAdapter: { id: 'user123', access_token: 'valid_token' } },
+      });
+      validatorSpy.calls.reset();
+
+      // Attempt to log in with only the id field (subset of stored data)
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        body: JSON.stringify({
+          authData: { testAdapter: { id: 'user123' } },
+        }),
+      });
+      expect(res.data.objectId).toBe(user.id);
+      // The adapter MUST be called to validate the login attempt
+      expect(validatorSpy).toHaveBeenCalled();
+    });
+
+    it('prevents account takeover via partial authData when allowExpiredAuthDataToken is enabled', async () => {
+      // Sign up a user with full authData
+      const user = new Parse.User();
+      await user.save({
+        authData: { testAdapter: { id: 'victim123', access_token: 'secret_token' } },
+      });
+      validatorSpy.calls.reset();
+
+      // Simulate an attacker sending only the provider ID (no access_token)
+      // The adapter should reject this because the token is missing
+      validatorSpy.and.rejectWith(
+        new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Invalid credentials')
+      );
+
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        body: JSON.stringify({
+          authData: { testAdapter: { id: 'victim123' } },
+        }),
+      }).catch(e => e);
+
+      // Login must be rejected — adapter validation must not be skipped
+      expect(res.status).toBe(400);
+      expect(validatorSpy).toHaveBeenCalled();
+    });
+
+    it('validates authData on login even when authData is identical', async () => {
+      // Sign up with full authData
+      const user = new Parse.User();
+      await user.save({
+        authData: { testAdapter: { id: 'user456', access_token: 'expired_token' } },
+      });
+      validatorSpy.calls.reset();
+
+      // Log in with the exact same authData (all keys present, same values)
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        body: JSON.stringify({
+          authData: { testAdapter: { id: 'user456', access_token: 'expired_token' } },
+        }),
+      });
+      expect(res.data.objectId).toBe(user.id);
+      // Auth providers are always validated on login regardless of allowExpiredAuthDataToken
+      expect(validatorSpy).toHaveBeenCalled();
+    });
+
+    it('skips validation on update when authData is a subset of stored data', async () => {
+      // Sign up with full authData
+      const user = new Parse.User();
+      await user.save({
+        authData: { testAdapter: { id: 'user789', access_token: 'valid_token' } },
+      });
+      validatorSpy.calls.reset();
+
+      // Update the user with a subset of authData (simulates afterFind stripping fields)
+      await request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/users/${user.id}`,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': user.getSessionToken(),
+        },
+        body: JSON.stringify({
+          authData: { testAdapter: { id: 'user789' } },
+        }),
+      });
+      // On update with allowExpiredAuthDataToken: true, subset data skips validation
+      expect(validatorSpy).not.toHaveBeenCalled();
+    });
+  });
 });
