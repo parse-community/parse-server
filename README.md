@@ -1175,3 +1175,5 @@ Support us with a monthly donation and help us continue our activities. [Become 
 [log_alpha]: https://github.com/parse-community/parse-server/blob/alpha/changelogs/CHANGELOG_alpha.md
 
 [server-options] http://parseplatform.org/parse-server/api/release/ParseServerOptions.html
+name: Dakwak kyeng Monday 
+dakwakmonday-ops 
