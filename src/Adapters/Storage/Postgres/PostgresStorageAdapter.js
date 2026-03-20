@@ -209,7 +209,7 @@ const handleDotFields = object => {
 };
 
 const escapeSqlString = value => value.replace(/'/g, "''");
-const escapeJsonString = value => value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+const escapeJsonString = value => JSON.stringify(value).slice(1, -1);
 
 const transformDotFieldToComponents = fieldName => {
   return fieldName.split('.').map((cmpt, index) => {
