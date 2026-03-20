@@ -1180,6 +1180,10 @@ RestWrite.prototype.handleSession = function () {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
     } else if (this.data.sessionToken) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
+    } else if (this.data.expiresAt && !this.auth.isMaster && !this.auth.isMaintenance) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
+    } else if (this.data.createdWith && !this.auth.isMaster && !this.auth.isMaintenance) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
     }
     if (!this.auth.isMaster) {
       this.query = {
