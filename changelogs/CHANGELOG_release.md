@@ -1,3 +1,10 @@
+## [8.6.56](https://github.com/parse-community/parse-server/compare/8.6.55...8.6.56) (2026-03-20)
+
+
+### Bug Fixes
+
+* LiveQuery subscription query depth bypass ([GHSA-6qh5-m6g3-xhq6](https://github.com/parse-community/parse-server/security/advisories/GHSA-6qh5-m6g3-xhq6)) ([#10260](https://github.com/parse-community/parse-server/issues/10260)) ([060d270](https://github.com/parse-community/parse-server/commit/060d27053fb0fadf613c25aabab7fe0c82b7a899))
+
 ## [8.6.55](https://github.com/parse-community/parse-server/compare/8.6.54...8.6.55) (2026-03-20)
 
 
