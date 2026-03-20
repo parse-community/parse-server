@@ -1,3 +1,10 @@
+## [8.6.53](https://github.com/parse-community/parse-server/compare/8.6.52...8.6.53) (2026-03-20)
+
+
+### Bug Fixes
+
+* LiveQuery bypasses CLP pointer permission enforcement ([GHSA-fph2-r4qg-9576](https://github.com/parse-community/parse-server/security/advisories/GHSA-fph2-r4qg-9576)) ([#10252](https://github.com/parse-community/parse-server/issues/10252)) ([976dad1](https://github.com/parse-community/parse-server/commit/976dad109f3fe3fbd0a3a35ef62e7a5d35eb0bee))
+
 ## [8.6.52](https://github.com/parse-community/parse-server/compare/8.6.51...8.6.52) (2026-03-19)
 
 
