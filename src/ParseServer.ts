@@ -3,7 +3,6 @@
 var batch = require('./batch'),
   express = require('express'),
   middlewares = require('./middlewares'),
-  Parse = require('parse/node').Parse,
   { parse } = require('graphql'),
   path = require('path'),
   fs = require('fs');
@@ -46,9 +45,8 @@ import Deprecator from './Deprecator/Deprecator';
 import { DefinedSchemas } from './SchemaMigrations/DefinedSchemas';
 import OptionsDefinitions from './Options/Definitions';
 import { resolvingPromise, Connections } from './TestUtils';
-
-// Mutate the Parse object to add the Cloud Code handlers
-addParseCloud();
+import { CloudCodeRegistrar } from './cloud-code/CloudCodeRegistrar';
+import { LegacyCloud } from './cloud-code/LegacyCloud';
 
 // Track connections to destroy them on shutdown
 const connections = new Connections();
@@ -128,9 +126,11 @@ class ParseServer {
       javascriptKey,
       serverURL = requiredParameter('You must provide a serverURL!'),
     } = options;
-    // Initialize the node client SDK automatically
-    Parse.initialize(appId, javascriptKey || 'unused', masterKey);
-    Parse.serverURL = serverURL;
+    // Initialize the cloud SDK and register it
+    const cloudSDK = new LegacyCloud();
+    cloudSDK.initialize({ appId, masterKey, javascriptKey, serverURL });
+    CloudCodeRegistrar.setInstance(cloudSDK);
+    const Parse = cloudSDK.Parse;
     Config.validateOptions(options);
     const allControllers = controllers.getControllers(options);
 
@@ -163,6 +163,8 @@ class ParseServer {
         schema,
         liveQueryController,
       } = this.config;
+      const cloudSDK = CloudCodeRegistrar.getInstance(this.config.appId) as LegacyCloud;
+      const Parse = cloudSDK.Parse;
       try {
         await databaseController.performInitialization();
       } catch (e) {
@@ -185,7 +187,7 @@ class ParseServer {
       startupPromises.push(liveQueryController.connect());
       await Promise.all(startupPromises);
       if (cloud) {
-        addParseCloud();
+        cloudSDK.bindToParseCloud();
         if (typeof cloud === 'function') {
           await Promise.resolve(cloud(Parse));
         } else if (typeof cloud === 'string') {
@@ -373,6 +375,7 @@ class ParseServer {
       });
     }
     if (process.env.PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS === '1' || directAccess) {
+      const Parse = require('parse/node').Parse;
       Parse.CoreManager.setRESTController(ParseServerRESTController(appId, appRouter));
     }
     return api;
@@ -535,6 +538,7 @@ class ParseServer {
   }
 
   static async verifyServerUrl() {
+    const Parse = require('parse/node').Parse;
     // perform a health check on the serverURL value
     if (Parse.serverURL) {
       const isValidHttpUrl = string => {
@@ -575,24 +579,6 @@ class ParseServer {
       return true;
     }
   }
-}
-
-function addParseCloud() {
-  const ParseCloud = require('./cloud-code/Parse.Cloud');
-  const ParseServer = require('./cloud-code/Parse.Server');
-  Object.defineProperty(Parse, 'Server', {
-    get() {
-      const conf = Config.get(Parse.applicationId);
-      return { ...conf, ...ParseServer };
-    },
-    set(newVal) {
-      newVal.appId = Parse.applicationId;
-      Config.put(newVal);
-    },
-    configurable: true,
-  });
-  Object.assign(Parse.Cloud, ParseCloud);
-  global.Parse = Parse;
 }
 
 function injectDefaults(options: ParseServerOptions) {
