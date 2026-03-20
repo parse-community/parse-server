@@ -123,9 +123,13 @@ export type JobHandler<
   P extends Record<string, unknown> = Record<string, unknown>,
 > = (request: JobRequest<P>) => unknown;
 
+export type BeforeSaveObjectTriggerHandler<
+  T extends Record<string, unknown> = Record<string, unknown>,
+> = (request: ObjectTriggerRequest<T>) => BeforeSaveResult<T>;
+
 export type ObjectTriggerHandler<
   T extends Record<string, unknown> = Record<string, unknown>,
-> = (request: ObjectTriggerRequest<T>) => BeforeSaveResult<T> | AfterTriggerResult;
+> = (request: ObjectTriggerRequest<T>) => AfterTriggerResult;
 
 export type QueryTriggerHandler = (
   request: QueryTriggerRequest
@@ -139,6 +143,7 @@ export type AfterFindHandler<
 export type TriggerHandler<
   T extends Record<string, unknown> = Record<string, unknown>,
 > =
+  | BeforeSaveObjectTriggerHandler<T>
   | ObjectTriggerHandler<T>
   | QueryTriggerHandler
   | AfterFindHandler<T>;
@@ -158,7 +163,7 @@ export type TriggerHandler<
 export interface TriggerHandlerMap<
   T extends Record<string, unknown> = Record<string, unknown>,
 > {
-  beforeSave: ObjectTriggerHandler<T>;
+  beforeSave: BeforeSaveObjectTriggerHandler<T>;
   afterSave: ObjectTriggerHandler<T>;
   beforeDelete: ObjectTriggerHandler<T>;
   afterDelete: ObjectTriggerHandler<T>;

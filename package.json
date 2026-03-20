@@ -5,7 +5,10 @@
   "main": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
-    "./cloud": "./lib/cloud.js"
+    "./cloud": {
+      "types": "./types/cloud.d.ts",
+      "default": "./lib/cloud.js"
+    }
   },
   "repository": {
     "type": "git",

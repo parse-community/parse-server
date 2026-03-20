@@ -25,10 +25,12 @@ const ROUTE_MAP: Record<string, string> = {
 };
 
 function getRoute(parseClass: string): string {
-  const route = ROUTE_MAP[parseClass] || 'classes';
-  if (parseClass === '@File') return `/${route}{/*id}`;
-  if (parseClass === '@Config') return `/${route}`;
-  return `/${route}/${parseClass}{/*id}`;
+  const route = ROUTE_MAP[parseClass];
+  if (route) {
+    if (parseClass === '@File') return `/${route}{/*id}`;
+    return `/${route}`;
+  }
+  return `/classes/${parseClass}{/*id}`;
 }
 
 function isParseObjectConstructor(obj: unknown): boolean {
@@ -150,7 +152,7 @@ export class LegacyCloud {
   }
 
   cloudBeforeLogin(...args: unknown[]): void {
-    this.cloudAuthTrigger(TriggerType.beforeLogin, '_User', args, '/login', 'POST');
+    this.cloudAuthTrigger(TriggerType.beforeLogin, '_User', args, '/login', ['POST', 'GET']);
   }
 
   cloudAfterLogin(...args: unknown[]): void {
@@ -212,8 +214,9 @@ export class LegacyCloud {
         return { ...conf, ...ParseServerModule };
       },
       set: (newVal: any) => {
-        newVal.appId = Parse.applicationId;
-        Config.put(newVal);
+        const existing = Config.get(Parse.applicationId) || {};
+        const merged = { ...existing, ...newVal, appId: Parse.applicationId };
+        Config.put(merged);
       },
       configurable: true,
     });
@@ -267,7 +270,7 @@ export class LegacyCloud {
     defaultClass: string,
     args: unknown[],
     rateLimitPath?: string,
-    rateLimitMethod?: string
+    rateLimitMethod?: string | string[]
   ): void {
     let handler = args[0] as CloudHandler;
     let validator = args[1] as Validator | undefined;
@@ -279,7 +282,8 @@ export class LegacyCloud {
       validator = args.length >= 3 ? (args[2] as Validator) : undefined;
     }
 
-    triggers.addTrigger(type, className, handler, this._appId);
+    validateValidator(validator);
+    triggers.addTrigger(type, className, handler, this._appId, validator);
 
     if (rateLimitPath) {
       this.applyRateLimit(validator, { requestPath: rateLimitPath, requestMethods: rateLimitMethod });

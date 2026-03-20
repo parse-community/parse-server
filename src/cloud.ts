@@ -23,6 +23,7 @@ export type {
   JobRequest,
   FunctionHandler,
   JobHandler,
+  BeforeSaveObjectTriggerHandler,
   ObjectTriggerHandler,
   QueryTriggerHandler,
   AfterFindHandler,
