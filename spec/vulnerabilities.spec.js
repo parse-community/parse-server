@@ -3751,8 +3751,17 @@ describe('(GHSA-qpc3-fg4j-8hgm) Protected field change detection oracle via Live
   });
 
   describe('(GHSA-8pjv-59c8-44p8) SSRF via Webhook URL requires master key', () => {
+    const expectMasterKeyRequired = async promise => {
+      try {
+        await promise;
+        fail('Expected request to be rejected');
+      } catch (error) {
+        expect(error.status).toBe(403);
+      }
+    };
+
     it('rejects registering a webhook function with internal URL without master key', async () => {
-      await expectAsync(
+      await expectMasterKeyRequired(
         request({
           method: 'POST',
           url: Parse.serverURL + '/hooks/functions',
@@ -3765,11 +3774,25 @@ describe('(GHSA-qpc3-fg4j-8hgm) Protected field change detection oracle via Live
             url: 'http://169.254.169.254/latest/meta-data/iam/security-credentials/',
           }),
         })
-      ).toBeRejected();
+      );
     });
 
     it('rejects updating a webhook function URL to internal address without master key', async () => {
-      await expectAsync(
+      // Seed a legitimate webhook first so the PUT hits auth, not "not found"
+      await request({
+        method: 'POST',
+        url: Parse.serverURL + '/hooks/functions',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': Parse.masterKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          functionName: 'ssrf_probe',
+          url: 'https://example.com/webhook',
+        }),
+      });
+      await expectMasterKeyRequired(
         request({
           method: 'PUT',
           url: Parse.serverURL + '/hooks/functions/ssrf_probe',
@@ -3781,11 +3804,11 @@ describe('(GHSA-qpc3-fg4j-8hgm) Protected field change detection oracle via Live
             url: 'http://169.254.169.254/latest/meta-data/',
           }),
         })
-      ).toBeRejected();
+      );
     });
 
     it('rejects registering a webhook trigger with internal URL without master key', async () => {
-      await expectAsync(
+      await expectMasterKeyRequired(
         request({
           method: 'POST',
           url: Parse.serverURL + '/hooks/triggers',
@@ -3799,11 +3822,11 @@ describe('(GHSA-qpc3-fg4j-8hgm) Protected field change detection oracle via Live
             url: 'http://127.0.0.1:8080/admin/status',
           }),
         })
-      ).toBeRejected();
+      );
     });
 
     it('rejects registering a webhook with internal URL using JavaScript key', async () => {
-      await expectAsync(
+      await expectMasterKeyRequired(
         request({
           method: 'POST',
           url: Parse.serverURL + '/hooks/functions',
@@ -3816,7 +3839,7 @@ describe('(GHSA-qpc3-fg4j-8hgm) Protected field change detection oracle via Live
             url: 'http://10.0.0.1:3000/internal-api',
           }),
         })
-      ).toBeRejected();
+      );
     });
   });
 
