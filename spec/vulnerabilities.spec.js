@@ -1615,25 +1615,23 @@ describe('(GHSA-gqpp-xgvh-9h7h) SQL Injection via dot-notation sub-key name in I
     }).catch(() => {});
     const elapsed = Date.now() - start;
 
-    // Double quotes break JSON structure inside the CONCAT, producing invalid JSONB.
-    // This causes a database error, NOT SQL injection. If injection succeeded,
-    // the query would take >= 3 seconds due to pg_sleep.
+    // Double quotes are escaped in the JSON context, producing a harmless literal key
+    // name. No SQL injection occurs. If injection succeeded, the query would take
+    // >= 3 seconds due to pg_sleep.
     expect(elapsed).toBeLessThan(3000);
-    // Invalid JSONB cast fails the UPDATE, so the row is not modified
     const verify = await new Parse.Query('SubKeyTest').get(obj.id);
-    expect(verify.get('stats')).toEqual({ counter: 0 });
+    // Original counter is untouched
+    expect(verify.get('stats').counter).toBe(0);
   });
 
-  it_only_db('postgres')('does not execute injected SQL via double quote crafted as valid JSONB in sub-key name', async () => {
+  it_only_db('postgres')('does not inject additional JSONB keys via double quote crafted as valid JSONB in sub-key name', async () => {
     const obj = new Parse.Object('SubKeyTest');
     obj.set('stats', { counter: 0 });
     await obj.save();
 
-    // This payload uses double quotes to craft a sub-key that produces valid JSONB
-    // (e.g. '{"x":0,"evil":1}') instead of breaking JSON structure. Even so, both
-    // interpolation sites are inside single-quoted SQL strings, so double quotes
-    // cannot escape the SQL context — no arbitrary SQL execution is possible.
-    const start = Date.now();
+    // This payload attempts to craft a sub-key that produces valid JSONB with
+    // injected keys (e.g. '{"x":0,"evil":1}'). Double quotes are escaped in the
+    // JSON context, so the payload becomes a harmless literal key name instead.
     await request({
       method: 'PUT',
       url: `http://localhost:8378/1/classes/SubKeyTest/${obj.id}`,
@@ -1642,13 +1640,12 @@ describe('(GHSA-gqpp-xgvh-9h7h) SQL Injection via dot-notation sub-key name in I
         'stats.x":0,"pg_sleep(3)': { __op: 'Increment', amount: 1 },
       }),
     }).catch(() => {});
-    const elapsed = Date.now() - start;
 
-    expect(elapsed).toBeLessThan(3000);
-    // Double quotes craft valid JSONB with extra keys, but no SQL injection occurs;
-    // original counter is untouched
     const verify = await new Parse.Query('SubKeyTest').get(obj.id);
+    // Original counter is untouched
     expect(verify.get('stats').counter).toBe(0);
+    // No injected key exists — the payload is treated as a single literal key name
+    expect(verify.get('stats')['pg_sleep(3)']).toBeUndefined();
   });
 
   it_only_db('postgres')('allows valid Increment on nested object field with normal sub-key', async () => {
