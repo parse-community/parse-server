@@ -1,15 +1,13 @@
 /**
- * LegacyCloud — CloudCodeRegistrar backed by parse/node.
+ * LegacyCloud — the built-in cloud SDK backed by parse/node.
  *
- * This is the default registrar. It:
- * - Wraps the Parse JS SDK (calls Parse.initialize, sets global.Parse)
- * - Registers hooks via the triggers module
- * - Provides Parse.Cloud.* convenience methods (beforeSave, define, etc.)
- * - Handles validator validation and rate limiting
+ * It wraps the Parse JS SDK and provides
+ * the Parse.Cloud.* convenience methods (beforeSave, define, etc.) that
+ * bypass the registrar's plain-data conversion — Parse.Cloud handlers
+ * receive Parse.Object etc. directly.
  */
 
-import { CloudCodeRegistrar, RegistrarConfig, TriggerType, HookType } from './CloudCodeRegistrar';
-import type { FunctionHandler, HookHandlerMap, TriggerHandlerMap } from './types';
+import { TriggerStore, TriggerType } from './TriggerStore';
 import * as triggers from '../triggers';
 import { addRateLimit } from '../middlewares';
 
@@ -85,7 +83,7 @@ function validateValidator(validator?: Validator): void {
   }
 }
 
-export class LegacyCloud extends CloudCodeRegistrar {
+export class LegacyCloud {
   private _appId: string = '';
   private _parse: any = null;
 
@@ -97,7 +95,7 @@ export class LegacyCloud extends CloudCodeRegistrar {
     return this._parse;
   }
 
-  initialize(config: RegistrarConfig): void {
+  initialize(config: { appId: string; masterKey: string; javascriptKey?: string; serverURL: string }): void {
     this._appId = config.appId;
     this._parse = require('parse/node').Parse;
     this._parse.initialize(
@@ -109,63 +107,10 @@ export class LegacyCloud extends CloudCodeRegistrar {
     (global as any).Parse = this._parse;
   }
 
-  // ── CloudCodeRegistrar contract ──────────────────────────────────────
-  //
-  // Handlers registered via define() / defineTrigger() receive plain-data
-  // requests (see types.ts). The wrapping below converts parse-server's
-  // internal Parse.Object / Parse.Query objects into plain JSON before
-  // calling the handler, preserving backwards compat for Parse.Cloud.*
-  // convenience methods (which bypass these methods entirely).
-
-  define<K extends HookType, P extends Record<string, unknown>>(
-    type: K, name: string, handler: HookHandlerMap<P>[K], validator?: unknown
-  ): void {
-    if (type === HookType.function) {
-      const fn = handler as FunctionHandler<P>;
-      const wrappedHandler = (request: any) => {
-        const plainRequest = {
-          ...request,
-          user: request.user?.toJSON?.() ?? request.user,
-        };
-        return fn(plainRequest);
-      };
-      triggers.addFunction(name, wrappedHandler, validator, this._appId);
-    } else if (type === HookType.job) {
-      triggers.addJob(name, handler as Function, this._appId);
-    }
-  }
-
-  defineTrigger<K extends TriggerType, T extends Record<string, unknown>>(
-    type: K, className: string, handler: TriggerHandlerMap<T>[K], validator?: unknown
-  ): void {
-    const wrappedHandler = (request: any) => {
-      const plainRequest = {
-        ...request,
-        object: request.object?.toJSON?.() ?? request.object,
-        original: request.original?.toJSON?.() ?? request.original,
-        query: request.query?.toJSON?.() ?? request.query,
-        objects: request.objects?.map((o: any) => o?.toJSON?.() ?? o),
-        user: request.user?.toJSON?.() ?? request.user,
-      };
-      return (handler as Function)(plainRequest);
-    };
-
-    if (type === TriggerType.beforeConnect) {
-      triggers.addConnectTrigger(type, wrappedHandler, this._appId, validator);
-    } else {
-      triggers.addTrigger(type, className, wrappedHandler, this._appId, validator);
-    }
-  }
-
-  removeAllHooks(): void {
-    triggers._unregisterAll();
-    Config.get(this._appId)?.unregisterRateLimiters();
-  }
-
   // ── Parse.Cloud convenience methods ──────────────────────────────────
-  // These are bound onto Parse.Cloud by ParseServer.addParseCloud().
-  // They bypass define()/defineTrigger() to avoid the plain-data
-  // conversion wrapper — Parse.Cloud handlers receive Parse.Object etc.
+  // These are bound onto Parse.Cloud by bindToParseCloud().
+  // They call triggers directly — Parse.Cloud handlers receive
+  // Parse.Object etc. without plain-data conversion.
 
   cloudDefine(name: string, handler: CloudHandler, validator?: Validator): void {
     validateValidator(validator);
@@ -291,13 +236,14 @@ export class LegacyCloud extends CloudCodeRegistrar {
       onLiveQueryEvent: 'cloudOnLiveQueryEvent',
       afterLiveQueryEvent: 'cloudAfterLiveQueryEvent',
       sendEmail: 'cloudSendEmail',
-      _removeAllHooks: 'removeAllHooks',
       useMasterKey: 'cloudUseMasterKey',
     };
 
-    for (const [cloudName, registrarName] of Object.entries(bindings)) {
-      Parse.Cloud[cloudName] = (this as any)[registrarName].bind(this);
+    for (const [cloudName, legacyName] of Object.entries(bindings)) {
+      Parse.Cloud[cloudName] = (this as any)[legacyName].bind(this);
     }
+
+    Parse.Cloud._removeAllHooks = () => TriggerStore.removeAllHooks(this._appId);
   }
 
   // ── Internal ─────────────────────────────────────────────────────────

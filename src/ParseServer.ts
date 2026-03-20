@@ -45,7 +45,6 @@ import Deprecator from './Deprecator/Deprecator';
 import { DefinedSchemas } from './SchemaMigrations/DefinedSchemas';
 import OptionsDefinitions from './Options/Definitions';
 import { resolvingPromise, Connections } from './TestUtils';
-import { CloudCodeRegistrar } from './cloud-code/CloudCodeRegistrar';
 import { LegacyCloud } from './cloud-code/LegacyCloud';
 
 // Track connections to destroy them on shutdown
@@ -59,6 +58,7 @@ class ParseServer {
   server: any;
   expressApp: any;
   liveQueryServer: any;
+  private legacyCloud: LegacyCloud;
   /**
    * @constructor
    * @param {ParseServerOptions} options the parse server initialization options
@@ -126,11 +126,9 @@ class ParseServer {
       javascriptKey,
       serverURL = requiredParameter('You must provide a serverURL!'),
     } = options;
-    // Initialize the cloud SDK and register it
-    const cloudSDK = new LegacyCloud();
-    cloudSDK.initialize({ appId, masterKey, javascriptKey, serverURL });
-    CloudCodeRegistrar.setInstance(cloudSDK);
-    const Parse = cloudSDK.Parse;
+    // Initialize the registrar and legacy cloud SDK
+    this.legacyCloud = new LegacyCloud();
+    this.legacyCloud.initialize({ appId, masterKey, javascriptKey, serverURL });
     Config.validateOptions(options);
     const allControllers = controllers.getControllers(options);
 
@@ -163,8 +161,7 @@ class ParseServer {
         schema,
         liveQueryController,
       } = this.config;
-      const cloudSDK = CloudCodeRegistrar.getInstance(this.config.appId) as LegacyCloud;
-      const Parse = cloudSDK.Parse;
+      const Parse = this.legacyCloud.Parse;
       try {
         await databaseController.performInitialization();
       } catch (e) {
@@ -187,7 +184,7 @@ class ParseServer {
       startupPromises.push(liveQueryController.connect());
       await Promise.all(startupPromises);
       if (cloud) {
-        cloudSDK.bindToParseCloud();
+        this.legacyCloud.bindToParseCloud();
         if (typeof cloud === 'function') {
           await Promise.resolve(cloud(Parse));
         } else if (typeof cloud === 'string') {

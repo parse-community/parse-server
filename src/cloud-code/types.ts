@@ -3,7 +3,7 @@
  *
  * These interfaces use only plain JSON — no Parse.Object, Parse.Query, or
  * any other SDK type. The conversion between parse-server internals and
- * these contracts is the registrar's responsibility (e.g. LegacyCloud
+ * these contracts is the registrar's responsibility (e.g. CloudCodeRegistrar
  * converts Parse.Object ↔ JSON).
  *
  * All request and handler types are generic so consumers can specify

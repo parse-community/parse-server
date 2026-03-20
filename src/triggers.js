@@ -1,7 +1,10 @@
 // triggers.js
+//
+// Storage is delegated to TriggerStore (static singleton, keyed by appId).
+// This module provides execution logic and thin wrappers for backwards compat.
 import Parse from 'parse/node';
-import { logger } from './logger';
 import Utils from './Utils';
+import { TriggerStore } from './cloud-code/TriggerStore';
 
 export const Types = {
   beforeLogin: 'beforeLogin',
@@ -19,40 +22,6 @@ export const Types = {
   afterEvent: 'afterEvent',
 };
 
-const ConnectClassName = '@Connect';
-
-/**
- * Creates a prototype-free object for use as a lookup store.
- * This prevents prototype chain properties (e.g. `constructor`, `toString`)
- * from being resolved as registered handlers when using bracket notation
- * for lookups. Always use this instead of `{}` for handler stores.
- */
-function createStore() {
-  return Object.create(null);
-}
-
-const baseStore = function () {
-  const Validators = Object.keys(Types).reduce(function (base, key) {
-    base[key] = createStore();
-    return base;
-  }, createStore());
-  const Functions = createStore();
-  const Jobs = createStore();
-  const LiveQuery = [];
-  const Triggers = Object.keys(Types).reduce(function (base, key) {
-    base[key] = createStore();
-    return base;
-  }, createStore());
-
-  return Object.freeze({
-    Functions,
-    Jobs,
-    Validators,
-    Triggers,
-    LiveQuery,
-  });
-};
-
 export function getClassName(parseClass) {
   if (parseClass && parseClass.className) {
     return parseClass.className;
@@ -63,126 +32,40 @@ export function getClassName(parseClass) {
   return parseClass;
 }
 
-function validateClassNameForTriggers(className, type) {
-  if (type == Types.beforeSave && className === '_PushStatus') {
-    // _PushStatus uses undocumented nested key increment ops
-    // allowing beforeSave would mess up the objects big time
-    // TODO: Allow proper documented way of using nested increment ops
-    throw 'Only afterSave is allowed on _PushStatus';
-  }
-  if ((type === Types.beforeLogin || type === Types.afterLogin || type === Types.beforePasswordResetRequest) && className !== '_User') {
-    // TODO: check if upstream code will handle `Error` instance rather
-    // than this anti-pattern of throwing strings
-    throw 'Only the _User class is allowed for the beforeLogin, afterLogin, and beforePasswordResetRequest triggers';
-  }
-  if (type === Types.afterLogout && className !== '_Session') {
-    // TODO: check if upstream code will handle `Error` instance rather
-    // than this anti-pattern of throwing strings
-    throw 'Only the _Session class is allowed for the afterLogout trigger.';
-  }
-  if (className === '_Session' && type !== Types.afterLogout) {
-    // TODO: check if upstream code will handle `Error` instance rather
-    // than this anti-pattern of throwing strings
-    throw 'Only the afterLogout trigger is allowed for the _Session class.';
-  }
-  return className;
-}
-
-const _triggerStore = Object.create(null);
-
-const Category = {
-  Functions: 'Functions',
-  Validators: 'Validators',
-  Jobs: 'Jobs',
-  Triggers: 'Triggers',
-};
-
-function getStore(category, name, applicationId) {
-  const invalidNameRegex = /['"`]/;
-  if (invalidNameRegex.test(name)) {
-    // Prevent a malicious user from injecting properties into the store
-    return createStore();
-  }
-
-  const path = name.split('.');
-  path.splice(-1); // remove last component
-  applicationId = applicationId || Parse.applicationId;
-  _triggerStore[applicationId] = _triggerStore[applicationId] || baseStore();
-  let store = _triggerStore[applicationId][category];
-  for (const component of path) {
-    if (!Object.prototype.hasOwnProperty.call(store, component)) {
-      return createStore();
-    }
-    store = store[component];
-    if (!store) {
-      return createStore();
-    }
-  }
-  return store;
-}
-
-function add(category, name, handler, applicationId) {
-  const lastComponent = name.split('.').splice(-1);
-  const store = getStore(category, name, applicationId);
-  if (store[lastComponent]) {
-    logger.warn(
-      `Warning: Duplicate cloud functions exist for ${lastComponent}. Only the last one will be used and the others will be ignored.`
-    );
-  }
-  store[lastComponent] = handler;
-}
-
-function remove(category, name, applicationId) {
-  const lastComponent = name.split('.').splice(-1);
-  const store = getStore(category, name, applicationId);
-  delete store[lastComponent];
-}
-
-function get(category, name, applicationId) {
-  const lastComponent = name.split('.').splice(-1);
-  const store = getStore(category, name, applicationId);
-  if (!Object.prototype.hasOwnProperty.call(store, lastComponent)) {
-    return undefined;
-  }
-  return store[lastComponent];
+function _appId(applicationId) {
+  return applicationId || Parse.applicationId;
 }
 
 export function addFunction(functionName, handler, validationHandler, applicationId) {
-  add(Category.Functions, functionName, handler, applicationId);
-  add(Category.Validators, functionName, validationHandler, applicationId);
+  TriggerStore.addFunction(_appId(applicationId), functionName, handler, validationHandler);
 }
 
 export function addJob(jobName, handler, applicationId) {
-  add(Category.Jobs, jobName, handler, applicationId);
+  TriggerStore.addJob(_appId(applicationId), jobName, handler);
 }
 
 export function addTrigger(type, className, handler, applicationId, validationHandler) {
-  validateClassNameForTriggers(className, type);
-  add(Category.Triggers, `${type}.${className}`, handler, applicationId);
-  add(Category.Validators, `${type}.${className}`, validationHandler, applicationId);
+  TriggerStore.addTrigger(_appId(applicationId), type, className, handler, validationHandler);
 }
 
 export function addConnectTrigger(type, handler, applicationId, validationHandler) {
-  add(Category.Triggers, `${type}.${ConnectClassName}`, handler, applicationId);
-  add(Category.Validators, `${type}.${ConnectClassName}`, validationHandler, applicationId);
+  TriggerStore.addConnectTrigger(_appId(applicationId), type, handler, validationHandler);
 }
 
 export function addLiveQueryEventHandler(handler, applicationId) {
-  applicationId = applicationId || Parse.applicationId;
-  _triggerStore[applicationId] = _triggerStore[applicationId] || baseStore();
-  _triggerStore[applicationId].LiveQuery.push(handler);
+  TriggerStore.addLiveQueryEventHandler(_appId(applicationId), handler);
 }
 
 export function removeFunction(functionName, applicationId) {
-  remove(Category.Functions, functionName, applicationId);
+  TriggerStore.removeFunction(_appId(applicationId), functionName);
 }
 
 export function removeTrigger(type, className, applicationId) {
-  remove(Category.Triggers, `${type}.${className}`, applicationId);
+  TriggerStore.removeTrigger(_appId(applicationId), type, className);
 }
 
 export function _unregisterAll() {
-  Object.keys(_triggerStore).forEach(appId => delete _triggerStore[appId]);
+  TriggerStore.clearAll();
 }
 
 export function toJSONwithObjects(object, className) {
@@ -213,7 +96,7 @@ export function getTrigger(className, triggerType, applicationId) {
   if (!applicationId) {
     throw 'Missing ApplicationID';
   }
-  return get(Category.Triggers, `${triggerType}.${className}`, applicationId);
+  return TriggerStore.getTrigger(applicationId, className, triggerType);
 }
 
 export async function runTrigger(trigger, name, request, auth) {
@@ -232,44 +115,23 @@ export function triggerExists(className: string, type: string, applicationId: st
 }
 
 export function getFunction(functionName, applicationId) {
-  return get(Category.Functions, functionName, applicationId);
+  return TriggerStore.getFunction(_appId(applicationId), functionName);
 }
 
 export function getFunctionNames(applicationId) {
-  const store =
-    (_triggerStore[applicationId] && _triggerStore[applicationId][Category.Functions]) || {};
-  const functionNames = [];
-  const extractFunctionNames = (namespace, store) => {
-    Object.keys(store).forEach(name => {
-      const value = store[name];
-      if (namespace) {
-        name = `${namespace}.${name}`;
-      }
-      if (typeof value === 'function') {
-        functionNames.push(name);
-      } else {
-        extractFunctionNames(name, value);
-      }
-    });
-  };
-  extractFunctionNames(null, store);
-  return functionNames;
+  return TriggerStore.getFunctionNames(_appId(applicationId));
 }
 
 export function getJob(jobName, applicationId) {
-  return get(Category.Jobs, jobName, applicationId);
+  return TriggerStore.getJob(_appId(applicationId), jobName);
 }
 
 export function getJobs(applicationId) {
-  var manager = _triggerStore[applicationId];
-  if (manager && manager.Jobs) {
-    return manager.Jobs;
-  }
-  return undefined;
+  return TriggerStore.getJobs(_appId(applicationId));
 }
 
 export function getValidator(functionName, applicationId) {
-  return get(Category.Validators, functionName, applicationId);
+  return TriggerStore.getValidator(_appId(applicationId), functionName);
 }
 
 export function getRequestObject(
@@ -1033,10 +895,7 @@ export function inflate(data, restObject) {
 }
 
 export function runLiveQueryEventHandlers(data, applicationId = Parse.applicationId) {
-  if (!_triggerStore || !_triggerStore[applicationId] || !_triggerStore[applicationId].LiveQuery) {
-    return;
-  }
-  _triggerStore[applicationId].LiveQuery.forEach(handler => handler(data));
+  TriggerStore.runLiveQueryEventHandlers(applicationId, data);
 }
 
 export function getRequestFileObject(triggerType, auth, fileObject, config) {

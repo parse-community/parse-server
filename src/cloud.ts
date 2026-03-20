@@ -4,11 +4,10 @@
  * Import from 'parse-server/cloud' in cloud code files to avoid
  * circular dependencies with the main 'parse-server' entry point.
  *
- *   import { CloudCodeRegistrar, TriggerType, HookType } from 'parse-server/cloud';
+ *   import { TriggerStore, TriggerType, HookType } from 'parse-server/cloud';
  */
 
-export { CloudCodeRegistrar, TriggerType, HookType } from './cloud-code/CloudCodeRegistrar';
-export type { RegistrarConfig } from './cloud-code/CloudCodeRegistrar';
+export { TriggerStore, TriggerType, HookType } from './cloud-code/TriggerStore';
 
 export type {
   CloudRequestBase,
