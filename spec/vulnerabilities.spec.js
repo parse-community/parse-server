@@ -2833,6 +2833,90 @@ describe('(GHSA-9xp9-j92r-p88v) Stack overflow process crash via deeply nested q
       })
     );
   });
+
+  it('rejects deeply nested query before transform pipeline processes it', async () => {
+    await reconfigureServer({
+      requestComplexity: { queryDepth: 10 },
+    });
+    const auth = require('../lib/Auth');
+    const rest = require('../lib/rest');
+    const config = Config.get('test');
+    // Depth 50 bypasses the fix because RestQuery.js transform pipeline
+    // recursively traverses the structure before validateQuery() is reached
+    let where = { username: 'test' };
+    for (let i = 0; i < 50; i++) {
+      where = { $and: [where] };
+    }
+    await expectAsync(
+      rest.find(config, auth.nobody(config), '_User', where)
+    ).toBeRejectedWith(
+      jasmine.objectContaining({
+        message: jasmine.stringMatching(/Query condition nesting depth exceeds maximum allowed depth/),
+      })
+    );
+  });
+
+  it('rejects deeply nested query via REST API without authentication', async () => {
+    await reconfigureServer({
+      requestComplexity: { queryDepth: 10 },
+    });
+    let where = { username: 'test' };
+    for (let i = 0; i < 50; i++) {
+      where = { $or: [where] };
+    }
+    await expectAsync(
+      request({
+        method: 'GET',
+        url: `${Parse.serverURL}/classes/_User`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        qs: { where: JSON.stringify(where) },
+      })
+    ).toBeRejectedWith(
+      jasmine.objectContaining({
+        data: jasmine.objectContaining({
+          code: Parse.Error.INVALID_QUERY,
+        }),
+      })
+    );
+  });
+
+  it('rejects deeply nested $nor query before transform pipeline', async () => {
+    await reconfigureServer({
+      requestComplexity: { queryDepth: 10 },
+    });
+    const auth = require('../lib/Auth');
+    const rest = require('../lib/rest');
+    const config = Config.get('test');
+    let where = { username: 'test' };
+    for (let i = 0; i < 50; i++) {
+      where = { $nor: [where] };
+    }
+    await expectAsync(
+      rest.find(config, auth.nobody(config), '_User', where)
+    ).toBeRejectedWith(
+      jasmine.objectContaining({
+        message: jasmine.stringMatching(/Query condition nesting depth exceeds maximum allowed depth/),
+      })
+    );
+  });
+
+  it('allows queries within the depth limit', async () => {
+    await reconfigureServer({
+      requestComplexity: { queryDepth: 10 },
+    });
+    const auth = require('../lib/Auth');
+    const rest = require('../lib/rest');
+    const config = Config.get('test');
+    let where = { username: 'test' };
+    for (let i = 0; i < 5; i++) {
+      where = { $or: [where] };
+    }
+    const result = await rest.find(config, auth.nobody(config), '_User', where);
+    expect(result.results).toBeDefined();
+  });
 });
 
 describe('(GHSA-fjxm-vhvc-gcmj) LiveQuery Operator Type Confusion', () => {
