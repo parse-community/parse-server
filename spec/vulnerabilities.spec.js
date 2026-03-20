@@ -3750,4 +3750,74 @@ describe('(GHSA-qpc3-fg4j-8hgm) Protected field change detection oracle via Live
     expect(updateSpy).not.toHaveBeenCalled();
   });
 
+  describe('(GHSA-8pjv-59c8-44p8) SSRF via Webhook URL requires master key', () => {
+    it('rejects registering a webhook function with internal URL without master key', async () => {
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: Parse.serverURL + '/hooks/functions',
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          body: JSON.stringify({
+            functionName: 'ssrf_probe',
+            url: 'http://169.254.169.254/latest/meta-data/iam/security-credentials/',
+          }),
+        })
+      ).toBeRejected();
+    });
+
+    it('rejects updating a webhook function URL to internal address without master key', async () => {
+      await expectAsync(
+        request({
+          method: 'PUT',
+          url: Parse.serverURL + '/hooks/functions/ssrf_probe',
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          body: JSON.stringify({
+            url: 'http://169.254.169.254/latest/meta-data/',
+          }),
+        })
+      ).toBeRejected();
+    });
+
+    it('rejects registering a webhook trigger with internal URL without master key', async () => {
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: Parse.serverURL + '/hooks/triggers',
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          body: JSON.stringify({
+            className: 'TestClass',
+            triggerName: 'beforeSave',
+            url: 'http://127.0.0.1:8080/admin/status',
+          }),
+        })
+      ).toBeRejected();
+    });
+
+    it('rejects registering a webhook with internal URL using JavaScript key', async () => {
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: Parse.serverURL + '/hooks/functions',
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-JavaScript-Key': 'test',
+          },
+          body: JSON.stringify({
+            functionName: 'ssrf_probe',
+            url: 'http://10.0.0.1:3000/internal-api',
+          }),
+        })
+      ).toBeRejected();
+    });
+  });
+
 });
