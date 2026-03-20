@@ -3736,7 +3736,7 @@ describe('(GHSA-qpc3-fg4j-8hgm) Protected field change detection oracle via Live
     ]);
   });
 
-  it('should not deliver update event when only non-watched public field changes', async () => {
+  it('should not deliver update event when only non-watched field changes', async () => {
     const query = new Parse.Query('SecretClass');
     query.watch('publicField');
     const subscription = await query.subscribe();
@@ -3744,7 +3744,7 @@ describe('(GHSA-qpc3-fg4j-8hgm) Protected field change detection oracle via Live
     subscription.on('update', updateSpy);
 
     // Change a field that is NOT in the watch list
-    obj.set('publicField', 'visible'); // same value, no change to watched field
+    obj.set('secretObj', { apiKey: 'ROTATED_KEY', score: 99 });
     await obj.save(null, { useMasterKey: true });
     await sleep(500);
     expect(updateSpy).not.toHaveBeenCalled();
