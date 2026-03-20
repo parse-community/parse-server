@@ -639,9 +639,10 @@ RestWrite.prototype.handleAuthData = async function (authData) {
         return;
       }
 
-      // Force to validate all provided authData on login
-      // on update only validate mutated ones
-      if (hasMutatedAuthData || !this.config.allowExpiredAuthDataToken) {
+      // Always validate all provided authData on login to prevent authentication
+      // bypass via partial authData (e.g. sending only the provider ID without
+      // an access token); on update only validate mutated ones
+      if (isLogin || hasMutatedAuthData || !this.config.allowExpiredAuthDataToken) {
         const res = await Auth.handleAuthDataValidation(
           isLogin ? authData : mutatedAuthData,
           this,

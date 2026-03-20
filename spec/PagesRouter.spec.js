@@ -840,6 +840,69 @@ describe('Pages Router', () => {
           followRedirects: false,
         });
         expect(formResponse.status).toEqual(303);
+        // With emailVerifySuccessOnInvalidEmail: true (default), the resend
+        // page always redirects to the success page to prevent user enumeration
+        expect(formResponse.text).toContain(
+          `/${locale}/${pages.emailVerificationSendSuccess.defaultFile}`
+        );
+      });
+
+      it('localizes end-to-end for verify email: invalid verification link - link send fail with emailVerifySuccessOnInvalidEmail disabled', async () => {
+        config.emailVerifySuccessOnInvalidEmail = false;
+        await reconfigureServer(config);
+        const sendVerificationEmail = spyOn(
+          config.emailAdapter,
+          'sendVerificationEmail'
+        ).and.callThrough();
+        const user = new Parse.User();
+        user.setUsername('exampleUsername');
+        user.setPassword('examplePassword');
+        user.set('email', 'mail@example.com');
+        await user.signUp();
+        await jasmine.timeout();
+
+        const link = sendVerificationEmail.calls.all()[0].args[0].link;
+        const linkWithLocale = new URL(link);
+        linkWithLocale.searchParams.append(pageParams.locale, exampleLocale);
+        linkWithLocale.searchParams.set(pageParams.token, 'invalidToken');
+
+        const linkResponse = await request({
+          url: linkWithLocale.toString(),
+          followRedirects: false,
+        });
+        expect(linkResponse.status).toBe(200);
+
+        const appId = linkResponse.headers['x-parse-page-param-appid'];
+        const locale = linkResponse.headers['x-parse-page-param-locale'];
+        const publicServerUrl = linkResponse.headers['x-parse-page-param-publicserverurl'];
+        await jasmine.timeout();
+
+        const invalidVerificationPagePath = pageResponse.calls.all()[0].args[0];
+        expect(appId).toBeDefined();
+        expect(locale).toBe(exampleLocale);
+        expect(publicServerUrl).toBeDefined();
+        expect(invalidVerificationPagePath).toMatch(
+          new RegExp(`\/${exampleLocale}\/${pages.emailVerificationLinkInvalid.defaultFile}`)
+        );
+
+        spyOn(UserController.prototype, 'resendVerificationEmail').and.callFake(() =>
+          Promise.reject('failed to resend verification email')
+        );
+
+        const formUrl = `${publicServerUrl}/apps/${appId}/resend_verification_email`;
+        const formResponse = await request({
+          url: formUrl,
+          method: 'POST',
+          body: {
+            locale,
+            username: 'exampleUsername',
+          },
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          followRedirects: false,
+        });
+        expect(formResponse.status).toEqual(303);
+        // With emailVerifySuccessOnInvalidEmail: false, the resend page
+        // redirects to the fail page
         expect(formResponse.text).toContain(
           `/${locale}/${pages.emailVerificationSendFail.defaultFile}`
         );
@@ -1039,6 +1102,81 @@ describe('Pages Router', () => {
           followRedirects: false,
         }).catch(e => e);
         expect(response.status).not.toBe(500);
+      });
+
+      it('does not leak email verification status via resend page when emailVerifySuccessOnInvalidEmail is true', async () => {
+        const emailAdapter = {
+          sendVerificationEmail: () => {},
+          sendPasswordResetEmail: () => {},
+          sendMail: () => {},
+        };
+        await reconfigureServer({
+          ...config,
+          verifyUserEmails: true,
+          emailVerifySuccessOnInvalidEmail: true,
+          emailAdapter,
+        });
+
+        // Create a user with unverified email
+        const user = new Parse.User();
+        user.setUsername('realuser');
+        user.setPassword('password123');
+        user.setEmail('real@example.com');
+        await user.signUp();
+
+        const formUrl = `${config.publicServerURL}/apps/${config.appId}/resend_verification_email`;
+
+        // Resend for existing unverified user
+        const existingResponse = await request({
+          method: 'POST',
+          url: formUrl,
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'username=realuser',
+          followRedirects: false,
+        }).catch(e => e);
+
+        // Resend for non-existing user
+        const nonExistingResponse = await request({
+          method: 'POST',
+          url: formUrl,
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'username=fakeuser',
+          followRedirects: false,
+        }).catch(e => e);
+
+        // Both should redirect to the same page (success) to prevent enumeration
+        expect(existingResponse.status).toBe(303);
+        expect(nonExistingResponse.status).toBe(303);
+        expect(existingResponse.headers.location).toContain('email_verification_send_success');
+        expect(nonExistingResponse.headers.location).toContain('email_verification_send_success');
+      });
+
+      it('does leak email verification status via resend page when emailVerifySuccessOnInvalidEmail is false', async () => {
+        const emailAdapter = {
+          sendVerificationEmail: () => {},
+          sendPasswordResetEmail: () => {},
+          sendMail: () => {},
+        };
+        await reconfigureServer({
+          ...config,
+          verifyUserEmails: true,
+          emailVerifySuccessOnInvalidEmail: false,
+          emailAdapter,
+        });
+
+        const formUrl = `${config.publicServerURL}/apps/${config.appId}/resend_verification_email`;
+
+        // Resend for non-existing user should redirect to fail page
+        const nonExistingResponse = await request({
+          method: 'POST',
+          url: formUrl,
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'username=fakeuser',
+          followRedirects: false,
+        }).catch(e => e);
+
+        expect(nonExistingResponse.status).toBe(303);
+        expect(nonExistingResponse.headers.location).toContain('email_verification_send_fail');
       });
     });
 
@@ -1418,15 +1556,17 @@ describe('Pages Router', () => {
       expect(response.text).toContain('&lt;img');
     });
 
-    it('should escape XSS in locale parameter', async () => {
+    it('should reject XSS payload in locale parameter', async () => {
       const xssLocale = '"><svg/onload=alert(1)>';
       const response = await request({
         url: `http://localhost:8378/1/apps/choose_password?locale=${encodeURIComponent(xssLocale)}&appId=test`,
       });
 
       expect(response.status).toBe(200);
+      // Invalid locale is rejected by format validation, so the XSS
+      // payload never reaches the page content
       expect(response.text).not.toContain('<svg/onload=alert(1)>');
-      expect(response.text).toContain('&quot;&gt;&lt;svg');
+      expect(response.text).not.toContain('&quot;&gt;&lt;svg');
     });
 
     it('should handle legitimate usernames with quotes correctly', async () => {

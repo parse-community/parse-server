@@ -3092,3 +3092,662 @@ describe('(GHSA-fjxm-vhvc-gcmj) LiveQuery Operator Type Confusion', () => {
     });
   });
 });
+
+describe('(GHSA-5hmj-jcgp-6hff) Protected fields leak via LiveQuery afterEvent trigger', () => {
+  let obj;
+
+  beforeEach(async () => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    await reconfigureServer({
+      liveQuery: { classNames: ['SecretClass'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    Parse.Cloud.afterLiveQueryEvent('SecretClass', () => {});
+    const config = Config.get(Parse.applicationId);
+    const schemaController = await config.database.loadSchema();
+    await schemaController.addClassIfNotExists('SecretClass', {
+      secretField: { type: 'String' },
+      publicField: { type: 'String' },
+    });
+    await schemaController.updateClass(
+      'SecretClass',
+      {},
+      {
+        find: { '*': true },
+        get: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+        protectedFields: { '*': ['secretField'] },
+      }
+    );
+    obj = new Parse.Object('SecretClass');
+    obj.set('secretField', 'SENSITIVE_DATA');
+    obj.set('publicField', 'visible');
+    await obj.save(null, { useMasterKey: true });
+  });
+
+  afterEach(async () => {
+    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+    if (client) {
+      await client.close();
+    }
+  });
+
+  it('should not leak protected fields on update event when afterEvent trigger is registered', async () => {
+    const query = new Parse.Query('SecretClass');
+    const subscription = await query.subscribe();
+    await Promise.all([
+      new Promise(resolve => {
+        subscription.on('update', (object, original) => {
+          expect(object.get('secretField')).toBeUndefined();
+          expect(object.get('publicField')).toBe('updated');
+          expect(original.get('secretField')).toBeUndefined();
+          expect(original.get('publicField')).toBe('visible');
+          resolve();
+        });
+      }),
+      obj.save({ publicField: 'updated' }, { useMasterKey: true }),
+    ]);
+  });
+
+  it('should not leak protected fields on create event when afterEvent trigger is registered', async () => {
+    const query = new Parse.Query('SecretClass');
+    const subscription = await query.subscribe();
+    await Promise.all([
+      new Promise(resolve => {
+        subscription.on('create', object => {
+          expect(object.get('secretField')).toBeUndefined();
+          expect(object.get('publicField')).toBe('new');
+          resolve();
+        });
+      }),
+      new Parse.Object('SecretClass').save(
+        { secretField: 'SECRET', publicField: 'new' },
+        { useMasterKey: true }
+      ),
+    ]);
+  });
+
+  it('should not leak protected fields on delete event when afterEvent trigger is registered', async () => {
+    const query = new Parse.Query('SecretClass');
+    const subscription = await query.subscribe();
+    await Promise.all([
+      new Promise(resolve => {
+        subscription.on('delete', object => {
+          expect(object.get('secretField')).toBeUndefined();
+          expect(object.get('publicField')).toBe('visible');
+          resolve();
+        });
+      }),
+      obj.destroy({ useMasterKey: true }),
+    ]);
+  });
+
+  it('should not leak protected fields on enter event when afterEvent trigger is registered', async () => {
+    const query = new Parse.Query('SecretClass');
+    query.equalTo('publicField', 'match');
+    const subscription = await query.subscribe();
+    await Promise.all([
+      new Promise(resolve => {
+        subscription.on('enter', (object, original) => {
+          expect(object.get('secretField')).toBeUndefined();
+          expect(object.get('publicField')).toBe('match');
+          expect(original.get('secretField')).toBeUndefined();
+          resolve();
+        });
+      }),
+      obj.save({ publicField: 'match' }, { useMasterKey: true }),
+    ]);
+  });
+
+  it('should not leak protected fields on leave event when afterEvent trigger is registered', async () => {
+    const query = new Parse.Query('SecretClass');
+    query.equalTo('publicField', 'visible');
+    const subscription = await query.subscribe();
+    await Promise.all([
+      new Promise(resolve => {
+        subscription.on('leave', (object, original) => {
+          expect(object.get('secretField')).toBeUndefined();
+          expect(object.get('publicField')).toBe('changed');
+          expect(original.get('secretField')).toBeUndefined();
+          expect(original.get('publicField')).toBe('visible');
+          resolve();
+        });
+      }),
+      obj.save({ publicField: 'changed' }, { useMasterKey: true }),
+    ]);
+  });
+
+  describe('(GHSA-pfj7-wv7c-22pr) AuthData subset validation bypass with allowExpiredAuthDataToken', () => {
+    let validatorSpy;
+
+    const testAdapter = {
+      validateAppId: () => Promise.resolve(),
+      validateAuthData: () => Promise.resolve(),
+    };
+
+    beforeEach(async () => {
+      validatorSpy = spyOn(testAdapter, 'validateAuthData').and.resolveTo({});
+      await reconfigureServer({
+        auth: { testAdapter },
+        allowExpiredAuthDataToken: true,
+      });
+    });
+
+    it('validates authData on login when incoming data is a strict subset of stored data', async () => {
+      // Sign up a user with full authData (id + access_token)
+      const user = new Parse.User();
+      await user.save({
+        authData: { testAdapter: { id: 'user123', access_token: 'valid_token' } },
+      });
+      validatorSpy.calls.reset();
+
+      // Attempt to log in with only the id field (subset of stored data)
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        body: JSON.stringify({
+          authData: { testAdapter: { id: 'user123' } },
+        }),
+      });
+      expect(res.data.objectId).toBe(user.id);
+      // The adapter MUST be called to validate the login attempt
+      expect(validatorSpy).toHaveBeenCalled();
+    });
+
+    it('prevents account takeover via partial authData when allowExpiredAuthDataToken is enabled', async () => {
+      // Sign up a user with full authData
+      const user = new Parse.User();
+      await user.save({
+        authData: { testAdapter: { id: 'victim123', access_token: 'secret_token' } },
+      });
+      validatorSpy.calls.reset();
+
+      // Simulate an attacker sending only the provider ID (no access_token)
+      // The adapter should reject this because the token is missing
+      validatorSpy.and.rejectWith(
+        new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Invalid credentials')
+      );
+
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        body: JSON.stringify({
+          authData: { testAdapter: { id: 'victim123' } },
+        }),
+      }).catch(e => e);
+
+      // Login must be rejected — adapter validation must not be skipped
+      expect(res.status).toBe(400);
+      expect(validatorSpy).toHaveBeenCalled();
+    });
+
+    it('validates authData on login even when authData is identical', async () => {
+      // Sign up with full authData
+      const user = new Parse.User();
+      await user.save({
+        authData: { testAdapter: { id: 'user456', access_token: 'expired_token' } },
+      });
+      validatorSpy.calls.reset();
+
+      // Log in with the exact same authData (all keys present, same values)
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        body: JSON.stringify({
+          authData: { testAdapter: { id: 'user456', access_token: 'expired_token' } },
+        }),
+      });
+      expect(res.data.objectId).toBe(user.id);
+      // Auth providers are always validated on login regardless of allowExpiredAuthDataToken
+      expect(validatorSpy).toHaveBeenCalled();
+    });
+
+    it('skips validation on update when authData is a subset of stored data', async () => {
+      // Sign up with full authData
+      const user = new Parse.User();
+      await user.save({
+        authData: { testAdapter: { id: 'user789', access_token: 'valid_token' } },
+      });
+      validatorSpy.calls.reset();
+
+      // Update the user with a subset of authData (simulates afterFind stripping fields)
+      await request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/users/${user.id}`,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': user.getSessionToken(),
+        },
+        body: JSON.stringify({
+          authData: { testAdapter: { id: 'user789' } },
+        }),
+      });
+      // On update with allowExpiredAuthDataToken: true, subset data skips validation
+      expect(validatorSpy).not.toHaveBeenCalled();
+    });
+  });
+});
+
+describe('(GHSA-fph2-r4qg-9576) LiveQuery bypasses CLP pointer permission enforcement', () => {
+  const { sleep } = require('../lib/TestUtils');
+
+  beforeEach(() => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+  });
+
+  afterEach(async () => {
+    try {
+      const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+      if (client) {
+        await client.close();
+      }
+    } catch (e) {
+      // Ignore cleanup errors when client is not initialized
+    }
+  });
+
+  async function updateCLP(className, permissions) {
+    const response = await fetch(Parse.serverURL + '/schemas/' + className, {
+      method: 'PUT',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ classLevelPermissions: permissions }),
+    });
+    const body = await response.json();
+    if (body.error) {
+      throw body;
+    }
+    return body;
+  }
+
+  it('should not deliver LiveQuery events to user not in readUserFields pointer', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['PrivateMessage'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    // Create users using master key to avoid session management issues
+    const userA = new Parse.User();
+    userA.setUsername('userA_pointer');
+    userA.setPassword('password123');
+    await userA.signUp();
+    await Parse.User.logOut();
+
+    // User B stays logged in for the subscription
+    const userB = new Parse.User();
+    userB.setUsername('userB_pointer');
+    userB.setPassword('password456');
+    await userB.signUp();
+
+    // Create schema by saving an object with owner pointer, then set CLP
+    const seed = new Parse.Object('PrivateMessage');
+    seed.set('owner', userA);
+    await seed.save(null, { useMasterKey: true });
+    await seed.destroy({ useMasterKey: true });
+
+    await updateCLP('PrivateMessage', {
+      create: { '*': true },
+      find: {},
+      get: {},
+      readUserFields: ['owner'],
+    });
+
+    // User B subscribes — should NOT receive events for User A's objects
+    const query = new Parse.Query('PrivateMessage');
+    const subscription = await query.subscribe(userB.getSessionToken());
+
+    const createSpy = jasmine.createSpy('create');
+    const enterSpy = jasmine.createSpy('enter');
+    subscription.on('create', createSpy);
+    subscription.on('enter', enterSpy);
+
+    // Create a message owned by User A
+    const msg = new Parse.Object('PrivateMessage');
+    msg.set('content', 'secret message');
+    msg.set('owner', userA);
+    await msg.save(null, { useMasterKey: true });
+
+    await sleep(500);
+
+    // User B should NOT have received the create event
+    expect(createSpy).not.toHaveBeenCalled();
+    expect(enterSpy).not.toHaveBeenCalled();
+  });
+
+  it('should deliver LiveQuery events to user in readUserFields pointer', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['PrivateMessage2'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    // User A stays logged in for the subscription
+    const userA = new Parse.User();
+    userA.setUsername('userA_owner');
+    userA.setPassword('password123');
+    await userA.signUp();
+
+    // Create schema by saving an object with owner pointer
+    const seed = new Parse.Object('PrivateMessage2');
+    seed.set('owner', userA);
+    await seed.save(null, { useMasterKey: true });
+    await seed.destroy({ useMasterKey: true });
+
+    await updateCLP('PrivateMessage2', {
+      create: { '*': true },
+      find: {},
+      get: {},
+      readUserFields: ['owner'],
+    });
+
+    // User A subscribes — SHOULD receive events for their own objects
+    const query = new Parse.Query('PrivateMessage2');
+    const subscription = await query.subscribe(userA.getSessionToken());
+
+    const createSpy = jasmine.createSpy('create');
+    subscription.on('create', createSpy);
+
+    // Create a message owned by User A
+    const msg = new Parse.Object('PrivateMessage2');
+    msg.set('content', 'my own message');
+    msg.set('owner', userA);
+    await msg.save(null, { useMasterKey: true });
+
+    await sleep(500);
+
+    // User A SHOULD have received the create event
+    expect(createSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('should not deliver LiveQuery events when find uses pointerFields', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['PrivateDoc'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const userA = new Parse.User();
+    userA.setUsername('userA_doc');
+    userA.setPassword('password123');
+    await userA.signUp();
+    await Parse.User.logOut();
+
+    // User B stays logged in for the subscription
+    const userB = new Parse.User();
+    userB.setUsername('userB_doc');
+    userB.setPassword('password456');
+    await userB.signUp();
+
+    // Create schema by saving an object with recipient pointer
+    const seed = new Parse.Object('PrivateDoc');
+    seed.set('recipient', userA);
+    await seed.save(null, { useMasterKey: true });
+    await seed.destroy({ useMasterKey: true });
+
+    // Set CLP with pointerFields instead of readUserFields
+    await updateCLP('PrivateDoc', {
+      create: { '*': true },
+      find: { pointerFields: ['recipient'] },
+      get: { pointerFields: ['recipient'] },
+    });
+
+    // User B subscribes
+    const query = new Parse.Query('PrivateDoc');
+    const subscription = await query.subscribe(userB.getSessionToken());
+
+    const createSpy = jasmine.createSpy('create');
+    subscription.on('create', createSpy);
+
+    // Create doc with recipient = User A (not User B)
+    const doc = new Parse.Object('PrivateDoc');
+    doc.set('title', 'confidential');
+    doc.set('recipient', userA);
+    await doc.save(null, { useMasterKey: true });
+
+    await sleep(500);
+
+    // User B should NOT receive events for User A's document
+    expect(createSpy).not.toHaveBeenCalled();
+  });
+
+  it('should not deliver LiveQuery events to unauthenticated users for pointer-protected classes', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['SecureItem'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const userA = new Parse.User();
+    userA.setUsername('userA_secure');
+    userA.setPassword('password123');
+    await userA.signUp();
+    await Parse.User.logOut();
+
+    // Create schema
+    const seed = new Parse.Object('SecureItem');
+    seed.set('owner', userA);
+    await seed.save(null, { useMasterKey: true });
+    await seed.destroy({ useMasterKey: true });
+
+    await updateCLP('SecureItem', {
+      create: { '*': true },
+      find: {},
+      get: {},
+      readUserFields: ['owner'],
+    });
+
+    // Unauthenticated subscription
+    const query = new Parse.Query('SecureItem');
+    const subscription = await query.subscribe();
+
+    const createSpy = jasmine.createSpy('create');
+    subscription.on('create', createSpy);
+
+    const item = new Parse.Object('SecureItem');
+    item.set('data', 'private');
+    item.set('owner', userA);
+    await item.save(null, { useMasterKey: true });
+
+    await sleep(500);
+
+    expect(createSpy).not.toHaveBeenCalled();
+  });
+
+  it('should handle readUserFields with array of pointers', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['SharedDoc'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const userA = new Parse.User();
+    userA.setUsername('userA_shared');
+    userA.setPassword('password123');
+    await userA.signUp();
+    await Parse.User.logOut();
+
+    // User B — don't log out, session must remain valid
+    const userB = new Parse.User();
+    userB.setUsername('userB_shared');
+    userB.setPassword('password456');
+    await userB.signUp();
+    const userBSessionToken = userB.getSessionToken();
+
+    // User C — signUp changes current user to C, but B's session stays valid
+    const userC = new Parse.User();
+    userC.setUsername('userC_shared');
+    userC.setPassword('password789');
+    await userC.signUp();
+    const userCSessionToken = userC.getSessionToken();
+
+    // Create schema with array field
+    const seed = new Parse.Object('SharedDoc');
+    seed.set('collaborators', [userA]);
+    await seed.save(null, { useMasterKey: true });
+    await seed.destroy({ useMasterKey: true });
+
+    await updateCLP('SharedDoc', {
+      create: { '*': true },
+      find: {},
+      get: {},
+      readUserFields: ['collaborators'],
+    });
+
+    // User B subscribes — is in the collaborators array
+    const queryB = new Parse.Query('SharedDoc');
+    const subscriptionB = await queryB.subscribe(userBSessionToken);
+    const createSpyB = jasmine.createSpy('createB');
+    subscriptionB.on('create', createSpyB);
+
+    // User C subscribes — is NOT in the collaborators array
+    const queryC = new Parse.Query('SharedDoc');
+    const subscriptionC = await queryC.subscribe(userCSessionToken);
+    const createSpyC = jasmine.createSpy('createC');
+    subscriptionC.on('create', createSpyC);
+
+    // Create doc with collaborators = [userA, userB] (not userC)
+    const doc = new Parse.Object('SharedDoc');
+    doc.set('title', 'team doc');
+    doc.set('collaborators', [userA, userB]);
+    await doc.save(null, { useMasterKey: true });
+
+    await sleep(500);
+
+    // User B SHOULD receive the event (in collaborators array)
+    expect(createSpyB).toHaveBeenCalledTimes(1);
+    // User C should NOT receive the event
+    expect(createSpyC).not.toHaveBeenCalled();
+  });
+});
+
+describe('(GHSA-qpc3-fg4j-8hgm) Protected field change detection oracle via LiveQuery watch parameter', () => {
+  const { sleep } = require('../lib/TestUtils');
+  let obj;
+
+  beforeEach(async () => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    await reconfigureServer({
+      liveQuery: { classNames: ['SecretClass'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const config = Config.get(Parse.applicationId);
+    const schemaController = await config.database.loadSchema();
+    await schemaController.addClassIfNotExists('SecretClass', {
+      secretObj: { type: 'Object' },
+      publicField: { type: 'String' },
+    });
+    await schemaController.updateClass(
+      'SecretClass',
+      {},
+      {
+        find: { '*': true },
+        get: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+        protectedFields: { '*': ['secretObj'] },
+      }
+    );
+
+    obj = new Parse.Object('SecretClass');
+    obj.set('secretObj', { apiKey: 'SENSITIVE_KEY_123', score: 42 });
+    obj.set('publicField', 'visible');
+    await obj.save(null, { useMasterKey: true });
+  });
+
+  afterEach(async () => {
+    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+    if (client) {
+      await client.close();
+    }
+  });
+
+  it('should reject LiveQuery subscription with protected field in watch', async () => {
+    const query = new Parse.Query('SecretClass');
+    query.watch('secretObj');
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+    );
+  });
+
+  it('should reject LiveQuery subscription with dot-notation on protected field in watch', async () => {
+    const query = new Parse.Query('SecretClass');
+    query.watch('secretObj.apiKey');
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+    );
+  });
+
+  it('should reject LiveQuery subscription with deeply nested dot-notation on protected field in watch', async () => {
+    const query = new Parse.Query('SecretClass');
+    query.watch('secretObj.nested.deep.key');
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+    );
+  });
+
+  it('should allow LiveQuery subscription with non-protected field in watch', async () => {
+    const query = new Parse.Query('SecretClass');
+    query.watch('publicField');
+    const subscription = await query.subscribe();
+    await Promise.all([
+      new Promise(resolve => {
+        subscription.on('update', object => {
+          expect(object.get('secretObj')).toBeUndefined();
+          expect(object.get('publicField')).toBe('updated');
+          resolve();
+        });
+      }),
+      obj.save({ publicField: 'updated' }, { useMasterKey: true }),
+    ]);
+  });
+
+  it('should not deliver update event when only non-watched field changes', async () => {
+    const query = new Parse.Query('SecretClass');
+    query.watch('publicField');
+    const subscription = await query.subscribe();
+    const updateSpy = jasmine.createSpy('update');
+    subscription.on('update', updateSpy);
+
+    // Change a field that is NOT in the watch list
+    obj.set('secretObj', { apiKey: 'ROTATED_KEY', score: 99 });
+    await obj.save(null, { useMasterKey: true });
+    await sleep(500);
+    expect(updateSpy).not.toHaveBeenCalled();
+  });
+
+});

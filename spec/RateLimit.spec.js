@@ -863,6 +863,169 @@ describe('rate limit', () => {
     });
   });
 
+  describe('method override bypass', () => {
+    it('should enforce rate limit when _method override attempts to change POST to GET', async () => {
+      Parse.Cloud.beforeLogin(() => {}, {
+        rateLimit: {
+          requestTimeWindow: 10000,
+          requestCount: 1,
+          errorResponseMessage: 'Too many requests',
+          includeInternalRequests: true,
+        },
+      });
+      await Parse.User.signUp('testuser', 'password');
+      // First login via POST — should succeed
+      const res1 = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/login',
+        body: JSON.stringify({ username: 'testuser', password: 'password' }),
+      });
+      expect(res1.data.username).toBe('testuser');
+      // Second login via POST with _method:GET — should still be rate limited
+      const res2 = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/login',
+        body: JSON.stringify({ _method: 'GET', username: 'testuser', password: 'password' }),
+      }).catch(e => e);
+      expect(res2.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many requests',
+      });
+    });
+
+    it('should allow _method override with PUT', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/classes/Test/*path',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            requestMethods: 'PUT',
+            errorResponseMessage: 'Too many requests',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      const obj = new Parse.Object('Test');
+      await obj.save();
+      // Update via POST with _method:PUT — should succeed and count toward rate limit
+      await request({
+        method: 'POST',
+        headers,
+        url: `http://localhost:8378/1/classes/Test/${obj.id}`,
+        body: JSON.stringify({ _method: 'PUT', key: 'value1' }),
+      });
+      // Second update via POST with _method:PUT — should be rate limited
+      const res = await request({
+        method: 'POST',
+        headers,
+        url: `http://localhost:8378/1/classes/Test/${obj.id}`,
+        body: JSON.stringify({ _method: 'PUT', key: 'value2' }),
+      }).catch(e => e);
+      expect(res.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many requests',
+      });
+    });
+
+    it('should allow _method override with DELETE', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/classes/Test/*path',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            requestMethods: 'DELETE',
+            errorResponseMessage: 'Too many requests',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      const obj1 = new Parse.Object('Test');
+      await obj1.save();
+      const obj2 = new Parse.Object('Test');
+      await obj2.save();
+      // Delete via POST with _method:DELETE — should succeed
+      await request({
+        method: 'POST',
+        headers,
+        url: `http://localhost:8378/1/classes/Test/${obj1.id}`,
+        body: JSON.stringify({ _method: 'DELETE' }),
+      });
+      // Second delete via POST with _method:DELETE — should be rate limited
+      const res = await request({
+        method: 'POST',
+        headers,
+        url: `http://localhost:8378/1/classes/Test/${obj2.id}`,
+        body: JSON.stringify({ _method: 'DELETE' }),
+      }).catch(e => e);
+      expect(res.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many requests',
+      });
+    });
+
+    it('should ignore _method override with non-string type', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/classes/*path',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            requestMethods: 'POST',
+            errorResponseMessage: 'Too many requests',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      // POST with _method as number — should be ignored and treated as POST
+      const obj = new Parse.Object('Test');
+      await obj.save();
+      const res = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/classes/Test',
+        body: JSON.stringify({ _method: 123, key: 'value' }),
+      }).catch(e => e);
+      expect(res.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many requests',
+      });
+    });
+  });
+
+  describe('batch method bypass', () => {
+    it('should enforce POST rate limit on batch sub-requests using GET method for login', async () => {
+      Parse.Cloud.beforeLogin(() => {}, {
+        rateLimit: {
+          requestTimeWindow: 10000,
+          requestCount: 1,
+          errorResponseMessage: 'Too many requests',
+          includeInternalRequests: true,
+        },
+      });
+      await Parse.User.signUp('testuser', 'password');
+      // Batch with 2 login sub-requests using GET — should be rate limited
+      const res = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/batch',
+        body: JSON.stringify({
+          requests: [
+            { method: 'GET', path: '/1/login', body: { username: 'testuser', password: 'password' } },
+            { method: 'GET', path: '/1/login', body: { username: 'testuser', password: 'password' } },
+          ],
+        }),
+      }).catch(e => e);
+      expect(res.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many requests',
+      });
+    });
+  });
+
   describe_only(() => {
     return process.env.PARSE_SERVER_TEST_CACHE === 'redis';
   })('with RedisCache', function () {

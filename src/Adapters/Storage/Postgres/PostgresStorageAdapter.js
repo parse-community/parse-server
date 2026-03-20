@@ -486,6 +486,18 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
             if (fieldName.indexOf('.') >= 0) {
               return;
             }
+            const fieldType = schema.fields[fieldName]?.type;
+            if (fieldType === 'String') {
+              const operatorName = notIn ? '$nin' : '$in';
+              for (const elem of baseArray) {
+                if (elem != null && typeof elem !== 'string') {
+                  throw new Parse.Error(
+                    Parse.Error.INVALID_QUERY,
+                    `${operatorName} element type mismatch: expected string for field "${fieldName}"`
+                  );
+                }
+              }
+            }
             const inPatterns = [];
             values.push(fieldName);
             baseArray.forEach((listElem, listIndex) => {

@@ -67,6 +67,11 @@ async function handleBatch(router, req) {
   if (!Array.isArray(req.body?.requests)) {
     throw new Parse.Error(Parse.Error.INVALID_JSON, 'requests must be an array');
   }
+  for (const restRequest of req.body.requests) {
+    if (!restRequest || typeof restRequest !== 'object' || typeof restRequest.path !== 'string') {
+      throw new Parse.Error(Parse.Error.INVALID_JSON, 'batch request path must be a string');
+    }
+  }
 
   // The batch paths are all from the root of our domain.
   // That means they include the API prefix, that the API is mounted
@@ -97,6 +102,7 @@ async function handleBatch(router, req) {
       const fakeReq = {
         ip: req.ip || req.config?.ip || '127.0.0.1',
         method: (restRequest.method || 'GET').toUpperCase(),
+        _batchOriginalMethod: 'POST',
         config: req.config,
         auth: req.auth,
         info: req.info,

@@ -29,7 +29,11 @@ export class AggregateRouter extends ClassesRouter {
     }
     options.pipeline = AggregateRouter.getPipeline(body);
     if (typeof body.where === 'string') {
-      body.where = JSON.parse(body.where);
+      try {
+        body.where = JSON.parse(body.where);
+      } catch {
+        throw new Parse.Error(Parse.Error.INVALID_JSON, 'where parameter is not valid JSON');
+      }
     }
     try {
       const response = await rest.find(

@@ -30,7 +30,11 @@ export class ClassesRouter extends PromiseRouter {
       options.redirectClassNameForKey = String(body.redirectClassNameForKey);
     }
     if (typeof body.where === 'string') {
-      body.where = JSON.parse(body.where);
+      try {
+        body.where = JSON.parse(body.where);
+      } catch {
+        throw new Parse.Error(Parse.Error.INVALID_JSON, 'where parameter is not valid JSON');
+      }
     }
     return rest
       .find(

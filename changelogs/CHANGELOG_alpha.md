@@ -1,3 +1,73 @@
+# [9.6.0-alpha.43](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.42...9.6.0-alpha.43) (2026-03-20)
+
+
+### Bug Fixes
+
+* Protected field change detection oracle via LiveQuery watch parameter ([GHSA-qpc3-fg4j-8hgm](https://github.com/parse-community/parse-server/security/advisories/GHSA-qpc3-fg4j-8hgm)) ([#10253](https://github.com/parse-community/parse-server/issues/10253)) ([0c0a0a5](https://github.com/parse-community/parse-server/commit/0c0a0a5a37ca821d2553119f2cb3be35322eda4b))
+
+# [9.6.0-alpha.42](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.41...9.6.0-alpha.42) (2026-03-20)
+
+
+### Bug Fixes
+
+* LiveQuery bypasses CLP pointer permission enforcement ([GHSA-fph2-r4qg-9576](https://github.com/parse-community/parse-server/security/advisories/GHSA-fph2-r4qg-9576)) ([#10250](https://github.com/parse-community/parse-server/issues/10250)) ([6c3317a](https://github.com/parse-community/parse-server/commit/6c3317aca6eb618ac48f999021ae3ef7766ad1ea))
+
+# [9.6.0-alpha.41](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.40...9.6.0-alpha.41) (2026-03-19)
+
+
+### Bug Fixes
+
+* Auth provider validation bypass on login via partial authData ([GHSA-pfj7-wv7c-22pr](https://github.com/parse-community/parse-server/security/advisories/GHSA-pfj7-wv7c-22pr)) ([#10246](https://github.com/parse-community/parse-server/issues/10246)) ([98f4ba5](https://github.com/parse-community/parse-server/commit/98f4ba5bcf2c199bfe6225f672e8edcd08ba732d))
+
+# [9.6.0-alpha.40](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.39...9.6.0-alpha.40) (2026-03-19)
+
+
+### Bug Fixes
+
+* Email verification resend page leaks user existence (GHSA-h29g-q5c2-9h4f) ([#10238](https://github.com/parse-community/parse-server/issues/10238)) ([fbda4cb](https://github.com/parse-community/parse-server/commit/fbda4cb0c5cbc8fad08a216823b6b64d4ae289c3))
+
+# [9.6.0-alpha.39](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.38...9.6.0-alpha.39) (2026-03-18)
+
+
+### Bug Fixes
+
+* Locale parameter path traversal in pages router ([#10242](https://github.com/parse-community/parse-server/issues/10242)) ([01fb6a9](https://github.com/parse-community/parse-server/commit/01fb6a972cf2437ba965dff590afec50184cf6e1))
+
+# [9.6.0-alpha.38](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.37...9.6.0-alpha.38) (2026-03-18)
+
+
+### Bug Fixes
+
+* Sanitize control characters in page parameter response headers ([#10237](https://github.com/parse-community/parse-server/issues/10237)) ([337ffd6](https://github.com/parse-community/parse-server/commit/337ffd65ccf94495a54cd883c5e8fa7a3892606c))
+
+# [9.6.0-alpha.37](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.36...9.6.0-alpha.37) (2026-03-18)
+
+
+### Bug Fixes
+
+* Security fix fast-xml-parser from 5.5.5 to 5.5.6 ([#10235](https://github.com/parse-community/parse-server/issues/10235)) ([f521576](https://github.com/parse-community/parse-server/commit/f521576143336334aad2cbac82c3f368afe8f706))
+
+# [9.6.0-alpha.36](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.35...9.6.0-alpha.36) (2026-03-18)
+
+
+### Bug Fixes
+
+* Rate limit bypass via HTTP method override and batch method spoofing ([#10234](https://github.com/parse-community/parse-server/issues/10234)) ([7d72d26](https://github.com/parse-community/parse-server/commit/7d72d264c03b63b463664d545c8c57f4851e4287))
+
+# [9.6.0-alpha.35](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.34...9.6.0-alpha.35) (2026-03-17)
+
+
+### Bug Fixes
+
+* Protected fields leak via LiveQuery afterEvent trigger ([GHSA-5hmj-jcgp-6hff](https://github.com/parse-community/parse-server/security/advisories/GHSA-5hmj-jcgp-6hff)) ([#10232](https://github.com/parse-community/parse-server/issues/10232)) ([6648500](https://github.com/parse-community/parse-server/commit/6648500428f33fb8ba336757702644d94ca0796a))
+
+# [9.6.0-alpha.34](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.33...9.6.0-alpha.34) (2026-03-17)
+
+
+### Bug Fixes
+
+* Input type validation for query operators and batch path ([#10230](https://github.com/parse-community/parse-server/issues/10230)) ([a628911](https://github.com/parse-community/parse-server/commit/a6289118d268d5dd5c453a22e99a48d36dcc81da))
+
 # [9.6.0-alpha.33](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.32...9.6.0-alpha.33) (2026-03-17)
 
 
