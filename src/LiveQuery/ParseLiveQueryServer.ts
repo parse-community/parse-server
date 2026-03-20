@@ -1050,7 +1050,7 @@ class ParseLiveQueryServer {
         op
       );
 
-      // Check protected fields in WHERE clause
+      // Check protected fields in WHERE clause and WATCH parameter
       if (!client.hasMasterKey) {
         const auth = request.user ? { user: request.user, userRoles: [] } : {};
         const protectedFields =
@@ -1082,6 +1082,17 @@ class ParseLiveQueryServer {
             }
           };
           checkWhere(request.query.where);
+        }
+        if (protectedFields.length > 0 && Array.isArray(request.query.watch)) {
+          for (const watchField of request.query.watch) {
+            const rootField = watchField.split('.')[0];
+            if (protectedFields.includes(watchField) || protectedFields.includes(rootField)) {
+              throw new Parse.Error(
+                Parse.Error.OPERATION_FORBIDDEN,
+                'Permission denied'
+              );
+            }
+          }
         }
       }
 

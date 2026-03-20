@@ -3416,3 +3416,103 @@ describe('(GHSA-fph2-r4qg-9576) LiveQuery bypasses CLP pointer permission enforc
     expect(createSpyC).not.toHaveBeenCalled();
   });
 });
+
+describe('(GHSA-qpc3-fg4j-8hgm) Protected field change detection oracle via LiveQuery watch parameter', () => {
+  const { sleep } = require('../lib/TestUtils');
+  let obj;
+
+  beforeEach(async () => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    await reconfigureServer({
+      liveQuery: { classNames: ['SecretClass'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const config = Config.get(Parse.applicationId);
+    const schemaController = await config.database.loadSchema();
+    await schemaController.addClassIfNotExists('SecretClass', {
+      secretObj: { type: 'Object' },
+      publicField: { type: 'String' },
+    });
+    await schemaController.updateClass(
+      'SecretClass',
+      {},
+      {
+        find: { '*': true },
+        get: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+        protectedFields: { '*': ['secretObj'] },
+      }
+    );
+
+    obj = new Parse.Object('SecretClass');
+    obj.set('secretObj', { apiKey: 'SENSITIVE_KEY_123', score: 42 });
+    obj.set('publicField', 'visible');
+    await obj.save(null, { useMasterKey: true });
+  });
+
+  afterEach(async () => {
+    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+    if (client) {
+      await client.close();
+    }
+  });
+
+  it('should reject LiveQuery subscription with protected field in watch', async () => {
+    const query = new Parse.Query('SecretClass');
+    query.watch('secretObj');
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+    );
+  });
+
+  it('should reject LiveQuery subscription with dot-notation on protected field in watch', async () => {
+    const query = new Parse.Query('SecretClass');
+    query.watch('secretObj.apiKey');
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+    );
+  });
+
+  it('should reject LiveQuery subscription with deeply nested dot-notation on protected field in watch', async () => {
+    const query = new Parse.Query('SecretClass');
+    query.watch('secretObj.nested.deep.key');
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+    );
+  });
+
+  it('should allow LiveQuery subscription with non-protected field in watch', async () => {
+    const query = new Parse.Query('SecretClass');
+    query.watch('publicField');
+    const subscription = await query.subscribe();
+    await Promise.all([
+      new Promise(resolve => {
+        subscription.on('update', object => {
+          expect(object.get('secretObj')).toBeUndefined();
+          expect(object.get('publicField')).toBe('updated');
+          resolve();
+        });
+      }),
+      obj.save({ publicField: 'updated' }, { useMasterKey: true }),
+    ]);
+  });
+
+  it('should not deliver update event when only non-watched field changes', async () => {
+    const query = new Parse.Query('SecretClass');
+    query.watch('publicField');
+    const subscription = await query.subscribe();
+    const updateSpy = jasmine.createSpy('update');
+    subscription.on('update', updateSpy);
+
+    // Change a field that is NOT in the watch list
+    obj.set('secretObj', { apiKey: 'ROTATED_KEY', score: 99 });
+    await obj.save(null, { useMasterKey: true });
+    await sleep(500);
+    expect(updateSpy).not.toHaveBeenCalled();
+  });
+});
