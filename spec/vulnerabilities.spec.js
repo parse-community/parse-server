@@ -3928,3 +3928,119 @@ describe('(GHSA-qpc3-fg4j-8hgm) Protected field change detection oracle via Live
   });
 
 });
+
+describe('(GHSA-6qh5-m6g3-xhq6) LiveQuery query depth DoS via deeply nested subscription', () => {
+  afterEach(async () => {
+    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+    if (client) {
+      await client.close();
+    }
+  });
+
+  it('should reject LiveQuery subscription with deeply nested $or when queryDepth is set', async () => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    await reconfigureServer({
+      liveQuery: { classNames: ['TestClass'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+      requestComplexity: { queryDepth: 10 },
+    });
+    const query = new Parse.Query('TestClass');
+    let where = { field: 'value' };
+    for (let i = 0; i < 15; i++) {
+      where = { $or: [where] };
+    }
+    query._where = where;
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      jasmine.objectContaining({
+        code: Parse.Error.INVALID_QUERY,
+        message: jasmine.stringMatching(/Query condition nesting depth exceeds maximum allowed depth/),
+      })
+    );
+  });
+
+  it('should reject LiveQuery subscription with deeply nested $and when queryDepth is set', async () => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    await reconfigureServer({
+      liveQuery: { classNames: ['TestClass'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+      requestComplexity: { queryDepth: 10 },
+    });
+    const query = new Parse.Query('TestClass');
+    let where = { field: 'value' };
+    for (let i = 0; i < 50; i++) {
+      where = { $and: [where] };
+    }
+    query._where = where;
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      jasmine.objectContaining({
+        code: Parse.Error.INVALID_QUERY,
+        message: jasmine.stringMatching(/Query condition nesting depth exceeds maximum allowed depth/),
+      })
+    );
+  });
+
+  it('should reject LiveQuery subscription with deeply nested $nor when queryDepth is set', async () => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    await reconfigureServer({
+      liveQuery: { classNames: ['TestClass'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+      requestComplexity: { queryDepth: 10 },
+    });
+    const query = new Parse.Query('TestClass');
+    let where = { field: 'value' };
+    for (let i = 0; i < 50; i++) {
+      where = { $nor: [where] };
+    }
+    query._where = where;
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      jasmine.objectContaining({
+        code: Parse.Error.INVALID_QUERY,
+        message: jasmine.stringMatching(/Query condition nesting depth exceeds maximum allowed depth/),
+      })
+    );
+  });
+
+  it('should allow LiveQuery subscription within the depth limit', async () => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    await reconfigureServer({
+      liveQuery: { classNames: ['TestClass'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+      requestComplexity: { queryDepth: 10 },
+    });
+    const query = new Parse.Query('TestClass');
+    let where = { field: 'value' };
+    for (let i = 0; i < 5; i++) {
+      where = { $or: [where] };
+    }
+    query._where = where;
+    const subscription = await query.subscribe();
+    expect(subscription).toBeDefined();
+  });
+
+  it('should allow LiveQuery subscription when queryDepth is disabled', async () => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    await reconfigureServer({
+      liveQuery: { classNames: ['TestClass'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+      requestComplexity: { queryDepth: -1 },
+    });
+    const query = new Parse.Query('TestClass');
+    let where = { field: 'value' };
+    for (let i = 0; i < 15; i++) {
+      where = { $or: [where] };
+    }
+    query._where = where;
+    const subscription = await query.subscribe();
+    expect(subscription).toBeDefined();
+  });
+});
