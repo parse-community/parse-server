@@ -3357,6 +3357,13 @@ describe('(GHSA-fph2-r4qg-9576) LiveQuery bypasses CLP pointer permission enforc
     Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
   });
 
+  afterEach(async () => {
+    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+    if (client) {
+      await client.close();
+    }
+  });
+
   async function updateCLP(className, permissions) {
     const response = await fetch(Parse.serverURL + '/schemas/' + className, {
       method: 'PUT',
