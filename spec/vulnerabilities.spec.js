@@ -3353,6 +3353,10 @@ describe('(GHSA-5hmj-jcgp-6hff) Protected fields leak via LiveQuery afterEvent t
 describe('(GHSA-fph2-r4qg-9576) LiveQuery bypasses CLP pointer permission enforcement', () => {
   const { sleep } = require('../lib/TestUtils');
 
+  beforeEach(() => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+  });
+
   async function updateCLP(className, permissions) {
     const response = await fetch(Parse.serverURL + '/schemas/' + className, {
       method: 'PUT',

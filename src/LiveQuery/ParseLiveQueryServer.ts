@@ -211,13 +211,16 @@ class ParseLiveQueryServer {
           const op = this._getCLPOperation(subscription.query);
           let res: any = {};
           try {
-            await this._matchesCLP(
+            const matchesCLP = await this._matchesCLP(
               classLevelPermissions,
               message.currentParseObject,
               client,
               requestId,
               op
             );
+            if (matchesCLP === false) {
+              return null;
+            }
             const isMatched = await this._matchesACL(acl, client, requestId);
             if (!isMatched) {
               return null;
@@ -339,13 +342,16 @@ class ParseLiveQueryServer {
           }
           try {
             const op = this._getCLPOperation(subscription.query);
-            await this._matchesCLP(
+            const matchesCLP = await this._matchesCLP(
               classLevelPermissions,
               message.currentParseObject,
               client,
               requestId,
               op
             );
+            if (matchesCLP === false) {
+              return;
+            }
             const [isOriginalMatched, isCurrentMatched] = await Promise.all([
               originalACLCheckingPromise,
               currentACLCheckingPromise,
@@ -673,7 +679,9 @@ class ParseLiveQueryServer {
       aclGroup,
       op
     );
-    // Enforce pointer permissions that validatePermission defers
+    // Enforce pointer permissions that validatePermission defers.
+    // Returns false to silently skip the event (like ACL), rather than
+    // throwing which would push errors to the client and log noise.
     if (!client.hasMasterKey && classLevelPermissions) {
       const permissionField =
         ['get', 'find', 'count'].indexOf(op) > -1 ? 'readUserFields' : 'writeUserFields';
@@ -694,10 +702,7 @@ class ParseLiveQueryServer {
           !SchemaController.testPermissions(classLevelPermissions, aclGroup, op)
         ) {
           if (!userId) {
-            throw new Parse.Error(
-              Parse.Error.OPERATION_FORBIDDEN,
-              'Permission denied for this action.'
-            );
+            return false;
           }
           // Check if any pointer field points to the current user
           const hasAccess = pointerFields.some(field => {
@@ -729,10 +734,7 @@ class ParseLiveQueryServer {
             return false;
           });
           if (!hasAccess) {
-            throw new Parse.Error(
-              Parse.Error.OPERATION_FORBIDDEN,
-              'Permission denied for this action.'
-            );
+            return false;
           }
         }
       }
