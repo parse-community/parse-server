@@ -3115,3 +3115,304 @@ describe('(GHSA-5hmj-jcgp-6hff) Protected fields leak via LiveQuery afterEvent t
     });
   });
 });
+
+describe('(GHSA-fph2-r4qg-9576) LiveQuery bypasses CLP pointer permission enforcement', () => {
+  const { sleep } = require('../lib/TestUtils');
+
+  beforeEach(() => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+  });
+
+  afterEach(async () => {
+    try {
+      const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+      if (client) {
+        await client.close();
+      }
+    } catch (e) {
+      // Ignore cleanup errors when client is not initialized
+    }
+  });
+
+  async function updateCLP(className, permissions) {
+    const response = await fetch(Parse.serverURL + '/schemas/' + className, {
+      method: 'PUT',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ classLevelPermissions: permissions }),
+    });
+    const body = await response.json();
+    if (body.error) {
+      throw body;
+    }
+    return body;
+  }
+
+  it('should not deliver LiveQuery events to user not in readUserFields pointer', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['PrivateMessage'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    // Create users using master key to avoid session management issues
+    const userA = new Parse.User();
+    userA.setUsername('userA_pointer');
+    userA.setPassword('password123');
+    await userA.signUp();
+    await Parse.User.logOut();
+
+    // User B stays logged in for the subscription
+    const userB = new Parse.User();
+    userB.setUsername('userB_pointer');
+    userB.setPassword('password456');
+    await userB.signUp();
+
+    // Create schema by saving an object with owner pointer, then set CLP
+    const seed = new Parse.Object('PrivateMessage');
+    seed.set('owner', userA);
+    await seed.save(null, { useMasterKey: true });
+    await seed.destroy({ useMasterKey: true });
+
+    await updateCLP('PrivateMessage', {
+      create: { '*': true },
+      find: {},
+      get: {},
+      readUserFields: ['owner'],
+    });
+
+    // User B subscribes — should NOT receive events for User A's objects
+    const query = new Parse.Query('PrivateMessage');
+    const subscription = await query.subscribe(userB.getSessionToken());
+
+    const createSpy = jasmine.createSpy('create');
+    const enterSpy = jasmine.createSpy('enter');
+    subscription.on('create', createSpy);
+    subscription.on('enter', enterSpy);
+
+    // Create a message owned by User A
+    const msg = new Parse.Object('PrivateMessage');
+    msg.set('content', 'secret message');
+    msg.set('owner', userA);
+    await msg.save(null, { useMasterKey: true });
+
+    await sleep(500);
+
+    // User B should NOT have received the create event
+    expect(createSpy).not.toHaveBeenCalled();
+    expect(enterSpy).not.toHaveBeenCalled();
+  });
+
+  it('should deliver LiveQuery events to user in readUserFields pointer', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['PrivateMessage2'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    // User A stays logged in for the subscription
+    const userA = new Parse.User();
+    userA.setUsername('userA_owner');
+    userA.setPassword('password123');
+    await userA.signUp();
+
+    // Create schema by saving an object with owner pointer
+    const seed = new Parse.Object('PrivateMessage2');
+    seed.set('owner', userA);
+    await seed.save(null, { useMasterKey: true });
+    await seed.destroy({ useMasterKey: true });
+
+    await updateCLP('PrivateMessage2', {
+      create: { '*': true },
+      find: {},
+      get: {},
+      readUserFields: ['owner'],
+    });
+
+    // User A subscribes — SHOULD receive events for their own objects
+    const query = new Parse.Query('PrivateMessage2');
+    const subscription = await query.subscribe(userA.getSessionToken());
+
+    const createSpy = jasmine.createSpy('create');
+    subscription.on('create', createSpy);
+
+    // Create a message owned by User A
+    const msg = new Parse.Object('PrivateMessage2');
+    msg.set('content', 'my own message');
+    msg.set('owner', userA);
+    await msg.save(null, { useMasterKey: true });
+
+    await sleep(500);
+
+    // User A SHOULD have received the create event
+    expect(createSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('should not deliver LiveQuery events when find uses pointerFields', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['PrivateDoc'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const userA = new Parse.User();
+    userA.setUsername('userA_doc');
+    userA.setPassword('password123');
+    await userA.signUp();
+    await Parse.User.logOut();
+
+    // User B stays logged in for the subscription
+    const userB = new Parse.User();
+    userB.setUsername('userB_doc');
+    userB.setPassword('password456');
+    await userB.signUp();
+
+    // Create schema by saving an object with recipient pointer
+    const seed = new Parse.Object('PrivateDoc');
+    seed.set('recipient', userA);
+    await seed.save(null, { useMasterKey: true });
+    await seed.destroy({ useMasterKey: true });
+
+    // Set CLP with pointerFields instead of readUserFields
+    await updateCLP('PrivateDoc', {
+      create: { '*': true },
+      find: { pointerFields: ['recipient'] },
+      get: { pointerFields: ['recipient'] },
+    });
+
+    // User B subscribes
+    const query = new Parse.Query('PrivateDoc');
+    const subscription = await query.subscribe(userB.getSessionToken());
+
+    const createSpy = jasmine.createSpy('create');
+    subscription.on('create', createSpy);
+
+    // Create doc with recipient = User A (not User B)
+    const doc = new Parse.Object('PrivateDoc');
+    doc.set('title', 'confidential');
+    doc.set('recipient', userA);
+    await doc.save(null, { useMasterKey: true });
+
+    await sleep(500);
+
+    // User B should NOT receive events for User A's document
+    expect(createSpy).not.toHaveBeenCalled();
+  });
+
+  it('should not deliver LiveQuery events to unauthenticated users for pointer-protected classes', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['SecureItem'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const userA = new Parse.User();
+    userA.setUsername('userA_secure');
+    userA.setPassword('password123');
+    await userA.signUp();
+    await Parse.User.logOut();
+
+    // Create schema
+    const seed = new Parse.Object('SecureItem');
+    seed.set('owner', userA);
+    await seed.save(null, { useMasterKey: true });
+    await seed.destroy({ useMasterKey: true });
+
+    await updateCLP('SecureItem', {
+      create: { '*': true },
+      find: {},
+      get: {},
+      readUserFields: ['owner'],
+    });
+
+    // Unauthenticated subscription
+    const query = new Parse.Query('SecureItem');
+    const subscription = await query.subscribe();
+
+    const createSpy = jasmine.createSpy('create');
+    subscription.on('create', createSpy);
+
+    const item = new Parse.Object('SecureItem');
+    item.set('data', 'private');
+    item.set('owner', userA);
+    await item.save(null, { useMasterKey: true });
+
+    await sleep(500);
+
+    expect(createSpy).not.toHaveBeenCalled();
+  });
+
+  it('should handle readUserFields with array of pointers', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['SharedDoc'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const userA = new Parse.User();
+    userA.setUsername('userA_shared');
+    userA.setPassword('password123');
+    await userA.signUp();
+    await Parse.User.logOut();
+
+    // User B — don't log out, session must remain valid
+    const userB = new Parse.User();
+    userB.setUsername('userB_shared');
+    userB.setPassword('password456');
+    await userB.signUp();
+    const userBSessionToken = userB.getSessionToken();
+
+    // User C — signUp changes current user to C, but B's session stays valid
+    const userC = new Parse.User();
+    userC.setUsername('userC_shared');
+    userC.setPassword('password789');
+    await userC.signUp();
+    const userCSessionToken = userC.getSessionToken();
+
+    // Create schema with array field
+    const seed = new Parse.Object('SharedDoc');
+    seed.set('collaborators', [userA]);
+    await seed.save(null, { useMasterKey: true });
+    await seed.destroy({ useMasterKey: true });
+
+    await updateCLP('SharedDoc', {
+      create: { '*': true },
+      find: {},
+      get: {},
+      readUserFields: ['collaborators'],
+    });
+
+    // User B subscribes — is in the collaborators array
+    const queryB = new Parse.Query('SharedDoc');
+    const subscriptionB = await queryB.subscribe(userBSessionToken);
+    const createSpyB = jasmine.createSpy('createB');
+    subscriptionB.on('create', createSpyB);
+
+    // User C subscribes — is NOT in the collaborators array
+    const queryC = new Parse.Query('SharedDoc');
+    const subscriptionC = await queryC.subscribe(userCSessionToken);
+    const createSpyC = jasmine.createSpy('createC');
+    subscriptionC.on('create', createSpyC);
+
+    // Create doc with collaborators = [userA, userB] (not userC)
+    const doc = new Parse.Object('SharedDoc');
+    doc.set('title', 'team doc');
+    doc.set('collaborators', [userA, userB]);
+    await doc.save(null, { useMasterKey: true });
+
+    await sleep(500);
+
+    // User B SHOULD receive the event (in collaborators array)
+    expect(createSpyB).toHaveBeenCalledTimes(1);
+    // User C should NOT receive the event
+    expect(createSpyC).not.toHaveBeenCalled();
+  });
+});
