@@ -1,3 +1,10 @@
+## [8.6.54](https://github.com/parse-community/parse-server/compare/8.6.53...8.6.54) (2026-03-20)
+
+
+### Bug Fixes
+
+* Protected field change detection oracle via LiveQuery watch parameter ([GHSA-qpc3-fg4j-8hgm](https://github.com/parse-community/parse-server/security/advisories/GHSA-qpc3-fg4j-8hgm)) ([#10254](https://github.com/parse-community/parse-server/issues/10254)) ([c62eaca](https://github.com/parse-community/parse-server/commit/c62eacaf38de86913f09240583448360b1cc8e67))
+
 ## [8.6.53](https://github.com/parse-community/parse-server/compare/8.6.52...8.6.53) (2026-03-20)
 
 
