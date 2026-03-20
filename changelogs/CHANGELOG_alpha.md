@@ -1,3 +1,24 @@
+# [9.6.0-alpha.43](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.42...9.6.0-alpha.43) (2026-03-20)
+
+
+### Bug Fixes
+
+* Protected field change detection oracle via LiveQuery watch parameter ([GHSA-qpc3-fg4j-8hgm](https://github.com/parse-community/parse-server/security/advisories/GHSA-qpc3-fg4j-8hgm)) ([#10253](https://github.com/parse-community/parse-server/issues/10253)) ([0c0a0a5](https://github.com/parse-community/parse-server/commit/0c0a0a5a37ca821d2553119f2cb3be35322eda4b))
+
+# [9.6.0-alpha.42](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.41...9.6.0-alpha.42) (2026-03-20)
+
+
+### Bug Fixes
+
+* LiveQuery bypasses CLP pointer permission enforcement ([GHSA-fph2-r4qg-9576](https://github.com/parse-community/parse-server/security/advisories/GHSA-fph2-r4qg-9576)) ([#10250](https://github.com/parse-community/parse-server/issues/10250)) ([6c3317a](https://github.com/parse-community/parse-server/commit/6c3317aca6eb618ac48f999021ae3ef7766ad1ea))
+
+# [9.6.0-alpha.41](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.40...9.6.0-alpha.41) (2026-03-19)
+
+
+### Bug Fixes
+
+* Auth provider validation bypass on login via partial authData ([GHSA-pfj7-wv7c-22pr](https://github.com/parse-community/parse-server/security/advisories/GHSA-pfj7-wv7c-22pr)) ([#10246](https://github.com/parse-community/parse-server/issues/10246)) ([98f4ba5](https://github.com/parse-community/parse-server/commit/98f4ba5bcf2c199bfe6225f672e8edcd08ba732d))
+
 # [9.6.0-alpha.40](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.39...9.6.0-alpha.40) (2026-03-19)
 
 
