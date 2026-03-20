@@ -659,8 +659,10 @@ class ParseLiveQueryServer {
   ): Promise<any> {
     const subscriptionInfo = client.getSubscriptionInfo(requestId);
     const aclGroup = ['*'];
+    let userId;
     if (typeof subscriptionInfo !== 'undefined') {
-      const { userId } = await this.getAuthForSessionToken(subscriptionInfo.sessionToken);
+      const result = await this.getAuthForSessionToken(subscriptionInfo.sessionToken);
+      userId = result.userId;
       if (userId) {
         aclGroup.push(userId);
       }
@@ -671,6 +673,70 @@ class ParseLiveQueryServer {
       aclGroup,
       op
     );
+    // Enforce pointer permissions that validatePermission defers
+    if (!client.hasMasterKey && classLevelPermissions) {
+      const permissionField =
+        ['get', 'find', 'count'].indexOf(op) > -1 ? 'readUserFields' : 'writeUserFields';
+      const pointerFields = [];
+      if (classLevelPermissions[op]?.pointerFields) {
+        pointerFields.push(...classLevelPermissions[op].pointerFields);
+      }
+      if (Array.isArray(classLevelPermissions[permissionField])) {
+        for (const field of classLevelPermissions[permissionField]) {
+          if (!pointerFields.includes(field)) {
+            pointerFields.push(field);
+          }
+        }
+      }
+      if (pointerFields.length > 0) {
+        // If public or user-specific permission already grants access, skip pointer check
+        if (
+          !SchemaController.testPermissions(classLevelPermissions, aclGroup, op)
+        ) {
+          if (!userId) {
+            throw new Parse.Error(
+              Parse.Error.OPERATION_FORBIDDEN,
+              'Permission denied for this action.'
+            );
+          }
+          // Check if any pointer field points to the current user
+          const hasAccess = pointerFields.some(field => {
+            const value =
+              typeof object.get === 'function' ? object.get(field) : object[field];
+            if (!value) {
+              return false;
+            }
+            // Handle Parse.Object pointer (has .id)
+            if (value.id) {
+              return value.id === userId;
+            }
+            // Handle raw pointer JSON (has .objectId)
+            if (value.objectId) {
+              return value.objectId === userId;
+            }
+            // Handle array of pointers
+            if (Array.isArray(value)) {
+              return value.some(item => {
+                if (item.id) {
+                  return item.id === userId;
+                }
+                if (item.objectId) {
+                  return item.objectId === userId;
+                }
+                return false;
+              });
+            }
+            return false;
+          });
+          if (!hasAccess) {
+            throw new Parse.Error(
+              Parse.Error.OPERATION_FORBIDDEN,
+              'Permission denied for this action.'
+            );
+          }
+        }
+      }
+    }
   }
 
   async _filterSensitiveData(
