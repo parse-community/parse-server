@@ -674,6 +674,12 @@ module.exports.RateLimitOptions = {
   },
 };
 module.exports.RequestComplexityOptions = {
+  batchRequestLimit: {
+    env: 'PARSE_SERVER_REQUEST_COMPLEXITY_BATCH_REQUEST_LIMIT',
+    help: 'Maximum number of sub-requests in a single batch request. Set to `-1` to disable. Default is `-1`.',
+    action: parsers.numberParser('batchRequestLimit'),
+    default: -1,
+  },
   graphQLDepth: {
     env: 'PARSE_SERVER_REQUEST_COMPLEXITY_GRAPHQL_DEPTH',
     help: 'Maximum depth of GraphQL field selections. Set to `-1` to disable. Default is `-1`.',
