@@ -2278,6 +2278,107 @@ describe('(GHSA-w54v-hf9p-8856) User enumeration via email verification endpoint
   });
 });
 
+describe('(GHSA-4m9m-p9j9-5hjw) User enumeration via signup endpoint', () => {
+  async function updateCLP(permissions) {
+    const response = await fetch(Parse.serverURL + '/schemas/_User', {
+      method: 'PUT',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ classLevelPermissions: permissions }),
+    });
+    const body = await response.json();
+    if (body.error) {
+      throw body;
+    }
+  }
+
+  it('does not reveal existing username when public create CLP is disabled', async () => {
+    const user = new Parse.User();
+    user.setUsername('existingUser');
+    user.setPassword('password123');
+    await user.signUp();
+    await Parse.User.logOut();
+
+    await updateCLP({
+      get: { '*': true },
+      find: { '*': true },
+      create: {},
+      update: { '*': true },
+      delete: { '*': true },
+      addField: {},
+    });
+
+    const response = await request({
+      url: 'http://localhost:8378/1/classes/_User',
+      method: 'POST',
+      body: { username: 'existingUser', password: 'otherpassword' },
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+    }).catch(e => e);
+    expect(response.data.code).not.toBe(Parse.Error.USERNAME_TAKEN);
+    expect(response.data.error).not.toContain('Account already exists');
+    expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+  });
+
+  it('does not reveal existing email when public create CLP is disabled', async () => {
+    const user = new Parse.User();
+    user.setUsername('emailUser');
+    user.setPassword('password123');
+    user.setEmail('existing@example.com');
+    await user.signUp();
+    await Parse.User.logOut();
+
+    await updateCLP({
+      get: { '*': true },
+      find: { '*': true },
+      create: {},
+      update: { '*': true },
+      delete: { '*': true },
+      addField: {},
+    });
+
+    const response = await request({
+      url: 'http://localhost:8378/1/classes/_User',
+      method: 'POST',
+      body: { username: 'newUser', password: 'otherpassword', email: 'existing@example.com' },
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+    }).catch(e => e);
+    expect(response.data.code).not.toBe(Parse.Error.EMAIL_TAKEN);
+    expect(response.data.error).not.toContain('Account already exists');
+    expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+  });
+
+  it('still returns username taken error when public create CLP is enabled', async () => {
+    const user = new Parse.User();
+    user.setUsername('existingUser');
+    user.setPassword('password123');
+    await user.signUp();
+    await Parse.User.logOut();
+
+    const response = await request({
+      url: 'http://localhost:8378/1/classes/_User',
+      method: 'POST',
+      body: { username: 'existingUser', password: 'otherpassword' },
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+    }).catch(e => e);
+    expect(response.data.code).toBe(Parse.Error.USERNAME_TAKEN);
+  });
+});
+
 describe('(GHSA-c442-97qw-j6c6) SQL Injection via $regex query operator field name in PostgreSQL adapter', () => {
   const headers = {
     'Content-Type': 'application/json',
