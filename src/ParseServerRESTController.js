@@ -29,11 +29,20 @@ function getAuth(options = {}, config) {
   });
 }
 
-function jsonCopy(obj) {
-  if (obj === undefined) {
-    return undefined;
+function stripUndefined(obj) {
+  if (obj === null || obj === undefined || typeof obj !== 'object') {
+    return obj;
   }
-  return JSON.parse(JSON.stringify(obj));
+  if (Array.isArray(obj)) {
+    return obj.map(item => item === undefined ? null : stripUndefined(item));
+  }
+  const result = {};
+  for (const key of Object.keys(obj)) {
+    if (obj[key] !== undefined) {
+      result[key] = stripUndefined(obj[key]);
+    }
+  }
+  return result;
 }
 
 function ParseServerRESTController(applicationId, router) {
@@ -120,7 +129,7 @@ function ParseServerRESTController(applicationId, router) {
     return new Promise((resolve, reject) => {
       getAuth(options, config).then(auth => {
         const request = {
-          body: jsonCopy(data),
+          body: stripUndefined(data),
           config,
           auth,
           info: {
