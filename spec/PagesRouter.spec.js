@@ -1207,6 +1207,9 @@ describe('Pages Router', () => {
 
           // Both responses must have the same status — no differential oracle
           expect(existsResponse.status).toBe(notExistsResponse.status);
+          // Canary content must never be served
+          expect(existsResponse.text).not.toContain('canary');
+          expect(notExistsResponse.text).not.toContain('canary');
         } finally {
           await fs.rm(canaryDir, { recursive: true, force: true });
         }
@@ -1241,6 +1244,9 @@ describe('Pages Router', () => {
 
           // Both responses must have the same status — no differential oracle
           expect(existsResponse.status).toBe(notExistsResponse.status);
+          // Canary content must never be served
+          expect(existsResponse.text).not.toContain('canary');
+          expect(notExistsResponse.text).not.toContain('canary');
         } finally {
           await fs.rm(canaryDir, { recursive: true, force: true });
         }
