@@ -374,13 +374,21 @@ describe('Account Lockout Policy: ', () => {
       )
     );
 
-    const invalidPassword = results.filter(r => {
+    const lockoutError =
+      'Your account is locked due to multiple failed login attempts. Please try again after 5 minute(s)';
+    const errors = results.map(r => {
       const body = typeof r.data === 'string' ? JSON.parse(r.data) : r.data;
-      return body?.error === 'Invalid username/password.';
+      return body?.error;
     });
+    const invalidPassword = errors.filter(error => error === 'Invalid username/password.');
+    const lockoutResponses = errors.filter(error => error === lockoutError);
 
-    // At most `threshold` requests should get "Invalid username/password"
-    // The rest must get the lockout error
+    expect(
+      errors.every(
+        error => error === 'Invalid username/password.' || error === lockoutError
+      )
+    ).toBeTrue();
+    expect(lockoutResponses.length).toBeGreaterThan(0);
     expect(invalidPassword.length).toBeLessThanOrEqual(threshold);
   });
 });
