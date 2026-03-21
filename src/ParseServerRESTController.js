@@ -29,6 +29,19 @@ function getAuth(options = {}, config) {
   });
 }
 
+function stripUndefined(obj) {
+  if (obj === null || obj === undefined || typeof obj !== 'object' || Array.isArray(obj)) {
+    return obj;
+  }
+  const result = {};
+  for (const key of Object.keys(obj)) {
+    if (obj[key] !== undefined) {
+      result[key] = obj[key];
+    }
+  }
+  return result;
+}
+
 function ParseServerRESTController(applicationId, router) {
   function handleRequest(method, path, data = {}, options = {}, config) {
     // Store the arguments, for later use if internal fails
@@ -113,7 +126,7 @@ function ParseServerRESTController(applicationId, router) {
     return new Promise((resolve, reject) => {
       getAuth(options, config).then(auth => {
         const request = {
-          body: data,
+          body: stripUndefined(data),
           config,
           auth,
           info: {

@@ -675,4 +675,22 @@ describe('ParseServerRESTController', () => {
     const result = await Parse.Push.getPushStatus(pushStatusId);
     expect(result.id).toBe(pushStatusId);
   });
+
+  it('should not convert undefined values to null on update with directAccess', async () => {
+    const createRes = await RESTController.request('POST', '/classes/MyObject', {
+      presentField: 'hello',
+    });
+    expect(createRes.objectId).toBeDefined();
+
+    await RESTController.request('PUT', `/classes/MyObject/${createRes.objectId}`, {
+      presentField: 'updated',
+      absentField: undefined,
+    });
+
+    const getRes = await RESTController.request('GET', `/classes/MyObject/${createRes.objectId}`);
+
+    expect(getRes.presentField).toBe('updated');
+    expect(getRes.absentField).toBeUndefined();
+    expect('absentField' in getRes).toBe(false);
+  });
 });
