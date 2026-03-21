@@ -72,6 +72,11 @@ module.exports = [
     solution: "Set 'requestComplexity.graphQLFields' to a positive integer appropriate for your app to limit the number of GraphQL field selections, or to '-1' to disable.",
   },
   {
+    optionKey: 'requestComplexity.batchRequestLimit',
+    changeNewDefault: '100',
+    solution: "Set 'requestComplexity.batchRequestLimit' to a positive integer appropriate for your app to limit the number of sub-requests per batch request, or to '-1' to disable.",
+  },
+  {
     optionKey: 'enableProductPurchaseLegacyApi',
     changeNewKey: '',
     solution: "The product purchase API is an undocumented, unmaintained legacy feature that may not function as expected and will be removed in a future major version. We strongly advise against using it. Set 'enableProductPurchaseLegacyApi' to 'false' to disable it, or remove the option to accept the future removal.",

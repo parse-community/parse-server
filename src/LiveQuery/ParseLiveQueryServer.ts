@@ -1023,8 +1023,35 @@ class ParseLiveQueryServer {
           return;
         }
       }
-      // Check CLP for subscribe operation
+      // Validate query condition depth
       const appConfig = Config.get(this.config.appId);
+      if (!client.hasMasterKey) {
+        const rc = appConfig.requestComplexity;
+        if (rc && rc.queryDepth !== -1) {
+          const maxDepth = rc.queryDepth;
+          const checkDepth = (where: any, depth: number) => {
+            if (depth > maxDepth) {
+              throw new Parse.Error(
+                Parse.Error.INVALID_QUERY,
+                `Query condition nesting depth exceeds maximum allowed depth of ${maxDepth}`
+              );
+            }
+            if (typeof where !== 'object' || where === null) {
+              return;
+            }
+            for (const op of ['$or', '$and', '$nor']) {
+              if (Array.isArray(where[op])) {
+                for (const subQuery of where[op]) {
+                  checkDepth(subQuery, depth + 1);
+                }
+              }
+            }
+          };
+          checkDepth(request.query.where, 0);
+        }
+      }
+
+      // Check CLP for subscribe operation
       const schemaController = await appConfig.database.loadSchema();
       const classLevelPermissions = schemaController.getClassLevelPermissions(className);
       const op = this._getCLPOperation(request.query);

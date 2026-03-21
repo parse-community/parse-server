@@ -209,6 +209,7 @@ const handleDotFields = object => {
 };
 
 const escapeSqlString = value => value.replace(/'/g, "''");
+const escapeJsonString = value => JSON.stringify(value).slice(1, -1);
 
 const transformDotFieldToComponents = fieldName => {
   return fieldName.split('.').map((cmpt, index) => {
@@ -1766,8 +1767,9 @@ export class PostgresStorageAdapter implements StorageAdapter {
                 }
                 incrementValues.push(amount);
                 const amountIndex = index + incrementValues.length;
-                const safeName = escapeSqlString(c);
-                return `CONCAT('{"${safeName}":', COALESCE($${index}:name->>'${safeName}','0')::int + $${amountIndex}, '}')::jsonb`;
+                const jsonSafeName = escapeSqlString(escapeJsonString(c));
+                const sqlSafeName = escapeSqlString(c);
+                return `CONCAT('{"${jsonSafeName}":', COALESCE($${index}:name->>'${sqlSafeName}','0')::int + $${amountIndex}, '}')::jsonb`;
               })
               .join(' || ');
           // Strip the keys

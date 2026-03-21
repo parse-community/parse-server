@@ -131,6 +131,7 @@
 
 /**
  * @interface RequestComplexityOptions
+ * @property {Number} batchRequestLimit Maximum number of sub-requests in a single batch request. Set to `-1` to disable. Default is `-1`.
  * @property {Number} graphQLDepth Maximum depth of GraphQL field selections. Set to `-1` to disable. Default is `-1`.
  * @property {Number} graphQLFields Maximum number of field selections in a GraphQL query. Set to `-1` to disable. Default is `-1`.
  * @property {Number} includeCount Maximum number of include paths in a single query. Set to `-1` to disable. Default is `-1`.

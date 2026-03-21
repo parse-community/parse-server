@@ -147,6 +147,7 @@ describe('request complexity', () => {
       await reconfigureServer({});
       const config = Config.get('test');
       expect(config.requestComplexity).toEqual({
+        batchRequestLimit: -1,
         includeDepth: -1,
         includeCount: -1,
         subqueryDepth: -1,

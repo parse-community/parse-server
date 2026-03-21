@@ -1615,25 +1615,23 @@ describe('(GHSA-gqpp-xgvh-9h7h) SQL Injection via dot-notation sub-key name in I
     }).catch(() => {});
     const elapsed = Date.now() - start;
 
-    // Double quotes break JSON structure inside the CONCAT, producing invalid JSONB.
-    // This causes a database error, NOT SQL injection. If injection succeeded,
-    // the query would take >= 3 seconds due to pg_sleep.
+    // Double quotes are escaped in the JSON context, producing a harmless literal key
+    // name. No SQL injection occurs. If injection succeeded, the query would take
+    // >= 3 seconds due to pg_sleep.
     expect(elapsed).toBeLessThan(3000);
-    // Invalid JSONB cast fails the UPDATE, so the row is not modified
     const verify = await new Parse.Query('SubKeyTest').get(obj.id);
-    expect(verify.get('stats')).toEqual({ counter: 0 });
+    // Original counter is untouched
+    expect(verify.get('stats').counter).toBe(0);
   });
 
-  it_only_db('postgres')('does not execute injected SQL via double quote crafted as valid JSONB in sub-key name', async () => {
+  it_only_db('postgres')('does not inject additional JSONB keys via double quote crafted as valid JSONB in sub-key name', async () => {
     const obj = new Parse.Object('SubKeyTest');
     obj.set('stats', { counter: 0 });
     await obj.save();
 
-    // This payload uses double quotes to craft a sub-key that produces valid JSONB
-    // (e.g. '{"x":0,"evil":1}') instead of breaking JSON structure. Even so, both
-    // interpolation sites are inside single-quoted SQL strings, so double quotes
-    // cannot escape the SQL context — no arbitrary SQL execution is possible.
-    const start = Date.now();
+    // This payload attempts to craft a sub-key that produces valid JSONB with
+    // injected keys (e.g. '{"x":0,"evil":1}'). Double quotes are escaped in the
+    // JSON context, so the payload becomes a harmless literal key name instead.
     await request({
       method: 'PUT',
       url: `http://localhost:8378/1/classes/SubKeyTest/${obj.id}`,
@@ -1642,13 +1640,12 @@ describe('(GHSA-gqpp-xgvh-9h7h) SQL Injection via dot-notation sub-key name in I
         'stats.x":0,"pg_sleep(3)': { __op: 'Increment', amount: 1 },
       }),
     }).catch(() => {});
-    const elapsed = Date.now() - start;
 
-    expect(elapsed).toBeLessThan(3000);
-    // Double quotes craft valid JSONB with extra keys, but no SQL injection occurs;
-    // original counter is untouched
     const verify = await new Parse.Query('SubKeyTest').get(obj.id);
+    // Original counter is untouched
     expect(verify.get('stats').counter).toBe(0);
+    // No injected key exists — the payload is treated as a single literal key name
+    expect(verify.get('stats')['pg_sleep(3)']).toBeUndefined();
   });
 
   it_only_db('postgres')('allows valid Increment on nested object field with normal sub-key', async () => {
@@ -2833,6 +2830,90 @@ describe('(GHSA-9xp9-j92r-p88v) Stack overflow process crash via deeply nested q
       })
     );
   });
+
+  it('rejects deeply nested query before transform pipeline processes it', async () => {
+    await reconfigureServer({
+      requestComplexity: { queryDepth: 10 },
+    });
+    const auth = require('../lib/Auth');
+    const rest = require('../lib/rest');
+    const config = Config.get('test');
+    // Depth 50 bypasses the fix because RestQuery.js transform pipeline
+    // recursively traverses the structure before validateQuery() is reached
+    let where = { username: 'test' };
+    for (let i = 0; i < 50; i++) {
+      where = { $and: [where] };
+    }
+    await expectAsync(
+      rest.find(config, auth.nobody(config), '_User', where)
+    ).toBeRejectedWith(
+      jasmine.objectContaining({
+        message: jasmine.stringMatching(/Query condition nesting depth exceeds maximum allowed depth/),
+      })
+    );
+  });
+
+  it('rejects deeply nested query via REST API without authentication', async () => {
+    await reconfigureServer({
+      requestComplexity: { queryDepth: 10 },
+    });
+    let where = { username: 'test' };
+    for (let i = 0; i < 50; i++) {
+      where = { $or: [where] };
+    }
+    await expectAsync(
+      request({
+        method: 'GET',
+        url: `${Parse.serverURL}/classes/_User`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        qs: { where: JSON.stringify(where) },
+      })
+    ).toBeRejectedWith(
+      jasmine.objectContaining({
+        data: jasmine.objectContaining({
+          code: Parse.Error.INVALID_QUERY,
+        }),
+      })
+    );
+  });
+
+  it('rejects deeply nested $nor query before transform pipeline', async () => {
+    await reconfigureServer({
+      requestComplexity: { queryDepth: 10 },
+    });
+    const auth = require('../lib/Auth');
+    const rest = require('../lib/rest');
+    const config = Config.get('test');
+    let where = { username: 'test' };
+    for (let i = 0; i < 50; i++) {
+      where = { $nor: [where] };
+    }
+    await expectAsync(
+      rest.find(config, auth.nobody(config), '_User', where)
+    ).toBeRejectedWith(
+      jasmine.objectContaining({
+        message: jasmine.stringMatching(/Query condition nesting depth exceeds maximum allowed depth/),
+      })
+    );
+  });
+
+  it('allows queries within the depth limit', async () => {
+    await reconfigureServer({
+      requestComplexity: { queryDepth: 10 },
+    });
+    const auth = require('../lib/Auth');
+    const rest = require('../lib/rest');
+    const config = Config.get('test');
+    let where = { username: 'test' };
+    for (let i = 0; i < 5; i++) {
+      where = { $or: [where] };
+    }
+    const result = await rest.find(config, auth.nobody(config), '_User', where);
+    expect(result.results).toBeDefined();
+  });
 });
 
 describe('(GHSA-fjxm-vhvc-gcmj) LiveQuery Operator Type Confusion', () => {
@@ -3750,4 +3831,213 @@ describe('(GHSA-qpc3-fg4j-8hgm) Protected field change detection oracle via Live
     expect(updateSpy).not.toHaveBeenCalled();
   });
 
+  describe('(GHSA-8pjv-59c8-44p8) SSRF via Webhook URL requires master key', () => {
+    const expectMasterKeyRequired = async promise => {
+      try {
+        await promise;
+        fail('Expected request to be rejected');
+      } catch (error) {
+        expect(error.status).toBe(403);
+      }
+    };
+
+    it('rejects registering a webhook function with internal URL without master key', async () => {
+      await expectMasterKeyRequired(
+        request({
+          method: 'POST',
+          url: Parse.serverURL + '/hooks/functions',
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          body: JSON.stringify({
+            functionName: 'ssrf_probe',
+            url: 'http://169.254.169.254/latest/meta-data/iam/security-credentials/',
+          }),
+        })
+      );
+    });
+
+    it('rejects updating a webhook function URL to internal address without master key', async () => {
+      // Seed a legitimate webhook first so the PUT hits auth, not "not found"
+      await request({
+        method: 'POST',
+        url: Parse.serverURL + '/hooks/functions',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': Parse.masterKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          functionName: 'ssrf_probe',
+          url: 'https://example.com/webhook',
+        }),
+      });
+      await expectMasterKeyRequired(
+        request({
+          method: 'PUT',
+          url: Parse.serverURL + '/hooks/functions/ssrf_probe',
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          body: JSON.stringify({
+            url: 'http://169.254.169.254/latest/meta-data/',
+          }),
+        })
+      );
+    });
+
+    it('rejects registering a webhook trigger with internal URL without master key', async () => {
+      await expectMasterKeyRequired(
+        request({
+          method: 'POST',
+          url: Parse.serverURL + '/hooks/triggers',
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          body: JSON.stringify({
+            className: 'TestClass',
+            triggerName: 'beforeSave',
+            url: 'http://127.0.0.1:8080/admin/status',
+          }),
+        })
+      );
+    });
+
+    it('rejects registering a webhook with internal URL using JavaScript key', async () => {
+      await expectMasterKeyRequired(
+        request({
+          method: 'POST',
+          url: Parse.serverURL + '/hooks/functions',
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-JavaScript-Key': 'test',
+          },
+          body: JSON.stringify({
+            functionName: 'ssrf_probe',
+            url: 'http://10.0.0.1:3000/internal-api',
+          }),
+        })
+      );
+    });
+  });
+
+});
+
+describe('(GHSA-6qh5-m6g3-xhq6) LiveQuery query depth DoS via deeply nested subscription', () => {
+  afterEach(async () => {
+    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+    if (client) {
+      await client.close();
+    }
+  });
+
+  it('should reject LiveQuery subscription with deeply nested $or when queryDepth is set', async () => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    await reconfigureServer({
+      liveQuery: { classNames: ['TestClass'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+      requestComplexity: { queryDepth: 10 },
+    });
+    const query = new Parse.Query('TestClass');
+    let where = { field: 'value' };
+    for (let i = 0; i < 15; i++) {
+      where = { $or: [where] };
+    }
+    query._where = where;
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      jasmine.objectContaining({
+        code: Parse.Error.INVALID_QUERY,
+        message: jasmine.stringMatching(/Query condition nesting depth exceeds maximum allowed depth/),
+      })
+    );
+  });
+
+  it('should reject LiveQuery subscription with deeply nested $and when queryDepth is set', async () => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    await reconfigureServer({
+      liveQuery: { classNames: ['TestClass'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+      requestComplexity: { queryDepth: 10 },
+    });
+    const query = new Parse.Query('TestClass');
+    let where = { field: 'value' };
+    for (let i = 0; i < 50; i++) {
+      where = { $and: [where] };
+    }
+    query._where = where;
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      jasmine.objectContaining({
+        code: Parse.Error.INVALID_QUERY,
+        message: jasmine.stringMatching(/Query condition nesting depth exceeds maximum allowed depth/),
+      })
+    );
+  });
+
+  it('should reject LiveQuery subscription with deeply nested $nor when queryDepth is set', async () => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    await reconfigureServer({
+      liveQuery: { classNames: ['TestClass'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+      requestComplexity: { queryDepth: 10 },
+    });
+    const query = new Parse.Query('TestClass');
+    let where = { field: 'value' };
+    for (let i = 0; i < 50; i++) {
+      where = { $nor: [where] };
+    }
+    query._where = where;
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      jasmine.objectContaining({
+        code: Parse.Error.INVALID_QUERY,
+        message: jasmine.stringMatching(/Query condition nesting depth exceeds maximum allowed depth/),
+      })
+    );
+  });
+
+  it('should allow LiveQuery subscription within the depth limit', async () => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    await reconfigureServer({
+      liveQuery: { classNames: ['TestClass'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+      requestComplexity: { queryDepth: 10 },
+    });
+    const query = new Parse.Query('TestClass');
+    let where = { field: 'value' };
+    for (let i = 0; i < 5; i++) {
+      where = { $or: [where] };
+    }
+    query._where = where;
+    const subscription = await query.subscribe();
+    expect(subscription).toBeDefined();
+  });
+
+  it('should allow LiveQuery subscription when queryDepth is disabled', async () => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    await reconfigureServer({
+      liveQuery: { classNames: ['TestClass'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+      requestComplexity: { queryDepth: -1 },
+    });
+    const query = new Parse.Query('TestClass');
+    let where = { field: 'value' };
+    for (let i = 0; i < 15; i++) {
+      where = { $or: [where] };
+    }
+    query._where = where;
+    const subscription = await query.subscribe();
+    expect(subscription).toBeDefined();
+  });
 });
