@@ -1,3 +1,10 @@
+## [8.6.58](https://github.com/parse-community/parse-server/compare/8.6.57...8.6.58) (2026-03-21)
+
+
+### Bug Fixes
+
+* Denial of service via unindexed database query for unconfigured auth providers ([GHSA-g4cf-xj29-wqqr](https://github.com/parse-community/parse-server/security/advisories/GHSA-g4cf-xj29-wqqr)) ([#10271](https://github.com/parse-community/parse-server/issues/10271)) ([40eb442](https://github.com/parse-community/parse-server/commit/40eb442e02672986730007d0a1edb22c1c4bd357))
+
 ## [8.6.57](https://github.com/parse-community/parse-server/compare/8.6.56...8.6.57) (2026-03-21)
 
 
