@@ -3504,6 +3504,39 @@ describe('(GHSA-5hmj-jcgp-6hff) Protected fields leak via LiveQuery afterEvent t
       expect(validatorSpy).toHaveBeenCalled();
     });
 
+    it('rejects login with identical but expired authData when adapter rejects', async () => {
+      // Sign up with authData that is initially valid
+      const user = new Parse.User();
+      await user.save({
+        authData: { testAdapter: { id: 'user_expired', access_token: 'token_now_expired' } },
+      });
+      validatorSpy.calls.reset();
+
+      // Simulate the token expiring on the provider side: the adapter now
+      // rejects the same token that was valid at signup time
+      validatorSpy.and.rejectWith(
+        new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Token expired')
+      );
+
+      // Attempt login with the exact same (now-expired) authData
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        body: JSON.stringify({
+          authData: { testAdapter: { id: 'user_expired', access_token: 'token_now_expired' } },
+        }),
+      }).catch(e => e);
+
+      // Login must be rejected even though authData is identical to what's stored
+      expect(res.status).toBe(400);
+      expect(validatorSpy).toHaveBeenCalled();
+    });
+
     it('skips validation on update when authData is a subset of stored data', async () => {
       // Sign up with full authData
       const user = new Parse.User();
