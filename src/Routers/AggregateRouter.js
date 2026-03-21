@@ -52,6 +52,9 @@ export class AggregateRouter extends ClassesRouter {
       }
       return { response };
     } catch (e) {
+      if (e instanceof Parse.Error) {
+        throw e;
+      }
       throw new Parse.Error(Parse.Error.INVALID_QUERY, e.message);
     }
   }

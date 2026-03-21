@@ -4206,3 +4206,187 @@ describe('(GHSA-g4cf-xj29-wqqr) DoS via unindexed database query for unconfigure
     expect(authDataQueries.length).toBeGreaterThan(0);
   });
 });
+
+describe('(GHSA-p2w6-rmh7-w8q3) SQL Injection via aggregate and distinct field names in PostgreSQL adapter', () => {
+  const headers = {
+    'Content-Type': 'application/json',
+    'X-Parse-Application-Id': 'test',
+    'X-Parse-REST-API-Key': 'rest',
+    'X-Parse-Master-Key': 'test',
+  };
+  const serverURL = 'http://localhost:8378/1';
+
+  beforeEach(async () => {
+    const obj = new Parse.Object('TestClass');
+    obj.set('playerName', 'Alice');
+    obj.set('score', 100);
+    obj.set('metadata', { tag: 'hello' });
+    await obj.save(null, { useMasterKey: true });
+  });
+
+  describe('aggregate $group._id SQL injection', () => {
+    it_only_db('postgres')('rejects $group._id field value containing double quotes', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          pipeline: JSON.stringify([
+            {
+              $group: {
+                _id: {
+                  alias: '$playerName" OR 1=1 --',
+                },
+              },
+            },
+          ]),
+        },
+      }).catch(e => e);
+      expect(response.data?.code).toBe(Parse.Error.INVALID_KEY_NAME);
+    });
+
+    it_only_db('postgres')('rejects $group._id field value containing semicolons', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          pipeline: JSON.stringify([
+            {
+              $group: {
+                _id: {
+                  alias: '$playerName"; DROP TABLE "TestClass" --',
+                },
+              },
+            },
+          ]),
+        },
+      }).catch(e => e);
+      expect(response.data?.code).toBe(Parse.Error.INVALID_KEY_NAME);
+    });
+
+    it_only_db('postgres')('rejects $group._id date operation field value containing double quotes', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          pipeline: JSON.stringify([
+            {
+              $group: {
+                _id: {
+                  day: { $dayOfMonth: '$createdAt" OR 1=1 --' },
+                },
+              },
+            },
+          ]),
+        },
+      }).catch(e => e);
+      expect(response.data?.code).toBe(Parse.Error.INVALID_KEY_NAME);
+    });
+
+    it_only_db('postgres')('allows legitimate $group._id with field reference', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          pipeline: JSON.stringify([
+            {
+              $group: {
+                _id: {
+                  name: '$playerName',
+                },
+                count: { $sum: 1 },
+              },
+            },
+          ]),
+        },
+      });
+      expect(response.data?.results?.length).toBeGreaterThan(0);
+    });
+
+    it_only_db('postgres')('allows legitimate $group._id with date extraction', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          pipeline: JSON.stringify([
+            {
+              $group: {
+                _id: {
+                  day: { $dayOfMonth: '$_created_at' },
+                },
+                count: { $sum: 1 },
+              },
+            },
+          ]),
+        },
+      });
+      expect(response.data?.results?.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('distinct dot-notation SQL injection', () => {
+    it_only_db('postgres')('rejects distinct field name containing double quotes in dot notation', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          distinct: 'metadata" FROM pg_tables; --.tag',
+        },
+      }).catch(e => e);
+      expect(response.data?.code).toBe(Parse.Error.INVALID_KEY_NAME);
+    });
+
+    it_only_db('postgres')('rejects distinct field name containing semicolons in dot notation', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          distinct: 'metadata; DROP TABLE "TestClass" --.tag',
+        },
+      }).catch(e => e);
+      expect(response.data?.code).toBe(Parse.Error.INVALID_KEY_NAME);
+    });
+
+    it_only_db('postgres')('rejects distinct field name containing single quotes in dot notation', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          distinct: "metadata' OR '1'='1.tag",
+        },
+      }).catch(e => e);
+      expect(response.data?.code).toBe(Parse.Error.INVALID_KEY_NAME);
+    });
+
+    it_only_db('postgres')('allows legitimate distinct with dot notation', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          distinct: 'metadata.tag',
+        },
+      });
+      expect(response.data?.results).toEqual(['hello']);
+    });
+
+    it_only_db('postgres')('allows legitimate distinct without dot notation', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          distinct: 'playerName',
+        },
+      });
+      expect(response.data?.results).toEqual(['Alice']);
+    });
+  });
+});
