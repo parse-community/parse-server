@@ -250,6 +250,9 @@ const transformAggregateField = fieldName => {
   if (fieldName === '$_updated_at') {
     return 'updatedAt';
   }
+  if (!fieldName.startsWith('$')) {
+    throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}`);
+  }
   const name = fieldName.substring(1);
   validateAggregateFieldName(name);
   return name;
