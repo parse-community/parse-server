@@ -4141,4 +4141,68 @@ describe('(GHSA-6qh5-m6g3-xhq6) LiveQuery query depth DoS via deeply nested subs
     const subscription = await query.subscribe();
     expect(subscription).toBeDefined();
   });
+
+  describe('(GHSA-g4cf-xj29-wqqr) DoS via unindexed database query for unconfigured auth providers', () => {
+    it('should not query database for unconfigured auth provider on signup', async () => {
+      const databaseAdapter = Config.get(Parse.applicationId).database.adapter;
+      const spy = spyOn(databaseAdapter, 'find').and.callThrough();
+      await expectAsync(
+        new Parse.User().save({ authData: { nonExistentProvider: { id: 'test123' } } })
+      ).toBeRejectedWith(
+        new Parse.Error(Parse.Error.UNSUPPORTED_SERVICE, 'This authentication method is unsupported.')
+      );
+      const authDataQueries = spy.calls.all().filter(call => {
+        const query = call.args[2];
+        return query?.$or?.some(q => q['authData.nonExistentProvider.id']);
+      });
+      expect(authDataQueries.length).toBe(0);
+    });
+
+    it('should not query database for unconfigured auth provider on challenge', async () => {
+      const databaseAdapter = Config.get(Parse.applicationId).database.adapter;
+      const spy = spyOn(databaseAdapter, 'find').and.callThrough();
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: Parse.serverURL + '/challenge',
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            authData: { nonExistentProvider: { id: 'test123' } },
+            challengeData: { nonExistentProvider: { token: 'abc' } },
+          }),
+        })
+      ).toBeRejected();
+      const authDataQueries = spy.calls.all().filter(call => {
+        const query = call.args[2];
+        return query?.$or?.some(q => q['authData.nonExistentProvider.id']);
+      });
+      expect(authDataQueries.length).toBe(0);
+    });
+
+    it('should still query database for configured auth provider', async () => {
+      await reconfigureServer({
+        auth: {
+          myConfiguredProvider: {
+            module: {
+              validateAppId: () => Promise.resolve(),
+              validateAuthData: () => Promise.resolve(),
+            },
+          },
+        },
+      });
+      const databaseAdapter = Config.get(Parse.applicationId).database.adapter;
+      const spy = spyOn(databaseAdapter, 'find').and.callThrough();
+      const user = new Parse.User();
+      await user.save({ authData: { myConfiguredProvider: { id: 'validId', token: 'validToken' } } });
+      const authDataQueries = spy.calls.all().filter(call => {
+        const query = call.args[2];
+        return query?.$or?.some(q => q['authData.myConfiguredProvider.id']);
+      });
+      expect(authDataQueries.length).toBeGreaterThan(0);
+    });
+  });
 });
