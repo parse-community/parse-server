@@ -715,6 +715,28 @@ describe('batch', () => {
       expect(result.data.length).toEqual(3);
     });
 
+    it('should bypass batchRequestLimit for maintenance key requests', async () => {
+      await reconfigureServer({
+        requestComplexity: { batchRequestLimit: 2 },
+      });
+      const result = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/batch',
+        headers: {
+          ...headers,
+          'X-Parse-Maintenance-Key': 'testing',
+        },
+        body: JSON.stringify({
+          requests: [
+            { method: 'GET', path: '/1/classes/TestClass' },
+            { method: 'GET', path: '/1/classes/TestClass' },
+            { method: 'GET', path: '/1/classes/TestClass' },
+          ],
+        }),
+      });
+      expect(result.data.length).toEqual(3);
+    });
+
     it('should include limit in error message when batch exceeds batchRequestLimit', async () => {
       await reconfigureServer({
         requestComplexity: { batchRequestLimit: 5 },

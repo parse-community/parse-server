@@ -73,7 +73,7 @@ module.exports = [
   },
   {
     optionKey: 'requestComplexity.batchRequestLimit',
-    changeNewDefault: '50',
+    changeNewDefault: '100',
     solution: "Set 'requestComplexity.batchRequestLimit' to a positive integer appropriate for your app to limit the number of sub-requests per batch request, or to '-1' to disable.",
   },
   {
