@@ -29,17 +29,11 @@ function getAuth(options = {}, config) {
   });
 }
 
-function stripUndefined(obj) {
-  if (obj === null || obj === undefined || typeof obj !== 'object' || Array.isArray(obj)) {
-    return obj;
+function jsonCopy(obj) {
+  if (obj === undefined) {
+    return undefined;
   }
-  const result = {};
-  for (const key of Object.keys(obj)) {
-    if (obj[key] !== undefined) {
-      result[key] = obj[key];
-    }
-  }
-  return result;
+  return JSON.parse(JSON.stringify(obj));
 }
 
 function ParseServerRESTController(applicationId, router) {
@@ -126,7 +120,7 @@ function ParseServerRESTController(applicationId, router) {
     return new Promise((resolve, reject) => {
       getAuth(options, config).then(auth => {
         const request = {
-          body: stripUndefined(data),
+          body: jsonCopy(data),
           config,
           auth,
           info: {
