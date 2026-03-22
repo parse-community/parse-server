@@ -3964,3 +3964,78 @@ describe('(GHSA-p2w6-rmh7-w8q3) SQL Injection via aggregate and distinct field n
     });
   });
 });
+
+describe('(GHSA-2299-ghjr-6vjp) MFA recovery code reuse via concurrent requests', () => {
+  const mfaHeaders = {
+    'X-Parse-Application-Id': 'test',
+    'X-Parse-REST-API-Key': 'rest',
+    'Content-Type': 'application/json',
+  };
+
+  beforeEach(async () => {
+    await reconfigureServer({
+      auth: {
+        mfa: {
+          enabled: true,
+          options: ['TOTP'],
+          algorithm: 'SHA1',
+          digits: 6,
+          period: 30,
+        },
+      },
+    });
+  });
+
+  it('rejects concurrent logins using the same MFA recovery code', async () => {
+    const OTPAuth = require('otpauth');
+    const user = await Parse.User.signUp('mfauser', 'password123');
+    const secret = new OTPAuth.Secret();
+    const totp = new OTPAuth.TOTP({
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
+    const token = totp.generate();
+    await user.save(
+      { authData: { mfa: { secret: secret.base32, token } } },
+      { sessionToken: user.getSessionToken() }
+    );
+
+    // Get recovery codes from stored auth data
+    await user.fetch({ useMasterKey: true });
+    const recoveryCode = user.get('authData').mfa.recovery[0];
+    expect(recoveryCode).toBeDefined();
+
+    // Send concurrent login requests with the same recovery code
+    const loginWithRecovery = () =>
+      request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/login',
+        headers: mfaHeaders,
+        body: JSON.stringify({
+          username: 'mfauser',
+          password: 'password123',
+          authData: {
+            mfa: {
+              token: recoveryCode,
+            },
+          },
+        }),
+      });
+
+    const results = await Promise.allSettled(Array(10).fill().map(() => loginWithRecovery()));
+
+    const succeeded = results.filter(r => r.status === 'fulfilled');
+    const failed = results.filter(r => r.status === 'rejected');
+
+    // Exactly one request should succeed; all others should fail
+    expect(succeeded.length).toBe(1);
+    expect(failed.length).toBe(9);
+
+    // Verify the recovery code has been consumed
+    await user.fetch({ useMasterKey: true });
+    const remainingRecovery = user.get('authData').mfa.recovery;
+    expect(remainingRecovery).not.toContain(recoveryCode);
+  });
+});
