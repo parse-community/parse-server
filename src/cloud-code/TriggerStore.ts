@@ -286,6 +286,14 @@ export class TriggerStore {
 
   static runLiveQueryEventHandlers(appId: string, data: unknown): void {
     const s = TriggerStore._stores.get(appId);
-    if (s) s.liveQuery.forEach(handler => handler(data));
+    if (s) {
+      for (const handler of s.liveQuery) {
+        try {
+          handler(data);
+        } catch (e) {
+          logging.logger.error(`liveQuery event handler failed for appId=${appId}:`, e);
+        }
+      }
+    }
   }
 }

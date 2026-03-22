@@ -1,7 +1,6 @@
 'use strict';
 
 const Parse = require('parse/node');
-const request = require('../lib/request');
 
 describe('TriggerStore', () => {
   describe('validator cleanup', () => {
