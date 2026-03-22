@@ -1,3 +1,10 @@
+## [8.6.62](https://github.com/parse-community/parse-server/compare/8.6.61...8.6.62) (2026-03-22)
+
+
+### Bug Fixes
+
+* Reject invalid locale format in PagesRouter ([#10282](https://github.com/parse-community/parse-server/issues/10282)) ([e047da9](https://github.com/parse-community/parse-server/commit/e047da961a4e911c3e110fc5534207a2d9b5ea35))
+
 ## [8.6.61](https://github.com/parse-community/parse-server/compare/8.6.60...8.6.61) (2026-03-22)
 
 
