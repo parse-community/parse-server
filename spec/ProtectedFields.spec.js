@@ -1972,5 +1972,61 @@ describe('ProtectedFields', function () {
       expect(response.data.phone).toBeUndefined();
       expect(response.data.objectId).toBe(user.id);
     });
+
+    it('owner sees non-protected fields like email when protectedFieldsOwnerExempt is true', async function () {
+      await reconfigureServer({
+        protectedFields: {
+          _User: {
+            '*': ['phone'],
+          },
+        },
+        protectedFieldsOwnerExempt: true,
+      });
+      const user = await Parse.User.signUp('user1', 'password');
+      const sessionToken = user.getSessionToken();
+      user.set('phone', '555-1234');
+      user.set('email', 'user1@example.com');
+      await user.save(null, { sessionToken });
+
+      // Owner fetches own object — phone and email should be visible (owner exempt)
+      const response = await request({
+        url: `http://localhost:8378/1/users/${user.id}`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': sessionToken,
+        },
+      });
+      expect(response.data.phone).toBe('555-1234');
+      expect(response.data.email).toBe('user1@example.com');
+    });
+
+    it('owner sees non-protected fields like email when protectedFieldsOwnerExempt is false', async function () {
+      await reconfigureServer({
+        protectedFields: {
+          _User: {
+            '*': ['phone'],
+          },
+        },
+        protectedFieldsOwnerExempt: false,
+      });
+      const user = await Parse.User.signUp('user1', 'password');
+      const sessionToken = user.getSessionToken();
+      user.set('phone', '555-1234');
+      user.set('email', 'user1@example.com');
+      await user.save(null, { sessionToken });
+
+      // Owner fetches own object — phone should be hidden, email should be visible
+      const response = await request({
+        url: `http://localhost:8378/1/users/${user.id}`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': sessionToken,
+        },
+      });
+      expect(response.data.phone).toBeUndefined();
+      expect(response.data.email).toBe('user1@example.com');
+    });
   });
 });
