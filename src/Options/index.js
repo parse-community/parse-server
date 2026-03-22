@@ -449,6 +449,9 @@ export interface RequestComplexityOptions {
   :ENV: PARSE_SERVER_REQUEST_COMPLEXITY_GRAPHQL_FIELDS
   :DEFAULT: -1 */
   graphQLFields: ?number;
+  /* Maximum number of sub-requests in a single batch request. Set to `-1` to disable. Default is `-1`.
+  :DEFAULT: -1 */
+  batchRequestLimit: ?number;
 }
 
 export interface SecurityOptions {

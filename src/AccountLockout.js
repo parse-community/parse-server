@@ -23,37 +23,7 @@ export class AccountLockout {
   }
 
   /**
-   * check if the _failed_login_count field has been set
-   */
-  _isFailedLoginCountSet() {
-    const query = {
-      username: this._user.username,
-      _failed_login_count: { $exists: true },
-    };
-
-    return this._config.database.find('_User', query).then(users => {
-      if (Array.isArray(users) && users.length > 0) {
-        return true;
-      } else {
-        return false;
-      }
-    });
-  }
-
-  /**
-   * if _failed_login_count is NOT set then set it to 0
-   * else do nothing
-   */
-  _initFailedLoginCount() {
-    return this._isFailedLoginCountSet().then(failedLoginCountIsSet => {
-      if (!failedLoginCountIsSet) {
-        return this._setFailedLoginCount(0);
-      }
-    });
-  }
-
-  /**
-   * increment _failed_login_count by 1
+   * increment _failed_login_count by 1 and return the updated document
    */
   _incrementFailedLoginCount() {
     const query = {
@@ -127,20 +97,26 @@ export class AccountLockout {
   }
 
   /**
-   * set and/or increment _failed_login_count
-   * if _failed_login_count > threshold
-   *   set the _account_lockout_expires_at to current_time + accountPolicy.duration
-   * else
-   *   do nothing
+   * Atomically increment _failed_login_count and enforce lockout threshold.
+   * Uses the atomic increment result to determine the exact post-increment
+   * count, eliminating the TOCTOU race between checking and updating.
    */
   _handleFailedLoginAttempt() {
-    return this._initFailedLoginCount()
-      .then(() => {
-        return this._incrementFailedLoginCount();
-      })
-      .then(() => {
-        return this._setLockoutExpiration();
-      });
+    return this._incrementFailedLoginCount().then(result => {
+      const count = result._failed_login_count;
+      if (count >= this._config.accountLockout.threshold) {
+        return this._setLockoutExpiration().then(() => {
+          if (count > this._config.accountLockout.threshold) {
+            throw new Parse.Error(
+              Parse.Error.OBJECT_NOT_FOUND,
+              'Your account is locked due to multiple failed login attempts. Please try again after ' +
+                this._config.accountLockout.duration +
+                ' minute(s)'
+            );
+          }
+        });
+      }
+    });
   }
 
   /**

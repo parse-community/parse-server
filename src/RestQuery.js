@@ -282,6 +282,9 @@ function _UnsafeRestQuery(
 _UnsafeRestQuery.prototype.execute = function (executeOptions) {
   return Promise.resolve()
     .then(() => {
+      return this.validateQueryDepth();
+    })
+    .then(() => {
       return this.buildRestWhere();
     })
     .then(() => {
@@ -350,6 +353,36 @@ _UnsafeRestQuery.prototype.each = function (callback) {
       }
     }
   );
+};
+
+_UnsafeRestQuery.prototype.validateQueryDepth = function () {
+  if (this.auth.isMaster || this.auth.isMaintenance) {
+    return;
+  }
+  const rc = this.config.requestComplexity;
+  if (!rc || rc.queryDepth === -1) {
+    return;
+  }
+  const maxDepth = rc.queryDepth;
+  const checkDepth = (where, depth) => {
+    if (depth > maxDepth) {
+      throw new Parse.Error(
+        Parse.Error.INVALID_QUERY,
+        `Query condition nesting depth exceeds maximum allowed depth of ${maxDepth}`
+      );
+    }
+    if (typeof where !== 'object' || where === null) {
+      return;
+    }
+    for (const op of ['$or', '$and', '$nor']) {
+      if (Array.isArray(where[op])) {
+        for (const subQuery of where[op]) {
+          checkDepth(subQuery, depth + 1);
+        }
+      }
+    }
+  };
+  checkDepth(this.restWhere, 0);
 };
 
 _UnsafeRestQuery.prototype.buildRestWhere = function () {

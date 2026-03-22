@@ -1,3 +1,87 @@
+# [9.6.0-alpha.55](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.54...9.6.0-alpha.55) (2026-03-22)
+
+
+### Bug Fixes
+
+* Auth data exposed via /users/me endpoint ([GHSA-37mj-c2wf-cx96](https://github.com/parse-community/parse-server/security/advisories/GHSA-37mj-c2wf-cx96)) ([#10278](https://github.com/parse-community/parse-server/issues/10278)) ([875cf10](https://github.com/parse-community/parse-server/commit/875cf10ac979bd60f70e7a0c534e2bc194d6982f))
+
+# [9.6.0-alpha.54](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.53...9.6.0-alpha.54) (2026-03-22)
+
+
+### Bug Fixes
+
+* MFA recovery code single-use bypass via concurrent requests ([GHSA-2299-ghjr-6vjp](https://github.com/parse-community/parse-server/security/advisories/GHSA-2299-ghjr-6vjp)) ([#10275](https://github.com/parse-community/parse-server/issues/10275)) ([5e70094](https://github.com/parse-community/parse-server/commit/5e70094250a36bfcc14ecd49592be2b94fba66ff))
+
+# [9.6.0-alpha.53](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.52...9.6.0-alpha.53) (2026-03-21)
+
+
+### Bug Fixes
+
+* SQL injection via aggregate and distinct field names in PostgreSQL adapter ([GHSA-p2w6-rmh7-w8q3](https://github.com/parse-community/parse-server/security/advisories/GHSA-p2w6-rmh7-w8q3)) ([#10272](https://github.com/parse-community/parse-server/issues/10272)) ([bdddab5](https://github.com/parse-community/parse-server/commit/bdddab5f8b61a40cb8fc62dd895887bdd2f3838e))
+
+# [9.6.0-alpha.52](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.51...9.6.0-alpha.52) (2026-03-21)
+
+
+### Bug Fixes
+
+* Denial of service via unindexed database query for unconfigured auth providers ([GHSA-g4cf-xj29-wqqr](https://github.com/parse-community/parse-server/security/advisories/GHSA-g4cf-xj29-wqqr)) ([#10270](https://github.com/parse-community/parse-server/issues/10270)) ([fbac847](https://github.com/parse-community/parse-server/commit/fbac847499e57f243315c5fc7135be1d58bb8e54))
+
+# [9.6.0-alpha.51](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.50...9.6.0-alpha.51) (2026-03-21)
+
+
+### Bug Fixes
+
+* Create CLP not enforced before user field validation on signup ([#10268](https://github.com/parse-community/parse-server/issues/10268)) ([a0530c2](https://github.com/parse-community/parse-server/commit/a0530c251a9e15198c60c1c15c6cc0802a1dd18c))
+
+# [9.6.0-alpha.50](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.49...9.6.0-alpha.50) (2026-03-21)
+
+
+### Bug Fixes
+
+* Account lockout race condition allows bypassing threshold via concurrent requests ([#10266](https://github.com/parse-community/parse-server/issues/10266)) ([ff70fee](https://github.com/parse-community/parse-server/commit/ff70fee7e18d7e627b590f7f5717a58ee91cfecb))
+
+# [9.6.0-alpha.49](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.48...9.6.0-alpha.49) (2026-03-21)
+
+
+### Bug Fixes
+
+* Add configurable batch request sub-request limit via option `requestComplexity.batchRequestLimit` ([#10265](https://github.com/parse-community/parse-server/issues/10265)) ([164ed0d](https://github.com/parse-community/parse-server/commit/164ed0dd1206e96ce42e46058016a7d7eaf84d85))
+
+# [9.6.0-alpha.48](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.47...9.6.0-alpha.48) (2026-03-21)
+
+
+### Bug Fixes
+
+* Session update endpoint allows overwriting server-generated session fields ([GHSA-jc39-686j-wp6q](https://github.com/parse-community/parse-server/security/advisories/GHSA-jc39-686j-wp6q)) ([#10263](https://github.com/parse-community/parse-server/issues/10263)) ([ea68fc0](https://github.com/parse-community/parse-server/commit/ea68fc0b22a6056c9675149469ff57817f7cf984))
+
+# [9.6.0-alpha.47](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.46...9.6.0-alpha.47) (2026-03-20)
+
+
+### Bug Fixes
+
+* Normalize HTTP method case in `allowMethodOverride` middleware ([#10262](https://github.com/parse-community/parse-server/issues/10262)) ([a248e8c](https://github.com/parse-community/parse-server/commit/a248e8cc99d857466aa5a5d3a472795a238acbc2))
+
+# [9.6.0-alpha.46](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.45...9.6.0-alpha.46) (2026-03-20)
+
+
+### Bug Fixes
+
+* Incomplete JSON key escaping in PostgreSQL Increment on nested Object fields ([#10261](https://github.com/parse-community/parse-server/issues/10261)) ([a692873](https://github.com/parse-community/parse-server/commit/a6928737dd40a3310f6e419f223cf93fdd442f2b))
+
+# [9.6.0-alpha.45](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.44...9.6.0-alpha.45) (2026-03-20)
+
+
+### Bug Fixes
+
+* LiveQuery subscription query depth bypass ([GHSA-6qh5-m6g3-xhq6](https://github.com/parse-community/parse-server/security/advisories/GHSA-6qh5-m6g3-xhq6)) ([#10259](https://github.com/parse-community/parse-server/issues/10259)) ([2126fe4](https://github.com/parse-community/parse-server/commit/2126fe4e12f9b399dc6b4b6a3fa70cb1825f159b))
+
+# [9.6.0-alpha.44](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.43...9.6.0-alpha.44) (2026-03-20)
+
+
+### Bug Fixes
+
+* Query condition depth bypass via pre-validation transform pipeline ([GHSA-9fjp-q3c4-6w3j](https://github.com/parse-community/parse-server/security/advisories/GHSA-9fjp-q3c4-6w3j)) ([#10257](https://github.com/parse-community/parse-server/issues/10257)) ([85994ef](https://github.com/parse-community/parse-server/commit/85994eff9e7b34cac7e1a2f5791985022a1461d1))
+
 # [9.6.0-alpha.43](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.42...9.6.0-alpha.43) (2026-03-20)
 
 
