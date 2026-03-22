@@ -340,6 +340,11 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
           patterns.push(`$${index}:raw = $${index + 1}::text`);
           values.push(name, fieldValue);
           index += 2;
+        } else if (typeof fieldValue === 'object') {
+          name = transformDotFieldToComponents(fieldName).join('->');
+          patterns.push(`($${index}:raw)::jsonb = $${index + 1}::jsonb`);
+          values.push(name, JSON.stringify(fieldValue));
+          index += 2;
         }
       }
     } else if (fieldValue === null || fieldValue === undefined) {

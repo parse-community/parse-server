@@ -286,12 +286,28 @@ export class UsersRouter extends ClassesRouter {
 
     // If we have some new validated authData update directly
     if (validatedAuthData && Object.keys(validatedAuthData).length) {
-      await req.config.database.update(
-        '_User',
-        { objectId: user.objectId },
-        { authData: validatedAuthData },
-        {}
-      );
+      const query = { objectId: user.objectId };
+      // Optimistic locking: include the original authData state in the WHERE clause
+      // for providers whose data is being updated. This prevents concurrent requests
+      // from both succeeding when consuming single-use tokens (e.g. MFA recovery codes).
+      if (user.authData) {
+        for (const provider of Object.keys(validatedAuthData)) {
+          const original = user.authData[provider];
+          if (original && JSON.stringify(original) !== JSON.stringify(validatedAuthData[provider])) {
+            for (const [field, value] of Object.entries(original)) {
+              query[`authData.${provider}.${field}`] = value;
+            }
+          }
+        }
+      }
+      try {
+        await req.config.database.update('_User', query, { authData: validatedAuthData }, {});
+      } catch (error) {
+        if (error.code === Parse.Error.OBJECT_NOT_FOUND) {
+          throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Invalid auth data');
+        }
+        throw error;
+      }
     }
 
     const { sessionData, createSession } = RestWrite.createSession(req.config, {
