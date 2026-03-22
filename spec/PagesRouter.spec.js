@@ -1642,6 +1642,20 @@ describe('Pages Router', () => {
       expect(response.text).not.toContain('&quot;&gt;&lt;svg');
     });
 
+    it('should reject non-ASCII characters in locale parameter', async () => {
+      // Non-ASCII characters like ğ (U+011F) would cause ERR_INVALID_CHAR
+      // when set as HTTP header value if not rejected by locale validation
+      const nonAsciiLocale = 'ğ';
+      const response = await request({
+        url: `http://localhost:8378/1/apps/choose_password?locale=${encodeURIComponent(nonAsciiLocale)}&appId=test`,
+      });
+
+      expect(response.status).toBe(200);
+      // Non-ASCII locale is rejected by format validation;
+      // no ERR_INVALID_CHAR error occurs
+      expect(response.headers['x-parse-page-param-locale']).toBeUndefined();
+    });
+
     it('should handle legitimate usernames with quotes correctly', async () => {
       const username = "O'Brien";
       const response = await request({
