@@ -1,3 +1,38 @@
+# [9.6.0-alpha.55](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.54...9.6.0-alpha.55) (2026-03-22)
+
+
+### Bug Fixes
+
+* Auth data exposed via /users/me endpoint ([GHSA-37mj-c2wf-cx96](https://github.com/parse-community/parse-server/security/advisories/GHSA-37mj-c2wf-cx96)) ([#10278](https://github.com/parse-community/parse-server/issues/10278)) ([875cf10](https://github.com/parse-community/parse-server/commit/875cf10ac979bd60f70e7a0c534e2bc194d6982f))
+
+# [9.6.0-alpha.54](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.53...9.6.0-alpha.54) (2026-03-22)
+
+
+### Bug Fixes
+
+* MFA recovery code single-use bypass via concurrent requests ([GHSA-2299-ghjr-6vjp](https://github.com/parse-community/parse-server/security/advisories/GHSA-2299-ghjr-6vjp)) ([#10275](https://github.com/parse-community/parse-server/issues/10275)) ([5e70094](https://github.com/parse-community/parse-server/commit/5e70094250a36bfcc14ecd49592be2b94fba66ff))
+
+# [9.6.0-alpha.53](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.52...9.6.0-alpha.53) (2026-03-21)
+
+
+### Bug Fixes
+
+* SQL injection via aggregate and distinct field names in PostgreSQL adapter ([GHSA-p2w6-rmh7-w8q3](https://github.com/parse-community/parse-server/security/advisories/GHSA-p2w6-rmh7-w8q3)) ([#10272](https://github.com/parse-community/parse-server/issues/10272)) ([bdddab5](https://github.com/parse-community/parse-server/commit/bdddab5f8b61a40cb8fc62dd895887bdd2f3838e))
+
+# [9.6.0-alpha.52](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.51...9.6.0-alpha.52) (2026-03-21)
+
+
+### Bug Fixes
+
+* Denial of service via unindexed database query for unconfigured auth providers ([GHSA-g4cf-xj29-wqqr](https://github.com/parse-community/parse-server/security/advisories/GHSA-g4cf-xj29-wqqr)) ([#10270](https://github.com/parse-community/parse-server/issues/10270)) ([fbac847](https://github.com/parse-community/parse-server/commit/fbac847499e57f243315c5fc7135be1d58bb8e54))
+
+# [9.6.0-alpha.51](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.50...9.6.0-alpha.51) (2026-03-21)
+
+
+### Bug Fixes
+
+* Create CLP not enforced before user field validation on signup ([#10268](https://github.com/parse-community/parse-server/issues/10268)) ([a0530c2](https://github.com/parse-community/parse-server/commit/a0530c251a9e15198c60c1c15c6cc0802a1dd18c))
+
 # [9.6.0-alpha.50](https://github.com/parse-community/parse-server/compare/9.6.0-alpha.49...9.6.0-alpha.50) (2026-03-21)
 
 

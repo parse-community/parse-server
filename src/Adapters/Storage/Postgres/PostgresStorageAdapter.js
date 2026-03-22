@@ -234,6 +234,12 @@ const transformDotField = fieldName => {
   return name;
 };
 
+const validateAggregateFieldName = name => {
+  if (typeof name !== 'string' || !name.match(/^[a-zA-Z][a-zA-Z0-9_]*$/)) {
+    throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${name}`);
+  }
+};
+
 const transformAggregateField = fieldName => {
   if (typeof fieldName !== 'string') {
     return fieldName;
@@ -244,7 +250,12 @@ const transformAggregateField = fieldName => {
   if (fieldName === '$_updated_at') {
     return 'updatedAt';
   }
-  return fieldName.substring(1);
+  if (!fieldName.startsWith('$')) {
+    throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}`);
+  }
+  const name = fieldName.substring(1);
+  validateAggregateFieldName(name);
+  return name;
 };
 
 const validateKeys = object => {
@@ -328,6 +339,14 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
         } else if (typeof fieldValue !== 'object') {
           patterns.push(`$${index}:raw = $${index + 1}::text`);
           values.push(name, fieldValue);
+          index += 2;
+        } else if (
+          typeof fieldValue === 'object' &&
+          !Object.keys(fieldValue).some(key => key.startsWith('$'))
+        ) {
+          name = transformDotFieldToComponents(fieldName).join('->');
+          patterns.push(`($${index}:raw)::jsonb = $${index + 1}::jsonb`);
+          values.push(name, JSON.stringify(fieldValue));
           index += 2;
         }
       }
@@ -2179,12 +2198,18 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
   async distinct(className: string, schema: SchemaType, query: QueryType, fieldName: string) {
     debug('distinct');
+    const fieldSegments = fieldName.split('.');
+    for (const segment of fieldSegments) {
+      if (!segment.match(/^[a-zA-Z][a-zA-Z0-9_]*$/)) {
+        throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}`);
+      }
+    }
     let field = fieldName;
     let column = fieldName;
     const isNested = fieldName.indexOf('.') >= 0;
     if (isNested) {
       field = transformDotFieldToComponents(fieldName).join('->');
-      column = fieldName.split('.')[0];
+      column = fieldSegments[0];
     }
     const isArrayField =
       schema.fields && schema.fields[fieldName] && schema.fields[fieldName].type === 'Array';

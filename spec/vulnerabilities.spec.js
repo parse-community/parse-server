@@ -2278,6 +2278,107 @@ describe('(GHSA-w54v-hf9p-8856) User enumeration via email verification endpoint
   });
 });
 
+describe('(GHSA-4m9m-p9j9-5hjw) User enumeration via signup endpoint', () => {
+  async function updateCLP(permissions) {
+    const response = await fetch(Parse.serverURL + '/schemas/_User', {
+      method: 'PUT',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ classLevelPermissions: permissions }),
+    });
+    const body = await response.json();
+    if (body.error) {
+      throw body;
+    }
+  }
+
+  it('does not reveal existing username when public create CLP is disabled', async () => {
+    const user = new Parse.User();
+    user.setUsername('existingUser');
+    user.setPassword('password123');
+    await user.signUp();
+    await Parse.User.logOut();
+
+    await updateCLP({
+      get: { '*': true },
+      find: { '*': true },
+      create: {},
+      update: { '*': true },
+      delete: { '*': true },
+      addField: {},
+    });
+
+    const response = await request({
+      url: 'http://localhost:8378/1/classes/_User',
+      method: 'POST',
+      body: { username: 'existingUser', password: 'otherpassword' },
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+    }).catch(e => e);
+    expect(response.data.code).not.toBe(Parse.Error.USERNAME_TAKEN);
+    expect(response.data.error).not.toContain('Account already exists');
+    expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+  });
+
+  it('does not reveal existing email when public create CLP is disabled', async () => {
+    const user = new Parse.User();
+    user.setUsername('emailUser');
+    user.setPassword('password123');
+    user.setEmail('existing@example.com');
+    await user.signUp();
+    await Parse.User.logOut();
+
+    await updateCLP({
+      get: { '*': true },
+      find: { '*': true },
+      create: {},
+      update: { '*': true },
+      delete: { '*': true },
+      addField: {},
+    });
+
+    const response = await request({
+      url: 'http://localhost:8378/1/classes/_User',
+      method: 'POST',
+      body: { username: 'newUser', password: 'otherpassword', email: 'existing@example.com' },
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+    }).catch(e => e);
+    expect(response.data.code).not.toBe(Parse.Error.EMAIL_TAKEN);
+    expect(response.data.error).not.toContain('Account already exists');
+    expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+  });
+
+  it('still returns username taken error when public create CLP is enabled', async () => {
+    const user = new Parse.User();
+    user.setUsername('existingUser');
+    user.setPassword('password123');
+    await user.signUp();
+    await Parse.User.logOut();
+
+    const response = await request({
+      url: 'http://localhost:8378/1/classes/_User',
+      method: 'POST',
+      body: { username: 'existingUser', password: 'otherpassword' },
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+    }).catch(e => e);
+    expect(response.data.code).toBe(Parse.Error.USERNAME_TAKEN);
+  });
+});
+
 describe('(GHSA-c442-97qw-j6c6) SQL Injection via $regex query operator field name in PostgreSQL adapter', () => {
   const headers = {
     'Content-Type': 'application/json',
@@ -3403,6 +3504,39 @@ describe('(GHSA-5hmj-jcgp-6hff) Protected fields leak via LiveQuery afterEvent t
       expect(validatorSpy).toHaveBeenCalled();
     });
 
+    it('rejects login with identical but expired authData when adapter rejects', async () => {
+      // Sign up with authData that is initially valid
+      const user = new Parse.User();
+      await user.save({
+        authData: { testAdapter: { id: 'user_expired', access_token: 'token_now_expired' } },
+      });
+      validatorSpy.calls.reset();
+
+      // Simulate the token expiring on the provider side: the adapter now
+      // rejects the same token that was valid at signup time
+      validatorSpy.and.rejectWith(
+        new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Token expired')
+      );
+
+      // Attempt login with the exact same (now-expired) authData
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        body: JSON.stringify({
+          authData: { testAdapter: { id: 'user_expired', access_token: 'token_now_expired' } },
+        }),
+      }).catch(e => e);
+
+      // Login must be rejected even though authData is identical to what's stored
+      expect(res.status).toBe(400);
+      expect(validatorSpy).toHaveBeenCalled();
+    });
+
     it('skips validation on update when authData is a subset of stored data', async () => {
       // Sign up with full authData
       const user = new Parse.User();
@@ -4039,5 +4173,431 @@ describe('(GHSA-6qh5-m6g3-xhq6) LiveQuery query depth DoS via deeply nested subs
     query._where = where;
     const subscription = await query.subscribe();
     expect(subscription).toBeDefined();
+  });
+});
+
+describe('(GHSA-g4cf-xj29-wqqr) DoS via unindexed database query for unconfigured auth providers', () => {
+  it('should not query database for unconfigured auth provider on signup', async () => {
+    const databaseAdapter = Config.get(Parse.applicationId).database.adapter;
+    const spy = spyOn(databaseAdapter, 'find').and.callThrough();
+    await expectAsync(
+      new Parse.User().save({ authData: { nonExistentProvider: { id: 'test123' } } })
+    ).toBeRejectedWith(
+      new Parse.Error(Parse.Error.UNSUPPORTED_SERVICE, 'This authentication method is unsupported.')
+    );
+    const authDataQueries = spy.calls.all().filter(call => {
+      const query = call.args[2];
+      return query?.$or?.some(q => q['authData.nonExistentProvider.id']);
+    });
+    expect(authDataQueries.length).toBe(0);
+  });
+
+  it('should not query database for unconfigured auth provider on challenge', async () => {
+    const databaseAdapter = Config.get(Parse.applicationId).database.adapter;
+    const spy = spyOn(databaseAdapter, 'find').and.callThrough();
+    await expectAsync(
+      request({
+        method: 'POST',
+        url: Parse.serverURL + '/challenge',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          authData: { nonExistentProvider: { id: 'test123' } },
+          challengeData: { nonExistentProvider: { token: 'abc' } },
+        }),
+      })
+    ).toBeRejected();
+    const authDataQueries = spy.calls.all().filter(call => {
+      const query = call.args[2];
+      return query?.$or?.some(q => q['authData.nonExistentProvider.id']);
+    });
+    expect(authDataQueries.length).toBe(0);
+  });
+
+  it('should still query database for configured auth provider', async () => {
+    await reconfigureServer({
+      auth: {
+        myConfiguredProvider: {
+          module: {
+            validateAppId: () => Promise.resolve(),
+            validateAuthData: () => Promise.resolve(),
+          },
+        },
+      },
+    });
+    const databaseAdapter = Config.get(Parse.applicationId).database.adapter;
+    const spy = spyOn(databaseAdapter, 'find').and.callThrough();
+    const user = new Parse.User();
+    await user.save({ authData: { myConfiguredProvider: { id: 'validId', token: 'validToken' } } });
+    const authDataQueries = spy.calls.all().filter(call => {
+      const query = call.args[2];
+      return query?.$or?.some(q => q['authData.myConfiguredProvider.id']);
+    });
+    expect(authDataQueries.length).toBeGreaterThan(0);
+  });
+});
+
+describe('(GHSA-2299-ghjr-6vjp) MFA recovery code reuse via concurrent requests', () => {
+  const mfaHeaders = {
+    'X-Parse-Application-Id': 'test',
+    'X-Parse-REST-API-Key': 'rest',
+    'Content-Type': 'application/json',
+  };
+
+  beforeEach(async () => {
+    await reconfigureServer({
+      auth: {
+        mfa: {
+          enabled: true,
+          options: ['TOTP'],
+          algorithm: 'SHA1',
+          digits: 6,
+          period: 30,
+        },
+      },
+    });
+  });
+
+  it('rejects concurrent logins using the same MFA recovery code', async () => {
+    const OTPAuth = require('otpauth');
+    const user = await Parse.User.signUp('mfauser', 'password123');
+    const secret = new OTPAuth.Secret();
+    const totp = new OTPAuth.TOTP({
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
+    const token = totp.generate();
+    await user.save(
+      { authData: { mfa: { secret: secret.base32, token } } },
+      { sessionToken: user.getSessionToken() }
+    );
+
+    // Get recovery codes from stored auth data
+    await user.fetch({ useMasterKey: true });
+    const recoveryCode = user.get('authData').mfa.recovery[0];
+    expect(recoveryCode).toBeDefined();
+
+    // Send concurrent login requests with the same recovery code
+    const loginWithRecovery = () =>
+      request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/login',
+        headers: mfaHeaders,
+        body: JSON.stringify({
+          username: 'mfauser',
+          password: 'password123',
+          authData: {
+            mfa: {
+              token: recoveryCode,
+            },
+          },
+        }),
+      });
+
+    const results = await Promise.allSettled(Array(10).fill().map(() => loginWithRecovery()));
+
+    const succeeded = results.filter(r => r.status === 'fulfilled');
+    const failed = results.filter(r => r.status === 'rejected');
+
+    // Exactly one request should succeed; all others should fail
+    expect(succeeded.length).toBe(1);
+    expect(failed.length).toBe(9);
+
+    // Verify the recovery code has been consumed
+    await user.fetch({ useMasterKey: true });
+    const remainingRecovery = user.get('authData').mfa.recovery;
+    expect(remainingRecovery).not.toContain(recoveryCode);
+  });
+});
+
+describe('(GHSA-p2w6-rmh7-w8q3) SQL Injection via aggregate and distinct field names in PostgreSQL adapter', () => {
+  const headers = {
+    'Content-Type': 'application/json',
+    'X-Parse-Application-Id': 'test',
+    'X-Parse-REST-API-Key': 'rest',
+    'X-Parse-Master-Key': 'test',
+  };
+  const serverURL = 'http://localhost:8378/1';
+
+  beforeEach(async () => {
+    const obj = new Parse.Object('TestClass');
+    obj.set('playerName', 'Alice');
+    obj.set('score', 100);
+    obj.set('metadata', { tag: 'hello' });
+    await obj.save(null, { useMasterKey: true });
+  });
+
+  describe('aggregate $group._id SQL injection', () => {
+    it_only_db('postgres')('rejects $group._id field value containing double quotes', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          pipeline: JSON.stringify([
+            {
+              $group: {
+                _id: {
+                  alias: '$playerName" OR 1=1 --',
+                },
+              },
+            },
+          ]),
+        },
+      }).catch(e => e);
+      expect(response.data?.code).toBe(Parse.Error.INVALID_KEY_NAME);
+    });
+
+    it_only_db('postgres')('rejects $group._id field value containing semicolons', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          pipeline: JSON.stringify([
+            {
+              $group: {
+                _id: {
+                  alias: '$playerName"; DROP TABLE "TestClass" --',
+                },
+              },
+            },
+          ]),
+        },
+      }).catch(e => e);
+      expect(response.data?.code).toBe(Parse.Error.INVALID_KEY_NAME);
+    });
+
+    it_only_db('postgres')('rejects $group._id date operation field value containing double quotes', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          pipeline: JSON.stringify([
+            {
+              $group: {
+                _id: {
+                  day: { $dayOfMonth: '$createdAt" OR 1=1 --' },
+                },
+              },
+            },
+          ]),
+        },
+      }).catch(e => e);
+      expect(response.data?.code).toBe(Parse.Error.INVALID_KEY_NAME);
+    });
+
+    it_only_db('postgres')('allows legitimate $group._id with field reference', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          pipeline: JSON.stringify([
+            {
+              $group: {
+                _id: {
+                  name: '$playerName',
+                },
+                count: { $sum: 1 },
+              },
+            },
+          ]),
+        },
+      });
+      expect(response.data?.results?.length).toBeGreaterThan(0);
+    });
+
+    it_only_db('postgres')('allows legitimate $group._id with date extraction', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          pipeline: JSON.stringify([
+            {
+              $group: {
+                _id: {
+                  day: { $dayOfMonth: '$_created_at' },
+                },
+                count: { $sum: 1 },
+              },
+            },
+          ]),
+        },
+      });
+      expect(response.data?.results?.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('distinct dot-notation SQL injection', () => {
+    it_only_db('postgres')('rejects distinct field name containing double quotes in dot notation', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          distinct: 'metadata" FROM pg_tables; --.tag',
+        },
+      }).catch(e => e);
+      expect(response.data?.code).toBe(Parse.Error.INVALID_KEY_NAME);
+    });
+
+    it_only_db('postgres')('rejects distinct field name containing semicolons in dot notation', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          distinct: 'metadata; DROP TABLE "TestClass" --.tag',
+        },
+      }).catch(e => e);
+      expect(response.data?.code).toBe(Parse.Error.INVALID_KEY_NAME);
+    });
+
+    it_only_db('postgres')('rejects distinct field name containing single quotes in dot notation', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          distinct: "metadata' OR '1'='1.tag",
+        },
+      }).catch(e => e);
+      expect(response.data?.code).toBe(Parse.Error.INVALID_KEY_NAME);
+    });
+
+    it_only_db('postgres')('allows legitimate distinct with dot notation', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          distinct: 'metadata.tag',
+        },
+      });
+      expect(response.data?.results).toEqual(['hello']);
+    });
+
+    it_only_db('postgres')('allows legitimate distinct without dot notation', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          distinct: 'playerName',
+        },
+      });
+      expect(response.data?.results).toEqual(['Alice']);
+    });
+  });
+
+  describe('(GHSA-37mj-c2wf-cx96) /users/me leaks raw authData via master context', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+
+    it('does not leak raw MFA authData via /users/me', async () => {
+      await reconfigureServer({
+        auth: {
+          mfa: {
+            enabled: true,
+            options: ['TOTP'],
+            algorithm: 'SHA1',
+            digits: 6,
+            period: 30,
+          },
+        },
+      });
+      const user = await Parse.User.signUp('username', 'password');
+      const sessionToken = user.getSessionToken();
+      const OTPAuth = require('otpauth');
+      const secret = new OTPAuth.Secret();
+      const totp = new OTPAuth.TOTP({
+        algorithm: 'SHA1',
+        digits: 6,
+        period: 30,
+        secret,
+      });
+      const token = totp.generate();
+      // Enable MFA
+      await user.save(
+        { authData: { mfa: { secret: secret.base32, token } } },
+        { sessionToken }
+      );
+      // Verify MFA data is stored (master key)
+      await user.fetch({ useMasterKey: true });
+      expect(user.get('authData').mfa.secret).toBe(secret.base32);
+      expect(user.get('authData').mfa.recovery).toBeDefined();
+      // GET /users/me should NOT include raw MFA data
+      const response = await request({
+        headers: {
+          ...headers,
+          'X-Parse-Session-Token': sessionToken,
+        },
+        method: 'GET',
+        url: 'http://localhost:8378/1/users/me',
+      });
+      expect(response.data.authData?.mfa?.secret).toBeUndefined();
+      expect(response.data.authData?.mfa?.recovery).toBeUndefined();
+      expect(response.data.authData?.mfa).toEqual({ status: 'enabled' });
+    });
+
+    it('returns same authData from /users/me and /users/:id', async () => {
+      await reconfigureServer({
+        auth: {
+          mfa: {
+            enabled: true,
+            options: ['TOTP'],
+            algorithm: 'SHA1',
+            digits: 6,
+            period: 30,
+          },
+        },
+      });
+      const user = await Parse.User.signUp('username', 'password');
+      const sessionToken = user.getSessionToken();
+      const OTPAuth = require('otpauth');
+      const secret = new OTPAuth.Secret();
+      const totp = new OTPAuth.TOTP({
+        algorithm: 'SHA1',
+        digits: 6,
+        period: 30,
+        secret,
+      });
+      await user.save(
+        { authData: { mfa: { secret: secret.base32, token: totp.generate() } } },
+        { sessionToken }
+      );
+      // Fetch via /users/me
+      const meResponse = await request({
+        headers: {
+          ...headers,
+          'X-Parse-Session-Token': sessionToken,
+        },
+        method: 'GET',
+        url: 'http://localhost:8378/1/users/me',
+      });
+      // Fetch via /users/:id
+      const idResponse = await request({
+        headers: {
+          ...headers,
+          'X-Parse-Session-Token': sessionToken,
+        },
+        method: 'GET',
+        url: `http://localhost:8378/1/users/${user.id}`,
+      });
+      // Both should return the same sanitized authData
+      expect(meResponse.data.authData).toEqual(idResponse.data.authData);
+      expect(meResponse.data.authData?.mfa).toEqual({ status: 'enabled' });
+    });
   });
 });
