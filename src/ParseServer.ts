@@ -183,8 +183,8 @@ class ParseServer {
       }
       startupPromises.push(liveQueryController.connect());
       await Promise.all(startupPromises);
+      this.legacyCloud.bindToParseCloud();
       if (cloud) {
-        this.legacyCloud.bindToParseCloud();
         if (typeof cloud === 'function') {
           await Promise.resolve(cloud(Parse));
         } else if (typeof cloud === 'string') {

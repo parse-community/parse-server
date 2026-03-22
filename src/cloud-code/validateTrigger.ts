@@ -1,7 +1,7 @@
 import { TriggerType } from './TriggerStore';
 
 export function validateClassNameForTriggers(className: string, type: string): string {
-  if (type == TriggerType.beforeSave && className === '_PushStatus') {
+  if (className === '_PushStatus' && type !== TriggerType.afterSave) {
     throw 'Only afterSave is allowed on _PushStatus';
   }
   if (

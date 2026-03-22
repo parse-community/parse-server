@@ -163,7 +163,11 @@ export class TriggerStore {
   static addFunction(appId: string, name: string, handler: Handler, validator?: Validator): void {
     const s = TriggerStore._getOrCreate(appId);
     addToStore(s.functions, name, handler);
-    if (validator) addToStore(s.validators, name, validator);
+    if (validator) {
+      addToStore(s.validators, name, validator);
+    } else {
+      removeFromStore(s.validators, name);
+    }
   }
 
   static addJob(appId: string, name: string, handler: Handler): void {
@@ -173,14 +177,24 @@ export class TriggerStore {
   static addTrigger(appId: string, type: string, className: string, handler: Handler, validator?: Validator): void {
     validateClassNameForTriggers(className, type);
     const s = TriggerStore._getOrCreate(appId);
-    addToStore(s.triggers, `${type}.${className}`, handler);
-    if (validator) addToStore(s.validators, `${type}.${className}`, validator);
+    const key = `${type}.${className}`;
+    addToStore(s.triggers, key, handler);
+    if (validator) {
+      addToStore(s.validators, key, validator);
+    } else {
+      removeFromStore(s.validators, key);
+    }
   }
 
   static addConnectTrigger(appId: string, type: string, handler: Handler, validator?: Validator): void {
     const s = TriggerStore._getOrCreate(appId);
-    addToStore(s.triggers, `${type}.${ConnectClassName}`, handler);
-    if (validator) addToStore(s.validators, `${type}.${ConnectClassName}`, validator);
+    const key = `${type}.${ConnectClassName}`;
+    addToStore(s.triggers, key, handler);
+    if (validator) {
+      addToStore(s.validators, key, validator);
+    } else {
+      removeFromStore(s.validators, key);
+    }
   }
 
   static addLiveQueryEventHandler(appId: string, handler: Handler): void {
@@ -242,12 +256,18 @@ export class TriggerStore {
 
   static removeFunction(appId: string, name: string): void {
     const s = TriggerStore._stores.get(appId);
-    if (s) removeFromStore(s.functions, name);
+    if (s) {
+      removeFromStore(s.functions, name);
+      removeFromStore(s.validators, name);
+    }
   }
 
   static removeTrigger(appId: string, type: string, className: string): void {
     const s = TriggerStore._stores.get(appId);
-    if (s) removeFromStore(s.triggers, `${type}.${className}`);
+    if (s) {
+      removeFromStore(s.triggers, `${type}.${className}`);
+      removeFromStore(s.validators, `${type}.${className}`);
+    }
   }
 
   static removeAllHooks(appId: string): void {
@@ -256,6 +276,9 @@ export class TriggerStore {
   }
 
   static clearAll(): void {
+    for (const appId of TriggerStore._stores.keys()) {
+      Config.get(appId)?.unregisterRateLimiters();
+    }
     TriggerStore._stores.clear();
   }
 

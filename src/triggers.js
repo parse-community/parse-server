@@ -582,7 +582,8 @@ export function resolveError(message, defaultOpts) {
   return error;
 }
 export function maybeRunValidator(request, functionName, auth) {
-  const theValidator = getValidator(functionName, Parse.applicationId);
+  const applicationId = request.config?.applicationId || Parse.applicationId;
+  const theValidator = getValidator(functionName, applicationId);
   if (!theValidator) {
     return;
   }
