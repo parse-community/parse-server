@@ -1,3 +1,10 @@
+## [8.6.61](https://github.com/parse-community/parse-server/compare/8.6.60...8.6.61) (2026-03-22)
+
+
+### Bug Fixes
+
+* Auth data exposed via /users/me endpoint ([GHSA-37mj-c2wf-cx96](https://github.com/parse-community/parse-server/security/advisories/GHSA-37mj-c2wf-cx96)) ([#10279](https://github.com/parse-community/parse-server/issues/10279)) ([5b8998e](https://github.com/parse-community/parse-server/commit/5b8998e6866bcf75be7b5bb625e27d23bfaf912c))
+
 ## [8.6.60](https://github.com/parse-community/parse-server/compare/8.6.59...8.6.60) (2026-03-22)
 
 
