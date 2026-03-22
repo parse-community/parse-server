@@ -1837,4 +1837,140 @@ describe('ProtectedFields', function () {
       await expectAsync(restQuery.denyProtectedFields()).toBeResolved();
     });
   });
+
+  describe('protectedFieldsOwnerExempt', function () {
+    it('owner sees own protectedFields when protectedFieldsOwnerExempt is true', async function () {
+      const protectedFields = {
+        _User: {
+          '*': ['phone'],
+        },
+      };
+      await reconfigureServer({ protectedFields, protectedFieldsOwnerExempt: true });
+      const user1 = new Parse.User();
+      user1.setUsername('user1');
+      user1.setPassword('password');
+      user1.set('phone', '555-1234');
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      user1.setACL(acl);
+      await user1.signUp();
+      const sessionToken1 = user1.getSessionToken();
+
+      // Owner fetches own object — phone should be visible
+      const response = await request({
+        url: `http://localhost:8378/1/users/${user1.id}`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': sessionToken1,
+        },
+      });
+      expect(response.data.phone).toBe('555-1234');
+
+      // Another user fetches the first user — phone should be hidden
+      const user2 = new Parse.User();
+      user2.setUsername('user2');
+      user2.setPassword('password');
+      await user2.signUp();
+      const response2 = await request({
+        url: `http://localhost:8378/1/users/${user1.id}`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': user2.getSessionToken(),
+        },
+      });
+      expect(response2.data.phone).toBeUndefined();
+    });
+
+    it('owner does NOT see own protectedFields when protectedFieldsOwnerExempt is false', async function () {
+      await reconfigureServer({
+        protectedFields: {
+          _User: {
+            '*': ['phone'],
+          },
+        },
+        protectedFieldsOwnerExempt: false,
+      });
+      const user = await Parse.User.signUp('user1', 'password');
+      const sessionToken = user.getSessionToken();
+      user.set('phone', '555-1234');
+      await user.save(null, { sessionToken });
+
+      // Owner fetches own object — phone should be hidden
+      const response = await request({
+        url: `http://localhost:8378/1/users/${user.id}`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': sessionToken,
+        },
+      });
+      expect(response.data.phone).toBeUndefined();
+
+      // Master key — phone should be visible
+      const masterResponse = await request({
+        url: `http://localhost:8378/1/users/${user.id}`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+        },
+      });
+      expect(masterResponse.data.phone).toBe('555-1234');
+    });
+
+    it('non-_User classes unaffected by protectedFieldsOwnerExempt', async function () {
+      await reconfigureServer({
+        protectedFields: {
+          TestClass: {
+            '*': ['secret'],
+          },
+        },
+        protectedFieldsOwnerExempt: true,
+      });
+      const user = await Parse.User.signUp('user1', 'password');
+      const obj = new Parse.Object('TestClass');
+      obj.set('secret', 'hidden-value');
+      obj.setACL(new Parse.ACL(user));
+      await obj.save(null, { sessionToken: user.getSessionToken() });
+
+      // Owner fetches own object — secret should still be hidden (non-_User class)
+      const response = await request({
+        url: `http://localhost:8378/1/classes/TestClass/${obj.id}`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': user.getSessionToken(),
+        },
+      });
+      expect(response.data.secret).toBeUndefined();
+    });
+
+    it('/users/me respects protectedFieldsOwnerExempt: false', async function () {
+      await reconfigureServer({
+        protectedFields: {
+          _User: {
+            '*': ['phone'],
+          },
+        },
+        protectedFieldsOwnerExempt: false,
+      });
+      const user = await Parse.User.signUp('user1', 'password');
+      const sessionToken = user.getSessionToken();
+      user.set('phone', '555-1234');
+      await user.save(null, { sessionToken });
+
+      // GET /users/me — phone should be hidden
+      const response = await request({
+        url: 'http://localhost:8378/1/users/me',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': sessionToken,
+        },
+      });
+      expect(response.data.phone).toBeUndefined();
+      expect(response.data.objectId).toBe(user.id);
+    });
+  });
 });

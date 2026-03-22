@@ -168,9 +168,13 @@ export interface ParseServerOptions {
   preserveFileName: ?boolean;
   /* Personally identifiable information fields in the user table the should be removed for non-authorized users. Deprecated @see protectedFields */
   userSensitiveFields: ?(string[]);
-  /* Protected fields that should be treated with extra security when fetching details.
+  /* Fields per class that are hidden from query results for specific user groups. Protected fields are stripped from the server response, but can still be used internally (e.g. in Cloud Code triggers). Configure as `{ 'ClassName': { 'UserGroup': ['field1', 'field2'] } }` where `UserGroup` is one of: `'*'` (all users), `'authenticated'` (authenticated users), `'role:RoleName'` (users with a specific role), or `'userField:FieldName'` (users referenced by a pointer field). When multiple groups apply, the intersection of their protected fields is used. By default, `email` is protected on the `_User` class for all users. On the `_User` class, the object owner is exempt from protected fields by default; see `protectedFieldsOwnerExempt` to change this.
   :DEFAULT: {"_User": {"*": ["email"]}} */
   protectedFields: ?ProtectedFields;
+  /* Whether the `_User` class is exempt from `protectedFields` when the logged-in user queries their own user object. If `true`, a user can see all their own fields regardless of `protectedFields` configuration. If `false`, `protectedFields` applies equally to the user's own object, consistent with all other classes.
+  :ENV: PARSE_SERVER_PROTECTED_FIELDS_OWNER_EXEMPT
+  :DEFAULT: true */
+  protectedFieldsOwnerExempt: ?boolean;
   /* Enable (or disable) anonymous users, defaults to true
   :ENV: PARSE_SERVER_ENABLE_ANON_USERS
   :DEFAULT: true */
