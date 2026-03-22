@@ -1,3 +1,10 @@
+## [8.6.60](https://github.com/parse-community/parse-server/compare/8.6.59...8.6.60) (2026-03-22)
+
+
+### Bug Fixes
+
+* MFA recovery code single-use bypass via concurrent requests ([GHSA-2299-ghjr-6vjp](https://github.com/parse-community/parse-server/security/advisories/GHSA-2299-ghjr-6vjp)) ([#10276](https://github.com/parse-community/parse-server/issues/10276)) ([fc3da35](https://github.com/parse-community/parse-server/commit/fc3da35a81d5083b453e8967cabcc880f1a3bd0c))
+
 ## [8.6.59](https://github.com/parse-community/parse-server/compare/8.6.58...8.6.59) (2026-03-21)
 
 
