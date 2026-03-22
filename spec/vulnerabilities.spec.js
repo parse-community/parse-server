@@ -1615,25 +1615,23 @@ describe('(GHSA-gqpp-xgvh-9h7h) SQL Injection via dot-notation sub-key name in I
     }).catch(() => {});
     const elapsed = Date.now() - start;
 
-    // Double quotes break JSON structure inside the CONCAT, producing invalid JSONB.
-    // This causes a database error, NOT SQL injection. If injection succeeded,
-    // the query would take >= 3 seconds due to pg_sleep.
+    // Double quotes are escaped in the JSON context, producing a harmless literal key
+    // name. No SQL injection occurs. If injection succeeded, the query would take
+    // >= 3 seconds due to pg_sleep.
     expect(elapsed).toBeLessThan(3000);
-    // Invalid JSONB cast fails the UPDATE, so the row is not modified
     const verify = await new Parse.Query('SubKeyTest').get(obj.id);
-    expect(verify.get('stats')).toEqual({ counter: 0 });
+    // Original counter is untouched
+    expect(verify.get('stats').counter).toBe(0);
   });
 
-  it_only_db('postgres')('does not execute injected SQL via double quote crafted as valid JSONB in sub-key name', async () => {
+  it_only_db('postgres')('does not inject additional JSONB keys via double quote crafted as valid JSONB in sub-key name', async () => {
     const obj = new Parse.Object('SubKeyTest');
     obj.set('stats', { counter: 0 });
     await obj.save();
 
-    // This payload uses double quotes to craft a sub-key that produces valid JSONB
-    // (e.g. '{"x":0,"evil":1}') instead of breaking JSON structure. Even so, both
-    // interpolation sites are inside single-quoted SQL strings, so double quotes
-    // cannot escape the SQL context — no arbitrary SQL execution is possible.
-    const start = Date.now();
+    // This payload attempts to craft a sub-key that produces valid JSONB with
+    // injected keys (e.g. '{"x":0,"evil":1}'). Double quotes are escaped in the
+    // JSON context, so the payload becomes a harmless literal key name instead.
     await request({
       method: 'PUT',
       url: `http://localhost:8378/1/classes/SubKeyTest/${obj.id}`,
@@ -1642,13 +1640,12 @@ describe('(GHSA-gqpp-xgvh-9h7h) SQL Injection via dot-notation sub-key name in I
         'stats.x":0,"pg_sleep(3)': { __op: 'Increment', amount: 1 },
       }),
     }).catch(() => {});
-    const elapsed = Date.now() - start;
 
-    expect(elapsed).toBeLessThan(3000);
-    // Double quotes craft valid JSONB with extra keys, but no SQL injection occurs;
-    // original counter is untouched
     const verify = await new Parse.Query('SubKeyTest').get(obj.id);
+    // Original counter is untouched
     expect(verify.get('stats').counter).toBe(0);
+    // No injected key exists — the payload is treated as a single literal key name
+    expect(verify.get('stats')['pg_sleep(3)']).toBeUndefined();
   });
 
   it_only_db('postgres')('allows valid Increment on nested object field with normal sub-key', async () => {
@@ -2281,6 +2278,107 @@ describe('(GHSA-w54v-hf9p-8856) User enumeration via email verification endpoint
   });
 });
 
+describe('(GHSA-4m9m-p9j9-5hjw) User enumeration via signup endpoint', () => {
+  async function updateCLP(permissions) {
+    const response = await fetch(Parse.serverURL + '/schemas/_User', {
+      method: 'PUT',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ classLevelPermissions: permissions }),
+    });
+    const body = await response.json();
+    if (body.error) {
+      throw body;
+    }
+  }
+
+  it('does not reveal existing username when public create CLP is disabled', async () => {
+    const user = new Parse.User();
+    user.setUsername('existingUser');
+    user.setPassword('password123');
+    await user.signUp();
+    await Parse.User.logOut();
+
+    await updateCLP({
+      get: { '*': true },
+      find: { '*': true },
+      create: {},
+      update: { '*': true },
+      delete: { '*': true },
+      addField: {},
+    });
+
+    const response = await request({
+      url: 'http://localhost:8378/1/classes/_User',
+      method: 'POST',
+      body: { username: 'existingUser', password: 'otherpassword' },
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+    }).catch(e => e);
+    expect(response.data.code).not.toBe(Parse.Error.USERNAME_TAKEN);
+    expect(response.data.error).not.toContain('Account already exists');
+    expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+  });
+
+  it('does not reveal existing email when public create CLP is disabled', async () => {
+    const user = new Parse.User();
+    user.setUsername('emailUser');
+    user.setPassword('password123');
+    user.setEmail('existing@example.com');
+    await user.signUp();
+    await Parse.User.logOut();
+
+    await updateCLP({
+      get: { '*': true },
+      find: { '*': true },
+      create: {},
+      update: { '*': true },
+      delete: { '*': true },
+      addField: {},
+    });
+
+    const response = await request({
+      url: 'http://localhost:8378/1/classes/_User',
+      method: 'POST',
+      body: { username: 'newUser', password: 'otherpassword', email: 'existing@example.com' },
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+    }).catch(e => e);
+    expect(response.data.code).not.toBe(Parse.Error.EMAIL_TAKEN);
+    expect(response.data.error).not.toContain('Account already exists');
+    expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+  });
+
+  it('still returns username taken error when public create CLP is enabled', async () => {
+    const user = new Parse.User();
+    user.setUsername('existingUser');
+    user.setPassword('password123');
+    await user.signUp();
+    await Parse.User.logOut();
+
+    const response = await request({
+      url: 'http://localhost:8378/1/classes/_User',
+      method: 'POST',
+      body: { username: 'existingUser', password: 'otherpassword' },
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+    }).catch(e => e);
+    expect(response.data.code).toBe(Parse.Error.USERNAME_TAKEN);
+  });
+});
+
 describe('(GHSA-c442-97qw-j6c6) SQL Injection via $regex query operator field name in PostgreSQL adapter', () => {
   const headers = {
     'Content-Type': 'application/json',
@@ -2833,6 +2931,90 @@ describe('(GHSA-9xp9-j92r-p88v) Stack overflow process crash via deeply nested q
       })
     );
   });
+
+  it('rejects deeply nested query before transform pipeline processes it', async () => {
+    await reconfigureServer({
+      requestComplexity: { queryDepth: 10 },
+    });
+    const auth = require('../lib/Auth');
+    const rest = require('../lib/rest');
+    const config = Config.get('test');
+    // Depth 50 bypasses the fix because RestQuery.js transform pipeline
+    // recursively traverses the structure before validateQuery() is reached
+    let where = { username: 'test' };
+    for (let i = 0; i < 50; i++) {
+      where = { $and: [where] };
+    }
+    await expectAsync(
+      rest.find(config, auth.nobody(config), '_User', where)
+    ).toBeRejectedWith(
+      jasmine.objectContaining({
+        message: jasmine.stringMatching(/Query condition nesting depth exceeds maximum allowed depth/),
+      })
+    );
+  });
+
+  it('rejects deeply nested query via REST API without authentication', async () => {
+    await reconfigureServer({
+      requestComplexity: { queryDepth: 10 },
+    });
+    let where = { username: 'test' };
+    for (let i = 0; i < 50; i++) {
+      where = { $or: [where] };
+    }
+    await expectAsync(
+      request({
+        method: 'GET',
+        url: `${Parse.serverURL}/classes/_User`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        qs: { where: JSON.stringify(where) },
+      })
+    ).toBeRejectedWith(
+      jasmine.objectContaining({
+        data: jasmine.objectContaining({
+          code: Parse.Error.INVALID_QUERY,
+        }),
+      })
+    );
+  });
+
+  it('rejects deeply nested $nor query before transform pipeline', async () => {
+    await reconfigureServer({
+      requestComplexity: { queryDepth: 10 },
+    });
+    const auth = require('../lib/Auth');
+    const rest = require('../lib/rest');
+    const config = Config.get('test');
+    let where = { username: 'test' };
+    for (let i = 0; i < 50; i++) {
+      where = { $nor: [where] };
+    }
+    await expectAsync(
+      rest.find(config, auth.nobody(config), '_User', where)
+    ).toBeRejectedWith(
+      jasmine.objectContaining({
+        message: jasmine.stringMatching(/Query condition nesting depth exceeds maximum allowed depth/),
+      })
+    );
+  });
+
+  it('allows queries within the depth limit', async () => {
+    await reconfigureServer({
+      requestComplexity: { queryDepth: 10 },
+    });
+    const auth = require('../lib/Auth');
+    const rest = require('../lib/rest');
+    const config = Config.get('test');
+    let where = { username: 'test' };
+    for (let i = 0; i < 5; i++) {
+      where = { $or: [where] };
+    }
+    const result = await rest.find(config, auth.nobody(config), '_User', where);
+    expect(result.results).toBeDefined();
+  });
 });
 
 describe('(GHSA-fjxm-vhvc-gcmj) LiveQuery Operator Type Confusion', () => {
@@ -3220,5 +3402,1202 @@ describe('(GHSA-5hmj-jcgp-6hff) Protected fields leak via LiveQuery afterEvent t
       }),
       obj.save({ publicField: 'changed' }, { useMasterKey: true }),
     ]);
+  });
+
+  describe('(GHSA-pfj7-wv7c-22pr) AuthData subset validation bypass with allowExpiredAuthDataToken', () => {
+    let validatorSpy;
+
+    const testAdapter = {
+      validateAppId: () => Promise.resolve(),
+      validateAuthData: () => Promise.resolve(),
+    };
+
+    beforeEach(async () => {
+      validatorSpy = spyOn(testAdapter, 'validateAuthData').and.resolveTo({});
+      await reconfigureServer({
+        auth: { testAdapter },
+        allowExpiredAuthDataToken: true,
+      });
+    });
+
+    it('validates authData on login when incoming data is a strict subset of stored data', async () => {
+      // Sign up a user with full authData (id + access_token)
+      const user = new Parse.User();
+      await user.save({
+        authData: { testAdapter: { id: 'user123', access_token: 'valid_token' } },
+      });
+      validatorSpy.calls.reset();
+
+      // Attempt to log in with only the id field (subset of stored data)
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        body: JSON.stringify({
+          authData: { testAdapter: { id: 'user123' } },
+        }),
+      });
+      expect(res.data.objectId).toBe(user.id);
+      // The adapter MUST be called to validate the login attempt
+      expect(validatorSpy).toHaveBeenCalled();
+    });
+
+    it('prevents account takeover via partial authData when allowExpiredAuthDataToken is enabled', async () => {
+      // Sign up a user with full authData
+      const user = new Parse.User();
+      await user.save({
+        authData: { testAdapter: { id: 'victim123', access_token: 'secret_token' } },
+      });
+      validatorSpy.calls.reset();
+
+      // Simulate an attacker sending only the provider ID (no access_token)
+      // The adapter should reject this because the token is missing
+      validatorSpy.and.rejectWith(
+        new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Invalid credentials')
+      );
+
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        body: JSON.stringify({
+          authData: { testAdapter: { id: 'victim123' } },
+        }),
+      }).catch(e => e);
+
+      // Login must be rejected — adapter validation must not be skipped
+      expect(res.status).toBe(400);
+      expect(validatorSpy).toHaveBeenCalled();
+    });
+
+    it('validates authData on login even when authData is identical', async () => {
+      // Sign up with full authData
+      const user = new Parse.User();
+      await user.save({
+        authData: { testAdapter: { id: 'user456', access_token: 'expired_token' } },
+      });
+      validatorSpy.calls.reset();
+
+      // Log in with the exact same authData (all keys present, same values)
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        body: JSON.stringify({
+          authData: { testAdapter: { id: 'user456', access_token: 'expired_token' } },
+        }),
+      });
+      expect(res.data.objectId).toBe(user.id);
+      // Auth providers are always validated on login regardless of allowExpiredAuthDataToken
+      expect(validatorSpy).toHaveBeenCalled();
+    });
+
+    it('rejects login with identical but expired authData when adapter rejects', async () => {
+      // Sign up with authData that is initially valid
+      const user = new Parse.User();
+      await user.save({
+        authData: { testAdapter: { id: 'user_expired', access_token: 'token_now_expired' } },
+      });
+      validatorSpy.calls.reset();
+
+      // Simulate the token expiring on the provider side: the adapter now
+      // rejects the same token that was valid at signup time
+      validatorSpy.and.rejectWith(
+        new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Token expired')
+      );
+
+      // Attempt login with the exact same (now-expired) authData
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        body: JSON.stringify({
+          authData: { testAdapter: { id: 'user_expired', access_token: 'token_now_expired' } },
+        }),
+      }).catch(e => e);
+
+      // Login must be rejected even though authData is identical to what's stored
+      expect(res.status).toBe(400);
+      expect(validatorSpy).toHaveBeenCalled();
+    });
+
+    it('skips validation on update when authData is a subset of stored data', async () => {
+      // Sign up with full authData
+      const user = new Parse.User();
+      await user.save({
+        authData: { testAdapter: { id: 'user789', access_token: 'valid_token' } },
+      });
+      validatorSpy.calls.reset();
+
+      // Update the user with a subset of authData (simulates afterFind stripping fields)
+      await request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/users/${user.id}`,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': user.getSessionToken(),
+        },
+        body: JSON.stringify({
+          authData: { testAdapter: { id: 'user789' } },
+        }),
+      });
+      // On update with allowExpiredAuthDataToken: true, subset data skips validation
+      expect(validatorSpy).not.toHaveBeenCalled();
+    });
+  });
+});
+
+describe('(GHSA-fph2-r4qg-9576) LiveQuery bypasses CLP pointer permission enforcement', () => {
+  const { sleep } = require('../lib/TestUtils');
+
+  beforeEach(() => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+  });
+
+  afterEach(async () => {
+    try {
+      const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+      if (client) {
+        await client.close();
+      }
+    } catch (e) {
+      // Ignore cleanup errors when client is not initialized
+    }
+  });
+
+  async function updateCLP(className, permissions) {
+    const response = await fetch(Parse.serverURL + '/schemas/' + className, {
+      method: 'PUT',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ classLevelPermissions: permissions }),
+    });
+    const body = await response.json();
+    if (body.error) {
+      throw body;
+    }
+    return body;
+  }
+
+  it('should not deliver LiveQuery events to user not in readUserFields pointer', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['PrivateMessage'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    // Create users using master key to avoid session management issues
+    const userA = new Parse.User();
+    userA.setUsername('userA_pointer');
+    userA.setPassword('password123');
+    await userA.signUp();
+    await Parse.User.logOut();
+
+    // User B stays logged in for the subscription
+    const userB = new Parse.User();
+    userB.setUsername('userB_pointer');
+    userB.setPassword('password456');
+    await userB.signUp();
+
+    // Create schema by saving an object with owner pointer, then set CLP
+    const seed = new Parse.Object('PrivateMessage');
+    seed.set('owner', userA);
+    await seed.save(null, { useMasterKey: true });
+    await seed.destroy({ useMasterKey: true });
+
+    await updateCLP('PrivateMessage', {
+      create: { '*': true },
+      find: {},
+      get: {},
+      readUserFields: ['owner'],
+    });
+
+    // User B subscribes — should NOT receive events for User A's objects
+    const query = new Parse.Query('PrivateMessage');
+    const subscription = await query.subscribe(userB.getSessionToken());
+
+    const createSpy = jasmine.createSpy('create');
+    const enterSpy = jasmine.createSpy('enter');
+    subscription.on('create', createSpy);
+    subscription.on('enter', enterSpy);
+
+    // Create a message owned by User A
+    const msg = new Parse.Object('PrivateMessage');
+    msg.set('content', 'secret message');
+    msg.set('owner', userA);
+    await msg.save(null, { useMasterKey: true });
+
+    await sleep(500);
+
+    // User B should NOT have received the create event
+    expect(createSpy).not.toHaveBeenCalled();
+    expect(enterSpy).not.toHaveBeenCalled();
+  });
+
+  it('should deliver LiveQuery events to user in readUserFields pointer', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['PrivateMessage2'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    // User A stays logged in for the subscription
+    const userA = new Parse.User();
+    userA.setUsername('userA_owner');
+    userA.setPassword('password123');
+    await userA.signUp();
+
+    // Create schema by saving an object with owner pointer
+    const seed = new Parse.Object('PrivateMessage2');
+    seed.set('owner', userA);
+    await seed.save(null, { useMasterKey: true });
+    await seed.destroy({ useMasterKey: true });
+
+    await updateCLP('PrivateMessage2', {
+      create: { '*': true },
+      find: {},
+      get: {},
+      readUserFields: ['owner'],
+    });
+
+    // User A subscribes — SHOULD receive events for their own objects
+    const query = new Parse.Query('PrivateMessage2');
+    const subscription = await query.subscribe(userA.getSessionToken());
+
+    const createSpy = jasmine.createSpy('create');
+    subscription.on('create', createSpy);
+
+    // Create a message owned by User A
+    const msg = new Parse.Object('PrivateMessage2');
+    msg.set('content', 'my own message');
+    msg.set('owner', userA);
+    await msg.save(null, { useMasterKey: true });
+
+    await sleep(500);
+
+    // User A SHOULD have received the create event
+    expect(createSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('should not deliver LiveQuery events when find uses pointerFields', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['PrivateDoc'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const userA = new Parse.User();
+    userA.setUsername('userA_doc');
+    userA.setPassword('password123');
+    await userA.signUp();
+    await Parse.User.logOut();
+
+    // User B stays logged in for the subscription
+    const userB = new Parse.User();
+    userB.setUsername('userB_doc');
+    userB.setPassword('password456');
+    await userB.signUp();
+
+    // Create schema by saving an object with recipient pointer
+    const seed = new Parse.Object('PrivateDoc');
+    seed.set('recipient', userA);
+    await seed.save(null, { useMasterKey: true });
+    await seed.destroy({ useMasterKey: true });
+
+    // Set CLP with pointerFields instead of readUserFields
+    await updateCLP('PrivateDoc', {
+      create: { '*': true },
+      find: { pointerFields: ['recipient'] },
+      get: { pointerFields: ['recipient'] },
+    });
+
+    // User B subscribes
+    const query = new Parse.Query('PrivateDoc');
+    const subscription = await query.subscribe(userB.getSessionToken());
+
+    const createSpy = jasmine.createSpy('create');
+    subscription.on('create', createSpy);
+
+    // Create doc with recipient = User A (not User B)
+    const doc = new Parse.Object('PrivateDoc');
+    doc.set('title', 'confidential');
+    doc.set('recipient', userA);
+    await doc.save(null, { useMasterKey: true });
+
+    await sleep(500);
+
+    // User B should NOT receive events for User A's document
+    expect(createSpy).not.toHaveBeenCalled();
+  });
+
+  it('should not deliver LiveQuery events to unauthenticated users for pointer-protected classes', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['SecureItem'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const userA = new Parse.User();
+    userA.setUsername('userA_secure');
+    userA.setPassword('password123');
+    await userA.signUp();
+    await Parse.User.logOut();
+
+    // Create schema
+    const seed = new Parse.Object('SecureItem');
+    seed.set('owner', userA);
+    await seed.save(null, { useMasterKey: true });
+    await seed.destroy({ useMasterKey: true });
+
+    await updateCLP('SecureItem', {
+      create: { '*': true },
+      find: {},
+      get: {},
+      readUserFields: ['owner'],
+    });
+
+    // Unauthenticated subscription
+    const query = new Parse.Query('SecureItem');
+    const subscription = await query.subscribe();
+
+    const createSpy = jasmine.createSpy('create');
+    subscription.on('create', createSpy);
+
+    const item = new Parse.Object('SecureItem');
+    item.set('data', 'private');
+    item.set('owner', userA);
+    await item.save(null, { useMasterKey: true });
+
+    await sleep(500);
+
+    expect(createSpy).not.toHaveBeenCalled();
+  });
+
+  it('should handle readUserFields with array of pointers', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['SharedDoc'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const userA = new Parse.User();
+    userA.setUsername('userA_shared');
+    userA.setPassword('password123');
+    await userA.signUp();
+    await Parse.User.logOut();
+
+    // User B — don't log out, session must remain valid
+    const userB = new Parse.User();
+    userB.setUsername('userB_shared');
+    userB.setPassword('password456');
+    await userB.signUp();
+    const userBSessionToken = userB.getSessionToken();
+
+    // User C — signUp changes current user to C, but B's session stays valid
+    const userC = new Parse.User();
+    userC.setUsername('userC_shared');
+    userC.setPassword('password789');
+    await userC.signUp();
+    const userCSessionToken = userC.getSessionToken();
+
+    // Create schema with array field
+    const seed = new Parse.Object('SharedDoc');
+    seed.set('collaborators', [userA]);
+    await seed.save(null, { useMasterKey: true });
+    await seed.destroy({ useMasterKey: true });
+
+    await updateCLP('SharedDoc', {
+      create: { '*': true },
+      find: {},
+      get: {},
+      readUserFields: ['collaborators'],
+    });
+
+    // User B subscribes — is in the collaborators array
+    const queryB = new Parse.Query('SharedDoc');
+    const subscriptionB = await queryB.subscribe(userBSessionToken);
+    const createSpyB = jasmine.createSpy('createB');
+    subscriptionB.on('create', createSpyB);
+
+    // User C subscribes — is NOT in the collaborators array
+    const queryC = new Parse.Query('SharedDoc');
+    const subscriptionC = await queryC.subscribe(userCSessionToken);
+    const createSpyC = jasmine.createSpy('createC');
+    subscriptionC.on('create', createSpyC);
+
+    // Create doc with collaborators = [userA, userB] (not userC)
+    const doc = new Parse.Object('SharedDoc');
+    doc.set('title', 'team doc');
+    doc.set('collaborators', [userA, userB]);
+    await doc.save(null, { useMasterKey: true });
+
+    await sleep(500);
+
+    // User B SHOULD receive the event (in collaborators array)
+    expect(createSpyB).toHaveBeenCalledTimes(1);
+    // User C should NOT receive the event
+    expect(createSpyC).not.toHaveBeenCalled();
+  });
+});
+
+describe('(GHSA-qpc3-fg4j-8hgm) Protected field change detection oracle via LiveQuery watch parameter', () => {
+  const { sleep } = require('../lib/TestUtils');
+  let obj;
+
+  beforeEach(async () => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    await reconfigureServer({
+      liveQuery: { classNames: ['SecretClass'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const config = Config.get(Parse.applicationId);
+    const schemaController = await config.database.loadSchema();
+    await schemaController.addClassIfNotExists('SecretClass', {
+      secretObj: { type: 'Object' },
+      publicField: { type: 'String' },
+    });
+    await schemaController.updateClass(
+      'SecretClass',
+      {},
+      {
+        find: { '*': true },
+        get: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+        protectedFields: { '*': ['secretObj'] },
+      }
+    );
+
+    obj = new Parse.Object('SecretClass');
+    obj.set('secretObj', { apiKey: 'SENSITIVE_KEY_123', score: 42 });
+    obj.set('publicField', 'visible');
+    await obj.save(null, { useMasterKey: true });
+  });
+
+  afterEach(async () => {
+    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+    if (client) {
+      await client.close();
+    }
+  });
+
+  it('should reject LiveQuery subscription with protected field in watch', async () => {
+    const query = new Parse.Query('SecretClass');
+    query.watch('secretObj');
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+    );
+  });
+
+  it('should reject LiveQuery subscription with dot-notation on protected field in watch', async () => {
+    const query = new Parse.Query('SecretClass');
+    query.watch('secretObj.apiKey');
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+    );
+  });
+
+  it('should reject LiveQuery subscription with deeply nested dot-notation on protected field in watch', async () => {
+    const query = new Parse.Query('SecretClass');
+    query.watch('secretObj.nested.deep.key');
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+    );
+  });
+
+  it('should allow LiveQuery subscription with non-protected field in watch', async () => {
+    const query = new Parse.Query('SecretClass');
+    query.watch('publicField');
+    const subscription = await query.subscribe();
+    await Promise.all([
+      new Promise(resolve => {
+        subscription.on('update', object => {
+          expect(object.get('secretObj')).toBeUndefined();
+          expect(object.get('publicField')).toBe('updated');
+          resolve();
+        });
+      }),
+      obj.save({ publicField: 'updated' }, { useMasterKey: true }),
+    ]);
+  });
+
+  it('should not deliver update event when only non-watched field changes', async () => {
+    const query = new Parse.Query('SecretClass');
+    query.watch('publicField');
+    const subscription = await query.subscribe();
+    const updateSpy = jasmine.createSpy('update');
+    subscription.on('update', updateSpy);
+
+    // Change a field that is NOT in the watch list
+    obj.set('secretObj', { apiKey: 'ROTATED_KEY', score: 99 });
+    await obj.save(null, { useMasterKey: true });
+    await sleep(500);
+    expect(updateSpy).not.toHaveBeenCalled();
+  });
+
+  describe('(GHSA-8pjv-59c8-44p8) SSRF via Webhook URL requires master key', () => {
+    const expectMasterKeyRequired = async promise => {
+      try {
+        await promise;
+        fail('Expected request to be rejected');
+      } catch (error) {
+        expect(error.status).toBe(403);
+      }
+    };
+
+    it('rejects registering a webhook function with internal URL without master key', async () => {
+      await expectMasterKeyRequired(
+        request({
+          method: 'POST',
+          url: Parse.serverURL + '/hooks/functions',
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          body: JSON.stringify({
+            functionName: 'ssrf_probe',
+            url: 'http://169.254.169.254/latest/meta-data/iam/security-credentials/',
+          }),
+        })
+      );
+    });
+
+    it('rejects updating a webhook function URL to internal address without master key', async () => {
+      // Seed a legitimate webhook first so the PUT hits auth, not "not found"
+      await request({
+        method: 'POST',
+        url: Parse.serverURL + '/hooks/functions',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': Parse.masterKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          functionName: 'ssrf_probe',
+          url: 'https://example.com/webhook',
+        }),
+      });
+      await expectMasterKeyRequired(
+        request({
+          method: 'PUT',
+          url: Parse.serverURL + '/hooks/functions/ssrf_probe',
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          body: JSON.stringify({
+            url: 'http://169.254.169.254/latest/meta-data/',
+          }),
+        })
+      );
+    });
+
+    it('rejects registering a webhook trigger with internal URL without master key', async () => {
+      await expectMasterKeyRequired(
+        request({
+          method: 'POST',
+          url: Parse.serverURL + '/hooks/triggers',
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          body: JSON.stringify({
+            className: 'TestClass',
+            triggerName: 'beforeSave',
+            url: 'http://127.0.0.1:8080/admin/status',
+          }),
+        })
+      );
+    });
+
+    it('rejects registering a webhook with internal URL using JavaScript key', async () => {
+      await expectMasterKeyRequired(
+        request({
+          method: 'POST',
+          url: Parse.serverURL + '/hooks/functions',
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-JavaScript-Key': 'test',
+          },
+          body: JSON.stringify({
+            functionName: 'ssrf_probe',
+            url: 'http://10.0.0.1:3000/internal-api',
+          }),
+        })
+      );
+    });
+  });
+
+});
+
+describe('(GHSA-6qh5-m6g3-xhq6) LiveQuery query depth DoS via deeply nested subscription', () => {
+  afterEach(async () => {
+    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+    if (client) {
+      await client.close();
+    }
+  });
+
+  it('should reject LiveQuery subscription with deeply nested $or when queryDepth is set', async () => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    await reconfigureServer({
+      liveQuery: { classNames: ['TestClass'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+      requestComplexity: { queryDepth: 10 },
+    });
+    const query = new Parse.Query('TestClass');
+    let where = { field: 'value' };
+    for (let i = 0; i < 15; i++) {
+      where = { $or: [where] };
+    }
+    query._where = where;
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      jasmine.objectContaining({
+        code: Parse.Error.INVALID_QUERY,
+        message: jasmine.stringMatching(/Query condition nesting depth exceeds maximum allowed depth/),
+      })
+    );
+  });
+
+  it('should reject LiveQuery subscription with deeply nested $and when queryDepth is set', async () => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    await reconfigureServer({
+      liveQuery: { classNames: ['TestClass'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+      requestComplexity: { queryDepth: 10 },
+    });
+    const query = new Parse.Query('TestClass');
+    let where = { field: 'value' };
+    for (let i = 0; i < 50; i++) {
+      where = { $and: [where] };
+    }
+    query._where = where;
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      jasmine.objectContaining({
+        code: Parse.Error.INVALID_QUERY,
+        message: jasmine.stringMatching(/Query condition nesting depth exceeds maximum allowed depth/),
+      })
+    );
+  });
+
+  it('should reject LiveQuery subscription with deeply nested $nor when queryDepth is set', async () => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    await reconfigureServer({
+      liveQuery: { classNames: ['TestClass'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+      requestComplexity: { queryDepth: 10 },
+    });
+    const query = new Parse.Query('TestClass');
+    let where = { field: 'value' };
+    for (let i = 0; i < 50; i++) {
+      where = { $nor: [where] };
+    }
+    query._where = where;
+    await expectAsync(query.subscribe()).toBeRejectedWith(
+      jasmine.objectContaining({
+        code: Parse.Error.INVALID_QUERY,
+        message: jasmine.stringMatching(/Query condition nesting depth exceeds maximum allowed depth/),
+      })
+    );
+  });
+
+  it('should allow LiveQuery subscription within the depth limit', async () => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    await reconfigureServer({
+      liveQuery: { classNames: ['TestClass'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+      requestComplexity: { queryDepth: 10 },
+    });
+    const query = new Parse.Query('TestClass');
+    let where = { field: 'value' };
+    for (let i = 0; i < 5; i++) {
+      where = { $or: [where] };
+    }
+    query._where = where;
+    const subscription = await query.subscribe();
+    expect(subscription).toBeDefined();
+  });
+
+  it('should allow LiveQuery subscription when queryDepth is disabled', async () => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    await reconfigureServer({
+      liveQuery: { classNames: ['TestClass'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+      requestComplexity: { queryDepth: -1 },
+    });
+    const query = new Parse.Query('TestClass');
+    let where = { field: 'value' };
+    for (let i = 0; i < 15; i++) {
+      where = { $or: [where] };
+    }
+    query._where = where;
+    const subscription = await query.subscribe();
+    expect(subscription).toBeDefined();
+  });
+});
+
+describe('(GHSA-g4cf-xj29-wqqr) DoS via unindexed database query for unconfigured auth providers', () => {
+  it('should not query database for unconfigured auth provider on signup', async () => {
+    const databaseAdapter = Config.get(Parse.applicationId).database.adapter;
+    const spy = spyOn(databaseAdapter, 'find').and.callThrough();
+    await expectAsync(
+      new Parse.User().save({ authData: { nonExistentProvider: { id: 'test123' } } })
+    ).toBeRejectedWith(
+      new Parse.Error(Parse.Error.UNSUPPORTED_SERVICE, 'This authentication method is unsupported.')
+    );
+    const authDataQueries = spy.calls.all().filter(call => {
+      const query = call.args[2];
+      return query?.$or?.some(q => q['authData.nonExistentProvider.id']);
+    });
+    expect(authDataQueries.length).toBe(0);
+  });
+
+  it('should not query database for unconfigured auth provider on challenge', async () => {
+    const databaseAdapter = Config.get(Parse.applicationId).database.adapter;
+    const spy = spyOn(databaseAdapter, 'find').and.callThrough();
+    await expectAsync(
+      request({
+        method: 'POST',
+        url: Parse.serverURL + '/challenge',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          authData: { nonExistentProvider: { id: 'test123' } },
+          challengeData: { nonExistentProvider: { token: 'abc' } },
+        }),
+      })
+    ).toBeRejected();
+    const authDataQueries = spy.calls.all().filter(call => {
+      const query = call.args[2];
+      return query?.$or?.some(q => q['authData.nonExistentProvider.id']);
+    });
+    expect(authDataQueries.length).toBe(0);
+  });
+
+  it('should still query database for configured auth provider', async () => {
+    await reconfigureServer({
+      auth: {
+        myConfiguredProvider: {
+          module: {
+            validateAppId: () => Promise.resolve(),
+            validateAuthData: () => Promise.resolve(),
+          },
+        },
+      },
+    });
+    const databaseAdapter = Config.get(Parse.applicationId).database.adapter;
+    const spy = spyOn(databaseAdapter, 'find').and.callThrough();
+    const user = new Parse.User();
+    await user.save({ authData: { myConfiguredProvider: { id: 'validId', token: 'validToken' } } });
+    const authDataQueries = spy.calls.all().filter(call => {
+      const query = call.args[2];
+      return query?.$or?.some(q => q['authData.myConfiguredProvider.id']);
+    });
+    expect(authDataQueries.length).toBeGreaterThan(0);
+  });
+});
+
+describe('(GHSA-2299-ghjr-6vjp) MFA recovery code reuse via concurrent requests', () => {
+  const mfaHeaders = {
+    'X-Parse-Application-Id': 'test',
+    'X-Parse-REST-API-Key': 'rest',
+    'Content-Type': 'application/json',
+  };
+
+  beforeEach(async () => {
+    await reconfigureServer({
+      auth: {
+        mfa: {
+          enabled: true,
+          options: ['TOTP'],
+          algorithm: 'SHA1',
+          digits: 6,
+          period: 30,
+        },
+      },
+    });
+  });
+
+  it('rejects concurrent logins using the same MFA recovery code', async () => {
+    const OTPAuth = require('otpauth');
+    const user = await Parse.User.signUp('mfauser', 'password123');
+    const secret = new OTPAuth.Secret();
+    const totp = new OTPAuth.TOTP({
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
+    const token = totp.generate();
+    await user.save(
+      { authData: { mfa: { secret: secret.base32, token } } },
+      { sessionToken: user.getSessionToken() }
+    );
+
+    // Get recovery codes from stored auth data
+    await user.fetch({ useMasterKey: true });
+    const recoveryCode = user.get('authData').mfa.recovery[0];
+    expect(recoveryCode).toBeDefined();
+
+    // Send concurrent login requests with the same recovery code
+    const loginWithRecovery = () =>
+      request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/login',
+        headers: mfaHeaders,
+        body: JSON.stringify({
+          username: 'mfauser',
+          password: 'password123',
+          authData: {
+            mfa: {
+              token: recoveryCode,
+            },
+          },
+        }),
+      });
+
+    const results = await Promise.allSettled(Array(10).fill().map(() => loginWithRecovery()));
+
+    const succeeded = results.filter(r => r.status === 'fulfilled');
+    const failed = results.filter(r => r.status === 'rejected');
+
+    // Exactly one request should succeed; all others should fail
+    expect(succeeded.length).toBe(1);
+    expect(failed.length).toBe(9);
+
+    // Verify the recovery code has been consumed
+    await user.fetch({ useMasterKey: true });
+    const remainingRecovery = user.get('authData').mfa.recovery;
+    expect(remainingRecovery).not.toContain(recoveryCode);
+  });
+});
+
+describe('(GHSA-p2w6-rmh7-w8q3) SQL Injection via aggregate and distinct field names in PostgreSQL adapter', () => {
+  const headers = {
+    'Content-Type': 'application/json',
+    'X-Parse-Application-Id': 'test',
+    'X-Parse-REST-API-Key': 'rest',
+    'X-Parse-Master-Key': 'test',
+  };
+  const serverURL = 'http://localhost:8378/1';
+
+  beforeEach(async () => {
+    const obj = new Parse.Object('TestClass');
+    obj.set('playerName', 'Alice');
+    obj.set('score', 100);
+    obj.set('metadata', { tag: 'hello' });
+    await obj.save(null, { useMasterKey: true });
+  });
+
+  describe('aggregate $group._id SQL injection', () => {
+    it_only_db('postgres')('rejects $group._id field value containing double quotes', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          pipeline: JSON.stringify([
+            {
+              $group: {
+                _id: {
+                  alias: '$playerName" OR 1=1 --',
+                },
+              },
+            },
+          ]),
+        },
+      }).catch(e => e);
+      expect(response.data?.code).toBe(Parse.Error.INVALID_KEY_NAME);
+    });
+
+    it_only_db('postgres')('rejects $group._id field value containing semicolons', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          pipeline: JSON.stringify([
+            {
+              $group: {
+                _id: {
+                  alias: '$playerName"; DROP TABLE "TestClass" --',
+                },
+              },
+            },
+          ]),
+        },
+      }).catch(e => e);
+      expect(response.data?.code).toBe(Parse.Error.INVALID_KEY_NAME);
+    });
+
+    it_only_db('postgres')('rejects $group._id date operation field value containing double quotes', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          pipeline: JSON.stringify([
+            {
+              $group: {
+                _id: {
+                  day: { $dayOfMonth: '$createdAt" OR 1=1 --' },
+                },
+              },
+            },
+          ]),
+        },
+      }).catch(e => e);
+      expect(response.data?.code).toBe(Parse.Error.INVALID_KEY_NAME);
+    });
+
+    it_only_db('postgres')('allows legitimate $group._id with field reference', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          pipeline: JSON.stringify([
+            {
+              $group: {
+                _id: {
+                  name: '$playerName',
+                },
+                count: { $sum: 1 },
+              },
+            },
+          ]),
+        },
+      });
+      expect(response.data?.results?.length).toBeGreaterThan(0);
+    });
+
+    it_only_db('postgres')('allows legitimate $group._id with date extraction', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          pipeline: JSON.stringify([
+            {
+              $group: {
+                _id: {
+                  day: { $dayOfMonth: '$_created_at' },
+                },
+                count: { $sum: 1 },
+              },
+            },
+          ]),
+        },
+      });
+      expect(response.data?.results?.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('distinct dot-notation SQL injection', () => {
+    it_only_db('postgres')('rejects distinct field name containing double quotes in dot notation', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          distinct: 'metadata" FROM pg_tables; --.tag',
+        },
+      }).catch(e => e);
+      expect(response.data?.code).toBe(Parse.Error.INVALID_KEY_NAME);
+    });
+
+    it_only_db('postgres')('rejects distinct field name containing semicolons in dot notation', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          distinct: 'metadata; DROP TABLE "TestClass" --.tag',
+        },
+      }).catch(e => e);
+      expect(response.data?.code).toBe(Parse.Error.INVALID_KEY_NAME);
+    });
+
+    it_only_db('postgres')('rejects distinct field name containing single quotes in dot notation', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          distinct: "metadata' OR '1'='1.tag",
+        },
+      }).catch(e => e);
+      expect(response.data?.code).toBe(Parse.Error.INVALID_KEY_NAME);
+    });
+
+    it_only_db('postgres')('allows legitimate distinct with dot notation', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          distinct: 'metadata.tag',
+        },
+      });
+      expect(response.data?.results).toEqual(['hello']);
+    });
+
+    it_only_db('postgres')('allows legitimate distinct without dot notation', async () => {
+      const response = await request({
+        method: 'GET',
+        url: `${serverURL}/aggregate/TestClass`,
+        headers,
+        qs: {
+          distinct: 'playerName',
+        },
+      });
+      expect(response.data?.results).toEqual(['Alice']);
+    });
+  });
+
+  describe('(GHSA-37mj-c2wf-cx96) /users/me leaks raw authData via master context', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+
+    it('does not leak raw MFA authData via /users/me', async () => {
+      await reconfigureServer({
+        auth: {
+          mfa: {
+            enabled: true,
+            options: ['TOTP'],
+            algorithm: 'SHA1',
+            digits: 6,
+            period: 30,
+          },
+        },
+      });
+      const user = await Parse.User.signUp('username', 'password');
+      const sessionToken = user.getSessionToken();
+      const OTPAuth = require('otpauth');
+      const secret = new OTPAuth.Secret();
+      const totp = new OTPAuth.TOTP({
+        algorithm: 'SHA1',
+        digits: 6,
+        period: 30,
+        secret,
+      });
+      const token = totp.generate();
+      // Enable MFA
+      await user.save(
+        { authData: { mfa: { secret: secret.base32, token } } },
+        { sessionToken }
+      );
+      // Verify MFA data is stored (master key)
+      await user.fetch({ useMasterKey: true });
+      expect(user.get('authData').mfa.secret).toBe(secret.base32);
+      expect(user.get('authData').mfa.recovery).toBeDefined();
+      // GET /users/me should NOT include raw MFA data
+      const response = await request({
+        headers: {
+          ...headers,
+          'X-Parse-Session-Token': sessionToken,
+        },
+        method: 'GET',
+        url: 'http://localhost:8378/1/users/me',
+      });
+      expect(response.data.authData?.mfa?.secret).toBeUndefined();
+      expect(response.data.authData?.mfa?.recovery).toBeUndefined();
+      expect(response.data.authData?.mfa).toEqual({ status: 'enabled' });
+    });
+
+    it('returns same authData from /users/me and /users/:id', async () => {
+      await reconfigureServer({
+        auth: {
+          mfa: {
+            enabled: true,
+            options: ['TOTP'],
+            algorithm: 'SHA1',
+            digits: 6,
+            period: 30,
+          },
+        },
+      });
+      const user = await Parse.User.signUp('username', 'password');
+      const sessionToken = user.getSessionToken();
+      const OTPAuth = require('otpauth');
+      const secret = new OTPAuth.Secret();
+      const totp = new OTPAuth.TOTP({
+        algorithm: 'SHA1',
+        digits: 6,
+        period: 30,
+        secret,
+      });
+      await user.save(
+        { authData: { mfa: { secret: secret.base32, token: totp.generate() } } },
+        { sessionToken }
+      );
+      // Fetch via /users/me
+      const meResponse = await request({
+        headers: {
+          ...headers,
+          'X-Parse-Session-Token': sessionToken,
+        },
+        method: 'GET',
+        url: 'http://localhost:8378/1/users/me',
+      });
+      // Fetch via /users/:id
+      const idResponse = await request({
+        headers: {
+          ...headers,
+          'X-Parse-Session-Token': sessionToken,
+        },
+        method: 'GET',
+        url: `http://localhost:8378/1/users/${user.id}`,
+      });
+      // Both should return the same sanitized authData
+      expect(meResponse.data.authData).toEqual(idResponse.data.authData);
+      expect(meResponse.data.authData?.mfa).toEqual({ status: 'enabled' });
+    });
   });
 });

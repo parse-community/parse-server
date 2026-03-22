@@ -967,6 +967,36 @@ describe('rate limit', () => {
       });
     });
 
+    it('should enforce rate limit when _method override uses non-standard casing', async () => {
+      Parse.Cloud.beforeLogin(() => {}, {
+        rateLimit: {
+          requestTimeWindow: 10000,
+          requestCount: 1,
+          errorResponseMessage: 'Too many requests',
+          includeInternalRequests: true,
+        },
+      });
+      await Parse.User.signUp('testuser', 'password');
+      const res1 = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/login',
+        body: JSON.stringify({ username: 'testuser', password: 'password' }),
+      });
+      expect(res1.data.username).toBe('testuser');
+      // Second login via POST with _method:'get' (lowercase) — should still be rate limited
+      const res2 = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/login',
+        body: JSON.stringify({ _method: 'get', username: 'testuser', password: 'password' }),
+      }).catch(e => e);
+      expect(res2.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many requests',
+      });
+    });
+
     it('should ignore _method override with non-string type', async () => {
       await reconfigureServer({
         rateLimit: [

@@ -594,6 +594,176 @@ describe('batch', () => {
     });
   }
 
+  describe('batch request size limit', () => {
+    it('should reject batch request when sub-requests exceed batchRequestLimit', async () => {
+      await reconfigureServer({
+        requestComplexity: { batchRequestLimit: 2 },
+      });
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/batch',
+          headers,
+          body: JSON.stringify({
+            requests: [
+              { method: 'GET', path: '/1/classes/TestClass' },
+              { method: 'GET', path: '/1/classes/TestClass' },
+              { method: 'GET', path: '/1/classes/TestClass' },
+            ],
+          }),
+        })
+      ).toBeRejectedWith(
+        jasmine.objectContaining({
+          status: 400,
+          data: jasmine.objectContaining({
+            error: jasmine.stringContaining('3'),
+          }),
+        })
+      );
+    });
+
+    it('should allow batch request when sub-requests are within batchRequestLimit', async () => {
+      await reconfigureServer({
+        requestComplexity: { batchRequestLimit: 5 },
+      });
+      const result = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/batch',
+        headers,
+        body: JSON.stringify({
+          requests: [
+            { method: 'POST', path: '/1/classes/TestClass', body: { key: 'v1' } },
+            { method: 'POST', path: '/1/classes/TestClass', body: { key: 'v2' } },
+          ],
+        }),
+      });
+      expect(result.data.length).toEqual(2);
+      expect(result.data[0].success.objectId).toBeDefined();
+      expect(result.data[1].success.objectId).toBeDefined();
+    });
+
+    it('should allow batch request at exactly batchRequestLimit', async () => {
+      await reconfigureServer({
+        requestComplexity: { batchRequestLimit: 2 },
+      });
+      const result = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/batch',
+        headers,
+        body: JSON.stringify({
+          requests: [
+            { method: 'POST', path: '/1/classes/TestClass', body: { key: 'v1' } },
+            { method: 'POST', path: '/1/classes/TestClass', body: { key: 'v2' } },
+          ],
+        }),
+      });
+      expect(result.data.length).toEqual(2);
+    });
+
+    it('should not limit batch request when batchRequestLimit is -1 (disabled)', async () => {
+      await reconfigureServer({
+        requestComplexity: { batchRequestLimit: -1 },
+      });
+      const requests = Array.from({ length: 20 }, (_, i) => ({
+        method: 'POST',
+        path: '/1/classes/TestClass',
+        body: { key: `v${i}` },
+      }));
+      const result = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/batch',
+        headers,
+        body: JSON.stringify({ requests }),
+      });
+      expect(result.data.length).toEqual(20);
+    });
+
+    it('should not limit batch request by default (no requestComplexity configured)', async () => {
+      const requests = Array.from({ length: 20 }, (_, i) => ({
+        method: 'POST',
+        path: '/1/classes/TestClass',
+        body: { key: `v${i}` },
+      }));
+      const result = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/batch',
+        headers,
+        body: JSON.stringify({ requests }),
+      });
+      expect(result.data.length).toEqual(20);
+    });
+
+    it('should bypass batchRequestLimit for master key requests', async () => {
+      await reconfigureServer({
+        requestComplexity: { batchRequestLimit: 2 },
+      });
+      const result = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/batch',
+        headers: {
+          ...headers,
+          'X-Parse-Master-Key': 'test',
+        },
+        body: JSON.stringify({
+          requests: [
+            { method: 'GET', path: '/1/classes/TestClass' },
+            { method: 'GET', path: '/1/classes/TestClass' },
+            { method: 'GET', path: '/1/classes/TestClass' },
+          ],
+        }),
+      });
+      expect(result.data.length).toEqual(3);
+    });
+
+    it('should bypass batchRequestLimit for maintenance key requests', async () => {
+      await reconfigureServer({
+        requestComplexity: { batchRequestLimit: 2 },
+      });
+      const result = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/batch',
+        headers: {
+          ...headers,
+          'X-Parse-Maintenance-Key': 'testing',
+        },
+        body: JSON.stringify({
+          requests: [
+            { method: 'GET', path: '/1/classes/TestClass' },
+            { method: 'GET', path: '/1/classes/TestClass' },
+            { method: 'GET', path: '/1/classes/TestClass' },
+          ],
+        }),
+      });
+      expect(result.data.length).toEqual(3);
+    });
+
+    it('should include limit in error message when batch exceeds batchRequestLimit', async () => {
+      await reconfigureServer({
+        requestComplexity: { batchRequestLimit: 5 },
+      });
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/batch',
+          headers,
+          body: JSON.stringify({
+            requests: Array.from({ length: 10 }, () => ({
+              method: 'GET',
+              path: '/1/classes/TestClass',
+            })),
+          }),
+        })
+      ).toBeRejectedWith(
+        jasmine.objectContaining({
+          status: 400,
+          data: jasmine.objectContaining({
+            error: jasmine.stringContaining('5'),
+          }),
+        })
+      );
+    });
+  });
+
   describe('subrequest path type validation', () => {
     it('rejects object path in batch subrequest with proper error instead of 500', async () => {
       await expectAsync(

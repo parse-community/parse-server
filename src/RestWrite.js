@@ -132,6 +132,9 @@ RestWrite.prototype.execute = function () {
       return this.setRequiredFieldsIfNeeded();
     })
     .then(() => {
+      return this.validateCreatePermission();
+    })
+    .then(() => {
       return this.transformUser();
     })
     .then(() => {
@@ -639,9 +642,10 @@ RestWrite.prototype.handleAuthData = async function (authData) {
         return;
       }
 
-      // Force to validate all provided authData on login
-      // on update only validate mutated ones
-      if (hasMutatedAuthData || !this.config.allowExpiredAuthDataToken) {
+      // Always validate all provided authData on login to prevent authentication
+      // bypass via partial authData (e.g. sending only the provider ID without
+      // an access token); on update only validate mutated ones
+      if (isLogin || hasMutatedAuthData || !this.config.allowExpiredAuthDataToken) {
         const res = await Auth.handleAuthDataValidation(
           isLogin ? authData : mutatedAuthData,
           this,
@@ -695,6 +699,24 @@ RestWrite.prototype.checkRestrictedFields = async function () {
       this.config
     );
   }
+};
+
+// Validates the create class-level permission before transformUser runs.
+// This prevents user enumeration (username/email existence) when public
+// create is disabled on _User, because transformUser checks uniqueness
+// before the CLP is enforced in runDatabaseOperation.
+RestWrite.prototype.validateCreatePermission = async function () {
+  if (this.query || this.auth.isMaster || this.auth.isMaintenance) {
+    return;
+  }
+  if (!this.validSchemaController) {
+    return;
+  }
+  await this.validSchemaController.validatePermission(
+    this.className,
+    this.runOptions.acl || [],
+    'create'
+  );
 };
 
 // The non-third-party parts of User transformation
@@ -1178,6 +1200,10 @@ RestWrite.prototype.handleSession = function () {
     } else if (this.data.installationId) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
     } else if (this.data.sessionToken) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
+    } else if (this.data.expiresAt && !this.auth.isMaster && !this.auth.isMaintenance) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
+    } else if (this.data.createdWith && !this.auth.isMaster && !this.auth.isMaintenance) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
     }
     if (!this.auth.isMaster) {

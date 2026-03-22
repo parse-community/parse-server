@@ -67,6 +67,13 @@ async function handleBatch(router, req) {
   if (!Array.isArray(req.body?.requests)) {
     throw new Parse.Error(Parse.Error.INVALID_JSON, 'requests must be an array');
   }
+  const batchRequestLimit = req.config?.requestComplexity?.batchRequestLimit ?? -1;
+  if (batchRequestLimit > -1 && !req.auth?.isMaster && !req.auth?.isMaintenance && req.body.requests.length > batchRequestLimit) {
+    throw new Parse.Error(
+      Parse.Error.INVALID_JSON,
+      `Batch request contains ${req.body.requests.length} sub-requests, which exceeds the limit of ${batchRequestLimit}.`
+    );
+  }
   for (const restRequest of req.body.requests) {
     if (!restRequest || typeof restRequest !== 'object' || typeof restRequest.path !== 'string') {
       throw new Parse.Error(Parse.Error.INVALID_JSON, 'batch request path must be a string');

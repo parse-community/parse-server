@@ -44,6 +44,7 @@ describe('Security Check Groups', () => {
         queryDepth: 10,
         graphQLDepth: 50,
         graphQLFields: 200,
+        batchRequestLimit: 50,
       };
       await reconfigureServer(config);
 
