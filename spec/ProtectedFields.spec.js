@@ -2028,5 +2028,37 @@ describe('ProtectedFields', function () {
       expect(response.data.phone).toBeUndefined();
       expect(response.data.email).toBe('user1@example.com');
     });
+
+    it('protectedFields can hide createdAt and updatedAt from non-owners', async function () {
+      await reconfigureServer({
+        protectedFields: {
+          _User: {
+            '*': ['createdAt', 'updatedAt'],
+          },
+        },
+      });
+      const user = await Parse.User.signUp('user1', 'password');
+      const user2 = await Parse.User.signUp('user2', 'password');
+      const sessionToken2 = user2.getSessionToken();
+
+      // Make user1 publicly readable
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      acl.setWriteAccess(user.id, true);
+      user.setACL(acl);
+      await user.save(null, { useMasterKey: true });
+
+      // Another user fetches user1 — createdAt and updatedAt should be hidden
+      const response = await request({
+        url: `http://localhost:8378/1/users/${user.id}`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': sessionToken2,
+        },
+      });
+      expect(response.data.createdAt).toBeUndefined();
+      expect(response.data.updatedAt).toBeUndefined();
+    });
   });
 });
