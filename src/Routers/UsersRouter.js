@@ -287,15 +287,22 @@ export class UsersRouter extends ClassesRouter {
     // If we have some new validated authData update directly
     if (validatedAuthData && Object.keys(validatedAuthData).length) {
       const query = { objectId: user.objectId };
-      // Optimistic locking: include the original authData state in the WHERE clause
+      // Optimistic locking: include the original array fields in the WHERE clause
       // for providers whose data is being updated. This prevents concurrent requests
       // from both succeeding when consuming single-use tokens (e.g. MFA recovery codes).
+      // Only array fields need locking — element removal is vulnerable to TOCTOU;
+      // scalar fields are simply overwritten and don't have concurrency issues.
       if (user.authData) {
         for (const provider of Object.keys(validatedAuthData)) {
           const original = user.authData[provider];
-          if (original && JSON.stringify(original) !== JSON.stringify(validatedAuthData[provider])) {
+          if (original && typeof original === 'object') {
             for (const [field, value] of Object.entries(original)) {
-              query[`authData.${provider}.${field}`] = value;
+              if (
+                Array.isArray(value) &&
+                JSON.stringify(value) !== JSON.stringify(validatedAuthData[provider]?.[field])
+              ) {
+                query[`authData.${provider}.${field}`] = value;
+              }
             }
           }
         }
