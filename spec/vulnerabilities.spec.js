@@ -4497,4 +4497,107 @@ describe('(GHSA-p2w6-rmh7-w8q3) SQL Injection via aggregate and distinct field n
       expect(response.data?.results).toEqual(['Alice']);
     });
   });
+
+  describe('(GHSA-37mj-c2wf-cx96) /users/me leaks raw authData via master context', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+
+    it('does not leak raw MFA authData via /users/me', async () => {
+      await reconfigureServer({
+        auth: {
+          mfa: {
+            enabled: true,
+            options: ['TOTP'],
+            algorithm: 'SHA1',
+            digits: 6,
+            period: 30,
+          },
+        },
+      });
+      const user = await Parse.User.signUp('username', 'password');
+      const sessionToken = user.getSessionToken();
+      const OTPAuth = require('otpauth');
+      const secret = new OTPAuth.Secret();
+      const totp = new OTPAuth.TOTP({
+        algorithm: 'SHA1',
+        digits: 6,
+        period: 30,
+        secret,
+      });
+      const token = totp.generate();
+      // Enable MFA
+      await user.save(
+        { authData: { mfa: { secret: secret.base32, token } } },
+        { sessionToken }
+      );
+      // Verify MFA data is stored (master key)
+      await user.fetch({ useMasterKey: true });
+      expect(user.get('authData').mfa.secret).toBe(secret.base32);
+      expect(user.get('authData').mfa.recovery).toBeDefined();
+      // GET /users/me should NOT include raw MFA data
+      const response = await request({
+        headers: {
+          ...headers,
+          'X-Parse-Session-Token': sessionToken,
+        },
+        method: 'GET',
+        url: 'http://localhost:8378/1/users/me',
+      });
+      expect(response.data.authData?.mfa?.secret).toBeUndefined();
+      expect(response.data.authData?.mfa?.recovery).toBeUndefined();
+      expect(response.data.authData?.mfa).toEqual({ status: 'enabled' });
+    });
+
+    it('returns same authData from /users/me and /users/:id', async () => {
+      await reconfigureServer({
+        auth: {
+          mfa: {
+            enabled: true,
+            options: ['TOTP'],
+            algorithm: 'SHA1',
+            digits: 6,
+            period: 30,
+          },
+        },
+      });
+      const user = await Parse.User.signUp('username', 'password');
+      const sessionToken = user.getSessionToken();
+      const OTPAuth = require('otpauth');
+      const secret = new OTPAuth.Secret();
+      const totp = new OTPAuth.TOTP({
+        algorithm: 'SHA1',
+        digits: 6,
+        period: 30,
+        secret,
+      });
+      await user.save(
+        { authData: { mfa: { secret: secret.base32, token: totp.generate() } } },
+        { sessionToken }
+      );
+      // Fetch via /users/me
+      const meResponse = await request({
+        headers: {
+          ...headers,
+          'X-Parse-Session-Token': sessionToken,
+        },
+        method: 'GET',
+        url: 'http://localhost:8378/1/users/me',
+      });
+      // Fetch via /users/:id
+      const idResponse = await request({
+        headers: {
+          ...headers,
+          'X-Parse-Session-Token': sessionToken,
+        },
+        method: 'GET',
+        url: `http://localhost:8378/1/users/${user.id}`,
+      });
+      // Both should return the same sanitized authData
+      expect(meResponse.data.authData).toEqual(idResponse.data.authData);
+      expect(meResponse.data.authData?.mfa).toEqual({ status: 'enabled' });
+    });
+  });
 });
