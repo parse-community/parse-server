@@ -2001,6 +2001,82 @@ describe('OTP TOTP auth adatper', () => {
       })
     ).toBeRejectedWith({ code: Parse.Error.SCRIPT_FAILED, error: 'Invalid MFA token' });
   });
+
+  it('allows unlinking MFA without TOTP verification (by design)', async () => {
+    const user = await Parse.User.signUp('username', 'password');
+    const sessionToken = user.getSessionToken();
+    const OTPAuth = require('otpauth');
+    const secret = new OTPAuth.Secret();
+    const totp = new OTPAuth.TOTP({
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
+    const token = totp.generate();
+    // Enable MFA
+    await user.save(
+      { authData: { mfa: { secret: secret.base32, token } } },
+      { sessionToken }
+    );
+    await user.fetch({ useMasterKey: true });
+    expect(user.get('authData').mfa.secret).toBeDefined();
+    // Unlink MFA without providing TOTP
+    await user.save(
+      { authData: { mfa: null } },
+      { sessionToken }
+    );
+    // MFA should be removed
+    await user.fetch({ useMasterKey: true });
+    expect(user.get('authData')).toBeUndefined();
+    // Login should succeed without MFA
+    const response = await request({
+      headers,
+      method: 'POST',
+      url: 'http://localhost:8378/1/login',
+      body: JSON.stringify({
+        username: 'username',
+        password: 'password',
+      }),
+    });
+    expect(response.data.sessionToken).toBeDefined();
+  });
+
+  it('allows blocking MFA unlink via beforeSave trigger', async () => {
+    Parse.Cloud.beforeSave('_User', request => {
+      const authData = request.object.get('authData');
+      if (authData?.mfa === null) {
+        throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Cannot disable MFA without verification');
+      }
+    });
+    const user = await Parse.User.signUp('username', 'password');
+    const OTPAuth = require('otpauth');
+    const secret = new OTPAuth.Secret();
+    const totp = new OTPAuth.TOTP({
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
+    const token = totp.generate();
+    // Enable MFA
+    await user.save(
+      { authData: { mfa: { secret: secret.base32, token } } },
+      { sessionToken: user.getSessionToken() }
+    );
+    // Attempt to unlink MFA — should be blocked by beforeSave trigger
+    await expectAsync(
+      user.save(
+        { authData: { mfa: null } },
+        { sessionToken: user.getSessionToken() }
+      )
+    ).toBeRejectedWith(
+      new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Cannot disable MFA without verification')
+    );
+    // MFA should still be enabled
+    await user.fetch({ useMasterKey: true });
+    expect(user.get('authData').mfa.secret).toBeDefined();
+  });
 });
 
 describe('OTP SMS auth adatper', () => {
