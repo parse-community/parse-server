@@ -555,6 +555,16 @@ export class PagesRouter extends PromiseRouter {
       (req.body || {})[pageParams.locale] ||
       (req.params || {})[pageParams.locale] ||
       (req.headers || {})[pageParamHeaderPrefix + pageParams.locale];
+
+    // Validate locale format to prevent path traversal and invalid
+    // HTTP header characters; only allow standard locale patterns
+    // like "en", "en-US", "de-AT", "zh-Hans-CN"
+    if (locale !== undefined && typeof locale !== 'string') {
+      return undefined;
+    }
+    if (typeof locale === 'string' && !/^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,8})*$/.test(locale)) {
+      return undefined;
+    }
     return locale;
   }
 
