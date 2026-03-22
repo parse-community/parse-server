@@ -4,6 +4,7 @@
 // This module provides execution logic and thin wrappers for backwards compat.
 import Parse from 'parse/node';
 import Utils from './Utils';
+import { logger } from './logger';
 import { TriggerStore } from './cloud-code/TriggerStore';
 
 export const Types = {
