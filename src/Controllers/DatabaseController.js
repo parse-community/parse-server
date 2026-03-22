@@ -1670,7 +1670,7 @@ class DatabaseController {
     const protectedFields = perms.protectedFields;
     if (!protectedFields) { return null; }
 
-    if (this.options.protectedFieldsOwnerExempt !== false && aclGroup.indexOf(query.objectId) > -1) { return null; }
+    if (className === '_User' && this.options.protectedFieldsOwnerExempt !== false && aclGroup.indexOf(query.objectId) > -1) { return null; }
 
     // for queries where "keys" are set and do not include all 'userField':{field},
     // we have to transparently include it, and then remove before returning to client
