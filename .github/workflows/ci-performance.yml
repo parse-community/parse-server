@@ -68,6 +68,7 @@ jobs:
         env:
           NODE_ENV: production
         run: |
+          set -o pipefail
           echo "Running baseline benchmarks..."
           if [ ! -f "benchmark/performance.js" ]; then
             echo "⚠️ Benchmark script not found - this is expected for new features"
@@ -125,6 +126,7 @@ jobs:
         env:
           NODE_ENV: production
         run: |
+          set -o pipefail
           echo "Running PR benchmarks..."
           taskset -c 0 npm run benchmark 2>&1 | tee pr-output.txt || npm run benchmark 2>&1 | tee pr-output.txt || true
           # Extract JSON from output (everything between first [ and last ])
