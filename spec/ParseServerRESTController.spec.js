@@ -593,6 +593,22 @@ describe('ParseServerRESTController', () => {
     expect(sharedContext.requestId).toBeUndefined();
   });
 
+  it('should reject with an error when context contains non-cloneable values', async () => {
+    const nonCloneableContext = { fn: () => {} };
+    try {
+      await RESTController.request(
+        'POST',
+        '/classes/MyObject',
+        { key: 'value' },
+        { context: nonCloneableContext }
+      );
+      fail('should have rejected for non-cloneable context');
+    } catch (error) {
+      expect(error).toBeDefined();
+      expect(error.name).toEqual('DataCloneError');
+    }
+  });
+
   it('ensures sessionTokens are properly handled', async () => {
     const user = await Parse.User.signUp('user', 'pass');
     const sessionToken = user.getSessionToken();

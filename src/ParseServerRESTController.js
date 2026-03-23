@@ -111,6 +111,13 @@ function ParseServerRESTController(applicationId, router) {
     }
 
     return new Promise((resolve, reject) => {
+      let requestContext;
+      try {
+        requestContext = structuredClone(options.context || {});
+      } catch (error) {
+        reject(error);
+        return;
+      }
       getAuth(options, config).then(auth => {
         const request = {
           body: data,
@@ -120,7 +127,7 @@ function ParseServerRESTController(applicationId, router) {
             applicationId: applicationId,
             sessionToken: options.sessionToken,
             installationId: options.installationId,
-            context: structuredClone(options.context || {}),
+            context: requestContext,
           },
           query,
         };
