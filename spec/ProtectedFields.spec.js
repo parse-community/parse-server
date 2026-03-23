@@ -2393,12 +2393,12 @@ describe('ProtectedFields', function () {
         config,
         auth: maintenanceAuth,
         className: '_User',
-        restWhere: { emailVerified: false },
+        restWhere: { email: 'test@example.com' },
         runBeforeFind: false,
       });
-      // Should not throw OPERATION_FORBIDDEN
       const result = await query.execute();
-      expect(result.results).toBeDefined();
+      expect(result.results.length).toBe(1);
+      expect(result.results[0].objectId).toBe(user.id);
     });
   });
 });
