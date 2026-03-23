@@ -30,6 +30,8 @@ let core;
 // Logging helpers
 const logInfo = message => core.info(message);
 const logError = message => core.error(message);
+const logGroup = title => core.startGroup(title);
+const logGroupEnd = () => core.endGroup();
 
 /**
  * Initialize Parse Server for benchmarking
@@ -866,22 +868,38 @@ async function runBenchmarks() {
     ];
 
     // Run each benchmark with database cleanup
-    for (const benchmark of benchmarks) {
-      logInfo(`\nRunning benchmark '${benchmark.name}'...`);
-      resetParseServer();
-      await cleanupDatabase();
-      results.push(await benchmark.fn(benchmark.name));
+    const suiteStart = performance.now();
+    for (let idx = 0; idx < benchmarks.length; idx++) {
+      const benchmark = benchmarks[idx];
+      const label = `[${idx + 1}/${benchmarks.length}] ${benchmark.name}`;
+      logGroup(label);
+      try {
+        logInfo('Resetting database...');
+        resetParseServer();
+        await cleanupDatabase();
+        logInfo('Running benchmark...');
+        const benchStart = performance.now();
+        const result = await benchmark.fn(benchmark.name);
+        const benchDuration = ((performance.now() - benchStart) / 1000).toFixed(1);
+        results.push(result);
+        logInfo(`Result: ${result.value.toFixed(2)} ${result.unit} (${result.extra})`);
+        logInfo(`Duration: ${benchDuration}s`);
+      } finally {
+        logGroupEnd();
+      }
     }
+    const suiteDuration = ((performance.now() - suiteStart) / 1000).toFixed(1);
 
     // Output results in github-action-benchmark format (stdout)
     logInfo(JSON.stringify(results, null, 2));
 
-    // Output summary to stderr for visibility
-    logInfo('Benchmarks completed successfully!');
-    logInfo('Summary:');
+    // Output summary
+    logGroup('Summary');
     results.forEach(result => {
-      logInfo(`  ${result.name}: ${result.value.toFixed(2)} ${result.unit} (${result.extra})`);
+      logInfo(`${result.name}: ${result.value.toFixed(2)} ${result.unit} (${result.extra})`);
     });
+    logInfo(`Total duration: ${suiteDuration}s`);
+    logGroupEnd();
 
   } catch (error) {
     logError('Error running benchmarks:', error);
