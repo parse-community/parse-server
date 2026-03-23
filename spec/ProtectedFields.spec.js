@@ -2368,4 +2368,37 @@ describe('ProtectedFields', function () {
       expect(response.data.secretField).toBeUndefined();
     });
   });
+
+  describe('maintenance auth', function () {
+    it('should allow maintenance auth to query using protected fields as WHERE keys', async function () {
+      await reconfigureServer({
+        protectedFields: { _User: { '*': ['email', 'emailVerified'] } },
+        protectedFieldsOwnerExempt: false,
+      });
+
+      const user = new Parse.User();
+      user.setUsername('testuser');
+      user.setPassword('password');
+      user.setEmail('test@example.com');
+      await user.signUp();
+
+      // Query using a protected field as a WHERE key with maintenance auth
+      const Auth = require('../lib/Auth');
+      const Config = require('../lib/Config');
+      const RestQuery = require('../lib/RestQuery');
+      const config = Config.get('test');
+      const maintenanceAuth = Auth.maintenance(config);
+      const query = await RestQuery({
+        method: RestQuery.Method.get,
+        config,
+        auth: maintenanceAuth,
+        className: '_User',
+        restWhere: { emailVerified: false },
+        runBeforeFind: false,
+      });
+      // Should not throw OPERATION_FORBIDDEN
+      const result = await query.execute();
+      expect(result.results).toBeDefined();
+    });
+  });
 });
