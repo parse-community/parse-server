@@ -1,3 +1,24 @@
+# [9.7.0-alpha.3](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.2...9.7.0-alpha.3) (2026-03-23)
+
+
+### Bug Fixes
+
+* Maintenance key blocked from querying protected fields ([#10290](https://github.com/parse-community/parse-server/issues/10290)) ([7c8b213](https://github.com/parse-community/parse-server/commit/7c8b213d96f1fd79f27d3a2bc01bef8bcaf588cd))
+
+# [9.7.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.1...9.7.0-alpha.2) (2026-03-23)
+
+
+### Features
+
+* Add `protectedFieldsSaveResponseExempt` option to strip protected fields from save responses ([#10289](https://github.com/parse-community/parse-server/issues/10289)) ([4f7cb53](https://github.com/parse-community/parse-server/commit/4f7cb53bd114554cf9e6d7855b5e8911cb87544b))
+
+# [9.7.0-alpha.1](https://github.com/parse-community/parse-server/compare/9.6.1...9.7.0-alpha.1) (2026-03-23)
+
+
+### Features
+
+* Add `protectedFieldsTriggerExempt` option to exempt Cloud Code triggers from `protectedFields` ([#10288](https://github.com/parse-community/parse-server/issues/10288)) ([1610f98](https://github.com/parse-community/parse-server/commit/1610f98316f7cb1120a7e20be7a1570b0e116df7))
+
 ## [9.6.1-alpha.1](https://github.com/parse-community/parse-server/compare/9.6.0...9.6.1-alpha.1) (2026-03-22)
 
 

@@ -896,7 +896,7 @@ _UnsafeRestQuery.prototype.runCount = function () {
 };
 
 _UnsafeRestQuery.prototype.denyProtectedFields = async function () {
-  if (this.auth.isMaster) {
+  if (this.auth.isMaster || this.auth.isMaintenance) {
     return;
   }
   const schemaController = await this.config.database.loadSchema();

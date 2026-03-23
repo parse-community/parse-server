@@ -91,4 +91,14 @@ module.exports = [
     changeNewDefault: 'false',
     solution: "Set 'protectedFieldsOwnerExempt' to 'false' to apply protectedFields consistently to the user's own _User object (same as all other classes), or to 'true' to keep the current behavior where a user can see all their own fields.",
   },
+  {
+    optionKey: 'protectedFieldsTriggerExempt',
+    changeNewDefault: 'true',
+    solution: "Set 'protectedFieldsTriggerExempt' to 'true' to make Cloud Code triggers (e.g. beforeSave, afterSave) receive the full object including protected fields, or to 'false' to keep the current behavior where protected fields are stripped from trigger objects.",
+  },
+  {
+    optionKey: 'protectedFieldsSaveResponseExempt',
+    changeNewDefault: 'false',
+    solution: "Set 'protectedFieldsSaveResponseExempt' to 'false' to strip protected fields from write operation responses (create, update), consistent with how they are stripped from query results. Set to 'true' to keep the current behavior where protected fields are included in write responses.",
+  },
 ];
