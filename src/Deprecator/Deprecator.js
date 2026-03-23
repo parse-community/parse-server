@@ -27,8 +27,11 @@ class Deprecator {
         Deprecator._logOption({ optionKey, changeNewDefault, solution });
       }
 
-      // If key will be removed or renamed, only throw a warning if option is set
-      if (changeNewKey != null && Utils.getNestedProperty(options, optionKey) != null) {
+      // If key will be removed or renamed, only throw a warning if option is set;
+      // skip if option is set to the resolved value that suppresses the deprecation
+      const resolvedValue = deprecation.resolvedValue;
+      const optionValue = Utils.getNestedProperty(options, optionKey);
+      if (changeNewKey != null && optionValue != null && optionValue !== resolvedValue) {
         Deprecator._logOption({ optionKey, changeNewKey, solution });
       }
     }
