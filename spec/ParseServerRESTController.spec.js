@@ -520,6 +520,65 @@ describe('ParseServerRESTController', () => {
     );
   });
 
+  it('should strip undefined values from cloud function responses (with directAccess)', async () => {
+    Parse.Cloud.define('returnUndefinedValues', () => {
+      return {
+        definedKey: 'value',
+        undefinedKey: undefined,
+        nested: { a: 1, b: undefined },
+        arrayWithUndefined: [1, undefined, 3],
+      };
+    });
+
+    const res = await RESTController.request(
+      'POST',
+      '/functions/returnUndefinedValues',
+      {},
+      { useMasterKey: true }
+    );
+
+    expect(res.result.definedKey).toEqual('value');
+    expect(res.result.undefinedKey).toBeUndefined();
+    expect(Object.hasOwnProperty.call(res.result, 'undefinedKey')).toBe(false);
+    expect(res.result.nested.a).toEqual(1);
+    expect(Object.hasOwnProperty.call(res.result.nested, 'b')).toBe(false);
+    expect(res.result.arrayWithUndefined).toEqual([1, null, 3]);
+  });
+
+  it('should strip undefined values from cloud function responses (without directAccess)', async () => {
+    Parse.Cloud.define('returnUndefinedValuesHTTP', () => {
+      return {
+        definedKey: 'value',
+        undefinedKey: undefined,
+        nested: { a: 1, b: undefined },
+        arrayWithUndefined: [1, undefined, 3],
+      };
+    });
+
+    const serverURL = 'http://localhost:8378/1';
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': Parse.applicationId,
+      'X-Parse-Master-Key': Parse.masterKey,
+    };
+
+    const res = await request({
+      method: 'POST',
+      headers,
+      url: `${serverURL}/functions/returnUndefinedValuesHTTP`,
+      body: {},
+    });
+
+    const result = res.data.result;
+
+    expect(result.definedKey).toEqual('value');
+    expect(result.undefinedKey).toBeUndefined();
+    expect(Object.hasOwnProperty.call(result, 'undefinedKey')).toBe(false);
+    expect(result.nested.a).toEqual(1);
+    expect(Object.hasOwnProperty.call(result.nested, 'b')).toBe(false);
+    expect(result.arrayWithUndefined).toEqual([1, null, 3]);
+  });
+
   it('ensures sessionTokens are properly handled', async () => {
     const user = await Parse.User.signUp('user', 'pass');
     const sessionToken = user.getSessionToken();

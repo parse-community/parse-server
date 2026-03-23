@@ -147,10 +147,11 @@ function ParseServerRESTController(applicationId, router) {
           .then(
             resp => {
               const { response, status, headers = {} } = resp;
+              const strippedResponse = stripUndefined(response);
               if (options.returnStatus) {
-                resolve({ ...response, _status: status, _headers: headers });
+                resolve({ ...strippedResponse, _status: status, _headers: headers });
               } else {
-                resolve(response);
+                resolve(strippedResponse);
               }
             },
             err => {
