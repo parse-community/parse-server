@@ -783,7 +783,7 @@ class ParseLiveQueryServer {
         res.object.className,
         protectedFields,
         obj,
-        query
+        this.config.protectedFieldsOwnerExempt
       );
     };
     res.object = filter(res.object);

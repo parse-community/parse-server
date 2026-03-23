@@ -470,13 +470,19 @@ module.exports.ParseServerOptions = {
   },
   protectedFields: {
     env: 'PARSE_SERVER_PROTECTED_FIELDS',
-    help: 'Protected fields that should be treated with extra security when fetching details.',
+    help: "Fields per class that are hidden from query results for specific user groups. Protected fields are stripped from the server response, but can still be used internally (e.g. in Cloud Code triggers). Configure as `{ 'ClassName': { 'UserGroup': ['field1', 'field2'] } }` where `UserGroup` is one of: `'*'` (all users), `'authenticated'` (authenticated users), `'role:RoleName'` (users with a specific role), `'userField:FieldName'` (users referenced by a pointer field), or a user `objectId` to target a specific user. When multiple groups apply, the intersection of their protected fields is used. Any field can be protected, including system fields like `createdAt` and `updatedAt`. By default, `email` is protected on the `_User` class for all users. On the `_User` class, the object owner is exempt from protected fields by default; see `protectedFieldsOwnerExempt` to change this.",
     action: parsers.objectParser,
     default: {
       _User: {
         '*': ['email'],
       },
     },
+  },
+  protectedFieldsOwnerExempt: {
+    env: 'PARSE_SERVER_PROTECTED_FIELDS_OWNER_EXEMPT',
+    help: "Whether the `_User` class is exempt from `protectedFields` when the logged-in user queries their own user object. If `true` (default), a user can see all their own fields regardless of `protectedFields` configuration; default protected fields (e.g. `email`) are merged into any custom `protectedFields` configuration. If `false`, `protectedFields` applies equally to the user's own object, consistent with all other classes; only explicitly configured protected fields apply, defaults are not merged. Defaults to `true`.",
+    action: parsers.booleanParser,
+    default: true,
   },
   publicServerURL: {
     env: 'PARSE_PUBLIC_SERVER_URL',

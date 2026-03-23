@@ -86,4 +86,9 @@ module.exports = [
     changeNewKey: '',
     solution: "Auth providers are always validated on login regardless of this setting. Set 'allowExpiredAuthDataToken' to 'false' or remove the option to accept the future removal.",
   },
+  {
+    optionKey: 'protectedFieldsOwnerExempt',
+    changeNewDefault: 'false',
+    solution: "Set 'protectedFieldsOwnerExempt' to 'false' to apply protectedFields consistently to the user's own _User object (same as all other classes), or to 'true' to keep the current behavior where a user can see all their own fields.",
+  },
 ];
