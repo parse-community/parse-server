@@ -72,7 +72,7 @@ module.exports.ParseServerOptions = {
   },
   allowExpiredAuthDataToken: {
     env: 'PARSE_SERVER_ALLOW_EXPIRED_AUTH_DATA_TOKEN',
-    help: 'Allow a user to log in even if the 3rd party authentication token that was used to sign in to their account has expired. If this is set to `false`, then the token will be validated every time the user signs in to their account. This refers to the token that is stored in the `_User.authData` field. Defaults to `false`.',
+    help: 'Deprecated. This option will be removed in a future version. Auth providers are always validated on login. On update, if this is set to `true`, auth providers are only re-validated when the auth data has changed. If this is set to `false`, auth providers are re-validated on every update. Defaults to `false`.',
     action: parsers.booleanParser,
     default: false,
   },
@@ -470,13 +470,31 @@ module.exports.ParseServerOptions = {
   },
   protectedFields: {
     env: 'PARSE_SERVER_PROTECTED_FIELDS',
-    help: 'Protected fields that should be treated with extra security when fetching details.',
+    help: "Fields per class that are hidden from query results for specific user groups. Protected fields are stripped from the server response, but can still be used internally (e.g. in Cloud Code triggers). Configure as `{ 'ClassName': { 'UserGroup': ['field1', 'field2'] } }` where `UserGroup` is one of: `'*'` (all users), `'authenticated'` (authenticated users), `'role:RoleName'` (users with a specific role), `'userField:FieldName'` (users referenced by a pointer field), or a user `objectId` to target a specific user. When multiple groups apply, the intersection of their protected fields is used. Any field can be protected, including system fields like `createdAt` and `updatedAt`. By default, `email` is protected on the `_User` class for all users. On the `_User` class, the object owner is exempt from protected fields by default; see `protectedFieldsOwnerExempt` to change this.",
     action: parsers.objectParser,
     default: {
       _User: {
         '*': ['email'],
       },
     },
+  },
+  protectedFieldsOwnerExempt: {
+    env: 'PARSE_SERVER_PROTECTED_FIELDS_OWNER_EXEMPT',
+    help: "Whether the `_User` class is exempt from `protectedFields` when the logged-in user queries their own user object. If `true` (default), a user can see all their own fields regardless of `protectedFields` configuration; default protected fields (e.g. `email`) are merged into any custom `protectedFields` configuration. If `false`, `protectedFields` applies equally to the user's own object, consistent with all other classes; only explicitly configured protected fields apply, defaults are not merged. Defaults to `true`.",
+    action: parsers.booleanParser,
+    default: true,
+  },
+  protectedFieldsSaveResponseExempt: {
+    env: 'PARSE_SERVER_PROTECTED_FIELDS_SAVE_RESPONSE_EXEMPT',
+    help: 'Whether save operation responses (create, update) are exempt from `protectedFields`. If `true` (default), protected fields modified during a save are included in the response to the client. If `false`, protected fields are stripped from save responses, consistent with how they are stripped from query results. Defaults to `true`.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  protectedFieldsTriggerExempt: {
+    env: 'PARSE_SERVER_PROTECTED_FIELDS_TRIGGER_EXEMPT',
+    help: "Whether Cloud Code triggers (e.g. `beforeSave`, `afterSave`) are exempt from `protectedFields`. If `true`, triggers receive the full object including protected fields in `request.object` and `request.original`, regardless of the caller's auth context. If `false`, protected fields are stripped from the original object fetch used to build trigger objects. Defaults to `false`.",
+    action: parsers.booleanParser,
+    default: false,
   },
   publicServerURL: {
     env: 'PARSE_PUBLIC_SERVER_URL',
@@ -674,6 +692,12 @@ module.exports.RateLimitOptions = {
   },
 };
 module.exports.RequestComplexityOptions = {
+  batchRequestLimit: {
+    env: 'PARSE_SERVER_REQUEST_COMPLEXITY_BATCH_REQUEST_LIMIT',
+    help: 'Maximum number of sub-requests in a single batch request. Set to `-1` to disable. Default is `-1`.',
+    action: parsers.numberParser('batchRequestLimit'),
+    default: -1,
+  },
   graphQLDepth: {
     env: 'PARSE_SERVER_REQUEST_COMPLEXITY_GRAPHQL_DEPTH',
     help: 'Maximum depth of GraphQL field selections. Set to `-1` to disable. Default is `-1`.',

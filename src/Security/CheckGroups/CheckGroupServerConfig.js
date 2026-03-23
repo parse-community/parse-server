@@ -145,7 +145,7 @@ class CheckGroupServerConfig extends CheckGroup {
           if (!rc) {
             throw 1;
           }
-          const values = [rc.includeDepth, rc.includeCount, rc.subqueryDepth, rc.queryDepth, rc.graphQLDepth, rc.graphQLFields];
+          const values = [rc.includeDepth, rc.includeCount, rc.subqueryDepth, rc.queryDepth, rc.graphQLDepth, rc.graphQLFields, rc.batchRequestLimit];
           if (values.some(v => v === -1)) {
             throw 1;
           }

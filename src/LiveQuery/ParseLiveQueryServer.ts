@@ -211,13 +211,16 @@ class ParseLiveQueryServer {
           const op = this._getCLPOperation(subscription.query);
           let res: any = {};
           try {
-            await this._matchesCLP(
+            const matchesCLP = await this._matchesCLP(
               classLevelPermissions,
               message.currentParseObject,
               client,
               requestId,
               op
             );
+            if (matchesCLP === false) {
+              return null;
+            }
             const isMatched = await this._matchesACL(acl, client, requestId);
             if (!isMatched) {
               return null;
@@ -339,13 +342,16 @@ class ParseLiveQueryServer {
           }
           try {
             const op = this._getCLPOperation(subscription.query);
-            await this._matchesCLP(
+            const matchesCLP = await this._matchesCLP(
               classLevelPermissions,
               message.currentParseObject,
               client,
               requestId,
               op
             );
+            if (matchesCLP === false) {
+              return;
+            }
             const [isOriginalMatched, isCurrentMatched] = await Promise.all([
               originalACLCheckingPromise,
               currentACLCheckingPromise,
@@ -659,8 +665,10 @@ class ParseLiveQueryServer {
   ): Promise<any> {
     const subscriptionInfo = client.getSubscriptionInfo(requestId);
     const aclGroup = ['*'];
+    let userId;
     if (typeof subscriptionInfo !== 'undefined') {
-      const { userId } = await this.getAuthForSessionToken(subscriptionInfo.sessionToken);
+      const result = await this.getAuthForSessionToken(subscriptionInfo.sessionToken);
+      userId = result.userId;
       if (userId) {
         aclGroup.push(userId);
       }
@@ -671,6 +679,66 @@ class ParseLiveQueryServer {
       aclGroup,
       op
     );
+    // Enforce pointer permissions that validatePermission defers.
+    // Returns false to silently skip the event (like ACL), rather than
+    // throwing which would push errors to the client and log noise.
+    if (!client.hasMasterKey && classLevelPermissions) {
+      const permissionField =
+        ['get', 'find', 'count'].indexOf(op) > -1 ? 'readUserFields' : 'writeUserFields';
+      const pointerFields = [];
+      if (classLevelPermissions[op]?.pointerFields) {
+        pointerFields.push(...classLevelPermissions[op].pointerFields);
+      }
+      if (Array.isArray(classLevelPermissions[permissionField])) {
+        for (const field of classLevelPermissions[permissionField]) {
+          if (!pointerFields.includes(field)) {
+            pointerFields.push(field);
+          }
+        }
+      }
+      if (pointerFields.length > 0) {
+        // If public or user-specific permission already grants access, skip pointer check
+        if (
+          !SchemaController.testPermissions(classLevelPermissions, aclGroup, op)
+        ) {
+          if (!userId) {
+            return false;
+          }
+          // Check if any pointer field points to the current user
+          const hasAccess = pointerFields.some(field => {
+            const value =
+              typeof object.get === 'function' ? object.get(field) : object[field];
+            if (!value) {
+              return false;
+            }
+            // Handle Parse.Object pointer (has .id)
+            if (value.id) {
+              return value.id === userId;
+            }
+            // Handle raw pointer JSON (has .objectId)
+            if (value.objectId) {
+              return value.objectId === userId;
+            }
+            // Handle array of pointers
+            if (Array.isArray(value)) {
+              return value.some(item => {
+                if (item.id) {
+                  return item.id === userId;
+                }
+                if (item.objectId) {
+                  return item.objectId === userId;
+                }
+                return false;
+              });
+            }
+            return false;
+          });
+          if (!hasAccess) {
+            return false;
+          }
+        }
+      }
+    }
   }
 
   async _filterSensitiveData(
@@ -715,7 +783,7 @@ class ParseLiveQueryServer {
         res.object.className,
         protectedFields,
         obj,
-        query
+        this.config.protectedFieldsOwnerExempt
       );
     };
     res.object = filter(res.object);
@@ -955,8 +1023,35 @@ class ParseLiveQueryServer {
           return;
         }
       }
-      // Check CLP for subscribe operation
+      // Validate query condition depth
       const appConfig = Config.get(this.config.appId);
+      if (!client.hasMasterKey) {
+        const rc = appConfig.requestComplexity;
+        if (rc && rc.queryDepth !== -1) {
+          const maxDepth = rc.queryDepth;
+          const checkDepth = (where: any, depth: number) => {
+            if (depth > maxDepth) {
+              throw new Parse.Error(
+                Parse.Error.INVALID_QUERY,
+                `Query condition nesting depth exceeds maximum allowed depth of ${maxDepth}`
+              );
+            }
+            if (typeof where !== 'object' || where === null) {
+              return;
+            }
+            for (const op of ['$or', '$and', '$nor']) {
+              if (Array.isArray(where[op])) {
+                for (const subQuery of where[op]) {
+                  checkDepth(subQuery, depth + 1);
+                }
+              }
+            }
+          };
+          checkDepth(request.query.where, 0);
+        }
+      }
+
+      // Check CLP for subscribe operation
       const schemaController = await appConfig.database.loadSchema();
       const classLevelPermissions = schemaController.getClassLevelPermissions(className);
       const op = this._getCLPOperation(request.query);
@@ -982,7 +1077,7 @@ class ParseLiveQueryServer {
         op
       );
 
-      // Check protected fields in WHERE clause
+      // Check protected fields in WHERE clause and WATCH parameter
       if (!client.hasMasterKey) {
         const auth = request.user ? { user: request.user, userRoles: [] } : {};
         const protectedFields =
@@ -1014,6 +1109,17 @@ class ParseLiveQueryServer {
             }
           };
           checkWhere(request.query.where);
+        }
+        if (protectedFields.length > 0 && Array.isArray(request.query.watch)) {
+          for (const watchField of request.query.watch) {
+            const rootField = watchField.split('.')[0];
+            if (protectedFields.includes(watchField) || protectedFields.includes(rootField)) {
+              throw new Parse.Error(
+                Parse.Error.OPERATION_FORBIDDEN,
+                'Permission denied'
+              );
+            }
+          }
         }
       }
 

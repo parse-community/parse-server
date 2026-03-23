@@ -72,8 +72,33 @@ module.exports = [
     solution: "Set 'requestComplexity.graphQLFields' to a positive integer appropriate for your app to limit the number of GraphQL field selections, or to '-1' to disable.",
   },
   {
+    optionKey: 'requestComplexity.batchRequestLimit',
+    changeNewDefault: '100',
+    solution: "Set 'requestComplexity.batchRequestLimit' to a positive integer appropriate for your app to limit the number of sub-requests per batch request, or to '-1' to disable.",
+  },
+  {
     optionKey: 'enableProductPurchaseLegacyApi',
     changeNewKey: '',
     solution: "The product purchase API is an undocumented, unmaintained legacy feature that may not function as expected and will be removed in a future major version. We strongly advise against using it. Set 'enableProductPurchaseLegacyApi' to 'false' to disable it, or remove the option to accept the future removal.",
+  },
+  {
+    optionKey: 'allowExpiredAuthDataToken',
+    changeNewKey: '',
+    solution: "Auth providers are always validated on login regardless of this setting. Set 'allowExpiredAuthDataToken' to 'false' or remove the option to accept the future removal.",
+  },
+  {
+    optionKey: 'protectedFieldsOwnerExempt',
+    changeNewDefault: 'false',
+    solution: "Set 'protectedFieldsOwnerExempt' to 'false' to apply protectedFields consistently to the user's own _User object (same as all other classes), or to 'true' to keep the current behavior where a user can see all their own fields.",
+  },
+  {
+    optionKey: 'protectedFieldsTriggerExempt',
+    changeNewDefault: 'true',
+    solution: "Set 'protectedFieldsTriggerExempt' to 'true' to make Cloud Code triggers (e.g. beforeSave, afterSave) receive the full object including protected fields, or to 'false' to keep the current behavior where protected fields are stripped from trigger objects.",
+  },
+  {
+    optionKey: 'protectedFieldsSaveResponseExempt',
+    changeNewDefault: 'false',
+    solution: "Set 'protectedFieldsSaveResponseExempt' to 'false' to strip protected fields from write operation responses (create, update), consistent with how they are stripped from query results. Set to 'true' to keep the current behavior where protected fields are included in write responses.",
   },
 ];

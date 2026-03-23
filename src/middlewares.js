@@ -484,7 +484,7 @@ export function allowMethodOverride(req, res, next) {
   if (req.method === 'POST' && req.body?._method) {
     if (typeof req.body._method === 'string') {
       req.originalMethod = req.method;
-      req.method = req.body._method;
+      req.method = req.body._method.toUpperCase();
     }
     delete req.body._method;
   }

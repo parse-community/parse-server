@@ -257,6 +257,143 @@ describe('Parse.Session', () => {
     expect(newSession.createdWith.authProvider).toBeUndefined();
   });
 
+  it('should reject expiresAt when updating a session via PUT', async () => {
+    const user = await Parse.User.signUp('sessionupdateuser1', 'password');
+    const sessionToken = user.getSessionToken();
+
+    // Get the session objectId
+    const sessionRes = await request({
+      method: 'GET',
+      url: 'http://localhost:8378/1/sessions/me',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': sessionToken,
+      },
+    });
+    const sessionId = sessionRes.data.objectId;
+    const originalExpiresAt = sessionRes.data.expiresAt;
+
+    // Attempt to overwrite expiresAt via PUT
+    const updateRes = await request({
+      method: 'PUT',
+      url: `http://localhost:8378/1/sessions/${sessionId}`,
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': sessionToken,
+        'Content-Type': 'application/json',
+      },
+      body: {
+        expiresAt: { __type: 'Date', iso: '2099-12-31T23:59:59.000Z' },
+      },
+    }).catch(e => e);
+
+    expect(updateRes.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+
+    // Verify expiresAt was not changed
+    const verifyRes = await request({
+      method: 'GET',
+      url: 'http://localhost:8378/1/sessions/me',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': sessionToken,
+      },
+    });
+    expect(verifyRes.data.expiresAt).toEqual(originalExpiresAt);
+  });
+
+  it('should reject createdWith when updating a session via PUT', async () => {
+    const user = await Parse.User.signUp('sessionupdateuser2', 'password');
+    const sessionToken = user.getSessionToken();
+
+    // Get the session objectId
+    const sessionRes = await request({
+      method: 'GET',
+      url: 'http://localhost:8378/1/sessions/me',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': sessionToken,
+      },
+    });
+    const sessionId = sessionRes.data.objectId;
+    const originalCreatedWith = sessionRes.data.createdWith;
+
+    // Attempt to overwrite createdWith via PUT
+    const updateRes = await request({
+      method: 'PUT',
+      url: `http://localhost:8378/1/sessions/${sessionId}`,
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': sessionToken,
+        'Content-Type': 'application/json',
+      },
+      body: {
+        createdWith: { action: 'attacker', authProvider: 'evil' },
+      },
+    }).catch(e => e);
+
+    expect(updateRes.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+
+    // Verify createdWith was not changed
+    const verifyRes = await request({
+      method: 'GET',
+      url: 'http://localhost:8378/1/sessions/me',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': sessionToken,
+      },
+    });
+    expect(verifyRes.data.createdWith).toEqual(originalCreatedWith);
+  });
+
+  it('should allow master key to update expiresAt on a session', async () => {
+    const user = await Parse.User.signUp('sessionupdateuser3', 'password');
+    const sessionToken = user.getSessionToken();
+
+    // Get the session objectId
+    const sessionRes = await request({
+      method: 'GET',
+      url: 'http://localhost:8378/1/sessions/me',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': sessionToken,
+      },
+    });
+    const sessionId = sessionRes.data.objectId;
+    const farFuture = '2099-12-31T23:59:59.000Z';
+
+    // Master key should be able to update expiresAt
+    await request({
+      method: 'PUT',
+      url: `http://localhost:8378/1/sessions/${sessionId}`,
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+        'Content-Type': 'application/json',
+      },
+      body: {
+        expiresAt: { __type: 'Date', iso: farFuture },
+      },
+    });
+
+    // Verify expiresAt was changed
+    const verifyRes = await request({
+      method: 'GET',
+      url: `http://localhost:8378/1/sessions/${sessionId}`,
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+      },
+    });
+    expect(verifyRes.data.expiresAt.iso).toBe(farFuture);
+  });
+
   describe('PUT /sessions/me', () => {
     it('should return error with invalid session token', async () => {
       const response = await request({

@@ -1178,6 +1178,79 @@ describe('Pages Router', () => {
         expect(nonExistingResponse.status).toBe(303);
         expect(nonExistingResponse.headers.location).toContain('email_verification_send_fail');
       });
+
+      it('does not create file existence oracle via path traversal in locale query parameter', async () => {
+        // Create a canary file at a traversable path to test the oracle
+        const canaryDir = path.join(__dirname, 'tmp-locale-oracle-test');
+        try {
+          await fs.mkdir(canaryDir, { recursive: true });
+          await fs.writeFile(path.join(canaryDir, 'password_reset.html'), 'canary');
+
+          config.pages.enableLocalization = true;
+          await reconfigureServer(config);
+
+          // Calculate traversal from pages directory to canary directory
+          const pagesPath = path.resolve(__dirname, '../public');
+          const relativePath = path.relative(pagesPath, canaryDir);
+
+          // Request with path traversal locale pointing to existing canary file
+          const existsResponse = await request({
+            url: `${config.publicServerURL}/apps/${config.appId}/request_password_reset?token=test&username=test&locale=${encodeURIComponent(relativePath)}`,
+            followRedirects: false,
+          }).catch(e => e);
+
+          // Request with path traversal locale pointing to non-existing directory
+          const notExistsResponse = await request({
+            url: `${config.publicServerURL}/apps/${config.appId}/request_password_reset?token=test&username=test&locale=${encodeURIComponent('../../../../../../tmp/nonexistent-dir')}`,
+            followRedirects: false,
+          }).catch(e => e);
+
+          // Both responses must have the same status — no differential oracle
+          expect(existsResponse.status).toBe(notExistsResponse.status);
+          // Canary content must never be served
+          expect(existsResponse.text).not.toContain('canary');
+          expect(notExistsResponse.text).not.toContain('canary');
+        } finally {
+          await fs.rm(canaryDir, { recursive: true, force: true });
+        }
+      });
+
+      it('does not create file existence oracle via path traversal in locale header', async () => {
+        // Create a canary file at a traversable path
+        const canaryDir = path.join(__dirname, 'tmp-locale-header-test');
+        try {
+          await fs.mkdir(canaryDir, { recursive: true });
+          await fs.writeFile(path.join(canaryDir, 'password_reset.html'), 'canary');
+
+          config.pages.enableLocalization = true;
+          await reconfigureServer(config);
+
+          const pagesPath = path.resolve(__dirname, '../public');
+          const relativePath = path.relative(pagesPath, canaryDir);
+
+          // Request with path traversal locale via header pointing to existing file
+          const existsResponse = await request({
+            url: `${config.publicServerURL}/apps/${config.appId}/request_password_reset?token=test&username=test`,
+            headers: { 'x-parse-page-param-locale': relativePath },
+            followRedirects: false,
+          }).catch(e => e);
+
+          // Request with path traversal locale via header pointing to non-existing directory
+          const notExistsResponse = await request({
+            url: `${config.publicServerURL}/apps/${config.appId}/request_password_reset?token=test&username=test`,
+            headers: { 'x-parse-page-param-locale': '../../../../../../tmp/nonexistent-dir' },
+            followRedirects: false,
+          }).catch(e => e);
+
+          // Both responses must have the same status — no differential oracle
+          expect(existsResponse.status).toBe(notExistsResponse.status);
+          // Canary content must never be served
+          expect(existsResponse.text).not.toContain('canary');
+          expect(notExistsResponse.text).not.toContain('canary');
+        } finally {
+          await fs.rm(canaryDir, { recursive: true, force: true });
+        }
+      });
     });
 
     describe('custom route', () => {
@@ -1567,6 +1640,20 @@ describe('Pages Router', () => {
       // payload never reaches the page content
       expect(response.text).not.toContain('<svg/onload=alert(1)>');
       expect(response.text).not.toContain('&quot;&gt;&lt;svg');
+    });
+
+    it('should reject non-ASCII characters in locale parameter', async () => {
+      // Non-ASCII characters like ğ (U+011F) would cause ERR_INVALID_CHAR
+      // when set as HTTP header value if not rejected by locale validation
+      const nonAsciiLocale = 'ğ';
+      const response = await request({
+        url: `http://localhost:8378/1/apps/choose_password?locale=${encodeURIComponent(nonAsciiLocale)}&appId=test`,
+      });
+
+      expect(response.status).toBe(200);
+      // Non-ASCII locale is rejected by format validation;
+      // no ERR_INVALID_CHAR error occurs
+      expect(response.headers['x-parse-page-param-locale']).toBeUndefined();
     });
 
     it('should handle legitimate usernames with quotes correctly', async () => {
