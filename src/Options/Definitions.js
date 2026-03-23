@@ -484,6 +484,12 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: true,
   },
+  protectedFieldsSaveResponseExempt: {
+    env: 'PARSE_SERVER_PROTECTED_FIELDS_SAVE_RESPONSE_EXEMPT',
+    help: 'Whether save operation responses (create, update) are exempt from `protectedFields`. If `true` (default), protected fields modified during a save are included in the response to the client. If `false`, protected fields are stripped from save responses, consistent with how they are stripped from query results. Defaults to `true`.',
+    action: parsers.booleanParser,
+    default: true,
+  },
   protectedFieldsTriggerExempt: {
     env: 'PARSE_SERVER_PROTECTED_FIELDS_TRIGGER_EXEMPT',
     help: "Whether Cloud Code triggers (e.g. `beforeSave`, `afterSave`) are exempt from `protectedFields`. If `true`, triggers receive the full object including protected fields in `request.object` and `request.original`, regardless of the caller's auth context. If `false`, protected fields are stripped from the original object fetch used to build trigger objects. Defaults to `false`.",

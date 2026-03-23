@@ -159,6 +159,9 @@ RestWrite.prototype.execute = function () {
       return this.cleanUserAuthData();
     })
     .then(() => {
+      return this.filterProtectedFieldsInResponse();
+    })
+    .then(() => {
       // Append the authDataResponse if exists
       if (this.authDataResponse) {
         if (this.response && this.response.response) {
@@ -1891,6 +1894,34 @@ RestWrite.prototype.cleanUserAuthData = function () {
         delete user.authData;
       }
     }
+  }
+};
+
+// Strips protected fields from the write response when protectedFieldsSaveResponseExempt is false.
+RestWrite.prototype.filterProtectedFieldsInResponse = async function () {
+  if (this.config.protectedFieldsSaveResponseExempt !== false) {
+    return;
+  }
+  if (this.auth.isMaster || this.auth.isMaintenance) {
+    return;
+  }
+  if (!this.response || !this.response.response) {
+    return;
+  }
+  const schemaController = await this.config.database.loadSchema();
+  const protectedFields = this.config.database.addProtectedFields(
+    schemaController,
+    this.className,
+    this.query ? { objectId: this.query.objectId } : {},
+    this.auth.user ? [this.auth.user.id].concat(this.auth.userRoles || []) : [],
+    this.auth,
+    {}
+  );
+  if (!protectedFields) {
+    return;
+  }
+  for (const field of protectedFields) {
+    delete this.response.response[field];
   }
 };
 

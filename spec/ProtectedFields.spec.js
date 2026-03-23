@@ -2216,4 +2216,156 @@ describe('ProtectedFields', function () {
       expect(triggerOriginal.hasSecret).toBe(false);
     });
   });
+
+  describe('protectedFieldsSaveResponseExempt', function () {
+    it('should strip protected fields from update response when protectedFieldsSaveResponseExempt is false', async function () {
+      await reconfigureServer({
+        protectedFields: { MyClass: { '*': ['secretField'] } },
+        protectedFieldsTriggerExempt: true,
+        protectedFieldsSaveResponseExempt: false,
+      });
+
+      // Create object with master key
+      const obj = new Parse.Object('MyClass');
+      obj.set('secretField', 'hidden-value');
+      obj.set('publicField', 'visible-value');
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      acl.setPublicWriteAccess(true);
+      obj.setACL(acl);
+      await obj.save(null, { useMasterKey: true });
+
+      // beforeSave trigger modifies the protected field
+      Parse.Cloud.beforeSave('MyClass', req => {
+        req.object.set('secretField', 'trigger-modified-value');
+      });
+
+      // Update via raw HTTP to inspect the actual server response
+      const user = await Parse.User.signUp('testuser', 'password');
+      const response = await request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/classes/MyClass/${obj.id}`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': user.getSessionToken(),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ publicField: 'updated-value' }),
+      });
+
+      // The server response should NOT contain the protected field
+      expect(response.data.updatedAt).toBeDefined();
+      expect(response.data.secretField).toBeUndefined();
+    });
+
+    it('should strip protected fields from update response for _User class when protectedFieldsSaveResponseExempt is false', async function () {
+      await reconfigureServer({
+        protectedFields: { _User: { '*': ['email'] } },
+        protectedFieldsOwnerExempt: false,
+        protectedFieldsTriggerExempt: true,
+        protectedFieldsSaveResponseExempt: false,
+      });
+
+      // Create user
+      const user = new Parse.User();
+      user.setUsername('testuser');
+      user.setPassword('password');
+      user.setEmail('test@example.com');
+      user.set('publicField', 'visible-value');
+      await user.signUp();
+
+      // beforeSave trigger modifies the protected field
+      Parse.Cloud.beforeSave(Parse.User, req => {
+        req.object.set('email', 'trigger-modified@example.com');
+      });
+
+      // Update via raw HTTP
+      const response = await request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/users/${user.id}`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': user.getSessionToken(),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ publicField: 'updated-value' }),
+      });
+
+      // The server response should NOT contain the protected field
+      expect(response.data.updatedAt).toBeDefined();
+      expect(response.data.email).toBeUndefined();
+    });
+
+    it('should include protected fields in update response when protectedFieldsSaveResponseExempt is true', async function () {
+      await reconfigureServer({
+        protectedFields: { MyClass: { '*': ['secretField'] } },
+        protectedFieldsTriggerExempt: true,
+        protectedFieldsSaveResponseExempt: true,
+      });
+
+      // Create object with master key
+      const obj = new Parse.Object('MyClass');
+      obj.set('secretField', 'hidden-value');
+      obj.set('publicField', 'visible-value');
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      acl.setPublicWriteAccess(true);
+      obj.setACL(acl);
+      await obj.save(null, { useMasterKey: true });
+
+      // beforeSave trigger modifies the protected field
+      Parse.Cloud.beforeSave('MyClass', req => {
+        req.object.set('secretField', 'trigger-modified-value');
+      });
+
+      // Update via raw HTTP
+      const user = await Parse.User.signUp('testuser', 'password');
+      const response = await request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/classes/MyClass/${obj.id}`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': user.getSessionToken(),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ publicField: 'updated-value' }),
+      });
+
+      // The server response SHOULD contain the protected field (current behavior preserved)
+      expect(response.data.secretField).toBe('trigger-modified-value');
+    });
+
+    it('should strip protected fields from create response when protectedFieldsSaveResponseExempt is false', async function () {
+      await reconfigureServer({
+        protectedFields: { MyClass: { '*': ['secretField'] } },
+        protectedFieldsSaveResponseExempt: false,
+      });
+
+      // Create via raw HTTP as a regular user
+      const user = await Parse.User.signUp('testuser', 'password');
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/classes/MyClass',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': user.getSessionToken(),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          secretField: 'hidden-value',
+          publicField: 'visible-value',
+          ACL: { '*': { read: true, write: true } },
+        }),
+      });
+
+      // The server response should NOT contain the protected field
+      expect(response.data.objectId).toBeDefined();
+      expect(response.data.createdAt).toBeDefined();
+      expect(response.data.secretField).toBeUndefined();
+    });
+  });
 });

@@ -179,6 +179,10 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_PROTECTED_FIELDS_TRIGGER_EXEMPT
   :DEFAULT: false */
   protectedFieldsTriggerExempt: ?boolean;
+  /* Whether save operation responses (create, update) are exempt from `protectedFields`. If `true` (default), protected fields modified during a save are included in the response to the client. If `false`, protected fields are stripped from save responses, consistent with how they are stripped from query results. Defaults to `true`.
+  :ENV: PARSE_SERVER_PROTECTED_FIELDS_SAVE_RESPONSE_EXEMPT
+  :DEFAULT: true */
+  protectedFieldsSaveResponseExempt: ?boolean;
   /* Enable (or disable) anonymous users, defaults to true
   :ENV: PARSE_SERVER_ENABLE_ANON_USERS
   :DEFAULT: true */

@@ -26,6 +26,7 @@ The following is a list of deprecations, according to the [Deprecation Policy](h
 | DEPPS20 | Remove config option `allowExpiredAuthDataToken`                                             |                                                                        | 9.6.0 (2026)                    | 10.0.0 (2027)                   | deprecated            | -     |
 | DEPPS21 | Config option `protectedFieldsOwnerExempt` defaults to `false`                               |                                                                        | 9.6.0 (2026)                    | 10.0.0 (2027)                   | deprecated            | -     |
 | DEPPS22 | Config option `protectedFieldsTriggerExempt` defaults to `true`                              |                                                                        | 9.6.0 (2026)                    | 10.0.0 (2027)                   | deprecated            | -     |
+| DEPPS23 | Config option `protectedFieldsSaveResponseExempt` defaults to `false`                               |                                                                        | 9.7.0 (2026)                    | 10.0.0 (2027)                   | deprecated            | -     |
 
 [i_deprecation]: ## "The version and date of the deprecation."
 [i_change]: ## "The version and date of the planned change."

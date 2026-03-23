@@ -96,4 +96,9 @@ module.exports = [
     changeNewDefault: 'true',
     solution: "Set 'protectedFieldsTriggerExempt' to 'true' to make Cloud Code triggers (e.g. beforeSave, afterSave) receive the full object including protected fields, or to 'false' to keep the current behavior where protected fields are stripped from trigger objects.",
   },
+  {
+    optionKey: 'protectedFieldsSaveResponseExempt',
+    changeNewDefault: 'false',
+    solution: "Set 'protectedFieldsSaveResponseExempt' to 'false' to strip protected fields from write operation responses (create, update), consistent with how they are stripped from query results. Set to 'true' to keep the current behavior where protected fields are included in write responses.",
+  },
 ];
