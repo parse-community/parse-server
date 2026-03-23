@@ -2,6 +2,7 @@ const ParseServerRESTController = require('../lib/ParseServerRESTController')
   .ParseServerRESTController;
 const ParseServer = require('../lib/ParseServer').default;
 const Parse = require('parse/node').Parse;
+const request = require('../lib/request');
 
 let RESTController;
 
@@ -692,5 +693,41 @@ describe('ParseServerRESTController', () => {
     expect(getRes.presentField).toBe('updated');
     expect(getRes.absentField).toBeUndefined();
     expect('absentField' in getRes).toBe(false);
+  });
+
+  it('should not convert undefined values to null on update without directAccess (HTTP mode)', async () => {
+    const serverURL = 'http://localhost:8378/1';
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': Parse.applicationId,
+      'X-Parse-Master-Key': Parse.masterKey,
+    };
+
+    const createRes = await request({
+      method: 'POST',
+      headers,
+      url: `${serverURL}/classes/MyObject`,
+      body: JSON.stringify({ presentField: 'hello' }),
+    });
+    const { objectId } = JSON.parse(createRes.text);
+    expect(objectId).toBeDefined();
+
+    await request({
+      method: 'PUT',
+      headers,
+      url: `${serverURL}/classes/MyObject/${objectId}`,
+      body: JSON.stringify({ presentField: 'updated', absentField: undefined }),
+    });
+
+    const getRes = await request({
+      method: 'GET',
+      headers,
+      url: `${serverURL}/classes/MyObject/${objectId}`,
+    });
+    const result = JSON.parse(getRes.text);
+
+    expect(result.presentField).toBe('updated');
+    expect(result.absentField).toBeUndefined();
+    expect('absentField' in result).toBe(false);
   });
 });
