@@ -1,3 +1,10 @@
+# [9.7.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.1...9.7.0-alpha.2) (2026-03-23)
+
+
+### Features
+
+* Add `protectedFieldsSaveResponseExempt` option to strip protected fields from save responses ([#10289](https://github.com/parse-community/parse-server/issues/10289)) ([4f7cb53](https://github.com/parse-community/parse-server/commit/4f7cb53bd114554cf9e6d7855b5e8911cb87544b))
+
 # [9.7.0-alpha.1](https://github.com/parse-community/parse-server/compare/9.6.1...9.7.0-alpha.1) (2026-03-23)
 
 
