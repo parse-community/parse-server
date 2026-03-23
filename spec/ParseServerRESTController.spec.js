@@ -707,27 +707,25 @@ describe('ParseServerRESTController', () => {
       method: 'POST',
       headers,
       url: `${serverURL}/classes/MyObject`,
-      body: JSON.stringify({ presentField: 'hello' }),
+      body: { presentField: 'hello' },
     });
-    const { objectId } = JSON.parse(createRes.text);
-    expect(objectId).toBeDefined();
+    expect(createRes.data.objectId).toBeDefined();
 
     await request({
       method: 'PUT',
       headers,
-      url: `${serverURL}/classes/MyObject/${objectId}`,
-      body: JSON.stringify({ presentField: 'updated', absentField: undefined }),
+      url: `${serverURL}/classes/MyObject/${createRes.data.objectId}`,
+      body: { presentField: 'updated', absentField: undefined },
     });
 
     const getRes = await request({
       method: 'GET',
       headers,
-      url: `${serverURL}/classes/MyObject/${objectId}`,
+      url: `${serverURL}/classes/MyObject/${createRes.data.objectId}`,
     });
-    const result = JSON.parse(getRes.text);
 
-    expect(result.presentField).toBe('updated');
-    expect(result.absentField).toBeUndefined();
-    expect('absentField' in result).toBe(false);
+    expect(getRes.data.presentField).toBe('updated');
+    expect(getRes.data.absentField).toBeUndefined();
+    expect('absentField' in getRes.data).toBe(false);
   });
 });
