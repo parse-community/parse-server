@@ -484,6 +484,12 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: true,
   },
+  protectedFieldsTriggerExempt: {
+    env: 'PARSE_SERVER_PROTECTED_FIELDS_TRIGGER_EXEMPT',
+    help: "Whether Cloud Code triggers (e.g. `beforeSave`, `afterSave`) are exempt from `protectedFields`. If `true`, triggers receive the full object including protected fields in `request.object` and `request.original`, regardless of the caller's auth context. If `false` (default), protected fields are stripped from the original object fetch used to build trigger objects, consistent with the current behavior. Defaults to `false`.",
+    action: parsers.booleanParser,
+    default: false,
+  },
   publicServerURL: {
     env: 'PARSE_PUBLIC_SERVER_URL',
     help: 'Optional. The public URL to Parse Server. This URL will be used to reach Parse Server publicly for features like password reset and email verification links. The option can be set to a string or a function that can be asynchronously resolved. The returned URL string must start with `http://` or `https://`.',

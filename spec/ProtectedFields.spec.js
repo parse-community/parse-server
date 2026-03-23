@@ -2061,4 +2061,159 @@ describe('ProtectedFields', function () {
       expect(response.data.updatedAt).toBeUndefined();
     });
   });
+
+  describe('protectedFieldsTriggerExempt', function () {
+    it('should expose protected fields in beforeSave trigger for a custom class', async function () {
+      await reconfigureServer({
+        protectedFields: { MyClass: { '*': ['secretField'] } },
+        protectedFieldsTriggerExempt: true,
+      });
+
+      // Create object with master key so both fields are stored
+      const obj = new Parse.Object('MyClass');
+      obj.set('secretField', 'hidden-value');
+      obj.set('publicField', 'visible-value');
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      acl.setPublicWriteAccess(true);
+      obj.setACL(acl);
+      await obj.save(null, { useMasterKey: true });
+
+      // Set up beforeSave trigger to capture field visibility
+      let triggerObject;
+      let triggerOriginal;
+      Parse.Cloud.beforeSave('MyClass', request => {
+        triggerObject = {
+          hasSecret: request.object.has('secretField'),
+          hasPublic: request.object.has('publicField'),
+          secretValue: request.object.get('secretField'),
+        };
+        if (request.original) {
+          triggerOriginal = {
+            hasSecret: request.original.has('secretField'),
+            hasPublic: request.original.has('publicField'),
+            secretValue: request.original.get('secretField'),
+          };
+        }
+      });
+
+      // Update using a user session (not master key)
+      const user = await Parse.User.signUp('testuser', 'password');
+      obj.set('publicField', 'updated-value');
+      await obj.save(null, { sessionToken: user.getSessionToken() });
+
+      // request.object should have all fields (original + changes merged)
+      expect(triggerObject.hasPublic).toBe(true);
+      expect(triggerObject.hasSecret).toBe(true);
+      expect(triggerObject.secretValue).toBe('hidden-value');
+
+      // request.original should have all fields unfiltered
+      expect(triggerOriginal.hasPublic).toBe(true);
+      expect(triggerOriginal.hasSecret).toBe(true);
+      expect(triggerOriginal.secretValue).toBe('hidden-value');
+    });
+
+    it('should expose protected fields in beforeSave trigger for _User class with protectedFieldsOwnerExempt false', async function () {
+      await reconfigureServer({
+        protectedFields: { _User: { '*': ['email'] } },
+        protectedFieldsOwnerExempt: false,
+        protectedFieldsTriggerExempt: true,
+      });
+
+      // Create user
+      const user = new Parse.User();
+      user.setUsername('testuser');
+      user.setPassword('password');
+      user.setEmail('test@example.com');
+      user.set('publicField', 'visible-value');
+      await user.signUp();
+
+      // Set up beforeSave trigger to capture field visibility
+      let triggerObject;
+      let triggerOriginal;
+      Parse.Cloud.beforeSave(Parse.User, request => {
+        triggerObject = {
+          hasEmail: request.object.has('email'),
+          hasPublic: request.object.has('publicField'),
+          emailValue: request.object.get('email'),
+        };
+        if (request.original) {
+          triggerOriginal = {
+            hasEmail: request.original.has('email'),
+            hasPublic: request.original.has('publicField'),
+            emailValue: request.original.get('email'),
+          };
+        }
+      });
+
+      // Update using the user's own session
+      user.set('publicField', 'updated-value');
+      await user.save(null, { sessionToken: user.getSessionToken() });
+
+      // request.object should have all fields including email
+      expect(triggerObject.hasPublic).toBe(true);
+      expect(triggerObject.hasEmail).toBe(true);
+      expect(triggerObject.emailValue).toBe('test@example.com');
+
+      // request.original should have all fields including email
+      expect(triggerOriginal.hasPublic).toBe(true);
+      expect(triggerOriginal.hasEmail).toBe(true);
+      expect(triggerOriginal.emailValue).toBe('test@example.com');
+    });
+
+    it('should still hide protected fields from query results when protectedFieldsTriggerExempt is true', async function () {
+      await reconfigureServer({
+        protectedFields: { MyClass: { '*': ['secretField'] } },
+        protectedFieldsTriggerExempt: true,
+      });
+
+      const obj = new Parse.Object('MyClass');
+      obj.set('secretField', 'hidden-value');
+      obj.set('publicField', 'visible-value');
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      obj.setACL(acl);
+      await obj.save(null, { useMasterKey: true });
+
+      // Query as a regular user — protectedFields should still apply to reads
+      const user = await Parse.User.signUp('testuser', 'password');
+      const fetched = await new Parse.Query('MyClass').get(obj.id, { sessionToken: user.getSessionToken() });
+      expect(fetched.has('publicField')).toBe(true);
+      expect(fetched.has('secretField')).toBe(false);
+    });
+
+    it('should not expose protected fields in beforeSave trigger when protectedFieldsTriggerExempt is false', async function () {
+      await reconfigureServer({
+        protectedFields: { MyClass: { '*': ['secretField'] } },
+        protectedFieldsTriggerExempt: false,
+      });
+
+      const obj = new Parse.Object('MyClass');
+      obj.set('secretField', 'hidden-value');
+      obj.set('publicField', 'visible-value');
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      acl.setPublicWriteAccess(true);
+      obj.setACL(acl);
+      await obj.save(null, { useMasterKey: true });
+
+      let triggerOriginal;
+      Parse.Cloud.beforeSave('MyClass', request => {
+        if (request.original) {
+          triggerOriginal = {
+            hasSecret: request.original.has('secretField'),
+            hasPublic: request.original.has('publicField'),
+          };
+        }
+      });
+
+      const user = await Parse.User.signUp('testuser', 'password');
+      obj.set('publicField', 'updated-value');
+      await obj.save(null, { sessionToken: user.getSessionToken() });
+
+      // With protectedFieldsTriggerExempt: false, current behavior is preserved
+      expect(triggerOriginal.hasPublic).toBe(true);
+      expect(triggerOriginal.hasSecret).toBe(false);
+    });
+  });
 });
