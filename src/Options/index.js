@@ -175,7 +175,7 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_PROTECTED_FIELDS_OWNER_EXEMPT
   :DEFAULT: true */
   protectedFieldsOwnerExempt: ?boolean;
-  /* Whether Cloud Code triggers (e.g. `beforeSave`, `afterSave`) are exempt from `protectedFields`. If `true`, triggers receive the full object including protected fields in `request.object` and `request.original`, regardless of the caller's auth context. If `false` (default), protected fields are stripped from the original object fetch used to build trigger objects, consistent with the current behavior. Defaults to `false`.
+  /* Whether Cloud Code triggers (e.g. `beforeSave`, `afterSave`) are exempt from `protectedFields`. If `true`, triggers receive the full object including protected fields in `request.object` and `request.original`, regardless of the caller's auth context. If `false`, protected fields are stripped from the original object fetch used to build trigger objects. Defaults to `false`.
   :ENV: PARSE_SERVER_PROTECTED_FIELDS_TRIGGER_EXEMPT
   :DEFAULT: false */
   protectedFieldsTriggerExempt: ?boolean;
