@@ -666,6 +666,9 @@ function injectDefaults(options: ParseServerOptions) {
       options.protectedFields[c] = defaults.protectedFields[c];
     } else {
       Object.keys(defaults.protectedFields[c]).forEach(r => {
+        if (options.protectedFields[c][r] && options.protectedFieldsOwnerExempt === false) {
+          return;
+        }
         const unq = new Set([
           ...(options.protectedFields[c][r] || []),
           ...defaults.protectedFields[c][r],
