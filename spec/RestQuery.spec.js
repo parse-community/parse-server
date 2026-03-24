@@ -205,16 +205,16 @@ describe('rest query', () => {
       '_password_changed_at',
       '_password_history',
     ];
-    await Promise.all([
-      ...internalFields.map(field =>
-        expectAsync(new Parse.Query(Parse.User).exists(field).find()).toBeRejectedWith(
-          new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${field}`)
-        )
-      ),
-      ...internalFields.map(field =>
-        new Parse.Query(Parse.User).exists(field).find({ useMasterKey: true })
-      ),
-    ]);
+    // Run rejection and success queries sequentially to avoid orphaned promises
+    // that can cause unhandled rejections when Promise.all short-circuits
+    for (const field of internalFields) {
+      await expectAsync(new Parse.Query(Parse.User).exists(field).find()).toBeRejectedWith(
+        new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${field}`)
+      );
+    }
+    for (const field of internalFields) {
+      await new Parse.Query(Parse.User).exists(field).find({ useMasterKey: true });
+    }
   });
 
   it('query protected field', async () => {

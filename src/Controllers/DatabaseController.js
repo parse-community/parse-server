@@ -545,7 +545,7 @@ class DatabaseController {
     try {
       Utils.checkProhibitedKeywords(this.options, update);
     } catch (error) {
-      return Promise.reject(new Parse.Error(Parse.Error.INVALID_KEY_NAME, error));
+      return Promise.reject(new Parse.Error(Parse.Error.INVALID_KEY_NAME, `${error}`));
     }
     try {
       const { validateFileUrlsInObject } = require('../FileUrlValidator');
@@ -888,7 +888,7 @@ class DatabaseController {
     try {
       Utils.checkProhibitedKeywords(this.options, object);
     } catch (error) {
-      return Promise.reject(new Parse.Error(Parse.Error.INVALID_KEY_NAME, error));
+      return Promise.reject(new Parse.Error(Parse.Error.INVALID_KEY_NAME, `${error}`));
     }
     try {
       const { validateFileUrlsInObject } = require('../FileUrlValidator');

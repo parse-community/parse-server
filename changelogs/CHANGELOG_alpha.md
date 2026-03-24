@@ -1,3 +1,10 @@
+# [9.7.0-alpha.4](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.3...9.7.0-alpha.4) (2026-03-24)
+
+
+### Bug Fixes
+
+* Missing error messages in Parse errors ([#10304](https://github.com/parse-community/parse-server/issues/10304)) ([f128048](https://github.com/parse-community/parse-server/commit/f12804800bc9232de02b4314e886bab6b169f041))
+
 # [9.7.0-alpha.3](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.2...9.7.0-alpha.3) (2026-03-23)
 
 
