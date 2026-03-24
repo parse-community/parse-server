@@ -217,6 +217,18 @@ describe('rest query', () => {
     }
   });
 
+  it('query internal field that has no database column', async () => {
+    const user = new Parse.User();
+    user.setUsername('user1');
+    user.setPassword('password');
+    await user.signUp();
+    // _tombstone is registered as an internal field but has no column in the
+    // Postgres _User table. Querying it with master key should return empty
+    // results (consistent with MongoDB behavior), not throw an error.
+    const results = await new Parse.Query(Parse.User).exists('_tombstone').find({ useMasterKey: true });
+    expect(results.length).toBe(0);
+  });
+
   it('query protected field', async () => {
     const user = new Parse.User();
     user.setUsername('username1');
