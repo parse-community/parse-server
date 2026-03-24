@@ -194,6 +194,17 @@ describe('Deprecator', () => {
     );
   });
 
+  it('does not log deprecation for enableProductPurchaseLegacyApi when set to false', async () => {
+    const logSpy = spyOn(Deprecator, '_logOption').and.callFake(() => {});
+
+    await reconfigureServer({ enableProductPurchaseLegacyApi: false });
+    expect(logSpy).not.toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        optionKey: 'enableProductPurchaseLegacyApi',
+      })
+    );
+  });
+
   it('does not log deprecation for requestComplexity limits when explicitly set', async () => {
     const logSpy = spyOn(Deprecator, '_logOption').and.callFake(() => {});
 

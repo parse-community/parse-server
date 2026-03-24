@@ -30,6 +30,8 @@ let core;
 // Logging helpers
 const logInfo = message => core.info(message);
 const logError = message => core.error(message);
+const logGroup = title => core.startGroup(title);
+const logGroupEnd = () => core.endGroup();
 
 /**
  * Initialize Parse Server for benchmarking
@@ -199,9 +201,10 @@ async function measureOperation({ name, operation, iterations, skipWarmup = fals
 
 /**
  * Measure GC pressure for an async operation over multiple iterations.
- * Tracks garbage collection duration per operation using PerformanceObserver.
- * Larger transient allocations (e.g., from unbounded cursor batch sizes) cause
- * more frequent and longer GC pauses, which this metric directly captures.
+ * Tracks total garbage collection time per operation using PerformanceObserver.
+ * Using total GC time (sum of all pauses) rather than max single pause provides
+ * much more stable metrics — it eliminates the variance from V8 choosing to do
+ * one long pause vs. many short pauses for the same amount of GC work.
  * @param {Object} options Measurement options.
  * @param {string} options.name Name of the operation being measured.
  * @param {Function} options.operation Async function to measure.
@@ -236,31 +239,34 @@ async function measureMemoryOperation({ name, operation, iterations, skipWarmup 
       global.gc();
     }
 
-    // Track GC events during this iteration; measure the longest single GC pause,
-    // which reflects the production impact of large transient allocations
-    let maxGcPause = 0;
+    // Track GC events during this iteration; sum all GC pause durations to
+    // measure total GC work, which is stable regardless of whether V8 chooses
+    // one long pause or many short pauses
+    let totalGcTime = 0;
     const obs = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
-        if (entry.duration > maxGcPause) {
-          maxGcPause = entry.duration;
-        }
+        totalGcTime += entry.duration;
       }
     });
     obs.observe({ type: 'gc', buffered: false });
 
     await operation();
 
+    // Force GC after the operation to flush pending GC work into this
+    // iteration's measurement, preventing cross-iteration contamination
+    if (typeof global.gc === 'function') {
+      global.gc();
+    }
+
     // Flush any buffered entries before disconnecting to avoid data loss
     for (const entry of obs.takeRecords()) {
-      if (entry.duration > maxGcPause) {
-        maxGcPause = entry.duration;
-      }
+      totalGcTime += entry.duration;
     }
     obs.disconnect();
-    gcDurations.push(maxGcPause);
+    gcDurations.push(totalGcTime);
 
     if (LOG_ITERATIONS) {
-      logInfo(`Iteration ${i + 1}: ${maxGcPause.toFixed(2)} ms GC`);
+      logInfo(`Iteration ${i + 1}: ${totalGcTime.toFixed(2)} ms GC`);
     } else if ((i + 1) % progressInterval === 0 || i + 1 === iterations) {
       const progress = Math.round(((i + 1) / iterations) * 100);
       logInfo(`Progress: ${progress}%`);
@@ -862,22 +868,38 @@ async function runBenchmarks() {
     ];
 
     // Run each benchmark with database cleanup
-    for (const benchmark of benchmarks) {
-      logInfo(`\nRunning benchmark '${benchmark.name}'...`);
-      resetParseServer();
-      await cleanupDatabase();
-      results.push(await benchmark.fn(benchmark.name));
+    const suiteStart = performance.now();
+    for (let idx = 0; idx < benchmarks.length; idx++) {
+      const benchmark = benchmarks[idx];
+      const label = `[${idx + 1}/${benchmarks.length}] ${benchmark.name}`;
+      logGroup(label);
+      try {
+        logInfo('Resetting database...');
+        resetParseServer();
+        await cleanupDatabase();
+        logInfo('Running benchmark...');
+        const benchStart = performance.now();
+        const result = await benchmark.fn(benchmark.name);
+        const benchDuration = ((performance.now() - benchStart) / 1000).toFixed(1);
+        results.push(result);
+        logInfo(`Result: ${result.value.toFixed(2)} ${result.unit} (${result.extra})`);
+        logInfo(`Duration: ${benchDuration}s`);
+      } finally {
+        logGroupEnd();
+      }
     }
+    const suiteDuration = ((performance.now() - suiteStart) / 1000).toFixed(1);
 
     // Output results in github-action-benchmark format (stdout)
     logInfo(JSON.stringify(results, null, 2));
 
-    // Output summary to stderr for visibility
-    logInfo('Benchmarks completed successfully!');
-    logInfo('Summary:');
+    // Output summary
+    logGroup('Summary');
     results.forEach(result => {
-      logInfo(`  ${result.name}: ${result.value.toFixed(2)} ${result.unit} (${result.extra})`);
+      logInfo(`${result.name}: ${result.value.toFixed(2)} ${result.unit} (${result.extra})`);
     });
+    logInfo(`Total duration: ${suiteDuration}s`);
+    logGroupEnd();
 
   } catch (error) {
     logError('Error running benchmarks:', error);
