@@ -313,7 +313,7 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
       try {
         Utils.checkProhibitedKeywords(this.config, this.data);
       } catch (error) {
-        throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, error);
+        throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `${error}`);
       }
     });
 };
@@ -1199,15 +1199,15 @@ RestWrite.prototype.handleSession = function () {
 
   if (this.query) {
     if (this.data.user && !this.auth.isMaster && this.data.user.objectId != this.auth.user.id) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: user');
     } else if (this.data.installationId) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: installationId');
     } else if (this.data.sessionToken) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: sessionToken');
     } else if (this.data.expiresAt && !this.auth.isMaster && !this.auth.isMaintenance) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: expiresAt');
     } else if (this.data.createdWith && !this.auth.isMaster && !this.auth.isMaintenance) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: createdWith');
     }
     if (!this.auth.isMaster) {
       this.query = {
