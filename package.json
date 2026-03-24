@@ -32,7 +32,7 @@
     "cors": "2.8.6",
     "express": "5.2.1",
     "express-rate-limit": "8.3.0",
-    "follow-redirects": "1.15.9",
+    "follow-redirects": "1.15.11",
     "graphql": "16.11.0",
     "graphql-list-fields": "2.0.4",
     "graphql-relay": "0.10.2",
