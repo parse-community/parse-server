@@ -229,6 +229,15 @@ describe('rest query', () => {
     expect(results.length).toBe(0);
   });
 
+  it('count internal field that has no database column', async () => {
+    const user = new Parse.User();
+    user.setUsername('user1');
+    user.setPassword('password');
+    await user.signUp();
+    const count = await new Parse.Query(Parse.User).exists('_tombstone').count({ useMasterKey: true });
+    expect(count).toBe(0);
+  });
+
   it('query protected field', async () => {
     const user = new Parse.User();
     user.setUsername('username1');
