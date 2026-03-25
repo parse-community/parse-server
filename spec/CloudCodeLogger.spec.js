@@ -241,12 +241,15 @@ describe('Cloud Code Logger', () => {
         },
       });
 
+      let afterSaveResolve;
+      const afterSavePromise = new Promise(resolve => { afterSaveResolve = resolve; });
       Parse.Cloud.beforeSave('TestClass', () => { });
-      Parse.Cloud.afterSave('TestClass', () => { });
+      Parse.Cloud.afterSave('TestClass', () => { afterSaveResolve(); });
 
       spy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
       const obj = new Parse.Object('TestClass');
       await obj.save();
+      await afterSavePromise;
 
       return {
         beforeSave: spy.calls
