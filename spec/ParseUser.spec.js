@@ -1457,7 +1457,7 @@ describe('Parse.User testing', () => {
     expect(result.get('authData').facebook.access_token).toBe('jenny');
   });
 
-  it('only creates a single session for an installation / user pair (#2885)', async done => {
+  it('only creates a single session for an installation / user pair (#2885)', async () => {
     Parse.Object.disableSingleInstance();
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
@@ -1466,18 +1466,19 @@ describe('Parse.User testing', () => {
     const user = await Parse.User.logInWith('facebook');
     const sessionToken = user.getSessionToken();
     const query = new Parse.Query('_Session');
-    return query
-      .find({ useMasterKey: true })
-      .then(results => {
-        expect(results.length).toBe(1);
-        expect(results[0].get('sessionToken')).toBe(sessionToken);
-        expect(results[0].get('createdWith')).toEqual({
-          action: 'login',
-          authProvider: 'facebook',
-        });
-        done();
-      })
-      .catch(done.fail);
+    // destroyDuplicatedSessions is fire-and-forget, poll until cleanup completes
+    let results;
+    for (let i = 0; i < 10; i++) {
+      results = await query.find({ useMasterKey: true });
+      if (results.length <= 1) { break; }
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    expect(results.length).toBe(1);
+    expect(results[0].get('sessionToken')).toBe(sessionToken);
+    expect(results[0].get('createdWith')).toEqual({
+      action: 'login',
+      authProvider: 'facebook',
+    });
   });
 
   it('log in with provider with files', done => {
