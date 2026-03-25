@@ -9,12 +9,7 @@ global.currentSpec = null;
  * a number of times to reduce the chance of false negatives. The test name must be the same
  * as the one displayed in the CI log test output.
  */
-const flakyTests = [
-  // Timeout
-  "ParseLiveQuery handle invalid websocket payload length",
-  // Unhandled promise rejection: TypeError: message.split is not a function
-  "rest query query internal field",
-];
+const flakyTests = [];
 
 /** The minimum execution time in seconds for a test to be considered slow. */
 const slowTestLimit = 2;

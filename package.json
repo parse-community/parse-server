@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "9.7.0-alpha.3",
+  "version": "9.7.0-alpha.5",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -32,7 +32,7 @@
     "cors": "2.8.6",
     "express": "5.2.1",
     "express-rate-limit": "8.3.0",
-    "follow-redirects": "1.15.9",
+    "follow-redirects": "1.15.11",
     "graphql": "16.11.0",
     "graphql-list-fields": "2.0.4",
     "graphql-relay": "0.10.2",
@@ -42,7 +42,7 @@
     "jwks-rsa": "3.2.0",
     "ldapjs": "3.0.7",
     "lodash": "4.17.23",
-    "lru-cache": "10.4.0",
+    "lru-cache": "11.2.7",
     "mime": "4.0.7",
     "mongodb": "7.1.0",
     "mustache": "4.2.0",
@@ -60,7 +60,7 @@
     "uuid": "11.1.0",
     "winston": "3.19.0",
     "winston-daily-rotate-file": "5.0.0",
-    "ws": "8.18.2"
+    "ws": "8.20.0"
   },
   "devDependencies": {
     "@actions/core": "3.0.0",

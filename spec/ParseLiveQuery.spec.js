@@ -956,7 +956,7 @@ describe('ParseLiveQuery', function () {
     await expectAsync(query.subscribe()).toBeRejectedWith(new Error('Invalid session token'));
   });
 
-  it_id('4ccc9508-ae6a-46ec-932a-9f5e49ab3b9e')(it)('handle invalid websocket payload length', async done => {
+  it_id('4ccc9508-ae6a-46ec-932a-9f5e49ab3b9e')(it)('handle invalid websocket payload length', async () => {
     await reconfigureServer({
       liveQuery: {
         classNames: ['TestObject'],
@@ -980,17 +980,31 @@ describe('ParseLiveQuery', function () {
     // 0xfe = 11111110 = first bit is masking the remaining 7 are 1111110 or 126 the payload length
     // https://tools.ietf.org/html/rfc6455#section-5.2
     const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
-    client.socket._socket.write(Buffer.from([0x89, 0xfe]));
 
-    subscription.on('update', async object => {
-      expect(object.get('foo')).toBe('bar');
-      done();
+    // Wait for the initial subscription 'open' event (fires 200ms after subscribe)
+    // before sending the invalid frame, so we don't confuse it with the reconnection 'open'
+    await new Promise(resolve => subscription.on('open', resolve));
+
+    // Now listen for close followed by reopen from the reconnection cycle
+    const reopened = new Promise(resolve => {
+      subscription.on('close', () => {
+        subscription.on('open', resolve);
+      });
     });
-    // Wait for Websocket timeout to reconnect
-    setTimeout(async () => {
-      object.set({ foo: 'bar' });
-      await object.save();
-    }, 1000);
+
+    client.socket._socket.write(Buffer.from([0x89, 0xfe]));
+    await reopened;
+
+    // After reconnection, save an update and verify the subscription receives it
+    const updated = new Promise(resolve => {
+      subscription.on('update', object => {
+        expect(object.get('foo')).toBe('bar');
+        resolve();
+      });
+    });
+    object.set({ foo: 'bar' });
+    await object.save();
+    await updated;
   });
 
   it_id('39a9191f-26dd-4e05-a379-297a67928de8')(it)('should execute live query update on email validation', async done => {
