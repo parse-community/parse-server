@@ -1470,7 +1470,7 @@ describe('Parse.User testing', () => {
     let results;
     for (let i = 0; i < 10; i++) {
       results = await query.find({ useMasterKey: true });
-      if (results.length <= 1) break;
+      if (results.length <= 1) { break; }
       await new Promise(resolve => setTimeout(resolve, 100));
     }
     expect(results.length).toBe(1);
