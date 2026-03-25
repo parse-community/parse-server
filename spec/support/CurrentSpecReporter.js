@@ -44,25 +44,52 @@ global.displayTestStats = function() {
 };
 
 /**
- * Wraps test functions that use both `async` and a `done` callback, which Jasmine
+ * Wraps test functions that use both `async` and a `done` callback, which Jasmine 5
  * does not support. This converts `async (done) => { ... }` to a promise-based
  * function so Jasmine does not throw:
  * "An asynchronous before/it/after function was defined with the async keyword
  * but also took a done callback."
  */
 global.normalizeAsyncTests = function() {
-  const originalSpecConstructor = jasmine.Spec;
-  jasmine.Spec = function(attrs) {
-    const spec = new originalSpecConstructor(attrs);
-    const originalTestFn = spec.queueableFn.fn;
-    if (originalTestFn.length > 0) {
-      spec.queueableFn.fn = function() {
+  function wrapDoneCallback(fn) {
+    if (fn.length > 0) {
+      return function() {
         return new Promise((resolve) => {
-          originalTestFn(resolve);
+          fn.call(this, resolve);
         });
       };
     }
+    return fn;
+  }
+
+  // Wrap it() specs
+  const originalSpecConstructor = jasmine.Spec;
+  jasmine.Spec = function(attrs) {
+    const spec = new originalSpecConstructor(attrs);
+    spec.queueableFn.fn = wrapDoneCallback(spec.queueableFn.fn);
     return spec;
+  };
+
+  // Wrap beforeEach/afterEach/beforeAll/afterAll
+  const originalBeforeEach = jasmine.Suite.prototype.beforeEach;
+  jasmine.Suite.prototype.beforeEach = function(fn) {
+    fn.fn = wrapDoneCallback(fn.fn);
+    return originalBeforeEach.call(this, fn);
+  };
+  const originalAfterEach = jasmine.Suite.prototype.afterEach;
+  jasmine.Suite.prototype.afterEach = function(fn) {
+    fn.fn = wrapDoneCallback(fn.fn);
+    return originalAfterEach.call(this, fn);
+  };
+  const originalBeforeAll = jasmine.Suite.prototype.beforeAll;
+  jasmine.Suite.prototype.beforeAll = function(fn) {
+    fn.fn = wrapDoneCallback(fn.fn);
+    return originalBeforeAll.call(this, fn);
+  };
+  const originalAfterAll = jasmine.Suite.prototype.afterAll;
+  jasmine.Suite.prototype.afterAll = function(fn) {
+    fn.fn = wrapDoneCallback(fn.fn);
+    return originalAfterAll.call(this, fn);
   };
 };
 
