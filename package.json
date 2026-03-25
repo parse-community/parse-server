@@ -33,7 +33,7 @@
     "express": "5.2.1",
     "express-rate-limit": "8.3.0",
     "follow-redirects": "1.15.11",
-    "graphql": "16.11.0",
+    "graphql": "16.13.2",
     "graphql-list-fields": "2.0.4",
     "graphql-relay": "0.10.2",
     "graphql-upload": "15.0.2",
