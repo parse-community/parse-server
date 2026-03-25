@@ -4,21 +4,10 @@ const { performance } = require('perf_hooks');
 
 global.currentSpec = null;
 
-/**
- * Names of tests that fail randomly and are considered flaky. These tests will be retried
- * a number of times to reduce the chance of false negatives. The test name must be the same
- * as the one displayed in the CI log test output.
- */
-const flakyTests = [];
-
 /** The minimum execution time in seconds for a test to be considered slow. */
 const slowTestLimit = 2;
 
-/** The number of times to retry a flaky test. */
-const retries = 5;
-
 const timerMap = {};
-const retryMap = {};
 const duplicates = [];
 class CurrentSpecReporter {
   specStarted(spec) {
@@ -52,61 +41,6 @@ global.displayTestStats = function() {
     console.warn('Duplicate spec: ' + spec);
   });
   console.log('\n');
-  Object.keys(retryMap).forEach((spec) => {
-    console.warn(`Flaky test: ${spec} failed ${retryMap[spec]} times`);
-  });
-  console.log('\n');
 };
-
-global.retryFlakyTests = function() {
-  const originalSpecConstructor = jasmine.Spec;
-
-  jasmine.Spec = function(attrs) {
-    const spec = new originalSpecConstructor(attrs);
-    const originalTestFn = spec.queueableFn.fn;
-    const runOriginalTest = () => {
-      if (originalTestFn.length == 0) {
-        // handle async testing
-        return originalTestFn();
-      } else {
-        // handle done() callback
-        return new Promise((resolve) => {
-          originalTestFn(resolve);
-        });
-      }
-    };
-    spec.queueableFn.fn = async function() {
-      const isFlaky = flakyTests.includes(spec.result.fullName);
-      const runs = isFlaky ? retries : 1;
-      let exceptionCaught;
-      let returnValue;
-
-      for (let i = 0; i < runs; ++i) {
-        spec.result.failedExpectations = [];
-        returnValue = undefined;
-        exceptionCaught = undefined;
-        try {
-          returnValue = await runOriginalTest();
-        } catch (exception) {
-          exceptionCaught = exception;
-        }
-        const failed = !spec.markedPending &&
-            (exceptionCaught || spec.result.failedExpectations.length != 0);
-        if (!failed) {
-          break;
-        }
-        if (isFlaky) {
-          retryMap[spec.result.fullName] = (retryMap[spec.result.fullName] || 0) + 1;
-          await global.afterEachFn();
-        }
-      }
-      if (exceptionCaught) {
-        throw exceptionCaught;
-      }
-      return returnValue;
-    };
-    return spec;
-  };
-}
 
 module.exports = CurrentSpecReporter;
