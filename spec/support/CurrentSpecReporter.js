@@ -43,4 +43,27 @@ global.displayTestStats = function() {
   console.log('\n');
 };
 
+/**
+ * Wraps test functions that use both `async` and a `done` callback, which Jasmine
+ * does not support. This converts `async (done) => { ... }` to a promise-based
+ * function so Jasmine does not throw:
+ * "An asynchronous before/it/after function was defined with the async keyword
+ * but also took a done callback."
+ */
+global.normalizeAsyncTests = function() {
+  const originalSpecConstructor = jasmine.Spec;
+  jasmine.Spec = function(attrs) {
+    const spec = new originalSpecConstructor(attrs);
+    const originalTestFn = spec.queueableFn.fn;
+    if (originalTestFn.length > 0) {
+      spec.queueableFn.fn = function() {
+        return new Promise((resolve) => {
+          originalTestFn(resolve);
+        });
+      };
+    }
+    return spec;
+  };
+};
+
 module.exports = CurrentSpecReporter;
