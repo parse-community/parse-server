@@ -720,38 +720,27 @@ describe('rest create', () => {
       });
   });
 
-  it('can create a session with no expiration', done => {
+  it('can create a session with no expiration', async () => {
+    await reconfigureServer({ expireInactiveSessions: false });
+    config = Config.get('test');
+
     const user = {
       username: 'asdf',
       password: 'zxcv',
       foo: 'bar',
     };
-    config.expireInactiveSessions = false;
 
-    rest
-      .create(config, auth.nobody(config), '_User', user)
-      .then(r => {
-        expect(Object.keys(r.response).length).toEqual(3);
-        expect(typeof r.response.objectId).toEqual('string');
-        expect(typeof r.response.createdAt).toEqual('string');
-        expect(typeof r.response.sessionToken).toEqual('string');
-        return rest.find(config, auth.master(config), '_Session', {
-          sessionToken: r.response.sessionToken,
-        });
-      })
-      .then(r => {
-        expect(r.results.length).toEqual(1);
+    const r = await rest.create(config, auth.nobody(config), '_User', user);
+    expect(Object.keys(r.response).length).toEqual(3);
+    expect(typeof r.response.objectId).toEqual('string');
+    expect(typeof r.response.createdAt).toEqual('string');
+    expect(typeof r.response.sessionToken).toEqual('string');
 
-        const session = r.results[0];
-        expect(session.expiresAt).toBeUndefined();
-
-        done();
-      })
-      .catch(err => {
-        console.error(err);
-        fail(err);
-        done();
-      });
+    const s = await rest.find(config, auth.master(config), '_Session', {
+      sessionToken: r.response.sessionToken,
+    });
+    expect(s.results.length).toEqual(1);
+    expect(s.results[0].expiresAt).toBeUndefined();
   });
 
   it('can create object in volatileClasses if masterKey', done => {
