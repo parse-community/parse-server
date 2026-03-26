@@ -44,11 +44,19 @@ global.displayTestStats = function() {
 };
 
 /**
- * Wraps test functions that use both `async` and a `done` callback, which Jasmine 5
- * does not support. This converts `async (done) => { ... }` to a promise-based
- * function so Jasmine does not throw:
+ * Transitional compatibility shim for Jasmine 5.
+ *
+ * Jasmine 5 throws when a test or hook function uses both `async` and a `done` callback:
  * "An asynchronous before/it/after function was defined with the async keyword
  * but also took a done callback."
+ *
+ * Many existing tests use `async (done) => { ... done(); }`. This wrapper converts
+ * those to promise-based functions by intercepting the `done` callback and resolving
+ * a promise instead, so Jasmine sees a plain async function.
+ *
+ * To remove this shim, convert each file below so that tests and hooks use plain
+ * `async () => {}` without a `done` parameter, then remove the file from this list.
+ * Once the list is empty, delete this function and its call in `helper.js`.
  */
 global.normalizeAsyncTests = function() {
   function wrapDoneCallback(fn) {
