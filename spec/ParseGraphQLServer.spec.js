@@ -8658,6 +8658,13 @@ describe('ParseGraphQLServer', () => {
       });
 
       describe('Data Types', () => {
+        beforeEach(async () => {
+          const schema = new Parse.Schema('SomeClass');
+          await schema.purge().catch(() => {});
+          await schema.delete().catch(() => {});
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+        });
+
         it('should support String', async () => {
           try {
             const someFieldValue = 'some string';
