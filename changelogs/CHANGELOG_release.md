@@ -1,3 +1,10 @@
+## [8.6.64](https://github.com/parse-community/parse-server/compare/8.6.63...8.6.64) (2026-03-26)
+
+
+### Bug Fixes
+
+* MFA single-use token bypass via concurrent authData login requests ([GHSA-w73w-g5xw-rwhf](https://github.com/parse-community/parse-server/security/advisories/GHSA-w73w-g5xw-rwhf)) ([#10327](https://github.com/parse-community/parse-server/issues/10327)) ([661f160](https://github.com/parse-community/parse-server/commit/661f160edac8daac0486bc94413cf9652876ab92))
+
 ## [8.6.63](https://github.com/parse-community/parse-server/compare/8.6.62...8.6.63) (2026-03-26)
 
 
