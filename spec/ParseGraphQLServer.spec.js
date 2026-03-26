@@ -10423,6 +10423,7 @@ describe('ParseGraphQLServer', () => {
           schema.addPointer('somePointerField', 'SomeClass');
           schema.addRelation('someRelationField', 'SomeClass');
           await schema.save();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           const body = new FormData();
           body.append(
