@@ -1466,13 +1466,7 @@ describe('Parse.User testing', () => {
     const user = await Parse.User.logInWith('facebook');
     const sessionToken = user.getSessionToken();
     const query = new Parse.Query('_Session');
-    // destroyDuplicatedSessions is fire-and-forget, poll until cleanup completes
-    let results;
-    for (let i = 0; i < 10; i++) {
-      results = await query.find({ useMasterKey: true });
-      if (results.length <= 1) { break; }
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
+    const results = await query.find({ useMasterKey: true });
     expect(results.length).toBe(1);
     expect(results[0].get('sessionToken')).toBe(sessionToken);
     expect(results[0].get('createdWith')).toEqual({

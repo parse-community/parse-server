@@ -1,3 +1,10 @@
+# [9.7.0-alpha.6](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.5...9.7.0-alpha.6) (2026-03-26)
+
+
+### Bug Fixes
+
+* Duplicate session destruction can cause unhandled promise rejection ([#10319](https://github.com/parse-community/parse-server/issues/10319)) ([92791c1](https://github.com/parse-community/parse-server/commit/92791c1d1d4b042a0e615ba45dcef491b904eccf))
+
 # [9.7.0-alpha.5](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.4...9.7.0-alpha.5) (2026-03-25)
 
 
