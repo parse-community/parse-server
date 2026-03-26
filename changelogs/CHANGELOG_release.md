@@ -1,3 +1,10 @@
+## [8.6.63](https://github.com/parse-community/parse-server/compare/8.6.62...8.6.63) (2026-03-26)
+
+
+### Bug Fixes
+
+* Auth data exposed via verify password endpoint ([GHSA-wp76-gg32-8258](https://github.com/parse-community/parse-server/security/advisories/GHSA-wp76-gg32-8258)) ([#10324](https://github.com/parse-community/parse-server/issues/10324)) ([a1d4e7b](https://github.com/parse-community/parse-server/commit/a1d4e7b12a12f16d3870dbee582a36765858e94c))
+
 ## [8.6.62](https://github.com/parse-community/parse-server/compare/8.6.61...8.6.62) (2026-03-22)
 
 
