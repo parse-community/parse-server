@@ -653,7 +653,8 @@ describe('rest create', () => {
       password: 'zxcv',
       foo: 'bar',
     };
-    const now = new Date();
+    const defaultSessionLength = 1000 * 3600 * 24 * 365;
+    const before = Date.now();
 
     rest
       .create(config, auth.nobody(config), '_User', user)
@@ -670,10 +671,11 @@ describe('rest create', () => {
         expect(r.results.length).toEqual(1);
 
         const session = r.results[0];
-        const actual = new Date(session.expiresAt.iso);
-        const expected = new Date(now.getTime() + 1000 * 3600 * 24 * 365);
+        const actual = new Date(session.expiresAt.iso).getTime();
+        const after = Date.now();
 
-        expect(Math.abs(actual - expected) <= jasmine.DEFAULT_TIMEOUT_INTERVAL).toEqual(true);
+        expect(actual).toBeGreaterThanOrEqual(before + defaultSessionLength);
+        expect(actual).toBeLessThanOrEqual(after + defaultSessionLength);
 
         done();
       });
@@ -685,9 +687,9 @@ describe('rest create', () => {
       password: 'zxcv',
       foo: 'bar',
     };
-    const sessionLength = 3600, // 1 Hour ahead
-      now = new Date(); // For reference later
+    const sessionLength = 3600; // 1 Hour ahead
     config.sessionLength = sessionLength;
+    const before = Date.now();
 
     rest
       .create(config, auth.nobody(config), '_User', user)
@@ -704,10 +706,11 @@ describe('rest create', () => {
         expect(r.results.length).toEqual(1);
 
         const session = r.results[0];
-        const actual = new Date(session.expiresAt.iso);
-        const expected = new Date(now.getTime() + sessionLength * 1000);
+        const actual = new Date(session.expiresAt.iso).getTime();
+        const after = Date.now();
 
-        expect(Math.abs(actual - expected) <= jasmine.DEFAULT_TIMEOUT_INTERVAL).toEqual(true);
+        expect(actual).toBeGreaterThanOrEqual(before + sessionLength * 1000);
+        expect(actual).toBeLessThanOrEqual(after + sessionLength * 1000);
 
         done();
       })
