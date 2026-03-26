@@ -8658,6 +8658,13 @@ describe('ParseGraphQLServer', () => {
       });
 
       describe('Data Types', () => {
+        beforeEach(async () => {
+          const schema = new Parse.Schema('SomeClass');
+          await schema.purge().catch(() => {});
+          await schema.delete().catch(() => {});
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+        });
+
         it('should support String', async () => {
           try {
             const someFieldValue = 'some string';
@@ -10423,6 +10430,7 @@ describe('ParseGraphQLServer', () => {
           schema.addPointer('somePointerField', 'SomeClass');
           schema.addRelation('someRelationField', 'SomeClass');
           await schema.save();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           const body = new FormData();
           body.append(

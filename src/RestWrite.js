@@ -1140,7 +1140,7 @@ RestWrite.prototype.destroyDuplicatedSessions = function () {
   if (!user.objectId) {
     return;
   }
-  this.config.database.destroy(
+  return this.config.database.destroy(
     '_Session',
     {
       user,
@@ -1149,7 +1149,11 @@ RestWrite.prototype.destroyDuplicatedSessions = function () {
     },
     {},
     this.validSchemaController
-  );
+  ).catch(e => {
+    if (e.code !== Parse.Error.OBJECT_NOT_FOUND) {
+      throw e;
+    }
+  });
 };
 
 // Handles any followup logic
