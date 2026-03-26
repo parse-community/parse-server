@@ -4315,6 +4315,91 @@ describe('(GHSA-2299-ghjr-6vjp) MFA recovery code reuse via concurrent requests'
   });
 });
 
+describe('(GHSA-w73w-g5xw-rwhf) MFA recovery code reuse via concurrent authData-only login', () => {
+  const mfaHeaders = {
+    'X-Parse-Application-Id': 'test',
+    'X-Parse-REST-API-Key': 'rest',
+    'Content-Type': 'application/json',
+  };
+
+  let fakeProvider;
+
+  beforeEach(async () => {
+    fakeProvider = {
+      validateAppId: () => Promise.resolve(),
+      validateAuthData: () => Promise.resolve(),
+    };
+    await reconfigureServer({
+      auth: {
+        fakeProvider,
+        mfa: {
+          enabled: true,
+          options: ['TOTP'],
+          algorithm: 'SHA1',
+          digits: 6,
+          period: 30,
+        },
+      },
+    });
+  });
+
+  it('rejects concurrent authData-only logins using the same MFA recovery code', async () => {
+    const OTPAuth = require('otpauth');
+
+    // Create user via authData login with fake provider
+    const user = await Parse.User.logInWith('fakeProvider', {
+      authData: { id: 'user1', token: 'fakeToken' },
+    });
+
+    // Enable MFA for this user
+    const secret = new OTPAuth.Secret();
+    const totp = new OTPAuth.TOTP({
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
+    const token = totp.generate();
+    await user.save(
+      { authData: { mfa: { secret: secret.base32, token } } },
+      { sessionToken: user.getSessionToken() }
+    );
+
+    // Get recovery codes from stored auth data
+    await user.fetch({ useMasterKey: true });
+    const recoveryCode = user.get('authData').mfa.recovery[0];
+    expect(recoveryCode).toBeDefined();
+
+    // Send concurrent authData-only login requests with the same recovery code
+    const loginWithRecovery = () =>
+      request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        headers: mfaHeaders,
+        body: JSON.stringify({
+          authData: {
+            fakeProvider: { id: 'user1', token: 'fakeToken' },
+            mfa: { token: recoveryCode },
+          },
+        }),
+      });
+
+    const results = await Promise.allSettled(Array(10).fill().map(() => loginWithRecovery()));
+
+    const succeeded = results.filter(r => r.status === 'fulfilled');
+    const failed = results.filter(r => r.status === 'rejected');
+
+    // Exactly one request should succeed; all others should fail
+    expect(succeeded.length).toBe(1);
+    expect(failed.length).toBe(9);
+
+    // Verify the recovery code has been consumed
+    await user.fetch({ useMasterKey: true });
+    const remainingRecovery = user.get('authData').mfa.recovery;
+    expect(remainingRecovery).not.toContain(recoveryCode);
+  });
+});
+
 describe('(GHSA-p2w6-rmh7-w8q3) SQL Injection via aggregate and distinct field names in PostgreSQL adapter', () => {
   const headers = {
     'Content-Type': 'application/json',
