@@ -4600,4 +4600,95 @@ describe('(GHSA-p2w6-rmh7-w8q3) SQL Injection via aggregate and distinct field n
       expect(meResponse.data.authData?.mfa).toEqual({ status: 'enabled' });
     });
   });
+
+  describe('(GHSA-wp76-gg32-8258) /verifyPassword leaks raw authData via missing afterFind', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+
+    it('does not leak raw MFA authData via /verifyPassword', async () => {
+      await reconfigureServer({
+        auth: {
+          mfa: {
+            enabled: true,
+            options: ['TOTP'],
+            algorithm: 'SHA1',
+            digits: 6,
+            period: 30,
+          },
+        },
+        verifyUserEmails: false,
+      });
+      const user = await Parse.User.signUp('username', 'password');
+      const sessionToken = user.getSessionToken();
+      const OTPAuth = require('otpauth');
+      const secret = new OTPAuth.Secret();
+      const totp = new OTPAuth.TOTP({
+        algorithm: 'SHA1',
+        digits: 6,
+        period: 30,
+        secret,
+      });
+      const token = totp.generate();
+      // Enable MFA
+      await user.save(
+        { authData: { mfa: { secret: secret.base32, token } } },
+        { sessionToken }
+      );
+      // Verify MFA data is stored (master key)
+      await user.fetch({ useMasterKey: true });
+      expect(user.get('authData').mfa.secret).toBe(secret.base32);
+      expect(user.get('authData').mfa.recovery).toBeDefined();
+      // POST /verifyPassword should NOT include raw MFA data
+      const response = await request({
+        headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/verifyPassword',
+        body: JSON.stringify({ username: 'username', password: 'password' }),
+      });
+      expect(response.data.authData?.mfa?.secret).toBeUndefined();
+      expect(response.data.authData?.mfa?.recovery).toBeUndefined();
+      expect(response.data.authData?.mfa).toEqual({ status: 'enabled' });
+    });
+
+    it('does not leak raw MFA authData via GET /verifyPassword', async () => {
+      await reconfigureServer({
+        auth: {
+          mfa: {
+            enabled: true,
+            options: ['TOTP'],
+            algorithm: 'SHA1',
+            digits: 6,
+            period: 30,
+          },
+        },
+        verifyUserEmails: false,
+      });
+      const user = await Parse.User.signUp('username', 'password');
+      const sessionToken = user.getSessionToken();
+      const OTPAuth = require('otpauth');
+      const secret = new OTPAuth.Secret();
+      const totp = new OTPAuth.TOTP({
+        algorithm: 'SHA1',
+        digits: 6,
+        period: 30,
+        secret,
+      });
+      await user.save(
+        { authData: { mfa: { secret: secret.base32, token: totp.generate() } } },
+        { sessionToken }
+      );
+      // GET /verifyPassword should NOT include raw MFA data
+      const response = await request({
+        headers,
+        method: 'GET',
+        url: `http://localhost:8378/1/verifyPassword?username=username&password=password`,
+      });
+      expect(response.data.authData?.mfa?.secret).toBeUndefined();
+      expect(response.data.authData?.mfa?.recovery).toBeUndefined();
+      expect(response.data.authData?.mfa).toEqual({ status: 'enabled' });
+    });
+  });
 });
