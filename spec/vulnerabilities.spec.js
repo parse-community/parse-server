@@ -3406,7 +3406,7 @@ describe('(GHSA-5hmj-jcgp-6hff) Protected fields leak via LiveQuery afterEvent t
 
   describe('(GHSA-m983-v2ff-wq65) LiveQuery shared mutable state race across concurrent subscribers', () => {
     // Helper: create a LiveQuery client, wait for open, subscribe, wait for subscription ACK
-    async function createSubscribedClient({ className, masterKey }) {
+    async function createSubscribedClient({ className, masterKey, installationId }) {
       const opts = {
         applicationId: 'test',
         serverURL: 'ws://localhost:8378',
@@ -3414,6 +3414,9 @@ describe('(GHSA-5hmj-jcgp-6hff) Protected fields leak via LiveQuery afterEvent t
       };
       if (masterKey) {
         opts.masterKey = 'test';
+      }
+      if (installationId) {
+        opts.installationId = installationId;
       }
       const client = new Parse.LiveQueryClient(opts);
       client.open();
@@ -3677,7 +3680,7 @@ describe('(GHSA-5hmj-jcgp-6hff) Protected fields leak via LiveQuery afterEvent t
       });
       Parse.Cloud.afterLiveQueryEvent(className, req => {
         if (req.object) {
-          req.object.set('injected', `for-${req.sessionToken || 'no-session'}`);
+          req.object.set('injected', `for-${req.installationId}`);
         }
       });
       const config = Config.get(Parse.applicationId);
@@ -3690,10 +3693,12 @@ describe('(GHSA-5hmj-jcgp-6hff) Protected fields leak via LiveQuery afterEvent t
       const { client: client1, sub: sub1 } = await createSubscribedClient({
         className,
         masterKey: false,
+        installationId: 'client-1',
       });
       const { client: client2, sub: sub2 } = await createSubscribedClient({
         className,
         masterKey: false,
+        installationId: 'client-2',
       });
 
       try {
@@ -3716,8 +3721,9 @@ describe('(GHSA-5hmj-jcgp-6hff) Protected fields leak via LiveQuery afterEvent t
 
         expect(r1.data).toBe('value');
         expect(r2.data).toBe('value');
-        expect(r1.injected).toBeDefined();
-        expect(r2.injected).toBeDefined();
+        expect(r1.injected).toBe('for-client-1');
+        expect(r2.injected).toBe('for-client-2');
+        expect(r1.injected).not.toBe(r2.injected);
       } finally {
         client1.close();
         client2.close();
