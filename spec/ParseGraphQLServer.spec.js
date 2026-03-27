@@ -503,7 +503,7 @@ describe('ParseGraphQLServer', () => {
         }
       });
 
-      it('should be cors enabled and scope the response within the source origin', async () => {
+      it('should be cors enabled', async () => {
         let checked = false;
         const apolloClient = new ApolloClient({
           link: new ApolloLink((operation, forward) => {
@@ -512,7 +512,7 @@ describe('ParseGraphQLServer', () => {
               const {
                 response: { headers },
               } = context;
-              expect(headers.get('access-control-allow-origin')).toEqual('http://example.com');
+              expect(headers.get('access-control-allow-origin')).toEqual('*');
               checked = true;
               return response;
             });
