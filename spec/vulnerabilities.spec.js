@@ -5103,4 +5103,123 @@ describe('(GHSA-p2w6-rmh7-w8q3) SQL Injection via aggregate and distinct field n
       expect(response.data.authData?.mfa).toEqual({ status: 'enabled' });
     });
   });
+
+  describe('(GHSA-q3p6-g7c4-829c) GraphQL endpoint ignores allowOrigin server option', () => {
+    let httpServer;
+    const gqlPort = 13398;
+
+    const gqlHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Javascript-Key': 'test',
+      'Content-Type': 'application/json',
+    };
+
+    async function setupGraphQLServer(serverOptions = {}) {
+      if (httpServer) {
+        await new Promise(resolve => httpServer.close(resolve));
+      }
+      const server = await reconfigureServer(serverOptions);
+      const expressApp = express();
+      httpServer = http.createServer(expressApp);
+      expressApp.use('/parse', server.app);
+      const parseGraphQLServer = new ParseGraphQLServer(server, {
+        graphQLPath: '/graphql',
+      });
+      parseGraphQLServer.applyGraphQL(expressApp);
+      await new Promise(resolve => httpServer.listen({ port: gqlPort }, resolve));
+      return parseGraphQLServer;
+    }
+
+    afterEach(async () => {
+      if (httpServer) {
+        await new Promise(resolve => httpServer.close(resolve));
+        httpServer = null;
+      }
+    });
+
+    it('should reflect allowed origin when allowOrigin is configured', async () => {
+      await setupGraphQLServer({ allowOrigin: 'https://example.com' });
+      const response = await fetch(`http://localhost:${gqlPort}/graphql`, {
+        method: 'POST',
+        headers: { ...gqlHeaders, Origin: 'https://example.com' },
+        body: JSON.stringify({ query: '{ health }' }),
+      });
+      expect(response.status).toBe(200);
+      expect(response.headers.get('access-control-allow-origin')).toBe('https://example.com');
+    });
+
+    it('should not reflect unauthorized origin when allowOrigin is configured', async () => {
+      await setupGraphQLServer({ allowOrigin: 'https://example.com' });
+      const response = await fetch(`http://localhost:${gqlPort}/graphql`, {
+        method: 'POST',
+        headers: { ...gqlHeaders, Origin: 'https://unauthorized.example.net' },
+        body: JSON.stringify({ query: '{ health }' }),
+      });
+      expect(response.headers.get('access-control-allow-origin')).not.toBe('https://unauthorized.example.net');
+      expect(response.headers.get('access-control-allow-origin')).toBe('https://example.com');
+    });
+
+    it('should support multiple allowed origins', async () => {
+      await setupGraphQLServer({ allowOrigin: ['https://a.example.com', 'https://b.example.com'] });
+      const responseA = await fetch(`http://localhost:${gqlPort}/graphql`, {
+        method: 'POST',
+        headers: { ...gqlHeaders, Origin: 'https://a.example.com' },
+        body: JSON.stringify({ query: '{ health }' }),
+      });
+      expect(responseA.headers.get('access-control-allow-origin')).toBe('https://a.example.com');
+
+      const responseB = await fetch(`http://localhost:${gqlPort}/graphql`, {
+        method: 'POST',
+        headers: { ...gqlHeaders, Origin: 'https://b.example.com' },
+        body: JSON.stringify({ query: '{ health }' }),
+      });
+      expect(responseB.headers.get('access-control-allow-origin')).toBe('https://b.example.com');
+
+      const responseUnauthorized = await fetch(`http://localhost:${gqlPort}/graphql`, {
+        method: 'POST',
+        headers: { ...gqlHeaders, Origin: 'https://unauthorized.example.net' },
+        body: JSON.stringify({ query: '{ health }' }),
+      });
+      expect(responseUnauthorized.headers.get('access-control-allow-origin')).not.toBe('https://unauthorized.example.net');
+      expect(responseUnauthorized.headers.get('access-control-allow-origin')).toBe('https://a.example.com');
+    });
+
+    it('should default to wildcard when allowOrigin is not configured', async () => {
+      await setupGraphQLServer();
+      const response = await fetch(`http://localhost:${gqlPort}/graphql`, {
+        method: 'POST',
+        headers: { ...gqlHeaders, Origin: 'https://example.com' },
+        body: JSON.stringify({ query: '{ health }' }),
+      });
+      expect(response.headers.get('access-control-allow-origin')).toBe('*');
+    });
+
+    it('should handle OPTIONS preflight with configured allowOrigin', async () => {
+      await setupGraphQLServer({ allowOrigin: 'https://example.com' });
+      const response = await fetch(`http://localhost:${gqlPort}/graphql`, {
+        method: 'OPTIONS',
+        headers: {
+          Origin: 'https://example.com',
+          'Access-Control-Request-Method': 'POST',
+          'Access-Control-Request-Headers': 'X-Parse-Application-Id, Content-Type',
+        },
+      });
+      expect(response.status).toBe(200);
+      expect(response.headers.get('access-control-allow-origin')).toBe('https://example.com');
+    });
+
+    it('should not reflect unauthorized origin in OPTIONS preflight', async () => {
+      await setupGraphQLServer({ allowOrigin: 'https://example.com' });
+      const response = await fetch(`http://localhost:${gqlPort}/graphql`, {
+        method: 'OPTIONS',
+        headers: {
+          Origin: 'https://unauthorized.example.net',
+          'Access-Control-Request-Method': 'POST',
+          'Access-Control-Request-Headers': 'X-Parse-Application-Id, Content-Type',
+        },
+      });
+      expect(response.headers.get('access-control-allow-origin')).not.toBe('https://unauthorized.example.net');
+      expect(response.headers.get('access-control-allow-origin')).toBe('https://example.com');
+    });
+  });
 });
