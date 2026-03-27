@@ -3072,6 +3072,334 @@ describe('(GHSA-5hmj-jcgp-6hff) Protected fields leak via LiveQuery afterEvent t
     ]);
   });
 
+  describe('(GHSA-m983-v2ff-wq65) LiveQuery shared mutable state race across concurrent subscribers', () => {
+    // Helper: create a LiveQuery client, wait for open, subscribe, wait for subscription ACK
+    async function createSubscribedClient({ className, masterKey, installationId }) {
+      const opts = {
+        applicationId: 'test',
+        serverURL: 'ws://localhost:8378',
+        javascriptKey: 'test',
+      };
+      if (masterKey) {
+        opts.masterKey = 'test';
+      }
+      if (installationId) {
+        opts.installationId = installationId;
+      }
+      const client = new Parse.LiveQueryClient(opts);
+      client.open();
+      const query = new Parse.Query(className);
+      const sub = client.subscribe(query);
+      await new Promise(resolve => sub.on('open', resolve));
+      return { client, sub };
+    }
+
+    async function setupProtectedClass(className) {
+      const config = Config.get(Parse.applicationId);
+      const schemaController = await config.database.loadSchema();
+      await schemaController.addClassIfNotExists(className, {
+        secretField: { type: 'String' },
+        publicField: { type: 'String' },
+      });
+      await schemaController.updateClass(
+        className,
+        {},
+        {
+          find: { '*': true },
+          get: { '*': true },
+          create: { '*': true },
+          update: { '*': true },
+          delete: { '*': true },
+          addField: {},
+          protectedFields: { '*': ['secretField'] },
+        }
+      );
+    }
+
+    it('should deliver protected fields to master key LiveQuery client', async () => {
+      const className = 'MasterKeyProtectedClass';
+      Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+      await reconfigureServer({
+        liveQuery: { classNames: [className] },
+        liveQueryServerOptions: {
+          keyPairs: { masterKey: 'test', javascriptKey: 'test' },
+        },
+        verbose: false,
+        silent: true,
+      });
+      Parse.Cloud.afterLiveQueryEvent(className, () => {});
+      await setupProtectedClass(className);
+
+      const { client: masterClient, sub: masterSub } = await createSubscribedClient({
+        className,
+        masterKey: true,
+      });
+
+      try {
+        const result = new Promise(resolve => {
+          masterSub.on('create', object => {
+            resolve({
+              secretField: object.get('secretField'),
+              publicField: object.get('publicField'),
+            });
+          });
+        });
+
+        const obj = new Parse.Object(className);
+        obj.set('secretField', 'MASTER_VISIBLE');
+        obj.set('publicField', 'public');
+        await obj.save(null, { useMasterKey: true });
+
+        const received = await result;
+
+        // Master key client must see protected fields
+        expect(received.secretField).toBe('MASTER_VISIBLE');
+        expect(received.publicField).toBe('public');
+      } finally {
+        masterClient.close();
+      }
+    });
+
+    it('should not leak protected fields to regular client when master key client subscribes concurrently on update', async () => {
+      const className = 'RaceUpdateClass';
+      Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+      await reconfigureServer({
+        liveQuery: { classNames: [className] },
+        liveQueryServerOptions: {
+          keyPairs: { masterKey: 'test', javascriptKey: 'test' },
+        },
+        verbose: false,
+        silent: true,
+      });
+      Parse.Cloud.afterLiveQueryEvent(className, () => {});
+      await setupProtectedClass(className);
+
+      const { client: masterClient, sub: masterSub } = await createSubscribedClient({
+        className,
+        masterKey: true,
+      });
+      const { client: regularClient, sub: regularSub } = await createSubscribedClient({
+        className,
+        masterKey: false,
+      });
+
+      try {
+        const obj = new Parse.Object(className);
+        obj.set('secretField', 'TOP_SECRET');
+        obj.set('publicField', 'visible');
+        await obj.save(null, { useMasterKey: true });
+
+        const masterResult = new Promise(resolve => {
+          masterSub.on('update', object => {
+            resolve({
+              secretField: object.get('secretField'),
+              publicField: object.get('publicField'),
+            });
+          });
+        });
+        const regularResult = new Promise(resolve => {
+          regularSub.on('update', object => {
+            resolve({
+              secretField: object.get('secretField'),
+              publicField: object.get('publicField'),
+            });
+          });
+        });
+
+        await obj.save({ publicField: 'updated' }, { useMasterKey: true });
+        const [master, regular] = await Promise.all([masterResult, regularResult]);
+
+        // Regular client must NOT see the secret field
+        expect(regular.secretField).toBeUndefined();
+        expect(regular.publicField).toBe('updated');
+        // Master client must see the secret field
+        expect(master.secretField).toBe('TOP_SECRET');
+        expect(master.publicField).toBe('updated');
+      } finally {
+        masterClient.close();
+        regularClient.close();
+      }
+    });
+
+    it('should not leak protected fields to regular client when master key client subscribes concurrently on create', async () => {
+      const className = 'RaceCreateClass';
+      Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+      await reconfigureServer({
+        liveQuery: { classNames: [className] },
+        liveQueryServerOptions: {
+          keyPairs: { masterKey: 'test', javascriptKey: 'test' },
+        },
+        verbose: false,
+        silent: true,
+      });
+      Parse.Cloud.afterLiveQueryEvent(className, () => {});
+      await setupProtectedClass(className);
+
+      const { client: masterClient, sub: masterSub } = await createSubscribedClient({
+        className,
+        masterKey: true,
+      });
+      const { client: regularClient, sub: regularSub } = await createSubscribedClient({
+        className,
+        masterKey: false,
+      });
+
+      try {
+        const masterResult = new Promise(resolve => {
+          masterSub.on('create', object => {
+            resolve({
+              secretField: object.get('secretField'),
+              publicField: object.get('publicField'),
+            });
+          });
+        });
+        const regularResult = new Promise(resolve => {
+          regularSub.on('create', object => {
+            resolve({
+              secretField: object.get('secretField'),
+              publicField: object.get('publicField'),
+            });
+          });
+        });
+
+        const newObj = new Parse.Object(className);
+        newObj.set('secretField', 'SECRET');
+        newObj.set('publicField', 'public');
+        await newObj.save(null, { useMasterKey: true });
+
+        const [master, regular] = await Promise.all([masterResult, regularResult]);
+
+        expect(regular.secretField).toBeUndefined();
+        expect(regular.publicField).toBe('public');
+        expect(master.secretField).toBe('SECRET');
+        expect(master.publicField).toBe('public');
+      } finally {
+        masterClient.close();
+        regularClient.close();
+      }
+    });
+
+    it('should not leak protected fields to regular client when master key client subscribes concurrently on delete', async () => {
+      const className = 'RaceDeleteClass';
+      Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+      await reconfigureServer({
+        liveQuery: { classNames: [className] },
+        liveQueryServerOptions: {
+          keyPairs: { masterKey: 'test', javascriptKey: 'test' },
+        },
+        verbose: false,
+        silent: true,
+      });
+      Parse.Cloud.afterLiveQueryEvent(className, () => {});
+      await setupProtectedClass(className);
+
+      const { client: masterClient, sub: masterSub } = await createSubscribedClient({
+        className,
+        masterKey: true,
+      });
+      const { client: regularClient, sub: regularSub } = await createSubscribedClient({
+        className,
+        masterKey: false,
+      });
+
+      try {
+        const obj = new Parse.Object(className);
+        obj.set('secretField', 'SECRET');
+        obj.set('publicField', 'public');
+        await obj.save(null, { useMasterKey: true });
+
+        const masterResult = new Promise(resolve => {
+          masterSub.on('delete', object => {
+            resolve({
+              secretField: object.get('secretField'),
+              publicField: object.get('publicField'),
+            });
+          });
+        });
+        const regularResult = new Promise(resolve => {
+          regularSub.on('delete', object => {
+            resolve({
+              secretField: object.get('secretField'),
+              publicField: object.get('publicField'),
+            });
+          });
+        });
+
+        await obj.destroy({ useMasterKey: true });
+        const [master, regular] = await Promise.all([masterResult, regularResult]);
+
+        expect(regular.secretField).toBeUndefined();
+        expect(regular.publicField).toBe('public');
+        expect(master.secretField).toBe('SECRET');
+        expect(master.publicField).toBe('public');
+      } finally {
+        masterClient.close();
+        regularClient.close();
+      }
+    });
+
+    it('should not corrupt object when afterEvent trigger modifies res.object for one client', async () => {
+      const className = 'TriggerRaceClass';
+      Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+      await reconfigureServer({
+        liveQuery: { classNames: [className] },
+        startLiveQueryServer: true,
+        verbose: false,
+        silent: true,
+      });
+      Parse.Cloud.afterLiveQueryEvent(className, req => {
+        if (req.object) {
+          req.object.set('injected', `for-${req.installationId}`);
+        }
+      });
+      const config = Config.get(Parse.applicationId);
+      const schemaController = await config.database.loadSchema();
+      await schemaController.addClassIfNotExists(className, {
+        data: { type: 'String' },
+        injected: { type: 'String' },
+      });
+
+      const { client: client1, sub: sub1 } = await createSubscribedClient({
+        className,
+        masterKey: false,
+        installationId: 'client-1',
+      });
+      const { client: client2, sub: sub2 } = await createSubscribedClient({
+        className,
+        masterKey: false,
+        installationId: 'client-2',
+      });
+
+      try {
+        const result1 = new Promise(resolve => {
+          sub1.on('create', object => {
+            resolve({ data: object.get('data'), injected: object.get('injected') });
+          });
+        });
+        const result2 = new Promise(resolve => {
+          sub2.on('create', object => {
+            resolve({ data: object.get('data'), injected: object.get('injected') });
+          });
+        });
+
+        const newObj = new Parse.Object(className);
+        newObj.set('data', 'value');
+        await newObj.save(null, { useMasterKey: true });
+
+        const [r1, r2] = await Promise.all([result1, result2]);
+
+        expect(r1.data).toBe('value');
+        expect(r2.data).toBe('value');
+        expect(r1.injected).toBe('for-client-1');
+        expect(r2.injected).toBe('for-client-2');
+        expect(r1.injected).not.toBe(r2.injected);
+      } finally {
+        client1.close();
+        client2.close();
+      }
+    });
+  });
+
   describe('(GHSA-pfj7-wv7c-22pr) AuthData subset validation bypass with allowExpiredAuthDataToken', () => {
     let validatorSpy;
 
