@@ -663,6 +663,15 @@ RestWrite.prototype.handleAuthData = async function (authData) {
       // We are supposed to have a response only on LOGIN with authData, so we skip those
       // If we're not logging in, but just updating the current user, we can safely skip that part
       if (this.response) {
+        // Capture original authData before mutating userResult via the response reference
+        const originalAuthData = userResult?.authData
+          ? Object.fromEntries(
+            Object.entries(userResult.authData).map(([k, v]) =>
+              [k, v && typeof v === 'object' ? { ...v } : v]
+            )
+          )
+          : undefined;
+
         // Assign the new authData in the response
         Object.keys(mutatedAuthData).forEach(provider => {
           this.response.response.authData[provider] = mutatedAuthData[provider];
@@ -673,14 +682,36 @@ RestWrite.prototype.handleAuthData = async function (authData) {
         // uses the `doNotSave` option. Just update the authData part
         // Then we're good for the user, early exit of sorts
         if (Object.keys(this.data.authData).length) {
+          const query = { objectId: this.data.objectId };
+          // Optimistic locking: include the original array fields in the WHERE clause
+          // for providers whose data is being updated. This prevents concurrent requests
+          // from both succeeding when consuming single-use tokens (e.g. MFA recovery codes).
+          if (originalAuthData) {
+            for (const provider of Object.keys(this.data.authData)) {
+              const original = originalAuthData[provider];
+              if (original && typeof original === 'object') {
+                for (const [field, value] of Object.entries(original)) {
+                  if (
+                    Array.isArray(value) &&
+                    JSON.stringify(value) !== JSON.stringify(this.data.authData[provider]?.[field])
+                  ) {
+                    query[`authData.${provider}.${field}`] = value;
+                  }
+                }
+              }
+            }
+          }
           try {
             await this.config.database.update(
               this.className,
-              { objectId: this.data.objectId },
+              query,
               { authData: this.data.authData },
               {}
             );
           } catch (error) {
+            if (error.code === Parse.Error.OBJECT_NOT_FOUND) {
+              throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Invalid auth data');
+            }
             this._throwIfAuthDataDuplicate(error);
             throw error;
           }
