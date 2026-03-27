@@ -90,7 +90,7 @@
     "form-data": "4.0.5",
     "globals": "17.3.0",
     "graphql-tag": "2.12.6",
-    "jasmine": "5.7.1",
+    "jasmine": "6.1.0",
     "jasmine-spec-reporter": "7.0.0",
     "jsdoc": "4.0.4",
     "jsdoc-babel": "0.5.0",
