@@ -96,6 +96,10 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
 // Returns a promise for a {response, status, location} object.
 // status and location are optional.
 RestWrite.prototype.execute = function () {
+  if (this.context.transaction) {
+    this.config.database.setTransactionalSession(this.context.transaction)
+  }
+
   return Promise.resolve()
     .then(() => {
       return this.getUserAndRoleACL();
@@ -172,7 +176,12 @@ RestWrite.prototype.execute = function () {
         throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
       }
       return this.response;
-    });
+    }).finally(() => {
+      if (this.context.transaction) {
+        // Ensure isolation even on uncaught errors
+        this.config.database.setTransactionalSession(null);
+      }
+    });;
 };
 
 // Uses the Auth object to get the list of roles, adds the user id

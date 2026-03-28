@@ -310,7 +310,15 @@ export function getRequestObject(
     triggerType === Types.afterFind
   ) {
     // Set a copy of the context on the request object.
-    request.context = Object.assign({}, context);
+    request.context = Object.assign(
+      {},
+      context,
+      {
+        createTransactionalSession: config.database.createTransactionalSession.bind(config.database),
+        commitTransactionalSession: config.database.commitTransactionalSession.bind(config.database),
+        abortTransactionalSession: config.database.abortTransactionalSession.bind(config.database),
+      }
+    );
   }
 
   if (!auth) {
