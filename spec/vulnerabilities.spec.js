@@ -287,6 +287,69 @@ describe('Vulnerabilities', () => {
     });
   });
 
+  describe('(GHSA-vpj2-qq7w-5qq6) Cloud function validator bypass via prototype.constructor traversal', () => {
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+
+    it('rejects prototype.constructor traversal on function keyword handler', async () => {
+      Parse.Cloud.define('protectedFn', function () { return 'secret'; }, { requireUser: true });
+      const response = await request({
+        headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/protectedFn.prototype.constructor',
+        body: JSON.stringify({}),
+      }).catch(e => e);
+      expect(response.status).toBe(400);
+      const text = JSON.parse(response.text);
+      expect(text.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(text.error).toContain('Invalid function');
+    });
+
+    it('rejects prototype traversal without constructor suffix', async () => {
+      Parse.Cloud.define('protectedFn2', function () { return 'secret'; }, { requireUser: true });
+      const response = await request({
+        headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/protectedFn2.prototype',
+        body: JSON.stringify({}),
+      }).catch(e => e);
+      expect(response.status).toBe(400);
+      const text = JSON.parse(response.text);
+      expect(text.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(text.error).toContain('Invalid function');
+    });
+
+    it('enforces validator when calling function normally', async () => {
+      Parse.Cloud.define('protectedFn3', function () { return 'secret'; }, { requireUser: true });
+      const response = await request({
+        headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/protectedFn3',
+        body: JSON.stringify({}),
+      }).catch(e => e);
+      expect(response.status).toBe(400);
+      const text = JSON.parse(response.text);
+      expect(text.code).toBe(Parse.Error.VALIDATION_ERROR);
+    });
+
+    it('enforces requireMaster validator against prototype.constructor bypass', async () => {
+      Parse.Cloud.define('masterOnlyFn', function () { return 'admin data'; }, { requireMaster: true });
+      const response = await request({
+        headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/masterOnlyFn.prototype.constructor',
+        body: JSON.stringify({}),
+      }).catch(e => e);
+      expect(response.status).toBe(400);
+      const text = JSON.parse(response.text);
+      expect(text.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(text.error).toContain('Invalid function');
+    });
+  });
+
   describe('Request denylist', () => {
     describe('(GHSA-q342-9w2p-57fp) Denylist bypass via sibling nested objects', () => {
       it('denies _bsontype:Code after a sibling nested object', async () => {
