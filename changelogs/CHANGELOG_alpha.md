@@ -1,3 +1,10 @@
+# [9.7.0-alpha.10](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.9...9.7.0-alpha.10) (2026-03-27)
+
+
+### Bug Fixes
+
+* GraphQL API endpoint ignores CORS origin restriction ([GHSA-q3p6-g7c4-829c](https://github.com/parse-community/parse-server/security/advisories/GHSA-q3p6-g7c4-829c)) ([#10334](https://github.com/parse-community/parse-server/issues/10334)) ([4dd0d3d](https://github.com/parse-community/parse-server/commit/4dd0d3d8be1c39664c74ad10bb0abaa76bc41203))
+
 # [9.7.0-alpha.9](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.8...9.7.0-alpha.9) (2026-03-27)
 
 
