@@ -1279,7 +1279,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(PUBLIC_ACL, true);
   parseGraphQLSchema.addGraphQLType(SUBQUERY_INPUT, true);
   parseGraphQLSchema.addGraphQLType(SELECT_INPUT, true);
-  parseGraphQLSchema.addGraphQLType(PARSE_GRAPHQL_BULK_ERROR, true, true);
+  parseGraphQLSchema.addGraphQLType(PARSE_GRAPHQL_BULK_ERROR, true);
 };
 
 export {
