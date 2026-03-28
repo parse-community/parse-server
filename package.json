@@ -3,6 +3,13 @@
   "version": "9.7.0-alpha.10",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./cloud": {
+      "types": "./types/cloud.d.ts",
+      "default": "./lib/cloud.js"
+    }
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/parse-community/parse-server"
