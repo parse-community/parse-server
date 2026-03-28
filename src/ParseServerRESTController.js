@@ -29,22 +29,6 @@ function getAuth(options = {}, config) {
   });
 }
 
-function stripUndefined(obj) {
-  if (obj === null || obj === undefined || typeof obj !== 'object') {
-    return obj;
-  }
-  if (Array.isArray(obj)) {
-    return obj.map(item => item === undefined ? null : stripUndefined(item));
-  }
-  const result = {};
-  for (const key of Object.keys(obj)) {
-    if (obj[key] !== undefined) {
-      result[key] = stripUndefined(obj[key]);
-    }
-  }
-  return result;
-}
-
 function ParseServerRESTController(applicationId, router) {
   function handleRequest(method, path, data = {}, options = {}, config) {
     // Store the arguments, for later use if internal fails
@@ -129,7 +113,7 @@ function ParseServerRESTController(applicationId, router) {
     return new Promise((resolve, reject) => {
       getAuth(options, config).then(auth => {
         const request = {
-          body: stripUndefined(data),
+          body: JSON.parse(JSON.stringify(data)),
           config,
           auth,
           info: {
@@ -138,7 +122,7 @@ function ParseServerRESTController(applicationId, router) {
             installationId: options.installationId,
             context: options.context || {},
           },
-          query,
+          query: query ? JSON.parse(JSON.stringify(query)) : query,
         };
         return Promise.resolve()
           .then(() => {
@@ -147,7 +131,7 @@ function ParseServerRESTController(applicationId, router) {
           .then(
             resp => {
               const { response, status, headers = {} } = resp;
-              const strippedResponse = stripUndefined(response);
+              const strippedResponse = JSON.parse(JSON.stringify(response));
               if (options.returnStatus) {
                 resolve({ ...strippedResponse, _status: status, _headers: headers });
               } else {

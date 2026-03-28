@@ -745,11 +745,29 @@ describe('ParseServerRESTController', () => {
     await RESTController.request('PUT', `/classes/MyObject/${createRes.objectId}`, {
       presentField: 'updated',
       absentField: undefined,
+      nested: { absentField: undefined, presentField: 'value' },
     });
 
     const getRes = await RESTController.request('GET', `/classes/MyObject/${createRes.objectId}`);
 
     expect(getRes.presentField).toBe('updated');
+    expect(getRes.absentField).toBeUndefined();
+    expect('absentField' in getRes).toBe(false);
+    expect(getRes.nested).toBeDefined();
+    expect(getRes.nested.presentField).toBe('value');
+    expect('absentField' in getRes.nested).toBe(false);
+  });
+
+  it('should not convert undefined values to null on create with directAccess', async () => {
+    const createRes = await RESTController.request('POST', '/classes/MyObject', {
+      presentField: 'hello',
+      absentField: undefined,
+    });
+    expect(createRes.objectId).toBeDefined();
+
+    const getRes = await RESTController.request('GET', `/classes/MyObject/${createRes.objectId}`);
+
+    expect(getRes.presentField).toBe('hello');
     expect(getRes.absentField).toBeUndefined();
     expect('absentField' in getRes).toBe(false);
   });
@@ -774,7 +792,7 @@ describe('ParseServerRESTController', () => {
       method: 'PUT',
       headers,
       url: `${serverURL}/classes/MyObject/${createRes.data.objectId}`,
-      body: { presentField: 'updated', absentField: undefined },
+      body: { presentField: 'updated', absentField: undefined, nested: { absentField: undefined, presentField: 'value' } },
     });
 
     const getRes = await request({
@@ -784,6 +802,36 @@ describe('ParseServerRESTController', () => {
     });
 
     expect(getRes.data.presentField).toBe('updated');
+    expect(getRes.data.absentField).toBeUndefined();
+    expect('absentField' in getRes.data).toBe(false);
+    expect(getRes.data.nested).toBeDefined();
+    expect(getRes.data.nested.presentField).toBe('value');
+    expect('absentField' in getRes.data.nested).toBe(false);
+  });
+
+  it('should not convert undefined values to null on create without directAccess (HTTP mode)', async () => {
+    const serverURL = 'http://localhost:8378/1';
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': Parse.applicationId,
+      'X-Parse-Master-Key': Parse.masterKey,
+    };
+
+    const createRes = await request({
+      method: 'POST',
+      headers,
+      url: `${serverURL}/classes/MyObject`,
+      body: { presentField: 'hello', absentField: undefined },
+    });
+    expect(createRes.data.objectId).toBeDefined();
+
+    const getRes = await request({
+      method: 'GET',
+      headers,
+      url: `${serverURL}/classes/MyObject/${createRes.data.objectId}`,
+    });
+
+    expect(getRes.data.presentField).toBe('hello');
     expect(getRes.data.absentField).toBeUndefined();
     expect('absentField' in getRes.data).toBe(false);
   });
