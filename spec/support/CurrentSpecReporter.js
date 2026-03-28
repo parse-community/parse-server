@@ -73,13 +73,16 @@ global.normalizeAsyncTests = function() {
   function wrapGlobal(name) {
     const original = global[name];
     global[name] = function(descriptionOrFn, fn, timeout) {
+      const args = Array.from(arguments);
       if (typeof descriptionOrFn === 'function') {
-        return original.call(this, wrapDoneCallback(descriptionOrFn));
+        args[0] = wrapDoneCallback(descriptionOrFn);
+        return original.apply(this, args);
       }
       if (typeof fn === 'function') {
-        return original.call(this, descriptionOrFn, wrapDoneCallback(fn), timeout);
+        args[1] = wrapDoneCallback(fn);
+        return original.apply(this, args);
       }
-      return original.apply(this, arguments);
+      return original.apply(this, args);
     };
     if (original.each) {
       global[name].each = original.each;
