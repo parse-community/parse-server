@@ -872,6 +872,32 @@ describe('ParseGraphQLController', () => {
           ],
         })
       ).toBeResolvedTo(successfulUpdateResponse);
+      expectAsync(
+        parseGraphQLController.updateGraphQLConfig({
+          classConfigs: [
+            {
+              className: '_User',
+              mutation: {
+                createMany: 1,
+              },
+            },
+          ],
+        })
+      ).toBeRejected();
+      expectAsync(
+        parseGraphQLController.updateGraphQLConfig({
+          classConfigs: [
+            {
+              className: '_User',
+              mutation: {
+                createMany: true,
+                updateMany: true,
+                deleteMany: false,
+              },
+            },
+          ],
+        })
+      ).toBeResolvedTo(successfulUpdateResponse);
     });
 
     it('should throw if _User create fields is missing username or password', async () => {
@@ -1042,6 +1068,54 @@ describe('ParseGraphQLController', () => {
         })
       ).toBeRejected(
         `Invalid graphQLConfig: classConfig:${className} is invalid because "mutation.destroyAlias" must be a string`
+      );
+
+      expectAsync(
+        parseGraphQLController.updateGraphQLConfig({
+          classConfigs: [
+            {
+              className,
+              mutation: {
+                createMany: true,
+                createManyAlias: true,
+              },
+            },
+          ],
+        })
+      ).toBeRejected(
+        `Invalid graphQLConfig: classConfig:${className} is invalid because "mutation.createManyAlias" must be a string`
+      );
+
+      expectAsync(
+        parseGraphQLController.updateGraphQLConfig({
+          classConfigs: [
+            {
+              className,
+              mutation: {
+                updateMany: true,
+                updateManyAlias: 1,
+              },
+            },
+          ],
+        })
+      ).toBeRejected(
+        `Invalid graphQLConfig: classConfig:${className} is invalid because "mutation.updateManyAlias" must be a string`
+      );
+
+      expectAsync(
+        parseGraphQLController.updateGraphQLConfig({
+          classConfigs: [
+            {
+              className,
+              mutation: {
+                deleteMany: true,
+                deleteManyAlias: { not: 'valid' },
+              },
+            },
+          ],
+        })
+      ).toBeRejected(
+        `Invalid graphQLConfig: classConfig:${className} is invalid because "mutation.deleteManyAlias" must be a string`
       );
     });
   });

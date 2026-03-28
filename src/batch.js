@@ -1,5 +1,6 @@
 const Parse = require('parse/node').Parse;
 const path = require('path');
+const { isBatchRequestLimitExceeded, getBatchRequestLimit } = require('./batchRequestLimit');
 // These methods handle batch requests.
 const batchPath = '/batch';
 
@@ -67,8 +68,8 @@ async function handleBatch(router, req) {
   if (!Array.isArray(req.body?.requests)) {
     throw new Parse.Error(Parse.Error.INVALID_JSON, 'requests must be an array');
   }
-  const batchRequestLimit = req.config?.requestComplexity?.batchRequestLimit ?? -1;
-  if (batchRequestLimit > -1 && !req.auth?.isMaster && !req.auth?.isMaintenance && req.body.requests.length > batchRequestLimit) {
+  if (isBatchRequestLimitExceeded(req.body.requests.length, req.config, req.auth)) {
+    const batchRequestLimit = getBatchRequestLimit(req.config);
     throw new Parse.Error(
       Parse.Error.INVALID_JSON,
       `Batch request contains ${req.body.requests.length} sub-requests, which exceeds the limit of ${batchRequestLimit}.`

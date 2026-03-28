@@ -1177,6 +1177,22 @@ const POLYGON_WHERE_INPUT = new GraphQLInputObjectType({
   },
 });
 
+const PARSE_GRAPHQL_BULK_ERROR = new GraphQLObjectType({
+  name: 'ParseGraphQLBulkError',
+  description:
+    'Error for a single entry in a bulk GraphQL mutation (createMany, updateMany, deleteMany).',
+  fields: {
+    code: {
+      description: 'Parse error code.',
+      type: new GraphQLNonNull(GraphQLInt),
+    },
+    message: {
+      description: 'Error message.',
+      type: new GraphQLNonNull(GraphQLString),
+    },
+  },
+});
+
 const ELEMENT = new GraphQLObjectType({
   name: 'Element',
   description: "The Element object type is used to return array items' value.",
@@ -1263,6 +1279,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(PUBLIC_ACL, true);
   parseGraphQLSchema.addGraphQLType(SUBQUERY_INPUT, true);
   parseGraphQLSchema.addGraphQLType(SELECT_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(PARSE_GRAPHQL_BULK_ERROR, true, true);
 };
 
 export {
@@ -1321,6 +1338,7 @@ export {
   CENTER_SPHERE_INPUT,
   GEO_WITHIN_INPUT,
   GEO_INTERSECTS_INPUT,
+  PARSE_GRAPHQL_BULK_ERROR,
   equalTo,
   notEqualTo,
   lessThan,
