@@ -12320,6 +12320,113 @@ describe('ParseGraphQLServer', () => {
             }
           });
 
+          it('should sanitize non-Parse Error messages in createMany bulk when sanitization is enabled', async () => {
+            try {
+              await reconfigureGraphQLWithBatchLimit2AndOpenClient();
+
+              Parse.Cloud.beforeSave('BulkTest', request => {
+                if (request.object.get('title') === 'FAIL') {
+                  throw new Error('internal stack detail');
+                }
+              });
+
+              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+
+              const { data } = await apolloClient.mutate({
+                mutation: gql`
+                  mutation CreateManyBulkPlainErrorSanitized($input: CreateManyBulkTestInput!) {
+                    createManyBulkTest(input: $input) {
+                      results {
+                        success
+                        error {
+                          code
+                          message
+                        }
+                        bulkTest {
+                          objectId
+                          title
+                        }
+                      }
+                    }
+                  }
+                `,
+                variables: {
+                  input: {
+                    clientMutationId: uuidv4(),
+                    fields: [{ title: 'ok' }, { title: 'FAIL' }],
+                  },
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+
+              const [ok, failed] = data.createManyBulkTest.results;
+              expect(ok.success).toBe(true);
+              expect(failed.success).toBe(false);
+              // Cloud Code wraps a plain Error as Parse.Error(SCRIPT_FAILED) before bulk handling;
+              // sanitized response matches other Parse.Error bulk failures.
+              expect(failed.error.code).toBe(Parse.Error.SCRIPT_FAILED);
+              expect(failed.error.message).toBe('Permission denied');
+            } catch (e) {
+              handleError(e);
+            }
+          });
+
+          it('should return raw non-Parse Error message in createMany bulk when sanitization is disabled', async () => {
+            try {
+              await reconfigureGraphQLWithUnsanitizedErrorsAndOpenClient();
+
+              Parse.Cloud.beforeSave('BulkTest', request => {
+                if (request.object.get('title') === 'FAIL') {
+                  throw new Error('internal stack detail');
+                }
+              });
+
+              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+
+              const { data } = await apolloClient.mutate({
+                mutation: gql`
+                  mutation CreateManyBulkPlainErrorUnsanitized($input: CreateManyBulkTestInput!) {
+                    createManyBulkTest(input: $input) {
+                      results {
+                        success
+                        error {
+                          code
+                          message
+                        }
+                        bulkTest {
+                          objectId
+                          title
+                        }
+                      }
+                    }
+                  }
+                `,
+                variables: {
+                  input: {
+                    clientMutationId: uuidv4(),
+                    fields: [{ title: 'ok' }, { title: 'FAIL' }],
+                  },
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+
+              const failed = data.createManyBulkTest.results[1];
+              expect(failed.success).toBe(false);
+              expect(failed.error.code).toBe(Parse.Error.SCRIPT_FAILED);
+              expect(failed.error.message).toBe('internal stack detail');
+            } catch (e) {
+              handleError(e);
+            }
+          });
+
           it('should updateMany with partial failure when beforeSave rejects', async () => {
             try {
               const a = new Parse.Object('BulkTest');
