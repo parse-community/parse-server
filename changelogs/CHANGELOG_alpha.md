@@ -1,3 +1,10 @@
+# [9.7.0-alpha.11](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.10...9.7.0-alpha.11) (2026-03-28)
+
+
+### Bug Fixes
+
+* Cloud function validator bypass via prototype chain traversal ([GHSA-vpj2-qq7w-5qq6](https://github.com/parse-community/parse-server/security/advisories/GHSA-vpj2-qq7w-5qq6)) ([#10342](https://github.com/parse-community/parse-server/issues/10342)) ([dc59e27](https://github.com/parse-community/parse-server/commit/dc59e272665644083c5b7f6862d88ce1ef0b2674))
+
 # [9.7.0-alpha.10](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.9...9.7.0-alpha.10) (2026-03-27)
 
 
