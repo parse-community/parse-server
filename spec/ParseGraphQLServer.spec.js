@@ -12192,6 +12192,58 @@ describe('ParseGraphQLServer', () => {
               expect(data.deleteManyBulkTest.results.length).toBe(2);
               expect(data.deleteManyBulkTest.results[0].success).toBe(true);
               expect(data.deleteManyBulkTest.results[1].success).toBe(true);
+
+              const dup = new Parse.Object('BulkTest');
+              dup.set('title', 'dupDel');
+              await dup.save(null, { useMasterKey: true });
+              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+
+              const dupClientMutationId = uuidv4();
+              const { data: dupData } = await apolloClient.mutate({
+                mutation: gql`
+              mutation DeleteManyBulkDup($input: DeleteManyBulkTestInput!) {
+                deleteManyBulkTest(input: $input) {
+                  clientMutationId
+                  results {
+                    success
+                    error {
+                      code
+                      message
+                    }
+                    bulkTest {
+                      objectId
+                      title
+                    }
+                  }
+                }
+              }
+            `,
+                variables: {
+                  input: {
+                    clientMutationId: dupClientMutationId,
+                    ids: [
+                      toGlobalId('BulkTest', dup.id),
+                      toGlobalId('BulkTest', dup.id),
+                    ],
+                  },
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+              const dupResults = dupData.deleteManyBulkTest.results;
+              expect(dupResults.length).toBe(2);
+              expect(dupResults.filter(r => r.success).length).toBe(1);
+              expect(dupResults.filter(r => !r.success).length).toBe(1);
+              expect(dupResults.find(r => !r.success).error.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+              expect(dupResults.find(r => r.success).bulkTest.title).toBe('dupDel');
+
+              const qDup = new Parse.Query('BulkTest');
+              qDup.equalTo('objectId', dup.id);
+              const dupRemaining = await qDup.find({ useMasterKey: true });
+              expect(dupRemaining.length).toBe(0);
             } catch (e) {
               handleError(e);
             }
@@ -12543,7 +12595,11 @@ describe('ParseGraphQLServer', () => {
                 variables: {
                   input: {
                     clientMutationId,
-                    ids: [toGlobalId('BulkTest', a.id), toGlobalId('BulkTest', b.id)],
+                    ids: [
+                      toGlobalId('BulkTest', a.id),
+                      toGlobalId('BulkTest', a.id),
+                      toGlobalId('BulkTest', b.id),
+                    ],
                   },
                 },
                 context: {
@@ -12554,14 +12610,27 @@ describe('ParseGraphQLServer', () => {
               });
 
               const results = data.deleteManyBulkTest.results;
-              expect(results.length).toBe(2);
-              expect(results[0].success).toBe(true);
-              expect(results[0].bulkTest.title).toBe('deletable');
-              expect(results[0].error).toBeNull();
-              expect(results[1].success).toBe(false);
-              expect(results[1].bulkTest).toBeNull();
-              expect(results[1].error.code).toBe(Parse.Error.SCRIPT_FAILED);
-              expect(results[1].error.message).toBe('Permission denied');
+              expect(results.length).toBe(3);
+              expect(results.filter(r => r.success).length).toBe(1);
+              expect(
+                results.filter(r => !r.success && r.error.code === Parse.Error.OBJECT_NOT_FOUND)
+                  .length
+              ).toBe(1);
+              expect(
+                results.filter(r => !r.success && r.error.code === Parse.Error.SCRIPT_FAILED).length
+              ).toBe(1);
+              const deleted = results.find(r => r.success);
+              expect(deleted.bulkTest.title).toBe('deletable');
+              expect(deleted.error).toBeNull();
+              const notFound = results.find(
+                r => !r.success && r.error.code === Parse.Error.OBJECT_NOT_FOUND
+              );
+              expect(notFound.bulkTest).toBeNull();
+              const blocked = results.find(
+                r => !r.success && r.error.code === Parse.Error.SCRIPT_FAILED
+              );
+              expect(blocked.bulkTest).toBeNull();
+              expect(blocked.error.message).toBe('Permission denied');
 
               const q = new Parse.Query('BulkTest');
               const remaining = await q.find({ useMasterKey: true });
