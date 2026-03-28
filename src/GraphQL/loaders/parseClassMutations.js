@@ -10,17 +10,8 @@ import * as objectsQueries from '../helpers/objectsQueries';
 import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLController';
 import { transformClassNameToGraphQL } from '../transformers/className';
 import { transformTypes } from '../transformers/mutation';
-import { createSanitizedError } from '../../Error';
+import { createSanitizedError, bulkErrorPayloadFromReason } from '../../Error';
 import { getBatchRequestLimit, isBatchRequestLimitExceeded } from '../../batchRequestLimit';
-
-const bulkErrorFromReason = reason => {
-  if (reason instanceof Parse.Error) {
-    return { code: reason.code, message: reason.message };
-  }
-  const message =
-    reason && typeof reason.message === 'string' ? reason.message : 'Internal server error';
-  return { code: Parse.Error.INTERNAL_SERVER_ERROR, message };
-};
 
 const normalizeObjectIdForClass = (id, className) => {
   try {
@@ -516,7 +507,7 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
             return {
               success: false,
               [getGraphQLQueryName]: null,
-              error: bulkErrorFromReason(r.reason),
+              error: bulkErrorPayloadFromReason(r.reason, config),
             };
           });
 
@@ -675,7 +666,7 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
             return {
               success: false,
               [getGraphQLQueryName]: null,
-              error: bulkErrorFromReason(r.reason),
+              error: bulkErrorPayloadFromReason(r.reason, config),
             };
           });
 
@@ -789,7 +780,7 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
             return {
               success: false,
               [getGraphQLQueryName]: null,
-              error: bulkErrorFromReason(r.reason),
+              error: bulkErrorPayloadFromReason(r.reason, config),
             };
           });
 

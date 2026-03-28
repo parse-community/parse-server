@@ -11834,6 +11834,44 @@ describe('ParseGraphQLServer', () => {
             );
           }
 
+          async function reconfigureGraphQLWithUnsanitizedErrorsAndOpenClient() {
+            parseServer = await global.reconfigureServer({
+              maintenanceKey: 'test2',
+              maxUploadSize: '1kb',
+              enableSanitizedErrorResponse: false,
+            });
+            await createGQLFromParseServer(parseServer);
+            const httpLink = await createUploadLink({
+              uri: 'http://localhost:13377/graphql',
+              fetch,
+              headers,
+            });
+            apolloClient = new ApolloClient({
+              link: httpLink,
+              cache: new InMemoryCache(),
+              defaultOptions: {
+                query: {
+                  fetchPolicy: 'no-cache',
+                },
+              },
+            });
+            const sc = new Parse.Schema('BulkTest');
+            await sc.purge().catch(() => {});
+            await sc.delete().catch(() => {});
+            await sc.addString('title').save();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+            await updateCLP(
+              {
+                create: { '*': true },
+                find: { '*': true },
+                get: { '*': true },
+                update: { '*': true },
+                delete: { '*': true },
+              },
+              'BulkTest'
+            );
+          }
+
           const clientKeyHeaders = {
             headers: {
               'X-Parse-Application-Id': 'test',
@@ -12213,12 +12251,70 @@ describe('ParseGraphQLServer', () => {
               expect(results[1].success).toBe(false);
               expect(results[1].bulkTest).toBeNull();
               expect(results[1].error.code).toBe(Parse.Error.SCRIPT_FAILED);
-              expect(results[1].error.message).toContain('beforeSave blocked');
+              expect(results[1].error.message).toBe('Permission denied');
 
               const q = new Parse.Query('BulkTest');
               q.equalTo('title', 'ok');
               const saved = await q.find({ useMasterKey: true });
               expect(saved.length).toBe(1);
+            } catch (e) {
+              handleError(e);
+            }
+          });
+
+          it('should return detailed Parse.Error message in createMany bulk when enableSanitizedErrorResponse is false', async () => {
+            try {
+              await reconfigureGraphQLWithUnsanitizedErrorsAndOpenClient();
+
+              Parse.Cloud.beforeSave('BulkTest', request => {
+                if (request.object.get('title') === 'FAIL') {
+                  throw new Parse.Error(
+                    Parse.Error.SCRIPT_FAILED,
+                    'beforeSave blocked this title'
+                  );
+                }
+              });
+
+              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+
+              const clientMutationId = uuidv4();
+              const { data } = await apolloClient.mutate({
+                mutation: gql`
+                mutation CreateManyBulkUnsanitized($input: CreateManyBulkTestInput!) {
+                  createManyBulkTest(input: $input) {
+                    clientMutationId
+                    results {
+                      success
+                      error {
+                        code
+                        message
+                      }
+                      bulkTest {
+                        objectId
+                        title
+                      }
+                    }
+                  }
+                }
+              `,
+                variables: {
+                  input: {
+                    clientMutationId,
+                    fields: [{ title: 'ok' }, { title: 'FAIL' }],
+                  },
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+
+              const results = data.createManyBulkTest.results;
+              expect(results.length).toBe(2);
+              expect(results[1].success).toBe(false);
+              expect(results[1].error.code).toBe(Parse.Error.SCRIPT_FAILED);
+              expect(results[1].error.message).toBe('beforeSave blocked this title');
             } catch (e) {
               handleError(e);
             }
@@ -12287,7 +12383,7 @@ describe('ParseGraphQLServer', () => {
               expect(results[1].success).toBe(false);
               expect(results[1].bulkTest).toBeNull();
               expect(results[1].error.code).toBe(Parse.Error.SCRIPT_FAILED);
-              expect(results[1].error.message).toContain('beforeSave blocked');
+              expect(results[1].error.message).toBe('Permission denied');
 
               await a.fetch({ useMasterKey: true });
               await b.fetch({ useMasterKey: true });
@@ -12358,7 +12454,7 @@ describe('ParseGraphQLServer', () => {
               expect(results[1].success).toBe(false);
               expect(results[1].bulkTest).toBeNull();
               expect(results[1].error.code).toBe(Parse.Error.SCRIPT_FAILED);
-              expect(results[1].error.message).toContain('beforeDelete blocked');
+              expect(results[1].error.message).toBe('Permission denied');
 
               const q = new Parse.Query('BulkTest');
               const remaining = await q.find({ useMasterKey: true });

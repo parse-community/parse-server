@@ -1,4 +1,5 @@
 import defaultLogger from './logger';
+import Utils from './Utils';
 
 /**
  * Creates a sanitized error that hides detailed information from clients
@@ -43,4 +44,37 @@ function createSanitizedHttpError(statusCode, detailedMessage, config) {
   return error;
 }
 
-export { createSanitizedError, createSanitizedHttpError };
+/**
+ * `{ code, message }` for GraphQL bulk mutation per-item failures (`ParseGraphQLBulkError`).
+ * `Parse.Error` uses `createSanitizedError`; other values are logged and mapped to a generic message when sanitizing.
+ *
+ * @param {unknown} reason
+ * @param {object} config
+ * @returns {{ code: number, message: string }}
+ */
+function bulkErrorPayloadFromReason(reason, config) {
+  if (reason instanceof Parse.Error) {
+    const sanitized = createSanitizedError(reason.code, reason.message, config);
+    return { code: sanitized.code, message: sanitized.message };
+  }
+  const detailedMessage =
+    reason && typeof reason.message === 'string'
+      ? reason.message
+      : reason !== undefined && reason !== null
+        ? String(reason)
+        : 'Internal server error';
+  if (process.env.TESTING) {
+    defaultLogger.error('Bulk mutation non-Parse error:', detailedMessage);
+  } else {
+    defaultLogger.error(
+      'Bulk mutation non-Parse error:',
+      detailedMessage,
+      Utils.isNativeError(reason) ? reason.stack : ''
+    );
+  }
+  const message =
+    config?.enableSanitizedErrorResponse !== false ? 'Internal server error' : detailedMessage;
+  return { code: Parse.Error.INTERNAL_SERVER_ERROR, message };
+}
+
+export { createSanitizedError, createSanitizedHttpError, bulkErrorPayloadFromReason };

@@ -1,5 +1,5 @@
 const Utils = require('../lib/Utils');
-const { createSanitizedError, createSanitizedHttpError } = require("../lib/Error")
+const { createSanitizedError, createSanitizedHttpError, bulkErrorPayloadFromReason } = require("../lib/Error")
 const vm = require('vm');
 
 describe('Utils', () => {
@@ -286,6 +286,38 @@ describe('Utils', () => {
       const config = { enableSanitizedErrorResponse: false };
       const error = createSanitizedHttpError(403, 'Detailed error message', config);
       expect(error.message).toBe('Detailed error message');
+    });
+  });
+
+  describe('bulkErrorPayloadFromReason', () => {
+    it('should sanitize Parse.Error messages when enableSanitizedErrorResponse is true', () => {
+      const config = { enableSanitizedErrorResponse: true };
+      const reason = new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Cloud script detail');
+      const payload = bulkErrorPayloadFromReason(reason, config);
+      expect(payload.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(payload.message).toBe('Permission denied');
+    });
+
+    it('should return detailed Parse.Error messages when enableSanitizedErrorResponse is false', () => {
+      const config = { enableSanitizedErrorResponse: false };
+      const reason = new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Cloud script detail');
+      const payload = bulkErrorPayloadFromReason(reason, config);
+      expect(payload.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(payload.message).toBe('Cloud script detail');
+    });
+
+    it('should sanitize non-Parse reasons', () => {
+      const config = { enableSanitizedErrorResponse: true };
+      const payload = bulkErrorPayloadFromReason(new Error('internal stack trace'), config);
+      expect(payload.code).toBe(Parse.Error.INTERNAL_SERVER_ERROR);
+      expect(payload.message).toBe('Internal server error');
+    });
+
+    it('should return non-Parse message when enableSanitizedErrorResponse is false', () => {
+      const config = { enableSanitizedErrorResponse: false };
+      const payload = bulkErrorPayloadFromReason(new Error('internal stack trace'), config);
+      expect(payload.code).toBe(Parse.Error.INTERNAL_SERVER_ERROR);
+      expect(payload.message).toBe('internal stack trace');
     });
   });
 
