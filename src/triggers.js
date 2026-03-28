@@ -114,7 +114,7 @@ function getStore(category, name, applicationId) {
       return createStore();
     }
     store = store[component];
-    if (!store) {
+    if (!store || Object.getPrototypeOf(store) !== null) {
       return createStore();
     }
   }
