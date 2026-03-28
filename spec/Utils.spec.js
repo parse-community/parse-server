@@ -319,6 +319,32 @@ describe('Utils', () => {
       expect(payload.code).toBe(Parse.Error.INTERNAL_SERVER_ERROR);
       expect(payload.message).toBe('internal stack trace');
     });
+
+    it('should not throw when reason.message getter throws', () => {
+      const reason = {};
+      Object.defineProperty(reason, 'message', {
+        get() {
+          throw new Error('boom');
+        },
+        configurable: true,
+      });
+      const sanitized = bulkErrorPayloadFromReason(reason, { enableSanitizedErrorResponse: true });
+      expect(sanitized.message).toBe('Internal server error');
+      const detailed = bulkErrorPayloadFromReason(reason, { enableSanitizedErrorResponse: false });
+      expect(detailed.message).toBe('Internal server error');
+    });
+
+    it('should not throw when String(reason) would throw', () => {
+      const reason = {
+        toString() {
+          throw new Error('boom');
+        },
+      };
+      const sanitized = bulkErrorPayloadFromReason(reason, { enableSanitizedErrorResponse: true });
+      expect(sanitized.message).toBe('Internal server error');
+      const detailed = bulkErrorPayloadFromReason(reason, { enableSanitizedErrorResponse: false });
+      expect(detailed.message).toBe('Internal server error');
+    });
   });
 
   describe('isDate', () => {

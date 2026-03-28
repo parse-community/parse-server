@@ -44,6 +44,23 @@ function createSanitizedHttpError(statusCode, detailedMessage, config) {
   return error;
 }
 
+function safeBulkReasonDetailedMessage(reason) {
+  if (reason === undefined || reason === null) {
+    return 'Internal server error';
+  }
+  try {
+    let detail;
+    if (typeof reason.message === 'string') {
+      detail = reason.message;
+    } else {
+      detail = String(reason);
+    }
+    return typeof detail === 'string' ? detail : 'Internal server error';
+  } catch {
+    return 'Internal server error';
+  }
+}
+
 /**
  * `{ code, message }` for GraphQL bulk mutation per-item failures (`ParseGraphQLBulkError`).
  * `Parse.Error` uses `createSanitizedError`; other values are logged and mapped to a generic message when sanitizing.
@@ -57,12 +74,7 @@ function bulkErrorPayloadFromReason(reason, config) {
     const sanitized = createSanitizedError(reason.code, reason.message, config);
     return { code: sanitized.code, message: sanitized.message };
   }
-  const detailedMessage =
-    reason && typeof reason.message === 'string'
-      ? reason.message
-      : reason !== undefined && reason !== null
-        ? String(reason)
-        : 'Internal server error';
+  const detailedMessage = safeBulkReasonDetailedMessage(reason);
   if (process.env.TESTING) {
     defaultLogger.error('Bulk mutation non-Parse error:', detailedMessage);
   } else {
