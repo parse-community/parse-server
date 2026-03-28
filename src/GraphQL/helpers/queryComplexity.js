@@ -45,6 +45,12 @@ function calculateQueryComplexity(operation, fragments, limits = {}) {
         }
         const fragment = fragments[name];
         if (fragment) {
+          if (
+            (allowedMaxFields !== undefined && allowedMaxFields !== -1 && totalFields > allowedMaxFields) ||
+            (allowedMaxDepth !== undefined && allowedMaxDepth !== -1 && maxDepth > allowedMaxDepth)
+          ) {
+            continue;
+          }
           visitedFragments.add(name);
           const savedFields = totalFields;
           const savedMaxDepth = maxDepth;
