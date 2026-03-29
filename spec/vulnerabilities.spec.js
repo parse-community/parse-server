@@ -5405,4 +5405,133 @@ describe('Vulnerabilities', () => {
       });
     });
   });
+
+  describe('(GHSA-445j-ww4h-339m) Cloud Code trigger context prototype poisoning via X-Parse-Cloud-Context header', () => {
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+
+    it('accepts __proto__ in X-Parse-Cloud-Context header', async () => {
+      // Context is client-controlled metadata for Cloud Code triggers and is not subject
+      // to requestKeywordDenylist. The __proto__ key is allowed but must not cause
+      // prototype pollution (verified by separate tests below).
+      Parse.Cloud.beforeSave('ContextTest', () => {});
+      const response = await request({
+        headers: {
+          ...headers,
+          'X-Parse-Cloud-Context': JSON.stringify(
+            JSON.parse('{"__proto__": {"isAdmin": true}}')
+          ),
+        },
+        method: 'POST',
+        url: 'http://localhost:8378/1/classes/ContextTest',
+        body: JSON.stringify({ foo: 'bar' }),
+      }).catch(e => e);
+      expect(response.status).toBe(201);
+    });
+
+    it('accepts constructor in X-Parse-Cloud-Context header', async () => {
+      Parse.Cloud.beforeSave('ContextTest', () => {});
+      const response = await request({
+        headers: {
+          ...headers,
+          'X-Parse-Cloud-Context': JSON.stringify({ constructor: { prototype: { dummy: 0 } } }),
+        },
+        method: 'POST',
+        url: 'http://localhost:8378/1/classes/ContextTest',
+        body: JSON.stringify({ foo: 'bar' }),
+      }).catch(e => e);
+      expect(response.status).toBe(201);
+      expect(Object.prototype.dummy).toBeUndefined();
+    });
+
+    it('accepts __proto__ in _context body field', async () => {
+      Parse.Cloud.beforeSave('ContextTest', () => {});
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/classes/ContextTest',
+        headers: {
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        body: {
+          foo: 'bar',
+          _ApplicationId: 'test',
+          _context: JSON.stringify(JSON.parse('{"__proto__": {"isAdmin": true}}')),
+        },
+      }).catch(e => e);
+      expect(response.status).toBe(201);
+    });
+
+    it('does not pollute request.context prototype via X-Parse-Cloud-Context header', async () => {
+      let contextInTrigger;
+      Parse.Cloud.beforeSave('ContextTest', req => {
+        contextInTrigger = req.context;
+      });
+      await request({
+        headers: {
+          ...headers,
+          'X-Parse-Cloud-Context': JSON.stringify(
+            JSON.parse('{"__proto__": {"isAdmin": true}}')
+          ),
+        },
+        method: 'POST',
+        url: 'http://localhost:8378/1/classes/ContextTest',
+        body: JSON.stringify({ foo: 'bar' }),
+      }).catch(e => e);
+      // Verify prototype was not polluted
+      expect(contextInTrigger?.isAdmin).toBeUndefined();
+      expect(Object.getPrototypeOf(contextInTrigger || {})).not.toEqual(
+        jasmine.objectContaining({ isAdmin: true })
+      );
+    });
+
+    it('does not pollute request.context prototype via _context body field', async () => {
+      let contextInTrigger;
+      Parse.Cloud.beforeSave('ContextTest', req => {
+        contextInTrigger = req.context;
+      });
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/classes/ContextTest',
+        headers: {
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        body: {
+          foo: 'bar',
+          _ApplicationId: 'test',
+          _context: JSON.stringify(JSON.parse('{"__proto__": {"isAdmin": true}}')),
+        },
+      }).catch(e => e);
+      // Verify prototype was not polluted
+      expect(contextInTrigger?.isAdmin).toBeUndefined();
+      expect(Object.getPrototypeOf(contextInTrigger || {})).not.toEqual(
+        jasmine.objectContaining({ isAdmin: true })
+      );
+    });
+
+    it('does not allow prototype-polluted properties to survive deletion in trigger context', async () => {
+      // This test verifies that __proto__ pollution cannot bypass context property deletion.
+      // When a developer deletes a context property, prototype-polluted properties would
+      // survive the deletion (unlike directly set properties), creating a security gap.
+      let contextAfterDelete;
+      Parse.Cloud.beforeSave('ContextTest', req => {
+        delete req.context.isAdmin;
+        contextAfterDelete = { isAdmin: req.context.isAdmin };
+      });
+      await request({
+        headers: {
+          ...headers,
+          'X-Parse-Cloud-Context': JSON.stringify(
+            JSON.parse('{"__proto__": {"isAdmin": true}}')
+          ),
+        },
+        method: 'POST',
+        url: 'http://localhost:8378/1/classes/ContextTest',
+        body: JSON.stringify({ foo: 'bar' }),
+      }).catch(e => e);
+      expect(contextAfterDelete?.isAdmin).toBeUndefined();
+    });
+  });
 });
