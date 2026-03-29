@@ -705,6 +705,9 @@ class DatabaseController {
           });
         })
         .then(result => {
+          if (skipSanitization) {
+            return Promise.resolve(result);
+          }
           if (many) {
             return {
               matchedCount: typeof result?.matchedCount === 'number'
@@ -714,9 +717,6 @@ class DatabaseController {
                 ? result.modifiedCount
                 : undefined,
             };
-          }
-          if (skipSanitization) {
-            return Promise.resolve(result);
           }
           return this._sanitizeDatabaseResult(originalUpdate, result);
         });

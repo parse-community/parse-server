@@ -915,6 +915,27 @@ describe('DatabaseController', function () {
       expect(result.modifiedCount).toBe(2);
       expect(Object.keys(result)).toEqual(['matchedCount', 'modifiedCount']);
     });
+
+    it('should return raw adapter result when skipSanitization is true', async () => {
+      const config = Config.get(Parse.applicationId);
+      const obj1 = new Parse.Object('TestObject');
+      obj1.set('status', 'pending');
+      await obj1.save();
+
+      const result = await config.database.update(
+        'TestObject',
+        { status: 'pending' },
+        { status: 'done' },
+        { many: true },
+        true // skipSanitization
+      );
+
+      // skipSanitization returns raw adapter result, which for MongoDB
+      // includes additional fields beyond matchedCount and modifiedCount
+      expect(result.matchedCount).toBe(1);
+      expect(result.modifiedCount).toBe(1);
+      expect(result.acknowledged).toBe(true);
+    });
   });
 });
 
