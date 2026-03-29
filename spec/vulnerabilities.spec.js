@@ -5380,8 +5380,14 @@ describe('(GHSA-mmg8-87c5-jrc2) LiveQuery protected-field guard bypass via array
 
     // Subscription must be rejected; no event oracle should be possible
     let subscriptionError;
+    let subscription;
     try {
-      const subscription = await query.subscribe();
+      subscription = await query.subscribe();
+    } catch (e) {
+      subscriptionError = e;
+    }
+
+    if (!subscriptionError) {
       const updateSpy = jasmine.createSpy('update');
       subscription.on('create', updateSpy);
       subscription.on('update', updateSpy);
@@ -5393,10 +5399,10 @@ describe('(GHSA-mmg8-87c5-jrc2) LiveQuery protected-field guard bypass via array
 
       // If subscription somehow accepted, verify no events fired (evaluator defense)
       expect(updateSpy).not.toHaveBeenCalled();
-    } catch (e) {
-      subscriptionError = e;
+      fail('Expected subscription to be rejected');
     }
-    // Primary expectation: subscription should have been rejected
-    expect(subscriptionError).toBeDefined();
+    expect(subscriptionError).toEqual(
+      jasmine.objectContaining({ code: Parse.Error.INVALID_QUERY })
+    );
   });
 });
