@@ -5469,7 +5469,7 @@ describe('Vulnerabilities', () => {
       Parse.Cloud.beforeSave('ContextTest', req => {
         contextInTrigger = req.context;
       });
-      await request({
+      const response = await request({
         headers: {
           ...headers,
           'X-Parse-Cloud-Context': JSON.stringify(
@@ -5480,9 +5480,10 @@ describe('Vulnerabilities', () => {
         url: 'http://localhost:8378/1/classes/ContextTest',
         body: JSON.stringify({ foo: 'bar' }),
       }).catch(e => e);
-      // Verify prototype was not polluted
-      expect(contextInTrigger?.isAdmin).toBeUndefined();
-      expect(Object.getPrototypeOf(contextInTrigger || {})).not.toEqual(
+      expect(response.status).toBe(201);
+      expect(contextInTrigger).toBeDefined();
+      expect(contextInTrigger.isAdmin).toBeUndefined();
+      expect(Object.getPrototypeOf(contextInTrigger)).not.toEqual(
         jasmine.objectContaining({ isAdmin: true })
       );
     });
@@ -5492,7 +5493,7 @@ describe('Vulnerabilities', () => {
       Parse.Cloud.beforeSave('ContextTest', req => {
         contextInTrigger = req.context;
       });
-      await request({
+      const response = await request({
         method: 'POST',
         url: 'http://localhost:8378/1/classes/ContextTest',
         headers: {
@@ -5504,9 +5505,10 @@ describe('Vulnerabilities', () => {
           _context: JSON.stringify(JSON.parse('{"__proto__": {"isAdmin": true}}')),
         },
       }).catch(e => e);
-      // Verify prototype was not polluted
-      expect(contextInTrigger?.isAdmin).toBeUndefined();
-      expect(Object.getPrototypeOf(contextInTrigger || {})).not.toEqual(
+      expect(response.status).toBe(201);
+      expect(contextInTrigger).toBeDefined();
+      expect(contextInTrigger.isAdmin).toBeUndefined();
+      expect(Object.getPrototypeOf(contextInTrigger)).not.toEqual(
         jasmine.objectContaining({ isAdmin: true })
       );
     });
@@ -5520,7 +5522,7 @@ describe('Vulnerabilities', () => {
         delete req.context.isAdmin;
         contextAfterDelete = { isAdmin: req.context.isAdmin };
       });
-      await request({
+      const response = await request({
         headers: {
           ...headers,
           'X-Parse-Cloud-Context': JSON.stringify(
@@ -5531,7 +5533,9 @@ describe('Vulnerabilities', () => {
         url: 'http://localhost:8378/1/classes/ContextTest',
         body: JSON.stringify({ foo: 'bar' }),
       }).catch(e => e);
-      expect(contextAfterDelete?.isAdmin).toBeUndefined();
+      expect(response.status).toBe(201);
+      expect(contextAfterDelete).toBeDefined();
+      expect(contextAfterDelete.isAdmin).toBeUndefined();
     });
   });
 });
