@@ -106,13 +106,17 @@ async function handleBatch(router, req) {
       if (!pathExp.test(routablePath)) {
         continue;
       }
+      const info = { ...req.info };
+      if (routablePath === '/login') {
+        delete info.sessionToken;
+      }
       const fakeReq = {
         ip: req.ip || req.config?.ip || '127.0.0.1',
         method: (restRequest.method || 'GET').toUpperCase(),
         _batchOriginalMethod: 'POST',
         config: req.config,
         auth: req.auth,
-        info: req.info,
+        info,
       };
       const fakeRes = { setHeader() {} };
       try {
