@@ -394,6 +394,158 @@ describe('Parse.Session', () => {
     expect(verifyRes.data.expiresAt.iso).toBe(farFuture);
   });
 
+  it('should reject null expiresAt when updating a session via PUT', async () => {
+    const user = await Parse.User.signUp('sessionupdatenull1', 'password');
+    const sessionToken = user.getSessionToken();
+
+    const sessionRes = await request({
+      method: 'GET',
+      url: 'http://localhost:8378/1/sessions/me',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': sessionToken,
+      },
+    });
+    const sessionId = sessionRes.data.objectId;
+    const originalExpiresAt = sessionRes.data.expiresAt;
+
+    const updateRes = await request({
+      method: 'PUT',
+      url: `http://localhost:8378/1/sessions/${sessionId}`,
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': sessionToken,
+        'Content-Type': 'application/json',
+      },
+      body: {
+        expiresAt: null,
+      },
+    }).catch(e => e);
+
+    expect(updateRes.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+
+    const verifyRes = await request({
+      method: 'GET',
+      url: 'http://localhost:8378/1/sessions/me',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': sessionToken,
+      },
+    });
+    expect(verifyRes.data.expiresAt).toEqual(originalExpiresAt);
+  });
+
+  it('should reject null createdWith when updating a session via PUT', async () => {
+    const user = await Parse.User.signUp('sessionupdatenull2', 'password');
+    const sessionToken = user.getSessionToken();
+
+    const sessionRes = await request({
+      method: 'GET',
+      url: 'http://localhost:8378/1/sessions/me',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': sessionToken,
+      },
+    });
+    const sessionId = sessionRes.data.objectId;
+    const originalCreatedWith = sessionRes.data.createdWith;
+
+    const updateRes = await request({
+      method: 'PUT',
+      url: `http://localhost:8378/1/sessions/${sessionId}`,
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': sessionToken,
+        'Content-Type': 'application/json',
+      },
+      body: {
+        createdWith: null,
+      },
+    }).catch(e => e);
+
+    expect(updateRes.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+
+    const verifyRes = await request({
+      method: 'GET',
+      url: 'http://localhost:8378/1/sessions/me',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': sessionToken,
+      },
+    });
+    expect(verifyRes.data.createdWith).toEqual(originalCreatedWith);
+  });
+
+  it('should reject null installationId when updating a session via PUT', async () => {
+    const user = await Parse.User.signUp('sessionupdatenull3', 'password');
+    const sessionToken = user.getSessionToken();
+
+    const sessionRes = await request({
+      method: 'GET',
+      url: 'http://localhost:8378/1/sessions/me',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': sessionToken,
+      },
+    });
+    const sessionId = sessionRes.data.objectId;
+
+    const updateRes = await request({
+      method: 'PUT',
+      url: `http://localhost:8378/1/sessions/${sessionId}`,
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': sessionToken,
+        'Content-Type': 'application/json',
+      },
+      body: {
+        installationId: null,
+      },
+    }).catch(e => e);
+
+    expect(updateRes.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+  });
+
+  it('should reject null sessionToken when updating a session via PUT', async () => {
+    const user = await Parse.User.signUp('sessionupdatenull4', 'password');
+    const sessionToken = user.getSessionToken();
+
+    const sessionRes = await request({
+      method: 'GET',
+      url: 'http://localhost:8378/1/sessions/me',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': sessionToken,
+      },
+    });
+    const sessionId = sessionRes.data.objectId;
+
+    const updateRes = await request({
+      method: 'PUT',
+      url: `http://localhost:8378/1/sessions/${sessionId}`,
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': sessionToken,
+        'Content-Type': 'application/json',
+      },
+      body: {
+        sessionToken: null,
+      },
+    }).catch(e => e);
+
+    expect(updateRes.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+  });
+
   describe('PUT /sessions/me', () => {
     it('should return error with invalid session token', async () => {
       const response = await request({
