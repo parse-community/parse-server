@@ -918,6 +918,126 @@ describe('Vulnerabilities', () => {
       await expectAsync(obj.save()).toBeResolved();
     });
   });
+
+  describe('(GHSA-mmg8-87c5-jrc2) LiveQuery protected-field guard bypass via array-like $or/$and/$nor', () => {
+    const { sleep } = require('../lib/TestUtils');
+    let obj;
+
+    beforeEach(async () => {
+      Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+      await reconfigureServer({
+        liveQuery: { classNames: ['SecretClass'] },
+        startLiveQueryServer: true,
+        verbose: false,
+        silent: true,
+      });
+      const config = Config.get(Parse.applicationId);
+      const schemaController = await config.database.loadSchema();
+      await schemaController.addClassIfNotExists(
+        'SecretClass',
+        { secretObj: { type: 'Object' }, publicField: { type: 'String' } },
+      );
+      await schemaController.updateClass(
+        'SecretClass',
+        {},
+        {
+          find: { '*': true },
+          get: { '*': true },
+          create: { '*': true },
+          update: { '*': true },
+          delete: { '*': true },
+          addField: {},
+          protectedFields: { '*': ['secretObj'] },
+        }
+      );
+
+      obj = new Parse.Object('SecretClass');
+      obj.set('secretObj', { apiKey: 'SENSITIVE_KEY_123', score: 42 });
+      obj.set('publicField', 'visible');
+      await obj.save(null, { useMasterKey: true });
+    });
+
+    afterEach(async () => {
+      const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+      if (client) {
+        await client.close();
+      }
+    });
+
+    it('should reject subscription with array-like $or containing protected field', async () => {
+      const query = new Parse.Query('SecretClass');
+      query._where = {
+        $or: { '0': { 'secretObj.apiKey': 'SENSITIVE_KEY_123' }, length: 1 },
+      };
+      await expectAsync(query.subscribe()).toBeRejectedWith(
+        jasmine.objectContaining({ code: Parse.Error.INVALID_QUERY })
+      );
+    });
+
+    it('should reject subscription with array-like $and containing protected field', async () => {
+      const query = new Parse.Query('SecretClass');
+      query._where = {
+        $and: { '0': { 'secretObj.apiKey': 'SENSITIVE_KEY_123' }, '1': { publicField: 'visible' }, length: 2 },
+      };
+      await expectAsync(query.subscribe()).toBeRejectedWith(
+        jasmine.objectContaining({ code: Parse.Error.INVALID_QUERY })
+      );
+    });
+
+    it('should reject subscription with array-like $nor containing protected field', async () => {
+      const query = new Parse.Query('SecretClass');
+      query._where = {
+        $nor: { '0': { 'secretObj.apiKey': 'SENSITIVE_KEY_123' }, length: 1 },
+      };
+      await expectAsync(query.subscribe()).toBeRejectedWith(
+        jasmine.objectContaining({ code: Parse.Error.INVALID_QUERY })
+      );
+    });
+
+    it('should reject subscription with array-like $or even on non-protected fields', async () => {
+      const query = new Parse.Query('SecretClass');
+      query._where = {
+        $or: { '0': { publicField: 'visible' }, length: 1 },
+      };
+      await expectAsync(query.subscribe()).toBeRejectedWith(
+        jasmine.objectContaining({ code: Parse.Error.INVALID_QUERY })
+      );
+    });
+
+    it('should not create oracle via array-like $or bypass on protected fields', async () => {
+      const query = new Parse.Query('SecretClass');
+      query._where = {
+        $or: { '0': { 'secretObj.apiKey': 'SENSITIVE_KEY_123' }, length: 1 },
+      };
+
+      // Subscription must be rejected; no event oracle should be possible
+      let subscriptionError;
+      let subscription;
+      try {
+        subscription = await query.subscribe();
+      } catch (e) {
+        subscriptionError = e;
+      }
+
+      if (!subscriptionError) {
+        const updateSpy = jasmine.createSpy('update');
+        subscription.on('create', updateSpy);
+        subscription.on('update', updateSpy);
+
+        // Trigger an object change
+        obj.set('publicField', 'changed');
+        await obj.save(null, { useMasterKey: true });
+        await sleep(500);
+
+        // If subscription somehow accepted, verify no events fired (evaluator defense)
+        expect(updateSpy).not.toHaveBeenCalled();
+        fail('Expected subscription to be rejected');
+      }
+      expect(subscriptionError).toEqual(
+        jasmine.objectContaining({ code: Parse.Error.INVALID_QUERY })
+      );
+    });
+  });
 });
 
 describe('Malformed $regex information disclosure', () => {
@@ -5284,125 +5404,5 @@ describe('(GHSA-p2w6-rmh7-w8q3) SQL Injection via aggregate and distinct field n
       expect(response.headers.get('access-control-allow-origin')).not.toBe('https://unauthorized.example.net');
       expect(response.headers.get('access-control-allow-origin')).toBe('https://example.com');
     });
-  });
-});
-
-describe('(GHSA-mmg8-87c5-jrc2) LiveQuery protected-field guard bypass via array-like $or/$and/$nor', () => {
-  const { sleep } = require('../lib/TestUtils');
-  let obj;
-
-  beforeEach(async () => {
-    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
-    await reconfigureServer({
-      liveQuery: { classNames: ['SecretClass'] },
-      startLiveQueryServer: true,
-      verbose: false,
-      silent: true,
-    });
-    const config = Config.get(Parse.applicationId);
-    const schemaController = await config.database.loadSchema();
-    await schemaController.addClassIfNotExists(
-      'SecretClass',
-      { secretObj: { type: 'Object' }, publicField: { type: 'String' } },
-    );
-    await schemaController.updateClass(
-      'SecretClass',
-      {},
-      {
-        find: { '*': true },
-        get: { '*': true },
-        create: { '*': true },
-        update: { '*': true },
-        delete: { '*': true },
-        addField: {},
-        protectedFields: { '*': ['secretObj'] },
-      }
-    );
-
-    obj = new Parse.Object('SecretClass');
-    obj.set('secretObj', { apiKey: 'SENSITIVE_KEY_123', score: 42 });
-    obj.set('publicField', 'visible');
-    await obj.save(null, { useMasterKey: true });
-  });
-
-  afterEach(async () => {
-    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
-    if (client) {
-      await client.close();
-    }
-  });
-
-  it('should reject subscription with array-like $or containing protected field', async () => {
-    const query = new Parse.Query('SecretClass');
-    query._where = {
-      $or: { '0': { 'secretObj.apiKey': 'SENSITIVE_KEY_123' }, length: 1 },
-    };
-    await expectAsync(query.subscribe()).toBeRejectedWith(
-      jasmine.objectContaining({ code: Parse.Error.INVALID_QUERY })
-    );
-  });
-
-  it('should reject subscription with array-like $and containing protected field', async () => {
-    const query = new Parse.Query('SecretClass');
-    query._where = {
-      $and: { '0': { 'secretObj.apiKey': 'SENSITIVE_KEY_123' }, '1': { publicField: 'visible' }, length: 2 },
-    };
-    await expectAsync(query.subscribe()).toBeRejectedWith(
-      jasmine.objectContaining({ code: Parse.Error.INVALID_QUERY })
-    );
-  });
-
-  it('should reject subscription with array-like $nor containing protected field', async () => {
-    const query = new Parse.Query('SecretClass');
-    query._where = {
-      $nor: { '0': { 'secretObj.apiKey': 'SENSITIVE_KEY_123' }, length: 1 },
-    };
-    await expectAsync(query.subscribe()).toBeRejectedWith(
-      jasmine.objectContaining({ code: Parse.Error.INVALID_QUERY })
-    );
-  });
-
-  it('should reject subscription with array-like $or even on non-protected fields', async () => {
-    const query = new Parse.Query('SecretClass');
-    query._where = {
-      $or: { '0': { publicField: 'visible' }, length: 1 },
-    };
-    await expectAsync(query.subscribe()).toBeRejectedWith(
-      jasmine.objectContaining({ code: Parse.Error.INVALID_QUERY })
-    );
-  });
-
-  it('should not create oracle via array-like $or bypass on protected fields', async () => {
-    const query = new Parse.Query('SecretClass');
-    query._where = {
-      $or: { '0': { 'secretObj.apiKey': 'SENSITIVE_KEY_123' }, length: 1 },
-    };
-
-    // Subscription must be rejected; no event oracle should be possible
-    let subscriptionError;
-    let subscription;
-    try {
-      subscription = await query.subscribe();
-    } catch (e) {
-      subscriptionError = e;
-    }
-
-    if (!subscriptionError) {
-      const updateSpy = jasmine.createSpy('update');
-      subscription.on('create', updateSpy);
-      subscription.on('update', updateSpy);
-
-      // Trigger an object change
-      obj.set('publicField', 'changed');
-      await obj.save(null, { useMasterKey: true });
-      await sleep(500);
-
-      // If subscription somehow accepted, verify no events fired (evaluator defense)
-      expect(updateSpy).not.toHaveBeenCalled();
-      fail('Expected subscription to be rejected');
-    }
-    expect(subscriptionError).toEqual(
-      jasmine.objectContaining({ code: Parse.Error.INVALID_QUERY })
-    );
   });
 });
