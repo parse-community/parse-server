@@ -555,6 +555,16 @@ class ParseLiveQueryServer {
     if (typeof where !== 'object' || where === null) {
       return;
     }
+    for (const op of ['$or', '$and', '$nor']) {
+      if (where[op] !== undefined && !Array.isArray(where[op])) {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, `${op} must be an array`);
+      }
+      if (Array.isArray(where[op])) {
+        where[op].forEach((subQuery: any) => {
+          this._validateQueryConstraints(subQuery);
+        });
+      }
+    }
     for (const key of Object.keys(where)) {
       const constraint = where[key];
       if (typeof constraint === 'object' && constraint !== null) {
@@ -581,18 +591,6 @@ class ParseLiveQueryServer {
               `Invalid regular expression: ${e.message}`
             );
           }
-        }
-        for (const op of ['$or', '$and', '$nor']) {
-          if (Array.isArray(constraint[op])) {
-            constraint[op].forEach((subQuery: any) => {
-              this._validateQueryConstraints(subQuery);
-            });
-          }
-        }
-        if (Array.isArray(where[key])) {
-          where[key].forEach((subQuery: any) => {
-            this._validateQueryConstraints(subQuery);
-          });
         }
       }
     }
@@ -1048,6 +1046,9 @@ class ParseLiveQueryServer {
               return;
             }
             for (const op of ['$or', '$and', '$nor']) {
+              if (where[op] !== undefined && !Array.isArray(where[op])) {
+                throw new Parse.Error(Parse.Error.INVALID_QUERY, `${op} must be an array`);
+              }
               if (Array.isArray(where[op])) {
                 for (const subQuery of where[op]) {
                   checkDepth(subQuery, depth + 1);
@@ -1111,6 +1112,9 @@ class ParseLiveQueryServer {
               }
             }
             for (const op of ['$or', '$and', '$nor']) {
+              if (where[op] !== undefined && !Array.isArray(where[op])) {
+                throw new Parse.Error(Parse.Error.INVALID_QUERY, `${op} must be an array`);
+              }
               if (Array.isArray(where[op])) {
                 where[op].forEach((subQuery: any) => checkWhere(subQuery));
               }
