@@ -213,6 +213,9 @@ function matchesKeyConstraints(object, key, constraints) {
   }
   var i;
   if (key === '$or') {
+    if (!Array.isArray(constraints)) {
+      return false;
+    }
     for (i = 0; i < constraints.length; i++) {
       if (matchesQuery(object, constraints[i])) {
         return true;
@@ -221,6 +224,9 @@ function matchesKeyConstraints(object, key, constraints) {
     return false;
   }
   if (key === '$and') {
+    if (!Array.isArray(constraints)) {
+      return false;
+    }
     for (i = 0; i < constraints.length; i++) {
       if (!matchesQuery(object, constraints[i])) {
         return false;
@@ -229,6 +235,9 @@ function matchesKeyConstraints(object, key, constraints) {
     return true;
   }
   if (key === '$nor') {
+    if (!Array.isArray(constraints)) {
+      return false;
+    }
     for (i = 0; i < constraints.length; i++) {
       if (matchesQuery(object, constraints[i])) {
         return false;
