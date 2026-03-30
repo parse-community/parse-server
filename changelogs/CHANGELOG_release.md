@@ -1,3 +1,10 @@
+## [8.6.71](https://github.com/parse-community/parse-server/compare/8.6.70...8.6.71) (2026-03-30)
+
+
+### Bug Fixes
+
+* Streaming file download bypasses afterFind file trigger authorization ([GHSA-hpm8-9qx6-jvwv](https://github.com/parse-community/parse-server/security/advisories/GHSA-hpm8-9qx6-jvwv)) ([#10362](https://github.com/parse-community/parse-server/issues/10362)) ([053109b](https://github.com/parse-community/parse-server/commit/053109b3ee71815bc39ed84116c108ff9edbf337))
+
 ## [8.6.70](https://github.com/parse-community/parse-server/compare/8.6.69...8.6.70) (2026-03-29)
 
 
