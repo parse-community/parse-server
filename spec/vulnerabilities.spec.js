@@ -5538,4 +5538,69 @@ describe('Vulnerabilities', () => {
       expect(contextAfterDelete.isAdmin).toBeUndefined();
     });
   });
+
+  describe('(GHSA-hpm8-9qx6-jvwv) Ranged file download bypasses afterFind(Parse.File) trigger and validators', () => {
+    it_only_db('mongo')('enforces afterFind requireUser validator on streaming file download', async () => {
+      const file = new Parse.File('secret.txt', [1, 2, 3], 'text/plain');
+      await file.save({ useMasterKey: true });
+      Parse.Cloud.afterFind(Parse.File, () => {}, { requireUser: true });
+      const response = await request({
+        url: file.url(),
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'Range': 'bytes=0-2',
+        },
+      }).catch(e => e);
+      expect(response.status).toBe(403);
+    });
+
+    it('enforces afterFind requireUser validator on non-streaming file download', async () => {
+      const file = new Parse.File('secret.txt', [1, 2, 3], 'text/plain');
+      await file.save({ useMasterKey: true });
+      Parse.Cloud.afterFind(Parse.File, () => {}, { requireUser: true });
+      const response = await request({
+        url: file.url(),
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+      }).catch(e => e);
+      expect(response.status).toBe(403);
+    });
+
+    it_only_db('mongo')('allows streaming file download when afterFind requireUser validator passes', async () => {
+      const file = new Parse.File('secret.txt', [1, 2, 3], 'text/plain');
+      await file.save({ useMasterKey: true });
+      const user = await Parse.User.signUp('username', 'password');
+      Parse.Cloud.afterFind(Parse.File, () => {}, { requireUser: true });
+      const response = await request({
+        url: file.url(),
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': user.getSessionToken(),
+          'Range': 'bytes=0-2',
+        },
+      }).catch(e => e);
+      expect(response.status).toBe(206);
+    });
+
+    it_only_db('mongo')('enforces afterFind custom authorization on streaming file download', async () => {
+      const file = new Parse.File('secret.txt', [1, 2, 3], 'text/plain');
+      await file.save({ useMasterKey: true });
+      Parse.Cloud.afterFind(Parse.File, () => {
+        throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Access denied');
+      });
+      const response = await request({
+        url: file.url(),
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'Range': 'bytes=0-2',
+        },
+      }).catch(e => e);
+      expect(response.status).toBe(403);
+    });
+  });
 });
