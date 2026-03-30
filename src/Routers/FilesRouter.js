@@ -209,13 +209,16 @@ export class FilesRouter {
       const defaultResponseHeaders = { 'X-Content-Type-Options': 'nosniff' };
 
       if (isFileStreamable(req, filesController)) {
-        await triggers.maybeRunFileTrigger(
+        const afterFind = await triggers.maybeRunFileTrigger(
           triggers.Types.afterFind,
           { file, forceDownload: false, responseHeaders: { ...defaultResponseHeaders } },
           config,
           fileAuth
         );
-        for (const [key, value] of Object.entries(defaultResponseHeaders)) {
+        if (afterFind?.forceDownload) {
+          res.set('Content-Disposition', `attachment;filename=${afterFind.file?._name || filename}`);
+        }
+        for (const [key, value] of Object.entries(afterFind?.responseHeaders ?? defaultResponseHeaders)) {
           res.set(key, value);
         }
         filesController.handleFileStream(config, filename, req, res, contentType).catch(() => {
