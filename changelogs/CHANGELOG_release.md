@@ -1,3 +1,10 @@
+## [8.6.72](https://github.com/parse-community/parse-server/compare/8.6.71...8.6.72) (2026-03-31)
+
+
+### Bug Fixes
+
+* Security upgrade @apollo/server from 4.12.1 to 4.13.0 ([#10082](https://github.com/parse-community/parse-server/issues/10082)) ([18a1560](https://github.com/parse-community/parse-server/commit/18a1560d480d5bdcacbc24dbb7e45c02d7f93613))
+
 ## [8.6.71](https://github.com/parse-community/parse-server/compare/8.6.70...8.6.71) (2026-03-30)
 
 
