@@ -33,8 +33,8 @@ describe('parseObjectToMongoObjectForCreate', () => {
     const output = transform.parseObjectToMongoObjectForCreate(null, input, {
       fields: {},
     });
-    expect(output._created_at instanceof Date).toBe(true);
-    expect(output._updated_at instanceof Date).toBe(true);
+    expect(Utils.isDate(output._created_at)).toBe(true);
+    expect(Utils.isDate(output._updated_at)).toBe(true);
     done();
   });
 
@@ -692,4 +692,5 @@ describe('relativeTimeToDate', () => {
       });
     });
   });
+
 });

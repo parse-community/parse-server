@@ -278,7 +278,7 @@ describe('rest create', () => {
       .then(results => {
         expect(results.length).toEqual(1);
         const mob = results[0];
-        expect(mob.array instanceof Array).toBe(true);
+        expect(Array.isArray(mob.array)).toBe(true);
         expect(typeof mob.object).toBe('object');
         expect(mob.date.__type).toBe('Date');
         expect(new Date(mob.date.iso).getTime()).toBe(now.getTime());
@@ -653,7 +653,8 @@ describe('rest create', () => {
       password: 'zxcv',
       foo: 'bar',
     };
-    const now = new Date();
+    const defaultSessionLength = 1000 * 3600 * 24 * 365;
+    const before = Date.now();
 
     rest
       .create(config, auth.nobody(config), '_User', user)
@@ -670,10 +671,11 @@ describe('rest create', () => {
         expect(r.results.length).toEqual(1);
 
         const session = r.results[0];
-        const actual = new Date(session.expiresAt.iso);
-        const expected = new Date(now.getTime() + 1000 * 3600 * 24 * 365);
+        const actual = new Date(session.expiresAt.iso).getTime();
+        const after = Date.now();
 
-        expect(Math.abs(actual - expected) <= jasmine.DEFAULT_TIMEOUT_INTERVAL).toEqual(true);
+        expect(actual).toBeGreaterThanOrEqual(before + defaultSessionLength);
+        expect(actual).toBeLessThanOrEqual(after + defaultSessionLength);
 
         done();
       });
@@ -685,9 +687,9 @@ describe('rest create', () => {
       password: 'zxcv',
       foo: 'bar',
     };
-    const sessionLength = 3600, // 1 Hour ahead
-      now = new Date(); // For reference later
+    const sessionLength = 3600; // 1 Hour ahead
     config.sessionLength = sessionLength;
+    const before = Date.now();
 
     rest
       .create(config, auth.nobody(config), '_User', user)
@@ -704,10 +706,11 @@ describe('rest create', () => {
         expect(r.results.length).toEqual(1);
 
         const session = r.results[0];
-        const actual = new Date(session.expiresAt.iso);
-        const expected = new Date(now.getTime() + sessionLength * 1000);
+        const actual = new Date(session.expiresAt.iso).getTime();
+        const after = Date.now();
 
-        expect(Math.abs(actual - expected) <= jasmine.DEFAULT_TIMEOUT_INTERVAL).toEqual(true);
+        expect(actual).toBeGreaterThanOrEqual(before + sessionLength * 1000);
+        expect(actual).toBeLessThanOrEqual(after + sessionLength * 1000);
 
         done();
       })
@@ -717,38 +720,27 @@ describe('rest create', () => {
       });
   });
 
-  it('can create a session with no expiration', done => {
+  it('can create a session with no expiration', async () => {
+    await reconfigureServer({ expireInactiveSessions: false });
+    config = Config.get('test');
+
     const user = {
       username: 'asdf',
       password: 'zxcv',
       foo: 'bar',
     };
-    config.expireInactiveSessions = false;
 
-    rest
-      .create(config, auth.nobody(config), '_User', user)
-      .then(r => {
-        expect(Object.keys(r.response).length).toEqual(3);
-        expect(typeof r.response.objectId).toEqual('string');
-        expect(typeof r.response.createdAt).toEqual('string');
-        expect(typeof r.response.sessionToken).toEqual('string');
-        return rest.find(config, auth.master(config), '_Session', {
-          sessionToken: r.response.sessionToken,
-        });
-      })
-      .then(r => {
-        expect(r.results.length).toEqual(1);
+    const r = await rest.create(config, auth.nobody(config), '_User', user);
+    expect(Object.keys(r.response).length).toEqual(3);
+    expect(typeof r.response.objectId).toEqual('string');
+    expect(typeof r.response.createdAt).toEqual('string');
+    expect(typeof r.response.sessionToken).toEqual('string');
 
-        const session = r.results[0];
-        expect(session.expiresAt).toBeUndefined();
-
-        done();
-      })
-      .catch(err => {
-        console.error(err);
-        fail(err);
-        done();
-      });
+    const s = await rest.find(config, auth.master(config), '_Session', {
+      sessionToken: r.response.sessionToken,
+    });
+    expect(s.results.length).toEqual(1);
+    expect(s.results[0].expiresAt).toBeUndefined();
   });
 
   it('can create object in volatileClasses if masterKey', done => {
@@ -810,6 +802,153 @@ describe('rest create', () => {
       'Permission denied'
     );
     expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining("Clients aren't allowed to perform the get operation on the _GlobalConfig collection."));
+  });
+
+  it('should require master key for all volatile classes', () => {
+    // This test guards against drift between volatileClasses (SchemaController.js)
+    // and classesWithMasterOnlyAccess (SharedRest.js). If a new volatile class is
+    // added, it must also be added to classesWithMasterOnlyAccess and this test.
+    const volatileClasses = [
+      '_JobStatus',
+      '_PushStatus',
+      '_Hooks',
+      '_GlobalConfig',
+      '_GraphQLConfig',
+      '_JobSchedule',
+      '_Audience',
+      '_Idempotency',
+    ];
+    for (const className of volatileClasses) {
+      expect(() =>
+        rest.create(config, auth.nobody(config), className, {})
+      ).toThrowMatching(
+        e => e.code === Parse.Error.OPERATION_FORBIDDEN,
+        `Expected ${className} to require master key`
+      );
+    }
+  });
+
+  it('cannot find objects in _GraphQLConfig without masterKey', async () => {
+    await config.parseGraphQLController.updateGraphQLConfig({ enabledForClasses: ['_User'] });
+    await expectAsync(
+      rest.find(config, auth.nobody(config), '_GraphQLConfig', {})
+    ).toBeRejectedWith(
+      jasmine.objectContaining({ code: Parse.Error.OPERATION_FORBIDDEN })
+    );
+  });
+
+  it('cannot update object in _GraphQLConfig without masterKey', async () => {
+    await config.parseGraphQLController.updateGraphQLConfig({ enabledForClasses: ['_User'] });
+    expect(() =>
+      rest.update(config, auth.nobody(config), '_GraphQLConfig', '1', {
+        config: { enabledForClasses: [] },
+      })
+    ).toThrowMatching(e => e.code === Parse.Error.OPERATION_FORBIDDEN);
+  });
+
+  it('cannot delete object in _GraphQLConfig without masterKey', async () => {
+    await config.parseGraphQLController.updateGraphQLConfig({ enabledForClasses: ['_User'] });
+    expect(() =>
+      rest.del(config, auth.nobody(config), '_GraphQLConfig', '1')
+    ).toThrowMatching(e => e.code === Parse.Error.OPERATION_FORBIDDEN);
+  });
+
+  it('can perform operations on _GraphQLConfig with masterKey', async () => {
+    await config.parseGraphQLController.updateGraphQLConfig({ enabledForClasses: ['_User'] });
+    const found = await rest.find(config, auth.master(config), '_GraphQLConfig', {});
+    expect(found.results.length).toBeGreaterThan(0);
+    await rest.del(config, auth.master(config), '_GraphQLConfig', '1');
+    const afterDelete = await rest.find(config, auth.master(config), '_GraphQLConfig', {});
+    expect(afterDelete.results.length).toBe(0);
+  });
+
+  it('cannot create object in _Audience without masterKey', () => {
+    expect(() =>
+      rest.create(config, auth.nobody(config), '_Audience', {
+        name: 'test',
+        query: '{}',
+      })
+    ).toThrowMatching(e => e.code === Parse.Error.OPERATION_FORBIDDEN);
+  });
+
+  it('cannot find objects in _Audience without masterKey', async () => {
+    await expectAsync(
+      rest.find(config, auth.nobody(config), '_Audience', {})
+    ).toBeRejectedWith(
+      jasmine.objectContaining({ code: Parse.Error.OPERATION_FORBIDDEN })
+    );
+  });
+
+  it('cannot update object in _Audience without masterKey', async () => {
+    const obj = await rest.create(config, auth.master(config), '_Audience', {
+      name: 'test',
+      query: '{}',
+    });
+    expect(() =>
+      rest.update(config, auth.nobody(config), '_Audience', obj.response.objectId, {
+        name: 'updated',
+      })
+    ).toThrowMatching(e => e.code === Parse.Error.OPERATION_FORBIDDEN);
+  });
+
+  it('cannot delete object in _Audience without masterKey', async () => {
+    const obj = await rest.create(config, auth.master(config), '_Audience', {
+      name: 'test',
+      query: '{}',
+    });
+    expect(() =>
+      rest.del(config, auth.nobody(config), '_Audience', obj.response.objectId)
+    ).toThrowMatching(e => e.code === Parse.Error.OPERATION_FORBIDDEN);
+  });
+
+  it('can perform CRUD on _Audience with masterKey', async () => {
+    const obj = await rest.create(config, auth.master(config), '_Audience', {
+      name: 'test',
+      query: '{}',
+    });
+    expect(obj.response.objectId).toBeDefined();
+    const found = await rest.find(config, auth.master(config), '_Audience', {});
+    expect(found.results.length).toBeGreaterThan(0);
+    await rest.del(config, auth.master(config), '_Audience', obj.response.objectId);
+    const afterDelete = await rest.find(config, auth.master(config), '_Audience', {});
+    expect(afterDelete.results.length).toBe(0);
+  });
+
+  it('cannot access _GraphQLConfig via class route without masterKey', async () => {
+    await config.parseGraphQLController.updateGraphQLConfig({ enabledForClasses: ['_User'] });
+    try {
+      await request({
+        url: 'http://localhost:8378/1/classes/_GraphQLConfig',
+        json: true,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+      });
+      fail('should have thrown');
+    } catch (e) {
+      expect(e.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+    }
+  });
+
+  it('cannot access _Audience via class route without masterKey', async () => {
+    await rest.create(config, auth.master(config), '_Audience', {
+      name: 'test',
+      query: '{}',
+    });
+    try {
+      await request({
+        url: 'http://localhost:8378/1/classes/_Audience',
+        json: true,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+      });
+      fail('should have thrown');
+    } catch (e) {
+      expect(e.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+    }
   });
 
   it('locks down session', done => {
@@ -950,6 +1089,117 @@ describe('rest update', () => {
       })
       .then(done)
       .catch(done.fail);
+  });
+});
+
+describe('_Join table security', () => {
+  let config;
+
+  beforeEach(() => {
+    config = Config.get('test');
+  });
+
+  it('cannot create object in _Join table without masterKey', () => {
+    expect(() =>
+      rest.create(config, auth.nobody(config), '_Join:users:_Role', {
+        relatedId: 'someUserId',
+        owningId: 'someRoleId',
+      })
+    ).toThrowError(/Permission denied/);
+  });
+
+  it('cannot find objects in _Join table without masterKey', async () => {
+    await expectAsync(
+      rest.find(config, auth.nobody(config), '_Join:users:_Role', {})
+    ).toBeRejectedWith(
+      jasmine.objectContaining({
+        code: Parse.Error.OPERATION_FORBIDDEN,
+      })
+    );
+  });
+
+  it('cannot update object in _Join table without masterKey', () => {
+    expect(() =>
+      rest.update(config, auth.nobody(config), '_Join:users:_Role', { relatedId: 'someUserId' }, { owningId: 'newRoleId' })
+    ).toThrowError(/Permission denied/);
+  });
+
+  it('cannot delete object in _Join table without masterKey', () => {
+    expect(() =>
+      rest.del(config, auth.nobody(config), '_Join:users:_Role', 'someObjectId')
+    ).toThrowError(/Permission denied/);
+  });
+
+  it('cannot get object in _Join table without masterKey', async () => {
+    await expectAsync(
+      rest.get(config, auth.nobody(config), '_Join:users:_Role', 'someObjectId')
+    ).toBeRejectedWith(
+      jasmine.objectContaining({
+        code: Parse.Error.OPERATION_FORBIDDEN,
+      })
+    );
+  });
+
+  it('can find objects in _Join table with masterKey', async () => {
+    await expectAsync(
+      rest.find(config, auth.master(config), '_Join:users:_Role', {})
+    ).toBeResolved();
+  });
+
+  it('can find objects in _Join table with maintenance key', async () => {
+    await expectAsync(
+      rest.find(config, auth.maintenance(config), '_Join:users:_Role', {})
+    ).toBeResolved();
+  });
+
+  it('legitimate relation operations still work', async () => {
+    const role = new Parse.Role('admin', new Parse.ACL());
+    const user = await Parse.User.signUp('testuser', 'password123');
+    role.getUsers().add(user);
+    await role.save(null, { useMasterKey: true });
+    const result = await rest.find(config, auth.master(config), '_Join:users:_Role', {});
+    expect(result.results.length).toBe(1);
+  });
+
+  it('blocks _Join table access for any relation, not just _Role', () => {
+    expect(() =>
+      rest.create(config, auth.nobody(config), '_Join:viewers:ConfidentialDoc', {
+        relatedId: 'someUserId',
+        owningId: 'someDocId',
+      })
+    ).toThrowError(/Permission denied/);
+  });
+
+  it('cannot escalate role via direct _Join table write', async () => {
+    const role = new Parse.Role('superadmin', new Parse.ACL());
+    await role.save(null, { useMasterKey: true });
+    const user = await Parse.User.signUp('attacker', 'password123');
+    const sessionToken = user.getSessionToken();
+    const userAuth = await auth.getAuthForSessionToken({
+      config,
+      sessionToken,
+    });
+    expect(() =>
+      rest.create(config, userAuth, '_Join:users:_Role', {
+        relatedId: user.id,
+        owningId: role.id,
+      })
+    ).toThrowError(/Permission denied/);
+  });
+
+  it('cannot write to _Join table with read-only masterKey', () => {
+    expect(() =>
+      rest.create(config, auth.readOnly(config), '_Join:users:_Role', {
+        relatedId: 'someUserId',
+        owningId: 'someRoleId',
+      })
+    ).toThrowError(/Permission denied/);
+  });
+
+  it('can read _Join table with read-only masterKey', async () => {
+    await expectAsync(
+      rest.find(config, auth.readOnly(config), '_Join:users:_Role', {})
+    ).toBeResolved();
   });
 });
 
@@ -1171,6 +1421,320 @@ describe('read-only masterKey', () => {
         expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining("read-only masterKey isn't allowed to send push notifications."));
         done();
       });
+  });
+
+  it('should throw when trying to create a hook function', async () => {
+    loggerErrorSpy.calls.reset();
+    try {
+      await request({
+        url: `${Parse.serverURL}/hooks/functions`,
+        method: 'POST',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': 'read-only-test',
+          'Content-Type': 'application/json',
+        },
+        body: { functionName: 'readOnlyTest', url: 'https://example.com/hook' },
+      });
+      fail('should have thrown');
+    } catch (res) {
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    }
+  });
+
+  it('should throw when trying to create a hook trigger', async () => {
+    loggerErrorSpy.calls.reset();
+    try {
+      await request({
+        url: `${Parse.serverURL}/hooks/triggers`,
+        method: 'POST',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': 'read-only-test',
+          'Content-Type': 'application/json',
+        },
+        body: { className: 'MyClass', triggerName: 'beforeSave', url: 'https://example.com/hook' },
+      });
+      fail('should have thrown');
+    } catch (res) {
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    }
+  });
+
+  it('should throw when trying to update a hook function', async () => {
+    // First create the hook with the real master key
+    await request({
+      url: `${Parse.serverURL}/hooks/functions`,
+      method: 'POST',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
+        'Content-Type': 'application/json',
+      },
+      body: { functionName: 'readOnlyUpdateTest', url: 'https://example.com/hook' },
+    });
+    loggerErrorSpy.calls.reset();
+    try {
+      await request({
+        url: `${Parse.serverURL}/hooks/functions/readOnlyUpdateTest`,
+        method: 'PUT',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': 'read-only-test',
+          'Content-Type': 'application/json',
+        },
+        body: { url: 'https://example.com/hacked' },
+      });
+      fail('should have thrown');
+    } catch (res) {
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    }
+  });
+
+  it('should throw when trying to delete a hook function', async () => {
+    // First create the hook with the real master key
+    await request({
+      url: `${Parse.serverURL}/hooks/functions`,
+      method: 'POST',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
+        'Content-Type': 'application/json',
+      },
+      body: { functionName: 'readOnlyDeleteTest', url: 'https://example.com/hook' },
+    });
+    loggerErrorSpy.calls.reset();
+    try {
+      await request({
+        url: `${Parse.serverURL}/hooks/functions/readOnlyDeleteTest`,
+        method: 'PUT',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': 'read-only-test',
+          'Content-Type': 'application/json',
+        },
+        body: { __op: 'Delete' },
+      });
+      fail('should have thrown');
+    } catch (res) {
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    }
+  });
+
+  it('should throw when trying to run a job with readOnlyMasterKey', async () => {
+    Parse.Cloud.job('readOnlyTestJob', () => {});
+    loggerErrorSpy.calls.reset();
+    try {
+      await request({
+        url: `${Parse.serverURL}/jobs/readOnlyTestJob`,
+        method: 'POST',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': 'read-only-test',
+          'Content-Type': 'application/json',
+        },
+        body: {},
+      });
+      fail('should have thrown');
+    } catch (res) {
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    }
+  });
+
+  it('should allow reading hooks with readOnlyMasterKey', async () => {
+    const res = await request({
+      url: `${Parse.serverURL}/hooks/functions`,
+      method: 'GET',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': 'read-only-test',
+      },
+    });
+    expect(Array.isArray(res.data)).toBe(true);
+  });
+
+  it('should throw when trying to delete a file with readOnlyMasterKey', async () => {
+    // Create a file with the real master key
+    const uploadRes = await request({
+      method: 'POST',
+      url: `${Parse.serverURL}/files/readonly-delete-test.txt`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
+        'Content-Type': 'text/plain',
+      },
+      body: 'file content',
+    });
+    const filename = uploadRes.data.name;
+    expect(filename).toBeDefined();
+
+    // Attempt delete with readOnlyMasterKey — should be rejected
+    loggerErrorSpy.calls.reset();
+    try {
+      await request({
+        method: 'DELETE',
+        url: `${Parse.serverURL}/files/${filename}`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': 'read-only-test',
+        },
+      });
+      fail('should have thrown');
+    } catch (res) {
+      expect(res.status).toBe(403);
+      expect(res.data.error).toBe('Permission denied');
+    }
+
+    // Verify file still exists
+    const getRes = await request({ url: uploadRes.data.url });
+    expect(getRes.status).toBe(200);
+  });
+
+  it('should throw when trying to create a file with readOnlyMasterKey', async () => {
+    loggerErrorSpy.calls.reset();
+    try {
+      await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/files/readonly-create-test.txt`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': 'read-only-test',
+          'Content-Type': 'text/plain',
+        },
+        body: 'file content',
+      });
+      fail('should have thrown');
+    } catch (res) {
+      expect(res.status).toBe(403);
+      expect(res.data.error).toBe('Permission denied');
+    }
+  });
+
+  it('should throw when trying to loginAs with readOnlyMasterKey', async () => {
+    // Create a target user
+    await Parse.User.signUp('readonly-loginas-test', 'password123');
+    const userId = Parse.User.current().id;
+    await Parse.User.logOut();
+
+    // Attempt loginAs with readOnlyMasterKey — should be rejected
+    loggerErrorSpy.calls.reset();
+    try {
+      await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/loginAs`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': 'read-only-test',
+          'Content-Type': 'application/json',
+        },
+        body: { userId },
+      });
+      fail('should have thrown');
+    } catch (res) {
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    }
+  });
+
+  it('should expose isReadOnly in Cloud Function request when using readOnlyMasterKey', async () => {
+    let receivedMaster;
+    let receivedIsReadOnly;
+    Parse.Cloud.define('checkReadOnly', req => {
+      receivedMaster = req.master;
+      receivedIsReadOnly = req.isReadOnly;
+      return 'ok';
+    });
+
+    await request({
+      method: 'POST',
+      url: `${Parse.serverURL}/functions/checkReadOnly`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': 'read-only-test',
+        'Content-Type': 'application/json',
+      },
+      body: {},
+    });
+
+    expect(receivedMaster).toBe(true);
+    expect(receivedIsReadOnly).toBe(true);
+  });
+
+  it('should not set isReadOnly in Cloud Function request when using masterKey', async () => {
+    let receivedMaster;
+    let receivedIsReadOnly;
+    Parse.Cloud.define('checkNotReadOnly', req => {
+      receivedMaster = req.master;
+      receivedIsReadOnly = req.isReadOnly;
+      return 'ok';
+    });
+
+    await request({
+      method: 'POST',
+      url: `${Parse.serverURL}/functions/checkNotReadOnly`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
+        'Content-Type': 'application/json',
+      },
+      body: {},
+    });
+
+    expect(receivedMaster).toBe(true);
+    expect(receivedIsReadOnly).toBe(false);
+  });
+
+  it('should expose isReadOnly in beforeFind trigger when using readOnlyMasterKey', async () => {
+    let receivedMaster;
+    let receivedIsReadOnly;
+    Parse.Cloud.beforeFind('ReadOnlyTriggerTest', req => {
+      receivedMaster = req.master;
+      receivedIsReadOnly = req.isReadOnly;
+    });
+
+    const obj = new Parse.Object('ReadOnlyTriggerTest');
+    await obj.save(null, { useMasterKey: true });
+
+    await request({
+      method: 'GET',
+      url: `${Parse.serverURL}/classes/ReadOnlyTriggerTest`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': 'read-only-test',
+      },
+    });
+
+    expect(receivedMaster).toBe(true);
+    expect(receivedIsReadOnly).toBe(true);
+  });
+
+  it('should not set isReadOnly in beforeFind trigger when using masterKey', async () => {
+    let receivedMaster;
+    let receivedIsReadOnly;
+    Parse.Cloud.beforeFind('ReadOnlyTriggerTestNeg', req => {
+      receivedMaster = req.master;
+      receivedIsReadOnly = req.isReadOnly;
+    });
+
+    const obj = new Parse.Object('ReadOnlyTriggerTestNeg');
+    await obj.save(null, { useMasterKey: true });
+
+    await request({
+      method: 'GET',
+      url: `${Parse.serverURL}/classes/ReadOnlyTriggerTestNeg`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
+      },
+    });
+
+    expect(receivedMaster).toBe(true);
+    expect(receivedIsReadOnly).toBe(false);
   });
 });
 

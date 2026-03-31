@@ -41,7 +41,46 @@ module.exports = [
       curly: ["error", "all"],
       "block-spacing": ["error", "always"],
       "no-unused-vars": "off",
-      "no-console": "warn"
+      "no-console": "warn",
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "BinaryExpression[operator='instanceof'][right.name='Date']",
+          message: "Use Utils.isDate() instead of instanceof Date (cross-realm safe).",
+        },
+        {
+          selector: "BinaryExpression[operator='instanceof'][right.name='RegExp']",
+          message: "Use Utils.isRegExp() instead of instanceof RegExp (cross-realm safe).",
+        },
+        {
+          selector: "BinaryExpression[operator='instanceof'][right.name='Error']",
+          message: "Use Utils.isNativeError() instead of instanceof Error (cross-realm safe).",
+        },
+        {
+          selector: "BinaryExpression[operator='instanceof'][right.name='Promise']",
+          message: "Use Utils.isPromise() instead of instanceof Promise (cross-realm safe).",
+        },
+        {
+          selector: "BinaryExpression[operator='instanceof'][right.name='Map']",
+          message: "Use Utils.isMap() instead of instanceof Map (cross-realm safe).",
+        },
+        {
+          selector: "BinaryExpression[operator='instanceof'][right.name='Object']",
+          message: "Use Utils.isObject() instead of instanceof Object (cross-realm safe).",
+        },
+        {
+          selector: "BinaryExpression[operator='instanceof'][right.name='Set']",
+          message: "Use Utils.isSet() instead of instanceof Set (cross-realm safe).",
+        },
+        {
+          selector: "BinaryExpression[operator='instanceof'][right.name='Buffer']",
+          message: "Use Buffer.isBuffer() instead of instanceof Buffer (cross-realm safe).",
+        },
+        {
+          selector: "BinaryExpression[operator='instanceof'][right.name='Array']",
+          message: "Use Array.isArray() instead of instanceof Array (cross-realm safe).",
+        },
+      ]
     },
   },
 ];

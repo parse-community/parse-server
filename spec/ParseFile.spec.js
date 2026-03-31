@@ -1461,6 +1461,63 @@ describe('Parse.File testing', () => {
       }
     });
 
+    it('default should block SVG files', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+        },
+      });
+      const headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      };
+      const svgContent = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>').toString('base64');
+      for (const extension of ['svg', 'SVG', 'Svg']) {
+        await expectAsync(
+          request({
+            method: 'POST',
+            headers: headers,
+            url: `http://localhost:8378/1/files/malicious.${extension}`,
+            body: JSON.stringify({
+              _ApplicationId: 'test',
+              _JavaScriptKey: 'test',
+              _ContentType: 'image/svg+xml',
+              base64: svgContent,
+            }),
+          }).catch(e => {
+            throw new Error(e.data.error);
+          })
+        ).toBeRejectedWith(
+          new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `File upload of extension ${extension} is disabled.`)
+        );
+      }
+    });
+
+    it('default should block SVG content type without file extension', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+        },
+      });
+      const svgContent = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>').toString('base64');
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/files/file',
+          body: JSON.stringify({
+            _ApplicationId: 'test',
+            _JavaScriptKey: 'test',
+            _ContentType: 'image/svg+xml',
+            base64: svgContent,
+          }),
+        }).catch(e => {
+          throw new Error(e.data.error);
+        })
+      ).toBeRejectedWith(
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `File upload of extension svg+xml is disabled.`)
+      );
+    });
+
     it('works with a period in the file name', async () => {
       await reconfigureServer({
         fileUpload: {
@@ -2021,6 +2078,210 @@ describe('Parse.File testing', () => {
       }
     });
 
+    describe('maxUploadSize override', () => {
+      it('allows streaming upload exceeding server limit with maxUploadSize override and master key', async () => {
+        await reconfigureServer({ maxUploadSize: '10b' });
+        const headers = {
+          'Content-Type': 'application/octet-stream',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+          'X-Parse-Upload-Mode': 'stream',
+          'X-Parse-File-Max-Upload-Size': '1mb',
+        };
+        const response = await request({
+          method: 'POST',
+          headers: headers,
+          url: 'http://localhost:8378/1/files/override-stream.txt',
+          body: 'this content is definitely longer than 10 bytes',
+        });
+        expect(response.data.name).toContain('override-stream');
+        expect(response.data.url).toBeDefined();
+      });
+
+      it('allows buffered upload exceeding server limit with maxUploadSize override and master key', async () => {
+        await reconfigureServer({ maxUploadSize: '10b' });
+        const headers = {
+          'Content-Type': 'application/octet-stream',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+          'X-Parse-File-Max-Upload-Size': '1mb',
+        };
+        const response = await request({
+          method: 'POST',
+          headers: headers,
+          url: 'http://localhost:8378/1/files/override-buffer.txt',
+          body: 'this content is definitely longer than 10 bytes',
+        });
+        expect(response.data.name).toContain('override-buffer');
+        expect(response.data.url).toBeDefined();
+      });
+
+      it('rejects maxUploadSize override without master key', async () => {
+        await reconfigureServer({ maxUploadSize: '10b' });
+        const headers = {
+          'Content-Type': 'application/octet-stream',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Upload-Mode': 'stream',
+          'X-Parse-File-Max-Upload-Size': '1mb',
+        };
+        try {
+          await request({
+            method: 'POST',
+            headers: headers,
+            url: 'http://localhost:8378/1/files/no-master.txt',
+            body: 'this content is longer than 10 bytes',
+          });
+          fail('should have thrown');
+        } catch (response) {
+          expect(response.status).toBe(403);
+        }
+      });
+
+      it('rejects invalid maxUploadSize override value', async () => {
+        const headers = {
+          'Content-Type': 'application/octet-stream',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+          'X-Parse-Upload-Mode': 'stream',
+          'X-Parse-File-Max-Upload-Size': 'notasize',
+        };
+        try {
+          await request({
+            method: 'POST',
+            headers: headers,
+            url: 'http://localhost:8378/1/files/bad-value.txt',
+            body: 'some data',
+          });
+          fail('should have thrown');
+        } catch (response) {
+          expect(response.data.code).toBe(Parse.Error.FILE_SAVE_ERROR);
+          expect(response.data.error).toContain('Invalid maxUploadSize override');
+        }
+      });
+
+      it('rejects streaming upload exceeding the overridden maxUploadSize', async () => {
+        await reconfigureServer({ maxUploadSize: '5b' });
+        const headers = {
+          'Content-Type': 'application/octet-stream',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+          'X-Parse-Upload-Mode': 'stream',
+          'X-Parse-File-Max-Upload-Size': '10b',
+        };
+        try {
+          await request({
+            method: 'POST',
+            headers: headers,
+            url: 'http://localhost:8378/1/files/still-too-big.txt',
+            body: 'this content is definitely longer than 10 bytes',
+          });
+          fail('should have thrown');
+        } catch (response) {
+          expect(response.data.code).toBe(Parse.Error.FILE_SAVE_ERROR);
+          expect(response.data.error).toContain('exceeds');
+        }
+      });
+
+      it('rejects maxUploadSize override with wrong master key', async () => {
+        const headers = {
+          'Content-Type': 'application/octet-stream',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'wrong-key',
+          'X-Parse-Upload-Mode': 'stream',
+          'X-Parse-File-Max-Upload-Size': '1mb',
+        };
+        try {
+          await request({
+            method: 'POST',
+            headers: headers,
+            url: 'http://localhost:8378/1/files/wrong-key.txt',
+            body: 'some data',
+          });
+          fail('should have thrown');
+        } catch (response) {
+          expect(response.status).toBe(403);
+        }
+      });
+
+      it('rejects maxUploadSize override with invalid application ID', async () => {
+        const headers = {
+          'Content-Type': 'application/octet-stream',
+          'X-Parse-Application-Id': 'invalid-app-id',
+          'X-Parse-Master-Key': 'test',
+          'X-Parse-Upload-Mode': 'stream',
+          'X-Parse-File-Max-Upload-Size': '1mb',
+        };
+        try {
+          await request({
+            method: 'POST',
+            headers: headers,
+            url: 'http://localhost:8378/1/files/bad-app.txt',
+            body: 'some data',
+          });
+          fail('should have thrown');
+        } catch (response) {
+          expect(response.status).toBe(403);
+        }
+      });
+
+      it('rejects maxUploadSize override when masterKeyIps blocks the IP', async () => {
+        await reconfigureServer({ masterKeyIps: ['10.0.0.1'] });
+        const headers = {
+          'Content-Type': 'application/octet-stream',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+          'X-Parse-Upload-Mode': 'stream',
+          'X-Parse-File-Max-Upload-Size': '1mb',
+        };
+        try {
+          await request({
+            method: 'POST',
+            headers: headers,
+            url: 'http://localhost:8378/1/files/blocked-ip.txt',
+            body: 'some data',
+          });
+          fail('should have thrown');
+        } catch (response) {
+          expect(response.status).toBe(403);
+        }
+      });
+
+    });
+
+    describe('maxUploadSize override via SDK', () => {
+      it('saves buffer file with maxUploadSize override and master key', async () => {
+        await reconfigureServer({ maxUploadSize: '10b' });
+        const data = Buffer.alloc(100, 'a');
+        const file = new Parse.File('sdk-buffer-override.txt', data, 'text/plain');
+        const result = await file.save({ useMasterKey: true, maxUploadSize: '1mb' });
+        expect(result.url()).toBeDefined();
+        expect(result.name()).toContain('sdk-buffer-override');
+      });
+
+      it('saves stream file with maxUploadSize override and master key', async () => {
+        await reconfigureServer({ maxUploadSize: '10b' });
+        const { Readable } = require('stream');
+        const stream = Readable.from(Buffer.alloc(100, 'b'));
+        const file = new Parse.File('sdk-stream-override.txt', stream, 'text/plain');
+        const result = await file.save({ useMasterKey: true, maxUploadSize: '1mb' });
+        expect(result.url()).toBeDefined();
+        expect(result.name()).toContain('sdk-stream-override');
+      });
+
+      it('rejects maxUploadSize override without master key', async () => {
+        await reconfigureServer({ maxUploadSize: '10b' });
+        const data = Buffer.alloc(100, 'c');
+        const file = new Parse.File('sdk-no-master.txt', data, 'text/plain');
+        try {
+          await file.save({ maxUploadSize: '1mb' });
+          fail('should have thrown');
+        } catch (error) {
+          expect(error.error).toBeDefined();
+        }
+      });
+    });
+
     it('fires beforeSave trigger with request.stream = true on streaming upload', async () => {
       let receivedStream;
       let receivedData;
@@ -2309,6 +2570,208 @@ describe('Parse.File testing', () => {
       const b = response.data;
       expect(b.name).toMatch(/^stream-uploads\/.*_stream-dir.txt$/);
       expect(b.url).toBeDefined();
+    });
+
+    it('saves file with directory via streaming upload (header)', async () => {
+      const headers = {
+        'Content-Type': 'text/plain',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+        'X-Parse-Upload-Mode': 'stream',
+        'X-Parse-File-Directory': 'stream-dir-test',
+      };
+      const response = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/files/stream-header.txt',
+        body: 'stream directory header content',
+      });
+      const b = response.data;
+      expect(b.name).toMatch(/^stream-dir-test\/.*_stream-header.txt$/);
+      expect(b.url).toBeDefined();
+    });
+
+    it('rejects directory header without master key for streaming upload', async () => {
+      const headers = {
+        'Content-Type': 'text/plain',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Upload-Mode': 'stream',
+        'X-Parse-File-Directory': 'no-master',
+      };
+      try {
+        await request({
+          method: 'POST',
+          headers,
+          url: 'http://localhost:8378/1/files/stream-header.txt',
+          body: 'should fail',
+        });
+        fail('should have thrown');
+      } catch (error) {
+        expect(error.data.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+      }
+    });
+
+    it('validates directory header for streaming upload', async () => {
+      const headers = {
+        'Content-Type': 'text/plain',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+        'X-Parse-Upload-Mode': 'stream',
+        'X-Parse-File-Directory': '../etc',
+      };
+      try {
+        await request({
+          method: 'POST',
+          headers,
+          url: 'http://localhost:8378/1/files/stream-header.txt',
+          body: 'should fail',
+        });
+        fail('should have thrown');
+      } catch (error) {
+        expect(error.data.code).toEqual(Parse.Error.INVALID_FILE_NAME);
+      }
+    });
+
+    it('saves file with metadata and tags via streaming upload headers', async () => {
+      spyOn(FilesController.prototype, 'createFile').and.callThrough();
+      const headers = {
+        'Content-Type': 'text/plain',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+        'X-Parse-Upload-Mode': 'stream',
+        'X-Parse-File-Metadata': JSON.stringify({ key1: 'value1' }),
+        'X-Parse-File-Tags': JSON.stringify({ tag1: 'tagValue1' }),
+      };
+      const response = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/files/stream-meta.txt',
+        body: 'stream with metadata content',
+      });
+      const b = response.data;
+      expect(b.name).toMatch(/_stream-meta.txt$/);
+      expect(b.url).toBeDefined();
+      const options = FilesController.prototype.createFile.calls.argsFor(0)[4];
+      expect(options.metadata).toEqual({ key1: 'value1' });
+      expect(options.tags).toEqual({ tag1: 'tagValue1' });
+    });
+
+    it('saves file with directory, metadata, and tags via streaming upload headers', async () => {
+      spyOn(FilesController.prototype, 'createFile').and.callThrough();
+      const headers = {
+        'Content-Type': 'text/plain',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+        'X-Parse-Upload-Mode': 'stream',
+        'X-Parse-File-Directory': 'uploads',
+        'X-Parse-File-Metadata': JSON.stringify({ author: 'test' }),
+        'X-Parse-File-Tags': JSON.stringify({ env: 'test' }),
+      };
+      const response = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/files/stream-all.txt',
+        body: 'stream with all file data',
+      });
+      const b = response.data;
+      expect(b.name).toMatch(/^uploads\/.*_stream-all.txt$/);
+      expect(b.url).toBeDefined();
+      const options = FilesController.prototype.createFile.calls.argsFor(0)[4];
+      expect(options.metadata).toEqual({ author: 'test' });
+      expect(options.tags).toEqual({ env: 'test' });
+    });
+
+    it('rejects invalid JSON in metadata header', async () => {
+      const headers = {
+        'Content-Type': 'text/plain',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+        'X-Parse-Upload-Mode': 'stream',
+        'X-Parse-File-Metadata': 'not-json',
+      };
+      try {
+        await request({
+          method: 'POST',
+          headers,
+          url: 'http://localhost:8378/1/files/stream-bad.txt',
+          body: 'should fail',
+        });
+        fail('should have thrown');
+      } catch (error) {
+        expect(error.data.code).toEqual(Parse.Error.INVALID_JSON);
+      }
+    });
+
+    it('rejects invalid JSON in tags header', async () => {
+      const headers = {
+        'Content-Type': 'text/plain',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+        'X-Parse-Upload-Mode': 'stream',
+        'X-Parse-File-Tags': '{bad',
+      };
+      try {
+        await request({
+          method: 'POST',
+          headers,
+          url: 'http://localhost:8378/1/files/stream-bad.txt',
+          body: 'should fail',
+        });
+        fail('should have thrown');
+      } catch (error) {
+        expect(error.data.code).toEqual(Parse.Error.INVALID_JSON);
+      }
+    });
+
+    it('rejects non-object metadata header', async () => {
+      const invalidValues = ['"a string"', '[1,2]', 'null', '42', 'true'];
+      for (const value of invalidValues) {
+        const headers = {
+          'Content-Type': 'text/plain',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+          'X-Parse-Upload-Mode': 'stream',
+          'X-Parse-File-Metadata': value,
+        };
+        try {
+          await request({
+            method: 'POST',
+            headers,
+            url: 'http://localhost:8378/1/files/stream-bad.txt',
+            body: 'should fail',
+          });
+          fail(`should have thrown for metadata: ${value}`);
+        } catch (error) {
+          expect(error.data.code).toEqual(Parse.Error.INVALID_JSON);
+          expect(error.data.error).toBe('Invalid JSON in X-Parse-File-Metadata header.');
+        }
+      }
+    });
+
+    it('rejects non-object tags header', async () => {
+      const invalidValues = ['"a string"', '[1,2]', 'null', '42', 'true'];
+      for (const value of invalidValues) {
+        const headers = {
+          'Content-Type': 'text/plain',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+          'X-Parse-Upload-Mode': 'stream',
+          'X-Parse-File-Tags': value,
+        };
+        try {
+          await request({
+            method: 'POST',
+            headers,
+            url: 'http://localhost:8378/1/files/stream-bad.txt',
+            body: 'should fail',
+          });
+          fail(`should have thrown for tags: ${value}`);
+        } catch (error) {
+          expect(error.data.code).toEqual(Parse.Error.INVALID_JSON);
+          expect(error.data.error).toBe('Invalid JSON in X-Parse-File-Tags header.');
+        }
+      }
     });
 
     it('validates directory - rejects trailing slash', async () => {

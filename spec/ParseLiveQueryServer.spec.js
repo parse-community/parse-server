@@ -1563,11 +1563,8 @@ describe('ParseLiveQueryServer', function () {
   });
 
   describe('class level permissions', () => {
-    it('matches CLP when find is closed', done => {
+    it('rejects CLP when find is closed', async () => {
       const parseLiveQueryServer = new ParseLiveQueryServer({});
-      const acl = new Parse.ACL();
-      acl.setReadAccess(testUserId, true);
-      // Mock sessionTokenCache will return false when sessionToken is undefined
       const client = {
         sessionToken: 'sessionToken',
         getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue({
@@ -1576,27 +1573,19 @@ describe('ParseLiveQueryServer', function () {
       };
       const requestId = 0;
 
-      parseLiveQueryServer
-        ._matchesCLP(
-          {
-            find: {},
-          },
+      await expectAsync(
+        parseLiveQueryServer._matchesCLP(
+          { find: {} },
           { className: 'Yolo' },
           client,
           requestId,
           'find'
         )
-        .then(isMatched => {
-          expect(isMatched).toBe(false);
-          done();
-        });
+      ).toBeRejected();
     });
 
-    it('matches CLP when find is open', done => {
+    it('resolves CLP when find is open', async () => {
       const parseLiveQueryServer = new ParseLiveQueryServer({});
-      const acl = new Parse.ACL();
-      acl.setReadAccess(testUserId, true);
-      // Mock sessionTokenCache will return false when sessionToken is undefined
       const client = {
         sessionToken: 'sessionToken',
         getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue({
@@ -1605,27 +1594,19 @@ describe('ParseLiveQueryServer', function () {
       };
       const requestId = 0;
 
-      parseLiveQueryServer
-        ._matchesCLP(
-          {
-            find: { '*': true },
-          },
+      await expectAsync(
+        parseLiveQueryServer._matchesCLP(
+          { find: { '*': true } },
           { className: 'Yolo' },
           client,
           requestId,
           'find'
         )
-        .then(isMatched => {
-          expect(isMatched).toBe(true);
-          done();
-        });
+      ).toBeResolved();
     });
 
-    it('matches CLP when find is restricted to userIds', done => {
+    it('rejects CLP when find is restricted to userIds', async () => {
       const parseLiveQueryServer = new ParseLiveQueryServer({});
-      const acl = new Parse.ACL();
-      acl.setReadAccess(testUserId, true);
-      // Mock sessionTokenCache will return false when sessionToken is undefined
       const client = {
         sessionToken: 'sessionToken',
         getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue({
@@ -1634,20 +1615,15 @@ describe('ParseLiveQueryServer', function () {
       };
       const requestId = 0;
 
-      parseLiveQueryServer
-        ._matchesCLP(
-          {
-            find: { userId: true },
-          },
+      await expectAsync(
+        parseLiveQueryServer._matchesCLP(
+          { find: { userId: true } },
           { className: 'Yolo' },
           client,
           requestId,
           'find'
         )
-        .then(isMatched => {
-          expect(isMatched).toBe(false);
-          done();
-        });
+      ).toBeRejected();
     });
   });
 

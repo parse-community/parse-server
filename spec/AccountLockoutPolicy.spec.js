@@ -341,6 +341,56 @@ describe('Account Lockout Policy: ', () => {
         done();
       });
   });
+
+  it('should enforce lockout threshold under concurrent failed login attempts', async () => {
+    const threshold = 3;
+    await reconfigureServer({
+      appName: 'lockout race',
+      accountLockout: {
+        duration: 5,
+        threshold,
+      },
+      publicServerURL: 'http://localhost:8378/1',
+    });
+
+    const user = new Parse.User();
+    user.setUsername('race_user');
+    user.setPassword('correct_password');
+    await user.signUp();
+
+    const concurrency = 30;
+    const results = await Promise.all(
+      Array.from({ length: concurrency }, () =>
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/login',
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ username: 'race_user', password: 'wrong_password' }),
+        }).catch(err => err)
+      )
+    );
+
+    const lockoutError =
+      'Your account is locked due to multiple failed login attempts. Please try again after 5 minute(s)';
+    const errors = results.map(r => {
+      const body = typeof r.data === 'string' ? JSON.parse(r.data) : r.data;
+      return body?.error;
+    });
+    const invalidPassword = errors.filter(error => error === 'Invalid username/password.');
+    const lockoutResponses = errors.filter(error => error === lockoutError);
+
+    expect(
+      errors.every(
+        error => error === 'Invalid username/password.' || error === lockoutError
+      )
+    ).toBeTrue();
+    expect(lockoutResponses.length).toBeGreaterThan(0);
+    expect(invalidPassword.length).toBeLessThanOrEqual(threshold);
+  });
 });
 
 describe('lockout with password reset option', () => {

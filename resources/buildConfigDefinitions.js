@@ -22,6 +22,7 @@ const nestedOptionTypes = [
   'PagesOptions',
   'PagesRoute',
   'PasswordPolicyOptions',
+  'RequestComplexityOptions',
   'SecurityOptions',
   'SchemaOptions',
   'LogLevels',
@@ -46,6 +47,7 @@ const nestedOptionEnvPrefix = {
   ParseServerOptions: 'PARSE_SERVER_',
   PasswordPolicyOptions: 'PARSE_SERVER_PASSWORD_POLICY_',
   RateLimitOptions: 'PARSE_SERVER_RATE_LIMIT_',
+  RequestComplexityOptions: 'PARSE_SERVER_REQUEST_COMPLEXITY_',
   SchemaOptions: 'PARSE_SERVER_SCHEMA_',
   SecurityOptions: 'PARSE_SERVER_SECURITY_',
 };

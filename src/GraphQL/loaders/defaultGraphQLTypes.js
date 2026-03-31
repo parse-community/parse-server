@@ -16,6 +16,7 @@ import {
 } from 'graphql';
 import { toGlobalId } from 'graphql-relay';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.js';
+import Utils from '../../Utils';
 
 class TypeValidationError extends Error {
   constructor(value, type) {
@@ -149,7 +150,7 @@ const parseDateIsoValue = value => {
     if (!isNaN(date)) {
       return date;
     }
-  } else if (value instanceof Date) {
+  } else if (Utils.isDate(value)) {
     return value;
   }
 
@@ -160,7 +161,7 @@ const serializeDateIso = value => {
   if (typeof value === 'string') {
     return value;
   }
-  if (value instanceof Date) {
+  if (Utils.isDate(value)) {
     return value.toISOString();
   }
 
@@ -179,7 +180,7 @@ const DATE = new GraphQLScalarType({
   name: 'Date',
   description: 'The Date scalar type is used in operations and types that involve dates.',
   parseValue(value) {
-    if (typeof value === 'string' || value instanceof Date) {
+    if (typeof value === 'string' || Utils.isDate(value)) {
       return {
         __type: 'Date',
         iso: parseDateIsoValue(value),
@@ -194,7 +195,7 @@ const DATE = new GraphQLScalarType({
     throw new TypeValidationError(value, 'Date');
   },
   serialize(value) {
-    if (typeof value === 'string' || value instanceof Date) {
+    if (typeof value === 'string' || Utils.isDate(value)) {
       return serializeDateIso(value);
     } else if (typeof value === 'object' && value.__type === 'Date' && value.iso) {
       return serializeDateIso(value.iso);

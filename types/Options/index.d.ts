@@ -95,6 +95,7 @@ export interface ParseServerOptions {
     preventSignupWithUnverifiedEmail?: boolean;
     emailVerifyTokenValidityDuration?: number;
     emailVerifyTokenReuseIfValid?: boolean;
+    emailVerifySuccessOnInvalidEmail?: boolean;
     sendUserEmailVerification?: boolean | ((params: SendEmailVerificationRequest) => boolean | Promise<boolean>);
     accountLockout?: AccountLockoutOptions;
     passwordPolicy?: PasswordPolicyOptions;
@@ -244,6 +245,7 @@ export interface FileUploadOptions {
 export interface DatabaseOptions {
     // Parse Server custom options
     allowPublicExplain?: boolean;
+    batchSize?: number;
     createIndexRoleName?: boolean;
     createIndexUserEmail?: boolean;
     createIndexUserEmailCaseInsensitive?: boolean;

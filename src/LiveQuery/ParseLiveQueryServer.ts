@@ -20,11 +20,12 @@ import {
 } from '../triggers';
 import { getAuthForSessionToken, Auth } from '../Auth';
 import { getCacheController, getDatabaseController } from '../Controllers';
+import Config from '../Config';
 import { LRUCache as LRU } from 'lru-cache';
 import UserRouter from '../Routers/UsersRouter';
 import DatabaseController from '../Controllers/DatabaseController';
 import { isDeepStrictEqual } from 'util';
-import deepcopy from 'deepcopy';
+
 
 class ParseLiveQueryServer {
   server: any;
@@ -189,7 +190,13 @@ class ParseLiveQueryServer {
     }
 
     for (const subscription of classSubscriptions.values()) {
-      const isSubscriptionMatched = this._matchesSubscription(deletedParseObject, subscription);
+      let isSubscriptionMatched;
+      try {
+        isSubscriptionMatched = this._matchesSubscription(deletedParseObject, subscription);
+      } catch (e) {
+        logger.error(`Failed matching subscription for class ${className}: ${e.message}`);
+        continue;
+      }
       if (!isSubscriptionMatched) {
         continue;
       }
@@ -199,18 +206,23 @@ class ParseLiveQueryServer {
           continue;
         }
         requestIds.forEach(async requestId => {
+          // Deep-clone shared object so each concurrent callback works on its own copy
+          let localDeletedParseObject = JSON.parse(JSON.stringify(deletedParseObject));
           const acl = message.currentParseObject.getACL();
           // Check CLP
           const op = this._getCLPOperation(subscription.query);
           let res: any = {};
           try {
-            await this._matchesCLP(
+            const matchesCLP = await this._matchesCLP(
               classLevelPermissions,
               message.currentParseObject,
               client,
               requestId,
               op
             );
+            if (matchesCLP === false) {
+              return null;
+            }
             const isMatched = await this._matchesACL(acl, client, requestId);
             if (!isMatched) {
               return null;
@@ -218,7 +230,7 @@ class ParseLiveQueryServer {
             res = {
               event: 'delete',
               sessionToken: client.sessionToken,
-              object: deletedParseObject,
+              object: localDeletedParseObject,
               clients: this.clients.size,
               subscriptions: this.subscriptions.size,
               useMasterKey: client.hasMasterKey,
@@ -240,8 +252,9 @@ class ParseLiveQueryServer {
               return;
             }
             if (res.object && typeof res.object.toJSON === 'function') {
-              deletedParseObject = toJSONwithObjects(res.object, res.object.className || className);
+              localDeletedParseObject = toJSONwithObjects(res.object, res.object.className || className);
             }
+            res.object = localDeletedParseObject;
             await this._filterSensitiveData(
               classLevelPermissions,
               res,
@@ -250,7 +263,7 @@ class ParseLiveQueryServer {
               op,
               subscription.query
             );
-            client.pushDelete(requestId, deletedParseObject);
+            client.pushDelete(requestId, res.object);
           } catch (e) {
             const error = resolveError(e);
             Client.pushError(client.parseWebSocket, error.code, error.message, false, requestId);
@@ -285,20 +298,34 @@ class ParseLiveQueryServer {
       return;
     }
     for (const subscription of classSubscriptions.values()) {
-      const isOriginalSubscriptionMatched = this._matchesSubscription(
-        originalParseObject,
-        subscription
-      );
-      const isCurrentSubscriptionMatched = this._matchesSubscription(
-        currentParseObject,
-        subscription
-      );
+      let isOriginalSubscriptionMatched;
+      let isCurrentSubscriptionMatched;
+      try {
+        isOriginalSubscriptionMatched = this._matchesSubscription(
+          originalParseObject,
+          subscription
+        );
+        isCurrentSubscriptionMatched = this._matchesSubscription(
+          currentParseObject,
+          subscription
+        );
+      } catch (e) {
+        logger.error(`Failed matching subscription for class ${className}: ${e.message}`);
+        continue;
+      }
       for (const [clientId, requestIds] of _.entries(subscription.clientRequestIds)) {
         const client = this.clients.get(clientId);
         if (typeof client === 'undefined') {
           continue;
         }
         requestIds.forEach(async requestId => {
+          // Deep-clone shared objects so each concurrent callback works on its own copy.
+          // Without cloning, _filterSensitiveData's in-place field deletion and afterEvent
+          // trigger modifications corrupt the shared state across concurrent subscribers.
+          let localCurrentParseObject = JSON.parse(JSON.stringify(currentParseObject));
+          let localOriginalParseObject = originalParseObject
+            ? JSON.parse(JSON.stringify(originalParseObject))
+            : null;
           // Set orignal ParseObject ACL checking promise, if the object does not match
           // subscription, we do not need to check ACL
           let originalACLCheckingPromise;
@@ -323,21 +350,24 @@ class ParseLiveQueryServer {
           }
           try {
             const op = this._getCLPOperation(subscription.query);
-            await this._matchesCLP(
+            const matchesCLP = await this._matchesCLP(
               classLevelPermissions,
               message.currentParseObject,
               client,
               requestId,
               op
             );
+            if (matchesCLP === false) {
+              return;
+            }
             const [isOriginalMatched, isCurrentMatched] = await Promise.all([
               originalACLCheckingPromise,
               currentACLCheckingPromise,
             ]);
             logger.verbose(
               'Original %j | Current %j | Match: %s, %s, %s, %s | Query: %s',
-              originalParseObject,
-              currentParseObject,
+              localOriginalParseObject,
+              localCurrentParseObject,
               isOriginalSubscriptionMatched,
               isCurrentSubscriptionMatched,
               isOriginalMatched,
@@ -351,7 +381,7 @@ class ParseLiveQueryServer {
             } else if (isOriginalMatched && !isCurrentMatched) {
               type = 'leave';
             } else if (!isOriginalMatched && isCurrentMatched) {
-              if (originalParseObject) {
+              if (localOriginalParseObject) {
                 type = 'enter';
               } else {
                 type = 'create';
@@ -366,8 +396,8 @@ class ParseLiveQueryServer {
             res = {
               event: type,
               sessionToken: client.sessionToken,
-              object: currentParseObject,
-              original: originalParseObject,
+              object: localCurrentParseObject,
+              original: localOriginalParseObject,
               clients: this.clients.size,
               subscriptions: this.subscriptions.size,
               useMasterKey: client.hasMasterKey,
@@ -392,14 +422,16 @@ class ParseLiveQueryServer {
               return;
             }
             if (res.object && typeof res.object.toJSON === 'function') {
-              currentParseObject = toJSONwithObjects(res.object, res.object.className || className);
+              localCurrentParseObject = toJSONwithObjects(res.object, res.object.className || className);
             }
             if (res.original && typeof res.original.toJSON === 'function') {
-              originalParseObject = toJSONwithObjects(
+              localOriginalParseObject = toJSONwithObjects(
                 res.original,
                 res.original.className || className
               );
             }
+            res.object = localCurrentParseObject;
+            res.original = localOriginalParseObject;
             await this._filterSensitiveData(
               classLevelPermissions,
               res,
@@ -410,7 +442,7 @@ class ParseLiveQueryServer {
             );
             const functionName = 'push' + res.event.charAt(0).toUpperCase() + res.event.slice(1);
             if (client[functionName]) {
-              client[functionName](requestId, currentParseObject, originalParseObject);
+              client[functionName](requestId, res.object, res.original ?? null);
             }
           } catch (e) {
             const error = resolveError(e);
@@ -519,12 +551,57 @@ class ParseLiveQueryServer {
     });
   }
 
+  _validateQueryConstraints(where: any): void {
+    if (typeof where !== 'object' || where === null) {
+      return;
+    }
+    for (const op of ['$or', '$and', '$nor']) {
+      if (where[op] !== undefined && !Array.isArray(where[op])) {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, `${op} must be an array`);
+      }
+      if (Array.isArray(where[op])) {
+        where[op].forEach((subQuery: any) => {
+          this._validateQueryConstraints(subQuery);
+        });
+      }
+    }
+    for (const key of Object.keys(where)) {
+      const constraint = where[key];
+      if (typeof constraint === 'object' && constraint !== null) {
+        if (constraint.$regex !== undefined) {
+          const regex = constraint.$regex;
+          const isRegExpLike =
+            regex !== null &&
+            typeof regex === 'object' &&
+            typeof regex.source === 'string' &&
+            typeof regex.flags === 'string';
+          if (typeof regex !== 'string' && !isRegExpLike) {
+            throw new Parse.Error(
+              Parse.Error.INVALID_QUERY,
+              'Invalid regular expression: $regex must be a string or RegExp'
+            );
+          }
+          const pattern = isRegExpLike ? regex.source : regex;
+          const flags = isRegExpLike ? regex.flags : constraint.$options || '';
+          try {
+            new RegExp(pattern, flags);
+          } catch (e) {
+            throw new Parse.Error(
+              Parse.Error.INVALID_QUERY,
+              `Invalid regular expression: ${e.message}`
+            );
+          }
+        }
+      }
+    }
+  }
+
   _matchesSubscription(parseObject: any, subscription: any): boolean {
     // Object is undefined or null, not match
     if (!parseObject) {
       return false;
     }
-    return matchesQuery(deepcopy(parseObject), subscription.query);
+    return matchesQuery(structuredClone(parseObject), subscription.query);
   }
 
   async _clearCachedRoles(userId: string) {
@@ -590,39 +667,82 @@ class ParseLiveQueryServer {
     requestId?: number,
     op?: string
   ): Promise<any> {
-    // try to match on user first, less expensive than with roles
     const subscriptionInfo = client.getSubscriptionInfo(requestId);
     const aclGroup = ['*'];
     let userId;
     if (typeof subscriptionInfo !== 'undefined') {
-      const { userId } = await this.getAuthForSessionToken(subscriptionInfo.sessionToken);
+      const result = await this.getAuthForSessionToken(subscriptionInfo.sessionToken);
+      userId = result.userId;
       if (userId) {
         aclGroup.push(userId);
       }
     }
-    try {
-      await SchemaController.validatePermission(
-        classLevelPermissions,
-        object.className,
-        aclGroup,
-        op
-      );
-      return true;
-    } catch (e) {
-      logger.verbose(`Failed matching CLP for ${object.id} ${userId} ${e}`);
-      return false;
+    await SchemaController.validatePermission(
+      classLevelPermissions,
+      object.className,
+      aclGroup,
+      op
+    );
+    // Enforce pointer permissions that validatePermission defers.
+    // Returns false to silently skip the event (like ACL), rather than
+    // throwing which would push errors to the client and log noise.
+    if (!client.hasMasterKey && classLevelPermissions) {
+      const permissionField =
+        ['get', 'find', 'count'].indexOf(op) > -1 ? 'readUserFields' : 'writeUserFields';
+      const pointerFields = [];
+      if (classLevelPermissions[op]?.pointerFields) {
+        pointerFields.push(...classLevelPermissions[op].pointerFields);
+      }
+      if (Array.isArray(classLevelPermissions[permissionField])) {
+        for (const field of classLevelPermissions[permissionField]) {
+          if (!pointerFields.includes(field)) {
+            pointerFields.push(field);
+          }
+        }
+      }
+      if (pointerFields.length > 0) {
+        // If public or user-specific permission already grants access, skip pointer check
+        if (
+          !SchemaController.testPermissions(classLevelPermissions, aclGroup, op)
+        ) {
+          if (!userId) {
+            return false;
+          }
+          // Check if any pointer field points to the current user
+          const hasAccess = pointerFields.some(field => {
+            const value =
+              typeof object.get === 'function' ? object.get(field) : object[field];
+            if (!value) {
+              return false;
+            }
+            // Handle Parse.Object pointer (has .id)
+            if (value.id) {
+              return value.id === userId;
+            }
+            // Handle raw pointer JSON (has .objectId)
+            if (value.objectId) {
+              return value.objectId === userId;
+            }
+            // Handle array of pointers
+            if (Array.isArray(value)) {
+              return value.some(item => {
+                if (item.id) {
+                  return item.id === userId;
+                }
+                if (item.objectId) {
+                  return item.objectId === userId;
+                }
+                return false;
+              });
+            }
+            return false;
+          });
+          if (!hasAccess) {
+            return false;
+          }
+        }
+      }
     }
-    // TODO: handle roles permissions
-    // Object.keys(classLevelPermissions).forEach((key) => {
-    //   const perm = classLevelPermissions[key];
-    //   Object.keys(perm).forEach((key) => {
-    //     if (key.indexOf('role'))
-    //   });
-    // })
-    // // it's rejected here, check the roles
-    // var rolesQuery = new Parse.Query(Parse.Role);
-    // rolesQuery.equalTo("users", user);
-    // return rolesQuery.find({useMasterKey:true});
   }
 
   async _filterSensitiveData(
@@ -648,7 +768,9 @@ class ParseLiveQueryServer {
         return;
       }
       let protectedFields = classLevelPermissions?.protectedFields || [];
-      if (!client.hasMasterKey && !Array.isArray(protectedFields)) {
+      if (client.hasMasterKey) {
+        protectedFields = [];
+      } else if (!Array.isArray(protectedFields)) {
         protectedFields = getDatabaseController(this.config).addProtectedFields(
           classLevelPermissions,
           res.object.className,
@@ -667,7 +789,7 @@ class ParseLiveQueryServer {
         res.object.className,
         protectedFields,
         obj,
-        query
+        this.config.protectedFieldsOwnerExempt
       );
     };
     res.object = filter(res.object);
@@ -907,6 +1029,115 @@ class ParseLiveQueryServer {
           return;
         }
       }
+      // Validate query condition depth
+      const appConfig = Config.get(this.config.appId);
+      if (!client.hasMasterKey) {
+        const rc = appConfig.requestComplexity;
+        if (rc && rc.queryDepth !== -1) {
+          const maxDepth = rc.queryDepth;
+          const checkDepth = (where: any, depth: number) => {
+            if (depth > maxDepth) {
+              throw new Parse.Error(
+                Parse.Error.INVALID_QUERY,
+                `Query condition nesting depth exceeds maximum allowed depth of ${maxDepth}`
+              );
+            }
+            if (typeof where !== 'object' || where === null) {
+              return;
+            }
+            for (const op of ['$or', '$and', '$nor']) {
+              if (where[op] !== undefined && !Array.isArray(where[op])) {
+                throw new Parse.Error(Parse.Error.INVALID_QUERY, `${op} must be an array`);
+              }
+              if (Array.isArray(where[op])) {
+                for (const subQuery of where[op]) {
+                  checkDepth(subQuery, depth + 1);
+                }
+              }
+            }
+          };
+          checkDepth(request.query.where, 0);
+        }
+      }
+
+      // Check CLP for subscribe operation
+      const schemaController = await appConfig.database.loadSchema();
+      const classLevelPermissions = schemaController.getClassLevelPermissions(className);
+      const op = this._getCLPOperation(request.query);
+      const aclGroup = ['*'];
+      if (!authCalled) {
+        const auth = await this.getAuthFromClient(
+          client,
+          request.requestId,
+          request.sessionToken
+        );
+        authCalled = true;
+        if (auth && auth.user) {
+          request.user = auth.user;
+          aclGroup.push(auth.user.id);
+        }
+      } else if (request.user) {
+        aclGroup.push(request.user.id);
+      }
+      await SchemaController.validatePermission(
+        classLevelPermissions,
+        className,
+        aclGroup,
+        op
+      );
+
+      // Check protected fields in WHERE clause and WATCH parameter
+      if (!client.hasMasterKey) {
+        const auth = request.user ? { user: request.user, userRoles: [] } : {};
+        const protectedFields =
+          appConfig.database.addProtectedFields(
+            classLevelPermissions,
+            className,
+            request.query.where,
+            aclGroup,
+            auth
+          ) || [];
+        if (protectedFields.length > 0 && request.query.where) {
+          const checkWhere = (where: any) => {
+            if (typeof where !== 'object' || where === null) {
+              return;
+            }
+            for (const whereKey of Object.keys(where)) {
+              const rootField = whereKey.split('.')[0];
+              if (protectedFields.includes(whereKey) || protectedFields.includes(rootField)) {
+                throw new Parse.Error(
+                  Parse.Error.OPERATION_FORBIDDEN,
+                  'Permission denied'
+                );
+              }
+            }
+            for (const op of ['$or', '$and', '$nor']) {
+              if (where[op] !== undefined && !Array.isArray(where[op])) {
+                throw new Parse.Error(Parse.Error.INVALID_QUERY, `${op} must be an array`);
+              }
+              if (Array.isArray(where[op])) {
+                where[op].forEach((subQuery: any) => checkWhere(subQuery));
+              }
+            }
+          };
+          checkWhere(request.query.where);
+        }
+        if (protectedFields.length > 0 && Array.isArray(request.query.watch)) {
+          for (const watchField of request.query.watch) {
+            const rootField = watchField.split('.')[0];
+            if (protectedFields.includes(watchField) || protectedFields.includes(rootField)) {
+              throw new Parse.Error(
+                Parse.Error.OPERATION_FORBIDDEN,
+                'Permission denied'
+              );
+            }
+          }
+        }
+      }
+
+      // Validate regex patterns in the subscription query
+      this._validateQueryConstraints(request.query.where);
+
       // Get subscription from subscriptions, create one if necessary
       const subscriptionHash = queryHash(request.query);
       // Add className to subscriptions if necessary

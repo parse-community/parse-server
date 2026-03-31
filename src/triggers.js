@@ -1,6 +1,7 @@
 // triggers.js
 import Parse from 'parse/node';
 import { logger } from './logger';
+import Utils from './Utils';
 
 export const Types = {
   beforeLogin: 'beforeLogin',
@@ -20,18 +21,28 @@ export const Types = {
 
 const ConnectClassName = '@Connect';
 
+/**
+ * Creates a prototype-free object for use as a lookup store.
+ * This prevents prototype chain properties (e.g. `constructor`, `toString`)
+ * from being resolved as registered handlers when using bracket notation
+ * for lookups. Always use this instead of `{}` for handler stores.
+ */
+function createStore() {
+  return Object.create(null);
+}
+
 const baseStore = function () {
   const Validators = Object.keys(Types).reduce(function (base, key) {
-    base[key] = {};
+    base[key] = createStore();
     return base;
-  }, {});
-  const Functions = {};
-  const Jobs = {};
+  }, createStore());
+  const Functions = createStore();
+  const Jobs = createStore();
   const LiveQuery = [];
   const Triggers = Object.keys(Types).reduce(function (base, key) {
-    base[key] = {};
+    base[key] = createStore();
     return base;
-  }, {});
+  }, createStore());
 
   return Object.freeze({
     Functions,
@@ -77,7 +88,7 @@ function validateClassNameForTriggers(className, type) {
   return className;
 }
 
-const _triggerStore = {};
+const _triggerStore = Object.create(null);
 
 const Category = {
   Functions: 'Functions',
@@ -90,7 +101,7 @@ function getStore(category, name, applicationId) {
   const invalidNameRegex = /['"`]/;
   if (invalidNameRegex.test(name)) {
     // Prevent a malicious user from injecting properties into the store
-    return {};
+    return createStore();
   }
 
   const path = name.split('.');
@@ -99,9 +110,12 @@ function getStore(category, name, applicationId) {
   _triggerStore[applicationId] = _triggerStore[applicationId] || baseStore();
   let store = _triggerStore[applicationId][category];
   for (const component of path) {
+    if (!Object.prototype.hasOwnProperty.call(store, component)) {
+      return createStore();
+    }
     store = store[component];
-    if (!store) {
-      return {};
+    if (!store || Object.getPrototypeOf(store) !== null) {
+      return createStore();
     }
   }
   return store;
@@ -127,6 +141,9 @@ function remove(category, name, applicationId) {
 function get(category, name, applicationId) {
   const lastComponent = name.split('.').splice(-1);
   const store = getStore(category, name, applicationId);
+  if (!Object.prototype.hasOwnProperty.call(store, lastComponent)) {
+    return undefined;
+  }
   return store[lastComponent];
 }
 
@@ -268,6 +285,7 @@ export function getRequestObject(
     triggerName: triggerType,
     object: parseObject,
     master: false,
+    isReadOnly: false,
     log: config.loggerController,
     headers: config.headers,
     ip: config.ip,
@@ -292,7 +310,7 @@ export function getRequestObject(
     triggerType === Types.afterFind
   ) {
     // Set a copy of the context on the request object.
-    request.context = Object.assign({}, context);
+    request.context = Object.assign(Object.create(null), context);
   }
 
   if (!auth) {
@@ -300,6 +318,9 @@ export function getRequestObject(
   }
   if (auth.isMaster) {
     request['master'] = true;
+  }
+  if (auth.isReadOnly) {
+    request['isReadOnly'] = true;
   }
   if (auth.user) {
     request['user'] = auth.user;
@@ -317,6 +338,7 @@ export function getRequestQueryObject(triggerType, auth, query, count, config, c
     triggerName: triggerType,
     query,
     master: false,
+    isReadOnly: false,
     count,
     log: config.loggerController,
     isGet,
@@ -331,6 +353,9 @@ export function getRequestQueryObject(triggerType, auth, query, count, config, c
   }
   if (auth.isMaster) {
     request['master'] = true;
+  }
+  if (auth.isReadOnly) {
+    request['isReadOnly'] = true;
   }
   if (auth.user) {
     request['user'] = auth.user;
@@ -688,7 +713,7 @@ export function resolveError(message, defaultOpts) {
     return new Parse.Error(code, message);
   }
   const error = new Parse.Error(code, message.message || message);
-  if (message instanceof Error) {
+  if (Utils.isNativeError(message)) {
     error.stack = message.stack;
   }
   return error;
@@ -1019,6 +1044,7 @@ export function getRequestFileObject(triggerType, auth, fileObject, config) {
     ...fileObject,
     triggerName: triggerType,
     master: false,
+    isReadOnly: false,
     log: config.loggerController,
     headers: config.headers,
     ip: config.ip,
@@ -1030,6 +1056,9 @@ export function getRequestFileObject(triggerType, auth, fileObject, config) {
   }
   if (auth.isMaster) {
     request['master'] = true;
+  }
+  if (auth.isReadOnly) {
+    request['isReadOnly'] = true;
   }
   if (auth.user) {
     request['user'] = auth.user;
@@ -1053,6 +1082,9 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
       const result = await fileTrigger(request);
       if (request.forceDownload) {
         fileObject.forceDownload = true;
+      }
+      if (request.responseHeaders) {
+        fileObject.responseHeaders = request.responseHeaders;
       }
       logTriggerSuccessBeforeHook(
         triggerType,

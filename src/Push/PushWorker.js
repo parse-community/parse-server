@@ -1,6 +1,4 @@
 // @flow
-// @flow-disable-next
-import deepcopy from 'deepcopy';
 import AdaptableController from '../Controllers/AdaptableController';
 import { master } from '../Auth';
 import Config from '../Config';
@@ -91,7 +89,7 @@ export class PushWorker {
 
     // Map the on the badges count and return the send result
     const promises = Object.keys(badgeInstallationsMap).map(badge => {
-      const payload = deepcopy(body);
+      const payload = structuredClone(body);
       payload.data.badge = parseInt(badge);
       const installations = badgeInstallationsMap[badge];
       return this.sendToAdapter(payload, installations, pushStatus, config, UTCOffset);

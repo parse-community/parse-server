@@ -9,7 +9,8 @@ var batch = require('./batch'),
   fs = require('fs');
 
 import { ParseServerOptions, LiveQueryServerOptions } from './Options';
-import defaults from './defaults';
+import { setRegexTimeout } from './LiveQuery/QueryTools';
+import defaults, { DatabaseOptionDefaults } from './defaults';
 import * as logging from './logger';
 import Config from './Config';
 import PromiseRouter from './PromiseRouter';
@@ -137,6 +138,8 @@ class ParseServer {
     this.config = Config.put(Object.assign({}, options, allControllers));
     this.config.masterKeyIpsStore = new Map();
     this.config.maintenanceKeyIpsStore = new Map();
+    this.config.readOnlyMasterKeyIpsStore = new Map();
+    setRegexTimeout(options.liveQuery?.regexTimeout);
     logging.setLogger(allControllers.loggerController);
   }
 
@@ -342,7 +345,7 @@ class ParseServer {
     }
     api.use(middlewares.handleParseSession);
     this.applyRequestContextMiddleware(api, options);
-    const appRouter = ParseServer.promiseRouter({ appId });
+    const appRouter = ParseServer.promiseRouter({ appId, options });
     api.use(appRouter.expressRouter());
 
     api.use(middlewares.handleParseErrors);
@@ -375,7 +378,7 @@ class ParseServer {
     return api;
   }
 
-  static promiseRouter({ appId }) {
+  static promiseRouter({ appId, options }) {
     const routers = [
       new ClassesRouter(),
       new UsersRouter(),
@@ -387,7 +390,6 @@ class ParseServer {
       new SchemasRouter(),
       new PushRouter(),
       new LogsRouter(),
-      new IAPValidationRouter(),
       new FeaturesRouter(),
       new GlobalConfigRouter(),
       new GraphQLRouter(),
@@ -398,6 +400,10 @@ class ParseServer {
       new AggregateRouter(),
       new SecurityRouter(),
     ];
+
+    if (options?.enableProductPurchaseLegacyApi !== false) {
+      routers.push(new IAPValidationRouter());
+    }
 
     const routes = routers.reduce((memo, router) => {
       return memo.concat(router.routes);
@@ -458,6 +464,9 @@ class ParseServer {
 
       if (options.mountPlayground) {
         parseGraphQLServer.applyPlayground(app);
+        logging.getLogger().warn(
+          'GraphQL Playground is deprecated and will be removed in a future version. It exposes the master key in the browser. Use Parse Dashboard as GraphQL IDE or configure a third-party GraphQL client with custom request headers.'
+        );
       }
     }
     const server = await new Promise(resolve => {
@@ -593,6 +602,22 @@ function injectDefaults(options: ParseServerOptions) {
     }
   });
 
+  // Inject defaults for database options; only when no explicit database adapter is set,
+  // because an explicit adapter manages its own options and passing databaseOptions alongside
+  // it would cause a conflict error in getDatabaseController.
+  if (!options.databaseAdapter) {
+    if (options.databaseOptions == null) {
+      options.databaseOptions = {};
+    }
+    if (typeof options.databaseOptions === 'object' && !Array.isArray(options.databaseOptions)) {
+      Object.keys(DatabaseOptionDefaults).forEach(key => {
+        if (!Object.prototype.hasOwnProperty.call(options.databaseOptions, key)) {
+          options.databaseOptions[key] = DatabaseOptionDefaults[key];
+        }
+      });
+    }
+  }
+
   if (!Object.prototype.hasOwnProperty.call(options, 'serverURL')) {
     options.serverURL = `http://localhost:${options.port}${options.mountPath}`;
   }
@@ -641,6 +666,9 @@ function injectDefaults(options: ParseServerOptions) {
       options.protectedFields[c] = defaults.protectedFields[c];
     } else {
       Object.keys(defaults.protectedFields[c]).forEach(r => {
+        if (options.protectedFields[c][r] && options.protectedFieldsOwnerExempt === false) {
+          return;
+        }
         const unq = new Set([
           ...(options.protectedFields[c][r] || []),
           ...defaults.protectedFields[c][r],

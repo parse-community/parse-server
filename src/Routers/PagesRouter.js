@@ -84,7 +84,7 @@ export class PagesRouter extends PromiseRouter {
   verifyEmail(req) {
     const config = req.config;
     const { token: rawToken } = req.query;
-    const token = rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
+    const token = typeof rawToken === 'string' ? rawToken : undefined;
 
     if (!config) {
       this.invalidRequest();
@@ -108,7 +108,8 @@ export class PagesRouter extends PromiseRouter {
   resendVerificationEmail(req) {
     const config = req.config;
     const username = req.body?.username;
-    const token = req.body?.token;
+    const rawToken = req.body?.token;
+    const token = typeof rawToken === 'string' ? rawToken : undefined;
 
     if (!config) {
       this.invalidRequest();
@@ -119,12 +120,16 @@ export class PagesRouter extends PromiseRouter {
     }
 
     const userController = config.userController;
+    const suppressError = config.emailVerifySuccessOnInvalidEmail ?? true;
 
     return userController.resendVerificationEmail(username, req, token).then(
       () => {
         return this.goToPage(req, pages.emailVerificationSendSuccess);
       },
       () => {
+        if (suppressError) {
+          return this.goToPage(req, pages.emailVerificationSendSuccess);
+        }
         return this.goToPage(req, pages.emailVerificationSendFail);
       }
     );
@@ -150,7 +155,7 @@ export class PagesRouter extends PromiseRouter {
     }
 
     const { token: rawToken } = req.query;
-    const token = rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
+    const token = typeof rawToken === 'string' ? rawToken : undefined;
 
     if (!token) {
       return this.goToPage(req, pages.passwordResetLinkInvalid);
@@ -179,7 +184,7 @@ export class PagesRouter extends PromiseRouter {
     }
 
     const { new_password, token: rawToken } = req.body || {};
-    const token = rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
+    const token = typeof rawToken === 'string' ? rawToken : undefined;
 
     if ((!token || !new_password) && req.xhr === false) {
       return this.goToPage(req, pages.passwordResetLinkInvalid);
@@ -443,7 +448,7 @@ export class PagesRouter extends PromiseRouter {
         : Object.prototype.toString.call(this.pagesConfig.placeholders) === '[object Object]'
           ? this.pagesConfig.placeholders
           : {};
-    if (configPlaceholders instanceof Promise) {
+    if (Utils.isPromise(configPlaceholders)) {
       configPlaceholders = await configPlaceholders;
     }
 
@@ -454,13 +459,7 @@ export class PagesRouter extends PromiseRouter {
 
     // Add placeholders in header to allow parsing for programmatic use
     // of response, instead of having to parse the HTML content.
-    const encode = this.pagesConfig.encodePageParamHeaders;
-    const headers = Object.entries(params).reduce((m, p) => {
-      if (p[1] !== undefined) {
-        m[`${pageParamHeaderPrefix}${p[0].toLowerCase()}`] = encode ? encodeURIComponent(p[1]) : p[1];
-      }
-      return m;
-    }, {});
+    const headers = this.composePageParamHeaders(params);
 
     return { text: data, headers: headers };
   }
@@ -501,7 +500,7 @@ export class PagesRouter extends PromiseRouter {
     const normalizedPath = path.normalize(filePath);
 
     // Abort if the path is outside of the path directory scope
-    if (!normalizedPath.startsWith(this.pagesPath)) {
+    if (!normalizedPath.startsWith(this.pagesPath + path.sep)) {
       throw errors.fileOutsideAllowedScope;
     }
 
@@ -551,7 +550,39 @@ export class PagesRouter extends PromiseRouter {
       (req.body || {})[pageParams.locale] ||
       (req.params || {})[pageParams.locale] ||
       (req.headers || {})[pageParamHeaderPrefix + pageParams.locale];
+
+    // Validate locale format to prevent path traversal; only allow
+    // standard locale patterns like "en", "en-US", "de-AT", "zh-Hans-CN"
+    if (locale !== undefined && typeof locale !== 'string') {
+      return undefined;
+    }
+    if (typeof locale === 'string' && !/^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,8})*$/.test(locale)) {
+      return undefined;
+    }
     return locale;
+  }
+
+  /**
+   * Composes page parameter headers from the given parameters. Control
+   * characters are always stripped from header values to prevent
+   * ERR_INVALID_CHAR errors. Values are URI-encoded if the
+   * `encodePageParamHeaders` option is enabled.
+   * @param {Object} params The parameters to include in the headers.
+   * @returns {Object} The headers object.
+   */
+  composePageParamHeaders(params) {
+    const encode = this.pagesConfig.encodePageParamHeaders;
+    return Object.entries(params).reduce((m, p) => {
+      if (p[1] !== undefined) {
+        let value = encode ? encodeURIComponent(p[1]) : p[1];
+        if (typeof value === 'string') {
+          // eslint-disable-next-line no-control-regex
+          value = value.replace(/[\x00-\x1f\x7f]/g, '');
+        }
+        m[`${pageParamHeaderPrefix}${p[0].toLowerCase()}`] = value;
+      }
+      return m;
+    }, {});
   }
 
   /**
@@ -577,13 +608,7 @@ export class PagesRouter extends PromiseRouter {
 
     // Add parameters to header to allow parsing for programmatic use
     // of response, instead of having to parse the HTML content.
-    const encode = this.pagesConfig.encodePageParamHeaders;
-    const headers = Object.entries(params).reduce((m, p) => {
-      if (p[1] !== undefined) {
-        m[`${pageParamHeaderPrefix}${p[0].toLowerCase()}`] = encode ? encodeURIComponent(p[1]) : p[1];
-      }
-      return m;
-    }, {});
+    const headers = this.composePageParamHeaders(params);
 
     return {
       status: 303,

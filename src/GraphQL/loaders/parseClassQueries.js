@@ -1,13 +1,13 @@
 import { GraphQLNonNull } from 'graphql';
 import { fromGlobalId } from 'graphql-relay';
 import getFieldNames from 'graphql-list-fields';
-import deepcopy from 'deepcopy';
+
 import pluralize from 'pluralize';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import * as objectsQueries from '../helpers/objectsQueries';
 import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLController';
 import { transformClassNameToGraphQL } from '../transformers/className';
-import { extractKeysAndInclude } from '../parseGraphQLUtils';
+import { extractKeysAndInclude, cloneArgs } from '../parseGraphQLUtils';
 
 const getParseClassQueryConfig = function (parseClassConfig: ?ParseGraphQLClassConfig) {
   return (parseClassConfig && parseClassConfig.query) || {};
@@ -75,7 +75,7 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
           return await getQuery(
             parseClass,
             _source,
-            deepcopy(args),
+            cloneArgs(args),
             context,
             queryInfo,
             parseGraphQLSchema.parseClasses
@@ -99,7 +99,7 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
       async resolve(_source, args, context, queryInfo) {
         try {
           // Deep copy args to avoid internal re assign issue
-          const { where, order, skip, first, after, last, before, options } = deepcopy(args);
+          const { where, order, skip, first, after, last, before, options } = cloneArgs(args);
           const { readPreference, includeReadPreference, subqueryReadPreference } = options || {};
           const { config, auth, info } = context;
           const selectedFields = getFieldNames(queryInfo);

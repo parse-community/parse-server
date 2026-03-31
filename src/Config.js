@@ -14,14 +14,17 @@ import {
   DatabaseOptions,
   FileUploadOptions,
   IdempotencyOptions,
+  LiveQueryOptions,
   LogLevels,
   PagesOptions,
   ParseServerOptions,
   SchemaOptions,
+  RequestComplexityOptions,
   SecurityOptions,
 } from './Options/Definitions';
 import ParseServer from './cloud-code/Parse.Server';
 import Deprecator from './Deprecator/Deprecator';
+import Utils from './Utils';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -118,6 +121,7 @@ export class Config {
     maintenanceKey,
     maintenanceKeyIps,
     readOnlyMasterKey,
+    readOnlyMasterKeyIps,
     allowHeaders,
     idempotencyOptions,
     fileUpload,
@@ -133,6 +137,8 @@ export class Config {
     databaseOptions,
     extendSessionOnUse,
     allowClientClassCreation,
+    requestComplexity,
+    liveQuery,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -158,6 +164,7 @@ export class Config {
     this.validateSessionConfiguration(sessionLength, expireInactiveSessions);
     this.validateIps('masterKeyIps', masterKeyIps);
     this.validateIps('maintenanceKeyIps', maintenanceKeyIps);
+    this.validateIps('readOnlyMasterKeyIps', readOnlyMasterKeyIps);
     this.validateDefaultLimit(defaultLimit);
     this.validateMaxLimit(maxLimit);
     this.validateAllowHeaders(allowHeaders);
@@ -174,6 +181,8 @@ export class Config {
     this.validateDatabaseOptions(databaseOptions);
     this.validateCustomPages(customPages);
     this.validateAllowClientClassCreation(allowClientClassCreation);
+    this.validateRequestComplexity(requestComplexity);
+    this.validateLiveQueryOptions(liveQuery);
   }
 
   static validateCustomPages(customPages) {
@@ -192,6 +201,7 @@ export class Config {
     _publicServerURL,
     emailVerifyTokenValidityDuration,
     emailVerifyTokenReuseIfValid,
+    emailVerifySuccessOnInvalidEmail,
   }) {
     const emailAdapter = userController.adapter;
     if (verifyUserEmails) {
@@ -201,6 +211,7 @@ export class Config {
         publicServerURL: publicServerURL || _publicServerURL,
         emailVerifyTokenValidityDuration,
         emailVerifyTokenReuseIfValid,
+        emailVerifySuccessOnInvalidEmail,
       });
     }
   }
@@ -336,7 +347,7 @@ export class Config {
     }
     if (pages.customRoutes === undefined) {
       pages.customRoutes = PagesOptions.customRoutes.default;
-    } else if (!(pages.customRoutes instanceof Array)) {
+    } else if (!Array.isArray(pages.customRoutes)) {
       throw 'Parse Server option pages.customRoutes must be an array.';
     }
     if (pages.encodePageParamHeaders === undefined) {
@@ -359,7 +370,7 @@ export class Config {
     }
     if (!idempotencyOptions.paths) {
       idempotencyOptions.paths = IdempotencyOptions.paths.default;
-    } else if (!(idempotencyOptions.paths instanceof Array)) {
+    } else if (!Array.isArray(idempotencyOptions.paths)) {
       throw 'idempotency paths must be of an array of strings';
     }
   }
@@ -410,7 +421,7 @@ export class Config {
       if (passwordPolicy.validatorPattern) {
         if (typeof passwordPolicy.validatorPattern === 'string') {
           passwordPolicy.validatorPattern = new RegExp(passwordPolicy.validatorPattern);
-        } else if (!(passwordPolicy.validatorPattern instanceof RegExp)) {
+        } else if (!Utils.isRegExp(passwordPolicy.validatorPattern)) {
           throw 'passwordPolicy.validatorPattern must be a regex string or RegExp object.';
         }
       }
@@ -449,11 +460,12 @@ export class Config {
       }
 
       if (
-        passwordPolicy.resetPasswordSuccessOnInvalidEmail &&
+        passwordPolicy.resetPasswordSuccessOnInvalidEmail !== undefined &&
         typeof passwordPolicy.resetPasswordSuccessOnInvalidEmail !== 'boolean'
       ) {
         throw 'resetPasswordSuccessOnInvalidEmail must be a boolean value';
       }
+
     }
   }
 
@@ -496,6 +508,7 @@ export class Config {
     publicServerURL,
     emailVerifyTokenValidityDuration,
     emailVerifyTokenReuseIfValid,
+    emailVerifySuccessOnInvalidEmail,
   }) {
     if (!emailAdapter) {
       throw 'An emailAdapter is required for e-mail verification and password resets.';
@@ -517,11 +530,14 @@ export class Config {
     if (emailVerifyTokenReuseIfValid && !emailVerifyTokenValidityDuration) {
       throw 'You cannot use emailVerifyTokenReuseIfValid without emailVerifyTokenValidityDuration';
     }
+    if (emailVerifySuccessOnInvalidEmail !== undefined && typeof emailVerifySuccessOnInvalidEmail !== 'boolean') {
+      throw 'emailVerifySuccessOnInvalidEmail must be a boolean value';
+    }
   }
 
   static validateFileUploadOptions(fileUpload) {
     try {
-      if (fileUpload == null || typeof fileUpload !== 'object' || fileUpload instanceof Array) {
+      if (fileUpload == null || typeof fileUpload !== 'object' || Array.isArray(fileUpload)) {
         throw 'fileUpload must be an object value.';
       }
     } catch (e) {
@@ -623,6 +639,31 @@ export class Config {
     }
   }
 
+  static validateRequestComplexity(requestComplexity) {
+    if (requestComplexity == null) {
+      return;
+    }
+    if (typeof requestComplexity !== 'object' || Array.isArray(requestComplexity)) {
+      throw new Error('requestComplexity must be an object.');
+    }
+    const validKeys = Object.keys(RequestComplexityOptions);
+    for (const key of Object.keys(requestComplexity)) {
+      if (!validKeys.includes(key)) {
+        throw new Error(`requestComplexity contains unknown property '${key}'.`);
+      }
+    }
+    for (const key of validKeys) {
+      if (requestComplexity[key] !== undefined) {
+        const value = requestComplexity[key];
+        if (!Number.isInteger(value) || (value < 1 && value !== -1)) {
+          throw new Error(`requestComplexity.${key} must be a positive integer or -1 to disable.`);
+        }
+      } else {
+        requestComplexity[key] = RequestComplexityOptions[key].default;
+      }
+    }
+  }
+
   static validateAllowHeaders(allowHeaders) {
     if (![null, undefined].includes(allowHeaders)) {
       if (Array.isArray(allowHeaders)) {
@@ -673,6 +714,17 @@ export class Config {
       databaseOptions.allowPublicExplain = DatabaseOptions.allowPublicExplain.default;
     } else if (typeof databaseOptions.allowPublicExplain !== 'boolean') {
       throw `Parse Server option 'databaseOptions.allowPublicExplain' must be a boolean.`;
+    }
+  }
+
+  static validateLiveQueryOptions(liveQuery) {
+    if (liveQuery == undefined) {
+      return;
+    }
+    if (liveQuery.regexTimeout === undefined) {
+      liveQuery.regexTimeout = LiveQueryOptions.regexTimeout.default;
+    } else if (typeof liveQuery.regexTimeout !== 'number') {
+      throw `liveQuery.regexTimeout must be a number`;
     }
   }
 

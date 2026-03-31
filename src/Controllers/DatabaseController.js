@@ -8,8 +8,6 @@ import { Parse } from 'parse/node';
 import _ from 'lodash';
 // @flow-disable-next
 import intersect from 'intersect';
-// @flow-disable-next
-import deepcopy from 'deepcopy';
 import logger from '../logger';
 import Utils from '../Utils';
 import * as SchemaController from './SchemaController';
@@ -20,6 +18,62 @@ import SchemaCache from '../Adapters/Cache/SchemaCache';
 import type { LoadSchemaOptions } from './types';
 import type { ParseServerOptions } from '../Options';
 import type { QueryOptions, FullQueryOptions } from '../Adapters/Storage/StorageAdapter';
+import { createSanitizedError } from '../Error';
+
+// Query operators that always pass validation regardless of auth level.
+const queryOperators = ['$and', '$or', '$nor'];
+
+// Registry of internal fields with access permissions.
+// Internal fields are never directly writable by clients, so clientWrite is omitted.
+// - clientRead: any client can use this field in queries
+// - masterRead: master key can use this field in queries
+// - masterWrite: master key can use this field in updates
+const internalFields = {
+  _rperm:                         { clientRead: true,  masterRead: true,  masterWrite: true  },
+  _wperm:                         { clientRead: true,  masterRead: true,  masterWrite: true  },
+  _hashed_password:               { clientRead: false, masterRead: false, masterWrite: true  },
+  _email_verify_token:            { clientRead: false, masterRead: true,  masterWrite: true  },
+  _perishable_token:              { clientRead: false, masterRead: true,  masterWrite: true  },
+  _perishable_token_expires_at:   { clientRead: false, masterRead: true,  masterWrite: true  },
+  _email_verify_token_expires_at: { clientRead: false, masterRead: true,  masterWrite: true  },
+  _failed_login_count:            { clientRead: false, masterRead: true,  masterWrite: true  },
+  _account_lockout_expires_at:    { clientRead: false, masterRead: true,  masterWrite: true  },
+  _password_changed_at:           { clientRead: false, masterRead: true,  masterWrite: true  },
+  _password_history:              { clientRead: false, masterRead: true,  masterWrite: true  },
+  _tombstone:                     { clientRead: false, masterRead: true,  masterWrite: false },
+  _session_token:                 { clientRead: false, masterRead: true,  masterWrite: false },
+  /////////////////////////////////////////////////////////////////////////////////////////////
+  // The following fields are not accessed by their _-prefixed name through the API;
+  // they are mapped to REST-level names in the adapter layer or handled through
+  // separate code paths.
+  /////////////////////////////////////////////////////////////////////////////////////////////
+  // System fields (mapped to REST-level names):
+  // _id (objectId)
+  // _created_at (createdAt)
+  // _updated_at (updatedAt)
+  // _last_used (lastUsed)
+  // _expiresAt (expiresAt)
+  /////////////////////////////////////////////////////////////////////////////////////////////
+  // Legacy ACL format: mapped to/from _rperm/_wperm
+  // _acl
+  /////////////////////////////////////////////////////////////////////////////////////////////
+  // Schema metadata: not data fields, used only for schema configuration
+  // _metadata
+  // _client_permissions
+  /////////////////////////////////////////////////////////////////////////////////////////////
+  // Dynamic auth data fields: used only in projections and updates, not in queries
+  // _auth_data_<provider>
+};
+
+// Derived access lists
+const specialQueryKeys = [
+  ...queryOperators,
+  ...Object.keys(internalFields).filter(k => internalFields[k].clientRead),
+];
+const specialMasterQueryKeys = [
+  ...queryOperators,
+  ...Object.keys(internalFields).filter(k => internalFields[k].masterRead),
+];
 
 function addWriteACL(query, acl) {
   const newQuery = _.cloneDeep(query);
@@ -55,51 +109,47 @@ const transformObjectACL = ({ ACL, ...result }) => {
   return result;
 };
 
-const specialQueryKeys = ['$and', '$or', '$nor', '_rperm', '_wperm'];
-const specialMasterQueryKeys = [
-  ...specialQueryKeys,
-  '_email_verify_token',
-  '_perishable_token',
-  '_tombstone',
-  '_email_verify_token_expires_at',
-  '_failed_login_count',
-  '_account_lockout_expires_at',
-  '_password_changed_at',
-  '_password_history',
-];
-
 const validateQuery = (
   query: any,
   isMaster: boolean,
   isMaintenance: boolean,
-  update: boolean
+  update: boolean,
+  options: ?ParseServerOptions,
+  _depth: number = 0
 ): void => {
   if (isMaintenance) {
     isMaster = true;
+  }
+  const rc = options?.requestComplexity;
+  if (!isMaster && rc && rc.queryDepth !== -1 && _depth > rc.queryDepth) {
+    throw new Parse.Error(
+      Parse.Error.INVALID_QUERY,
+      `Query condition nesting depth exceeds maximum allowed depth of ${rc.queryDepth}`
+    );
   }
   if (query.ACL) {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
   }
 
   if (query.$or) {
-    if (query.$or instanceof Array) {
-      query.$or.forEach(value => validateQuery(value, isMaster, isMaintenance, update));
+    if (Array.isArray(query.$or)) {
+      query.$or.forEach(value => validateQuery(value, isMaster, isMaintenance, update, options, _depth + 1));
     } else {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $or format - use an array value.');
     }
   }
 
   if (query.$and) {
-    if (query.$and instanceof Array) {
-      query.$and.forEach(value => validateQuery(value, isMaster, isMaintenance, update));
+    if (Array.isArray(query.$and)) {
+      query.$and.forEach(value => validateQuery(value, isMaster, isMaintenance, update, options, _depth + 1));
     } else {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $and format - use an array value.');
     }
   }
 
   if (query.$nor) {
-    if (query.$nor instanceof Array && query.$nor.length > 0) {
-      query.$nor.forEach(value => validateQuery(value, isMaster, isMaintenance, update));
+    if (Array.isArray(query.$nor) && query.$nor.length > 0) {
+      query.$nor.forEach(value => validateQuery(value, isMaster, isMaintenance, update, options, _depth + 1));
     } else {
       throw new Parse.Error(
         Parse.Error.INVALID_QUERY,
@@ -110,6 +160,12 @@ const validateQuery = (
 
   Object.keys(query).forEach(key => {
     if (query && query[key] && query[key].$regex) {
+      if (typeof query[key].$regex !== 'string') {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, '$regex value must be a string');
+      }
+      if (query[key].$options !== undefined && typeof query[key].$options !== 'string') {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, '$options value must be a string');
+      }
       if (typeof query[key].$options === 'string') {
         if (!query[key].$options.match(/^[imxsu]+$/)) {
           throw new Parse.Error(
@@ -121,8 +177,8 @@ const validateQuery = (
     }
     if (
       !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/) &&
-      ((!specialQueryKeys.includes(key) && !isMaster && !update) ||
-        (update && isMaster && !specialMasterQueryKeys.includes(key)))
+      !specialQueryKeys.includes(key) &&
+      !(isMaster && specialMasterQueryKeys.includes(key))
     ) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${key}`);
     }
@@ -139,7 +195,8 @@ const filterSensitiveData = (
   schema: SchemaController.SchemaController | any,
   className: string,
   protectedFields: null | Array<any>,
-  object: any
+  object: any,
+  protectedFieldsOwnerExempt: ?boolean
 ) => {
   let userId = null;
   if (auth && auth.user) { userId = auth.user.id; }
@@ -215,8 +272,9 @@ const filterSensitiveData = (
   }
 
   /* special treat for the user class: don't filter protectedFields if currently loggedin user is
-  the retrieved user */
-  if (!(isUserClass && userId && object.objectId === userId)) {
+  the retrieved user, unless protectedFieldsOwnerExempt is false */
+  const isOwnerExempt = protectedFieldsOwnerExempt !== false && isUserClass && userId && object.objectId === userId;
+  if (!isOwnerExempt) {
     protectedFields && protectedFields.forEach(k => delete object[k]);
 
     // fields not requested by client (excluded),
@@ -249,17 +307,7 @@ const filterSensitiveData = (
 //   acl:  a list of strings. If the object to be updated has an ACL,
 //         one of the provided strings must provide the caller with
 //         write permissions.
-const specialKeysForUpdate = [
-  '_hashed_password',
-  '_perishable_token',
-  '_email_verify_token',
-  '_email_verify_token_expires_at',
-  '_account_lockout_expires_at',
-  '_failed_login_count',
-  '_perishable_token_expires_at',
-  '_password_changed_at',
-  '_password_history',
-];
+const specialKeysForUpdate = Object.keys(internalFields).filter(k => internalFields[k].masterWrite);
 
 const isSpecialUpdateKey = key => {
   return specialKeysForUpdate.indexOf(key) >= 0;
@@ -283,19 +331,19 @@ const flattenUpdateOperatorsForCreate = object => {
           object[key] = object[key].amount;
           break;
         case 'Add':
-          if (!(object[key].objects instanceof Array)) {
+          if (!Array.isArray(object[key].objects)) {
             throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
           }
           object[key] = object[key].objects;
           break;
         case 'AddUnique':
-          if (!(object[key].objects instanceof Array)) {
+          if (!Array.isArray(object[key].objects)) {
             throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
           }
           object[key] = object[key].objects;
           break;
         case 'Remove':
-          if (!(object[key].objects instanceof Array)) {
+          if (!Array.isArray(object[key].objects)) {
             throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
           }
           object[key] = [];
@@ -485,6 +533,13 @@ class DatabaseController {
       });
   }
 
+  /**
+   * Updates objects in the database that match the given query.
+   * @param {Object} options
+   * @param {boolean} [options.many=false] When true, updates all matching documents
+   *   and returns `{ matchedCount, modifiedCount }` where values are numbers if the
+   *   storage adapter supports `UpdateManyResult`, or `undefined` otherwise.
+   */
   update(
     className: string,
     query: any,
@@ -497,7 +552,7 @@ class DatabaseController {
     try {
       Utils.checkProhibitedKeywords(this.options, update);
     } catch (error) {
-      return Promise.reject(new Parse.Error(Parse.Error.INVALID_KEY_NAME, error));
+      return Promise.reject(new Parse.Error(Parse.Error.INVALID_KEY_NAME, `${error}`));
     }
     try {
       const { validateFileUrlsInObject } = require('../FileUrlValidator');
@@ -508,7 +563,7 @@ class DatabaseController {
     const originalQuery = query;
     const originalUpdate = update;
     // Make a copy of the object, so we don't mutate the incoming data.
-    update = deepcopy(update);
+    update = structuredClone(update);
     var relationUpdates = [];
     var isMaster = acl === undefined;
     var aclGroup = acl || [];
@@ -550,7 +605,7 @@ class DatabaseController {
           if (acl) {
             query = addWriteACL(query, acl);
           }
-          validateQuery(query, isMaster, false, true);
+          validateQuery(query, isMaster, false, true, this.options);
           return schemaController
             .getOneSchema(className, true)
             .catch(error => {
@@ -563,7 +618,7 @@ class DatabaseController {
             })
             .then(schema => {
               Object.keys(update).forEach(fieldName => {
-                if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
+                if (fieldName.match(/^authData\./)) {
                   throw new Parse.Error(
                     Parse.Error.INVALID_KEY_NAME,
                     `Invalid field name for update: ${fieldName}`
@@ -652,6 +707,16 @@ class DatabaseController {
         .then(result => {
           if (skipSanitization) {
             return Promise.resolve(result);
+          }
+          if (many) {
+            return {
+              matchedCount: typeof result?.matchedCount === 'number'
+                ? result.matchedCount
+                : undefined,
+              modifiedCount: typeof result?.modifiedCount === 'number'
+                ? result.modifiedCount
+                : undefined,
+            };
           }
           return this._sanitizeDatabaseResult(originalUpdate, result);
         });
@@ -798,7 +863,7 @@ class DatabaseController {
         if (acl) {
           query = addWriteACL(query, acl);
         }
-        validateQuery(query, isMaster, false, false);
+        validateQuery(query, isMaster, false, false, this.options);
         return schemaController
           .getOneSchema(className)
           .catch(error => {
@@ -840,7 +905,7 @@ class DatabaseController {
     try {
       Utils.checkProhibitedKeywords(this.options, object);
     } catch (error) {
-      return Promise.reject(new Parse.Error(Parse.Error.INVALID_KEY_NAME, error));
+      return Promise.reject(new Parse.Error(Parse.Error.INVALID_KEY_NAME, `${error}`));
     }
     try {
       const { validateFileUrlsInObject } = require('../FileUrlValidator');
@@ -1309,7 +1374,7 @@ class DatabaseController {
                   query = addReadACL(query, aclGroup);
                 }
               }
-              validateQuery(query, isMaster, isMaintenance, false);
+              validateQuery(query, isMaster, isMaintenance, false, this.options);
               if (count) {
                 if (!classExists) {
                   return 0;
@@ -1361,12 +1426,25 @@ class DatabaseController {
                         schemaController,
                         className,
                         protectedFields,
-                        object
+                        object,
+                        this.options.protectedFieldsOwnerExempt
                       );
                     })
                   )
                   .catch(error => {
-                    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, error);
+                    if (error instanceof Parse.Error) {
+                      throw error;
+                    }
+                    const detailedMessage =
+                      typeof error === 'string'
+                        ? error
+                        : error?.message || 'An internal server error occurred';
+                    throw createSanitizedError(
+                      Parse.Error.INTERNAL_SERVER_ERROR,
+                      detailedMessage,
+                      this.options,
+                      'An internal server error occurred'
+                    );
                   });
               }
             });
@@ -1609,7 +1687,7 @@ class DatabaseController {
     const protectedFields = perms.protectedFields;
     if (!protectedFields) { return null; }
 
-    if (aclGroup.indexOf(query.objectId) > -1) { return null; }
+    if (className === '_User' && this.options.protectedFieldsOwnerExempt !== false && aclGroup.indexOf(query.objectId) > -1) { return null; }
 
     // for queries where "keys" are set and do not include all 'userField':{field},
     // we have to transparently include it, and then remove before returning to client
@@ -1837,6 +1915,30 @@ class DatabaseController {
           throw error;
         });
     }
+    // Create unique indexes for authData providers to prevent race conditions
+    // during concurrent signups with the same authData
+    if (
+      databaseOptions.createIndexAuthDataUniqueness !== false &&
+      typeof this.adapter.ensureAuthDataUniqueness === 'function'
+    ) {
+      const authProviders = Object.keys(this.options.auth || {});
+      if (this.options.enableAnonymousUsers !== false) {
+        if (!authProviders.includes('anonymous')) {
+          authProviders.push('anonymous');
+        }
+      }
+      await Promise.all(
+        authProviders.map(provider =>
+          this.adapter.ensureAuthDataUniqueness(provider).catch(error => {
+            logger.warn(
+              `Unable to ensure uniqueness for auth data provider "${provider}": `,
+              error
+            );
+          })
+        )
+      );
+    }
+
     await this.adapter.updateSchemaWithIndexes();
   }
 
@@ -1907,7 +2009,7 @@ class DatabaseController {
   }
 
   static _validateQuery: (any, boolean, boolean, boolean) => void;
-  static filterSensitiveData: (boolean, boolean, any[], any, any, any, string, any[], any) => void;
+  static filterSensitiveData: (boolean, boolean, any[], any, any, any, string, any[], any, ?boolean) => void;
 }
 
 module.exports = DatabaseController;

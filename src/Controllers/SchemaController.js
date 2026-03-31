@@ -21,8 +21,6 @@ import SchemaCache from '../Adapters/Cache/SchemaCache';
 import DatabaseController from './DatabaseController';
 import Config from '../Config';
 import { createSanitizedError } from '../Error';
-// @flow-disable-next
-import deepcopy from 'deepcopy';
 import type {
   Schema,
   SchemaFields,
@@ -574,7 +572,7 @@ class SchemaData {
           if (!this.__data[schema.className]) {
             const data = {};
             data.fields = injectDefaultSchema(schema).fields;
-            data.classLevelPermissions = deepcopy(schema.classLevelPermissions);
+            data.classLevelPermissions = structuredClone(schema.classLevelPermissions);
             data.indexes = schema.indexes;
 
             const classProtectedFields = this.__protectedFields[schema.className];
@@ -1582,7 +1580,7 @@ function getType(obj: any): ?(SchemaField | string) {
 // also gets the appropriate type for $ operators.
 // Returns null if the type is unknown.
 function getObjectType(obj): ?(SchemaField | string) {
-  if (obj instanceof Array) {
+  if (Array.isArray(obj)) {
     return 'Array';
   }
   if (obj.__type) {

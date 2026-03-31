@@ -3,7 +3,9 @@ const classesWithMasterOnlyAccess = [
   '_PushStatus',
   '_Hooks',
   '_GlobalConfig',
+  '_GraphQLConfig',
   '_JobSchedule',
+  '_Audience',
   '_Idempotency',
 ];
 const { createSanitizedError } = require('./Error');
@@ -26,6 +28,15 @@ function enforceRoleSecurity(method, className, auth, config) {
     !auth.isMaster &&
     !auth.isMaintenance
   ) {
+    throw createSanitizedError(
+      Parse.Error.OPERATION_FORBIDDEN,
+      `Clients aren't allowed to perform the ${method} operation on the ${className} collection.`,
+      config
+    );
+  }
+
+  // _Join tables are internal and must only be modified through relation operations
+  if (className.startsWith('_Join:') && !auth.isMaster && !auth.isMaintenance) {
     throw createSanitizedError(
       Parse.Error.OPERATION_FORBIDDEN,
       `Clients aren't allowed to perform the ${method} operation on the ${className} collection.`,

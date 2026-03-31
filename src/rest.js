@@ -12,6 +12,7 @@ var Parse = require('parse/node').Parse;
 var RestQuery = require('./RestQuery');
 var RestWrite = require('./RestWrite');
 var triggers = require('./triggers');
+const Auth = require('./Auth');
 const { enforceRoleSecurity } = require('./SharedRest');
 const { createSanitizedError } = require('./Error');
 
@@ -281,10 +282,13 @@ function update(config, auth, className, restWhere, restObject, clientSDK, conte
       const hasLiveQuery = checkLiveQuery(className, config);
       if (hasTriggers || hasLiveQuery) {
         // Do not use find, as it runs the before finds
+        // Use master auth when protectedFieldsTriggerExempt is true to bypass
+        // protectedFields filtering, so triggers see the full original object
+        const queryAuth = config.protectedFieldsTriggerExempt ? Auth.master(config) : auth;
         const query = await RestQuery({
           method: RestQuery.Method.get,
           config,
-          auth,
+          auth: queryAuth,
           className,
           restWhere,
           runAfterFind: false,

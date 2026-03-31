@@ -21,6 +21,7 @@ export default class MongoCollection {
       sort,
       keys,
       maxTimeMS,
+      batchSize,
       readPreference,
       hint,
       caseInsensitive,
@@ -39,6 +40,7 @@ export default class MongoCollection {
       sort,
       keys,
       maxTimeMS,
+      batchSize,
       readPreference,
       hint,
       caseInsensitive,
@@ -68,6 +70,7 @@ export default class MongoCollection {
               sort,
               keys,
               maxTimeMS,
+              batchSize,
               readPreference,
               hint,
               caseInsensitive,
@@ -94,6 +97,7 @@ export default class MongoCollection {
       sort,
       keys,
       maxTimeMS,
+      batchSize,
       readPreference,
       hint,
       caseInsensitive,
@@ -108,6 +112,7 @@ export default class MongoCollection {
       readPreference,
       hint,
       comment,
+      batchSize,
     });
 
     if (keys) {
@@ -153,9 +158,9 @@ export default class MongoCollection {
     return this._mongoCollection.distinct(field, query);
   }
 
-  aggregate(pipeline, { maxTimeMS, readPreference, hint, explain, comment } = {}) {
+  aggregate(pipeline, { maxTimeMS, batchSize, readPreference, hint, explain, comment } = {}) {
     return this._mongoCollection
-      .aggregate(pipeline, { maxTimeMS, readPreference, hint, explain, comment })
+      .aggregate(pipeline, { maxTimeMS, batchSize, readPreference, hint, explain, comment })
       .toArray();
   }
 

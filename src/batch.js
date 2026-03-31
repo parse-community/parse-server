@@ -63,9 +63,21 @@ function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
 
 // Returns a promise for a {response} object.
 // TODO: pass along auth correctly
-function handleBatch(router, req) {
+async function handleBatch(router, req) {
   if (!Array.isArray(req.body?.requests)) {
     throw new Parse.Error(Parse.Error.INVALID_JSON, 'requests must be an array');
+  }
+  const batchRequestLimit = req.config?.requestComplexity?.batchRequestLimit ?? -1;
+  if (batchRequestLimit > -1 && !req.auth?.isMaster && !req.auth?.isMaintenance && req.body.requests.length > batchRequestLimit) {
+    throw new Parse.Error(
+      Parse.Error.INVALID_JSON,
+      `Batch request contains ${req.body.requests.length} sub-requests, which exceeds the limit of ${batchRequestLimit}.`
+    );
+  }
+  for (const restRequest of req.body.requests) {
+    if (!restRequest || typeof restRequest !== 'object' || typeof restRequest.path !== 'string') {
+      throw new Parse.Error(Parse.Error.INVALID_JSON, 'batch request path must be a string');
+    }
   }
 
   // The batch paths are all from the root of our domain.
@@ -82,6 +94,45 @@ function handleBatch(router, req) {
     req.config.serverURL,
     req.config.publicServerURL
   );
+
+  // Enforce rate limits for each batch sub-request by invoking the
+  // rate limit handler. This ensures sub-requests consume tokens from
+  // the same window state as direct requests.
+  const rateLimits = req.config.rateLimits || [];
+  for (const restRequest of req.body.requests) {
+    const routablePath = makeRoutablePath(restRequest.path);
+    for (const limit of rateLimits) {
+      const pathExp = limit.path.regexp || limit.path;
+      if (!pathExp.test(routablePath)) {
+        continue;
+      }
+      const info = { ...req.info };
+      if (routablePath === '/login') {
+        delete info.sessionToken;
+      }
+      const fakeReq = {
+        ip: req.ip || req.config?.ip || '127.0.0.1',
+        method: (restRequest.method || 'GET').toUpperCase(),
+        _batchOriginalMethod: 'POST',
+        config: req.config,
+        auth: req.auth,
+        info,
+      };
+      const fakeRes = { setHeader() {} };
+      try {
+        await limit.handler(fakeReq, fakeRes, err => {
+          if (err) {
+            throw err;
+          }
+        });
+      } catch {
+        throw new Parse.Error(
+          Parse.Error.CONNECTION_FAILED,
+          limit.errorResponseMessage || 'Too many requests'
+        );
+      }
+    }
+  }
 
   const batch = transactionRetries => {
     let initialPromise = Promise.resolve();

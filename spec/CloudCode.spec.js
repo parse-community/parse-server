@@ -5,6 +5,7 @@ const ParseServer = require('../lib/index').ParseServer;
 const request = require('../lib/request');
 const InMemoryCacheAdapter = require('../lib/Adapters/Cache/InMemoryCacheAdapter')
   .InMemoryCacheAdapter;
+const Utils = require('../lib/Utils');
 
 const mockAdapter = {
   createFile: async filename => ({
@@ -1272,15 +1273,15 @@ describe('Cloud Code', () => {
 
   it('test cloud function request params types', function (done) {
     Parse.Cloud.define('params', function (req) {
-      expect(req.params.date instanceof Date).toBe(true);
+      expect(Utils.isDate(req.params.date)).toBe(true);
       expect(req.params.date.getTime()).toBe(1463907600000);
-      expect(req.params.dateList[0] instanceof Date).toBe(true);
+      expect(Utils.isDate(req.params.dateList[0])).toBe(true);
       expect(req.params.dateList[0].getTime()).toBe(1463907600000);
-      expect(req.params.complexStructure.date[0] instanceof Date).toBe(true);
+      expect(Utils.isDate(req.params.complexStructure.date[0])).toBe(true);
       expect(req.params.complexStructure.date[0].getTime()).toBe(1463907600000);
-      expect(req.params.complexStructure.deepDate.date[0] instanceof Date).toBe(true);
+      expect(Utils.isDate(req.params.complexStructure.deepDate.date[0])).toBe(true);
       expect(req.params.complexStructure.deepDate.date[0].getTime()).toBe(1463907600000);
-      expect(req.params.complexStructure.deepDate2[0].date instanceof Date).toBe(true);
+      expect(Utils.isDate(req.params.complexStructure.deepDate2[0].date)).toBe(true);
       expect(req.params.complexStructure.deepDate2[0].date.getTime()).toBe(1463907600000);
       // Regression for #2294
       expect(req.params.file instanceof Parse.File).toBe(true);
@@ -4451,6 +4452,54 @@ describe('Parse.File hooks', () => {
       },
     });
     expect(response.headers['content-disposition']).toBe(`attachment;filename=${file._name}`);
+  });
+
+  it('can set custom response headers in afterFind', async () => {
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
+    await file.save({ useMasterKey: true });
+    Parse.Cloud.afterFind(Parse.File, req => {
+      req.responseHeaders['X-Custom-Header'] = 'custom-value';
+    });
+    const response = await request({
+      url: file.url(),
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      },
+    });
+    expect(response.headers['x-custom-header']).toBe('custom-value');
+    expect(response.headers['x-content-type-options']).toBe('nosniff');
+  });
+
+  it('can override default response headers in afterFind', async () => {
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
+    await file.save({ useMasterKey: true });
+    Parse.Cloud.afterFind(Parse.File, req => {
+      delete req.responseHeaders['X-Content-Type-Options'];
+    });
+    const response = await request({
+      url: file.url(),
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      },
+    });
+    expect(response.headers['x-content-type-options']).toBeUndefined();
+  });
+
+  it('beforeFind blocks metadata endpoint', async () => {
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
+    await file.save({ useMasterKey: true });
+    Parse.Cloud.beforeFind(Parse.File, () => {
+      throw 'unauthorized';
+    });
+    await expectAsync(
+      request({
+        url: `http://localhost:8378/1/files/test/metadata/${file._name}`,
+      }).catch(e => {
+        throw new Parse.Error(e.data.code, e.data.error);
+      })
+    ).toBeRejectedWith(new Parse.Error(Parse.Error.SCRIPT_FAILED, 'unauthorized'));
   });
 });
 

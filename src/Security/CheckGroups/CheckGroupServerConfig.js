@@ -91,6 +91,18 @@ class CheckGroupServerConfig extends CheckGroup {
         },
       }),
       new Check({
+        title: 'GraphQL Playground disabled',
+        warning:
+          'GraphQL Playground is enabled and exposes the master key in the browser page.',
+        solution:
+          "Change Parse Server configuration to 'mountPlayground: false'. Use Parse Dashboard for GraphQL exploration in production.",
+        check: () => {
+          if (config.mountPlayground) {
+            throw 1;
+          }
+        },
+      }),
+      new Check({
         title: 'Public database explain disabled',
         warning:
           'Database explain queries are publicly accessible, which may expose sensitive database performance information and schema details.',
@@ -101,6 +113,76 @@ class CheckGroupServerConfig extends CheckGroup {
             config.databaseOptions?.allowPublicExplain === true ||
             config.databaseOptions?.allowPublicExplain == null
           ) {
+            throw 1;
+          }
+        },
+      }),
+      new Check({
+        title: 'Read-only master key IP range restricted',
+        warning:
+          'The read-only master key can be used from any IP address, which increases the attack surface if the key is compromised.',
+        solution:
+          "Change Parse Server configuration to 'readOnlyMasterKeyIps: [\"127.0.0.1\", \"::1\"]' to restrict access to localhost, or set it to a list of specific IP addresses.",
+        check: () => {
+          if (!config.readOnlyMasterKey) {
+            return;
+          }
+          const ips = config.readOnlyMasterKeyIps || [];
+          const wildcards = ['0.0.0.0/0', '0.0.0.0', '::/0', '::', '::0'];
+          if (ips.some(ip => wildcards.includes(ip))) {
+            throw 1;
+          }
+        },
+      }),
+      new Check({
+        title: 'Request complexity limits enabled',
+        warning:
+          'One or more request complexity limits are disabled, which may allow denial-of-service attacks through deeply nested or excessively broad queries.',
+        solution:
+          "Ensure all properties in 'requestComplexity' are set to positive integers. Set to '-1' only if you have other mitigations in place.",
+        check: () => {
+          const rc = config.requestComplexity;
+          if (!rc) {
+            throw 1;
+          }
+          const values = [rc.includeDepth, rc.includeCount, rc.subqueryDepth, rc.queryDepth, rc.graphQLDepth, rc.graphQLFields, rc.batchRequestLimit];
+          if (values.some(v => v === -1)) {
+            throw 1;
+          }
+        },
+      }),
+      new Check({
+        title: 'Password reset endpoint user enumeration mitigated',
+        warning:
+          'The password reset endpoint returns distinct error responses for invalid email addresses, which allows attackers to enumerate registered users.',
+        solution:
+          "Change Parse Server configuration to 'passwordPolicy.resetPasswordSuccessOnInvalidEmail: true'.",
+        check: () => {
+          if (config.passwordPolicy?.resetPasswordSuccessOnInvalidEmail === false) {
+            throw 1;
+          }
+        },
+      }),
+      new Check({
+        title: 'Email verification endpoint user enumeration mitigated',
+        warning:
+          'The email verification endpoint returns distinct error responses for invalid email addresses, which allows attackers to enumerate registered users.',
+        solution:
+          "Change Parse Server configuration to 'emailVerifySuccessOnInvalidEmail: true'.",
+        check: () => {
+          if (config.emailVerifySuccessOnInvalidEmail === false) {
+            throw 1;
+          }
+        },
+      }),
+      new Check({
+        title: 'LiveQuery regex timeout enabled',
+        warning:
+          'LiveQuery regex timeout is disabled. A malicious client can subscribe with a crafted $regex pattern that causes catastrophic backtracking, blocking the Node.js event loop and making the server unresponsive.',
+        solution:
+          "Change Parse Server configuration to 'liveQuery.regexTimeout: 100' to set a 100ms timeout for regex evaluation in LiveQuery.",
+        check: () => {
+          if (config.liveQuery?.classNames?.length > 0 && config.liveQuery?.regexTimeout === 0) {
             throw 1;
           }
         },

@@ -20,10 +20,19 @@ class Deprecator {
       const solution = deprecation.solution;
       const optionKey = deprecation.optionKey;
       const changeNewDefault = deprecation.changeNewDefault;
+      const changeNewKey = deprecation.changeNewKey;
 
       // If default will change, only throw a warning if option is not set
       if (changeNewDefault != null && Utils.getNestedProperty(options, optionKey) == null) {
         Deprecator._logOption({ optionKey, changeNewDefault, solution });
+      }
+
+      // If key will be removed or renamed, only throw a warning if option is set;
+      // skip if option is set to the resolved value that suppresses the deprecation
+      const resolvedValue = deprecation.resolvedValue;
+      const optionValue = Utils.getNestedProperty(options, optionKey);
+      if (changeNewKey != null && optionValue != null && optionValue !== resolvedValue) {
+        Deprecator._logOption({ optionKey, changeNewKey, solution });
       }
     }
   }
@@ -107,7 +116,7 @@ class Deprecator {
 
     // Compose message
     let output = `DeprecationWarning: The Parse Server ${type} '${key}' `;
-    output += changeNewKey ? `is deprecated and will be ${keyAction} in a future version.` : '';
+    output += changeNewKey != null ? `is deprecated and will be ${keyAction} in a future version.` : '';
     output += changeNewDefault
       ? `default will change to '${changeNewDefault}' in a future version.`
       : '';

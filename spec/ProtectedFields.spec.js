@@ -1700,4 +1700,705 @@ describe('ProtectedFields', function () {
       done();
     });
   });
+
+  describe('query on protected fields via logical operators', function () {
+    let user;
+    let otherUser;
+    const testEmail = 'victim@example.com';
+    const otherEmail = 'other@example.com';
+
+    beforeEach(async function () {
+      await reconfigureServer({
+        protectedFields: {
+          _User: { '*': ['email'] },
+        },
+      });
+      user = new Parse.User();
+      user.setUsername('victim' + Date.now());
+      user.setPassword('password');
+      user.setEmail(testEmail);
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      user.setACL(acl);
+      await user.save(null, { useMasterKey: true });
+
+      otherUser = new Parse.User();
+      otherUser.setUsername('attacker' + Date.now());
+      otherUser.setPassword('password');
+      otherUser.setEmail(otherEmail);
+      const acl2 = new Parse.ACL();
+      acl2.setPublicReadAccess(true);
+      otherUser.setACL(acl2);
+      await otherUser.save(null, { useMasterKey: true });
+      await Parse.User.logIn(otherUser.getUsername(), 'password');
+    });
+
+    it('should deny query on protected field via $or', async function () {
+      const q1 = new Parse.Query(Parse.User);
+      q1.equalTo('email', testEmail);
+      const query = Parse.Query.or(q1);
+      await expectAsync(query.find()).toBeRejectedWith(
+        jasmine.objectContaining({
+          code: Parse.Error.OPERATION_FORBIDDEN,
+        })
+      );
+    });
+
+    it('should deny query on protected field via $and', async function () {
+      const query = new Parse.Query(Parse.User);
+      query.withJSON({ where: { $and: [{ email: testEmail }] } });
+      await expectAsync(query.find()).toBeRejectedWith(
+        jasmine.objectContaining({
+          code: Parse.Error.OPERATION_FORBIDDEN,
+        })
+      );
+    });
+
+    it('should deny query on protected field via $nor', async function () {
+      const query = new Parse.Query(Parse.User);
+      query.withJSON({ where: { $nor: [{ email: testEmail }] } });
+      await expectAsync(query.find()).toBeRejectedWith(
+        jasmine.objectContaining({
+          code: Parse.Error.OPERATION_FORBIDDEN,
+        })
+      );
+    });
+
+    it('should deny query on protected field via nested $or inside $and', async function () {
+      const query = new Parse.Query(Parse.User);
+      query.withJSON({ where: { $and: [{ $or: [{ email: testEmail }] }] } });
+      await expectAsync(query.find()).toBeRejectedWith(
+        jasmine.objectContaining({
+          code: Parse.Error.OPERATION_FORBIDDEN,
+        })
+      );
+    });
+
+    it('should deny query on protected field via $or with $regex', async function () {
+      const query = new Parse.Query(Parse.User);
+      query.withJSON({ where: { $or: [{ email: { $regex: '^victim' } }] } });
+      await expectAsync(query.find()).toBeRejectedWith(
+        jasmine.objectContaining({
+          code: Parse.Error.OPERATION_FORBIDDEN,
+        })
+      );
+    });
+
+    it('should allow $or query on non-protected fields', async function () {
+      const q1 = new Parse.Query(Parse.User);
+      q1.equalTo('username', user.getUsername());
+      const query = Parse.Query.or(q1);
+      const results = await query.find();
+      expect(results.length).toBe(1);
+      expect(results[0].id).toBe(user.id);
+    });
+
+    it('should allow master key to query on protected fields via $or', async function () {
+      const q1 = new Parse.Query(Parse.User);
+      q1.equalTo('email', testEmail);
+      const query = Parse.Query.or(q1);
+      const results = await query.find({ useMasterKey: true });
+      expect(results.length).toBe(1);
+      expect(results[0].id).toBe(user.id);
+    });
+
+    it('should deny query on protected field with falsy value', async function () {
+      const query = new Parse.Query(Parse.User);
+      query.withJSON({ where: { email: null } });
+      await expectAsync(query.find()).toBeRejectedWith(
+        jasmine.objectContaining({
+          code: Parse.Error.OPERATION_FORBIDDEN,
+        })
+      );
+    });
+
+    it('should deny query on protected field with falsy value via $or', async function () {
+      const query = new Parse.Query(Parse.User);
+      query.withJSON({ where: { $or: [{ email: null }] } });
+      await expectAsync(query.find()).toBeRejectedWith(
+        jasmine.objectContaining({
+          code: Parse.Error.OPERATION_FORBIDDEN,
+        })
+      );
+    });
+
+    it('should not throw TypeError in denyProtectedFields for null element in $or', async function () {
+      const Config = require('../lib/Config');
+      const authModule = require('../lib/Auth');
+      const RestQuery = require('../lib/RestQuery');
+      const config = Config.get(Parse.applicationId);
+      const restQuery = await RestQuery({
+        method: RestQuery.Method.find,
+        config,
+        auth: authModule.nobody(config),
+        className: '_User',
+        restWhere: { $or: [null, { username: 'test' }] },
+      });
+      await expectAsync(restQuery.denyProtectedFields()).toBeResolved();
+    });
+  });
+
+  describe('protectedFieldsOwnerExempt', function () {
+    it('owner sees own protectedFields when protectedFieldsOwnerExempt is true', async function () {
+      const protectedFields = {
+        _User: {
+          '*': ['phone'],
+        },
+      };
+      await reconfigureServer({ protectedFields, protectedFieldsOwnerExempt: true });
+      const user1 = new Parse.User();
+      user1.setUsername('user1');
+      user1.setPassword('password');
+      user1.set('phone', '555-1234');
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      user1.setACL(acl);
+      await user1.signUp();
+      const sessionToken1 = user1.getSessionToken();
+
+      // Owner fetches own object — phone should be visible
+      const response = await request({
+        url: `http://localhost:8378/1/users/${user1.id}`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': sessionToken1,
+        },
+      });
+      expect(response.data.phone).toBe('555-1234');
+
+      // Another user fetches the first user — phone should be hidden
+      const user2 = new Parse.User();
+      user2.setUsername('user2');
+      user2.setPassword('password');
+      await user2.signUp();
+      const response2 = await request({
+        url: `http://localhost:8378/1/users/${user1.id}`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': user2.getSessionToken(),
+        },
+      });
+      expect(response2.data.phone).toBeUndefined();
+    });
+
+    it('owner does NOT see own protectedFields when protectedFieldsOwnerExempt is false', async function () {
+      await reconfigureServer({
+        protectedFields: {
+          _User: {
+            '*': ['phone'],
+          },
+        },
+        protectedFieldsOwnerExempt: false,
+      });
+      const user = await Parse.User.signUp('user1', 'password');
+      const sessionToken = user.getSessionToken();
+      user.set('phone', '555-1234');
+      await user.save(null, { sessionToken });
+
+      // Owner fetches own object — phone should be hidden
+      const response = await request({
+        url: `http://localhost:8378/1/users/${user.id}`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': sessionToken,
+        },
+      });
+      expect(response.data.phone).toBeUndefined();
+
+      // Master key — phone should be visible
+      const masterResponse = await request({
+        url: `http://localhost:8378/1/users/${user.id}`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+        },
+      });
+      expect(masterResponse.data.phone).toBe('555-1234');
+    });
+
+    it('non-_User classes unaffected by protectedFieldsOwnerExempt', async function () {
+      await reconfigureServer({
+        protectedFields: {
+          TestClass: {
+            '*': ['secret'],
+          },
+        },
+        protectedFieldsOwnerExempt: true,
+      });
+      const user = await Parse.User.signUp('user1', 'password');
+      const obj = new Parse.Object('TestClass');
+      obj.set('secret', 'hidden-value');
+      obj.setACL(new Parse.ACL(user));
+      await obj.save(null, { sessionToken: user.getSessionToken() });
+
+      // Owner fetches own object — secret should still be hidden (non-_User class)
+      const response = await request({
+        url: `http://localhost:8378/1/classes/TestClass/${obj.id}`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': user.getSessionToken(),
+        },
+      });
+      expect(response.data.secret).toBeUndefined();
+    });
+
+    it('/users/me respects protectedFieldsOwnerExempt: false', async function () {
+      await reconfigureServer({
+        protectedFields: {
+          _User: {
+            '*': ['phone'],
+          },
+        },
+        protectedFieldsOwnerExempt: false,
+      });
+      const user = await Parse.User.signUp('user1', 'password');
+      const sessionToken = user.getSessionToken();
+      user.set('phone', '555-1234');
+      await user.save(null, { sessionToken });
+
+      // GET /users/me — phone should be hidden
+      const response = await request({
+        url: 'http://localhost:8378/1/users/me',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': sessionToken,
+        },
+      });
+      expect(response.data.phone).toBeUndefined();
+      expect(response.data.objectId).toBe(user.id);
+    });
+
+    it('owner sees non-protected fields like email when protectedFieldsOwnerExempt is true', async function () {
+      await reconfigureServer({
+        protectedFields: {
+          _User: {
+            '*': ['phone'],
+          },
+        },
+        protectedFieldsOwnerExempt: true,
+      });
+      const user = await Parse.User.signUp('user1', 'password');
+      const sessionToken = user.getSessionToken();
+      user.set('phone', '555-1234');
+      user.set('email', 'user1@example.com');
+      await user.save(null, { sessionToken });
+
+      // Owner fetches own object — phone and email should be visible (owner exempt)
+      const response = await request({
+        url: `http://localhost:8378/1/users/${user.id}`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': sessionToken,
+        },
+      });
+      expect(response.data.phone).toBe('555-1234');
+      expect(response.data.email).toBe('user1@example.com');
+    });
+
+    it('owner sees non-protected fields like email when protectedFieldsOwnerExempt is false', async function () {
+      await reconfigureServer({
+        protectedFields: {
+          _User: {
+            '*': ['phone'],
+          },
+        },
+        protectedFieldsOwnerExempt: false,
+      });
+      const user = await Parse.User.signUp('user1', 'password');
+      const sessionToken = user.getSessionToken();
+      user.set('phone', '555-1234');
+      user.set('email', 'user1@example.com');
+      await user.save(null, { sessionToken });
+
+      // Owner fetches own object — phone should be hidden, email should be visible
+      const response = await request({
+        url: `http://localhost:8378/1/users/${user.id}`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': sessionToken,
+        },
+      });
+      expect(response.data.phone).toBeUndefined();
+      expect(response.data.email).toBe('user1@example.com');
+    });
+
+    it('protectedFields can hide createdAt and updatedAt from non-owners', async function () {
+      await reconfigureServer({
+        protectedFields: {
+          _User: {
+            '*': ['createdAt', 'updatedAt'],
+          },
+        },
+      });
+      const user = await Parse.User.signUp('user1', 'password');
+      const user2 = await Parse.User.signUp('user2', 'password');
+      const sessionToken2 = user2.getSessionToken();
+
+      // Make user1 publicly readable
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      acl.setWriteAccess(user.id, true);
+      user.setACL(acl);
+      await user.save(null, { useMasterKey: true });
+
+      // Another user fetches user1 — createdAt and updatedAt should be hidden
+      const response = await request({
+        url: `http://localhost:8378/1/users/${user.id}`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': sessionToken2,
+        },
+      });
+      expect(response.data.createdAt).toBeUndefined();
+      expect(response.data.updatedAt).toBeUndefined();
+    });
+  });
+
+  describe('protectedFieldsTriggerExempt', function () {
+    it('should expose protected fields in beforeSave trigger for a custom class', async function () {
+      await reconfigureServer({
+        protectedFields: { MyClass: { '*': ['secretField'] } },
+        protectedFieldsTriggerExempt: true,
+      });
+
+      // Create object with master key so both fields are stored
+      const obj = new Parse.Object('MyClass');
+      obj.set('secretField', 'hidden-value');
+      obj.set('publicField', 'visible-value');
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      acl.setPublicWriteAccess(true);
+      obj.setACL(acl);
+      await obj.save(null, { useMasterKey: true });
+
+      // Set up beforeSave trigger to capture field visibility
+      let triggerObject;
+      let triggerOriginal;
+      Parse.Cloud.beforeSave('MyClass', request => {
+        triggerObject = {
+          hasSecret: request.object.has('secretField'),
+          hasPublic: request.object.has('publicField'),
+          secretValue: request.object.get('secretField'),
+        };
+        if (request.original) {
+          triggerOriginal = {
+            hasSecret: request.original.has('secretField'),
+            hasPublic: request.original.has('publicField'),
+            secretValue: request.original.get('secretField'),
+          };
+        }
+      });
+
+      // Update using a user session (not master key)
+      const user = await Parse.User.signUp('testuser', 'password');
+      obj.set('publicField', 'updated-value');
+      await obj.save(null, { sessionToken: user.getSessionToken() });
+
+      // request.object should have all fields (original + changes merged)
+      expect(triggerObject.hasPublic).toBe(true);
+      expect(triggerObject.hasSecret).toBe(true);
+      expect(triggerObject.secretValue).toBe('hidden-value');
+
+      // request.original should have all fields unfiltered
+      expect(triggerOriginal.hasPublic).toBe(true);
+      expect(triggerOriginal.hasSecret).toBe(true);
+      expect(triggerOriginal.secretValue).toBe('hidden-value');
+    });
+
+    it('should expose protected fields in beforeSave trigger for _User class with protectedFieldsOwnerExempt false', async function () {
+      await reconfigureServer({
+        protectedFields: { _User: { '*': ['email'] } },
+        protectedFieldsOwnerExempt: false,
+        protectedFieldsTriggerExempt: true,
+      });
+
+      // Create user
+      const user = new Parse.User();
+      user.setUsername('testuser');
+      user.setPassword('password');
+      user.setEmail('test@example.com');
+      user.set('publicField', 'visible-value');
+      await user.signUp();
+
+      // Set up beforeSave trigger to capture field visibility
+      let triggerObject;
+      let triggerOriginal;
+      Parse.Cloud.beforeSave(Parse.User, request => {
+        triggerObject = {
+          hasEmail: request.object.has('email'),
+          hasPublic: request.object.has('publicField'),
+          emailValue: request.object.get('email'),
+        };
+        if (request.original) {
+          triggerOriginal = {
+            hasEmail: request.original.has('email'),
+            hasPublic: request.original.has('publicField'),
+            emailValue: request.original.get('email'),
+          };
+        }
+      });
+
+      // Update using the user's own session
+      user.set('publicField', 'updated-value');
+      await user.save(null, { sessionToken: user.getSessionToken() });
+
+      // request.object should have all fields including email
+      expect(triggerObject.hasPublic).toBe(true);
+      expect(triggerObject.hasEmail).toBe(true);
+      expect(triggerObject.emailValue).toBe('test@example.com');
+
+      // request.original should have all fields including email
+      expect(triggerOriginal.hasPublic).toBe(true);
+      expect(triggerOriginal.hasEmail).toBe(true);
+      expect(triggerOriginal.emailValue).toBe('test@example.com');
+    });
+
+    it('should still hide protected fields from query results when protectedFieldsTriggerExempt is true', async function () {
+      await reconfigureServer({
+        protectedFields: { MyClass: { '*': ['secretField'] } },
+        protectedFieldsTriggerExempt: true,
+      });
+
+      const obj = new Parse.Object('MyClass');
+      obj.set('secretField', 'hidden-value');
+      obj.set('publicField', 'visible-value');
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      obj.setACL(acl);
+      await obj.save(null, { useMasterKey: true });
+
+      // Query as a regular user — protectedFields should still apply to reads
+      const user = await Parse.User.signUp('testuser', 'password');
+      const fetched = await new Parse.Query('MyClass').get(obj.id, { sessionToken: user.getSessionToken() });
+      expect(fetched.has('publicField')).toBe(true);
+      expect(fetched.has('secretField')).toBe(false);
+    });
+
+    it('should not expose protected fields in beforeSave trigger when protectedFieldsTriggerExempt is false', async function () {
+      await reconfigureServer({
+        protectedFields: { MyClass: { '*': ['secretField'] } },
+        protectedFieldsTriggerExempt: false,
+      });
+
+      const obj = new Parse.Object('MyClass');
+      obj.set('secretField', 'hidden-value');
+      obj.set('publicField', 'visible-value');
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      acl.setPublicWriteAccess(true);
+      obj.setACL(acl);
+      await obj.save(null, { useMasterKey: true });
+
+      let triggerOriginal;
+      Parse.Cloud.beforeSave('MyClass', request => {
+        if (request.original) {
+          triggerOriginal = {
+            hasSecret: request.original.has('secretField'),
+            hasPublic: request.original.has('publicField'),
+          };
+        }
+      });
+
+      const user = await Parse.User.signUp('testuser', 'password');
+      obj.set('publicField', 'updated-value');
+      await obj.save(null, { sessionToken: user.getSessionToken() });
+
+      // With protectedFieldsTriggerExempt: false, current behavior is preserved
+      expect(triggerOriginal.hasPublic).toBe(true);
+      expect(triggerOriginal.hasSecret).toBe(false);
+    });
+  });
+
+  describe('protectedFieldsSaveResponseExempt', function () {
+    it('should strip protected fields from update response when protectedFieldsSaveResponseExempt is false', async function () {
+      await reconfigureServer({
+        protectedFields: { MyClass: { '*': ['secretField'] } },
+        protectedFieldsTriggerExempt: true,
+        protectedFieldsSaveResponseExempt: false,
+      });
+
+      // Create object with master key
+      const obj = new Parse.Object('MyClass');
+      obj.set('secretField', 'hidden-value');
+      obj.set('publicField', 'visible-value');
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      acl.setPublicWriteAccess(true);
+      obj.setACL(acl);
+      await obj.save(null, { useMasterKey: true });
+
+      // beforeSave trigger modifies the protected field
+      Parse.Cloud.beforeSave('MyClass', req => {
+        req.object.set('secretField', 'trigger-modified-value');
+      });
+
+      // Update via raw HTTP to inspect the actual server response
+      const user = await Parse.User.signUp('testuser', 'password');
+      const response = await request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/classes/MyClass/${obj.id}`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': user.getSessionToken(),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ publicField: 'updated-value' }),
+      });
+
+      // The server response should NOT contain the protected field
+      expect(response.data.updatedAt).toBeDefined();
+      expect(response.data.secretField).toBeUndefined();
+    });
+
+    it('should strip protected fields from update response for _User class when protectedFieldsSaveResponseExempt is false', async function () {
+      await reconfigureServer({
+        protectedFields: { _User: { '*': ['email'] } },
+        protectedFieldsOwnerExempt: false,
+        protectedFieldsTriggerExempt: true,
+        protectedFieldsSaveResponseExempt: false,
+      });
+
+      // Create user
+      const user = new Parse.User();
+      user.setUsername('testuser');
+      user.setPassword('password');
+      user.setEmail('test@example.com');
+      user.set('publicField', 'visible-value');
+      await user.signUp();
+
+      // beforeSave trigger modifies the protected field
+      Parse.Cloud.beforeSave(Parse.User, req => {
+        req.object.set('email', 'trigger-modified@example.com');
+      });
+
+      // Update via raw HTTP
+      const response = await request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/users/${user.id}`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': user.getSessionToken(),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ publicField: 'updated-value' }),
+      });
+
+      // The server response should NOT contain the protected field
+      expect(response.data.updatedAt).toBeDefined();
+      expect(response.data.email).toBeUndefined();
+    });
+
+    it('should include protected fields in update response when protectedFieldsSaveResponseExempt is true', async function () {
+      await reconfigureServer({
+        protectedFields: { MyClass: { '*': ['secretField'] } },
+        protectedFieldsTriggerExempt: true,
+        protectedFieldsSaveResponseExempt: true,
+      });
+
+      // Create object with master key
+      const obj = new Parse.Object('MyClass');
+      obj.set('secretField', 'hidden-value');
+      obj.set('publicField', 'visible-value');
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      acl.setPublicWriteAccess(true);
+      obj.setACL(acl);
+      await obj.save(null, { useMasterKey: true });
+
+      // beforeSave trigger modifies the protected field
+      Parse.Cloud.beforeSave('MyClass', req => {
+        req.object.set('secretField', 'trigger-modified-value');
+      });
+
+      // Update via raw HTTP
+      const user = await Parse.User.signUp('testuser', 'password');
+      const response = await request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/classes/MyClass/${obj.id}`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': user.getSessionToken(),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ publicField: 'updated-value' }),
+      });
+
+      // The server response SHOULD contain the protected field (current behavior preserved)
+      expect(response.data.secretField).toBe('trigger-modified-value');
+    });
+
+    it('should strip protected fields from create response when protectedFieldsSaveResponseExempt is false', async function () {
+      await reconfigureServer({
+        protectedFields: { MyClass: { '*': ['secretField'] } },
+        protectedFieldsSaveResponseExempt: false,
+      });
+
+      // Create via raw HTTP as a regular user
+      const user = await Parse.User.signUp('testuser', 'password');
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/classes/MyClass',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': user.getSessionToken(),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          secretField: 'hidden-value',
+          publicField: 'visible-value',
+          ACL: { '*': { read: true, write: true } },
+        }),
+      });
+
+      // The server response should NOT contain the protected field
+      expect(response.data.objectId).toBeDefined();
+      expect(response.data.createdAt).toBeDefined();
+      expect(response.data.secretField).toBeUndefined();
+    });
+  });
+
+  describe('maintenance auth', function () {
+    it('should allow maintenance auth to query using protected fields as WHERE keys', async function () {
+      await reconfigureServer({
+        protectedFields: { _User: { '*': ['email', 'emailVerified'] } },
+        protectedFieldsOwnerExempt: false,
+      });
+
+      const user = new Parse.User();
+      user.setUsername('testuser');
+      user.setPassword('password');
+      user.setEmail('test@example.com');
+      await user.signUp();
+
+      // Query using a protected field as a WHERE key with maintenance auth
+      const Auth = require('../lib/Auth');
+      const Config = require('../lib/Config');
+      const RestQuery = require('../lib/RestQuery');
+      const config = Config.get('test');
+      const maintenanceAuth = Auth.maintenance(config);
+      const query = await RestQuery({
+        method: RestQuery.Method.get,
+        config,
+        auth: maintenanceAuth,
+        className: '_User',
+        restWhere: { email: 'test@example.com' },
+        runBeforeFind: false,
+      });
+      const result = await query.execute();
+      expect(result.results.length).toBe(1);
+      expect(result.results[0].objectId).toBe(user.id);
+    });
+  });
 });

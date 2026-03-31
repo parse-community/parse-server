@@ -9,6 +9,7 @@ const request = require('../lib/request');
 const ParseServerRESTController = require('../lib/ParseServerRESTController').ParseServerRESTController;
 const ParseServer = require('../lib/ParseServer').default;
 const Deprecator = require('../lib/Deprecator/Deprecator').default;
+const Utils = require('../lib/Utils');
 
 const masterKeyHeaders = {
   'X-Parse-Application-Id': 'test',
@@ -1452,8 +1453,8 @@ describe('Parse.Query testing', () => {
         ok(result);
         equal(result.id, objectId);
         equal(result.get('foo'), 'bar');
-        ok(result.createdAt instanceof Date);
-        ok(result.updatedAt instanceof Date);
+        ok(Utils.isDate(result.createdAt));
+        ok(Utils.isDate(result.updatedAt));
         done();
       });
     });
@@ -3902,7 +3903,7 @@ describe('Parse.Query testing', () => {
         objs => {
           expect(objs.length).toBe(1);
           expect(objs[0].get('child').get('hello')).toEqual('world');
-          expect(objs[0].createdAt instanceof Date).toBe(true);
+          expect(Utils.isDate(objs[0].createdAt)).toBe(true);
           done();
         },
         () => {
@@ -5563,5 +5564,189 @@ describe('Parse.Query testing', () => {
         expect(resultWithMasterKey).toBeDefined();
       }
     );
+  });
+
+  describe('query input type validation', () => {
+    const restHeaders = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+
+    describe('malformed where parameter', () => {
+      it('rejects invalid JSON in where parameter with proper error instead of 500', async () => {
+        await expectAsync(
+          request({
+            method: 'GET',
+            url: 'http://localhost:8378/1/classes/TestClass?where=%7Bbad-json',
+            headers: restHeaders,
+          })
+        ).toBeRejectedWith(jasmine.objectContaining({ status: 400 }));
+      });
+
+      it('rejects invalid JSON in where parameter for roles endpoint', async () => {
+        await expectAsync(
+          request({
+            method: 'GET',
+            url: 'http://localhost:8378/1/roles?where=%7Bbad-json',
+            headers: restHeaders,
+          })
+        ).toBeRejectedWith(jasmine.objectContaining({ status: 400 }));
+      });
+
+      it('rejects invalid JSON in where parameter for users endpoint', async () => {
+        await expectAsync(
+          request({
+            method: 'GET',
+            url: 'http://localhost:8378/1/users?where=%7Bbad-json',
+            headers: restHeaders,
+          })
+        ).toBeRejectedWith(jasmine.objectContaining({ status: 400 }));
+      });
+
+      it('rejects invalid JSON in where parameter for sessions endpoint', async () => {
+        await expectAsync(
+          request({
+            method: 'GET',
+            url: 'http://localhost:8378/1/sessions?where=%7Bbad-json',
+            headers: restHeaders,
+          })
+        ).toBeRejectedWith(jasmine.objectContaining({ status: 400 }));
+      });
+
+      it('still accepts valid JSON in where parameter', async () => {
+        const result = await request({
+          method: 'GET',
+          url: `http://localhost:8378/1/classes/TestClass?where=${encodeURIComponent(JSON.stringify({}))}`,
+          headers: restHeaders,
+        });
+        expect(result.data.results).toEqual([]);
+      });
+    });
+
+    describe('$regex type validation', () => {
+      it('rejects object $regex in query', async () => {
+        const where = JSON.stringify({ field: { $regex: { a: 1 } } });
+        await expectAsync(
+          request({
+            method: 'GET',
+            url: `http://localhost:8378/1/classes/TestClass?where=${encodeURIComponent(where)}`,
+            headers: restHeaders,
+          })
+        ).toBeRejectedWith(jasmine.objectContaining({ status: 400 }));
+      });
+
+      it('rejects numeric $regex in query', async () => {
+        const where = JSON.stringify({ field: { $regex: 123 } });
+        await expectAsync(
+          request({
+            method: 'GET',
+            url: `http://localhost:8378/1/classes/TestClass?where=${encodeURIComponent(where)}`,
+            headers: restHeaders,
+          })
+        ).toBeRejectedWith(jasmine.objectContaining({ status: 400 }));
+      });
+
+      it('rejects array $regex in query', async () => {
+        const where = JSON.stringify({ field: { $regex: ['test'] } });
+        await expectAsync(
+          request({
+            method: 'GET',
+            url: `http://localhost:8378/1/classes/TestClass?where=${encodeURIComponent(where)}`,
+            headers: restHeaders,
+          })
+        ).toBeRejectedWith(jasmine.objectContaining({ status: 400 }));
+      });
+
+      it('still accepts valid string $regex in query', async () => {
+        const obj = new Parse.Object('TestClass');
+        obj.set('field', 'hello');
+        await obj.save();
+        const where = JSON.stringify({ field: { $regex: '^hello$' } });
+        const result = await request({
+          method: 'GET',
+          url: `http://localhost:8378/1/classes/TestClass?where=${encodeURIComponent(where)}`,
+          headers: restHeaders,
+        });
+        expect(result.data.results.length).toBe(1);
+      });
+    });
+
+    describe('$options type validation', () => {
+      it('rejects numeric $options in query', async () => {
+        const where = JSON.stringify({ field: { $regex: 'test', $options: 123 } });
+        await expectAsync(
+          request({
+            method: 'GET',
+            url: `http://localhost:8378/1/classes/TestClass?where=${encodeURIComponent(where)}`,
+            headers: restHeaders,
+          })
+        ).toBeRejectedWith(jasmine.objectContaining({ status: 400 }));
+      });
+
+      it('rejects object $options in query', async () => {
+        const where = JSON.stringify({ field: { $regex: 'test', $options: { a: 1 } } });
+        await expectAsync(
+          request({
+            method: 'GET',
+            url: `http://localhost:8378/1/classes/TestClass?where=${encodeURIComponent(where)}`,
+            headers: restHeaders,
+          })
+        ).toBeRejectedWith(jasmine.objectContaining({ status: 400 }));
+      });
+
+      it('rejects boolean $options in query', async () => {
+        const where = JSON.stringify({ field: { $regex: 'test', $options: true } });
+        await expectAsync(
+          request({
+            method: 'GET',
+            url: `http://localhost:8378/1/classes/TestClass?where=${encodeURIComponent(where)}`,
+            headers: restHeaders,
+          })
+        ).toBeRejectedWith(jasmine.objectContaining({ status: 400 }));
+      });
+
+      it('still accepts valid string $options in query', async () => {
+        const obj = new Parse.Object('TestClass');
+        obj.set('field', 'hello');
+        await obj.save();
+        const where = JSON.stringify({ field: { $regex: 'hello', $options: 'i' } });
+        const result = await request({
+          method: 'GET',
+          url: `http://localhost:8378/1/classes/TestClass?where=${encodeURIComponent(where)}`,
+          headers: restHeaders,
+        });
+        expect(result.data.results.length).toBe(1);
+      });
+    });
+
+    describe('$in type validation on text fields', () => {
+      it_only_db('postgres')('rejects non-matching type in $in for text field with proper error instead of 500', async () => {
+        const obj = new Parse.Object('TestClass');
+        obj.set('textField', 'hello');
+        await obj.save();
+        const where = JSON.stringify({ textField: { $in: [1, 2, 3] } });
+        await expectAsync(
+          request({
+            method: 'GET',
+            url: `http://localhost:8378/1/classes/TestClass?where=${encodeURIComponent(where)}`,
+            headers: restHeaders,
+          })
+        ).toBeRejectedWith(jasmine.objectContaining({ status: 400 }));
+      });
+
+      it('still accepts matching type in $in for text field', async () => {
+        const obj = new Parse.Object('TestClass');
+        obj.set('textField', 'hello');
+        await obj.save();
+        const where = JSON.stringify({ textField: { $in: ['hello', 'world'] } });
+        const result = await request({
+          method: 'GET',
+          url: `http://localhost:8378/1/classes/TestClass?where=${encodeURIComponent(where)}`,
+          headers: restHeaders,
+        });
+        expect(result.data.results.length).toBe(1);
+      });
+    });
   });
 });

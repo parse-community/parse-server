@@ -7,6 +7,7 @@ const AppCachePut = (appId, config) =>
     ...config,
     maintenanceKeyIpsStore: new Map(),
     masterKeyIpsStore: new Map(),
+    readOnlyMasterKeyIpsStore: new Map(),
   });
 
 describe('middlewares', () => {
@@ -207,6 +208,55 @@ describe('middlewares', () => {
     expect(fakeReq.auth.isMaster).toBe(true);
   });
 
+  it('should not succeed and log if the ip does not belong to readOnlyMasterKeyIps list', async () => {
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'error').and.callFake(() => {});
+    AppCachePut(fakeReq.body._ApplicationId, {
+      masterKeyIps: ['0.0.0.0/0'],
+      readOnlyMasterKey: 'readOnlyMasterKey',
+      readOnlyMasterKeyIps: ['10.0.0.1'],
+    });
+    fakeReq.ip = '127.0.0.1';
+    fakeReq.headers['x-parse-application-id'] = fakeReq.body._ApplicationId;
+    fakeReq.headers['x-parse-master-key'] = 'readOnlyMasterKey';
+
+    const error = await middlewares.handleParseHeaders(fakeReq, fakeRes, () => {}).catch(e => e);
+
+    expect(error).toBeDefined();
+    expect(error.message).toEqual('unauthorized');
+    expect(logger.error).toHaveBeenCalledWith(
+      `Request using read-only master key rejected as the request IP address '127.0.0.1' is not set in Parse Server option 'readOnlyMasterKeyIps'.`
+    );
+  });
+
+  it('should succeed if the ip does belong to readOnlyMasterKeyIps list', async () => {
+    AppCachePut(fakeReq.body._ApplicationId, {
+      masterKeyIps: ['0.0.0.0/0'],
+      readOnlyMasterKey: 'readOnlyMasterKey',
+      readOnlyMasterKeyIps: ['10.0.0.1'],
+    });
+    fakeReq.ip = '10.0.0.1';
+    fakeReq.headers['x-parse-application-id'] = fakeReq.body._ApplicationId;
+    fakeReq.headers['x-parse-master-key'] = 'readOnlyMasterKey';
+    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
+    expect(fakeReq.auth.isMaster).toBe(true);
+    expect(fakeReq.auth.isReadOnly).toBe(true);
+  });
+
+  it('should allow any ip to use readOnlyMasterKey if readOnlyMasterKeyIps is 0.0.0.0/0', async () => {
+    AppCachePut(fakeReq.body._ApplicationId, {
+      masterKeyIps: ['0.0.0.0/0'],
+      readOnlyMasterKey: 'readOnlyMasterKey',
+      readOnlyMasterKeyIps: ['0.0.0.0/0'],
+    });
+    fakeReq.ip = '10.0.0.1';
+    fakeReq.headers['x-parse-application-id'] = fakeReq.body._ApplicationId;
+    fakeReq.headers['x-parse-master-key'] = 'readOnlyMasterKey';
+    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
+    expect(fakeReq.auth.isMaster).toBe(true);
+    expect(fakeReq.auth.isReadOnly).toBe(true);
+  });
+
   it('can set trust proxy', async () => {
     const server = await reconfigureServer({ trustProxy: 1 });
     expect(server.app.parent.settings['trust proxy']).toBe(1);
@@ -378,6 +428,103 @@ describe('middlewares', () => {
     expect(middlewares.checkIp(localhostV62, ['::1'], new Map())).toBe(false);
     // ::ffff:127.0.0.1 is a padded ipv4 address and is a match for  127.0.0.1
     expect(middlewares.checkIp(localhostV62, ['127.0.0.1'], new Map())).toBe(true);
+  });
+
+  describe('body field type validation', () => {
+    beforeEach(() => {
+      AppCachePut(fakeReq.body._ApplicationId, {
+        masterKeyIps: ['0.0.0.0/0'],
+      });
+    });
+
+    it('should reject non-string _SessionToken in body', async () => {
+      fakeReq.body._SessionToken = { toString: 'evil' };
+      await middlewares.handleParseHeaders(fakeReq, fakeRes);
+      expect(fakeRes.status).toHaveBeenCalledWith(403);
+    });
+
+    it('should reject non-string _ClientVersion in body', async () => {
+      fakeReq.body._ClientVersion = { toLowerCase: 'evil' };
+      await middlewares.handleParseHeaders(fakeReq, fakeRes);
+      expect(fakeRes.status).toHaveBeenCalledWith(403);
+    });
+
+    it('should reject non-string _InstallationId in body', async () => {
+      fakeReq.body._InstallationId = { toString: 'evil' };
+      await middlewares.handleParseHeaders(fakeReq, fakeRes);
+      expect(fakeRes.status).toHaveBeenCalledWith(403);
+    });
+
+    it('should reject non-string _ContentType in body', async () => {
+      fakeReq.body._ContentType = { toString: 'evil' };
+      await middlewares.handleParseHeaders(fakeReq, fakeRes);
+      expect(fakeRes.status).toHaveBeenCalledWith(403);
+    });
+
+    it('should reject non-string base64 in file-via-JSON upload', async () => {
+      fakeReq.body = Buffer.from(
+        JSON.stringify({
+          _ApplicationId: 'FakeAppId',
+          base64: { toString: 'evil' },
+        })
+      );
+      await middlewares.handleParseHeaders(fakeReq, fakeRes);
+      expect(fakeRes.status).toHaveBeenCalledWith(403);
+    });
+
+    it('should not crash the server process on non-string body fields', async () => {
+      // Verify that type confusion in body fields does not crash the Node.js process.
+      // Each request should be handled independently without affecting server stability.
+      const payloads = [
+        { _SessionToken: { toString: 'evil' } },
+        { _ClientVersion: { toLowerCase: 'evil' } },
+        { _InstallationId: [1, 2, 3] },
+        { _ContentType: { toString: 'evil' } },
+      ];
+      for (const payload of payloads) {
+        const req = {
+          ip: '127.0.0.1',
+          originalUrl: 'http://example.com/parse/',
+          url: 'http://example.com/',
+          body: { _ApplicationId: 'FakeAppId', ...payload },
+          headers: {},
+          get: key => req.headers[key.toLowerCase()],
+        };
+        const res = jasmine.createSpyObj('res', ['end', 'status']);
+        await middlewares.handleParseHeaders(req, res);
+        expect(res.status).toHaveBeenCalledWith(403);
+      }
+      // Server process is still alive — a subsequent valid request works
+      const validReq = {
+        ip: '127.0.0.1',
+        originalUrl: 'http://example.com/parse/',
+        url: 'http://example.com/',
+        body: { _ApplicationId: 'FakeAppId' },
+        headers: {},
+        get: key => validReq.headers[key.toLowerCase()],
+      };
+      const validRes = jasmine.createSpyObj('validRes', ['end', 'status']);
+      let nextCalled = false;
+      await middlewares.handleParseHeaders(validReq, validRes, () => {
+        nextCalled = true;
+      });
+      expect(nextCalled).toBe(true);
+      expect(validRes.status).not.toHaveBeenCalled();
+    });
+
+    it('should still accept valid string body fields', done => {
+      fakeReq.body._SessionToken = 'r:validtoken';
+      fakeReq.body._ClientVersion = 'js1.0.0';
+      fakeReq.body._InstallationId = 'install123';
+      fakeReq.body._ContentType = 'application/json';
+      middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
+        expect(fakeReq.info.sessionToken).toEqual('r:validtoken');
+        expect(fakeReq.info.clientVersion).toEqual('js1.0.0');
+        expect(fakeReq.info.installationId).toEqual('install123');
+        expect(fakeReq.headers['content-type']).toEqual('application/json');
+        done();
+      });
+    });
   });
 
   it('should match address with cache', () => {

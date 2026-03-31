@@ -3,6 +3,7 @@ const PushController = require('../lib/Controllers/PushController').PushControll
 const StatusHandler = require('../lib/StatusHandler');
 const Config = require('../lib/Config');
 const validatePushType = require('../lib/Push/utils').validatePushType;
+const Utils = require('../lib/Utils');
 
 const successfulTransmissions = function (body, installations) {
   const promises = installations.map(device => {
@@ -454,8 +455,8 @@ describe('PushController', () => {
     const pushStatusId = await sendPush(payload, {}, config, auth);
     await pushCompleted(pushStatusId);
     const result = await Parse.Push.getPushStatus(pushStatusId);
-    expect(result.createdAt instanceof Date).toBe(true);
-    expect(result.updatedAt instanceof Date).toBe(true);
+    expect(Utils.isDate(result.createdAt)).toBe(true);
+    expect(Utils.isDate(result.updatedAt)).toBe(true);
     expect(result.id.length).toBe(10);
     expect(result.get('source')).toEqual('rest');
     expect(result.get('query')).toEqual(JSON.stringify({}));
@@ -1074,7 +1075,7 @@ describe('PushController', () => {
     const audience = new Parse.Object('_Audience');
     audience.set('name', 'testAudience');
     audience.set('query', JSON.stringify(where));
-    await Parse.Object.saveAll(audience);
+    await audience.save(null, { useMasterKey: true });
     await query.find({ useMasterKey: true }).then(parseResults);
 
     const body = {

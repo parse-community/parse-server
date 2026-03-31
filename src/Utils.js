@@ -6,6 +6,7 @@
 
 const path = require('path');
 const fs = require('fs').promises;
+const { types } = require('util');
 
 /**
  * The general purpose utilities.
@@ -120,12 +121,75 @@ class Utils {
   }
 
   /**
-   * Determines whether an object is a Promise.
-   * @param {any} object The object to validate.
-   * @returns {Boolean} Returns true if the object is a promise.
+   * Realm-safe check for Date.
+   * @param {any} value The value to check.
+   * @returns {Boolean} Returns true if the value is a Date.
    */
-  static isPromise(object) {
-    return object instanceof Promise;
+  static isDate(value) {
+    return types.isDate(value);
+  }
+
+  /**
+   * Realm-safe check for RegExp.
+   * @param {any} value The value to check.
+   * @returns {Boolean} Returns true if the value is a RegExp.
+   */
+  static isRegExp(value) {
+    return types.isRegExp(value);
+  }
+
+  /**
+   * Realm-safe check for Map.
+   * @param {any} value The value to check.
+   * @returns {Boolean} Returns true if the value is a Map.
+   */
+  static isMap(value) {
+    return types.isMap(value);
+  }
+
+  /**
+   * Realm-safe check for Set.
+   * @param {any} value The value to check.
+   * @returns {Boolean} Returns true if the value is a Set.
+   */
+  static isSet(value) {
+    return types.isSet(value);
+  }
+
+  /**
+   * Realm-safe check for native Error.
+   * @param {any} value The value to check.
+   * @returns {Boolean} Returns true if the value is a native Error.
+   */
+  static isNativeError(value) {
+    return types.isNativeError(value);
+  }
+
+  /**
+   * Realm-safe check for Promise (duck-typed as thenable).
+   * Guards against Object.prototype pollution by ensuring `then` is not
+   * inherited solely from Object.prototype.
+   * @param {any} value The value to check.
+   * @returns {Boolean} Returns true if the value is a Promise or thenable.
+   */
+  static isPromise(value) {
+    if (value == null || typeof value.then !== 'function') {
+      return false;
+    }
+    return Object.getPrototypeOf(value) !== Object.prototype || Object.prototype.hasOwnProperty.call(value, 'then');
+  }
+
+  /**
+   * Realm-safe check for object type. Uses `typeof` instead of `instanceof Object`
+   * which fails across realms. Returns true for any non-null value where
+   * `typeof` is `'object'`, including plain objects, arrays, dates, maps, sets,
+   * regex, and boxed primitives (e.g. `new String()`). Returns false for `null`,
+   * `undefined`, unboxed primitives, and functions.
+   * @param {any} value The value to check.
+   * @returns {Boolean} Returns true if the value is a non-null object type.
+   */
+  static isObject(value) {
+    return typeof value === 'object' && value !== null;
   }
 
   /**
@@ -344,16 +408,25 @@ class Utils {
     const isMatch = (a, b) => (typeof a === 'string' && new RegExp(b).test(a)) || a === b;
     const isKeyMatch = k => isMatch(k, key);
     const isValueMatch = v => isMatch(v, value);
-    for (const [k, v] of Object.entries(obj)) {
-      if (key !== undefined && value === undefined && isKeyMatch(k)) {
-        return true;
-      } else if (key === undefined && value !== undefined && isValueMatch(v)) {
-        return true;
-      } else if (key !== undefined && value !== undefined && isKeyMatch(k) && isValueMatch(v)) {
-        return true;
+    const stack = [obj];
+    const seen = new WeakSet();
+    while (stack.length > 0) {
+      const current = stack.pop();
+      if (seen.has(current)) {
+        continue;
       }
-      if (['[object Object]', '[object Array]'].includes(Object.prototype.toString.call(v))) {
-        return Utils.objectContainsKeyValue(v, key, value);
+      seen.add(current);
+      for (const [k, v] of Object.entries(current)) {
+        if (key !== undefined && value === undefined && isKeyMatch(k)) {
+          return true;
+        } else if (key === undefined && value !== undefined && isValueMatch(v)) {
+          return true;
+        } else if (key !== undefined && value !== undefined && isKeyMatch(k) && isValueMatch(v)) {
+          return true;
+        }
+        if (['[object Object]', '[object Array]'].includes(Object.prototype.toString.call(v))) {
+          stack.push(v);
+        }
       }
     }
     return false;
@@ -429,10 +502,10 @@ class Utils {
   static getCircularReplacer() {
     const seen = new WeakSet();
     return (key, value) => {
-      if (value instanceof Map) {
+      if (Utils.isMap(value)) {
         return Object.fromEntries(value);
       }
-      if (value instanceof Set) {
+      if (Utils.isSet(value)) {
         return Array.from(value);
       }
       if (typeof value === 'object' && value !== null) {

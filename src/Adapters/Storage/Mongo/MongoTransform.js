@@ -121,7 +121,7 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
   }
 
   // Handle arrays
-  if (restValue instanceof Array) {
+  if (Array.isArray(restValue)) {
     value = restValue.map(transformInteriorValue);
     return { key, value };
   }
@@ -137,7 +137,7 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
 };
 
 const isRegex = value => {
-  return value && value instanceof RegExp;
+  return value && Utils.isRegExp(value);
 };
 
 const isStartsWithRegex = value => {
@@ -189,10 +189,10 @@ const transformInteriorValue = restValue => {
   var value = transformInteriorAtom(restValue);
   if (value !== CannotTransform) {
     if (value && typeof value === 'object') {
-      if (value instanceof Date) {
+      if (Utils.isDate(value)) {
         return value;
       }
-      if (value instanceof Array) {
+      if (Array.isArray(value)) {
         value = value.map(transformInteriorValue);
       } else {
         value = mapValues(value, transformInteriorValue);
@@ -202,7 +202,7 @@ const transformInteriorValue = restValue => {
   }
 
   // Handle arrays
-  if (restValue instanceof Array) {
+  if (Array.isArray(restValue)) {
     return restValue.map(transformInteriorValue);
   }
 
@@ -218,7 +218,7 @@ const transformInteriorValue = restValue => {
 const valueAsDate = value => {
   if (typeof value === 'string') {
     return new Date(value);
-  } else if (value instanceof Date) {
+  } else if (Utils.isDate(value)) {
     return value;
   }
   return false;
@@ -304,11 +304,11 @@ function transformQueryKeyValue(className, key, value, schema, count = false) {
       return { key: 'times_used', value: value };
     default: {
       // Other auth data
-      const authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
+      const authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)(\.(.+))?$/);
       if (authDataMatch && className === '_User') {
         const provider = authDataMatch[1];
-        // Special-case auth data.
-        return { key: `_auth_data_${provider}.id`, value };
+        const subField = authDataMatch[3];
+        return { key: `_auth_data_${provider}${subField ? `.${subField}` : ''}`, value };
       }
     }
   }
@@ -338,7 +338,7 @@ function transformQueryKeyValue(className, key, value, schema, count = false) {
     return { key, value: transformedConstraint };
   }
 
-  if (expectedTypeIsArray && !(value instanceof Array)) {
+  if (expectedTypeIsArray && !Array.isArray(value)) {
     return { key, value: { $all: [transformInteriorAtom(value)] } };
   }
 
@@ -444,7 +444,7 @@ const parseObjectKeyValueToMongoObjectKeyValue = (restKey, restValue, schema) =>
   }
 
   // Handle arrays
-  if (restValue instanceof Array) {
+  if (Array.isArray(restValue)) {
     value = restValue.map(transformInteriorValue);
     return { key: restKey, value: value };
   }
@@ -565,7 +565,7 @@ function CannotTransform() {}
 
 const transformInteriorAtom = atom => {
   // TODO: check validity harder for the __type-defined types
-  if (typeof atom === 'object' && atom && !(atom instanceof Date) && atom.__type === 'Pointer') {
+  if (typeof atom === 'object' && atom && !Utils.isDate(atom) && atom.__type === 'Pointer') {
     return {
       __type: 'Pointer',
       className: atom.className,
@@ -608,7 +608,7 @@ function transformTopLevelAtom(atom, field) {
     case 'function':
       throw new Parse.Error(Parse.Error.INVALID_JSON, `cannot transform value: ${atom}`);
     case 'object':
-      if (atom instanceof Date) {
+      if (Utils.isDate(atom)) {
         // Technically dates are not rest format, but, it seems pretty
         // clear what they should be transformed to, so let's just do it.
         return atom;
@@ -726,7 +726,7 @@ function transformConstraint(constraint, field, queryKey, count = false) {
       case '$in':
       case '$nin': {
         const arr = constraint[key];
-        if (!(arr instanceof Array)) {
+        if (!Array.isArray(arr)) {
           throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad ' + key + ' value');
         }
         answer[key] = _.flatMap(arr, value => {
@@ -742,7 +742,7 @@ function transformConstraint(constraint, field, queryKey, count = false) {
       }
       case '$all': {
         const arr = constraint[key];
-        if (!(arr instanceof Array)) {
+        if (!Array.isArray(arr)) {
           throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad ' + key + ' value');
         }
         answer[key] = arr.map(transformInteriorAtom);
@@ -767,7 +767,7 @@ function transformConstraint(constraint, field, queryKey, count = false) {
 
       case '$containedBy': {
         const arr = constraint[key];
-        if (!(arr instanceof Array)) {
+        if (!Array.isArray(arr)) {
           throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $containedBy: should be an array`);
         }
         answer.$elemMatch = {
@@ -877,7 +877,7 @@ function transformConstraint(constraint, field, queryKey, count = false) {
               );
             }
             points = polygon.coordinates;
-          } else if (polygon instanceof Array) {
+          } else if (Array.isArray(polygon)) {
             if (polygon.length < 3) {
               throw new Parse.Error(
                 Parse.Error.INVALID_JSON,
@@ -892,7 +892,7 @@ function transformConstraint(constraint, field, queryKey, count = false) {
             );
           }
           points = points.map(point => {
-            if (point instanceof Array && point.length === 2) {
+            if (Array.isArray(point) && point.length === 2) {
               Parse.GeoPoint._validate(point[1], point[0]);
               return point;
             }
@@ -907,7 +907,7 @@ function transformConstraint(constraint, field, queryKey, count = false) {
             $polygon: points,
           };
         } else if (centerSphere !== undefined) {
-          if (!(centerSphere instanceof Array) || centerSphere.length < 2) {
+          if (!Array.isArray(centerSphere) || centerSphere.length < 2) {
             throw new Parse.Error(
               Parse.Error.INVALID_JSON,
               'bad $geoWithin value; $centerSphere should be an array of Parse.GeoPoint and distance'
@@ -915,7 +915,7 @@ function transformConstraint(constraint, field, queryKey, count = false) {
           }
           // Get point, convert to geo point if necessary and validate
           let point = centerSphere[0];
-          if (point instanceof Array && point.length === 2) {
+          if (Array.isArray(point) && point.length === 2) {
             point = new Parse.GeoPoint(point[1], point[0]);
           } else if (!GeoPointCoder.isValidJSON(point)) {
             throw new Parse.Error(
@@ -1004,7 +1004,7 @@ function transformUpdateOperator({ __op, amount, objects }, flatten) {
 
     case 'Add':
     case 'AddUnique':
-      if (!(objects instanceof Array)) {
+      if (!Array.isArray(objects)) {
         throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
       }
       var toAdd = objects.map(transformInteriorAtom);
@@ -1019,7 +1019,7 @@ function transformUpdateOperator({ __op, amount, objects }, flatten) {
       }
 
     case 'Remove':
-      if (!(objects instanceof Array)) {
+      if (!Array.isArray(objects)) {
         throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to remove must be an array');
       }
       var toRemove = objects.map(transformInteriorAtom);
@@ -1058,11 +1058,11 @@ const nestedMongoObjectToNestedParseObject = mongoObject => {
       if (mongoObject === null) {
         return null;
       }
-      if (mongoObject instanceof Array) {
+      if (Array.isArray(mongoObject)) {
         return mongoObject.map(nestedMongoObjectToNestedParseObject);
       }
 
-      if (mongoObject instanceof Date) {
+      if (Utils.isDate(mongoObject)) {
         return Parse._encode(mongoObject);
       }
 
@@ -1085,7 +1085,7 @@ const nestedMongoObjectToNestedParseObject = mongoObject => {
       if (
         Object.prototype.hasOwnProperty.call(mongoObject, '__type') &&
         mongoObject.__type == 'Date' &&
-        mongoObject.iso instanceof Date
+        Utils.isDate(mongoObject.iso)
       ) {
         mongoObject.iso = mongoObject.iso.toJSON();
         return mongoObject;
@@ -1125,11 +1125,11 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
       if (mongoObject === null) {
         return null;
       }
-      if (mongoObject instanceof Array) {
+      if (Array.isArray(mongoObject)) {
         return mongoObject.map(nestedMongoObjectToNestedParseObject);
       }
 
-      if (mongoObject instanceof Date) {
+      if (Utils.isDate(mongoObject)) {
         return Parse._encode(mongoObject);
       }
 
@@ -1368,7 +1368,7 @@ var GeoPointCoder = {
   },
 
   isValidDatabaseObject(object) {
-    return object instanceof Array && object.length == 2;
+    return Array.isArray(object) && object.length == 2;
   },
 
   JSONToDatabase(json) {
@@ -1394,7 +1394,7 @@ var PolygonCoder = {
 
   isValidDatabaseObject(object) {
     const coords = object.coordinates[0];
-    if (object.type !== 'Polygon' || !(coords instanceof Array)) {
+    if (object.type !== 'Polygon' || !Array.isArray(coords)) {
       return false;
     }
     for (let i = 0; i < coords.length; i++) {

@@ -25,8 +25,7 @@ if (dns.setDefaultResultOrder) {
 jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
 jasmine.getEnv().addReporter(new CurrentSpecReporter());
 jasmine.getEnv().addReporter(new SpecReporter());
-global.retryFlakyTests();
-
+global.normalizeAsyncTests();
 global.on_db = (db, callback, elseCallback) => {
   if (process.env.PARSE_SERVER_TEST_DB == db) {
     return callback();
@@ -258,6 +257,9 @@ global.afterEachFn = async () => {
         if (!className.startsWith('_')) {
           return true;
         }
+        if (className.startsWith('_Join:')) {
+          return true;
+        }
         return [
           '_User',
           '_Installation',
@@ -334,7 +336,7 @@ function normalize(obj) {
   if (obj === null || typeof obj !== 'object') {
     return JSON.stringify(obj);
   }
-  if (obj instanceof Array) {
+  if (Array.isArray(obj)) {
     return '[' + obj.map(normalize).join(', ') + ']';
   }
   let answer = '{';

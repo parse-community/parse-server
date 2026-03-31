@@ -186,6 +186,31 @@ describe('test validate_receipt endpoint', () => {
       });
   });
 
+  it('should disable validate_purchase endpoint when enableProductPurchaseLegacyApi is false', async () => {
+    await reconfigureServer({ enableProductPurchaseLegacyApi: false });
+    const ParseServer = require('../lib/ParseServer').default;
+    const routers = ParseServer.promiseRouter({
+      appId: 'test',
+      options: { enableProductPurchaseLegacyApi: false },
+    });
+    const hasValidatePurchase = routers.routes.some(
+      r => r.path === '/validate_purchase' && r.method === 'POST'
+    );
+    expect(hasValidatePurchase).toBe(false);
+  });
+
+  it('should enable validate_purchase endpoint by default', async () => {
+    const ParseServer = require('../lib/ParseServer').default;
+    const routers = ParseServer.promiseRouter({
+      appId: 'test',
+      options: {},
+    });
+    const hasValidatePurchase = routers.routes.some(
+      r => r.path === '/validate_purchase' && r.method === 'POST'
+    );
+    expect(hasValidatePurchase).toBe(true);
+  });
+
   it('should not be able to remove a require key in a _Product', done => {
     const query = new Parse.Query('_Product');
     query

@@ -1,6 +1,51 @@
 var equalObjects = require('./equalObjects');
 var Id = require('./Id');
 var Parse = require('parse/node');
+var vm = require('vm');
+var logger = require('../logger').default;
+
+var regexTimeout = 0;
+// IMPORTANT: vmContext is shared across all calls for performance (vm.createContext() is expensive).
+// This is safe because safeRegexTest is synchronous — setting the context properties and calling
+// runInContext happen in the same event loop tick with no interruption possible. Do NOT add any
+// asynchronous operations (await, callbacks, promises) between setting vmContext properties and
+// calling script.runInContext, as this would allow other calls to overwrite the context values
+// and cause cross-contamination between regex evaluations.
+var vmContext = vm.createContext(Object.create(null));
+var scriptCache = new Map();
+var SCRIPT_CACHE_MAX = 1000;
+
+function setRegexTimeout(ms) {
+  regexTimeout = ms;
+}
+
+// IMPORTANT: This function must remain synchronous. See vmContext comment above.
+function safeRegexTest(pattern, flags, input) {
+  try {
+    if (!regexTimeout) {
+      var re = new RegExp(pattern, flags);
+      return re.test(input);
+    }
+    var cacheKey = flags + ':' + pattern;
+    var script = scriptCache.get(cacheKey);
+    if (!script) {
+      if (scriptCache.size >= SCRIPT_CACHE_MAX) { scriptCache.clear(); }
+      script = new vm.Script('new RegExp(pattern, flags).test(input)');
+      scriptCache.set(cacheKey, script);
+    }
+    vmContext.pattern = pattern;
+    vmContext.flags = flags;
+    vmContext.input = input;
+    return script.runInContext(vmContext, { timeout: regexTimeout });
+  } catch (e) {
+    if (e.code === 'ERR_SCRIPT_EXECUTION_TIMEOUT') {
+      logger.warn(`Regex timeout: pattern "${pattern}" with flags "${flags}" exceeded ${regexTimeout}ms limit`);
+    } else {
+      logger.warn(`Invalid regex: pattern "${pattern}" with flags "${flags}": ${e.message}`);
+    }
+    return false;
+  }
+}
 
 /**
  * Query Hashes are deterministic hashes for Parse Queries.
@@ -168,6 +213,9 @@ function matchesKeyConstraints(object, key, constraints) {
   }
   var i;
   if (key === '$or') {
+    if (!Array.isArray(constraints)) {
+      return false;
+    }
     for (i = 0; i < constraints.length; i++) {
       if (matchesQuery(object, constraints[i])) {
         return true;
@@ -176,6 +224,9 @@ function matchesKeyConstraints(object, key, constraints) {
     return false;
   }
   if (key === '$and') {
+    if (!Array.isArray(constraints)) {
+      return false;
+    }
     for (i = 0; i < constraints.length; i++) {
       if (!matchesQuery(object, constraints[i])) {
         return false;
@@ -184,6 +235,9 @@ function matchesKeyConstraints(object, key, constraints) {
     return true;
   }
   if (key === '$nor') {
+    if (!Array.isArray(constraints)) {
+      return false;
+    }
     for (i = 0; i < constraints.length; i++) {
       if (matchesQuery(object, constraints[i])) {
         return false;
@@ -290,9 +344,12 @@ function matchesKeyConstraints(object, key, constraints) {
         }
         break;
       }
-      case '$regex':
+      case '$regex': {
         if (typeof compareTo === 'object') {
-          return compareTo.test(object[key]);
+          if (!safeRegexTest(compareTo.source, compareTo.flags, object[key])) {
+            return false;
+          }
+          break;
         }
         // JS doesn't support perl-style escaping
         var expString = '';
@@ -312,11 +369,11 @@ function matchesKeyConstraints(object, key, constraints) {
           escapeStart = compareTo.indexOf('\\Q', escapeEnd);
         }
         expString += compareTo.substring(Math.max(escapeStart, escapeEnd + 2));
-        var exp = new RegExp(expString, constraints.$options || '');
-        if (!exp.test(object[key])) {
+        if (!safeRegexTest(expString, constraints.$options || '', object[key])) {
           return false;
         }
         break;
+      }
       case '$nearSphere':
         if (!compareTo || !object[key]) {
           return false;
@@ -396,6 +453,7 @@ function matchesKeyConstraints(object, key, constraints) {
 var QueryTools = {
   queryHash: queryHash,
   matchesQuery: matchesQuery,
+  setRegexTimeout: setRegexTimeout,
 };
 
 module.exports = QueryTools;

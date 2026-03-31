@@ -76,6 +76,37 @@
 const ldapjs = require('ldapjs');
 const Parse = require('parse/node').Parse;
 
+// Escape LDAP DN special characters per RFC 4514
+// https://datatracker.ietf.org/doc/html/rfc4514#section-2.4
+function escapeDN(value) {
+  let escaped = value
+    .replace(/\\/g, '\\\\')
+    .replace(/,/g, '\\,')
+    .replace(/=/g, '\\=')
+    .replace(/\+/g, '\\+')
+    .replace(/</g, '\\<')
+    .replace(/>/g, '\\>')
+    .replace(/#/g, '\\#')
+    .replace(/;/g, '\\;')
+    .replace(/"/g, '\\"');
+  if (escaped.startsWith(' ')) {
+    escaped = '\\ ' + escaped.slice(1);
+  }
+  if (escaped.endsWith(' ')) {
+    escaped = escaped.slice(0, -1) + '\\ ';
+  }
+  return escaped;
+}
+
+// Escape LDAP filter special characters per RFC 4515
+// https://datatracker.ietf.org/doc/html/rfc4515#section-3
+function escapeFilter(value) {
+  // eslint-disable-next-line no-control-regex
+  return value.replace(/[\\*()\x00]/g, ch =>
+    '\\' + ch.charCodeAt(0).toString(16).padStart(2, '0')
+  );
+}
+
 function validateAuthData(authData, options) {
   if (!optionsAreValid(options)) {
     return new Promise((_, reject) => {
@@ -86,11 +117,17 @@ function validateAuthData(authData, options) {
     ? { url: options.url, tlsOptions: options.tlsOptions }
     : { url: options.url };
 
+  if (typeof authData.id !== 'string') {
+    return Promise.reject(
+      new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'LDAP: Wrong username or password')
+    );
+  }
   const client = ldapjs.createClient(clientOptions);
+  const escapedId = escapeDN(authData.id);
   const userCn =
     typeof options.dn === 'string'
-      ? options.dn.replace('{{id}}', authData.id)
-      : `uid=${authData.id},${options.suffix}`;
+      ? options.dn.replace('{{id}}', escapedId)
+      : `uid=${escapedId},${options.suffix}`;
 
   return new Promise((resolve, reject) => {
     client.bind(userCn, authData.password, ldapError => {
@@ -140,7 +177,7 @@ function optionsAreValid(options) {
 }
 
 function searchForGroup(client, options, id, resolve, reject) {
-  const filter = options.groupFilter.replace(/{{id}}/gi, id);
+  const filter = options.groupFilter.replace(/{{id}}/gi, escapeFilter(id));
   const opts = {
     scope: 'sub',
     filter: filter,
@@ -184,4 +221,6 @@ function validateAppId() {
 module.exports = {
   validateAppId,
   validateAuthData,
+  escapeDN,
+  escapeFilter,
 };

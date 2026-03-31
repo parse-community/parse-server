@@ -1,4 +1,5 @@
 import requiredParameter from '../../lib/requiredParameter';
+import Utils from '../Utils';
 import DatabaseController from './DatabaseController';
 import CacheController from './CacheController';
 
@@ -306,8 +307,8 @@ const isValidSimpleObject = function (obj): boolean {
     typeof obj === 'object' &&
     !Array.isArray(obj) &&
     obj !== null &&
-    obj instanceof Date !== true &&
-    obj instanceof Promise !== true
+    Utils.isDate(obj) !== true &&
+    Utils.isPromise(obj) !== true
   );
 };
 

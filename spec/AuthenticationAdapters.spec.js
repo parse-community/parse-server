@@ -484,7 +484,7 @@ describe('google auth adapter', () => {
 
   it('should throw error with missing id_token', async () => {
     try {
-      await google.validateAuthData({}, {});
+      await google.validateAuthData({}, { clientId: 'secret' });
       fail();
     } catch (e) {
       expect(e.message).toBe('id token is invalid for this user.');
@@ -493,7 +493,7 @@ describe('google auth adapter', () => {
 
   it('should not decode invalid id_token', async () => {
     try {
-      await google.validateAuthData({ id: 'the_user_id', id_token: 'the_token' }, {});
+      await google.validateAuthData({ id: 'the_user_id', id_token: 'the_token' }, { clientId: 'secret' });
       fail();
     } catch (e) {
       expect(e.message).toBe('provided token does not decode as JWT');
@@ -646,11 +646,21 @@ describe('google auth adapter', () => {
       expect(e.message).toBe('auth data is invalid for this user.');
     }
   });
+
+  it('should throw error when clientId is not configured', async () => {
+    try {
+      await google.validateAuthData({ id: 'the_user_id', id_token: 'the_token' }, {});
+      fail('should have thrown');
+    } catch (e) {
+      expect(e.message).toBe('Google auth is not configured.');
+    }
+  });
 });
 
 describe('keycloak auth adapter', () => {
   const keycloak = require('../lib/Adapters/Auth/keycloak');
-  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+  const jwt = require('jsonwebtoken');
+  const authUtils = require('../lib/Adapters/Auth/utils');
 
   it('validateAuthData should fail without access token', async () => {
     const authData = {
@@ -695,17 +705,12 @@ describe('keycloak auth adapter', () => {
     }
   });
 
-  it('validateAuthData should fail connect error', async () => {
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.reject({
-        text: JSON.stringify({ error: 'hosting_error' }),
-      });
-    });
+  it('validateAuthData should fail without client-id', async () => {
     const options = {
       keycloak: {
         config: {
-          'auth-server-url': 'http://example.com',
-          realm: 'new',
+          'auth-server-url': 'https://auth.example.com',
+          realm: 'my-realm',
         },
       },
     };
@@ -718,84 +723,170 @@ describe('keycloak auth adapter', () => {
       await adapter.validateAuthData(authData, providerOptions);
       fail();
     } catch (e) {
-      expect(e.message).toBe('Could not connect to the authentication server');
+      expect(e.message).toBe('Keycloak auth is not configured. Missing client-id.');
     }
   });
 
-  it('validateAuthData should fail with error description', async () => {
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.reject({
-        text: JSON.stringify({ error_description: 'custom error message' }),
-      });
-    });
+  it('validateAuthData should fail with invalid JWT token', async () => {
     const options = {
       keycloak: {
         config: {
-          'auth-server-url': 'http://example.com',
-          realm: 'new',
+          'auth-server-url': 'https://auth.example.com',
+          realm: 'my-realm',
+          'client-id': 'parse-app',
         },
       },
     };
     const authData = {
       id: 'fakeid',
-      access_token: 'sometoken',
+      access_token: 'not-a-jwt',
     };
     const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     try {
       await adapter.validateAuthData(authData, providerOptions);
       fail();
     } catch (e) {
-      expect(e.message).toBe('custom error message');
+      expect(e.message).toBe('provided token does not decode as JWT');
     }
   });
 
-  it('validateAuthData should fail with invalid auth', async () => {
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({});
-    });
+  it('validateAuthData should fail with wrong issuer', async () => {
+    const fakeClaim = {
+      iss: 'https://evil.example.com/realms/my-realm',
+      azp: 'parse-app',
+      sub: 'fakeid',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
+    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
     const options = {
       keycloak: {
         config: {
-          'auth-server-url': 'http://example.com',
-          realm: 'new',
+          'auth-server-url': 'https://auth.example.com',
+          realm: 'my-realm',
+          'client-id': 'parse-app',
         },
       },
     };
     const authData = {
       id: 'fakeid',
-      access_token: 'sometoken',
+      access_token: 'fake.jwt.token',
     };
     const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     try {
       await adapter.validateAuthData(authData, providerOptions);
       fail();
     } catch (e) {
-      expect(e.message).toBe('Invalid authentication');
+      expect(e.message).toBe(
+        'access token not issued by correct provider - expected: https://auth.example.com/realms/my-realm | from: https://evil.example.com/realms/my-realm'
+      );
     }
   });
 
-  it('validateAuthData should fail with invalid groups', async () => {
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({
-        data: {
-          sub: 'fakeid',
-          roles: ['role1'],
-          groups: ['unknown'],
-        },
-      });
-    });
+  it('validateAuthData should fail with wrong azp (audience)', async () => {
+    const fakeClaim = {
+      iss: 'https://auth.example.com/realms/my-realm',
+      azp: 'other-app',
+      sub: 'fakeid',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
+    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
     const options = {
       keycloak: {
         config: {
-          'auth-server-url': 'http://example.com',
-          realm: 'new',
+          'auth-server-url': 'https://auth.example.com',
+          realm: 'my-realm',
+          'client-id': 'parse-app',
         },
       },
     };
     const authData = {
       id: 'fakeid',
-      access_token: 'sometoken',
+      access_token: 'fake.jwt.token',
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
+    try {
+      await adapter.validateAuthData(authData, providerOptions);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe(
+        'access token is not authorized for this client - expected: parse-app | from: other-app'
+      );
+    }
+  });
+
+  it('validateAuthData should fail with wrong sub', async () => {
+    const fakeClaim = {
+      iss: 'https://auth.example.com/realms/my-realm',
+      azp: 'parse-app',
+      sub: 'wrong-id',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
+    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    const options = {
+      keycloak: {
+        config: {
+          'auth-server-url': 'https://auth.example.com',
+          realm: 'my-realm',
+          'client-id': 'parse-app',
+        },
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'fake.jwt.token',
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
+    try {
+      await adapter.validateAuthData(authData, providerOptions);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('auth data is invalid for this user.');
+    }
+  });
+
+  it('validateAuthData should fail with invalid roles (JWT validation)', async () => {
+    const fakeClaim = {
+      iss: 'https://auth.example.com/realms/my-realm',
+      azp: 'parse-app',
+      sub: 'fakeid',
+      exp: Math.floor(Date.now() / 1000) + 3600,
       roles: ['role1'],
+      groups: ['group1'],
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
+    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    const options = {
+      keycloak: {
+        config: {
+          'auth-server-url': 'https://auth.example.com',
+          realm: 'my-realm',
+          'client-id': 'parse-app',
+        },
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'fake.jwt.token',
+      roles: ['wrong-role'],
       groups: ['group1'],
     };
     const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
@@ -807,29 +898,35 @@ describe('keycloak auth adapter', () => {
     }
   });
 
-  it('validateAuthData should fail with invalid roles', async () => {
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({
-        data: {
-          sub: 'fakeid',
-          roles: 'unknown',
-          groups: ['group1'],
-        },
-      });
-    });
+  it('validateAuthData should fail with invalid groups (JWT validation)', async () => {
+    const fakeClaim = {
+      iss: 'https://auth.example.com/realms/my-realm',
+      azp: 'parse-app',
+      sub: 'fakeid',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+      roles: ['role1'],
+      groups: ['group1'],
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
+    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
     const options = {
       keycloak: {
         config: {
-          'auth-server-url': 'http://example.com',
-          realm: 'new',
+          'auth-server-url': 'https://auth.example.com',
+          realm: 'my-realm',
+          'client-id': 'parse-app',
         },
       },
     };
     const authData = {
       id: 'fakeid',
-      access_token: 'sometoken',
+      access_token: 'fake.jwt.token',
       roles: ['role1'],
-      groups: ['group1'],
+      groups: ['wrong-group'],
     };
     const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     try {
@@ -840,39 +937,201 @@ describe('keycloak auth adapter', () => {
     }
   });
 
-  it('validateAuthData should handle authentication', async () => {
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({
-        data: {
-          sub: 'fakeid',
-          roles: ['role1'],
-          groups: ['group1'],
-        },
-      });
-    });
+  it('validateAuthData should handle successful authentication', async () => {
+    const fakeClaim = {
+      iss: 'https://auth.example.com/realms/my-realm',
+      azp: 'parse-app',
+      sub: 'fakeid',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+      roles: ['role1'],
+      groups: ['group1'],
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
+    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
     const options = {
       keycloak: {
         config: {
-          'auth-server-url': 'http://example.com',
-          realm: 'new',
+          'auth-server-url': 'https://auth.example.com',
+          realm: 'my-realm',
+          'client-id': 'parse-app',
         },
       },
     };
     const authData = {
       id: 'fakeid',
-      access_token: 'sometoken',
+      access_token: 'fake.jwt.token',
       roles: ['role1'],
       groups: ['group1'],
     };
     const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     await adapter.validateAuthData(authData, providerOptions);
-    expect(httpsRequest.get).toHaveBeenCalledWith({
-      host: 'http://example.com',
-      path: '/realms/new/protocol/openid-connect/userinfo',
-      headers: {
-        Authorization: 'Bearer sometoken',
+    expect(jwt.verify).toHaveBeenCalled();
+    expect(jwt.verify.calls.first().args[2].algorithms).toEqual(['RS256']);
+  });
+
+  it('validateAuthData should handle successful authentication without roles and groups', async () => {
+    const fakeClaim = {
+      iss: 'https://auth.example.com/realms/my-realm',
+      azp: 'parse-app',
+      sub: 'fakeid',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
+    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    const options = {
+      keycloak: {
+        config: {
+          'auth-server-url': 'https://auth.example.com',
+          realm: 'my-realm',
+          'client-id': 'parse-app',
+        },
       },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'fake.jwt.token',
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
+    await adapter.validateAuthData(authData, providerOptions);
+    expect(jwt.verify).toHaveBeenCalled();
+  });
+
+  it('validateAuthData should use hardcoded RS256 algorithm, not JWT header alg', async () => {
+    const fakeClaim = {
+      iss: 'https://auth.example.com/realms/my-realm',
+      azp: 'parse-app',
+      sub: 'fakeid',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    };
+    const fakeDecodedToken = { kid: '123', alg: 'none' };
+    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    const options = {
+      keycloak: {
+        config: {
+          'auth-server-url': 'https://auth.example.com',
+          realm: 'my-realm',
+          'client-id': 'parse-app',
+        },
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'fake.jwt.token',
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
+    await adapter.validateAuthData(authData, providerOptions);
+    expect(jwt.verify.calls.first().args[2].algorithms).toEqual(['RS256']);
+  });
+
+  it('validateAuthData should verify a real signed JWT end-to-end', async () => {
+    const crypto = require('crypto');
+    const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+      publicKeyEncoding: { type: 'spki', format: 'pem' },
+      privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
     });
+
+    const token = jwt.sign(
+      {
+        iss: 'https://auth.example.com/realms/my-realm',
+        azp: 'parse-app',
+        sub: 'user123',
+        roles: ['admin'],
+        groups: ['staff'],
+      },
+      privateKey,
+      { algorithm: 'RS256', keyid: 'test-key-1', expiresIn: '1h' }
+    );
+
+    // Only mock the JWKS key fetch — jwt.verify runs for real
+    spyOn(authUtils, 'getSigningKey').and.resolveTo({
+      kid: 'test-key-1',
+      publicKey: publicKey,
+    });
+
+    const options = {
+      keycloak: {
+        config: {
+          'auth-server-url': 'https://auth.example.com',
+          realm: 'my-realm',
+          'client-id': 'parse-app',
+        },
+      },
+    };
+    const authData = {
+      id: 'user123',
+      access_token: token,
+      roles: ['admin'],
+      groups: ['staff'],
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
+    const result = await adapter.validateAuthData(authData, providerOptions);
+    expect(result.sub).toBe('user123');
+    expect(result.azp).toBe('parse-app');
+    expect(result.iss).toBe('https://auth.example.com/realms/my-realm');
+  });
+
+  it('validateAuthData should reject a JWT signed with a different key', async () => {
+    const crypto = require('crypto');
+    const { privateKey } = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+      publicKeyEncoding: { type: 'spki', format: 'pem' },
+      privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+    });
+    const { publicKey: differentPublicKey } = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+      publicKeyEncoding: { type: 'spki', format: 'pem' },
+      privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+    });
+
+    const token = jwt.sign(
+      {
+        iss: 'https://auth.example.com/realms/my-realm',
+        azp: 'parse-app',
+        sub: 'user123',
+      },
+      privateKey,
+      { algorithm: 'RS256', keyid: 'test-key-1', expiresIn: '1h' }
+    );
+
+    // Return a different public key — signature verification should fail
+    spyOn(authUtils, 'getSigningKey').and.resolveTo({
+      kid: 'test-key-1',
+      publicKey: differentPublicKey,
+    });
+
+    const options = {
+      keycloak: {
+        config: {
+          'auth-server-url': 'https://auth.example.com',
+          realm: 'my-realm',
+          'client-id': 'parse-app',
+        },
+      },
+    };
+    const authData = {
+      id: 'user123',
+      access_token: token,
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
+    try {
+      await adapter.validateAuthData(authData, providerOptions);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('invalid signature');
+    }
   });
 });
 
@@ -1202,6 +1461,15 @@ describe('apple signin auth adapter', () => {
       expect(e.message).toBe('auth data is invalid for this user.');
     }
   });
+
+  it('should throw error when clientId is not configured', async () => {
+    try {
+      await apple.validateAuthData({ id: 'the_user_id', token: 'the_token' }, {});
+      fail('should have thrown');
+    } catch (e) {
+      expect(e.message).toBe('Apple auth is not configured.');
+    }
+  });
 });
 
 describe('phant auth adapter', () => {
@@ -1237,19 +1505,9 @@ describe('facebook limited auth adapter', () => {
   const authUtils = require('../lib/Adapters/Auth/utils');
 
   // TODO: figure out a way to run this test alongside facebook classic tests
-  xit('(using client id as string) should throw error with missing id_token', async () => {
+  xit('should throw error with missing id_token', async () => {
     try {
-      await facebook.validateAuthData({}, { clientId: 'secret' });
-      fail();
-    } catch (e) {
-      expect(e.message).toBe('Facebook auth is not configured.');
-    }
-  });
-
-  // TODO: figure out a way to run this test alongside facebook classic tests
-  xit('(using client id as array) should throw error with missing id_token', async () => {
-    try {
-      await facebook.validateAuthData({}, { clientId: ['secret'] });
+      await facebook.validateAuthData({}, { appIds: ['secret'] });
       fail();
     } catch (e) {
       expect(e.message).toBe('Facebook auth is not configured.');
@@ -1260,7 +1518,7 @@ describe('facebook limited auth adapter', () => {
     try {
       await facebook.validateAuthData(
         { id: 'the_user_id', token: 'the_token' },
-        { clientId: 'secret' }
+        { appIds: ['secret'] }
       );
       fail();
     } catch (e) {
@@ -1277,7 +1535,7 @@ describe('facebook limited auth adapter', () => {
 
       await facebook.validateAuthData(
         { id: 'the_user_id', token: 'the_token' },
-        { clientId: 'secret' }
+        { appIds: ['secret'] }
       );
       fail();
     } catch (e) {
@@ -1302,7 +1560,7 @@ describe('facebook limited auth adapter', () => {
 
     const result = await facebook.validateAuthData(
       { id: 'the_user_id', token: 'the_token' },
-      { clientId: 'secret' }
+      { appIds: ['secret'] }
     );
     expect(result).toEqual(fakeClaim);
     expect(jwt.verify.calls.first().args[2].algorithms).toEqual(['RS256']);
@@ -1323,7 +1581,7 @@ describe('facebook limited auth adapter', () => {
 
     await facebook.validateAuthData(
       { id: 'the_user_id', token: 'the_token' },
-      { clientId: 'secret' }
+      { appIds: ['secret'] }
     );
     expect(jwt.verify.calls.first().args[2].algorithms).toEqual(['RS256']);
   });
@@ -1337,7 +1595,7 @@ describe('facebook limited auth adapter', () => {
     try {
       await facebook.validateAuthData(
         { id: 'the_user_id', token: 'the_token' },
-        { clientId: 'secret' }
+        { appIds: ['secret'] }
       );
       fail();
     } catch (e) {
@@ -1345,19 +1603,7 @@ describe('facebook limited auth adapter', () => {
     }
   });
 
-  it('(using client id as array) should not verify invalid id_token', async () => {
-    try {
-      await facebook.validateAuthData(
-        { id: 'the_user_id', token: 'the_token' },
-        { clientId: ['secret'] }
-      );
-      fail();
-    } catch (e) {
-      expect(e.message).toBe('provided token does not decode as JWT');
-    }
-  });
-
-  it_id('4bcb1a1a-11f8-4e12-a3f6-73f7e25e355a')(it)('using client id as string) should verify id_token (facebook.com)', async () => {
+  it_id('4bcb1a1a-11f8-4e12-a3f6-73f7e25e355a')(it)('should verify id_token (facebook.com)', async () => {
     const fakeClaim = {
       iss: 'https://www.facebook.com',
       aud: 'secret',
@@ -1372,12 +1618,12 @@ describe('facebook limited auth adapter', () => {
 
     const result = await facebook.validateAuthData(
       { id: 'the_user_id', token: 'the_token' },
-      { clientId: 'secret' }
+      { appIds: ['secret'] }
     );
     expect(result).toEqual(fakeClaim);
   });
 
-  it_id('c521a272-2ac2-4d8b-b5ed-ea250336d8b1')(it)('(using client id as array) should verify id_token (facebook.com)', async () => {
+  it_id('e3f16404-18e9-4a87-a555-4710cfbdac67')(it)('(using multiple appIds) should verify id_token (facebook.com)', async () => {
     const fakeClaim = {
       iss: 'https://www.facebook.com',
       aud: 'secret',
@@ -1392,32 +1638,12 @@ describe('facebook limited auth adapter', () => {
 
     const result = await facebook.validateAuthData(
       { id: 'the_user_id', token: 'the_token' },
-      { clientId: ['secret'] }
+      { appIds: ['secret', 'secret 123'] }
     );
     expect(result).toEqual(fakeClaim);
   });
 
-  it_id('e3f16404-18e9-4a87-a555-4710cfbdac67')(it)('(using client id as array with multiple items) should verify id_token (facebook.com)', async () => {
-    const fakeClaim = {
-      iss: 'https://www.facebook.com',
-      aud: 'secret',
-      exp: Date.now(),
-      sub: 'the_user_id',
-    };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
-    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
-    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
-    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
-
-    const result = await facebook.validateAuthData(
-      { id: 'the_user_id', token: 'the_token' },
-      { clientId: ['secret', 'secret 123'] }
-    );
-    expect(result).toEqual(fakeClaim);
-  });
-
-  it_id('549c33a1-3a6b-4732-8cf6-8f010ad4569c')(it)('(using client id as string) should throw error with with invalid jwt issuer (facebook.com)', async () => {
+  it_id('549c33a1-3a6b-4732-8cf6-8f010ad4569c')(it)('should throw error with with invalid jwt issuer (facebook.com)', async () => {
     const fakeClaim = {
       iss: 'https://not.facebook.com',
       sub: 'the_user_id',
@@ -1431,7 +1657,7 @@ describe('facebook limited auth adapter', () => {
     try {
       await facebook.validateAuthData(
         { id: 'the_user_id', token: 'the_token' },
-        { clientId: 'secret' }
+        { appIds: ['secret'] }
       );
       fail();
     } catch (e) {
@@ -1443,87 +1669,14 @@ describe('facebook limited auth adapter', () => {
 
   // TODO: figure out a way to generate our own facebook signed tokens, perhaps with a parse facebook account
   // and a private key
-  xit('(using client id as array) should throw error with with invalid jwt issuer', async () => {
-    const fakeClaim = {
-      iss: 'https://not.facebook.com',
-      sub: 'the_user_id',
-    };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
-    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
-    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
-    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
-
-    try {
-      await facebook.validateAuthData(
-        {
-          id: 'INSERT ID HERE',
-          token: 'INSERT FACEBOOK TOKEN HERE WITH INVALID JWT ISSUER',
-        },
-        { clientId: ['INSERT CLIENT ID HERE'] }
-      );
-      fail();
-    } catch (e) {
-      expect(e.message).toBe(
-        'id token not issued by correct OpenID provider - expected: https://www.facebook.com | from: https://not.facebook.com'
-      );
-    }
-  });
-
-  it('(using client id as string)  with token', async () => {
-    const fakeClaim = {
-      iss: 'https://not.facebook.com',
-      sub: 'the_user_id',
-    };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
-    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
-    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
-    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
-
-    try {
-      await facebook.validateAuthData(
-        {
-          id: 'INSERT ID HERE',
-          token: 'INSERT FACEBOOK TOKEN HERE WITH INVALID JWT ISSUER',
-        },
-        { clientId: 'INSERT CLIENT ID HERE' }
-      );
-      fail();
-    } catch (e) {
-      expect(e.message).toBe(
-        'id token not issued by correct OpenID provider - expected: https://www.facebook.com | from: https://not.facebook.com'
-      );
-    }
-  });
-
-  // TODO: figure out a way to generate our own facebook signed tokens, perhaps with a parse facebook account
-  // and a private key
-  xit('(using client id as string) should throw error with invalid jwt clientId', async () => {
+  xit('should throw error with invalid jwt audience', async () => {
     try {
       await facebook.validateAuthData(
         {
           id: 'INSERT ID HERE',
           token: 'INSERT FACEBOOK TOKEN HERE',
         },
-        { clientId: 'secret' }
-      );
-      fail();
-    } catch (e) {
-      expect(e.message).toBe('jwt audience invalid. expected: secret');
-    }
-  });
-
-  // TODO: figure out a way to generate our own facebook signed tokens, perhaps with a parse facebook account
-  // and a private key
-  xit('(using client id as array) should throw error with invalid jwt clientId', async () => {
-    try {
-      await facebook.validateAuthData(
-        {
-          id: 'INSERT ID HERE',
-          token: 'INSERT FACEBOOK TOKEN HERE',
-        },
-        { clientId: ['secret'] }
+        { appIds: ['secret'] }
       );
       fail();
     } catch (e) {
@@ -1540,7 +1693,7 @@ describe('facebook limited auth adapter', () => {
           id: 'invalid user',
           token: 'INSERT FACEBOOK TOKEN HERE',
         },
-        { clientId: 'INSERT CLIENT ID HERE' }
+        { appIds: ['INSERT APP ID HERE'] }
       );
       fail();
     } catch (e) {
@@ -1551,7 +1704,7 @@ describe('facebook limited auth adapter', () => {
   it_id('c194d902-e697-46c9-a303-82c2d914473c')(it)('should throw error with with invalid user id (facebook.com)', async () => {
     const fakeClaim = {
       iss: 'https://www.facebook.com',
-      aud: 'invalid_client_id',
+      aud: 'invalid_app_id',
       sub: 'a_different_user_id',
     };
     const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
@@ -1563,11 +1716,20 @@ describe('facebook limited auth adapter', () => {
     try {
       await facebook.validateAuthData(
         { id: 'the_user_id', token: 'the_token' },
-        { clientId: 'secret' }
+        { appIds: ['secret'] }
       );
       fail();
     } catch (e) {
       expect(e.message).toBe('auth data is invalid for this user.');
+    }
+  });
+
+  it('should throw error when appIds is not configured for Limited Login', async () => {
+    try {
+      await facebook.validateAuthData({ id: 'the_user_id', token: 'the_token' }, {});
+      fail('should have thrown');
+    } catch (e) {
+      expect(e.message).toBe('Facebook auth is not configured.');
     }
   });
 });
@@ -1751,6 +1913,60 @@ describe('OTP TOTP auth adatper', () => {
     );
   });
 
+  it('consumes recovery code after use', async () => {
+    const user = await Parse.User.signUp('username', 'password');
+    const OTPAuth = require('otpauth');
+    const secret = new OTPAuth.Secret();
+    const totp = new OTPAuth.TOTP({
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
+    const token = totp.generate();
+    await user.save(
+      { authData: { mfa: { secret: secret.base32, token } } },
+      { sessionToken: user.getSessionToken() }
+    );
+    // Get recovery codes from stored auth data
+    await user.fetch({ useMasterKey: true });
+    const recoveryCode = user.get('authData').mfa.recovery[0];
+    // First login with recovery code should succeed
+    await request({
+      headers,
+      method: 'POST',
+      url: 'http://localhost:8378/1/login',
+      body: JSON.stringify({
+        username: 'username',
+        password: 'password',
+        authData: {
+          mfa: {
+            token: recoveryCode,
+          },
+        },
+      }),
+    });
+    // Second login with same recovery code should fail (code consumed)
+    await expectAsync(
+      request({
+        headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/login',
+        body: JSON.stringify({
+          username: 'username',
+          password: 'password',
+          authData: {
+            mfa: {
+              token: recoveryCode,
+            },
+          },
+        }),
+      }).catch(e => {
+        throw e.data;
+      })
+    ).toBeRejectedWith({ code: Parse.Error.SCRIPT_FAILED, error: 'Invalid MFA token' });
+  });
+
   it('future logins reject incorrect TOTP token', async () => {
     const user = await Parse.User.signUp('username', 'password');
     const OTPAuth = require('otpauth');
@@ -1784,6 +2000,82 @@ describe('OTP TOTP auth adatper', () => {
         throw e.data;
       })
     ).toBeRejectedWith({ code: Parse.Error.SCRIPT_FAILED, error: 'Invalid MFA token' });
+  });
+
+  it('allows unlinking MFA without TOTP verification (by design)', async () => {
+    const user = await Parse.User.signUp('username', 'password');
+    const sessionToken = user.getSessionToken();
+    const OTPAuth = require('otpauth');
+    const secret = new OTPAuth.Secret();
+    const totp = new OTPAuth.TOTP({
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
+    const token = totp.generate();
+    // Enable MFA
+    await user.save(
+      { authData: { mfa: { secret: secret.base32, token } } },
+      { sessionToken }
+    );
+    await user.fetch({ useMasterKey: true });
+    expect(user.get('authData').mfa.secret).toBeDefined();
+    // Unlink MFA without providing TOTP
+    await user.save(
+      { authData: { mfa: null } },
+      { sessionToken }
+    );
+    // MFA should be removed
+    await user.fetch({ useMasterKey: true });
+    expect(user.get('authData')).toBeUndefined();
+    // Login should succeed without MFA
+    const response = await request({
+      headers,
+      method: 'POST',
+      url: 'http://localhost:8378/1/login',
+      body: JSON.stringify({
+        username: 'username',
+        password: 'password',
+      }),
+    });
+    expect(response.data.sessionToken).toBeDefined();
+  });
+
+  it('allows blocking MFA unlink via beforeSave trigger', async () => {
+    Parse.Cloud.beforeSave('_User', request => {
+      const authData = request.object.get('authData');
+      if (authData?.mfa === null) {
+        throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Cannot disable MFA without verification');
+      }
+    });
+    const user = await Parse.User.signUp('username', 'password');
+    const OTPAuth = require('otpauth');
+    const secret = new OTPAuth.Secret();
+    const totp = new OTPAuth.TOTP({
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
+    const token = totp.generate();
+    // Enable MFA
+    await user.save(
+      { authData: { mfa: { secret: secret.base32, token } } },
+      { sessionToken: user.getSessionToken() }
+    );
+    // Attempt to unlink MFA — should be blocked by beforeSave trigger
+    await expectAsync(
+      user.save(
+        { authData: { mfa: null } },
+        { sessionToken: user.getSessionToken() }
+      )
+    ).toBeRejectedWith(
+      new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Cannot disable MFA without verification')
+    );
+    // MFA should still be enabled
+    await user.fetch({ useMasterKey: true });
+    expect(user.get('authData').mfa.secret).toBeDefined();
   });
 });
 

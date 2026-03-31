@@ -3,21 +3,17 @@ const express = require('express');
 const req = require('../lib/request');
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const FormData = require('form-data');
-const ws = require('ws');
 require('./helper');
 const { updateCLP } = require('./support/dev');
+const Utils = require('../lib/Utils');
 
 const pluralize = require('pluralize');
-const { getMainDefinition } = require('@apollo/client/utilities');
 const createUploadLink = (...args) => import('apollo-upload-client/createUploadLink.mjs').then(({ default: fn }) => fn(...args));
-const { SubscriptionClient } = require('subscriptions-transport-ws');
-const { WebSocketLink } = require('@apollo/client/link/ws');
 const { mergeSchemas } = require('@graphql-tools/schema');
 const {
   ApolloClient,
   InMemoryCache,
   ApolloLink,
-  split,
   createHttpLink,
 } = require('@apollo/client/core');
 const gql = require('graphql-tag');
@@ -58,7 +54,6 @@ describe('ParseGraphQLServer', () => {
     parseGraphQLServer = new ParseGraphQLServer(parseServer, {
       graphQLPath: '/graphql',
       playgroundPath: '/playground',
-      subscriptionsPath: '/subscriptions',
     });
 
     const logger = require('../lib/logger').default;
@@ -238,16 +233,6 @@ describe('ParseGraphQLServer', () => {
         })
       ).not.toThrow();
       expect(useCount).toBeGreaterThan(0);
-    });
-  });
-
-  describe('createSubscriptions', () => {
-    it('should require initialization with config.subscriptionsPath', () => {
-      expect(() =>
-        new ParseGraphQLServer(parseServer, {
-          graphQLPath: 'graphql',
-        }).createSubscriptions({})
-      ).toThrow('You must provide a config.subscriptionsPath to createSubscriptions!');
     });
   });
 
@@ -467,41 +452,23 @@ describe('ParseGraphQLServer', () => {
       parseGraphQLServer = new ParseGraphQLServer(_parseServer, {
         graphQLPath: '/graphql',
         playgroundPath: '/playground',
-        subscriptionsPath: '/subscriptions',
         ...parseGraphQLServerOptions,
       });
       parseGraphQLServer.applyGraphQL(expressApp);
       parseGraphQLServer.applyPlayground(expressApp);
-      parseGraphQLServer.createSubscriptions(httpServer);
       await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
     }
 
     beforeEach(async () => {
       await createGQLFromParseServer(parseServer);
 
-      const subscriptionClient = new SubscriptionClient(
-        'ws://localhost:13377/subscriptions',
-        {
-          reconnect: true,
-          connectionParams: headers,
-        },
-        ws
-      );
-      const wsLink = new WebSocketLink(subscriptionClient);
       const httpLink = await createUploadLink({
         uri: 'http://localhost:13377/graphql',
         fetch,
         headers,
       });
       apolloClient = new ApolloClient({
-        link: split(
-          ({ query }) => {
-            const { kind, operation } = getMainDefinition(query);
-            return kind === 'OperationDefinition' && operation === 'subscription';
-          },
-          wsLink,
-          httpLink
-        ),
+        link: httpLink,
         cache: new InMemoryCache(),
         defaultOptions: {
           query: {
@@ -536,7 +503,7 @@ describe('ParseGraphQLServer', () => {
         }
       });
 
-      it('should be cors enabled and scope the response within the source origin', async () => {
+      it('should be cors enabled', async () => {
         let checked = false;
         const apolloClient = new ApolloClient({
           link: new ApolloLink((operation, forward) => {
@@ -545,7 +512,7 @@ describe('ParseGraphQLServer', () => {
               const {
                 response: { headers },
               } = context;
-              expect(headers.get('access-control-allow-origin')).toEqual('http://example.com');
+              expect(headers.get('access-control-allow-origin')).toEqual('*');
               checked = true;
               return response;
             });
@@ -909,6 +876,52 @@ describe('ParseGraphQLServer', () => {
 
                 query MixedQuery {
                   ...MixedFragment
+                }
+              `,
+            });
+
+            fail('should have thrown an error');
+          } catch (e) {
+            expect(e.message).toEqual('Response not successful: Received status code 403');
+            expect(e.networkError.result.errors[0].message).toEqual('Introspection is not allowed');
+          }
+        });
+
+        it('should block __type introspection inside inline fragment without master key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                query InlineFragmentBypass {
+                  ... on Query {
+                    __type(name: "User") {
+                      name
+                      kind
+                    }
+                  }
+                }
+              `,
+            });
+
+            fail('should have thrown an error');
+          } catch (e) {
+            expect(e.message).toEqual('Response not successful: Received status code 403');
+            expect(e.networkError.result.errors[0].message).toEqual('Introspection is not allowed');
+          }
+        });
+
+        it('should block __type introspection inside nested inline fragments without master key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                query NestedInlineFragmentBypass {
+                  ... on Query {
+                    ... {
+                      __type(name: "User") {
+                        name
+                        kind
+                      }
+                    }
+                  }
                 }
               `,
             });
@@ -8464,15 +8477,15 @@ describe('ParseGraphQLServer', () => {
 
         it('should accept different params', done => {
           Parse.Cloud.define('hello', async req => {
-            expect(req.params.date instanceof Date).toBe(true);
+            expect(Utils.isDate(req.params.date)).toBe(true);
             expect(req.params.date.getTime()).toBe(1463907600000);
-            expect(req.params.dateList[0] instanceof Date).toBe(true);
+            expect(Utils.isDate(req.params.dateList[0])).toBe(true);
             expect(req.params.dateList[0].getTime()).toBe(1463907600000);
-            expect(req.params.complexStructure.date[0] instanceof Date).toBe(true);
+            expect(Utils.isDate(req.params.complexStructure.date[0])).toBe(true);
             expect(req.params.complexStructure.date[0].getTime()).toBe(1463907600000);
-            expect(req.params.complexStructure.deepDate.date[0] instanceof Date).toBe(true);
+            expect(Utils.isDate(req.params.complexStructure.deepDate.date[0])).toBe(true);
             expect(req.params.complexStructure.deepDate.date[0].getTime()).toBe(1463907600000);
-            expect(req.params.complexStructure.deepDate2[0].date instanceof Date).toBe(true);
+            expect(Utils.isDate(req.params.complexStructure.deepDate2[0].date)).toBe(true);
             expect(req.params.complexStructure.deepDate2[0].date.getTime()).toBe(1463907600000);
             // Regression for #2294
             expect(req.params.file instanceof Parse.File).toBe(true);
@@ -8645,6 +8658,13 @@ describe('ParseGraphQLServer', () => {
       });
 
       describe('Data Types', () => {
+        beforeEach(async () => {
+          const schema = new Parse.Schema('SomeClass');
+          await schema.purge().catch(() => {});
+          await schema.delete().catch(() => {});
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+        });
+
         it('should support String', async () => {
           try {
             const someFieldValue = 'some string';
@@ -9508,6 +9528,12 @@ describe('ParseGraphQLServer', () => {
         });
 
         it_only_db('mongo')('should support deep nested creation', async () => {
+          parseServer = await global.reconfigureServer({
+            maintenanceKey: 'test2',
+            maxUploadSize: '1kb',
+            requestComplexity: { includeDepth: 10 },
+          });
+          await createGQLFromParseServer(parseServer);
           const team = new Parse.Object('Team');
           team.set('name', 'imATeam1');
           await team.save();
@@ -10404,6 +10430,7 @@ describe('ParseGraphQLServer', () => {
           schema.addPointer('somePointerField', 'SomeClass');
           schema.addRelation('someRelationField', 'SomeClass');
           await schema.save();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           const body = new FormData();
           body.append(

@@ -646,6 +646,82 @@ describe('ParseLiveQuery', function () {
     );
   });
 
+  it('rejects subscription with invalid $regex pattern', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const query = new Parse.Query('TestObject');
+    query._where = { foo: { $regex: '[invalid' } };
+    await expectAsync(query.subscribe()).toBeRejectedWithError(/Invalid regular expression/);
+  });
+
+  it('rejects subscription with non-string $regex value', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const query = new Parse.Query('TestObject');
+    query._where = { foo: { $regex: 123 } };
+    await expectAsync(query.subscribe()).toBeRejectedWithError(
+      /\$regex must be a string or RegExp/
+    );
+  });
+
+  it('does not crash server when subscription matching throws and other subscriptions still work', async () => {
+    const server = await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const object = new TestObject();
+    object.set('foo', 'bar');
+    await object.save();
+
+    // Create a valid subscription
+    const validQuery = new Parse.Query('TestObject');
+    validQuery.equalTo('objectId', object.id);
+    const validSubscription = await validQuery.subscribe();
+
+    // Inject a malformed subscription directly into the LiveQuery server
+    // to bypass subscribe-time validation and test the try-catch in _onAfterSave
+    const lqServer = server.liveQueryServer;
+    const Subscription = require('../lib/LiveQuery/Subscription').Subscription;
+    const badSubscription = new Subscription('TestObject', { foo: { $regex: '[invalid' } });
+    badSubscription.addClientSubscription('fakeClientId', 'fakeRequestId');
+    const classSubscriptions = lqServer.subscriptions.get('TestObject');
+    classSubscriptions.set('bad-hash', badSubscription);
+
+    // Verify the valid subscription still receives updates despite the bad subscription
+    const updatePromise = new Promise(resolve => {
+      validSubscription.on('update', obj => {
+        expect(obj.get('foo')).toBe('baz');
+        resolve();
+      });
+    });
+
+    object.set('foo', 'baz');
+    await object.save();
+    await updatePromise;
+
+    // Clean up the injected subscription
+    classSubscriptions.delete('bad-hash');
+  });
+
   it('can handle mutate beforeSubscribe query', async done => {
     await reconfigureServer({
       liveQuery: {
@@ -880,7 +956,7 @@ describe('ParseLiveQuery', function () {
     await expectAsync(query.subscribe()).toBeRejectedWith(new Error('Invalid session token'));
   });
 
-  it_id('4ccc9508-ae6a-46ec-932a-9f5e49ab3b9e')(it)('handle invalid websocket payload length', async done => {
+  it_id('4ccc9508-ae6a-46ec-932a-9f5e49ab3b9e')(it)('handle invalid websocket payload length', async () => {
     await reconfigureServer({
       liveQuery: {
         classNames: ['TestObject'],
@@ -904,17 +980,31 @@ describe('ParseLiveQuery', function () {
     // 0xfe = 11111110 = first bit is masking the remaining 7 are 1111110 or 126 the payload length
     // https://tools.ietf.org/html/rfc6455#section-5.2
     const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
-    client.socket._socket.write(Buffer.from([0x89, 0xfe]));
 
-    subscription.on('update', async object => {
-      expect(object.get('foo')).toBe('bar');
-      done();
+    // Wait for the initial subscription 'open' event (fires 200ms after subscribe)
+    // before sending the invalid frame, so we don't confuse it with the reconnection 'open'
+    await new Promise(resolve => subscription.on('open', resolve));
+
+    // Now listen for close followed by reopen from the reconnection cycle
+    const reopened = new Promise(resolve => {
+      subscription.on('close', () => {
+        subscription.on('open', resolve);
+      });
     });
-    // Wait for Websocket timeout to reconnect
-    setTimeout(async () => {
-      object.set({ foo: 'bar' });
-      await object.save();
-    }, 1000);
+
+    client.socket._socket.write(Buffer.from([0x89, 0xfe]));
+    await reopened;
+
+    // After reconnection, save an update and verify the subscription receives it
+    const updated = new Promise(resolve => {
+      subscription.on('update', object => {
+        expect(object.get('foo')).toBe('bar');
+        resolve();
+      });
+    });
+    object.set({ foo: 'bar' });
+    await object.save();
+    await updated;
   });
 
   it_id('39a9191f-26dd-4e05-a379-297a67928de8')(it)('should execute live query update on email validation', async done => {
@@ -1307,5 +1397,89 @@ describe('ParseLiveQuery', function () {
 
     await new Promise(resolve => setTimeout(resolve, 100));
     expect(createSpy).toHaveBeenCalledTimes(1);
+  });
+
+  describe('class level permissions', () => {
+    async function setPermissionsOnClass(className, permissions, doPut) {
+      const method = doPut ? 'PUT' : 'POST';
+      const response = await fetch(Parse.serverURL + '/schemas/' + className, {
+        method,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': Parse.masterKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          classLevelPermissions: permissions,
+        }),
+      });
+      const body = await response.json();
+      if (body.error) {
+        throw body;
+      }
+      return body;
+    }
+
+    it('delivers LiveQuery event to authenticated client when CLP allows find', async () => {
+      await reconfigureServer({
+        liveQuery: {
+          classNames: ['SecureChat'],
+        },
+        startLiveQueryServer: true,
+        verbose: false,
+        silent: true,
+      });
+
+      const user = new Parse.User();
+      user.setUsername('admin');
+      user.setPassword('password');
+      await user.signUp();
+
+      await setPermissionsOnClass('SecureChat', {
+        create: { '*': true },
+        find: { [user.id]: true },
+      });
+
+      // Subscribe as the authorized user
+      const query = new Parse.Query('SecureChat');
+      const subscription = await query.subscribe(user.getSessionToken());
+
+      const spy = jasmine.createSpy('create');
+      subscription.on('create', spy);
+
+      const obj = new Parse.Object('SecureChat');
+      obj.set('secret', 'data');
+      await obj.save(null, { useMasterKey: true });
+
+      await sleep(500);
+      expect(spy).toHaveBeenCalledTimes(1);
+    });
+
+    it('rejects LiveQuery subscription when CLP denies find at subscription time', async () => {
+      await reconfigureServer({
+        liveQuery: {
+          classNames: ['SecureChat'],
+        },
+        startLiveQueryServer: true,
+        verbose: false,
+        silent: true,
+      });
+
+      const user = new Parse.User();
+      user.setUsername('admin');
+      user.setPassword('password');
+      await user.signUp();
+
+      await setPermissionsOnClass('SecureChat', {
+        create: { '*': true },
+        find: { [user.id]: true },
+      });
+
+      // Log out so subscription is unauthenticated
+      await Parse.User.logOut();
+
+      const query = new Parse.Query('SecureChat');
+      await expectAsync(query.subscribe()).toBeRejected();
+    });
   });
 });

@@ -103,4 +103,135 @@ describe('Deprecator', () => {
       })
     );
   });
+
+  it('logs deprecation for removed key when option is set', async () => {
+    deprecations = [{ optionKey: 'exampleKey', changeNewKey: '', solution: 'Use something else.' }];
+
+    spyOn(Deprecator, '_getDeprecations').and.callFake(() => deprecations);
+    const logger = require('../lib/logger').logger;
+    const logSpy = spyOn(logger, 'warn').and.callFake(() => {});
+
+    await reconfigureServer({ exampleKey: true });
+    expect(logSpy).toHaveBeenCalledWith(
+      `DeprecationWarning: The Parse Server option '${deprecations[0].optionKey}' is deprecated and will be removed in a future version. ${deprecations[0].solution}`
+    );
+  });
+
+  it('does not log deprecation for removed key when option is not set', async () => {
+    deprecations = [{ optionKey: 'exampleKey', changeNewKey: '', solution: 'Use something else.' }];
+
+    spyOn(Deprecator, '_getDeprecations').and.callFake(() => deprecations);
+    const logSpy = spyOn(Deprecator, '_logOption').and.callFake(() => {});
+
+    await reconfigureServer();
+    expect(logSpy).not.toHaveBeenCalled();
+  });
+
+  it('logs deprecation for mountPlayground when set', async () => {
+    const logSpy = spyOn(Deprecator, '_logOption').and.callFake(() => {});
+
+    await reconfigureServer({ mountPlayground: true, mountGraphQL: true });
+    expect(logSpy).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        optionKey: 'mountPlayground',
+        changeNewKey: '',
+      })
+    );
+  });
+
+  it('does not log deprecation for mountPlayground when not set', async () => {
+    const logSpy = spyOn(Deprecator, '_logOption').and.callFake(() => {});
+
+    await reconfigureServer();
+    expect(logSpy).not.toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        optionKey: 'mountPlayground',
+      })
+    );
+  });
+
+  it('logs deprecation for requestComplexity limits when not set', async () => {
+    const logSpy = spyOn(Deprecator, '_logOption').and.callFake(() => {});
+
+    await reconfigureServer();
+    const keys = [
+      'requestComplexity.includeDepth',
+      'requestComplexity.includeCount',
+      'requestComplexity.subqueryDepth',
+      'requestComplexity.queryDepth',
+      'requestComplexity.graphQLDepth',
+      'requestComplexity.graphQLFields',
+    ];
+    for (const key of keys) {
+      expect(logSpy).toHaveBeenCalledWith(
+        jasmine.objectContaining({
+          optionKey: key,
+        })
+      );
+    }
+  });
+
+  it('logs deprecation for enableProductPurchaseLegacyApi when set', async () => {
+    const logSpy = spyOn(Deprecator, '_logOption').and.callFake(() => {});
+
+    await reconfigureServer({ enableProductPurchaseLegacyApi: true });
+    expect(logSpy).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        optionKey: 'enableProductPurchaseLegacyApi',
+        changeNewKey: '',
+      })
+    );
+  });
+
+  it('does not log deprecation for enableProductPurchaseLegacyApi when not set', async () => {
+    const logSpy = spyOn(Deprecator, '_logOption').and.callFake(() => {});
+
+    await reconfigureServer();
+    expect(logSpy).not.toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        optionKey: 'enableProductPurchaseLegacyApi',
+      })
+    );
+  });
+
+  it('does not log deprecation for enableProductPurchaseLegacyApi when set to false', async () => {
+    const logSpy = spyOn(Deprecator, '_logOption').and.callFake(() => {});
+
+    await reconfigureServer({ enableProductPurchaseLegacyApi: false });
+    expect(logSpy).not.toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        optionKey: 'enableProductPurchaseLegacyApi',
+      })
+    );
+  });
+
+  it('does not log deprecation for requestComplexity limits when explicitly set', async () => {
+    const logSpy = spyOn(Deprecator, '_logOption').and.callFake(() => {});
+
+    await reconfigureServer({
+      requestComplexity: {
+        includeDepth: 10,
+        includeCount: 100,
+        subqueryDepth: 10,
+        queryDepth: 10,
+        graphQLDepth: 20,
+        graphQLFields: 200,
+      },
+    });
+    const keys = [
+      'requestComplexity.includeDepth',
+      'requestComplexity.includeCount',
+      'requestComplexity.subqueryDepth',
+      'requestComplexity.queryDepth',
+      'requestComplexity.graphQLDepth',
+      'requestComplexity.graphQLFields',
+    ];
+    for (const key of keys) {
+      expect(logSpy).not.toHaveBeenCalledWith(
+        jasmine.objectContaining({
+          optionKey: key,
+        })
+      );
+    }
+  });
 });

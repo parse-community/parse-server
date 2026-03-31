@@ -1,5 +1,6 @@
 const request = require('../lib/request');
 const Auth = require('../lib/Auth');
+const Config = require('../lib/Config');
 const requestWithExpectedError = async params => {
   try {
     return await request(params);
@@ -1612,5 +1613,93 @@ describe('Auth Adapter features', () => {
     const authData = reloaded.get('authData') || {};
     expect(authData.simpleAdapter && authData.simpleAdapter.id).toBe('simple1');
     expect(authData.codeBasedAdapter && authData.codeBasedAdapter.id).toBe('user1');
+  });
+
+  describe('authData dot-notation injection and login crash', () => {
+    it('rejects dotted update key that targets authData sub-field', async () => {
+      const user = new Parse.User();
+      user.setUsername('dotuser');
+      user.setPassword('pass1234');
+      await user.signUp();
+
+      const res = await request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/users/${user.id}`,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': user.getSessionToken(),
+        },
+        body: JSON.stringify({ 'authData.anonymous".id': 'injected' }),
+      }).catch(e => e);
+      expect(res.status).toBe(400);
+    });
+
+    it('login does not crash when stored authData has unknown provider', async () => {
+      const user = new Parse.User();
+      user.setUsername('dotuser2');
+      user.setPassword('pass1234');
+      await user.signUp();
+      await Parse.User.logOut();
+
+      // Inject unknown provider directly in database to simulate corrupted data
+      const config = Config.get('test');
+      await config.database.update(
+        '_User',
+        { objectId: user.id },
+        { authData: { unknown_provider: { id: 'bad' } } }
+      );
+
+      // Login should not crash with 500
+      const login = await request({
+        method: 'GET',
+        url: `http://localhost:8378/1/login?username=dotuser2&password=pass1234`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+      }).catch(e => e);
+      expect(login.status).toBe(200);
+      expect(login.data.sessionToken).toBeDefined();
+    });
+  });
+
+  describe('challenge endpoint authData provider value validation', () => {
+    it('rejects challenge request with null provider value without 500', async () => {
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/challenge',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        body: JSON.stringify({
+          authData: { anonymous: null },
+          challengeData: { anonymous: { token: '123456' } },
+        }),
+      }).catch(e => e);
+      expect(res.status).toBeGreaterThanOrEqual(400);
+      expect(res.status).toBeLessThan(500);
+    });
+
+    it('rejects challenge request with non-object provider value without 500', async () => {
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/challenge',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        body: JSON.stringify({
+          authData: { anonymous: 'string_value' },
+          challengeData: { anonymous: { token: '123456' } },
+        }),
+      }).catch(e => e);
+      expect(res.status).toBeGreaterThanOrEqual(400);
+      expect(res.status).toBeLessThan(500);
+    });
   });
 });

@@ -305,6 +305,9 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 
 <sub>(1) `Parse.Object.createdAt`, `Parse.Object.updatedAt`.</sub>
 
+> [!NOTE]
+> In Cloud Code, both `masterKey` and `readOnlyMasterKey` set `request.master` to `true`. To distinguish between them, check `request.isReadOnly`. For example, use `request.master && !request.isReadOnly` to ensure full master key access.
+
 ## Email Verification and Password Reset
 
 Verifying user email addresses and enabling password reset via email requires an email adapter. There are many email adapters provided and maintained by the community. The following is an example configuration with an example email adapter. See the [Parse Server Options][server-options] for more details and a full list of available options.
@@ -819,7 +822,7 @@ $ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongo
 
 After starting the server, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
 
-**_Note:_** Do **_NOT_** use --mountPlayground option in production. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and it is the recommended option for production apps.
+**_Note:_** Do **_NOT_** use --mountPlayground option in production. The GraphQL Playground exposes the master key in the browser page. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and is the recommended option for production apps.
 
 ### Using Docker
 
@@ -842,7 +845,7 @@ $ docker run --name my-parse-server --link my-mongo:mongo -v config-vol:/parse-s
 
 After starting the server, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
 
-**_Note:_** Do **_NOT_** use --mountPlayground option in production. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and it is the recommended option for production apps.
+**_Note:_** Do **_NOT_** use --mountPlayground option in production. The GraphQL Playground exposes the master key in the browser page. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and is the recommended option for production apps.
 
 ### Using Express.js
 
@@ -896,7 +899,7 @@ $ node index.js
 
 After starting the app, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
 
-**_Note:_** Do **_NOT_** mount the GraphQL Playground in production. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and it is the recommended option for production apps.
+**_Note:_** Do **_NOT_** mount the GraphQL Playground in production. The GraphQL Playground exposes the master key in the browser page. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and is the recommended option for production apps.
 
 ## Checking the API health
 

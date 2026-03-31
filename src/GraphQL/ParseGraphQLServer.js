@@ -1,40 +1,44 @@
-import corsMiddleware from 'cors';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.js';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@as-integrations/express5';
 import { ApolloServerPluginCacheControlDisabled } from '@apollo/server/plugin/disabled';
 import express from 'express';
-import { execute, subscribe, GraphQLError, parse } from 'graphql';
-import { SubscriptionServer } from 'subscriptions-transport-ws';
-import { handleParseErrors, handleParseHeaders, handleParseSession } from '../middlewares';
+import { GraphQLError, parse } from 'graphql';
+import { allowCrossDomain, handleParseErrors, handleParseHeaders, handleParseSession } from '../middlewares';
 import requiredParameter from '../requiredParameter';
 import defaultLogger from '../logger';
 import { ParseGraphQLSchema } from './ParseGraphQLSchema';
 import ParseGraphQLController, { ParseGraphQLConfig } from '../Controllers/ParseGraphQLController';
+import { createComplexityValidationPlugin } from './helpers/queryComplexity';
 
 
 const hasTypeIntrospection = (query) => {
   try {
     const ast = parse(query);
-    // Check only root-level fields in the query
-    // Note: selection.name.value is the actual field name, so this correctly handles
-    // aliases like "myAlias: __type(...)" where name.value === "__type"
-    for (const definition of ast.definitions) {
-      if ((definition.kind === 'OperationDefinition' || definition.kind === 'FragmentDefinition') && definition.selectionSet) {
-        for (const selection of definition.selectionSet.selections) {
-          if (selection.kind === 'Field' && selection.name.value === '__type') {
-            // GraphQL's introspection __type field requires a 'name' argument
-            // This distinguishes it from potential user-defined __type fields
-            if (selection.arguments && selection.arguments.length > 0) {
-              return true;
-            }
+    const checkSelections = (selections) => {
+      for (const selection of selections) {
+        if (selection.kind === 'Field' && selection.name.value === '__type') {
+          if (selection.arguments && selection.arguments.length > 0) {
+            return true;
           }
+        }
+        if (selection.selectionSet) {
+          if (checkSelections(selection.selectionSet.selections)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+    for (const definition of ast.definitions) {
+      if (definition.selectionSet) {
+        if (checkSelections(definition.selectionSet.selections)) {
+          return true;
         }
       }
     }
     return false;
   } catch {
-    // If parsing fails, we assume it's not a valid query and let Apollo handle it
     return false;
   }
 };
@@ -111,8 +115,7 @@ class ParseGraphQLServer {
     try {
       return {
         schema: await this.parseGraphQLSchema.load(),
-        context: async ({ req, res }) => {
-          res.set('access-control-allow-origin', req.get('origin') || '*');
+        context: async ({ req }) => {
           return {
             info: req.info,
             config: req.config,
@@ -150,7 +153,7 @@ class ParseGraphQLServer {
           // We need always true introspection because apollo server have changing behavior based on the NODE_ENV variable
           // we delegate the introspection control to the IntrospectionControlPlugin
           introspection: true,
-          plugins: [ApolloServerPluginCacheControlDisabled(), IntrospectionControlPlugin(this.config.graphQLPublicIntrospection)],
+          plugins: [ApolloServerPluginCacheControlDisabled(), IntrospectionControlPlugin(this.config.graphQLPublicIntrospection), createComplexityValidationPlugin(() => this.parseServer.config.requestComplexity)],
           schema,
         });
         await apollo.start();
@@ -199,7 +202,7 @@ class ParseGraphQLServer {
     if (!app || !app.use) {
       requiredParameter('You must provide an Express.js app instance!');
     }
-    app.use(this.config.graphQLPath, corsMiddleware());
+    app.use(this.config.graphQLPath, allowCrossDomain(this.parseServer.config.appId));
     app.use(this.config.graphQLPath, handleParseHeaders);
     app.use(this.config.graphQLPath, handleParseSession);
     this.applyRequestContextMiddleware(app, this.parseServer.config);
@@ -251,23 +254,6 @@ class ParseGraphQLServer {
           </script>`
         );
         res.end();
-      }
-    );
-  }
-
-  createSubscriptions(server) {
-    SubscriptionServer.create(
-      {
-        execute,
-        subscribe,
-        onOperation: async (_message, params, webSocket) =>
-          Object.assign({}, params, await this._getGraphQLOptions(webSocket.upgradeReq)),
-      },
-      {
-        server,
-        path:
-          this.config.subscriptionsPath ||
-          requiredParameter('You must provide a config.subscriptionsPath to createSubscriptions!'),
       }
     );
   }

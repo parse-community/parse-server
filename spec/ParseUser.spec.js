@@ -12,6 +12,7 @@ const request = require('../lib/request');
 const passwordCrypto = require('../lib/password');
 const Config = require('../lib/Config');
 const cryptoUtils = require('../lib/cryptoUtils');
+const Utils = require('../lib/Utils');
 
 
 describe('allowExpiredAuthDataToken option', () => {
@@ -358,9 +359,6 @@ describe('Parse.User testing', () => {
       uri: databaseURI,
     });
     await adapter.connect();
-    await adapter.database.dropDatabase();
-    delete adapter.connectionPromise;
-    Config.get(Parse.applicationId).schemaCache.clear();
 
     const user = new Parse.User();
     await user.signUp({
@@ -390,7 +388,7 @@ describe('Parse.User testing', () => {
     expect(newUser).not.toBeUndefined();
   });
 
-  it('should be let masterKey lock user out with authData', async () => {
+  it_only_db('mongo')('should reject duplicate authData when masterKey locks user out (mongo)', async () => {
     const response = await request({
       method: 'POST',
       url: 'http://localhost:8378/1/classes/_User',
@@ -406,15 +404,13 @@ describe('Parse.User testing', () => {
     });
     const body = response.data;
     const objectId = body.objectId;
-    const sessionToken = body.sessionToken;
-    expect(sessionToken).toBeDefined();
+    expect(body.sessionToken).toBeDefined();
     expect(objectId).toBeDefined();
     const user = new Parse.User();
     user.id = objectId;
     const ACL = new Parse.ACL();
     user.setACL(ACL);
     await user.save(null, { useMasterKey: true });
-    // update the user
     const options = {
       method: 'POST',
       url: `http://localhost:8378/1/classes/_User/`,
@@ -430,8 +426,61 @@ describe('Parse.User testing', () => {
         },
       },
     };
-    const res = await request(options);
-    expect(res.data.objectId).not.toEqual(objectId);
+    try {
+      await request(options);
+      fail('should have thrown');
+    } catch (err) {
+      expect(err.data.code).toBe(208);
+      expect(err.data.error).toBe('this auth is already used');
+    }
+  });
+
+  it_only_db('postgres')('should reject duplicate authData when masterKey locks user out (postgres)', async () => {
+    await reconfigureServer();
+    const response = await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/_User',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+      body: {
+        key: 'value',
+        authData: { anonymous: { id: '00000000-0000-0000-0000-000000000001' } },
+      },
+    });
+    const body = response.data;
+    const objectId = body.objectId;
+    expect(body.sessionToken).toBeDefined();
+    expect(objectId).toBeDefined();
+    const user = new Parse.User();
+    user.id = objectId;
+    const ACL = new Parse.ACL();
+    user.setACL(ACL);
+    await user.save(null, { useMasterKey: true });
+    const options = {
+      method: 'POST',
+      url: `http://localhost:8378/1/classes/_User/`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+      body: {
+        key: 'otherValue',
+        authData: {
+          anonymous: { id: '00000000-0000-0000-0000-000000000001' },
+        },
+      },
+    };
+    try {
+      await request(options);
+      fail('should have thrown');
+    } catch (err) {
+      expect(err.data.code).toBe(208);
+      expect(err.data.error).toBe('this auth is already used');
+    }
   });
 
   it('user login with files', done => {
@@ -1077,9 +1126,9 @@ describe('Parse.User testing', () => {
 
           equal(userInMemory.id, id, 'id should be set');
 
-          expect(userInMemory.updatedAt instanceof Date).toBe(true);
+          expect(Utils.isDate(userInMemory.updatedAt)).toBe(true);
 
-          ok(userInMemory.createdAt instanceof Date);
+          ok(Utils.isDate(userInMemory.createdAt));
 
           ok(userInMemory.getSessionToken(), 'user should have a sessionToken after saving');
 
@@ -1116,9 +1165,9 @@ describe('Parse.User testing', () => {
 
           equal(userFromDisk.id, id, 'id should be set on userFromDisk');
 
-          ok(userFromDisk.updatedAt instanceof Date);
+          ok(Utils.isDate(userFromDisk.updatedAt));
 
-          ok(userFromDisk.createdAt instanceof Date);
+          ok(Utils.isDate(userFromDisk.createdAt));
 
           ok(userFromDisk.getSessionToken(), 'userFromDisk should have a sessionToken');
 
@@ -1408,7 +1457,7 @@ describe('Parse.User testing', () => {
     expect(result.get('authData').facebook.access_token).toBe('jenny');
   });
 
-  it('only creates a single session for an installation / user pair (#2885)', async done => {
+  it('only creates a single session for an installation / user pair (#2885)', async () => {
     Parse.Object.disableSingleInstance();
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
@@ -1417,18 +1466,13 @@ describe('Parse.User testing', () => {
     const user = await Parse.User.logInWith('facebook');
     const sessionToken = user.getSessionToken();
     const query = new Parse.Query('_Session');
-    return query
-      .find({ useMasterKey: true })
-      .then(results => {
-        expect(results.length).toBe(1);
-        expect(results[0].get('sessionToken')).toBe(sessionToken);
-        expect(results[0].get('createdWith')).toEqual({
-          action: 'login',
-          authProvider: 'facebook',
-        });
-        done();
-      })
-      .catch(done.fail);
+    const results = await query.find({ useMasterKey: true });
+    expect(results.length).toBe(1);
+    expect(results[0].get('sessionToken')).toBe(sessionToken);
+    expect(results[0].get('createdWith')).toEqual({
+      action: 'login',
+      authProvider: 'facebook',
+    });
   });
 
   it('log in with provider with files', done => {
@@ -3265,6 +3309,47 @@ describe('Parse.User testing', () => {
     });
     const session = await Parse.Session.current();
     expect(session.get('expiresAt')).toEqual(expiresAt);
+  });
+
+  it('should reject expired session token even when served from cache', async () => {
+    // Use a 1-second session length with a 5-second cache TTL (default)
+    // so the session expires while the cache entry is still alive
+    await reconfigureServer({ sessionLength: 1 });
+
+    // Sign up user — creates a session with expiresAt = now + 1 second
+    const user = await Parse.User.signUp('cacheuser', 'somepass');
+    const sessionToken = user.getSessionToken();
+
+    // Make an authenticated request to prime the user cache
+    await request({
+      method: 'GET',
+      url: 'http://localhost:8378/1/users/me',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': sessionToken,
+      },
+    });
+
+    // Wait for the session to expire (1 second), but cache entry (5s TTL) is still alive
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    // This request should be served from cache but still reject the expired session
+    try {
+      await request({
+        method: 'GET',
+        url: 'http://localhost:8378/1/users/me',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': sessionToken,
+        },
+      });
+      fail('Should have rejected expired session token from cache');
+    } catch (error) {
+      expect(error.data.code).toEqual(209);
+      expect(error.data.error).toEqual('Session token is expired.');
+    }
   });
 
   it('should not create extraneous session tokens', done => {

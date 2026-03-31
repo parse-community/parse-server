@@ -2,6 +2,7 @@ const { loadAdapter, loadModule } = require('../lib/Adapters/AdapterLoader');
 const FilesAdapter = require('@parse/fs-files-adapter').default;
 const MockFilesAdapter = require('mock-files-adapter');
 const Config = require('../lib/Config');
+const Utils = require('../lib/Utils');
 
 describe('AdapterLoader', () => {
   it('should instantiate an adapter from string in object', done => {
@@ -15,7 +16,7 @@ describe('AdapterLoader', () => {
       },
     });
 
-    expect(adapter instanceof Object).toBe(true);
+    expect(Utils.isObject(adapter)).toBe(true);
     expect(adapter.options.key).toBe('value');
     expect(adapter.options.foo).toBe('bar');
     done();
@@ -25,7 +26,7 @@ describe('AdapterLoader', () => {
     const adapterPath = require('path').resolve('./spec/support/MockAdapter');
     const adapter = loadAdapter(adapterPath);
 
-    expect(adapter instanceof Object).toBe(true);
+    expect(Utils.isObject(adapter)).toBe(true);
     done();
   });
 

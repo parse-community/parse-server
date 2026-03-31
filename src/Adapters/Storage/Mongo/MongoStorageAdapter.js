@@ -2,6 +2,7 @@
 import { format as formatUrl, parse as parseUrl } from '../../../vendor/mongodbUrl';
 import type { QueryOptions, QueryType, SchemaType, StorageClass } from '../StorageAdapter';
 import { StorageAdapter } from '../StorageAdapter';
+import Utils from '../../../Utils';
 import MongoCollection from './MongoCollection';
 import MongoSchemaCollection from './MongoSchemaCollection';
 import {
@@ -18,7 +19,6 @@ import Parse from 'parse/node';
 import _ from 'lodash';
 import defaults, { ParseServerDatabaseOptions } from '../../../defaults';
 import logger from '../../../logger';
-import Utils from '../../../Utils';
 
 // @flow-disable-next
 const mongodb = require('mongodb');
@@ -170,6 +170,7 @@ export class MongoStorageAdapter implements StorageAdapter {
   database: any;
   client: MongoClient;
   _maxTimeMS: ?number;
+  _batchSize: ?number;
   canSortOnJoinTables: boolean;
   enableSchemaHooks: boolean;
   schemaCacheTtl: ?number;
@@ -182,6 +183,8 @@ export class MongoStorageAdapter implements StorageAdapter {
 
     // MaxTimeMS is not a global MongoDB client option, it is applied per operation.
     this._maxTimeMS = mongoOptions.maxTimeMS;
+    // BatchSize is not a global MongoDB client option, it is applied per cursor operation.
+    this._batchSize = mongoOptions.batchSize;
     this.canSortOnJoinTables = true;
     this.enableSchemaHooks = !!mongoOptions.enableSchemaHooks;
     this.schemaCacheTtl = mongoOptions.schemaCacheTtl;
@@ -579,6 +582,13 @@ export class MongoStorageAdapter implements StorageAdapter {
             if (matches && Array.isArray(matches)) {
               err.userInfo = { duplicated_field: matches[1] };
             }
+            // Check for authData unique index violations
+            if (!err.userInfo) {
+              const authDataMatch = error.message.match(/index:\s+(_auth_data_[a-zA-Z0-9_]+_id)/);
+              if (authDataMatch) {
+                err.userInfo = { duplicated_field: authDataMatch[1] };
+              }
+            }
           }
           throw err;
         }
@@ -655,10 +665,26 @@ export class MongoStorageAdapter implements StorageAdapter {
       .catch(error => {
         if (error.code === 11000) {
           logger.error('Duplicate key error:', error.message);
-          throw new Parse.Error(
+          const err = new Parse.Error(
             Parse.Error.DUPLICATE_VALUE,
             'A duplicate value for a field with unique values was provided'
           );
+          err.underlyingError = error;
+          if (error.message) {
+            const matches = error.message.match(
+              /index:[\sa-zA-Z0-9_\-\.]+\$?([a-zA-Z_-]+)_1/
+            );
+            if (matches && Array.isArray(matches)) {
+              err.userInfo = { duplicated_field: matches[1] };
+            }
+            if (!err.userInfo) {
+              const authDataMatch = error.message.match(/index:\s+(_auth_data_[a-zA-Z0-9_]+_id)/);
+              if (authDataMatch) {
+                err.userInfo = { duplicated_field: authDataMatch[1] };
+              }
+            }
+          }
+          throw err;
         }
         throw error;
       })
@@ -735,6 +761,7 @@ export class MongoStorageAdapter implements StorageAdapter {
           sort: mongoSort,
           keys: mongoKeys,
           maxTimeMS: this._maxTimeMS,
+          batchSize: this._batchSize,
           readPreference,
           hint,
           caseInsensitive,
@@ -773,12 +800,17 @@ export class MongoStorageAdapter implements StorageAdapter {
     const caseInsensitiveOptions: Object = caseInsensitive
       ? { collation: MongoCollection.caseInsensitiveCollation() }
       : {};
+    const partialFilterOptions: Object =
+      options.partialFilterExpression !== undefined
+        ? { partialFilterExpression: options.partialFilterExpression }
+        : {};
     const indexOptions: Object = {
       ...defaultOptions,
       ...caseInsensitiveOptions,
       ...indexNameOptions,
       ...ttlOptions,
       ...sparseOptions,
+      ...partialFilterOptions,
     };
 
     return this._adaptiveCollection(className)
@@ -814,12 +846,39 @@ export class MongoStorageAdapter implements StorageAdapter {
       .catch(err => this.handleError(err));
   }
 
+  // Creates a unique sparse index on _auth_data_<provider>.id to prevent
+  // race conditions during concurrent signups with the same authData.
+  ensureAuthDataUniqueness(provider: string) {
+    return this._adaptiveCollection('_User')
+      .then(collection =>
+        collection._mongoCollection.createIndex(
+          { [`_auth_data_${provider}.id`]: 1 },
+          { unique: true, sparse: true, background: true, name: `_auth_data_${provider}_id` }
+        )
+      )
+      .catch(error => {
+        if (error.code === 11000) {
+          throw new Parse.Error(
+            Parse.Error.DUPLICATE_VALUE,
+            'Tried to ensure field uniqueness for a class that already has duplicates.'
+          );
+        }
+        // Ignore "index already exists with same name" or "index already exists with different options"
+        if (error.code === 85 || error.code === 86) {
+          return;
+        }
+        throw error;
+      })
+      .catch(err => this.handleError(err));
+  }
+
   // Used in tests
   _rawFind(className: string, query: QueryType) {
     return this._adaptiveCollection(className)
       .then(collection =>
         collection.find(query, {
           maxTimeMS: this._maxTimeMS,
+          batchSize: this._batchSize,
         })
       )
       .catch(err => this.handleError(err));
@@ -909,6 +968,7 @@ export class MongoStorageAdapter implements StorageAdapter {
         collection.aggregate(pipeline, {
           readPreference,
           maxTimeMS: this._maxTimeMS,
+          batchSize: this._batchSize,
           hint,
           explain,
           comment,
@@ -1055,7 +1115,7 @@ export class MongoStorageAdapter implements StorageAdapter {
    * @returns {any} The original value if not convertible to Date, or a Date object if it is.
    */
   _convertToDate(value: any): any {
-    if (value instanceof Date) {
+    if (Utils.isDate(value)) {
       return value;
     }
     if (typeof value === 'string') {

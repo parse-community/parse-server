@@ -133,8 +133,13 @@ const getAuthForSessionToken = async function ({
 }) {
   cacheController = cacheController || (config && config.cacheController);
   if (cacheController) {
-    const userJSON = await cacheController.user.get(sessionToken);
-    if (userJSON) {
+    const cached = await cacheController.user.get(sessionToken);
+    if (cached) {
+      const { expiresAt: cachedExpiresAt, ...userJSON } = cached;
+      if (cachedExpiresAt && new Date(cachedExpiresAt) < new Date()) {
+        cacheController.user.del(sessionToken);
+        throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token is expired.');
+      }
       const cachedUser = Parse.Object.fromJSON(userJSON);
       renewSessionIfNeeded({ config, sessionToken });
       return Promise.resolve(
@@ -195,7 +200,7 @@ const getAuthForSessionToken = async function ({
   obj['className'] = '_User';
   obj['sessionToken'] = sessionToken;
   if (cacheController) {
-    cacheController.user.put(sessionToken, obj);
+    cacheController.user.put(sessionToken, { ...obj, expiresAt: expiresAt?.toISOString() });
   }
   renewSessionIfNeeded({ config, session, sessionToken });
   const userObject = Parse.Object.fromJSON(obj);
@@ -228,6 +233,11 @@ var getAuthForLegacySessionToken = async function ({ config, sessionToken, insta
       throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid legacy session token');
     }
     const obj = results[0];
+
+    if (typeof obj['objectId'] === 'string' && obj['objectId'].startsWith('role:')) {
+      throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid object ID.');
+    }
+
     obj.className = '_User';
     const userObject = Parse.Object.fromJSON(obj);
     return new Auth({
@@ -438,13 +448,23 @@ const findUsersWithAuthData = async (config, authData, beforeFind, currentUserAu
       const isUnchanged = storedProviderData && incomingKeys.length > 0 &&
         !incomingKeys.some(key => !isDeepStrictEqual(providerAuthData[key], storedProviderData[key]));
 
-      const adapter = config.authDataManager.getValidatorForProvider(provider)?.adapter;
+      const validatorConfig = config.authDataManager.getValidatorForProvider(provider);
+      // Skip database query for unconfigured providers to avoid unindexed collection scans;
+      // the provider will be rejected later in handleAuthDataValidation with UNSUPPORTED_SERVICE
+      if (!validatorConfig?.validator) {
+        return null;
+      }
+      const adapter = validatorConfig.adapter;
       if (beforeFind && typeof adapter?.beforeFind === 'function' && !isUnchanged) {
         await adapter.beforeFind(providerAuthData);
       }
 
       if (!providerAuthData?.id) {
         return null;
+      }
+
+      if (typeof providerAuthData.id !== 'string') {
+        throw new Parse.Error(Parse.Error.INVALID_VALUE, `Invalid authData id for provider '${provider}'.`);
       }
 
       return { [`authData.${provider}.id`]: providerAuthData.id };
@@ -509,10 +529,15 @@ const checkIfUserHasProvidedConfiguredProvidersForLogin = (
   userAuthData = {},
   config
 ) => {
-  const savedUserProviders = Object.keys(userAuthData).map(provider => ({
-    name: provider,
-    adapter: config.authDataManager.getValidatorForProvider(provider).adapter,
-  }));
+  const savedUserProviders = Object.keys(userAuthData)
+    .map(provider => {
+      const validator = config.authDataManager.getValidatorForProvider(provider);
+      if (!validator || !validator.adapter) {
+        return null;
+      }
+      return { name: provider, adapter: validator.adapter };
+    })
+    .filter(Boolean);
 
   const hasProvidedASoloProvider = savedUserProviders.some(
     provider =>

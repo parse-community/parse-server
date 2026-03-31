@@ -213,27 +213,36 @@ const handleDotFields = object => {
   return object;
 };
 
+const escapeSqlString = value => value.replace(/'/g, "''");
+const escapeJsonString = value => JSON.stringify(value).slice(1, -1);
+
 const transformDotFieldToComponents = fieldName => {
   return fieldName.split('.').map((cmpt, index) => {
     if (index === 0) {
-      return `"${cmpt}"`;
+      return `"${cmpt.replace(/"/g, '""')}"`;
     }
     if (isArrayIndex(cmpt)) {
       return Number(cmpt);
     } else {
-      return `'${cmpt}'`;
+      return `'${escapeSqlString(cmpt)}'`;
     }
   });
 };
 
 const transformDotField = fieldName => {
   if (fieldName.indexOf('.') === -1) {
-    return `"${fieldName}"`;
+    return `"${fieldName.replace(/"/g, '""')}"`;
   }
   const components = transformDotFieldToComponents(fieldName);
   let name = components.slice(0, components.length - 1).join('->');
   name += '->>' + components[components.length - 1];
   return name;
+};
+
+const validateAggregateFieldName = name => {
+  if (typeof name !== 'string' || !name.match(/^[a-zA-Z][a-zA-Z0-9_]*$/)) {
+    throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${name}`);
+  }
 };
 
 const transformAggregateField = fieldName => {
@@ -246,7 +255,12 @@ const transformAggregateField = fieldName => {
   if (fieldName === '$_updated_at') {
     return 'updatedAt';
   }
-  return fieldName.substring(1);
+  if (!fieldName.startsWith('$')) {
+    throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}`);
+  }
+  const name = fieldName.substring(1);
+  validateAggregateFieldName(name);
+  return name;
 };
 
 const validateKeys = object => {
@@ -330,6 +344,14 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
         } else if (typeof fieldValue !== 'object') {
           patterns.push(`$${index}:raw = $${index + 1}::text`);
           values.push(name, fieldValue);
+          index += 2;
+        } else if (
+          typeof fieldValue === 'object' &&
+          !Object.keys(fieldValue).some(key => key.startsWith('$'))
+        ) {
+          name = transformDotFieldToComponents(fieldName).join('->');
+          patterns.push(`($${index}:raw)::jsonb = $${index + 1}::jsonb`);
+          values.push(name, JSON.stringify(fieldValue));
           index += 2;
         }
       }
@@ -489,6 +511,18 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
             if (fieldName.indexOf('.') >= 0) {
               return;
             }
+            const fieldType = schema.fields[fieldName]?.type;
+            if (fieldType === 'String') {
+              const operatorName = notIn ? '$nin' : '$in';
+              for (const elem of baseArray) {
+                if (elem != null && typeof elem !== 'string') {
+                  throw new Parse.Error(
+                    Parse.Error.INVALID_QUERY,
+                    `${operatorName} element type mismatch: expected string for field "${fieldName}"`
+                  );
+                }
+              }
+            }
             const inPatterns = [];
             values.push(fieldName);
             baseArray.forEach((listElem, listIndex) => {
@@ -575,7 +609,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
 
     if (fieldValue.$containedBy) {
       const arr = fieldValue.$containedBy;
-      if (!(arr instanceof Array)) {
+      if (!Array.isArray(arr)) {
         throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $containedBy: should be an array`);
       }
 
@@ -657,7 +691,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
 
     if (fieldValue.$geoWithin && fieldValue.$geoWithin.$centerSphere) {
       const centerSphere = fieldValue.$geoWithin.$centerSphere;
-      if (!(centerSphere instanceof Array) || centerSphere.length < 2) {
+      if (!Array.isArray(centerSphere) || centerSphere.length < 2) {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
           'bad $geoWithin value; $centerSphere should be an array of Parse.GeoPoint and distance'
@@ -665,7 +699,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       }
       // Get point, convert to geo point if necessary and validate
       let point = centerSphere[0];
-      if (point instanceof Array && point.length === 2) {
+      if (Array.isArray(point) && point.length === 2) {
         point = new Parse.GeoPoint(point[1], point[0]);
       } else if (!GeoPointCoder.isValidJSON(point)) {
         throw new Parse.Error(
@@ -702,7 +736,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
           );
         }
         points = polygon.coordinates;
-      } else if (polygon instanceof Array) {
+      } else if (Array.isArray(polygon)) {
         if (polygon.length < 3) {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
@@ -718,7 +752,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       }
       points = points
         .map(point => {
-          if (point instanceof Array && point.length === 2) {
+          if (Array.isArray(point) && point.length === 2) {
             Parse.GeoPoint._validate(point[1], point[0]);
             return `(${point[0]}, ${point[1]})`;
           }
@@ -763,11 +797,16 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
         }
       }
 
-      const name = transformDotField(fieldName);
       regex = processRegexPattern(regex);
 
-      patterns.push(`$${index}:raw ${operator} '$${index + 1}:raw'`);
-      values.push(name, regex);
+      if (fieldName.indexOf('.') >= 0) {
+        const name = transformDotField(fieldName);
+        patterns.push(`$${index}:raw ${operator} '$${index + 1}:raw'`);
+        values.push(name, regex);
+      } else {
+        patterns.push(`$${index}:name ${operator} '$${index + 1}:raw'`);
+        values.push(fieldName, regex);
+      }
       index += 2;
     }
 
@@ -1493,9 +1532,15 @@ export class PostgresStorageAdapter implements StorageAdapter {
           );
           err.underlyingError = error;
           if (error.constraint) {
-            const matches = error.constraint.match(/unique_([a-zA-Z]+)/);
-            if (matches && Array.isArray(matches)) {
-              err.userInfo = { duplicated_field: matches[1] };
+            // Check for authData unique index violations first
+            const authDataMatch = error.constraint.match(/_User_unique_authData_([a-zA-Z0-9_]+)_id/);
+            if (authDataMatch) {
+              err.userInfo = { duplicated_field: `_auth_data_${authDataMatch[1]}` };
+            } else {
+              const matches = error.constraint.match(/unique_([a-zA-Z]+)/);
+              if (matches && Array.isArray(matches)) {
+                err.userInfo = { duplicated_field: matches[1] };
+              }
             }
           }
           error = err;
@@ -1697,7 +1742,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         updatePatterns.push(`$${index}:name = $${index + 1}`);
         values.push(fieldName, toPostgresValue(fieldValue));
         index += 2;
-      } else if (fieldValue instanceof Date) {
+      } else if (Utils.isDate(fieldValue)) {
         updatePatterns.push(`$${index}:name = $${index + 1}`);
         values.push(fieldName, fieldValue);
         index += 2;
@@ -1747,13 +1792,21 @@ export class PostgresStorageAdapter implements StorageAdapter {
           .map(k => k.split('.')[1]);
 
         let incrementPatterns = '';
+        const incrementValues = [];
         if (keysToIncrement.length > 0) {
           incrementPatterns =
             ' || ' +
             keysToIncrement
               .map(c => {
                 const amount = fieldValue[c].amount;
-                return `CONCAT('{"${c}":', COALESCE($${index}:name->>'${c}','0')::int + ${amount}, '}')::jsonb`;
+                if (typeof amount !== 'number') {
+                  throw new Parse.Error(Parse.Error.INVALID_JSON, 'incrementing must provide a number');
+                }
+                incrementValues.push(amount);
+                const amountIndex = index + incrementValues.length;
+                const jsonSafeName = escapeSqlString(escapeJsonString(c));
+                const sqlSafeName = escapeSqlString(c);
+                return `CONCAT('{"${jsonSafeName}":', COALESCE($${index}:name->>'${sqlSafeName}','0')::int + $${amountIndex}, '}')::jsonb`;
               })
               .join(' || ');
           // Strip the keys
@@ -1776,7 +1829,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
           .map(k => k.split('.')[1]);
 
         const deletePatterns = keysToDelete.reduce((p: string, c: string, i: number) => {
-          return p + ` - '$${index + 1 + i}:value'`;
+          return p + ` - '$${index + 1 + incrementValues.length + i}:value'`;
         }, '');
         // Override Object
         let updateObject = "'{}'::jsonb";
@@ -1786,11 +1839,11 @@ export class PostgresStorageAdapter implements StorageAdapter {
           updateObject = `COALESCE($${index}:name, '{}'::jsonb)`;
         }
         updatePatterns.push(
-          `$${index}:name = (${updateObject} ${deletePatterns} ${incrementPatterns} || $${index + 1 + keysToDelete.length
+          `$${index}:name = (${updateObject} ${deletePatterns} ${incrementPatterns} || $${index + 1 + incrementValues.length + keysToDelete.length
           }::jsonb )`
         );
-        values.push(fieldName, ...keysToDelete, JSON.stringify(fieldValue));
-        index += 2 + keysToDelete.length;
+        values.push(fieldName, ...incrementValues, ...keysToDelete, JSON.stringify(fieldValue));
+        index += 2 + incrementValues.length + keysToDelete.length;
       } else if (
         Array.isArray(fieldValue) &&
         schema.fields[fieldName] &&
@@ -1827,7 +1880,30 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
     const whereClause = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
     const qs = `UPDATE $1:name SET ${updatePatterns.join()} ${whereClause} RETURNING *`;
-    const promise = (transactionalSession ? transactionalSession.t : this._client).any(qs, values);
+    const promise = (transactionalSession ? transactionalSession.t : this._client)
+      .any(qs, values)
+      .catch(error => {
+        if (error.code === PostgresUniqueIndexViolationError) {
+          const err = new Parse.Error(
+            Parse.Error.DUPLICATE_VALUE,
+            'A duplicate value for a field with unique values was provided'
+          );
+          err.underlyingError = error;
+          if (error.constraint) {
+            const authDataMatch = error.constraint.match(/_User_unique_authData_([a-zA-Z0-9_]+)_id/);
+            if (authDataMatch) {
+              err.userInfo = { duplicated_field: `_auth_data_${authDataMatch[1]}` };
+            } else {
+              const matches = error.constraint.match(/unique_([a-zA-Z]+)/);
+              if (matches && Array.isArray(matches)) {
+                err.userInfo = { duplicated_field: matches[1] };
+              }
+            }
+          }
+          throw err;
+        }
+        throw error;
+      });
     if (transactionalSession) {
       transactionalSession.batch.push(promise);
     }
@@ -1934,8 +2010,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
     return this._client
       .any(qs, values)
       .catch(error => {
-        // Query on non existing table, don't crash
-        if (error.code !== PostgresRelationDoesNotExistError) {
+        if (
+          error.code !== PostgresRelationDoesNotExistError &&
+          error.code !== PostgresMissingColumnError
+        ) {
           throw error;
         }
         return [];
@@ -2038,7 +2116,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       if (object[fieldName] === null) {
         delete object[fieldName];
       }
-      if (object[fieldName] instanceof Date) {
+      if (Utils.isDate(object[fieldName])) {
         object[fieldName] = {
           __type: 'Date',
           iso: object[fieldName].toISOString(),
@@ -2069,6 +2147,31 @@ export class PostgresStorageAdapter implements StorageAdapter {
         throw new Parse.Error(
           Parse.Error.DUPLICATE_VALUE,
           'A duplicate value for a field with unique values was provided'
+        );
+      } else {
+        throw error;
+      }
+    });
+  }
+
+  // Creates a unique index on authData-><provider>->>'id' to prevent
+  // race conditions during concurrent signups with the same authData.
+  async ensureAuthDataUniqueness(provider: string) {
+    const indexName = `_User_unique_authData_${provider}_id`;
+    const qs = `CREATE UNIQUE INDEX IF NOT EXISTS $1:name ON "_User" (("authData"->$2::text->>'id')) WHERE "authData"->$2::text->>'id' IS NOT NULL`;
+    await this._client.none(qs, [indexName, provider]).catch(error => {
+      if (
+        error.code === PostgresDuplicateRelationError &&
+        error.message.includes(indexName)
+      ) {
+        // Index already exists. Ignore error.
+      } else if (
+        error.code === PostgresUniqueIndexViolationError &&
+        error.message.includes(indexName)
+      ) {
+        throw new Parse.Error(
+          Parse.Error.DUPLICATE_VALUE,
+          'Tried to ensure field uniqueness for a class that already has duplicates.'
         );
       } else {
         throw error;
@@ -2112,7 +2215,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
         }
       })
       .catch(error => {
-        if (error.code !== PostgresRelationDoesNotExistError) {
+        if (
+          error.code !== PostgresRelationDoesNotExistError &&
+          error.code !== PostgresMissingColumnError
+        ) {
           throw error;
         }
         return 0;
@@ -2121,12 +2227,18 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
   async distinct(className: string, schema: SchemaType, query: QueryType, fieldName: string) {
     debug('distinct');
+    const fieldSegments = fieldName.split('.');
+    for (const segment of fieldSegments) {
+      if (!segment.match(/^[a-zA-Z][a-zA-Z0-9_]*$/)) {
+        throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}`);
+      }
+    }
     let field = fieldName;
     let column = fieldName;
     const isNested = fieldName.indexOf('.') >= 0;
     if (isNested) {
       field = transformDotFieldToComponents(fieldName).join('->');
-      column = fieldName.split('.')[0];
+      column = fieldSegments[0];
     }
     const isArrayField =
       schema.fields && schema.fields[fieldName] && schema.fields[fieldName].type === 'Array';
