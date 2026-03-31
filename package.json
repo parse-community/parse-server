@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "8.6.3",
+  "version": "8.6.71",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -29,7 +29,6 @@
     "bcryptjs": "3.0.2",
     "commander": "13.1.0",
     "cors": "2.8.5",
-    "deepcopy": "2.1.0",
     "express": "5.2.1",
     "express-rate-limit": "7.5.1",
     "follow-redirects": "1.15.9",
@@ -56,7 +55,6 @@
     "rate-limit-redis": "4.2.0",
     "redis": "4.7.0",
     "semver": "7.7.2",
-    "subscriptions-transport-ws": "0.11.0",
     "tv4": "1.3.0",
     "uuid": "11.1.0",
     "winston": "3.17.0",

@@ -1700,4 +1700,141 @@ describe('ProtectedFields', function () {
       done();
     });
   });
+
+  describe('query on protected fields via logical operators', function () {
+    let user;
+    let otherUser;
+    const testEmail = 'victim@example.com';
+    const otherEmail = 'other@example.com';
+
+    beforeEach(async function () {
+      await reconfigureServer({
+        protectedFields: {
+          _User: { '*': ['email'] },
+        },
+      });
+      user = new Parse.User();
+      user.setUsername('victim' + Date.now());
+      user.setPassword('password');
+      user.setEmail(testEmail);
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      user.setACL(acl);
+      await user.save(null, { useMasterKey: true });
+
+      otherUser = new Parse.User();
+      otherUser.setUsername('attacker' + Date.now());
+      otherUser.setPassword('password');
+      otherUser.setEmail(otherEmail);
+      const acl2 = new Parse.ACL();
+      acl2.setPublicReadAccess(true);
+      otherUser.setACL(acl2);
+      await otherUser.save(null, { useMasterKey: true });
+      await Parse.User.logIn(otherUser.getUsername(), 'password');
+    });
+
+    it('should deny query on protected field via $or', async function () {
+      const q1 = new Parse.Query(Parse.User);
+      q1.equalTo('email', testEmail);
+      const query = Parse.Query.or(q1);
+      await expectAsync(query.find()).toBeRejectedWith(
+        jasmine.objectContaining({
+          code: Parse.Error.OPERATION_FORBIDDEN,
+        })
+      );
+    });
+
+    it('should deny query on protected field via $and', async function () {
+      const query = new Parse.Query(Parse.User);
+      query.withJSON({ where: { $and: [{ email: testEmail }] } });
+      await expectAsync(query.find()).toBeRejectedWith(
+        jasmine.objectContaining({
+          code: Parse.Error.OPERATION_FORBIDDEN,
+        })
+      );
+    });
+
+    it('should deny query on protected field via $nor', async function () {
+      const query = new Parse.Query(Parse.User);
+      query.withJSON({ where: { $nor: [{ email: testEmail }] } });
+      await expectAsync(query.find()).toBeRejectedWith(
+        jasmine.objectContaining({
+          code: Parse.Error.OPERATION_FORBIDDEN,
+        })
+      );
+    });
+
+    it('should deny query on protected field via nested $or inside $and', async function () {
+      const query = new Parse.Query(Parse.User);
+      query.withJSON({ where: { $and: [{ $or: [{ email: testEmail }] }] } });
+      await expectAsync(query.find()).toBeRejectedWith(
+        jasmine.objectContaining({
+          code: Parse.Error.OPERATION_FORBIDDEN,
+        })
+      );
+    });
+
+    it('should deny query on protected field via $or with $regex', async function () {
+      const query = new Parse.Query(Parse.User);
+      query.withJSON({ where: { $or: [{ email: { $regex: '^victim' } }] } });
+      await expectAsync(query.find()).toBeRejectedWith(
+        jasmine.objectContaining({
+          code: Parse.Error.OPERATION_FORBIDDEN,
+        })
+      );
+    });
+
+    it('should allow $or query on non-protected fields', async function () {
+      const q1 = new Parse.Query(Parse.User);
+      q1.equalTo('username', user.getUsername());
+      const query = Parse.Query.or(q1);
+      const results = await query.find();
+      expect(results.length).toBe(1);
+      expect(results[0].id).toBe(user.id);
+    });
+
+    it('should allow master key to query on protected fields via $or', async function () {
+      const q1 = new Parse.Query(Parse.User);
+      q1.equalTo('email', testEmail);
+      const query = Parse.Query.or(q1);
+      const results = await query.find({ useMasterKey: true });
+      expect(results.length).toBe(1);
+      expect(results[0].id).toBe(user.id);
+    });
+
+    it('should deny query on protected field with falsy value', async function () {
+      const query = new Parse.Query(Parse.User);
+      query.withJSON({ where: { email: null } });
+      await expectAsync(query.find()).toBeRejectedWith(
+        jasmine.objectContaining({
+          code: Parse.Error.OPERATION_FORBIDDEN,
+        })
+      );
+    });
+
+    it('should deny query on protected field with falsy value via $or', async function () {
+      const query = new Parse.Query(Parse.User);
+      query.withJSON({ where: { $or: [{ email: null }] } });
+      await expectAsync(query.find()).toBeRejectedWith(
+        jasmine.objectContaining({
+          code: Parse.Error.OPERATION_FORBIDDEN,
+        })
+      );
+    });
+
+    it('should not throw TypeError in denyProtectedFields for null element in $or', async function () {
+      const Config = require('../lib/Config');
+      const authModule = require('../lib/Auth');
+      const RestQuery = require('../lib/RestQuery');
+      const config = Config.get(Parse.applicationId);
+      const restQuery = await RestQuery({
+        method: RestQuery.Method.find,
+        config,
+        auth: authModule.nobody(config),
+        className: '_User',
+        restWhere: { $or: [null, { username: 'test' }] },
+      });
+      await expectAsync(restQuery.denyProtectedFields()).toBeResolved();
+    });
+  });
 });

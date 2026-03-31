@@ -3,6 +3,7 @@
 
 var SchemaController = require('./Controllers/SchemaController');
 var Parse = require('parse/node').Parse;
+var logger = require('./logger').default;
 const triggers = require('./triggers');
 const { continueWhile } = require('parse/lib/node/promiseUtils');
 const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt', 'ACL'];
@@ -281,6 +282,9 @@ function _UnsafeRestQuery(
 _UnsafeRestQuery.prototype.execute = function (executeOptions) {
   return Promise.resolve()
     .then(() => {
+      return this.validateQueryDepth();
+    })
+    .then(() => {
       return this.buildRestWhere();
     })
     .then(() => {
@@ -288,6 +292,9 @@ _UnsafeRestQuery.prototype.execute = function (executeOptions) {
     })
     .then(() => {
       return this.handleIncludeAll();
+    })
+    .then(() => {
+      return this.validateIncludeComplexity();
     })
     .then(() => {
       return this.handleExcludeKeys();
@@ -348,6 +355,36 @@ _UnsafeRestQuery.prototype.each = function (callback) {
   );
 };
 
+_UnsafeRestQuery.prototype.validateQueryDepth = function () {
+  if (this.auth.isMaster || this.auth.isMaintenance) {
+    return;
+  }
+  const rc = this.config.requestComplexity;
+  if (!rc || rc.queryDepth === -1) {
+    return;
+  }
+  const maxDepth = rc.queryDepth;
+  const checkDepth = (where, depth) => {
+    if (depth > maxDepth) {
+      throw new Parse.Error(
+        Parse.Error.INVALID_QUERY,
+        `Query condition nesting depth exceeds maximum allowed depth of ${maxDepth}`
+      );
+    }
+    if (typeof where !== 'object' || where === null) {
+      return;
+    }
+    for (const op of ['$or', '$and', '$nor']) {
+      if (Array.isArray(where[op])) {
+        for (const subQuery of where[op]) {
+          checkDepth(subQuery, depth + 1);
+        }
+      }
+    }
+  };
+  checkDepth(this.restWhere, 0);
+};
+
 _UnsafeRestQuery.prototype.buildRestWhere = function () {
   return Promise.resolve()
     .then(() => {
@@ -358,6 +395,9 @@ _UnsafeRestQuery.prototype.buildRestWhere = function () {
     })
     .then(() => {
       return this.validateClientClassCreation();
+    })
+    .then(() => {
+      return this.checkSubqueryDepth();
     })
     .then(() => {
       return this.replaceSelect();
@@ -407,6 +447,35 @@ _UnsafeRestQuery.prototype.redirectClassNameForKey = function () {
     .then(newClassName => {
       this.className = newClassName;
       this.redirectClassName = newClassName;
+
+      // Re-apply security checks for the redirected class name, since the
+      // checks in the constructor and in rest.find ran against the original
+      // class name before the redirect.
+      if (!this.auth.isMaster) {
+        enforceRoleSecurity('find', this.className, this.auth, this.config);
+
+        if (this.className === '_Session') {
+          if (!this.auth.user) {
+            throw createSanitizedError(
+              Parse.Error.INVALID_SESSION_TOKEN,
+              'Invalid session token',
+              this.config
+            );
+          }
+          this.restWhere = {
+            $and: [
+              this.restWhere,
+              {
+                user: {
+                  __type: 'Pointer',
+                  className: '_User',
+                  objectId: this.auth.user.id,
+                },
+              },
+            ],
+          };
+        }
+      }
     });
 };
 
@@ -451,6 +520,22 @@ function transformInQuery(inQueryObject, className, results) {
   }
 }
 
+_UnsafeRestQuery.prototype.checkSubqueryDepth = function () {
+  if (this.auth.isMaster || this.auth.isMaintenance) {
+    return;
+  }
+  const rc = this.config.requestComplexity;
+  if (!rc || rc.subqueryDepth === -1) {
+    return;
+  }
+  const depth = this.context._subqueryDepth || 0;
+  if (depth > rc.subqueryDepth) {
+    const message = `Subquery nesting depth exceeds maximum allowed depth of ${rc.subqueryDepth}`;
+    logger.warn(message);
+    throw new Parse.Error(Parse.Error.INVALID_QUERY, message);
+  }
+};
+
 // Replaces a $inQuery clause by running the subquery, if there is an
 // $inQuery clause.
 // The $inQuery clause turns into an $in with values that are just
@@ -478,6 +563,7 @@ _UnsafeRestQuery.prototype.replaceInQuery = async function () {
     additionalOptions.readPreference = this.restOptions.readPreference;
   }
 
+  const childContext = { ...this.context, _subqueryDepth: (this.context._subqueryDepth || 0) + 1 };
   const subquery = await RestQuery({
     method: RestQuery.Method.find,
     config: this.config,
@@ -485,7 +571,7 @@ _UnsafeRestQuery.prototype.replaceInQuery = async function () {
     className: inQueryValue.className,
     restWhere: inQueryValue.where,
     restOptions: additionalOptions,
-    context: this.context,
+    context: childContext,
   });
   return subquery.execute().then(response => {
     transformInQuery(inQueryObject, subquery.className, response.results);
@@ -538,6 +624,7 @@ _UnsafeRestQuery.prototype.replaceNotInQuery = async function () {
     additionalOptions.readPreference = this.restOptions.readPreference;
   }
 
+  const childContext = { ...this.context, _subqueryDepth: (this.context._subqueryDepth || 0) + 1 };
   const subquery = await RestQuery({
     method: RestQuery.Method.find,
     config: this.config,
@@ -545,7 +632,7 @@ _UnsafeRestQuery.prototype.replaceNotInQuery = async function () {
     className: notInQueryValue.className,
     restWhere: notInQueryValue.where,
     restOptions: additionalOptions,
-    context: this.context,
+    context: childContext,
   });
 
   return subquery.execute().then(response => {
@@ -611,6 +698,7 @@ _UnsafeRestQuery.prototype.replaceSelect = async function () {
     additionalOptions.readPreference = this.restOptions.readPreference;
   }
 
+  const childContext = { ...this.context, _subqueryDepth: (this.context._subqueryDepth || 0) + 1 };
   const subquery = await RestQuery({
     method: RestQuery.Method.find,
     config: this.config,
@@ -618,7 +706,7 @@ _UnsafeRestQuery.prototype.replaceSelect = async function () {
     className: selectValue.query.className,
     restWhere: selectValue.query.where,
     restOptions: additionalOptions,
-    context: this.context,
+    context: childContext,
   });
 
   return subquery.execute().then(response => {
@@ -674,6 +762,7 @@ _UnsafeRestQuery.prototype.replaceDontSelect = async function () {
     additionalOptions.readPreference = this.restOptions.readPreference;
   }
 
+  const childContext = { ...this.context, _subqueryDepth: (this.context._subqueryDepth || 0) + 1 };
   const subquery = await RestQuery({
     method: RestQuery.Method.find,
     config: this.config,
@@ -681,7 +770,7 @@ _UnsafeRestQuery.prototype.replaceDontSelect = async function () {
     className: dontSelectValue.query.className,
     restWhere: dontSelectValue.query.where,
     restOptions: additionalOptions,
-    context: this.context,
+    context: childContext,
   });
 
   return subquery.execute().then(response => {
@@ -800,13 +889,46 @@ _UnsafeRestQuery.prototype.denyProtectedFields = async function () {
       this.auth,
       this.findOptions
     ) || [];
-  for (const key of protectedFields) {
-    if (this.restWhere[key]) {
-      throw createSanitizedError(
-        Parse.Error.OPERATION_FORBIDDEN,
-        `This user is not allowed to query ${key} on class ${this.className}`,
-        this.config
-      );
+  const checkWhere = (where) => {
+    if (typeof where !== 'object' || where === null) {
+      return;
+    }
+    for (const whereKey of Object.keys(where)) {
+      const rootField = whereKey.split('.')[0];
+      if (protectedFields.includes(whereKey) || protectedFields.includes(rootField)) {
+        throw createSanitizedError(
+          Parse.Error.OPERATION_FORBIDDEN,
+          `This user is not allowed to query ${whereKey} on class ${this.className}`,
+          this.config
+        );
+      }
+    }
+    for (const op of ['$or', '$and', '$nor']) {
+      if (where[op] !== undefined && !Array.isArray(where[op])) {
+        throw createSanitizedError(
+          Parse.Error.INVALID_QUERY,
+          `${op} must be an array`,
+          this.config
+        );
+      }
+      if (Array.isArray(where[op])) {
+        where[op].forEach(subQuery => checkWhere(subQuery));
+      }
+    }
+  };
+  checkWhere(this.restWhere);
+
+  // Check sort keys against protected fields
+  if (this.findOptions.sort) {
+    for (const sortKey of Object.keys(this.findOptions.sort)) {
+      const rootField = sortKey.split('.')[0];
+      if (protectedFields.includes(sortKey) || protectedFields.includes(rootField)) {
+        throw createSanitizedError(
+          Parse.Error.OPERATION_FORBIDDEN,
+          `This user is not allowed to sort by ${sortKey} on class ${this.className}`,
+          this.config
+        );
+      }
     }
   }
 };
@@ -838,6 +960,29 @@ _UnsafeRestQuery.prototype.handleIncludeAll = function () {
         this.keys = [...new Set([...this.keys, ...keyFields])];
       }
     });
+};
+
+_UnsafeRestQuery.prototype.validateIncludeComplexity = function () {
+  if (this.auth.isMaster || this.auth.isMaintenance) {
+    return;
+  }
+  const rc = this.config.requestComplexity;
+  if (!rc) {
+    return;
+  }
+  if (rc.includeDepth !== -1 && this.include && this.include.length > 0) {
+    const maxDepth = Math.max(...this.include.map(path => path.length));
+    if (maxDepth > rc.includeDepth) {
+      const message = `Include depth of ${maxDepth} exceeds maximum allowed depth of ${rc.includeDepth}`;
+      logger.warn(message);
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, message);
+    }
+  }
+  if (rc.includeCount !== -1 && this.include && this.include.length > rc.includeCount) {
+    const message = `Number of include fields (${this.include.length}) exceeds maximum allowed (${rc.includeCount})`;
+    logger.warn(message);
+    throw new Parse.Error(Parse.Error.INVALID_QUERY, message);
+  }
 };
 
 // Updates property `this.keys` to contain all keys but the ones unselected.

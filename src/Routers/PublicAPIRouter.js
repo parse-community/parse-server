@@ -71,6 +71,7 @@ export class PublicAPIRouter extends PromiseRouter {
     }
 
     const userController = config.userController;
+    const suppressError = config.emailVerifySuccessOnInvalidEmail ?? true;
 
     return userController.resendVerificationEmail(username, req, token).then(
       () => {
@@ -80,6 +81,12 @@ export class PublicAPIRouter extends PromiseRouter {
         });
       },
       () => {
+        if (suppressError) {
+          return Promise.resolve({
+            status: 302,
+            location: `${config.linkSendSuccessURL}`,
+          });
+        }
         return Promise.resolve({
           status: 302,
           location: `${config.linkSendFailURL}`,

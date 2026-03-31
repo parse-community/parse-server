@@ -5,6 +5,8 @@ import Config from '../Config';
 import logger from '../logger';
 const triggers = require('../triggers');
 const Utils = require('../Utils');
+const auth = require('../Auth');
+import { createSanitizedHttpError } from '../Error';
 
 export class FilesRouter {
   expressRouter({ maxUploadSize = '20Mb' } = {}) {
@@ -39,6 +41,22 @@ export class FilesRouter {
     return router;
   }
 
+  static async _resolveAuth(req, config) {
+    const sessionToken = req.get('X-Parse-Session-Token');
+    if (!sessionToken) {
+      return null;
+    }
+    try {
+      return await auth.getAuthForSessionToken({
+        config,
+        sessionToken,
+        installationId: req.get('X-Parse-Installation-Id'),
+      });
+    } catch {
+      return null;
+    }
+  }
+
   async getHandler(req, res) {
     const config = Config.get(req.params.appId);
     if (!config) {
@@ -53,11 +71,12 @@ export class FilesRouter {
       const mime = (await import('mime')).default;
       let contentType = mime.getType(filename);
       let file = new Parse.File(filename, { base64: '' }, contentType);
+      const fileAuth = await FilesRouter._resolveAuth(req, config);
       const triggerResult = await triggers.maybeRunFileTrigger(
         triggers.Types.beforeFind,
         { file },
         config,
-        req.auth
+        fileAuth
       );
       if (triggerResult?.file?._name) {
         filename = triggerResult?.file?._name;
@@ -65,6 +84,15 @@ export class FilesRouter {
       }
 
       if (isFileStreamable(req, filesController)) {
+        const afterFind = await triggers.maybeRunFileTrigger(
+          triggers.Types.afterFind,
+          { file, forceDownload: false },
+          config,
+          fileAuth
+        );
+        if (afterFind?.forceDownload) {
+          res.set('Content-Disposition', `attachment;filename=${afterFind.file?._name || filename}`);
+        }
         filesController.handleFileStream(config, filename, req, res, contentType).catch(() => {
           res.status(404);
           res.set('Content-Type', 'text/plain');
@@ -86,7 +114,7 @@ export class FilesRouter {
         triggers.Types.afterFind,
         { file, forceDownload: false },
         config,
-        req.auth
+        fileAuth
       );
 
       if (afterFind?.file) {
@@ -112,6 +140,12 @@ export class FilesRouter {
   }
 
   async createHandler(req, res, next) {
+    if (req.auth.isReadOnly) {
+      const error = createSanitizedHttpError(403, "read-only masterKey isn't allowed to create a file.", req.config);
+      res.status(error.status);
+      res.end(`{"error":"${error.message}"}`);
+      return;
+    }
     const config = req.config;
     const user = req.auth.user;
     const isMaster = req.auth.isMaster;
@@ -169,7 +203,8 @@ export class FilesRouter {
       } else if (contentType && contentType.includes('/')) {
         extension = contentType.split('/')[1];
       }
-      extension = extension?.split(' ')?.join('');
+      // Strip MIME parameters (e.g. ";charset=utf-8") and whitespace
+      extension = extension?.split(';')[0]?.replace(/\s+/g, '');
 
       if (extension && !isValidExtension(extension)) {
         next(
@@ -266,6 +301,12 @@ export class FilesRouter {
   }
 
   async deleteHandler(req, res, next) {
+    if (req.auth.isReadOnly) {
+      const error = createSanitizedHttpError(403, "read-only masterKey isn't allowed to delete a file.", req.config);
+      res.status(error.status);
+      res.end(`{"error":"${error.message}"}`);
+      return;
+    }
     try {
       const { filesController } = req.config;
       const { filename } = req.params;
@@ -304,14 +345,46 @@ export class FilesRouter {
   async metadataHandler(req, res) {
     try {
       const config = Config.get(req.params.appId);
+      if (!config) {
+        res.status(200);
+        res.json({});
+        return;
+      }
       const { filesController } = config;
-      const { filename } = req.params;
-      const data = await filesController.getMetadata(filename);
+      let { filename } = req.params;
+      const file = new Parse.File(filename, { base64: '' });
+      const fileAuth = await FilesRouter._resolveAuth(req, config);
+      const triggerResult = await triggers.maybeRunFileTrigger(
+        triggers.Types.beforeFind,
+        { file },
+        config,
+        fileAuth
+      );
+      if (triggerResult?.file?._name) {
+        filename = triggerResult.file._name;
+      }
+      const data = await filesController.getMetadata(filename).catch(() => {
+        res.status(200);
+        res.json({});
+      });
+      if (!data) {
+        return;
+      }
+      await triggers.maybeRunFileTrigger(
+        triggers.Types.afterFind,
+        { file },
+        config,
+        fileAuth
+      );
       res.status(200);
       res.json(data);
-    } catch {
-      res.status(200);
-      res.json({});
+    } catch (e) {
+      const err = triggers.resolveError(e, {
+        code: Parse.Error.SCRIPT_FAILED,
+        message: 'Could not get file metadata.',
+      });
+      res.status(403);
+      res.json({ code: err.code, error: err.message });
     }
   }
 }

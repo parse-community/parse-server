@@ -301,7 +301,15 @@ export class UserController extends AdaptableController {
   async updatePassword(token, password) {
     try {
       const rawUser = await this.checkResetTokenValidity(token);
-      const user = await updateUserPassword(rawUser, password, this.config);
+      let user;
+      try {
+        user = await updateUserPassword(rawUser, password, this.config);
+      } catch (error) {
+        if (error && error.code === Parse.Error.OBJECT_NOT_FOUND) {
+          throw 'Failed to reset password: username / email / token is invalid';
+        }
+        throw error;
+      }
 
       const accountLockoutPolicy = new AccountLockout(user, this.config);
       return await accountLockoutPolicy.unlockAccount();
@@ -353,7 +361,7 @@ function updateUserPassword(user, password, config) {
       config,
       Auth.master(config),
       '_User',
-      { objectId: user.objectId },
+      { objectId: user.objectId, _perishable_token: user._perishable_token },
       {
         password: password,
       }

@@ -20,18 +20,28 @@ export const Types = {
 
 const ConnectClassName = '@Connect';
 
+/**
+ * Creates a prototype-free object for use as a lookup store.
+ * This prevents prototype chain properties (e.g. `constructor`, `toString`)
+ * from being resolved as registered handlers when using bracket notation
+ * for lookups. Always use this instead of `{}` for handler stores.
+ */
+function createStore() {
+  return Object.create(null);
+}
+
 const baseStore = function () {
   const Validators = Object.keys(Types).reduce(function (base, key) {
-    base[key] = {};
+    base[key] = createStore();
     return base;
-  }, {});
-  const Functions = {};
-  const Jobs = {};
+  }, createStore());
+  const Functions = createStore();
+  const Jobs = createStore();
   const LiveQuery = [];
   const Triggers = Object.keys(Types).reduce(function (base, key) {
-    base[key] = {};
+    base[key] = createStore();
     return base;
-  }, {});
+  }, createStore());
 
   return Object.freeze({
     Functions,
@@ -90,7 +100,7 @@ function getStore(category, name, applicationId) {
   const invalidNameRegex = /['"`]/;
   if (invalidNameRegex.test(name)) {
     // Prevent a malicious user from injecting properties into the store
-    return {};
+    return createStore();
   }
 
   const path = name.split('.');
@@ -99,9 +109,12 @@ function getStore(category, name, applicationId) {
   _triggerStore[applicationId] = _triggerStore[applicationId] || baseStore();
   let store = _triggerStore[applicationId][category];
   for (const component of path) {
+    if (!Object.prototype.hasOwnProperty.call(store, component)) {
+      return createStore();
+    }
     store = store[component];
-    if (!store) {
-      return {};
+    if (!store || Object.getPrototypeOf(store) !== null) {
+      return createStore();
     }
   }
   return store;
@@ -127,6 +140,9 @@ function remove(category, name, applicationId) {
 function get(category, name, applicationId) {
   const lastComponent = name.split('.').splice(-1);
   const store = getStore(category, name, applicationId);
+  if (!Object.prototype.hasOwnProperty.call(store, lastComponent)) {
+    return undefined;
+  }
   return store[lastComponent];
 }
 

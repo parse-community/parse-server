@@ -170,34 +170,50 @@ export class UsersRouter extends ClassesRouter {
     });
   }
 
-  handleMe(req) {
+  async handleMe(req) {
     if (!req.info || !req.info.sessionToken) {
       throw createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token', req.config);
     }
     const sessionToken = req.info.sessionToken;
-    return rest
-      .find(
-        req.config,
-        Auth.master(req.config),
-        '_Session',
-        { sessionToken },
-        { include: 'user' },
-        req.info.clientSDK,
-        req.info.context
-      )
-      .then(response => {
-        if (!response.results || response.results.length == 0 || !response.results[0].user) {
-          throw createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token', req.config);
-        } else {
-          const user = response.results[0].user;
-          // Send token back on the login, because SDKs expect that.
-          user.sessionToken = sessionToken;
-
-          // Remove hidden properties.
-          UsersRouter.removeHiddenProperties(user);
-          return { response: user };
-        }
-      });
+    // Query the session with master key to validate the session token,
+    // but do NOT include 'user' to avoid leaking user data via master context
+    const sessionResponse = await rest.find(
+      req.config,
+      Auth.master(req.config),
+      '_Session',
+      { sessionToken },
+      {},
+      req.info.clientSDK,
+      req.info.context
+    );
+    if (
+      !sessionResponse.results ||
+      sessionResponse.results.length == 0 ||
+      !sessionResponse.results[0].user
+    ) {
+      throw createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token', req.config);
+    }
+    const userId = sessionResponse.results[0].user.objectId;
+    // Re-fetch the user with the caller's auth context so that
+    // protectedFields, CLP, and auth adapter afterFind apply correctly
+    const userResponse = await rest.get(
+      req.config,
+      req.auth,
+      '_User',
+      userId,
+      {},
+      req.info.clientSDK,
+      req.info.context
+    );
+    if (!userResponse.results || userResponse.results.length == 0) {
+      throw createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token', req.config);
+    }
+    const user = userResponse.results[0];
+    // Send token back on the login, because SDKs expect that.
+    user.sessionToken = sessionToken;
+    // Remove hidden properties.
+    UsersRouter.removeHiddenProperties(user);
+    return { response: user };
   }
 
   async handleLogIn(req) {
@@ -280,12 +296,35 @@ export class UsersRouter extends ClassesRouter {
 
     // If we have some new validated authData update directly
     if (validatedAuthData && Object.keys(validatedAuthData).length) {
-      await req.config.database.update(
-        '_User',
-        { objectId: user.objectId },
-        { authData: validatedAuthData },
-        {}
-      );
+      const query = { objectId: user.objectId };
+      // Optimistic locking: include the original array fields in the WHERE clause
+      // for providers whose data is being updated. This prevents concurrent requests
+      // from both succeeding when consuming single-use tokens (e.g. MFA recovery codes).
+      // Only array fields need locking — element removal is vulnerable to TOCTOU;
+      // scalar fields are simply overwritten and don't have concurrency issues.
+      if (user.authData) {
+        for (const provider of Object.keys(validatedAuthData)) {
+          const original = user.authData[provider];
+          if (original && typeof original === 'object') {
+            for (const [field, value] of Object.entries(original)) {
+              if (
+                Array.isArray(value) &&
+                JSON.stringify(value) !== JSON.stringify(validatedAuthData[provider]?.[field])
+              ) {
+                query[`authData.${provider}.${field}`] = value;
+              }
+            }
+          }
+        }
+      }
+      try {
+        await req.config.database.update('_User', query, { authData: validatedAuthData }, {});
+      } catch (error) {
+        if (error.code === Parse.Error.OBJECT_NOT_FOUND) {
+          throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Invalid auth data');
+        }
+        throw error;
+      }
     }
 
     const { sessionData, createSession } = RestWrite.createSession(req.config, {
@@ -341,6 +380,13 @@ export class UsersRouter extends ClassesRouter {
         req.config
       );
     }
+    if (req.auth.isReadOnly) {
+      throw createSanitizedError(
+        Parse.Error.OPERATION_FORBIDDEN,
+        "read-only masterKey isn't allowed to login as another user.",
+        req.config
+      );
+    }
 
     const userId = req.body?.userId || req.query.userId;
     if (!userId) {
@@ -376,10 +422,10 @@ export class UsersRouter extends ClassesRouter {
 
   handleVerifyPassword(req) {
     return this._authenticateUserFromRequest(req)
-      .then(user => {
+      .then(async user => {
         // Remove hidden properties.
         UsersRouter.removeHiddenProperties(user);
-
+        await req.config.authDataManager.runAfterFind(req, user.authData);
         return { response: user };
       })
       .catch(error => {
@@ -449,6 +495,10 @@ export class UsersRouter extends ClassesRouter {
 
     if (!email && !token) {
       throw new Parse.Error(Parse.Error.EMAIL_MISSING, 'you must provide an email');
+    }
+
+    if (token && typeof token !== 'string') {
+      throw new Parse.Error(Parse.Error.INVALID_VALUE, 'token must be a string');
     }
 
     let userResults = null;
@@ -536,8 +586,13 @@ export class UsersRouter extends ClassesRouter {
       );
     }
 
+    const verifyEmailSuccessOnInvalidEmail = req.config.emailVerifySuccessOnInvalidEmail ?? true;
+
     const results = await req.config.database.find('_User', { email: email }, {}, Auth.maintenance(req.config));
     if (!results.length || results.length < 1) {
+      if (verifyEmailSuccessOnInvalidEmail) {
+        return { response: {} };
+      }
       throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, `No user found with email ${email}`);
     }
     const user = results[0];
@@ -546,6 +601,9 @@ export class UsersRouter extends ClassesRouter {
     delete user.password;
 
     if (user.emailVerified) {
+      if (verifyEmailSuccessOnInvalidEmail) {
+        return { response: {} };
+      }
       throw new Parse.Error(Parse.Error.OTHER_CAUSE, `Email ${email} is already verified.`);
     }
 

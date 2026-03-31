@@ -8,8 +8,6 @@ import { Parse } from 'parse/node';
 import _ from 'lodash';
 // @flow-disable-next
 import intersect from 'intersect';
-// @flow-disable-next
-import deepcopy from 'deepcopy';
 import logger from '../logger';
 import Utils from '../Utils';
 import * as SchemaController from './SchemaController';
@@ -20,6 +18,7 @@ import SchemaCache from '../Adapters/Cache/SchemaCache';
 import type { LoadSchemaOptions } from './types';
 import type { ParseServerOptions } from '../Options';
 import type { QueryOptions, FullQueryOptions } from '../Adapters/Storage/StorageAdapter';
+import { createSanitizedError } from '../Error';
 
 function addWriteACL(query, acl) {
   const newQuery = _.cloneDeep(query);
@@ -60,22 +59,33 @@ const specialMasterQueryKeys = [
   ...specialQueryKeys,
   '_email_verify_token',
   '_perishable_token',
+  '_perishable_token_expires_at',
   '_tombstone',
   '_email_verify_token_expires_at',
   '_failed_login_count',
   '_account_lockout_expires_at',
   '_password_changed_at',
   '_password_history',
+  '_session_token',
 ];
 
 const validateQuery = (
   query: any,
   isMaster: boolean,
   isMaintenance: boolean,
-  update: boolean
+  update: boolean,
+  options: ?ParseServerOptions,
+  _depth: number = 0
 ): void => {
   if (isMaintenance) {
     isMaster = true;
+  }
+  const rc = options?.requestComplexity;
+  if (!isMaster && rc && rc.queryDepth !== -1 && _depth > rc.queryDepth) {
+    throw new Parse.Error(
+      Parse.Error.INVALID_QUERY,
+      `Query condition nesting depth exceeds maximum allowed depth of ${rc.queryDepth}`
+    );
   }
   if (query.ACL) {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
@@ -83,7 +93,7 @@ const validateQuery = (
 
   if (query.$or) {
     if (query.$or instanceof Array) {
-      query.$or.forEach(value => validateQuery(value, isMaster, isMaintenance, update));
+      query.$or.forEach(value => validateQuery(value, isMaster, isMaintenance, update, options, _depth + 1));
     } else {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $or format - use an array value.');
     }
@@ -91,7 +101,7 @@ const validateQuery = (
 
   if (query.$and) {
     if (query.$and instanceof Array) {
-      query.$and.forEach(value => validateQuery(value, isMaster, isMaintenance, update));
+      query.$and.forEach(value => validateQuery(value, isMaster, isMaintenance, update, options, _depth + 1));
     } else {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $and format - use an array value.');
     }
@@ -99,7 +109,7 @@ const validateQuery = (
 
   if (query.$nor) {
     if (query.$nor instanceof Array && query.$nor.length > 0) {
-      query.$nor.forEach(value => validateQuery(value, isMaster, isMaintenance, update));
+      query.$nor.forEach(value => validateQuery(value, isMaster, isMaintenance, update, options, _depth + 1));
     } else {
       throw new Parse.Error(
         Parse.Error.INVALID_QUERY,
@@ -121,8 +131,8 @@ const validateQuery = (
     }
     if (
       !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/) &&
-      ((!specialQueryKeys.includes(key) && !isMaster && !update) ||
-        (update && isMaster && !specialMasterQueryKeys.includes(key)))
+      !specialQueryKeys.includes(key) &&
+      !(isMaster && specialMasterQueryKeys.includes(key))
     ) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${key}`);
     }
@@ -502,7 +512,7 @@ class DatabaseController {
     const originalQuery = query;
     const originalUpdate = update;
     // Make a copy of the object, so we don't mutate the incoming data.
-    update = deepcopy(update);
+    update = structuredClone(update);
     var relationUpdates = [];
     var isMaster = acl === undefined;
     var aclGroup = acl || [];
@@ -544,7 +554,7 @@ class DatabaseController {
           if (acl) {
             query = addWriteACL(query, acl);
           }
-          validateQuery(query, isMaster, false, true);
+          validateQuery(query, isMaster, false, true, this.options);
           return schemaController
             .getOneSchema(className, true)
             .catch(error => {
@@ -792,7 +802,7 @@ class DatabaseController {
         if (acl) {
           query = addWriteACL(query, acl);
         }
-        validateQuery(query, isMaster, false, false);
+        validateQuery(query, isMaster, false, false, this.options);
         return schemaController
           .getOneSchema(className)
           .catch(error => {
@@ -1297,7 +1307,7 @@ class DatabaseController {
                   query = addReadACL(query, aclGroup);
                 }
               }
-              validateQuery(query, isMaster, isMaintenance, false);
+              validateQuery(query, isMaster, isMaintenance, false, this.options);
               if (count) {
                 if (!classExists) {
                   return 0;
@@ -1354,7 +1364,19 @@ class DatabaseController {
                     })
                   )
                   .catch(error => {
-                    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, error);
+                    if (error instanceof Parse.Error) {
+                      throw error;
+                    }
+                    const detailedMessage =
+                      typeof error === 'string'
+                        ? error
+                        : error?.message || 'An internal server error occurred';
+                    throw createSanitizedError(
+                      Parse.Error.INTERNAL_SERVER_ERROR,
+                      detailedMessage,
+                      this.options,
+                      'An internal server error occurred'
+                    );
                   });
               }
             });
@@ -1825,6 +1847,30 @@ class DatabaseController {
           throw error;
         });
     }
+    // Create unique indexes for authData providers to prevent race conditions
+    // during concurrent signups with the same authData
+    if (
+      databaseOptions.createIndexAuthDataUniqueness !== false &&
+      typeof this.adapter.ensureAuthDataUniqueness === 'function'
+    ) {
+      const authProviders = Object.keys(this.options.auth || {});
+      if (this.options.enableAnonymousUsers !== false) {
+        if (!authProviders.includes('anonymous')) {
+          authProviders.push('anonymous');
+        }
+      }
+      await Promise.all(
+        authProviders.map(provider =>
+          this.adapter.ensureAuthDataUniqueness(provider).catch(error => {
+            logger.warn(
+              `Unable to ensure uniqueness for auth data provider "${provider}": `,
+              error
+            );
+          })
+        )
+      );
+    }
+
     await this.adapter.updateSchemaWithIndexes();
   }
 

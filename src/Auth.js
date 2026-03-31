@@ -424,13 +424,23 @@ const findUsersWithAuthData = async (config, authData, beforeFind) => {
     providers.map(async provider => {
       const providerAuthData = authData[provider];
 
-      const adapter = config.authDataManager.getValidatorForProvider(provider)?.adapter;
+      const validatorConfig = config.authDataManager.getValidatorForProvider(provider);
+      // Skip database query for unconfigured providers to avoid unindexed collection scans;
+      // the provider will be rejected later in handleAuthDataValidation with UNSUPPORTED_SERVICE
+      if (!validatorConfig?.validator) {
+        return null;
+      }
+      const adapter = validatorConfig.adapter;
       if (beforeFind && typeof adapter?.beforeFind === 'function') {
         await adapter.beforeFind(providerAuthData);
       }
 
       if (!providerAuthData?.id) {
         return null;
+      }
+
+      if (typeof providerAuthData.id !== 'string') {
+        throw new Parse.Error(Parse.Error.INVALID_VALUE, `Invalid authData id for provider '${provider}'.`);
       }
 
       return { [`authData.${provider}.id`]: providerAuthData.id };

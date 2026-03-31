@@ -692,4 +692,5 @@ describe('relativeTimeToDate', () => {
       });
     });
   });
+
 });

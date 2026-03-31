@@ -1,13 +1,12 @@
-import corsMiddleware from 'cors';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.js';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@apollo/server/express4';
 import { ApolloServerPluginCacheControlDisabled } from '@apollo/server/plugin/disabled';
 import express from 'express';
-import { execute, subscribe, GraphQLError } from 'graphql';
-import { SubscriptionServer } from 'subscriptions-transport-ws';
-import { handleParseErrors, handleParseHeaders, handleParseSession } from '../middlewares';
+import { GraphQLError } from 'graphql';
+import { allowCrossDomain, handleParseErrors, handleParseHeaders, handleParseSession } from '../middlewares';
 import requiredParameter from '../requiredParameter';
+import { createComplexityValidationPlugin } from './helpers/queryComplexity';
 import defaultLogger from '../logger';
 import { ParseGraphQLSchema } from './ParseGraphQLSchema';
 import ParseGraphQLController, { ParseGraphQLConfig } from '../Controllers/ParseGraphQLController';
@@ -76,8 +75,7 @@ class ParseGraphQLServer {
     try {
       return {
         schema: await this.parseGraphQLSchema.load(),
-        context: async ({ req, res }) => {
-          res.set('access-control-allow-origin', req.get('origin') || '*');
+        context: async ({ req }) => {
           return {
             info: req.info,
             config: req.config,
@@ -113,7 +111,7 @@ class ParseGraphQLServer {
             requestHeaders: ['X-Parse-Application-Id'],
           },
           introspection: this.config.graphQLPublicIntrospection,
-          plugins: [ApolloServerPluginCacheControlDisabled(), IntrospectionControlPlugin(this.config.graphQLPublicIntrospection)],
+          plugins: [ApolloServerPluginCacheControlDisabled(), IntrospectionControlPlugin(this.config.graphQLPublicIntrospection), createComplexityValidationPlugin(() => this.parseServer.config.requestComplexity)],
           schema,
         });
         await apollo.start();
@@ -162,7 +160,7 @@ class ParseGraphQLServer {
     if (!app || !app.use) {
       requiredParameter('You must provide an Express.js app instance!');
     }
-    app.use(this.config.graphQLPath, corsMiddleware());
+    app.use(this.config.graphQLPath, allowCrossDomain(this.parseServer.config.appId));
     app.use(this.config.graphQLPath, handleParseHeaders);
     app.use(this.config.graphQLPath, handleParseSession);
     this.applyRequestContextMiddleware(app, this.parseServer.config);
@@ -214,23 +212,6 @@ class ParseGraphQLServer {
           </script>`
         );
         res.end();
-      }
-    );
-  }
-
-  createSubscriptions(server) {
-    SubscriptionServer.create(
-      {
-        execute,
-        subscribe,
-        onOperation: async (_message, params, webSocket) =>
-          Object.assign({}, params, await this._getGraphQLOptions(webSocket.upgradeReq)),
-      },
-      {
-        server,
-        path:
-          this.config.subscriptionsPath ||
-          requiredParameter('You must provide a config.subscriptionsPath to createSubscriptions!'),
       }
     );
   }

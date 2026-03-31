@@ -4,6 +4,178 @@ const fs = require('fs');
 const port = 12345;
 const sslport = 12346;
 
+describe('LDAP Injection Prevention', () => {
+  describe('escapeDN', () => {
+    it('should escape comma', () => {
+      expect(ldap.escapeDN('admin,ou=evil')).toBe('admin\\,ou\\=evil');
+    });
+
+    it('should escape equals sign', () => {
+      expect(ldap.escapeDN('admin=evil')).toBe('admin\\=evil');
+    });
+
+    it('should escape plus sign', () => {
+      expect(ldap.escapeDN('admin+evil')).toBe('admin\\+evil');
+    });
+
+    it('should escape less-than and greater-than signs', () => {
+      expect(ldap.escapeDN('admin<evil>')).toBe('admin\\<evil\\>');
+    });
+
+    it('should escape hash at start', () => {
+      expect(ldap.escapeDN('#admin')).toBe('\\#admin');
+    });
+
+    it('should escape semicolon', () => {
+      expect(ldap.escapeDN('admin;evil')).toBe('admin\\;evil');
+    });
+
+    it('should escape double quote', () => {
+      expect(ldap.escapeDN('admin"evil')).toBe('admin\\"evil');
+    });
+
+    it('should escape backslash', () => {
+      expect(ldap.escapeDN('admin\\evil')).toBe('admin\\\\evil');
+    });
+
+    it('should escape leading space', () => {
+      expect(ldap.escapeDN(' admin')).toBe('\\ admin');
+    });
+
+    it('should escape trailing space', () => {
+      expect(ldap.escapeDN('admin ')).toBe('admin\\ ');
+    });
+
+    it('should escape multiple special characters', () => {
+      expect(ldap.escapeDN('admin,ou=evil+cn=x')).toBe('admin\\,ou\\=evil\\+cn\\=x');
+    });
+
+    it('should not modify safe values', () => {
+      expect(ldap.escapeDN('testuser')).toBe('testuser');
+      expect(ldap.escapeDN('john.doe')).toBe('john.doe');
+      expect(ldap.escapeDN('user123')).toBe('user123');
+    });
+  });
+
+  describe('escapeFilter', () => {
+    it('should escape asterisk', () => {
+      expect(ldap.escapeFilter('*')).toBe('\\2a');
+    });
+
+    it('should escape open parenthesis', () => {
+      expect(ldap.escapeFilter('test(')).toBe('test\\28');
+    });
+
+    it('should escape close parenthesis', () => {
+      expect(ldap.escapeFilter('test)')).toBe('test\\29');
+    });
+
+    it('should escape backslash', () => {
+      expect(ldap.escapeFilter('test\\')).toBe('test\\5c');
+    });
+
+    it('should escape null byte', () => {
+      expect(ldap.escapeFilter('test\x00')).toBe('test\\00');
+    });
+
+    it('should escape multiple special characters', () => {
+      expect(ldap.escapeFilter('*()\\')).toBe('\\2a\\28\\29\\5c');
+    });
+
+    it('should not modify safe values', () => {
+      expect(ldap.escapeFilter('testuser')).toBe('testuser');
+      expect(ldap.escapeFilter('john.doe')).toBe('john.doe');
+      expect(ldap.escapeFilter('user123')).toBe('user123');
+    });
+
+    it('should escape filter injection attempt with wildcard', () => {
+      expect(ldap.escapeFilter('x)(|(objectClass=*)')).toBe('x\\29\\28|\\28objectClass=\\2a\\29');
+    });
+  });
+
+  describe('authData validation', () => {
+    it('should reject missing authData.id', async done => {
+      const server = await mockLdapServer(port, 'uid=testuser, o=example');
+      const options = {
+        suffix: 'o=example',
+        url: `ldap://localhost:${port}`,
+        dn: 'uid={{id}}, o=example',
+      };
+      try {
+        await ldap.validateAuthData({ password: 'secret' }, options);
+        fail('Should have rejected missing id');
+      } catch (err) {
+        expect(err.message).toBe('LDAP: Wrong username or password');
+      }
+      server.close(done);
+    });
+
+    it('should reject non-string authData.id', async done => {
+      const server = await mockLdapServer(port, 'uid=testuser, o=example');
+      const options = {
+        suffix: 'o=example',
+        url: `ldap://localhost:${port}`,
+        dn: 'uid={{id}}, o=example',
+      };
+      try {
+        await ldap.validateAuthData({ id: 123, password: 'secret' }, options);
+        fail('Should have rejected non-string id');
+      } catch (err) {
+        expect(err.message).toBe('LDAP: Wrong username or password');
+      }
+      server.close(done);
+    });
+  });
+
+  describe('DN injection prevention', () => {
+    it('should prevent DN injection via comma in authData.id', async done => {
+      // Mock server accepts the DN that would result from an unescaped injection
+      const server = await mockLdapServer(port, 'uid=admin,ou=admins,o=example');
+      const options = {
+        suffix: 'o=example',
+        url: `ldap://localhost:${port}`,
+        dn: 'uid={{id}}, o=example',
+      };
+      // Attacker tries to inject additional DN components via comma
+      // Without escaping: DN = uid=admin,ou=admins, o=example (3 RDNs) → matches mock
+      // With escaping: DN = uid=admin\,ou=admins, o=example (2 RDNs) → doesn't match
+      try {
+        await ldap.validateAuthData({ id: 'admin,ou=admins', password: 'secret' }, options);
+        fail('Should have rejected DN injection attempt');
+      } catch (err) {
+        expect(err.message).toBe('LDAP: Wrong username or password');
+      }
+      server.close(done);
+    });
+  });
+
+  describe('Filter injection prevention', () => {
+    it('should prevent LDAP filter injection via wildcard in authData.id', async done => {
+      // Mock server accepts uid=*, o=example (the attacker's bind DN)
+      // The * is not special in DNs so it binds fine regardless of escaping
+      const server = await mockLdapServer(port, 'uid=*, o=example');
+      const options = {
+        suffix: 'o=example',
+        url: `ldap://localhost:${port}`,
+        dn: 'uid={{id}}, o=example',
+        groupCn: 'powerusers',
+        groupFilter: '(&(uniqueMember=uid={{id}}, o=example)(objectClass=groupOfUniqueNames))',
+      };
+      // Attacker uses * as ID to match any group member via wildcard
+      // Group has member uid=testuser, not uid=*
+      // Without escaping: filter uses SubstringFilter, matches testuser → passes
+      // With escaping: filter uses EqualityFilter with literal \2a, no match → fails
+      try {
+        await ldap.validateAuthData({ id: '*', password: 'secret' }, options);
+        fail('Should have rejected filter injection attempt');
+      } catch (err) {
+        expect(err.message).toBe('LDAP: User not in group');
+      }
+      server.close(done);
+    });
+  });
+});
+
 describe('Ldap Auth', () => {
   it('Should fail with missing options', done => {
     ldap

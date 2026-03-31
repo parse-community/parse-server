@@ -13,9 +13,11 @@ import {
   DatabaseOptions,
   FileUploadOptions,
   IdempotencyOptions,
+  LiveQueryOptions,
   LogLevels,
   PagesOptions,
   ParseServerOptions,
+  RequestComplexityOptions,
   SchemaOptions,
   SecurityOptions,
 } from './Options/Definitions';
@@ -129,9 +131,11 @@ export class Config {
     allowExpiredAuthDataToken,
     logLevels,
     rateLimit,
+    requestComplexity,
     databaseOptions,
     extendSessionOnUse,
     allowClientClassCreation,
+    liveQuery,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -169,10 +173,12 @@ export class Config {
     this.validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken);
     this.validateRequestKeywordDenylist(requestKeywordDenylist);
     this.validateRateLimit(rateLimit);
+    this.validateRequestComplexity(requestComplexity);
     this.validateLogLevels(logLevels);
     this.validateDatabaseOptions(databaseOptions);
     this.validateCustomPages(customPages);
     this.validateAllowClientClassCreation(allowClientClassCreation);
+    this.validateLiveQueryOptions(liveQuery);
   }
 
   static validateCustomPages(customPages) {
@@ -191,6 +197,7 @@ export class Config {
     _publicServerURL,
     emailVerifyTokenValidityDuration,
     emailVerifyTokenReuseIfValid,
+    emailVerifySuccessOnInvalidEmail,
   }) {
     const emailAdapter = userController.adapter;
     if (verifyUserEmails) {
@@ -200,6 +207,7 @@ export class Config {
         publicServerURL: publicServerURL || _publicServerURL,
         emailVerifyTokenValidityDuration,
         emailVerifyTokenReuseIfValid,
+        emailVerifySuccessOnInvalidEmail,
       });
     }
   }
@@ -450,7 +458,7 @@ export class Config {
       }
 
       if (
-        passwordPolicy.resetPasswordSuccessOnInvalidEmail &&
+        passwordPolicy.resetPasswordSuccessOnInvalidEmail !== undefined &&
         typeof passwordPolicy.resetPasswordSuccessOnInvalidEmail !== 'boolean'
       ) {
         throw 'resetPasswordSuccessOnInvalidEmail must be a boolean value';
@@ -497,6 +505,7 @@ export class Config {
     publicServerURL,
     emailVerifyTokenValidityDuration,
     emailVerifyTokenReuseIfValid,
+    emailVerifySuccessOnInvalidEmail,
   }) {
     if (!emailAdapter) {
       throw 'An emailAdapter is required for e-mail verification and password resets.';
@@ -517,6 +526,9 @@ export class Config {
     }
     if (emailVerifyTokenReuseIfValid && !emailVerifyTokenValidityDuration) {
       throw 'You cannot use emailVerifyTokenReuseIfValid without emailVerifyTokenValidityDuration';
+    }
+    if (emailVerifySuccessOnInvalidEmail !== undefined && typeof emailVerifySuccessOnInvalidEmail !== 'boolean') {
+      throw 'emailVerifySuccessOnInvalidEmail must be a boolean value';
     }
   }
 
@@ -666,6 +678,17 @@ export class Config {
     }
   }
 
+  static validateLiveQueryOptions(liveQuery) {
+    if (liveQuery == undefined) {
+      return;
+    }
+    if (liveQuery.regexTimeout === undefined) {
+      liveQuery.regexTimeout = LiveQueryOptions.regexTimeout.default;
+    } else if (typeof liveQuery.regexTimeout !== 'number') {
+      throw `liveQuery.regexTimeout must be a number`;
+    }
+  }
+
   static validateRateLimit(rateLimit) {
     if (!rateLimit) {
       return;
@@ -709,6 +732,31 @@ export class Config {
       if (option.zone && !options.includes(option.zone)) {
         const formatter = new Intl.ListFormat('en', { style: 'short', type: 'disjunction' });
         throw `rateLimit.zone must be one of ${formatter.format(options)}`;
+      }
+    }
+  }
+
+  static validateRequestComplexity(requestComplexity) {
+    if (requestComplexity == null) {
+      return;
+    }
+    if (typeof requestComplexity !== 'object' || Array.isArray(requestComplexity)) {
+      throw new Error('requestComplexity must be an object.');
+    }
+    const validKeys = Object.keys(RequestComplexityOptions);
+    for (const key of Object.keys(requestComplexity)) {
+      if (!validKeys.includes(key)) {
+        throw new Error(`requestComplexity contains unknown property '${key}'.`);
+      }
+    }
+    for (const key of validKeys) {
+      if (requestComplexity[key] !== undefined) {
+        const value = requestComplexity[key];
+        if (!Number.isInteger(value) || (value < 1 && value !== -1)) {
+          throw new Error(`requestComplexity.${key} must be a positive integer or -1 to disable.`);
+        }
+      } else {
+        requestComplexity[key] = RequestComplexityOptions[key].default;
       }
     }
   }

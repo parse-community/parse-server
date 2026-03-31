@@ -3,7 +3,7 @@
  *
  * @class GoogleAdapter
  * @param {Object} options - The adapter configuration options.
- * @param {string} options.clientId - Your Google application Client ID. Required for authentication.
+ * @param {string} options.clientId - Your Google application Client ID.
  * @param {number} [options.cacheMaxEntries] - Maximum number of JWKS cache entries. Default: 5.
  * @param {number} [options.cacheMaxAge] - Maximum age of JWKS cache entries in ms. Default: 3600000 (1 hour).
  *
@@ -74,6 +74,13 @@ const getGoogleKeyByKeyId = async (keyId, cacheMaxEntries, cacheMaxAge) => {
 };
 
 async function verifyIdToken({ id_token: token, id }, { clientId, cacheMaxEntries, cacheMaxAge }) {
+  if (!clientId) {
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      'Google auth is not configured.'
+    );
+  }
+
   if (!token) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `id token is invalid for this user.`);
   }
@@ -107,13 +114,6 @@ async function verifyIdToken({ id_token: token, id }, { clientId, cacheMaxEntrie
 
   if (jwtClaims.sub !== id) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `auth data is invalid for this user.`);
-  }
-
-  if (clientId && jwtClaims.aud !== clientId) {
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
-      `id token not authorized for this clientId.`
-    );
   }
 
   return jwtClaims;

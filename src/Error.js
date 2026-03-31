@@ -6,9 +6,11 @@ import defaultLogger from './logger';
  *
  * @param {number} errorCode - The Parse.Error code (e.g., Parse.Error.OPERATION_FORBIDDEN)
  * @param {string} detailedMessage - The detailed error message to log server-side
+ * @param {object} config - Parse Server config with enableSanitizedErrorResponse
+ * @param {string} [sanitizedMessage='Permission denied'] - The sanitized message to return to clients
  * @returns {Parse.Error} A Parse.Error with sanitized message
  */
-function createSanitizedError(errorCode, detailedMessage, config) {
+function createSanitizedError(errorCode, detailedMessage, config, sanitizedMessage = 'Permission denied') {
   // On testing we need to add a prefix to the message to allow to find the correct call in the TestUtils.js file
   if (process.env.TESTING) {
     defaultLogger.error('Sanitized error:', detailedMessage);
@@ -16,7 +18,7 @@ function createSanitizedError(errorCode, detailedMessage, config) {
     defaultLogger.error(detailedMessage);
   }
 
-  return new Parse.Error(errorCode, config?.enableSanitizedErrorResponse !== false ? 'Permission denied' : detailedMessage);
+  return new Parse.Error(errorCode, config?.enableSanitizedErrorResponse !== false ? sanitizedMessage : detailedMessage);
 }
 
 /**

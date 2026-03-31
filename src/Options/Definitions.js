@@ -78,7 +78,7 @@ module.exports.ParseServerOptions = {
   allowExpiredAuthDataToken: {
     env: 'PARSE_SERVER_ALLOW_EXPIRED_AUTH_DATA_TOKEN',
     help:
-      'Allow a user to log in even if the 3rd party authentication token that was used to sign in to their account has expired. If this is set to `false`, then the token will be validated every time the user signs in to their account. This refers to the token that is stored in the `_User.authData` field. Defaults to `false`.',
+      'Deprecated. This option will be removed in a future version. Auth providers are always validated on login. On update, if this is set to `true`, auth providers are only re-validated when the auth data has changed. If this is set to `false`, auth providers are re-validated on every update. Defaults to `false`.',
     action: parsers.booleanParser,
     default: false,
   },
@@ -110,7 +110,7 @@ module.exports.ParseServerOptions = {
   auth: {
     env: 'PARSE_SERVER_AUTH_PROVIDERS',
     help:
-      'Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication',
+      "Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication<br><br>Provider names must start with a letter and contain only letters, digits, and underscores (`/^[A-Za-z][A-Za-z0-9_]*$/`). This is because each provider name is used to construct a database field (`_auth_data_<provider>`), which must comply with Parse Server's field naming rules.",
     action: parsers.objectParser,
   },
   cacheAdapter: {
@@ -208,6 +208,13 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_EMAIL_ADAPTER',
     help: 'Adapter module for email sending',
     action: parsers.moduleOrObjectParser,
+  },
+  emailVerifySuccessOnInvalidEmail: {
+    env: 'PARSE_SERVER_EMAIL_VERIFY_SUCCESS_ON_INVALID_EMAIL',
+    help:
+      'Set to `true` if a request to verify the email should return a success response even if the provided email address does not belong to a verifiable account, for example because it is unknown or already verified, or `false` if the request should return an error response in those cases.<br><br>Default is `true`.<br>Requires option `verifyUserEmails: true`.',
+    action: parsers.booleanParser,
+    default: true,
   },
   emailVerifyTokenReuseIfValid: {
     env: 'PARSE_SERVER_EMAIL_VERIFY_TOKEN_REUSE_IF_VALID',
@@ -524,6 +531,14 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_READ_ONLY_MASTER_KEY',
     help: 'Read-only key, which has the same capabilities as MasterKey without writes',
   },
+  requestComplexity: {
+    env: 'PARSE_SERVER_REQUEST_COMPLEXITY',
+    help:
+      'Options to limit the complexity of requests to prevent abuse. Each option can be set to `-1` to disable.',
+    action: parsers.objectParser,
+    type: 'RequestComplexityOptions',
+    default: {},
+  },
   requestContextMiddleware: {
     env: 'PARSE_SERVER_REQUEST_CONTEXT_MIDDLEWARE',
     help:
@@ -674,7 +689,7 @@ module.exports.RateLimitOptions = {
   requestCount: {
     env: 'PARSE_SERVER_RATE_LIMIT_REQUEST_COUNT',
     help:
-      'The number of requests that can be made per IP address within the time window set in `requestTimeWindow` before the rate limit is applied.',
+      'The number of requests that can be made per IP address within the time window set in `requestTimeWindow` before the rate limit is applied. For batch requests, this also limits the number of sub-requests in a single batch that target this path; however, requests already consumed in the current time window are not counted against the batch, so the effective limit may be higher when combining individual and batch requests. Note that this is a basic server-level rate limit; for comprehensive protection, use a reverse proxy or WAF for rate limiting.',
     action: parsers.numberParser('requestCount'),
   },
   requestMethods: {
@@ -700,6 +715,49 @@ module.exports.RateLimitOptions = {
     help:
       'The type of rate limit to apply. The following types are supported:<ul><li>`global`: rate limit based on the number of requests made by all users</li><li>`ip`: rate limit based on the IP address of the request</li><li>`user`: rate limit based on the user ID of the request</li><li>`session`: rate limit based on the session token of the request</li></ul>Default is `ip`.',
     default: 'ip',
+  },
+};
+module.exports.RequestComplexityOptions = {
+  graphQLDepth: {
+    env: 'PARSE_SERVER_REQUEST_COMPLEXITY_GRAPHQL_DEPTH',
+    help: 'Maximum depth of GraphQL field selections. Set to `-1` to disable. Default is `-1`.',
+    action: parsers.numberParser('graphQLDepth'),
+    default: -1,
+  },
+  graphQLFields: {
+    env: 'PARSE_SERVER_REQUEST_COMPLEXITY_GRAPHQL_FIELDS',
+    help:
+      'Maximum number of field selections in a GraphQL query. Set to `-1` to disable. Default is `-1`.',
+    action: parsers.numberParser('graphQLFields'),
+    default: -1,
+  },
+  includeCount: {
+    env: 'PARSE_SERVER_REQUEST_COMPLEXITY_INCLUDE_COUNT',
+    help:
+      'Maximum number of include paths in a single query. Set to `-1` to disable. Default is `-1`.',
+    action: parsers.numberParser('includeCount'),
+    default: -1,
+  },
+  includeDepth: {
+    env: 'PARSE_SERVER_REQUEST_COMPLEXITY_INCLUDE_DEPTH',
+    help:
+      'Maximum depth of include pointer chains (e.g. `a.b.c` = depth 3). Set to `-1` to disable. Default is `-1`.',
+    action: parsers.numberParser('includeDepth'),
+    default: -1,
+  },
+  queryDepth: {
+    env: 'PARSE_SERVER_REQUEST_COMPLEXITY_QUERY_DEPTH',
+    help:
+      'Maximum nesting depth of `$or`, `$and`, `$nor` query operators. Set to `-1` to disable. Default is `-1`.',
+    action: parsers.numberParser('queryDepth'),
+    default: -1,
+  },
+  subqueryDepth: {
+    env: 'PARSE_SERVER_REQUEST_COMPLEXITY_SUBQUERY_DEPTH',
+    help:
+      'Maximum nesting depth of `$inQuery`, `$notInQuery`, `$select`, `$dontSelect` subqueries. Set to `-1` to disable. Default is `-1`.',
+    action: parsers.numberParser('subqueryDepth'),
+    default: -1,
   },
 };
 module.exports.SecurityOptions = {
@@ -901,6 +959,13 @@ module.exports.LiveQueryOptions = {
     env: 'PARSE_SERVER_LIVEQUERY_REDIS_URL',
     help: "parse-server's LiveQuery redisURL",
   },
+  regexTimeout: {
+    env: 'PARSE_SERVER_LIVEQUERY_REGEX_TIMEOUT',
+    help:
+      'Sets the maximum execution time in milliseconds for regular expression pattern matching in LiveQuery. This protects against Regular Expression Denial of Service (ReDoS) attacks where a malicious regex pattern could block the event loop. A regex that exceeds the timeout will be treated as non-matching.<br><br>The protection runs each regex evaluation in an isolated VM context with a timeout. This adds approximately 50 microseconds of overhead per regex evaluation. For most applications this is negligible, but it can add up if you have a very large number of LiveQuery subscriptions that use `$regex` on the same class. For example, 10,000 concurrent regex subscriptions would add approximately 500ms of processing time per object save event on that class.<br><br>Set to `0` to disable the timeout and use native regex evaluation without protection. Defaults to `100`.',
+    action: parsers.numberParser('regexTimeout'),
+    default: 100,
+  },
   wssAdapter: {
     env: 'PARSE_SERVER_LIVEQUERY_WSS_ADAPTER',
     help: 'Adapter module for the WebSocketServer',
@@ -1087,9 +1152,11 @@ module.exports.FileUploadOptions = {
   fileExtensions: {
     env: 'PARSE_SERVER_FILE_UPLOAD_FILE_EXTENSIONS',
     help:
-      "Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML files are especially problematic as they may be used by an attacker who uploads a HTML form to look legitimate under your app's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^(?![xXsS]?[hH][tT][mM][lL]?$)` which allows any file extension except those MIME types that are mapped to `text/html` and are rendered as website by a web browser.",
+      'Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to only allow the file extensions that your app actually needs, rather than relying on blocking dangerous extensions. This allowlist approach is more secure because new dangerous file extensions may emerge that are not covered by the default blocklist.<br><br>The default blocks the most common file extensions that are known to be rendered as active content by web browsers, such as HTML, SVG, and XML files, which may be used by an attacker to compromise the session token of another user via accessing the browser\'s local storage. The blocked extensions are: `html`, `htm`, `shtml`, `xhtml`, `xhtml+xml`, `xht`, `svg`, `svgz`, `svg+xml`, `xml`, `xsl`, `xslt`, `xslt+xml`, `xsd`, `rng`, `rdf`, `rdf+xml`, `owl`, `mathml`, `mathml+xml`.<br><br>Defaults to `["^(?!([xXsS]?[hH][tT][mM][lL]?(\\\\+[xX][mM][lL])?|[xX][hH][tT]|[sS][vV][gG]([zZ]|\\\\+[xX][mM][lL])?|[xX][mM][lL]|[xX][sS][lL][tT]?(\\\\+[xX][mM][lL])?|[xX][sS][dD]|[rR][nN][gG]|[rR][dD][fF](\\\\+[xX][mM][lL])?|[oO][wW][lL]|[mM][aA][tT][hH][mM][lL](\\\\+[xX][mM][lL])?)$)"]`.',
     action: parsers.arrayParser,
-    default: ['^(?![xXsS]?[hH][tT][mM][lL]?$)'],
+    default: [
+      '^(?!([xXsS]?[hH][tT][mM][lL]?(\\+[xX][mM][lL])?|[xX][hH][tT]|[sS][vV][gG]([zZ]|\\+[xX][mM][lL])?|[xX][mM][lL]|[xX][sS][lL][tT]?(\\+[xX][mM][lL])?|[xX][sS][dD]|[rR][nN][gG]|[rR][dD][fF](\\+[xX][mM][lL])?|[oO][wW][lL]|[mM][aA][tT][hH][mM][lL](\\+[xX][mM][lL])?)$)',
+    ],
   },
 };
 /* The available log levels for Parse Server logging. Valid values are:<br>- `'error'` - Error level (highest priority)<br>- `'warn'` - Warning level<br>- `'info'` - Info level (default)<br>- `'verbose'` - Verbose level<br>- `'debug'` - Debug level<br>- `'silly'` - Silly level (lowest priority) */
@@ -1196,6 +1263,13 @@ module.exports.DatabaseOptions = {
     help:
       'The MongoDB driver option to specify the amount of time, in milliseconds, to wait to establish a single TCP socket connection to the server before raising an error. Specifying 0 disables the connection timeout.',
     action: parsers.numberParser('connectTimeoutMS'),
+  },
+  createIndexAuthDataUniqueness: {
+    env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_AUTH_DATA_UNIQUENESS',
+    help:
+      'Set to `true` to automatically create unique indexes on the authData fields of the _User collection for each configured auth provider on server start, including `anonymous` when anonymous users are enabled. These indexes prevent race conditions during concurrent signups with the same authData. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F When setting this option to `false` to manually create the indexes, keep in mind that the otherwise automatically created indexes may change in the future to be optimized for the internal usage by Parse Server.',
+    action: parsers.booleanParser,
+    default: true,
   },
   createIndexRoleName: {
     env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_ROLE_NAME',

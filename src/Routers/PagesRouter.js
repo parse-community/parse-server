@@ -108,7 +108,8 @@ export class PagesRouter extends PromiseRouter {
   resendVerificationEmail(req) {
     const config = req.config;
     const username = req.body?.username;
-    const token = req.body?.token;
+    const rawToken = req.body?.token;
+    const token = rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
 
     if (!config) {
       this.invalidRequest();
@@ -119,12 +120,16 @@ export class PagesRouter extends PromiseRouter {
     }
 
     const userController = config.userController;
+    const suppressError = config.emailVerifySuccessOnInvalidEmail ?? true;
 
     return userController.resendVerificationEmail(username, req, token).then(
       () => {
         return this.goToPage(req, pages.emailVerificationSendSuccess);
       },
       () => {
+        if (suppressError) {
+          return this.goToPage(req, pages.emailVerificationSendSuccess);
+        }
         return this.goToPage(req, pages.emailVerificationSendFail);
       }
     );
@@ -500,7 +505,7 @@ export class PagesRouter extends PromiseRouter {
     const normalizedPath = path.normalize(filePath);
 
     // Abort if the path is outside of the path directory scope
-    if (!normalizedPath.startsWith(this.pagesPath)) {
+    if (!normalizedPath.startsWith(this.pagesPath + path.sep)) {
       throw errors.fileOutsideAllowedScope;
     }
 
@@ -550,6 +555,16 @@ export class PagesRouter extends PromiseRouter {
       (req.body || {})[pageParams.locale] ||
       (req.params || {})[pageParams.locale] ||
       (req.headers || {})[pageParamHeaderPrefix + pageParams.locale];
+
+    // Validate locale format to prevent path traversal and invalid
+    // HTTP header characters; only allow standard locale patterns
+    // like "en", "en-US", "de-AT", "zh-Hans-CN"
+    if (locale !== undefined && typeof locale !== 'string') {
+      return undefined;
+    }
+    if (typeof locale === 'string' && !/^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,8})*$/.test(locale)) {
+      return undefined;
+    }
     return locale;
   }
 

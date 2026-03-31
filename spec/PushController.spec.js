@@ -1074,7 +1074,7 @@ describe('PushController', () => {
     const audience = new Parse.Object('_Audience');
     audience.set('name', 'testAudience');
     audience.set('query', JSON.stringify(where));
-    await Parse.Object.saveAll(audience);
+    await audience.save(null, { useMasterKey: true });
     await query.find({ useMasterKey: true }).then(parseResults);
 
     const body = {
