@@ -78,9 +78,6 @@ async function handleBatch(router, req) {
     if (!restRequest || typeof restRequest !== 'object' || typeof restRequest.path !== 'string') {
       throw new Parse.Error(Parse.Error.INVALID_JSON, 'batch request path must be a string');
     }
-    if (restRequest.method === 'POST' && restRequest.path.endsWith(batchPath)) {
-      throw new Parse.Error(Parse.Error.INVALID_JSON, 'nested batch requests are not allowed');
-    }
   }
 
   // The batch paths are all from the root of our domain.
@@ -104,6 +101,9 @@ async function handleBatch(router, req) {
   const rateLimits = req.config.rateLimits || [];
   for (const restRequest of req.body.requests) {
     const routablePath = makeRoutablePath(restRequest.path);
+    if ((restRequest.method || 'GET').toUpperCase() === 'POST' && routablePath === batchPath) {
+      throw new Parse.Error(Parse.Error.INVALID_JSON, 'nested batch requests are not allowed');
+    }
     for (const limit of rateLimits) {
       const pathExp = limit.path.regexp || limit.path;
       if (!pathExp.test(routablePath)) {
