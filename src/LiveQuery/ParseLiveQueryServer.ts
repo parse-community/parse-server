@@ -206,6 +206,8 @@ class ParseLiveQueryServer {
           continue;
         }
         requestIds.forEach(async requestId => {
+          // Deep-clone shared object so each concurrent callback works on its own copy
+          let localDeletedParseObject = JSON.parse(JSON.stringify(deletedParseObject));
           const acl = message.currentParseObject.getACL();
           // Check CLP
           const op = this._getCLPOperation(subscription.query);
@@ -228,7 +230,7 @@ class ParseLiveQueryServer {
             res = {
               event: 'delete',
               sessionToken: client.sessionToken,
-              object: deletedParseObject,
+              object: localDeletedParseObject,
               clients: this.clients.size,
               subscriptions: this.subscriptions.size,
               useMasterKey: client.hasMasterKey,
@@ -250,9 +252,9 @@ class ParseLiveQueryServer {
               return;
             }
             if (res.object && typeof res.object.toJSON === 'function') {
-              deletedParseObject = toJSONwithObjects(res.object, res.object.className || className);
+              localDeletedParseObject = toJSONwithObjects(res.object, res.object.className || className);
             }
-            res.object = deletedParseObject;
+            res.object = localDeletedParseObject;
             await this._filterSensitiveData(
               classLevelPermissions,
               res,
@@ -261,8 +263,7 @@ class ParseLiveQueryServer {
               op,
               subscription.query
             );
-            deletedParseObject = res.object;
-            client.pushDelete(requestId, deletedParseObject);
+            client.pushDelete(requestId, res.object);
           } catch (e) {
             const error = resolveError(e);
             Client.pushError(client.parseWebSocket, error.code, error.message, false, requestId);
@@ -318,6 +319,13 @@ class ParseLiveQueryServer {
           continue;
         }
         requestIds.forEach(async requestId => {
+          // Deep-clone shared objects so each concurrent callback works on its own copy.
+          // Without cloning, _filterSensitiveData's in-place field deletion and afterEvent
+          // trigger modifications corrupt the shared state across concurrent subscribers.
+          let localCurrentParseObject = JSON.parse(JSON.stringify(currentParseObject));
+          let localOriginalParseObject = originalParseObject
+            ? JSON.parse(JSON.stringify(originalParseObject))
+            : null;
           // Set orignal ParseObject ACL checking promise, if the object does not match
           // subscription, we do not need to check ACL
           let originalACLCheckingPromise;
@@ -358,8 +366,8 @@ class ParseLiveQueryServer {
             ]);
             logger.verbose(
               'Original %j | Current %j | Match: %s, %s, %s, %s | Query: %s',
-              originalParseObject,
-              currentParseObject,
+              localOriginalParseObject,
+              localCurrentParseObject,
               isOriginalSubscriptionMatched,
               isCurrentSubscriptionMatched,
               isOriginalMatched,
@@ -373,7 +381,7 @@ class ParseLiveQueryServer {
             } else if (isOriginalMatched && !isCurrentMatched) {
               type = 'leave';
             } else if (!isOriginalMatched && isCurrentMatched) {
-              if (originalParseObject) {
+              if (localOriginalParseObject) {
                 type = 'enter';
               } else {
                 type = 'create';
@@ -388,8 +396,8 @@ class ParseLiveQueryServer {
             res = {
               event: type,
               sessionToken: client.sessionToken,
-              object: currentParseObject,
-              original: originalParseObject,
+              object: localCurrentParseObject,
+              original: localOriginalParseObject,
               clients: this.clients.size,
               subscriptions: this.subscriptions.size,
               useMasterKey: client.hasMasterKey,
@@ -414,16 +422,16 @@ class ParseLiveQueryServer {
               return;
             }
             if (res.object && typeof res.object.toJSON === 'function') {
-              currentParseObject = toJSONwithObjects(res.object, res.object.className || className);
+              localCurrentParseObject = toJSONwithObjects(res.object, res.object.className || className);
             }
             if (res.original && typeof res.original.toJSON === 'function') {
-              originalParseObject = toJSONwithObjects(
+              localOriginalParseObject = toJSONwithObjects(
                 res.original,
                 res.original.className || className
               );
             }
-            res.object = currentParseObject;
-            res.original = originalParseObject;
+            res.object = localCurrentParseObject;
+            res.original = localOriginalParseObject;
             await this._filterSensitiveData(
               classLevelPermissions,
               res,
@@ -432,11 +440,9 @@ class ParseLiveQueryServer {
               op,
               subscription.query
             );
-            currentParseObject = res.object;
-            originalParseObject = res.original ?? null;
             const functionName = 'push' + res.event.charAt(0).toUpperCase() + res.event.slice(1);
             if (client[functionName]) {
-              client[functionName](requestId, currentParseObject, originalParseObject);
+              client[functionName](requestId, res.object, res.original ?? null);
             }
           } catch (e) {
             const error = resolveError(e);
@@ -549,6 +555,16 @@ class ParseLiveQueryServer {
     if (typeof where !== 'object' || where === null) {
       return;
     }
+    for (const op of ['$or', '$and', '$nor']) {
+      if (where[op] !== undefined && !Array.isArray(where[op])) {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, `${op} must be an array`);
+      }
+      if (Array.isArray(where[op])) {
+        where[op].forEach((subQuery: any) => {
+          this._validateQueryConstraints(subQuery);
+        });
+      }
+    }
     for (const key of Object.keys(where)) {
       const constraint = where[key];
       if (typeof constraint === 'object' && constraint !== null) {
@@ -575,18 +591,6 @@ class ParseLiveQueryServer {
               `Invalid regular expression: ${e.message}`
             );
           }
-        }
-        for (const op of ['$or', '$and', '$nor']) {
-          if (Array.isArray(constraint[op])) {
-            constraint[op].forEach((subQuery: any) => {
-              this._validateQueryConstraints(subQuery);
-            });
-          }
-        }
-        if (Array.isArray(where[key])) {
-          where[key].forEach((subQuery: any) => {
-            this._validateQueryConstraints(subQuery);
-          });
         }
       }
     }
@@ -764,7 +768,9 @@ class ParseLiveQueryServer {
         return;
       }
       let protectedFields = classLevelPermissions?.protectedFields || [];
-      if (!client.hasMasterKey && !Array.isArray(protectedFields)) {
+      if (client.hasMasterKey) {
+        protectedFields = [];
+      } else if (!Array.isArray(protectedFields)) {
         protectedFields = getDatabaseController(this.config).addProtectedFields(
           classLevelPermissions,
           res.object.className,
@@ -1040,6 +1046,9 @@ class ParseLiveQueryServer {
               return;
             }
             for (const op of ['$or', '$and', '$nor']) {
+              if (where[op] !== undefined && !Array.isArray(where[op])) {
+                throw new Parse.Error(Parse.Error.INVALID_QUERY, `${op} must be an array`);
+              }
               if (Array.isArray(where[op])) {
                 for (const subQuery of where[op]) {
                   checkDepth(subQuery, depth + 1);
@@ -1103,6 +1112,9 @@ class ParseLiveQueryServer {
               }
             }
             for (const op of ['$or', '$and', '$nor']) {
+              if (where[op] !== undefined && !Array.isArray(where[op])) {
+                throw new Parse.Error(Parse.Error.INVALID_QUERY, `${op} must be an array`);
+              }
               if (Array.isArray(where[op])) {
                 where[op].forEach((subQuery: any) => checkWhere(subQuery));
               }

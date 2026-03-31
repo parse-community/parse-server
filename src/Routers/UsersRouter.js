@@ -422,10 +422,10 @@ export class UsersRouter extends ClassesRouter {
 
   handleVerifyPassword(req) {
     return this._authenticateUserFromRequest(req)
-      .then(user => {
+      .then(async user => {
         // Remove hidden properties.
         UsersRouter.removeHiddenProperties(user);
-
+        await req.config.authDataManager.runAfterFind(req, user.authData);
         return { response: user };
       })
       .catch(error => {

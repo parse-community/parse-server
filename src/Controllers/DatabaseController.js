@@ -533,6 +533,13 @@ class DatabaseController {
       });
   }
 
+  /**
+   * Updates objects in the database that match the given query.
+   * @param {Object} options
+   * @param {boolean} [options.many=false] When true, updates all matching documents
+   *   and returns `{ matchedCount, modifiedCount }` where values are numbers if the
+   *   storage adapter supports `UpdateManyResult`, or `undefined` otherwise.
+   */
   update(
     className: string,
     query: any,
@@ -545,7 +552,7 @@ class DatabaseController {
     try {
       Utils.checkProhibitedKeywords(this.options, update);
     } catch (error) {
-      return Promise.reject(new Parse.Error(Parse.Error.INVALID_KEY_NAME, error));
+      return Promise.reject(new Parse.Error(Parse.Error.INVALID_KEY_NAME, `${error}`));
     }
     try {
       const { validateFileUrlsInObject } = require('../FileUrlValidator');
@@ -700,6 +707,16 @@ class DatabaseController {
         .then(result => {
           if (skipSanitization) {
             return Promise.resolve(result);
+          }
+          if (many) {
+            return {
+              matchedCount: typeof result?.matchedCount === 'number'
+                ? result.matchedCount
+                : undefined,
+              modifiedCount: typeof result?.modifiedCount === 'number'
+                ? result.modifiedCount
+                : undefined,
+            };
           }
           return this._sanitizeDatabaseResult(originalUpdate, result);
         });
@@ -888,7 +905,7 @@ class DatabaseController {
     try {
       Utils.checkProhibitedKeywords(this.options, object);
     } catch (error) {
-      return Promise.reject(new Parse.Error(Parse.Error.INVALID_KEY_NAME, error));
+      return Promise.reject(new Parse.Error(Parse.Error.INVALID_KEY_NAME, `${error}`));
     }
     try {
       const { validateFileUrlsInObject } = require('../FileUrlValidator');

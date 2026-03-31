@@ -1992,8 +1992,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
     return this._client
       .any(qs, values)
       .catch(error => {
-        // Query on non existing table, don't crash
-        if (error.code !== PostgresRelationDoesNotExistError) {
+        if (
+          error.code !== PostgresRelationDoesNotExistError &&
+          error.code !== PostgresMissingColumnError
+        ) {
           throw error;
         }
         return [];
@@ -2189,7 +2191,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
         }
       })
       .catch(error => {
-        if (error.code !== PostgresRelationDoesNotExistError) {
+        if (
+          error.code !== PostgresRelationDoesNotExistError &&
+          error.code !== PostgresMissingColumnError
+        ) {
           throw error;
         }
         return 0;

@@ -114,7 +114,7 @@ function getStore(category, name, applicationId) {
       return createStore();
     }
     store = store[component];
-    if (!store) {
+    if (!store || Object.getPrototypeOf(store) !== null) {
       return createStore();
     }
   }
@@ -310,7 +310,7 @@ export function getRequestObject(
     triggerType === Types.afterFind
   ) {
     // Set a copy of the context on the request object.
-    request.context = Object.assign({}, context);
+    request.context = Object.assign(Object.create(null), context);
   }
 
   if (!auth) {

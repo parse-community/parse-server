@@ -359,9 +359,6 @@ describe('Parse.User testing', () => {
       uri: databaseURI,
     });
     await adapter.connect();
-    await adapter.database.dropDatabase();
-    delete adapter.connectionPromise;
-    Config.get(Parse.applicationId).schemaCache.clear();
 
     const user = new Parse.User();
     await user.signUp({
@@ -1460,7 +1457,7 @@ describe('Parse.User testing', () => {
     expect(result.get('authData').facebook.access_token).toBe('jenny');
   });
 
-  it('only creates a single session for an installation / user pair (#2885)', async done => {
+  it('only creates a single session for an installation / user pair (#2885)', async () => {
     Parse.Object.disableSingleInstance();
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
@@ -1469,18 +1466,13 @@ describe('Parse.User testing', () => {
     const user = await Parse.User.logInWith('facebook');
     const sessionToken = user.getSessionToken();
     const query = new Parse.Query('_Session');
-    return query
-      .find({ useMasterKey: true })
-      .then(results => {
-        expect(results.length).toBe(1);
-        expect(results[0].get('sessionToken')).toBe(sessionToken);
-        expect(results[0].get('createdWith')).toEqual({
-          action: 'login',
-          authProvider: 'facebook',
-        });
-        done();
-      })
-      .catch(done.fail);
+    const results = await query.find({ useMasterKey: true });
+    expect(results.length).toBe(1);
+    expect(results[0].get('sessionToken')).toBe(sessionToken);
+    expect(results[0].get('createdWith')).toEqual({
+      action: 'login',
+      authProvider: 'facebook',
+    });
   });
 
   it('log in with provider with files', done => {

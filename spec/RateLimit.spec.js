@@ -1027,6 +1027,122 @@ describe('rate limit', () => {
   });
 
   describe('batch method bypass', () => {
+    it('should use IP-based keying for batch login sub-requests with session zone', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/login',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            errorResponseMessage: 'Too many requests',
+            includeInternalRequests: true,
+            zone: Parse.Server.RateLimitZone.session,
+          },
+        ],
+      });
+      // Create two users and get their session tokens
+      const res1 = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/users',
+        body: JSON.stringify({ username: 'user1', password: 'password1' }),
+      });
+      const sessionToken1 = res1.data.sessionToken;
+      const res2 = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/users',
+        body: JSON.stringify({ username: 'user2', password: 'password2' }),
+      });
+      const sessionToken2 = res2.data.sessionToken;
+      // First batch login with TOKEN1 — should succeed
+      const batch1 = await request({
+        method: 'POST',
+        headers: { ...headers, 'X-Parse-Session-Token': sessionToken1 },
+        url: 'http://localhost:8378/1/batch',
+        body: JSON.stringify({
+          requests: [
+            { method: 'POST', path: '/1/login', body: { username: 'user1', password: 'password1' } },
+          ],
+        }),
+      });
+      expect(batch1.status).toBe(200);
+      // Second batch login with TOKEN2 — should be rate limited because
+      // login rate limit must use IP-based keying, not session-token keying;
+      // rotating session tokens must not create independent rate limit counters
+      const batch2 = await request({
+        method: 'POST',
+        headers: { ...headers, 'X-Parse-Session-Token': sessionToken2 },
+        url: 'http://localhost:8378/1/batch',
+        body: JSON.stringify({
+          requests: [
+            { method: 'POST', path: '/1/login', body: { username: 'user1', password: 'password1' } },
+          ],
+        }),
+      }).catch(e => e);
+      expect(batch2.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many requests',
+      });
+    });
+
+    it('should use IP-based keying for batch login sub-requests with user zone', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/login',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            errorResponseMessage: 'Too many requests',
+            includeInternalRequests: true,
+            zone: Parse.Server.RateLimitZone.user,
+          },
+        ],
+      });
+      // Create two users and get their session tokens
+      const res1 = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/users',
+        body: JSON.stringify({ username: 'user1', password: 'password1' }),
+      });
+      const sessionToken1 = res1.data.sessionToken;
+      const res2 = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/users',
+        body: JSON.stringify({ username: 'user2', password: 'password2' }),
+      });
+      const sessionToken2 = res2.data.sessionToken;
+      // First batch login with TOKEN1 — should succeed
+      const batch1 = await request({
+        method: 'POST',
+        headers: { ...headers, 'X-Parse-Session-Token': sessionToken1 },
+        url: 'http://localhost:8378/1/batch',
+        body: JSON.stringify({
+          requests: [
+            { method: 'POST', path: '/1/login', body: { username: 'user1', password: 'password1' } },
+          ],
+        }),
+      });
+      expect(batch1.status).toBe(200);
+      // Second batch login with TOKEN2 — should be rate limited
+      const batch2 = await request({
+        method: 'POST',
+        headers: { ...headers, 'X-Parse-Session-Token': sessionToken2 },
+        url: 'http://localhost:8378/1/batch',
+        body: JSON.stringify({
+          requests: [
+            { method: 'POST', path: '/1/login', body: { username: 'user1', password: 'password1' } },
+          ],
+        }),
+      }).catch(e => e);
+      expect(batch2.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many requests',
+      });
+    });
+
     it('should enforce POST rate limit on batch sub-requests using GET method for login', async () => {
       Parse.Cloud.beforeLogin(() => {}, {
         rateLimit: {

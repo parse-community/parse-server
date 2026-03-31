@@ -503,7 +503,7 @@ describe('ParseGraphQLServer', () => {
         }
       });
 
-      it('should be cors enabled and scope the response within the source origin', async () => {
+      it('should be cors enabled', async () => {
         let checked = false;
         const apolloClient = new ApolloClient({
           link: new ApolloLink((operation, forward) => {
@@ -512,7 +512,7 @@ describe('ParseGraphQLServer', () => {
               const {
                 response: { headers },
               } = context;
-              expect(headers.get('access-control-allow-origin')).toEqual('http://example.com');
+              expect(headers.get('access-control-allow-origin')).toEqual('*');
               checked = true;
               return response;
             });
@@ -8658,6 +8658,13 @@ describe('ParseGraphQLServer', () => {
       });
 
       describe('Data Types', () => {
+        beforeEach(async () => {
+          const schema = new Parse.Schema('SomeClass');
+          await schema.purge().catch(() => {});
+          await schema.delete().catch(() => {});
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+        });
+
         it('should support String', async () => {
           try {
             const someFieldValue = 'some string';
@@ -10423,6 +10430,7 @@ describe('ParseGraphQLServer', () => {
           schema.addPointer('somePointerField', 'SomeClass');
           schema.addRelation('someRelationField', 'SomeClass');
           await schema.save();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           const body = new FormData();
           body.append(

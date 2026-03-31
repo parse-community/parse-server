@@ -11,6 +11,8 @@ describe('ParseGraphQLController', () => {
   let databaseController;
   let cacheController;
   let databaseUpdateArgs;
+  let originalDbFind;
+  let originalDbUpdate;
 
   // Holds the graphQLConfig in memory instead of using the db
   let graphQLConfigRecord;
@@ -34,17 +36,18 @@ describe('ParseGraphQLController', () => {
       databaseController = parseServer.config.databaseController;
       cacheController = parseServer.config.cacheController;
 
-      const defaultFind = databaseController.find.bind(databaseController);
+      originalDbFind = databaseController.find.bind(databaseController);
+      originalDbUpdate = databaseController.update.bind(databaseController);
+
       databaseController.find = async (className, query, ...args) => {
         if (className === GraphQLConfigClassName && isEqual(query, { objectId: GraphQLConfigId })) {
           const graphQLConfigRecord = getConfigFromDb();
           return graphQLConfigRecord ? [graphQLConfigRecord] : [];
         } else {
-          return defaultFind(className, query, ...args);
+          return originalDbFind(className, query, ...args);
         }
       };
 
-      const defaultUpdate = databaseController.update.bind(databaseController);
       databaseController.update = async (className, query, update, fullQueryOptions) => {
         databaseUpdateArgs = [className, query, update, fullQueryOptions];
         if (
@@ -57,11 +60,18 @@ describe('ParseGraphQLController', () => {
         ) {
           setConfigOnDb(update[GraphQLConfigKey]);
         } else {
-          return defaultUpdate(...databaseUpdateArgs);
+          return originalDbUpdate(...databaseUpdateArgs);
         }
       };
     }
     databaseUpdateArgs = null;
+  });
+
+  afterAll(() => {
+    if (databaseController) {
+      databaseController.find = originalDbFind;
+      databaseController.update = originalDbUpdate;
+    }
   });
 
   describe('constructor', () => {

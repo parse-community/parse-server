@@ -313,7 +313,7 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
       try {
         Utils.checkProhibitedKeywords(this.config, this.data);
       } catch (error) {
-        throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, error);
+        throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `${error}`);
       }
     });
 };
@@ -663,6 +663,15 @@ RestWrite.prototype.handleAuthData = async function (authData) {
       // We are supposed to have a response only on LOGIN with authData, so we skip those
       // If we're not logging in, but just updating the current user, we can safely skip that part
       if (this.response) {
+        // Capture original authData before mutating userResult via the response reference
+        const originalAuthData = userResult?.authData
+          ? Object.fromEntries(
+            Object.entries(userResult.authData).map(([k, v]) =>
+              [k, v && typeof v === 'object' ? { ...v } : v]
+            )
+          )
+          : undefined;
+
         // Assign the new authData in the response
         Object.keys(mutatedAuthData).forEach(provider => {
           this.response.response.authData[provider] = mutatedAuthData[provider];
@@ -673,14 +682,36 @@ RestWrite.prototype.handleAuthData = async function (authData) {
         // uses the `doNotSave` option. Just update the authData part
         // Then we're good for the user, early exit of sorts
         if (Object.keys(this.data.authData).length) {
+          const query = { objectId: this.data.objectId };
+          // Optimistic locking: include the original array fields in the WHERE clause
+          // for providers whose data is being updated. This prevents concurrent requests
+          // from both succeeding when consuming single-use tokens (e.g. MFA recovery codes).
+          if (originalAuthData) {
+            for (const provider of Object.keys(this.data.authData)) {
+              const original = originalAuthData[provider];
+              if (original && typeof original === 'object') {
+                for (const [field, value] of Object.entries(original)) {
+                  if (
+                    Array.isArray(value) &&
+                    JSON.stringify(value) !== JSON.stringify(this.data.authData[provider]?.[field])
+                  ) {
+                    query[`authData.${provider}.${field}`] = value;
+                  }
+                }
+              }
+            }
+          }
           try {
             await this.config.database.update(
               this.className,
-              { objectId: this.data.objectId },
+              query,
               { authData: this.data.authData },
               {}
             );
           } catch (error) {
+            if (error.code === Parse.Error.OBJECT_NOT_FOUND) {
+              throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Invalid auth data');
+            }
             this._throwIfAuthDataDuplicate(error);
             throw error;
           }
@@ -1140,7 +1171,7 @@ RestWrite.prototype.destroyDuplicatedSessions = function () {
   if (!user.objectId) {
     return;
   }
-  this.config.database.destroy(
+  return this.config.database.destroy(
     '_Session',
     {
       user,
@@ -1149,7 +1180,11 @@ RestWrite.prototype.destroyDuplicatedSessions = function () {
     },
     {},
     this.validSchemaController
-  );
+  ).catch(e => {
+    if (e.code !== Parse.Error.OBJECT_NOT_FOUND) {
+      throw e;
+    }
+  });
 };
 
 // Handles any followup logic
@@ -1199,15 +1234,15 @@ RestWrite.prototype.handleSession = function () {
 
   if (this.query) {
     if (this.data.user && !this.auth.isMaster && this.data.user.objectId != this.auth.user.id) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
-    } else if (this.data.installationId) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
-    } else if (this.data.sessionToken) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
-    } else if (this.data.expiresAt && !this.auth.isMaster && !this.auth.isMaintenance) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
-    } else if (this.data.createdWith && !this.auth.isMaster && !this.auth.isMaintenance) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: user');
+    } else if ('installationId' in this.data) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: installationId');
+    } else if ('sessionToken' in this.data) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: sessionToken');
+    } else if ('expiresAt' in this.data && !this.auth.isMaster && !this.auth.isMaintenance) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: expiresAt');
+    } else if ('createdWith' in this.data && !this.auth.isMaster && !this.auth.isMaintenance) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: createdWith');
     }
     if (!this.auth.isMaster) {
       this.query = {

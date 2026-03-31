@@ -8,6 +8,11 @@
  * or set to an empty string if the current key will be removed without replacement.
  * - `changeNewDefault` {String}: Set the new default value if the key's default value
  * will change in a future version.
+ * - `resolvedValue` {any}: The option value that suppresses the deprecation warning,
+ * indicating the user has already adopted the future behavior. Only applicable when
+ * `changeNewKey` is an empty string (option will be removed without replacement).
+ * For example, `false` for an option that will be removed, if setting it to `false`
+ * disables the deprecated feature.
  * - `solution`: The instruction to resolve this deprecation warning. Optional. This
  * instruction must not include the deprecation warning which is auto-generated.
  * It should only contain additional instruction regarding the deprecation if
@@ -79,11 +84,13 @@ module.exports = [
   {
     optionKey: 'enableProductPurchaseLegacyApi',
     changeNewKey: '',
+    resolvedValue: false,
     solution: "The product purchase API is an undocumented, unmaintained legacy feature that may not function as expected and will be removed in a future major version. We strongly advise against using it. Set 'enableProductPurchaseLegacyApi' to 'false' to disable it, or remove the option to accept the future removal.",
   },
   {
     optionKey: 'allowExpiredAuthDataToken',
     changeNewKey: '',
+    resolvedValue: false,
     solution: "Auth providers are always validated on login regardless of this setting. Set 'allowExpiredAuthDataToken' to 'false' or remove the option to accept the future removal.",
   },
   {
