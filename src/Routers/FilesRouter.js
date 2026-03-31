@@ -5,6 +5,7 @@ import Config from '../Config';
 import logger from '../logger';
 const triggers = require('../triggers');
 const Utils = require('../Utils');
+const auth = require('../Auth');
 import { Readable } from 'stream';
 import { createSanitizedHttpError } from '../Error';
 
@@ -120,6 +121,22 @@ export class FilesRouter {
     return Array.isArray(parts) ? parts.join('/') : parts;
   }
 
+  static async _resolveAuth(req, config) {
+    const sessionToken = req.get('X-Parse-Session-Token');
+    if (!sessionToken) {
+      return null;
+    }
+    try {
+      return await auth.getAuthForSessionToken({
+        config,
+        sessionToken,
+        installationId: req.get('X-Parse-Installation-Id'),
+      });
+    } catch {
+      return null;
+    }
+  }
+
   static validateDirectory(directory) {
     if (typeof directory !== 'string') {
       return new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Directory must be a string.');
@@ -177,11 +194,12 @@ export class FilesRouter {
       const mime = (await import('mime')).default;
       let contentType = mime.getType(filename);
       let file = new Parse.File(filename, { base64: '' }, contentType);
+      const fileAuth = await FilesRouter._resolveAuth(req, config);
       const triggerResult = await triggers.maybeRunFileTrigger(
         triggers.Types.beforeFind,
         { file },
         config,
-        req.auth
+        fileAuth
       );
       if (triggerResult?.file?._name) {
         filename = triggerResult?.file?._name;
@@ -191,7 +209,16 @@ export class FilesRouter {
       const defaultResponseHeaders = { 'X-Content-Type-Options': 'nosniff' };
 
       if (isFileStreamable(req, filesController)) {
-        for (const [key, value] of Object.entries(defaultResponseHeaders)) {
+        const afterFind = await triggers.maybeRunFileTrigger(
+          triggers.Types.afterFind,
+          { file, forceDownload: false, responseHeaders: { ...defaultResponseHeaders } },
+          config,
+          fileAuth
+        );
+        if (afterFind?.forceDownload) {
+          res.set('Content-Disposition', `attachment;filename=${afterFind.file?._name || filename}`);
+        }
+        for (const [key, value] of Object.entries(afterFind?.responseHeaders ?? defaultResponseHeaders)) {
           res.set(key, value);
         }
         filesController.handleFileStream(config, filename, req, res, contentType).catch(() => {
@@ -215,7 +242,7 @@ export class FilesRouter {
         triggers.Types.afterFind,
         { file, forceDownload: false, responseHeaders: { ...defaultResponseHeaders } },
         config,
-        req.auth
+        fileAuth
       );
 
       if (afterFind?.file) {
@@ -736,11 +763,12 @@ export class FilesRouter {
       const { filesController } = config;
       let filename = FilesRouter._getFilenameFromParams(req);
       const file = new Parse.File(filename, { base64: '' });
+      const fileAuth = await FilesRouter._resolveAuth(req, config);
       const triggerResult = await triggers.maybeRunFileTrigger(
         triggers.Types.beforeFind,
         { file },
         config,
-        req.auth
+        fileAuth
       );
       if (triggerResult?.file?._name) {
         filename = triggerResult.file._name;
@@ -756,7 +784,7 @@ export class FilesRouter {
         triggers.Types.afterFind,
         { file },
         config,
-        req.auth
+        fileAuth
       );
       res.status(200);
       res.json(data);

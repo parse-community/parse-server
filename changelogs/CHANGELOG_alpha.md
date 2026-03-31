@@ -1,3 +1,80 @@
+## [9.7.1-alpha.1](https://github.com/parse-community/parse-server/compare/9.7.0...9.7.1-alpha.1) (2026-03-30)
+
+
+### Bug Fixes
+
+* Streaming file download bypasses afterFind file trigger authorization ([GHSA-hpm8-9qx6-jvwv](https://github.com/parse-community/parse-server/security/advisories/GHSA-hpm8-9qx6-jvwv)) ([#10361](https://github.com/parse-community/parse-server/issues/10361)) ([a0b0c69](https://github.com/parse-community/parse-server/commit/a0b0c69fc44f87f80d793d257344e7dcbf676e22))
+
+# [9.7.0-alpha.18](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.17...9.7.0-alpha.18) (2026-03-30)
+
+
+### Features
+
+* Extend storage adapter interface to optionally return `matchedCount` and `modifiedCount` from `DatabaseController.update` with `many: true` ([#10353](https://github.com/parse-community/parse-server/issues/10353)) ([aea7596](https://github.com/parse-community/parse-server/commit/aea7596cd2336c1c179ae130efd550f1596f5f3a))
+
+# [9.7.0-alpha.17](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.16...9.7.0-alpha.17) (2026-03-29)
+
+
+### Bug Fixes
+
+* Cloud Code trigger context vulnerable to prototype pollution ([#10352](https://github.com/parse-community/parse-server/issues/10352)) ([d5f5128](https://github.com/parse-community/parse-server/commit/d5f5128ade49749856d8ad5f9750ffd26d44836a))
+
+# [9.7.0-alpha.16](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.15...9.7.0-alpha.16) (2026-03-29)
+
+
+### Bug Fixes
+
+* LiveQuery protected-field guard bypass via array-like logical operator value ([GHSA-mmg8-87c5-jrc2](https://github.com/parse-community/parse-server/security/advisories/GHSA-mmg8-87c5-jrc2)) ([#10350](https://github.com/parse-community/parse-server/issues/10350)) ([f63fd1a](https://github.com/parse-community/parse-server/commit/f63fd1a3fe0a7c1c5fe809f01b0e04759e8c9b98))
+
+# [9.7.0-alpha.15](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.14...9.7.0-alpha.15) (2026-03-29)
+
+
+### Bug Fixes
+
+* Batch login sub-request rate limit uses IP-based keying ([#10349](https://github.com/parse-community/parse-server/issues/10349)) ([63c37c4](https://github.com/parse-community/parse-server/commit/63c37c49c7a72dc617635da8859004503021b8fd))
+
+# [9.7.0-alpha.14](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.13...9.7.0-alpha.14) (2026-03-29)
+
+
+### Bug Fixes
+
+* Session field immutability bypass via falsy-value guard ([GHSA-f6j3-w9v3-cq22](https://github.com/parse-community/parse-server/security/advisories/GHSA-f6j3-w9v3-cq22)) ([#10347](https://github.com/parse-community/parse-server/issues/10347)) ([9080296](https://github.com/parse-community/parse-server/commit/90802969fc713b7bc9733d7255c7519a6ed75d21))
+
+# [9.7.0-alpha.13](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.12...9.7.0-alpha.13) (2026-03-29)
+
+
+### Features
+
+* Add support for `partialFilterExpression` in MongoDB storage adapter ([#10346](https://github.com/parse-community/parse-server/issues/10346)) ([8dd7bf2](https://github.com/parse-community/parse-server/commit/8dd7bf2f61c07b0467d6dbc7aad5142db6694339))
+
+# [9.7.0-alpha.12](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.11...9.7.0-alpha.12) (2026-03-29)
+
+
+### Bug Fixes
+
+* GraphQL complexity validator exponential fragment traversal DoS ([GHSA-mfj6-6p54-m98c](https://github.com/parse-community/parse-server/security/advisories/GHSA-mfj6-6p54-m98c)) ([#10344](https://github.com/parse-community/parse-server/issues/10344)) ([f759bda](https://github.com/parse-community/parse-server/commit/f759bda075298ec44e2b4fb57659a0c56620483b))
+
+# [9.7.0-alpha.11](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.10...9.7.0-alpha.11) (2026-03-28)
+
+
+### Bug Fixes
+
+* Cloud function validator bypass via prototype chain traversal ([GHSA-vpj2-qq7w-5qq6](https://github.com/parse-community/parse-server/security/advisories/GHSA-vpj2-qq7w-5qq6)) ([#10342](https://github.com/parse-community/parse-server/issues/10342)) ([dc59e27](https://github.com/parse-community/parse-server/commit/dc59e272665644083c5b7f6862d88ce1ef0b2674))
+
+# [9.7.0-alpha.10](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.9...9.7.0-alpha.10) (2026-03-27)
+
+
+### Bug Fixes
+
+* GraphQL API endpoint ignores CORS origin restriction ([GHSA-q3p6-g7c4-829c](https://github.com/parse-community/parse-server/security/advisories/GHSA-q3p6-g7c4-829c)) ([#10334](https://github.com/parse-community/parse-server/issues/10334)) ([4dd0d3d](https://github.com/parse-community/parse-server/commit/4dd0d3d8be1c39664c74ad10bb0abaa76bc41203))
+
+# [9.7.0-alpha.9](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.8...9.7.0-alpha.9) (2026-03-27)
+
+
+### Bug Fixes
+
+* LiveQuery protected field leak via shared mutable state across concurrent subscribers ([GHSA-m983-v2ff-wq65](https://github.com/parse-community/parse-server/security/advisories/GHSA-m983-v2ff-wq65)) ([#10330](https://github.com/parse-community/parse-server/issues/10330)) ([776c71c](https://github.com/parse-community/parse-server/commit/776c71c3078e77d38c94937f463741793609d055))
+
 # [9.7.0-alpha.8](https://github.com/parse-community/parse-server/compare/9.7.0-alpha.7...9.7.0-alpha.8) (2026-03-26)
 
 

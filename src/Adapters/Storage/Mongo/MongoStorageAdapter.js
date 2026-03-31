@@ -800,12 +800,17 @@ export class MongoStorageAdapter implements StorageAdapter {
     const caseInsensitiveOptions: Object = caseInsensitive
       ? { collation: MongoCollection.caseInsensitiveCollation() }
       : {};
+    const partialFilterOptions: Object =
+      options.partialFilterExpression !== undefined
+        ? { partialFilterExpression: options.partialFilterExpression }
+        : {};
     const indexOptions: Object = {
       ...defaultOptions,
       ...caseInsensitiveOptions,
       ...indexNameOptions,
       ...ttlOptions,
       ...sparseOptions,
+      ...partialFilterOptions,
     };
 
     return this._adaptiveCollection(className)

@@ -70,35 +70,31 @@ global.normalizeAsyncTests = function() {
     return fn;
   }
 
-  // Wrap it() specs
-  const originalSpecConstructor = jasmine.Spec;
-  jasmine.Spec = function(attrs) {
-    const spec = new originalSpecConstructor(attrs);
-    spec.queueableFn.fn = wrapDoneCallback(spec.queueableFn.fn);
-    return spec;
-  };
+  function wrapGlobal(name) {
+    const original = global[name];
+    global[name] = function(descriptionOrFn, fn, timeout) {
+      const args = Array.from(arguments);
+      if (typeof descriptionOrFn === 'function') {
+        args[0] = wrapDoneCallback(descriptionOrFn);
+        return original.apply(this, args);
+      }
+      if (typeof fn === 'function') {
+        args[1] = wrapDoneCallback(fn);
+        return original.apply(this, args);
+      }
+      return original.apply(this, args);
+    };
+    if (original.each) {
+      global[name].each = original.each;
+    }
+  }
 
-  // Wrap beforeEach/afterEach/beforeAll/afterAll
-  const originalBeforeEach = jasmine.Suite.prototype.beforeEach;
-  jasmine.Suite.prototype.beforeEach = function(fn) {
-    fn.fn = wrapDoneCallback(fn.fn);
-    return originalBeforeEach.call(this, fn);
-  };
-  const originalAfterEach = jasmine.Suite.prototype.afterEach;
-  jasmine.Suite.prototype.afterEach = function(fn) {
-    fn.fn = wrapDoneCallback(fn.fn);
-    return originalAfterEach.call(this, fn);
-  };
-  const originalBeforeAll = jasmine.Suite.prototype.beforeAll;
-  jasmine.Suite.prototype.beforeAll = function(fn) {
-    fn.fn = wrapDoneCallback(fn.fn);
-    return originalBeforeAll.call(this, fn);
-  };
-  const originalAfterAll = jasmine.Suite.prototype.afterAll;
-  jasmine.Suite.prototype.afterAll = function(fn) {
-    fn.fn = wrapDoneCallback(fn.fn);
-    return originalAfterAll.call(this, fn);
-  };
+  wrapGlobal('it');
+  wrapGlobal('fit');
+  wrapGlobal('beforeEach');
+  wrapGlobal('afterEach');
+  wrapGlobal('beforeAll');
+  wrapGlobal('afterAll');
 };
 
 module.exports = CurrentSpecReporter;

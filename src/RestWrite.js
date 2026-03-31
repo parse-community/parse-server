@@ -1235,13 +1235,13 @@ RestWrite.prototype.handleSession = function () {
   if (this.query) {
     if (this.data.user && !this.auth.isMaster && this.data.user.objectId != this.auth.user.id) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: user');
-    } else if (this.data.installationId) {
+    } else if ('installationId' in this.data) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: installationId');
-    } else if (this.data.sessionToken) {
+    } else if ('sessionToken' in this.data) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: sessionToken');
-    } else if (this.data.expiresAt && !this.auth.isMaster && !this.auth.isMaintenance) {
+    } else if ('expiresAt' in this.data && !this.auth.isMaster && !this.auth.isMaintenance) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: expiresAt');
-    } else if (this.data.createdWith && !this.auth.isMaster && !this.auth.isMaintenance) {
+    } else if ('createdWith' in this.data && !this.auth.isMaster && !this.auth.isMaintenance) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: createdWith');
     }
     if (!this.auth.isMaster) {

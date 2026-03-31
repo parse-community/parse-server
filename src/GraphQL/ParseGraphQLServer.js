@@ -1,11 +1,10 @@
-import corsMiddleware from 'cors';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.js';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@as-integrations/express5';
 import { ApolloServerPluginCacheControlDisabled } from '@apollo/server/plugin/disabled';
 import express from 'express';
 import { GraphQLError, parse } from 'graphql';
-import { handleParseErrors, handleParseHeaders, handleParseSession } from '../middlewares';
+import { allowCrossDomain, handleParseErrors, handleParseHeaders, handleParseSession } from '../middlewares';
 import requiredParameter from '../requiredParameter';
 import defaultLogger from '../logger';
 import { ParseGraphQLSchema } from './ParseGraphQLSchema';
@@ -116,8 +115,7 @@ class ParseGraphQLServer {
     try {
       return {
         schema: await this.parseGraphQLSchema.load(),
-        context: async ({ req, res }) => {
-          res.set('access-control-allow-origin', req.get('origin') || '*');
+        context: async ({ req }) => {
           return {
             info: req.info,
             config: req.config,
@@ -204,7 +202,7 @@ class ParseGraphQLServer {
     if (!app || !app.use) {
       requiredParameter('You must provide an Express.js app instance!');
     }
-    app.use(this.config.graphQLPath, corsMiddleware());
+    app.use(this.config.graphQLPath, allowCrossDomain(this.parseServer.config.appId));
     app.use(this.config.graphQLPath, handleParseHeaders);
     app.use(this.config.graphQLPath, handleParseSession);
     this.applyRequestContextMiddleware(app, this.parseServer.config);
