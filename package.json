@@ -107,7 +107,7 @@
     "semantic-release": "25.0.3",
     "typescript": "5.9.3",
     "typescript-eslint": "8.53.1",
-    "yaml": "2.8.2"
+    "yaml": "2.8.3"
   },
   "scripts": {
     "ci:check": "node ./ci/ciCheck.js",
