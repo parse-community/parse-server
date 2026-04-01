@@ -92,7 +92,7 @@
     "graphql-tag": "2.12.6",
     "jasmine": "6.1.0",
     "jasmine-spec-reporter": "7.0.0",
-    "jsdoc": "4.0.4",
+    "jsdoc": "4.0.5",
     "jsdoc-babel": "0.5.0",
     "lint-staged": "16.4.0",
     "m": "1.10.0",
