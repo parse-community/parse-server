@@ -22,9 +22,9 @@
   "dependencies": {
     "@apollo/server": "5.5.0",
     "@as-integrations/express5": "1.1.2",
-    "@graphql-tools/merge": "9.0.24",
-    "@graphql-tools/schema": "10.0.23",
-    "@graphql-tools/utils": "10.8.6",
+    "@graphql-tools/merge": "9.1.7",
+    "@graphql-tools/schema": "10.0.31",
+    "@graphql-tools/utils": "11.0.0",
     "@parse/fs-files-adapter": "3.0.0",
     "@parse/push-adapter": "8.3.1",
     "bcryptjs": "3.0.3",
