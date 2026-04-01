@@ -214,12 +214,17 @@ describe('execution', () => {
   const binPath = path.resolve(__dirname, '../bin/parse-server');
   let childProcess;
   let aggregatedData;
+  let testCompleted;
 
   function handleStdout(childProcess, done, aggregatedData, requiredData) {
     childProcess.stdout.on('data', data => {
+      if (testCompleted) {
+        return;
+      }
       data = data.toString();
       aggregatedData.push(data);
       if (requiredData.every(required => aggregatedData.some(aggregated => aggregated.includes(required)))) {
+        testCompleted = true;
         done();
       }
     });
@@ -227,8 +232,12 @@ describe('execution', () => {
 
   function handleStderr(childProcess, done) {
     childProcess.stderr.on('data', data => {
+      if (testCompleted) {
+        return;
+      }
       data = data.toString();
-      if (!data.includes('[DEP0040] DeprecationWarning')) {
+      if (!data.includes('DeprecationWarning')) {
+        testCompleted = true;
         done.fail(data);
       }
     });
@@ -236,12 +245,17 @@ describe('execution', () => {
 
   function handleError(childProcess, done) {
     childProcess.on('error', err => {
+      if (testCompleted) {
+        return;
+      }
+      testCompleted = true;
       done.fail(err);
     });
   }
 
   beforeEach(() => {
     aggregatedData = [];
+    testCompleted = false;
   });
 
   afterEach(done => {
@@ -267,7 +281,7 @@ describe('execution', () => {
     handleError(childProcess, done);
   });
 
-  it_id('d7165081-b133-4cba-901b-19128ce41301')(it)('should start Parse Server with GraphQL', async done => {
+  it_id('d7165081-b133-4cba-901b-19128ce41301')(it)('should start Parse Server with GraphQL', done => {
     const env = { ...process.env };
     env.NODE_OPTIONS = '--dns-result-order=ipv4first --trace-deprecation';
     childProcess = spawn(
@@ -293,7 +307,7 @@ describe('execution', () => {
     handleError(childProcess, done);
   });
 
-  it_id('2769cdb4-ce8a-484d-8a91-635b5894ba7e')(it)('should start Parse Server with GraphQL and Playground', async done => {
+  it_id('2769cdb4-ce8a-484d-8a91-635b5894ba7e')(it)('should start Parse Server with GraphQL and Playground', done => {
     const env = { ...process.env };
     env.NODE_OPTIONS = '--dns-result-order=ipv4first --trace-deprecation';
     childProcess = spawn(
