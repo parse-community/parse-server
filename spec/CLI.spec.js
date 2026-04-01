@@ -238,7 +238,7 @@ describe('execution', () => {
         const lines = stderrBuf.split('\n');
         stderrBuf = lines.pop();
         for (const line of lines) {
-          if (!line.trim() || /Warning:/.test(line) || /^\s+at\s/.test(line)) {
+          if (!line.trim() || /^\(node:\d+\)/.test(line) || /^\s+at\s/.test(line) || /experimental feature/.test(line)) {
             continue;
           }
           settled = true;
