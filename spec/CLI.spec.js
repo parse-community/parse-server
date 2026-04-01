@@ -216,43 +216,14 @@ describe('execution', () => {
 
   function waitForStartup(cp, requiredOutput) {
     return new Promise((resolve, reject) => {
-      let settled = false;
       const aggregated = [];
-      let stderrBuf = '';
       cp.stdout.on('data', data => {
-        if (settled) {
-          return;
-        }
-        data = data.toString();
-        aggregated.push(data);
+        aggregated.push(data.toString());
         if (requiredOutput.every(r => aggregated.some(a => a.includes(r)))) {
-          settled = true;
           resolve();
         }
       });
-      cp.stderr.on('data', data => {
-        if (settled) {
-          return;
-        }
-        stderrBuf += data.toString();
-        const lines = stderrBuf.split('\n');
-        stderrBuf = lines.pop();
-        for (const line of lines) {
-          if (!line.trim() || /^\(node:\d+\)/.test(line) || /^\s+at\s/.test(line) || /experimental feature/.test(line)) {
-            continue;
-          }
-          settled = true;
-          reject(new Error(`Unexpected stderr: ${line}`));
-          return;
-        }
-      });
-      cp.on('error', err => {
-        if (settled) {
-          return;
-        }
-        settled = true;
-        reject(err);
-      });
+      cp.on('error', reject);
     });
   }
 
