@@ -1228,12 +1228,12 @@ RestWrite.prototype.handleSession = function () {
   }
 
   // TODO: Verify proper error to throw
-  if (this.data.ACL) {
+  if ('ACL' in this.data) {
     throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Cannot set ' + 'ACL on a Session.');
   }
 
   if (this.query) {
-    if (this.data.user && !this.auth.isMaster && this.data.user.objectId != this.auth.user.id) {
+    if ('user' in this.data && !this.auth.isMaster && this.data.user?.objectId !== this.auth.user.id) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: user');
     } else if ('installationId' in this.data) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: installationId');
