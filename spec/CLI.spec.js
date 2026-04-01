@@ -215,6 +215,7 @@ describe('execution', () => {
   let childProcess;
   let aggregatedData;
   let testCompleted;
+  let stderrBuffer;
 
   function handleStdout(childProcess, done, aggregatedData, requiredData) {
     childProcess.stdout.on('data', data => {
@@ -235,10 +236,16 @@ describe('execution', () => {
       if (testCompleted) {
         return;
       }
-      data = data.toString();
-      if (!data.includes('DeprecationWarning')) {
+      stderrBuffer += data.toString();
+      const lines = stderrBuffer.split('\n');
+      stderrBuffer = lines.pop();
+      for (const line of lines) {
+        if (!line.trim() || line.includes('DeprecationWarning') || /^\s+at\s/.test(line)) {
+          continue;
+        }
         testCompleted = true;
-        done.fail(data);
+        done.fail(line);
+        return;
       }
     });
   }
@@ -256,6 +263,7 @@ describe('execution', () => {
   beforeEach(() => {
     aggregatedData = [];
     testCompleted = false;
+    stderrBuffer = '';
   });
 
   afterEach(done => {
