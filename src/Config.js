@@ -748,7 +748,7 @@ export class Config {
       }
       try {
         new RegExp('^' + pattern + '$');
-      } catch (e) {
+      } catch {
         throw `Parse Server option routeAllowList contains an invalid regex pattern: "${pattern}".`;
       }
     }
