@@ -1,3 +1,10 @@
+## [8.6.73](https://github.com/parse-community/parse-server/compare/8.6.72...8.6.73) (2026-04-02)
+
+
+### Bug Fixes
+
+* File upload Content-Type override via extension mismatch ([GHSA-vr5f-2r24-w5hc](https://github.com/parse-community/parse-server/security/advisories/GHSA-vr5f-2r24-w5hc)) ([#10384](https://github.com/parse-community/parse-server/issues/10384)) ([0de3e9f](https://github.com/parse-community/parse-server/commit/0de3e9f4bd477b0f0866f519974f513060876c04))
+
 ## [8.6.72](https://github.com/parse-community/parse-server/compare/8.6.71...8.6.72) (2026-03-31)
 
 
