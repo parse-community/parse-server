@@ -852,4 +852,61 @@ describe('batch', () => {
       expect(result.data).toEqual(jasmine.any(Array));
     });
   });
+
+  describe('nested batch requests', () => {
+    it('rejects sub-request that targets the batch endpoint', async () => {
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/batch',
+          headers,
+          body: JSON.stringify({
+            requests: [
+              {
+                method: 'POST',
+                path: '/1/batch',
+                body: {
+                  requests: [{ method: 'GET', path: '/1/classes/TestClass' }],
+                },
+              },
+            ],
+          }),
+        })
+      ).toBeRejectedWith(
+        jasmine.objectContaining({
+          status: 400,
+          data: jasmine.objectContaining({
+            error: 'nested batch requests are not allowed',
+          }),
+        })
+      );
+    });
+
+    it('rejects when any sub-request among valid ones targets the batch endpoint', async () => {
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/batch',
+          headers,
+          body: JSON.stringify({
+            requests: [
+              { method: 'GET', path: '/1/classes/TestClass' },
+              {
+                method: 'POST',
+                path: '/1/batch',
+                body: { requests: [{ method: 'GET', path: '/1/classes/TestClass' }] },
+              },
+            ],
+          }),
+        })
+      ).toBeRejectedWith(
+        jasmine.objectContaining({
+          status: 400,
+          data: jasmine.objectContaining({
+            error: 'nested batch requests are not allowed',
+          }),
+        })
+      );
+    });
+  });
 });

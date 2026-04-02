@@ -77,6 +77,7 @@ A big _thank you_ 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
       - [Dynamic placeholders](#dynamic-placeholders)
       - [Reserved Keys](#reserved-keys)
       - [Parameters](#parameters-1)
+  - [Multi-Tenancy](#multi-tenancy)
   - [Logging](#logging)
 - [Deprecations](#deprecations)
 - [Live Query](#live-query)
@@ -776,6 +777,10 @@ The following parameter and placeholder keys are reserved because they are used 
 ### Notes <!-- omit in toc -->
 
 - In combination with the [Parse Server API Mail Adapter](https://www.npmjs.com/package/parse-server-api-mail-adapter) Parse Server provides a fully localized flow (emails -> pages) for the user. The email adapter sends a localized email and adds a locale parameter to the password reset or email verification link, which is then used to respond with localized pages.
+
+## Multi-Tenancy
+
+Parse Server does not support multi-tenancy. Only one Parse Server instance may be mounted per Express app. Among other considerations, there is no isolation between apps in the same process. For example, Cloud Code runs in the same Node.js process as Parse Server and has full access to the server environment, such as server configuration, modules, and environment variables.
 
 ## Logging
 

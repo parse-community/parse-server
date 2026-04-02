@@ -30,7 +30,7 @@ const {
 const { ParseServer } = require('../');
 const { ParseGraphQLServer } = require('../lib/GraphQL/ParseGraphQLServer');
 const { ReadPreference, Collection } = require('mongodb');
-const { v4: uuidv4 } = require('uuid');
+let uuidv4;
 
 function handleError(e) {
   if (e && e.networkError && e.networkError.result && e.networkError.result.errors) {
@@ -45,6 +45,9 @@ describe('ParseGraphQLServer', () => {
   let parseGraphQLServer;
   let loggerErrorSpy;
 
+  beforeAll(async () => {
+    ({ v4: uuidv4 } = await import('uuid'));
+  });
 
   beforeEach(async () => {
     parseServer = await global.reconfigureServer({

@@ -101,6 +101,9 @@ async function handleBatch(router, req) {
   const rateLimits = req.config.rateLimits || [];
   for (const restRequest of req.body.requests) {
     const routablePath = makeRoutablePath(restRequest.path);
+    if ((restRequest.method || 'GET').toUpperCase() === 'POST' && routablePath === batchPath) {
+      throw new Parse.Error(Parse.Error.INVALID_JSON, 'nested batch requests are not allowed');
+    }
     for (const limit of rateLimits) {
       const pathExp = limit.path.regexp || limit.path;
       if (!pathExp.test(routablePath)) {
