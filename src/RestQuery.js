@@ -896,7 +896,7 @@ _UnsafeRestQuery.prototype.runCount = function () {
 };
 
 _UnsafeRestQuery.prototype.denyProtectedFields = async function () {
-  if (this.auth.isMaster) {
+  if (this.auth.isMaster || this.auth.isMaintenance) {
     return;
   }
   const schemaController = await this.config.database.loadSchema();
@@ -924,6 +924,13 @@ _UnsafeRestQuery.prototype.denyProtectedFields = async function () {
       }
     }
     for (const op of ['$or', '$and', '$nor']) {
+      if (where[op] !== undefined && !Array.isArray(where[op])) {
+        throw createSanitizedError(
+          Parse.Error.INVALID_QUERY,
+          `${op} must be an array`,
+          this.config
+        );
+      }
       if (Array.isArray(where[op])) {
         where[op].forEach(subQuery => checkWhere(subQuery));
       }

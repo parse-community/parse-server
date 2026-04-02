@@ -7,6 +7,7 @@ const request = require('../lib/request');
 const Config = require('../lib/Config');
 const TestUtils = require('../lib/TestUtils');
 const Utils = require('../lib/Utils');
+let uuidv4;
 
 const fakeClient = {
   s: { options: { dbName: null } },
@@ -16,6 +17,9 @@ const fakeClient = {
 // These tests are specific to the mongo storage adapter + mongo storage format
 // and will eventually be moved into their own repo
 describe_only_db('mongo')('MongoStorageAdapter', () => {
+  beforeAll(async () => {
+    ({ v4: uuidv4 } = await import('uuid'));
+  });
   beforeEach(async () => {
     await new MongoStorageAdapter({ uri: databaseURI }).deleteAllClasses();
     Config.get(Parse.applicationId).schemaCache.clear();
@@ -308,9 +312,8 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
   });
 
   it('upserts with $setOnInsert', async () => {
-    const uuid = require('uuid');
-    const uuid1 = uuid.v4();
-    const uuid2 = uuid.v4();
+    const uuid1 = uuidv4();
+    const uuid2 = uuidv4();
     const schema = {
       className: 'MyClass',
       fields: {
@@ -500,6 +503,30 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     const schemaAfterDeletion = await new Parse.Schema('MyObject').get();
     expect(schemaBeforeDeletion.fields.test).toBeDefined();
     expect(schemaAfterDeletion.fields.test).toBeUndefined();
+  });
+
+  it('should create index with partialFilterExpression', async () => {
+    const database = Config.get(Parse.applicationId).database;
+    const adapter = database.adapter;
+
+    const user = new Parse.User();
+    user.set('username', 'testuser');
+    user.set('password', 'testpass');
+    await user.signUp();
+
+    const schema = await new Parse.Schema('_User').get();
+    const partialFilterExpression = { _email_verify_token: { $exists: true } };
+
+    await adapter.ensureIndex('_User', schema, ['username'], 'partial_username_index', false, {
+      partialFilterExpression,
+      sparse: false,
+    });
+
+    const indexes = await adapter.getIndexes('_User');
+    const createdIndex = indexes.find(idx => idx.name === 'partial_username_index');
+    expect(createdIndex).toBeDefined();
+    expect(createdIndex.partialFilterExpression).toEqual({ _email_verify_token: { $exists: true } });
+    expect(createdIndex.sparse).toBeFalsy();
   });
 
   if (process.env.MONGODB_TOPOLOGY === 'replicaset') {

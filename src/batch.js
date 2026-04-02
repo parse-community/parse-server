@@ -101,10 +101,17 @@ async function handleBatch(router, req) {
   const rateLimits = req.config.rateLimits || [];
   for (const restRequest of req.body.requests) {
     const routablePath = makeRoutablePath(restRequest.path);
+    if ((restRequest.method || 'GET').toUpperCase() === 'POST' && routablePath === batchPath) {
+      throw new Parse.Error(Parse.Error.INVALID_JSON, 'nested batch requests are not allowed');
+    }
     for (const limit of rateLimits) {
       const pathExp = limit.path.regexp || limit.path;
       if (!pathExp.test(routablePath)) {
         continue;
+      }
+      const info = { ...req.info };
+      if (routablePath === '/login') {
+        delete info.sessionToken;
       }
       const fakeReq = {
         ip: req.ip || req.config?.ip || '127.0.0.1',
@@ -112,7 +119,7 @@ async function handleBatch(router, req) {
         _batchOriginalMethod: 'POST',
         config: req.config,
         auth: req.auth,
-        info: req.info,
+        info,
       };
       const fakeRes = { setHeader() {} };
       try {
