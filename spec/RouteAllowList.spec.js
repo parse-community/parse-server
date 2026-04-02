@@ -243,5 +243,23 @@ describe('routeAllowList', () => {
         jasmine.objectContaining({ code: Parse.Error.OPERATION_FORBIDDEN })
       );
     });
+
+    it_id('ad700243-ea26-41e7-b237-bd6b6aa99d46')(it)('should block health endpoint when not in allow list', async () => {
+      await reconfigureServer({ routeAllowList: ['classes/GameScore'] });
+      const request = require('../lib/request');
+      try {
+        await request({
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          method: 'GET',
+          url: 'http://localhost:8378/1/health',
+        });
+        fail('should have thrown');
+      } catch (e) {
+        expect(e.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      }
+    });
   });
 });
