@@ -58,6 +58,8 @@ A big _thank you_ 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
   - [Basic Options](#basic-options)
   - [Client Key Options](#client-key-options)
   - [Access Scopes](#access-scopes)
+  - [Route Allow List](#route-allow-list)
+    - [Covered Routes](#covered-routes)
   - [Email Verification and Password Reset](#email-verification-and-password-reset)
   - [Password and Account Policy](#password-and-account-policy)
   - [Custom Routes](#custom-routes)
@@ -308,6 +310,89 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 
 > [!NOTE]
 > In Cloud Code, both `masterKey` and `readOnlyMasterKey` set `request.master` to `true`. To distinguish between them, check `request.isReadOnly`. For example, use `request.master && !request.isReadOnly` to ensure full master key access.
+
+## Route Allow List
+
+The `routeAllowList` option restricts which API routes are accessible to external clients. When set, all external requests are denied by default unless the route matches one of the configured regex patterns. This is useful for apps where all logic runs in Cloud Code and clients should not access the API directly.
+
+Internal calls from Cloud Code, Cloud Jobs, and triggers are not affected. Master key and maintenance key requests bypass the restriction.
+
+```js
+const server = ParseServer({
+  ...otherOptions,
+  routeAllowList: [
+    'classes/ChatMessage',
+    'classes/Public.*',
+    'users',
+    'login',
+    'functions/getMenu',
+    'health',
+  ],
+});
+```
+
+Each entry is a regex pattern matched against the normalized route identifier. Patterns are auto-anchored with `^` and `$` for full-match semantics. For example, `classes/Chat` matches only `classes/Chat`, not `classes/ChatRoom`. Use `classes/Chat.*` to match both.
+
+Setting an empty array `[]` blocks all external non-master-key requests (full lockdown). Not setting the option preserves current behavior (all routes accessible).
+
+### Covered Routes
+
+The following table lists all route groups covered by `routeAllowList` with examples of how to allow them.
+
+| Route group | Example route identifiers | Allow pattern |
+| --- | --- | --- |
+| **Data** | | |
+| Classes | `classes/[className]`, `classes/[className]/[objectId]` | `classes/[className].*` |
+| Aggregate | `aggregate/[className]` | `aggregate/.*` |
+| Batch | `batch` | `batch` |
+| Purge | `purge/[className]` | `purge/.*` |
+| | | |
+| **System Classes** | | |
+| Users | `users`, `users/me`, `users/[objectId]` | `users.*` |
+| Sessions | `sessions`, `sessions/me`, `sessions/[objectId]` | `sessions.*` |
+| Installations | `installations`, `installations/[objectId]` | `installations.*` |
+| Roles | `roles`, `roles/[objectId]` | `roles.*` |
+| | | |
+| **Auth** | | |
+| Login | `login`, `loginAs` | `login.*` |
+| Logout | `logout` | `logout` |
+| Upgrade session | `upgradeToRevocableSession` | `upgradeToRevocableSession` |
+| Auth challenge | `challenge` | `challenge` |
+| Email verification | `verificationEmailRequest` | `verificationEmailRequest` |
+| Password verification | `verifyPassword` | `verifyPassword` |
+| Password reset | `requestPasswordReset` | `requestPasswordReset` |
+| | | |
+| **Cloud Code** | | |
+| Cloud Functions | `functions/[functionName]` | `functions/.*` |
+| Cloud Jobs (trigger) | `jobs`, `jobs/[jobName]` | `jobs.*` |
+| Cloud Jobs (schedule) | `cloud_code/jobs`, `cloud_code/jobs/data`, `cloud_code/jobs/[objectId]` | `cloud_code/.*` |
+| Hooks | `hooks/functions`, `hooks/triggers`, `hooks/functions/[functionName]`, `hooks/triggers/[className]/[triggerName]` | `hooks/.*` |
+| | | |
+| **Push** | | |
+| Push | `push` | `push` |
+| Push audiences | `push_audiences`, `push_audiences/[objectId]` | `push_audiences.*` |
+| | | |
+| **Schema** | | |
+| Schemas | `schemas`, `schemas/[className]` | `schemas.*` |
+| | | |
+| **Config** | | |
+| Config | `config` | `config` |
+| GraphQL config | `graphql-config` | `graphql-config` |
+| | | |
+| **Analytics** | | |
+| Analytics | `events/AppOpened`, `events/[eventName]` | `events/.*` |
+| | | |
+| **Server** | | |
+| Health | `health` | `health` |
+| Server info | `serverInfo` | `serverInfo` |
+| Security | `security` | `security` |
+| Logs | `scriptlog` | `scriptlog` |
+| | | |
+| **Legacy** | | |
+| Purchase validation | `validate_purchase` | `validate_purchase` |
+
+> [!NOTE]
+> File upload, file download, and file metadata routes are not covered by `routeAllowList`. File upload access is controlled via the `fileUpload` option.
 
 ## Email Verification and Password Reset
 
