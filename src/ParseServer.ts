@@ -338,6 +338,7 @@ class ParseServer {
     api.use(express.json({ type: '*/*', limit: maxUploadSize }));
     api.use(middlewares.allowMethodOverride);
     api.use(middlewares.handleParseHeaders);
+    api.use(middlewares.enforceRouteAllowList);
     api.set('query parser', 'extended');
     const routes = Array.isArray(rateLimit) ? rateLimit : [rateLimit];
     for (const route of routes) {

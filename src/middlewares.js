@@ -14,7 +14,7 @@ import { pathToRegexp } from 'path-to-regexp';
 import RedisStore from 'rate-limit-redis';
 import { createClient } from 'redis';
 import { BlockList, isIPv4 } from 'net';
-import { createSanitizedHttpError } from './Error';
+import { createSanitizedHttpError, createSanitizedError } from './Error';
 
 export const DEFAULT_ALLOWED_HEADERS =
   'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, X-Parse-Request-Id, Content-Type, Pragma, Cache-Control';
@@ -489,6 +489,35 @@ export function allowMethodOverride(req, res, next) {
     delete req.body._method;
   }
   next();
+}
+
+export function enforceRouteAllowList(req, res, next) {
+  const config = req.config;
+  if (!config || config.routeAllowList === undefined || config.routeAllowList === null) {
+    return next();
+  }
+  if (req.auth && (req.auth.isMaster || req.auth.isMaintenance)) {
+    return next();
+  }
+  let path = req.url;
+  if (path.startsWith('/')) {
+    path = path.substring(1);
+  }
+  const queryIndex = path.indexOf('?');
+  if (queryIndex !== -1) {
+    path = path.substring(0, queryIndex);
+  }
+  const regexes = config._routeAllowListRegex || [];
+  for (const regex of regexes) {
+    if (regex.test(path)) {
+      return next();
+    }
+  }
+  throw createSanitizedError(
+    Parse.Error.OPERATION_FORBIDDEN,
+    `Route not allowed by routeAllowList: ${req.method} ${path}`,
+    config
+  );
 }
 
 export function handleParseErrors(err, req, res, next) {

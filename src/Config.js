@@ -100,6 +100,11 @@ export class Config {
   static put(serverConfiguration) {
     Config.validateOptions(serverConfiguration);
     Config.validateControllers(serverConfiguration);
+    if (serverConfiguration.routeAllowList) {
+      serverConfiguration._routeAllowListRegex = serverConfiguration.routeAllowList.map(
+        pattern => new RegExp('^' + pattern + '$')
+      );
+    }
     Config.transformConfiguration(serverConfiguration);
     AppCache.put(serverConfiguration.appId, serverConfiguration);
     Config.setupPasswordValidator(serverConfiguration.passwordPolicy);
@@ -139,6 +144,7 @@ export class Config {
     allowClientClassCreation,
     requestComplexity,
     liveQuery,
+    routeAllowList,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -183,6 +189,7 @@ export class Config {
     this.validateAllowClientClassCreation(allowClientClassCreation);
     this.validateRequestComplexity(requestComplexity);
     this.validateLiveQueryOptions(liveQuery);
+    this.validateRouteAllowList(routeAllowList);
   }
 
   static validateCustomPages(customPages) {
@@ -725,6 +732,25 @@ export class Config {
       liveQuery.regexTimeout = LiveQueryOptions.regexTimeout.default;
     } else if (typeof liveQuery.regexTimeout !== 'number') {
       throw `liveQuery.regexTimeout must be a number`;
+    }
+  }
+
+  static validateRouteAllowList(routeAllowList) {
+    if (routeAllowList === undefined || routeAllowList === null) {
+      return;
+    }
+    if (!Array.isArray(routeAllowList)) {
+      throw 'Parse Server option routeAllowList must be an array of strings.';
+    }
+    for (const pattern of routeAllowList) {
+      if (typeof pattern !== 'string') {
+        throw `Parse Server option routeAllowList contains a non-string value.`;
+      }
+      try {
+        new RegExp('^' + pattern + '$');
+      } catch (e) {
+        throw `Parse Server option routeAllowList contains an invalid regex pattern: "${pattern}".`;
+      }
     }
   }
 

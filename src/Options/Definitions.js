@@ -560,6 +560,11 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: true,
   },
+  routeAllowList: {
+    env: 'PARSE_SERVER_ROUTE_ALLOW_LIST',
+    help: '(Optional) Restricts external client access to a list of allowed API routes.<br><br>When this option is set, all external non-master-key requests are denied by default. Only routes matching at least one of the configured regex patterns are allowed through. Internal calls from Cloud Code, Cloud Jobs, and triggers are not affected.<br><br>Each entry is a regex pattern string matched against the normalized route identifier (request path with mount prefix and leading slash stripped). Patterns are auto-anchored with `^` and `$` for full-match semantics.<br><br><b>Examples of normalized route identifiers:</b><br>- `classes/GameScore` (class CRUD)<br>- `classes/GameScore/abc123` (object by ID)<br>- `users` (user operations)<br>- `login` (login endpoint)<br>- `functions/sendEmail` (Cloud Function)<br>- `jobs/cleanup` (Cloud Job)<br>- `push` (push notifications)<br>- `config` (client config)<br>- `installations` (installations)<br>- `files/picture.jpg` (file operations)<br><br><b>Example patterns:</b><br>- `classes/ChatMessage` matches only `classes/ChatMessage`<br>- `classes/Chat.*` matches `classes/ChatMessage`, `classes/ChatRoom`, etc.<br>- `functions/.*` matches all Cloud Functions<br><br>Setting an empty array `[]` blocks all external non-master-key requests (full lockdown).<br><br>When setting the option via an environment variable, the notation is a comma-separated string, for example `"classes/ChatMessage,users,functions/.*"`.',
+    action: parsers.arrayParser,
+  },
   scheduledPush: {
     env: 'PARSE_SERVER_SCHEDULED_PUSH',
     help: 'Configuration for push scheduling, defaults to false.',
