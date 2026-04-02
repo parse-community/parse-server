@@ -4,9 +4,12 @@ const Definitions = require('../lib/Options/Definitions');
 const request = require('../lib/request');
 const rest = require('../lib/rest');
 const auth = require('../lib/Auth');
-const uuid = require('uuid');
+let uuidv4;
 
 describe('Idempotency', () => {
+  beforeAll(async () => {
+    ({ v4: uuidv4 } = await import('uuid'));
+  });
   // Parameters
   /** Enable TTL expiration simulated by removing entry instead of waiting for MongoDB TTL monitor which
    runs only every 60s, so it can take up to 119s until entry removal - ain't nobody got time for that */
@@ -231,7 +234,7 @@ describe('Idempotency', () => {
         headers: {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-Master-Key': Parse.masterKey,
-          'X-Parse-Request-Id': uuid.v4(),
+          'X-Parse-Request-Id': uuidv4(),
         },
       };
       return request(params);
