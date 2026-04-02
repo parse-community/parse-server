@@ -1663,6 +1663,88 @@ describe('Vulnerabilities', () => {
     });
   });
 
+  describe('(GHSA-vr5f-2r24-w5hc) Stored XSS via Content-Type and file extension mismatch', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+
+    it('overrides mismatched Content-Type with extension-derived MIME type on buffered upload', async () => {
+      const adapter = Config.get('test').filesController.adapter;
+      const spy = spyOn(adapter, 'createFile').and.callThrough();
+      const content = Buffer.from('<script>alert(1)</script>').toString('base64');
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/files/evil.txt',
+        body: JSON.stringify({
+          _ApplicationId: 'test',
+          _JavaScriptKey: 'test',
+          _ContentType: 'text/html',
+          base64: content,
+        }),
+        headers,
+      });
+      expect(spy).toHaveBeenCalled();
+      const contentTypeArg = spy.calls.mostRecent().args[2];
+      expect(contentTypeArg).toBe('text/plain');
+    });
+
+    it('overrides mismatched Content-Type with extension-derived MIME type on stream upload', async () => {
+      const adapter = Config.get('test').filesController.adapter;
+      const spy = spyOn(adapter, 'createFile').and.callThrough();
+      const body = '<script>alert(1)</script>';
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/files/evil.txt',
+        headers: {
+          ...headers,
+          'Content-Type': 'text/html',
+          'X-Parse-Upload-Mode': 'stream',
+        },
+        body,
+      });
+      expect(spy).toHaveBeenCalled();
+      const contentTypeArg = spy.calls.mostRecent().args[2];
+      expect(contentTypeArg).toBe('text/plain');
+    });
+
+    it('preserves Content-Type when no file extension is present', async () => {
+      const adapter = Config.get('test').filesController.adapter;
+      const spy = spyOn(adapter, 'createFile').and.callThrough();
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/files/noextension',
+        headers: {
+          ...headers,
+          'Content-Type': 'image/png',
+        },
+        body: Buffer.from('fake png content'),
+      });
+      expect(spy).toHaveBeenCalled();
+      const contentTypeArg = spy.calls.mostRecent().args[2];
+      expect(contentTypeArg).toBe('image/png');
+    });
+
+    it('infers Content-Type from extension when none is provided', async () => {
+      const adapter = Config.get('test').filesController.adapter;
+      const spy = spyOn(adapter, 'createFile').and.callThrough();
+      const content = Buffer.from('test content').toString('base64');
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/files/data.txt',
+        body: JSON.stringify({
+          _ApplicationId: 'test',
+          _JavaScriptKey: 'test',
+          base64: content,
+        }),
+        headers,
+      });
+      expect(spy).toHaveBeenCalled();
+      const contentTypeArg = spy.calls.mostRecent().args[2];
+      expect(contentTypeArg).toBe('text/plain');
+    });
+  });
+
   describe('(GHSA-q3vj-96h2-gwvg) SQL Injection via Increment amount on nested Object field', () => {
     const headers = {
       'Content-Type': 'application/json',
