@@ -21,8 +21,8 @@ export class FilesController extends AdaptableController {
     const mime = (await import('mime')).default
     if (!hasExtension && contentType && mime.getExtension(contentType)) {
       filename = filename + '.' + mime.getExtension(contentType);
-    } else if (hasExtension && !contentType) {
-      contentType = mime.getType(filename);
+    } else if (hasExtension) {
+      contentType = mime.getType(filename) || contentType;
     }
 
     if (!this.options.preserveFileName) {
