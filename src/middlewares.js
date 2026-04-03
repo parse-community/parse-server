@@ -535,9 +535,18 @@ export function enforceRouteAllowList(req, res, next) {
   if (req.auth && (req.auth.isMaster || req.auth.isMaintenance)) {
     return next();
   }
-  let path = req.url;
+  let path = req.originalUrl;
+  if (config.mount) {
+    const mountPath = new URL(config.mount).pathname;
+    if (path.startsWith(mountPath)) {
+      path = path.substring(mountPath.length);
+    }
+  }
   if (path.startsWith('/')) {
     path = path.substring(1);
+  }
+  if (path.endsWith('/')) {
+    path = path.substring(0, path.length - 1);
   }
   const queryIndex = path.indexOf('?');
   if (queryIndex !== -1) {

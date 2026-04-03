@@ -258,6 +258,16 @@ describe('routeAllowList', () => {
       }
     });
 
+    it_id('b59dd736-029d-4769-b69d-ac3aed6e4c3f')(it)('should allow health endpoint when in allow list', async () => {
+      await reconfigureServer({ routeAllowList: ['health'] });
+      const request = require('../lib/request');
+      const res = await request({
+        method: 'GET',
+        url: 'http://localhost:8378/1/health',
+      });
+      expect(res.data.status).toBe('ok');
+    });
+
     it_id('ac0315e3-a3b1-447d-b61b-2354d0d4bc18')(it)('should block sessions routes', async () => {
       await reconfigureServer({ routeAllowList: ['classes/GameScore'] });
       await expectAsync(
