@@ -600,5 +600,189 @@ describe('routeAllowList', () => {
         expect(e.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
       }
     });
+    it_id('60466f80-27af-456c-a05d-8f5ceaf95451')(it)('should allow read-only master key requests to bypass', async () => {
+      await reconfigureServer({ routeAllowList: [] });
+      const request = require('../lib/request');
+      const res = await request({
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'read-only-test',
+        },
+        method: 'GET',
+        url: 'http://localhost:8378/1/classes/GameScore',
+      });
+      expect(res.data.results).toEqual([]);
+    });
+
+    it_id('4fe57cc2-f104-491c-843b-64afc11c6fa3')(it)('should block all routes when routeAllowList is empty array and no key provided', async () => {
+      await reconfigureServer({ routeAllowList: [] });
+      const request = require('../lib/request');
+      try {
+        await request({
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          method: 'GET',
+          url: 'http://localhost:8378/1/classes/GameScore',
+        });
+        fail('should have thrown');
+      } catch (e) {
+        expect(e.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      }
+    });
+
+    it_id('f3dd5622-036c-45bf-ab76-c31b59028642')(it)('should block health endpoint even when routeAllowList is empty array', async () => {
+      await reconfigureServer({ routeAllowList: [] });
+      const request = require('../lib/request');
+      try {
+        await request({
+          method: 'GET',
+          url: 'http://localhost:8378/1/health',
+        });
+        fail('should have thrown');
+      } catch (e) {
+        expect(e.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      }
+    });
+
+    it_id('ed3797f6-38ee-4bf0-806f-a7242ae14b5c')(it)('should block logout route', async () => {
+      await reconfigureServer({ routeAllowList: ['classes/GameScore'] });
+      const request = require('../lib/request');
+      try {
+        await request({
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          method: 'POST',
+          url: 'http://localhost:8378/1/logout',
+        });
+        fail('should have thrown');
+      } catch (e) {
+        expect(e.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      }
+    });
+
+    it_id('2d7ce7cd-7d61-418f-8255-451304e18f11')(it)('should block loginAs route', async () => {
+      await reconfigureServer({ routeAllowList: ['classes/GameScore'] });
+      const request = require('../lib/request');
+      try {
+        await request({
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          method: 'POST',
+          url: 'http://localhost:8378/1/loginAs',
+          body: JSON.stringify({}),
+        });
+        fail('should have thrown');
+      } catch (e) {
+        expect(e.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      }
+    });
+
+    it_id('808c7f7e-3918-4851-915c-205b1f807965')(it)('should block upgradeToRevocableSession route', async () => {
+      await reconfigureServer({ routeAllowList: ['classes/GameScore'] });
+      const request = require('../lib/request');
+      try {
+        await request({
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          method: 'POST',
+          url: 'http://localhost:8378/1/upgradeToRevocableSession',
+          body: JSON.stringify({}),
+        });
+        fail('should have thrown');
+      } catch (e) {
+        expect(e.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      }
+    });
+
+    it_id('ad06367e-b220-4f9f-9ee6-8756bea36937')(it)('should block verificationEmailRequest route', async () => {
+      await reconfigureServer({ routeAllowList: ['classes/GameScore'] });
+      const request = require('../lib/request');
+      try {
+        await request({
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          method: 'POST',
+          url: 'http://localhost:8378/1/verificationEmailRequest',
+          body: JSON.stringify({}),
+        });
+        fail('should have thrown');
+      } catch (e) {
+        expect(e.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      }
+    });
+
+    it_id('a14df8c8-a09a-47fa-a208-74f8e429f060')(it)('should block verifyPassword route', async () => {
+      await reconfigureServer({ routeAllowList: ['classes/GameScore'] });
+      const request = require('../lib/request');
+      try {
+        await request({
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          method: 'POST',
+          url: 'http://localhost:8378/1/verifyPassword',
+          body: JSON.stringify({}),
+        });
+        fail('should have thrown');
+      } catch (e) {
+        expect(e.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      }
+    });
+
+    it_id('acb37217-ab57-42f5-86b3-f81c61b28003')(it)('should block requestPasswordReset route', async () => {
+      await reconfigureServer({ routeAllowList: ['classes/GameScore'] });
+      const request = require('../lib/request');
+      try {
+        await request({
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          method: 'POST',
+          url: 'http://localhost:8378/1/requestPasswordReset',
+          body: JSON.stringify({}),
+        });
+        fail('should have thrown');
+      } catch (e) {
+        expect(e.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      }
+    });
+
+    it_id('4b67e9cc-8068-4848-a536-229818d0c0ed')(it)('should block challenge route', async () => {
+      await reconfigureServer({ routeAllowList: ['classes/GameScore'] });
+      const request = require('../lib/request');
+      try {
+        await request({
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          method: 'POST',
+          url: 'http://localhost:8378/1/challenge',
+          body: JSON.stringify({}),
+        });
+        fail('should have thrown');
+      } catch (e) {
+        expect(e.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      }
+    });
   });
 });
