@@ -12,6 +12,23 @@ import { createSanitizedError } from '../Error';
 import Busboy from '@fastify/busboy';
 import Utils from '../Utils';
 
+function redactBuffers(obj) {
+  if (Buffer.isBuffer(obj)) {
+    return `[Buffer: ${obj.length} bytes]`;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(redactBuffers);
+  }
+  if (obj && typeof obj === 'object') {
+    const result = {};
+    for (const key of Object.keys(obj)) {
+      result[key] = redactBuffers(obj[key]);
+    }
+    return result;
+  }
+  return obj;
+}
+
 function parseObject(obj, config) {
   if (Array.isArray(obj)) {
     return obj.map(item => {
@@ -289,7 +306,7 @@ export class FunctionsRouter extends PromiseRouter {
         result => {
           try {
             if (req.config.logLevels.cloudFunctionSuccess !== 'silent') {
-              const cleanInput = logger.truncateLogMessage(JSON.stringify(params));
+              const cleanInput = logger.truncateLogMessage(JSON.stringify(redactBuffers(params)));
               const cleanResult = logger.truncateLogMessage(JSON.stringify(result.response.result));
               logger[req.config.logLevels.cloudFunctionSuccess](
                 `Ran cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput}\n  Result: ${cleanResult}`,
@@ -308,7 +325,7 @@ export class FunctionsRouter extends PromiseRouter {
         error => {
           try {
             if (req.config.logLevels.cloudFunctionError !== 'silent') {
-              const cleanInput = logger.truncateLogMessage(JSON.stringify(params));
+              const cleanInput = logger.truncateLogMessage(JSON.stringify(redactBuffers(params)));
               logger[req.config.logLevels.cloudFunctionError](
                 `Failed running cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput}\n  Error: ` +
                   JSON.stringify(error),
