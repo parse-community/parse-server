@@ -12,6 +12,7 @@ import { version } from '../package.json';
 import {
   AccountLockoutOptions,
   DatabaseOptions,
+  FileDownloadOptions,
   FileUploadOptions,
   IdempotencyOptions,
   LiveQueryOptions,
@@ -130,6 +131,7 @@ export class Config {
     allowHeaders,
     idempotencyOptions,
     fileUpload,
+    fileDownload,
     pages,
     security,
     enforcePrivateUsers,
@@ -157,6 +159,11 @@ export class Config {
     this.validateAccountLockoutPolicy(accountLockout);
     this.validatePasswordPolicy(passwordPolicy);
     this.validateFileUploadOptions(fileUpload);
+    if (fileDownload == null) {
+      fileDownload = {};
+      arguments[0].fileDownload = fileDownload;
+    }
+    this.validateFileDownloadOptions(fileDownload);
 
     if (typeof revokeSessionOnPasswordReset !== 'boolean') {
       throw 'revokeSessionOnPasswordReset must be a boolean value';
@@ -583,6 +590,34 @@ export class Config {
           throw 'fileUpload.allowedFileUrlDomains must contain only non-empty strings.';
         }
       }
+    }
+  }
+
+  static validateFileDownloadOptions(fileDownload) {
+    try {
+      if (fileDownload == null || typeof fileDownload !== 'object' || Array.isArray(fileDownload)) {
+        throw 'fileDownload must be an object value.';
+      }
+    } catch (e) {
+      if (e instanceof ReferenceError) {
+        return;
+      }
+      throw e;
+    }
+    if (fileDownload.enableForAnonymousUser === undefined) {
+      fileDownload.enableForAnonymousUser = FileDownloadOptions.enableForAnonymousUser.default;
+    } else if (typeof fileDownload.enableForAnonymousUser !== 'boolean') {
+      throw 'fileDownload.enableForAnonymousUser must be a boolean value.';
+    }
+    if (fileDownload.enableForPublic === undefined) {
+      fileDownload.enableForPublic = FileDownloadOptions.enableForPublic.default;
+    } else if (typeof fileDownload.enableForPublic !== 'boolean') {
+      throw 'fileDownload.enableForPublic must be a boolean value.';
+    }
+    if (fileDownload.enableForAuthenticatedUser === undefined) {
+      fileDownload.enableForAuthenticatedUser = FileDownloadOptions.enableForAuthenticatedUser.default;
+    } else if (typeof fileDownload.enableForAuthenticatedUser !== 'boolean') {
+      throw 'fileDownload.enableForAuthenticatedUser must be a boolean value.';
     }
   }
 

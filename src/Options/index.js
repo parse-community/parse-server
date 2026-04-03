@@ -355,6 +355,10 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_FILE_UPLOAD_OPTIONS
   :DEFAULT: {} */
   fileUpload: ?FileUploadOptions;
+  /* Options for file downloads
+  :ENV: PARSE_SERVER_FILE_DOWNLOAD_OPTIONS
+  :DEFAULT: {} */
+  fileDownload: ?FileDownloadOptions;
   /* Full path to your GraphQL custom schema.graphql file */
   graphQLSchema: ?string;
   /* Mounts the GraphQL endpoint
@@ -696,6 +700,18 @@ export interface FileUploadOptions {
   /* Sets the allowed hostnames for file URLs referenced in Parse objects. When a File object includes a URL, its hostname must match one of these entries to be accepted. Supports exact hostnames (e.g., `'cdn.example.com'`) and wildcard subdomains (e.g., `'*.example.com'`). Use `['*']` to allow any domain. Use `[]` to block all file URLs (only name-based files allowed).
   :DEFAULT: ["*"] */
   allowedFileUrlDomains: ?(string[]);
+}
+
+export interface FileDownloadOptions {
+  /* Is true if file download should be allowed for anonymous users.
+  :DEFAULT: true */
+  enableForAnonymousUser: ?boolean;
+  /* Is true if file download should be allowed for authenticated users.
+  :DEFAULT: true */
+  enableForAuthenticatedUser: ?boolean;
+  /* Is true if file download should be allowed for anyone, regardless of user authentication.
+  :DEFAULT: true */
+  enableForPublic: ?boolean;
 }
 
 /* The available log levels for Parse Server logging. Valid values are:<br>- `'error'` - Error level (highest priority)<br>- `'warn'` - Warning level<br>- `'info'` - Info level (default)<br>- `'verbose'` - Verbose level<br>- `'debug'` - Debug level<br>- `'silly'` - Silly level (lowest priority) */

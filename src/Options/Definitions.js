@@ -272,6 +272,13 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  fileDownload: {
+    env: 'PARSE_SERVER_FILE_DOWNLOAD_OPTIONS',
+    help: 'Options for file downloads',
+    action: parsers.objectParser,
+    type: 'FileDownloadOptions',
+    default: {},
+  },
   fileKey: {
     env: 'PARSE_SERVER_FILE_KEY',
     help: 'Key for your files',
@@ -1111,6 +1118,26 @@ module.exports.FileUploadOptions = {
     default: [
       '^(?!([xXsS]?[hH][tT][mM][lL]?(\\+[xX][mM][lL])?|[xX][hH][tT]|[sS][vV][gG]([zZ]|\\+[xX][mM][lL])?|[xX][mM][lL]|[xX][sS][lL][tT]?(\\+[xX][mM][lL])?|[xX][sS][dD]|[rR][nN][gG]|[rR][dD][fF](\\+[xX][mM][lL])?|[oO][wW][lL]|[mM][aA][tT][hH][mM][lL](\\+[xX][mM][lL])?)$)',
     ],
+  },
+};
+module.exports.FileDownloadOptions = {
+  enableForAnonymousUser: {
+    env: 'PARSE_SERVER_FILE_DOWNLOAD_ENABLE_FOR_ANONYMOUS_USER',
+    help: 'Is true if file download should be allowed for anonymous users.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  enableForAuthenticatedUser: {
+    env: 'PARSE_SERVER_FILE_DOWNLOAD_ENABLE_FOR_AUTHENTICATED_USER',
+    help: 'Is true if file download should be allowed for authenticated users.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  enableForPublic: {
+    env: 'PARSE_SERVER_FILE_DOWNLOAD_ENABLE_FOR_PUBLIC',
+    help: 'Is true if file download should be allowed for anyone, regardless of user authentication.',
+    action: parsers.booleanParser,
+    default: true,
   },
 };
 /* The available log levels for Parse Server logging. Valid values are:<br>- `'error'` - Error level (highest priority)<br>- `'warn'` - Warning level<br>- `'info'` - Info level (default)<br>- `'verbose'` - Verbose level<br>- `'debug'` - Debug level<br>- `'silly'` - Silly level (lowest priority) */

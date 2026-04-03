@@ -392,7 +392,7 @@ The following table lists all route groups covered by `routeAllowList` with exam
 | Purchase validation | `validate_purchase` | `validate_purchase` |
 
 > [!NOTE]
-> File upload, file download, and file metadata routes are not covered by `routeAllowList`. File upload access is controlled via the `fileUpload` option.
+> File routes are not covered by `routeAllowList`. File upload access is controlled via the `fileUpload` option. File download and metadata access is controlled via the `fileDownload` option.
 
 ## Email Verification and Password Reset
 
