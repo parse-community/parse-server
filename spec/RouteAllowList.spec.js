@@ -268,6 +268,52 @@ describe('routeAllowList', () => {
       expect(res.data.status).toBe('ok');
     });
 
+    it_id('60466f80-27af-456c-a05d-8f5ceaf95451')(it)('should allow read-only master key requests to bypass', async () => {
+      await reconfigureServer({ routeAllowList: [] });
+      const request = require('../lib/request');
+      const res = await request({
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'read-only-test',
+        },
+        method: 'GET',
+        url: 'http://localhost:8378/1/classes/GameScore',
+      });
+      expect(res.data.results).toEqual([]);
+    });
+
+    it_id('4fe57cc2-f104-491c-843b-64afc11c6fa3')(it)('should block all routes when routeAllowList is empty array and no key provided', async () => {
+      await reconfigureServer({ routeAllowList: [] });
+      const request = require('../lib/request');
+      try {
+        await request({
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          method: 'GET',
+          url: 'http://localhost:8378/1/classes/GameScore',
+        });
+        fail('should have thrown');
+      } catch (e) {
+        expect(e.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      }
+    });
+
+    it_id('f3dd5622-036c-45bf-ab76-c31b59028642')(it)('should block health endpoint even when routeAllowList is empty array', async () => {
+      await reconfigureServer({ routeAllowList: [] });
+      const request = require('../lib/request');
+      try {
+        await request({
+          method: 'GET',
+          url: 'http://localhost:8378/1/health',
+        });
+        fail('should have thrown');
+      } catch (e) {
+        expect(e.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      }
+    });
+
     it_id('229cab22-dad3-4d08-8de5-64d813658596')(it)('should block all route groups when not in allow list', async () => {
       await reconfigureServer({
         routeAllowList: ['classes/GameScore'],
@@ -322,52 +368,6 @@ describe('routeAllowList', () => {
         } catch (e) {
           expect(e.data.code).withContext(`${route.method} ${route.path}`).toBe(Parse.Error.OPERATION_FORBIDDEN);
         }
-      }
-    });
-
-    it_id('60466f80-27af-456c-a05d-8f5ceaf95451')(it)('should allow read-only master key requests to bypass', async () => {
-      await reconfigureServer({ routeAllowList: [] });
-      const request = require('../lib/request');
-      const res = await request({
-        headers: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-Master-Key': 'read-only-test',
-        },
-        method: 'GET',
-        url: 'http://localhost:8378/1/classes/GameScore',
-      });
-      expect(res.data.results).toEqual([]);
-    });
-
-    it_id('4fe57cc2-f104-491c-843b-64afc11c6fa3')(it)('should block all routes when routeAllowList is empty array and no key provided', async () => {
-      await reconfigureServer({ routeAllowList: [] });
-      const request = require('../lib/request');
-      try {
-        await request({
-          headers: {
-            'X-Parse-Application-Id': 'test',
-            'X-Parse-REST-API-Key': 'rest',
-          },
-          method: 'GET',
-          url: 'http://localhost:8378/1/classes/GameScore',
-        });
-        fail('should have thrown');
-      } catch (e) {
-        expect(e.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
-      }
-    });
-
-    it_id('f3dd5622-036c-45bf-ab76-c31b59028642')(it)('should block health endpoint even when routeAllowList is empty array', async () => {
-      await reconfigureServer({ routeAllowList: [] });
-      const request = require('../lib/request');
-      try {
-        await request({
-          method: 'GET',
-          url: 'http://localhost:8378/1/health',
-        });
-        fail('should have thrown');
-      } catch (e) {
-        expect(e.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
       }
     });
   });
