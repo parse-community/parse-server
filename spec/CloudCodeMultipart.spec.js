@@ -264,6 +264,32 @@ describe('Cloud Code Multipart', () => {
     expect(result.data.code).toBe(Parse.Error.OBJECT_TOO_LARGE);
   });
 
+  it('should reject multipart request exceeding maxUploadSize via file stream', async () => {
+    await reconfigureServer({ maxUploadSize: '1kb' });
+
+    Parse.Cloud.define('multipartLargeFile', req => {
+      return { ok: true };
+    });
+
+    const boundary = '----TestBoundaryLargeFile';
+    const body = buildMultipartBody(boundary, [
+      { name: 'small', value: 'ok' },
+      { name: 'bigfile', filename: 'large.bin', contentType: 'application/octet-stream', data: Buffer.alloc(2 * 1024, 'x') },
+    ]);
+
+    const result = await postMultipart(
+      `http://localhost:8378/1/functions/multipartLargeFile`,
+      {
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      body
+    );
+
+    expect(result.data.code).toBe(Parse.Error.OBJECT_TOO_LARGE);
+  });
+
   it('should reject malformed multipart body', async () => {
     Parse.Cloud.define('multipartMalformed', req => {
       return { ok: true };
