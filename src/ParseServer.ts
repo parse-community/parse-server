@@ -311,6 +311,7 @@ class ParseServer {
     //api.use("/apps", express.static(__dirname + "/public"));
     api.use(middlewares.allowCrossDomain(appId));
     api.use(middlewares.allowDoubleForwardSlash);
+    api.use(middlewares.handleParseAuth(appId));
     // File handling needs to be before the default JSON body parser because file
     // uploads send binary data that should not be parsed as JSON.
     api.use(
@@ -319,6 +320,8 @@ class ParseServer {
         maxUploadSize: maxUploadSize,
       })
     );
+
+    api.use('/health', middlewares.enforceRouteAllowList, middlewares.handleParseHealth(options));
 
     api.use(
       '/',
@@ -331,16 +334,6 @@ class ParseServer {
     api.use(middlewares.handleParseHeaders);
     api.use(middlewares.enforceRouteAllowList);
     api.set('query parser', 'extended');
-
-    api.use('/health', function (req, res) {
-      res.status(options.state === 'ok' ? 200 : 503);
-      if (options.state === 'starting') {
-        res.set('Retry-After', 1);
-      }
-      res.json({
-        status: options.state,
-      });
-    });
     const routes = Array.isArray(rateLimit) ? rateLimit : [rateLimit];
     for (const route of routes) {
       middlewares.addRateLimit(route, options);

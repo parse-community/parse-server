@@ -249,10 +249,6 @@ describe('routeAllowList', () => {
       const request = require('../lib/request');
       try {
         await request({
-          headers: {
-            'X-Parse-Application-Id': 'test',
-            'X-Parse-REST-API-Key': 'rest',
-          },
           method: 'GET',
           url: 'http://localhost:8378/1/health',
         });
