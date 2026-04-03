@@ -454,6 +454,10 @@ async function resolveKeyAuth({ config, keyValue, maintenanceKeyValue, installat
     log.error(
       `Request using maintenance key rejected as the request IP address '${clientIp}' is not set in Parse Server option 'maintenanceKeyIps'.`
     );
+    const error = new Error();
+    error.status = 403;
+    error.message = 'unauthorized';
+    throw error;
   }
   const masterKey = await config.loadMasterKey();
   if (keyValue === masterKey) {
