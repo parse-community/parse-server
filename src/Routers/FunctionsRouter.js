@@ -168,6 +168,17 @@ export class FunctionsRouter extends PromiseRouter {
     return responseObject;
   }
 
+  /**
+   * Parses multipart/form-data requests for Cloud Function invocation.
+   * For non-multipart requests, this is a no-op.
+   *
+   * Text fields are set as strings in `req.body`. File fields are set as
+   * objects with the shape `{ filename: string, contentType: string, data: Buffer }`.
+   * All fields are merged flat into `req.body`; the caller is responsible for
+   * avoiding name collisions between text and file fields.
+   *
+   * The total request size is limited by the server's `maxUploadSize` option.
+   */
   static multipartMiddleware(req) {
     if (!req.is || !req.is('multipart/form-data')) {
       return Promise.resolve();
