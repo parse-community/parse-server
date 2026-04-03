@@ -1,3 +1,10 @@
+# [9.8.0-alpha.3](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.2...9.8.0-alpha.3) (2026-04-03)
+
+
+### Bug Fixes
+
+* Bump lodash from 4.17.23 to 4.18.1 ([#10393](https://github.com/parse-community/parse-server/issues/10393)) ([19716ad](https://github.com/parse-community/parse-server/commit/19716ad9afe9400ad2440c0ed3c5fbfe376a8585))
+
 # [9.8.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.1...9.8.0-alpha.2) (2026-04-03)
 
 
