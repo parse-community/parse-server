@@ -1,3 +1,10 @@
+# [9.8.0-alpha.4](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.3...9.8.0-alpha.4) (2026-04-03)
+
+
+### Features
+
+* Add server option `fileDownload` to restrict file download ([#10394](https://github.com/parse-community/parse-server/issues/10394)) ([fc117ef](https://github.com/parse-community/parse-server/commit/fc117efa4dc233ad6dfee6f46d80991b10927ba8))
+
 # [9.8.0-alpha.3](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.2...9.8.0-alpha.3) (2026-04-03)
 
 
