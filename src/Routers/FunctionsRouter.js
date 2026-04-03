@@ -197,7 +197,9 @@ export class FunctionsRouter extends PromiseRouter {
         );
       }
       const safeReject = (err) => {
-        if (settled) return;
+        if (settled) {
+          return;
+        }
         settled = true;
         busboy.destroy();
         reject(err);
@@ -230,7 +232,9 @@ export class FunctionsRouter extends PromiseRouter {
           chunks.push(chunk);
         });
         stream.on('end', () => {
-          if (settled) return;
+          if (settled) {
+            return;
+          }
           fields[name] = {
             filename,
             contentType: mimeType || 'application/octet-stream',
@@ -239,7 +243,9 @@ export class FunctionsRouter extends PromiseRouter {
         });
       });
       busboy.on('finish', () => {
-        if (settled) return;
+        if (settled) {
+          return;
+        }
         settled = true;
         req.body = fields;
         resolve();
