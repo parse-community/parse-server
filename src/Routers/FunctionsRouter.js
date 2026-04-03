@@ -9,6 +9,8 @@ import { jobStatusHandler } from '../StatusHandler';
 import _ from 'lodash';
 import { logger } from '../logger';
 import { createSanitizedError } from '../Error';
+import Busboy from '@fastify/busboy';
+import Utils from '../Utils';
 
 function parseObject(obj, config) {
   if (Array.isArray(obj)) {
@@ -29,6 +31,8 @@ function parseObject(obj, config) {
       className: obj.className,
       objectId: obj.objectId,
     });
+  } else if (Buffer.isBuffer(obj)) {
+    return obj;
   } else if (obj && typeof obj === 'object') {
     return parseParams(obj, config);
   } else {
@@ -46,6 +50,7 @@ export class FunctionsRouter extends PromiseRouter {
       'POST',
       '/functions/:functionName',
       promiseEnsureIdempotency,
+      FunctionsRouter.multipartMiddleware,
       FunctionsRouter.handleCloudFunction
     );
     this.route(
@@ -162,6 +167,81 @@ export class FunctionsRouter extends PromiseRouter {
     };
     return responseObject;
   }
+
+  static multipartMiddleware(req) {
+    if (!req.is || !req.is('multipart/form-data')) {
+      return Promise.resolve();
+    }
+    const maxBytes = Utils.parseSizeToBytes(req.config.maxUploadSize);
+    return new Promise((resolve, reject) => {
+      const fields = {};
+      let totalBytes = 0;
+      let settled = false;
+      let busboy;
+      try {
+        busboy = Busboy({ headers: req.headers });
+      } catch (err) {
+        return reject(
+          new Parse.Error(Parse.Error.INVALID_JSON, `Invalid multipart request: ${err.message}`)
+        );
+      }
+      const safeReject = (err) => {
+        if (settled) return;
+        settled = true;
+        busboy.destroy();
+        reject(err);
+      };
+      busboy.on('field', (name, value) => {
+        totalBytes += Buffer.byteLength(value);
+        if (totalBytes > maxBytes) {
+          return safeReject(
+            new Parse.Error(
+              Parse.Error.OBJECT_TOO_LARGE,
+              'Multipart request exceeds maximum upload size.'
+            )
+          );
+        }
+        fields[name] = value;
+      });
+      busboy.on('file', (name, stream, filename, transferEncoding, mimeType) => {
+        const chunks = [];
+        stream.on('data', chunk => {
+          totalBytes += chunk.length;
+          if (totalBytes > maxBytes) {
+            stream.destroy();
+            return safeReject(
+              new Parse.Error(
+                Parse.Error.OBJECT_TOO_LARGE,
+                'Multipart request exceeds maximum upload size.'
+              )
+            );
+          }
+          chunks.push(chunk);
+        });
+        stream.on('end', () => {
+          if (settled) return;
+          fields[name] = {
+            filename,
+            contentType: mimeType || 'application/octet-stream',
+            data: Buffer.concat(chunks),
+          };
+        });
+      });
+      busboy.on('finish', () => {
+        if (settled) return;
+        settled = true;
+        req.body = fields;
+        resolve();
+      });
+      busboy.on('error', err => {
+        safeReject(
+          new Parse.Error(Parse.Error.INVALID_JSON, `Invalid multipart request: ${err.message}`)
+        );
+      });
+      req.pipe(busboy);
+    });
+  }
+
   static handleCloudFunction(req) {
     const functionName = req.params.functionName;
     const applicationId = req.config.applicationId;
