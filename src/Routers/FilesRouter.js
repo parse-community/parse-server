@@ -182,21 +182,25 @@ export class FilesRouter {
 
   static _validateFileDownload(req, config) {
     const isMaster = req.auth?.isMaster;
+    const isMaintenance = req.auth?.isMaintenance;
+    if (isMaster || isMaintenance) {
+      return;
+    }
     const user = req.auth?.user;
     const isLinked = user && Parse.AnonymousUtils.isLinked(user);
-    if (!isMaster && !config.fileDownload.enableForAnonymousUser && isLinked) {
+    if (!config.fileDownload.enableForAnonymousUser && isLinked) {
       throw new Parse.Error(
         Parse.Error.OPERATION_FORBIDDEN,
         'File download by anonymous user is disabled.'
       );
     }
-    if (!isMaster && !config.fileDownload.enableForAuthenticatedUser && !isLinked && user) {
+    if (!config.fileDownload.enableForAuthenticatedUser && !isLinked && user) {
       throw new Parse.Error(
         Parse.Error.OPERATION_FORBIDDEN,
         'File download by authenticated user is disabled.'
       );
     }
-    if (!isMaster && !config.fileDownload.enableForPublic && !user) {
+    if (!config.fileDownload.enableForPublic && !user) {
       throw new Parse.Error(
         Parse.Error.OPERATION_FORBIDDEN,
         'File download by public is disabled.'
@@ -371,27 +375,30 @@ export class FilesRouter {
       return;
     }
     const config = req.config;
-    const user = req.auth.user;
     const isMaster = req.auth.isMaster;
-    const isLinked = user && Parse.AnonymousUtils.isLinked(user);
-    if (!isMaster && !config.fileUpload.enableForAnonymousUser && isLinked) {
-      next(
-        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by anonymous user is disabled.')
-      );
-      return;
-    }
-    if (!isMaster && !config.fileUpload.enableForAuthenticatedUser && !isLinked && user) {
-      next(
-        new Parse.Error(
-          Parse.Error.FILE_SAVE_ERROR,
-          'File upload by authenticated user is disabled.'
-        )
-      );
-      return;
-    }
-    if (!isMaster && !config.fileUpload.enableForPublic && !user) {
-      next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by public is disabled.'));
-      return;
+    const isMaintenance = req.auth.isMaintenance;
+    if (!isMaster && !isMaintenance) {
+      const user = req.auth.user;
+      const isLinked = user && Parse.AnonymousUtils.isLinked(user);
+      if (!config.fileUpload.enableForAnonymousUser && isLinked) {
+        next(
+          new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by anonymous user is disabled.')
+        );
+        return;
+      }
+      if (!config.fileUpload.enableForAuthenticatedUser && !isLinked && user) {
+        next(
+          new Parse.Error(
+            Parse.Error.FILE_SAVE_ERROR,
+            'File upload by authenticated user is disabled.'
+          )
+        );
+        return;
+      }
+      if (!config.fileUpload.enableForPublic && !user) {
+        next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by public is disabled.'));
+        return;
+      }
     }
     const filesController = config.filesController;
     const { filename } = req.params;

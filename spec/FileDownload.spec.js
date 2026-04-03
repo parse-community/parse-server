@@ -236,5 +236,47 @@ describe('fileDownload', () => {
         expect(e.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
       }
     });
+
+    it('should allow maintenance key to bypass download restrictions', async () => {
+      await reconfigureServer({
+        fileDownload: {
+          enableForAnonymousUser: false,
+          enableForAuthenticatedUser: false,
+          enableForPublic: false,
+        },
+      });
+      const file = await uploadTestFile();
+      const request = require('../lib/request');
+      const res = await request({
+        headers: {
+          'X-Parse-Maintenance-Key': 'testing',
+        },
+        method: 'GET',
+        url: file.url,
+      });
+      expect(res.status).toBe(200);
+    });
+
+    it('should allow maintenance key to bypass upload restrictions', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForAnonymousUser: false,
+          enableForAuthenticatedUser: false,
+          enableForPublic: false,
+        },
+      });
+      const request = require('../lib/request');
+      const res = await request({
+        headers: {
+          'Content-Type': 'text/plain',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Maintenance-Key': 'testing',
+        },
+        method: 'POST',
+        url: 'http://localhost:8378/1/files/test.txt',
+        body: 'hello world',
+      });
+      expect(res.data.url).toBeDefined();
+    });
   });
 });
