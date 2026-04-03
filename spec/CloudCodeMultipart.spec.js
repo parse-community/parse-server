@@ -281,4 +281,60 @@ describe('Cloud Code Multipart', () => {
 
     expect(result.data.code).toBe(Parse.Error.INVALID_JSON);
   });
+
+  it('should not allow prototype pollution via __proto__ field name', async () => {
+    Parse.Cloud.define('multipartProto', req => {
+      const obj = {};
+      return {
+        polluted: obj.polluted !== undefined,
+        paramsClean: Object.getPrototypeOf(req.params) === Object.prototype,
+      };
+    });
+
+    const boundary = '----TestBoundaryProto';
+    const body = buildMultipartBody(boundary, [
+      { name: '__proto__', value: '{"polluted":"yes"}' },
+    ]);
+
+    const result = await postMultipart(
+      `http://localhost:8378/1/functions/multipartProto`,
+      {
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      body
+    );
+
+    expect(result.status).toBe(200);
+    expect(result.data.result.polluted).toBe(false);
+    expect(result.data.result.paramsClean).toBe(true);
+  });
+
+  it('should not grant master key access via multipart fields', async () => {
+    const obj = new Parse.Object('SecretClass');
+    await obj.save(null, { useMasterKey: true });
+
+    Parse.Cloud.define('multipartAuthCheck', req => {
+      return { isMaster: req.master };
+    });
+
+    const boundary = '----TestBoundaryAuth';
+    const body = buildMultipartBody(boundary, [
+      { name: '_MasterKey', value: 'test' },
+    ]);
+
+    const result = await postMultipart(
+      `http://localhost:8378/1/functions/multipartAuthCheck`,
+      {
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      body
+    );
+
+    expect(result.status).toBe(200);
+    expect(result.data.result.isMaster).toBe(false);
+  });
 });

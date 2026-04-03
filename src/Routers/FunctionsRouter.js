@@ -185,7 +185,7 @@ export class FunctionsRouter extends PromiseRouter {
     }
     const maxBytes = Utils.parseSizeToBytes(req.config.maxUploadSize);
     return new Promise((resolve, reject) => {
-      const fields = {};
+      const fields = Object.create(null);
       let totalBytes = 0;
       let settled = false;
       let busboy;
