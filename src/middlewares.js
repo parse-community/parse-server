@@ -224,7 +224,7 @@ export async function handleParseHeaders(req, res, next) {
   }
 
   const clientIp = getClientIp(req);
-  const config = Config.get(info.appId, mount);
+  const config = req.config || Config.get(info.appId, mount);
   if (config.state && config.state !== 'ok') {
     res.status(500);
     res.json({
@@ -233,7 +233,9 @@ export async function handleParseHeaders(req, res, next) {
     });
     return;
   }
-  await config.loadKeys();
+  if (!req.config) {
+    await config.loadKeys();
+  }
 
   info.app = AppCache.get(info.appId);
   req.config = config;
