@@ -221,7 +221,15 @@ export class FunctionsRouter extends PromiseRouter {
         busboy.destroy();
         reject(err);
       };
-      busboy.on('field', (name, value) => {
+      busboy.on('field', (name, value, fieldnameTruncated, valueTruncated) => {
+        if (valueTruncated) {
+          return safeReject(
+            new Parse.Error(
+              Parse.Error.OBJECT_TOO_LARGE,
+              'Multipart request exceeds maximum upload size.'
+            )
+          );
+        }
         totalBytes += Buffer.byteLength(value);
         if (totalBytes > maxBytes) {
           return safeReject(
