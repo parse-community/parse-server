@@ -207,7 +207,7 @@ export class FunctionsRouter extends PromiseRouter {
       let settled = false;
       let busboy;
       try {
-        busboy = Busboy({ headers: req.headers });
+        busboy = Busboy({ headers: req.headers, limits: { fieldSize: maxBytes } });
       } catch (err) {
         return reject(
           new Parse.Error(Parse.Error.INVALID_JSON, `Invalid multipart request: ${err.message}`)
