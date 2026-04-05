@@ -127,9 +127,12 @@ export class UsersRouter extends ClassesRouter {
             user = results[0];
           }
 
-          const hashedPassword =
-            typeof user.password === 'string' ? user.password : passwordCrypto.dummyHash;
-          return passwordCrypto.compare(password, hashedPassword);
+          const hasStoredPassword =
+            typeof user.password === 'string' && user.password.length > 0;
+          const hashedPassword = hasStoredPassword ? user.password : passwordCrypto.dummyHash;
+          return passwordCrypto
+            .compare(password, hashedPassword)
+            .then(correct => (hasStoredPassword ? correct : false));
         })
         .then(correct => {
           isValidPassword = correct;
