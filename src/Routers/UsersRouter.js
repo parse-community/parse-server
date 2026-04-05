@@ -127,12 +127,12 @@ export class UsersRouter extends ClassesRouter {
             user = results[0];
           }
 
-          const hasStoredPassword =
-            typeof user.password === 'string' && user.password.length > 0;
-          const hashedPassword = hasStoredPassword ? user.password : passwordCrypto.dummyHash;
-          return passwordCrypto
-            .compare(password, hashedPassword)
-            .then(correct => (hasStoredPassword ? correct : false));
+          if (typeof user.password !== 'string' || user.password.length === 0) {
+            // Passwordless account (e.g. OAuth-only): run dummy compare for
+            // timing normalization, discard result, always reject
+            return passwordCrypto.compare(password, passwordCrypto.dummyHash).then(() => false);
+          }
+          return passwordCrypto.compare(password, user.password);
         })
         .then(correct => {
           isValidPassword = correct;
