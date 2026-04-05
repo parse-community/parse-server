@@ -27,7 +27,13 @@ function compare(password, hashedPassword) {
   return bcrypt.compare(password, hashedPassword);
 }
 
+// Pre-computed bcrypt hash (cost factor 10) used for timing normalization.
+// The actual value is irrelevant; it ensures bcrypt.compare() runs with
+// realistic cost even when no real password hash is available.
+const dummyHash = '$2b$10$Wd1gvrMYPnQv5pHBbXCwCehxXmJSEzRqNON0ev98L6JJP5296S35i';
+
 module.exports = {
   hash: hash,
   compare: compare,
+  dummyHash: dummyHash,
 };
