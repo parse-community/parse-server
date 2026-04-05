@@ -4,7 +4,14 @@ import { expressMiddleware } from '@as-integrations/express5';
 import { ApolloServerPluginCacheControlDisabled } from '@apollo/server/plugin/disabled';
 import express from 'express';
 import { GraphQLError, parse } from 'graphql';
-import { allowCrossDomain, handleParseErrors, handleParseHeaders, handleParseSession } from '../middlewares';
+import {
+  allowCrossDomain,
+  getHeaderAliases,
+  handleHeaderAliases,
+  handleParseErrors,
+  handleParseHeaders,
+  handleParseSession,
+} from '../middlewares';
 import requiredParameter from '../requiredParameter';
 import defaultLogger from '../logger';
 import { ParseGraphQLSchema } from './ParseGraphQLSchema';
@@ -90,6 +97,10 @@ const IntrospectionControlPlugin = (publicIntrospection) => ({
 
 });
 
+export const getCSRFRequestHeaders = headerAliases => {
+  return [...new Set(['X-Parse-Application-Id', ...getHeaderAliases(headerAliases, 'X-Parse-Application-Id')])];
+};
+
 class ParseGraphQLServer {
   parseGraphQLController: ParseGraphQLController;
 
@@ -144,11 +155,12 @@ class ParseGraphQLServer {
     const createServer = async () => {
       try {
         const { schema, context } = await this._getGraphQLOptions();
+        const csrfRequestHeaders = getCSRFRequestHeaders(this.parseServer.config.headerAliases);
         const apollo = new ApolloServer({
           csrfPrevention: {
             // See https://www.apollographql.com/docs/router/configuration/csrf/
             // needed since we use graphql upload
-            requestHeaders: ['X-Parse-Application-Id'],
+            requestHeaders: csrfRequestHeaders,
           },
           // We need always true introspection because apollo server have changing behavior based on the NODE_ENV variable
           // we delegate the introspection control to the IntrospectionControlPlugin
@@ -203,6 +215,7 @@ class ParseGraphQLServer {
       requiredParameter('You must provide an Express.js app instance!');
     }
     app.use(this.config.graphQLPath, allowCrossDomain(this.parseServer.config.appId));
+    app.use(this.config.graphQLPath, handleHeaderAliases(this.parseServer.config.appId));
     app.use(this.config.graphQLPath, handleParseHeaders);
     app.use(this.config.graphQLPath, handleParseSession);
     this.applyRequestContextMiddleware(app, this.parseServer.config);

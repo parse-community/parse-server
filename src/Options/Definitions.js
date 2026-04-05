@@ -310,6 +310,11 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_GRAPH_QLSCHEMA',
     help: 'Full path to your GraphQL custom schema.graphql file',
   },
+  headerAliases: {
+    env: 'PARSE_SERVER_HEADER_ALIASES',
+    help: '(Optional) Define aliases for Parse request headers. For each canonical Parse header, set an array of accepted alias headers. If the canonical header is not present in a request, Parse Server uses the first matching alias.<br><br>Example:<br>`{ "X-Parse-Application-Id": ["X-App-Id"], "X-Parse-Session-Token": ["X-Session-Token"] }`<br><br>When setting this option via an environment variable, provide a JSON object string.',
+    action: parsers.objectParser,
+  },
   host: {
     env: 'PARSE_SERVER_HOST',
     help: 'The host to serve ParseServer on, defaults to 0.0.0.0',

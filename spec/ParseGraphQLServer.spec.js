@@ -28,7 +28,7 @@ const {
   GraphQLList,
 } = require('graphql');
 const { ParseServer } = require('../');
-const { ParseGraphQLServer } = require('../lib/GraphQL/ParseGraphQLServer');
+const { ParseGraphQLServer, getCSRFRequestHeaders } = require('../lib/GraphQL/ParseGraphQLServer');
 const { ReadPreference, Collection } = require('mongodb');
 let uuidv4;
 
@@ -135,6 +135,13 @@ describe('ParseGraphQLServer', () => {
         expect(server).toBe(firstServer);
       });
     });
+
+    it('should include application-id header aliases in GraphQL CSRF request headers', () => {
+      const headers = getCSRFRequestHeaders({
+        'X-Parse-Application-Id': ['X-App-Id', 'X-Client-App'],
+      });
+      expect(headers).toEqual(['X-Parse-Application-Id', 'X-App-Id', 'X-Client-App']);
+    });
   });
 
   describe('_getGraphQLOptions', () => {
@@ -200,6 +207,46 @@ describe('ParseGraphQLServer', () => {
         })
       ).not.toThrow();
       expect(useCount).toBeGreaterThan(0);
+    });
+
+    it('registers header alias normalization before parse header handling', async () => {
+      const parseServerWithAliases = await global.reconfigureServer({
+        maintenanceKey: 'test2',
+        maxUploadSize: '1kb',
+        headerAliases: {
+          'X-Parse-Application-Id': ['X-App-Id'],
+        },
+      });
+      const graphQLServerWithAliases = new ParseGraphQLServer(parseServerWithAliases, {
+        graphQLPath: '/graphql',
+        playgroundPath: '/playground',
+      });
+      const middlewares = require('../lib/middlewares');
+      const useCalls = [];
+      const app = {
+        use: (...args) => {
+          useCalls.push(args);
+        },
+      };
+      graphQLServerWithAliases.applyGraphQL(app);
+      const parseHeadersIndex = useCalls.findIndex(
+        ([path, middleware]) => path === '/graphql' && middleware === middlewares.handleParseHeaders
+      );
+      expect(parseHeadersIndex).toBeGreaterThan(0);
+      const [path, aliasMiddleware] = useCalls[parseHeadersIndex - 1];
+      expect(path).toBe('/graphql');
+      const req = {
+        originalUrl: '/graphql',
+        url: '/graphql',
+        protocol: 'http',
+        headers: {
+          host: 'localhost',
+          'x-app-id': parseServerWithAliases.config.appId,
+        },
+        get: key => req.headers[key.toLowerCase()],
+      };
+      await new Promise(resolve => aliasMiddleware(req, {}, resolve));
+      expect(req.headers['x-parse-application-id']).toBe(parseServerWithAliases.config.appId);
     });
   });
 
@@ -8325,6 +8372,37 @@ describe('ParseGraphQLServer', () => {
       });
 
       describe('Session Token', () => {
+        it('should retrieve me with session token header alias', async () => {
+          parseServer = await global.reconfigureServer({
+            headerAliases: {
+              'X-Parse-Session-Token': ['X-Session-Token-Alias'],
+            },
+          });
+          await createGQLFromParseServer(parseServer);
+          const username = `alias-gql-${uuidv4()}`;
+          const user = new Parse.User();
+          user.setUsername(username);
+          user.setPassword('password');
+          await user.signUp();
+          const result = await apolloClient.query({
+            query: gql`
+              query GetCurrentUser {
+                viewer {
+                  user {
+                    username
+                  }
+                }
+              }
+            `,
+            context: {
+              headers: {
+                'X-Session-Token-Alias': user.getSessionToken(),
+              },
+            },
+          });
+          expect(result.data.viewer.user.username).toBe(username);
+        });
+
         it('should fail due to invalid session token', async () => {
           try {
             await apolloClient.query({

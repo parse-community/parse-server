@@ -1738,6 +1738,55 @@ describe('read-only masterKey', () => {
   });
 });
 
+describe('rest header aliases', () => {
+  it('supports REST requests with application-id header alias only', async () => {
+    await reconfigureServer({
+      headerAliases: {
+        'X-Parse-Application-Id': ['X-App-Id'],
+      },
+    });
+    try {
+      const response = await request({
+        url: `${Parse.serverURL}/schemas`,
+        method: 'GET',
+        headers: {
+          'X-App-Id': Parse.applicationId,
+          'X-Parse-Master-Key': Parse.masterKey,
+        },
+      });
+      expect(response.data.results).toBeDefined();
+      expect(Array.isArray(response.data.results)).toBe(true);
+    } finally {
+      await reconfigureServer();
+    }
+  });
+
+  it('supports /users/me with session-token header alias', async () => {
+    await reconfigureServer({
+      headerAliases: {
+        'X-Parse-Session-Token': ['X-Session-Token-Alias'],
+      },
+    });
+    try {
+      const username = `alias-rest-${Date.now()}`;
+      const user = await Parse.User.signUp(username, 'password');
+      const response = await request({
+        url: `${Parse.serverURL}/users/me`,
+        method: 'GET',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Session-Token-Alias': user.getSessionToken(),
+        },
+      });
+      expect(response.data.objectId).toBe(user.id);
+      expect(response.data.username).toBe(username);
+    } finally {
+      await reconfigureServer();
+    }
+  });
+});
+
 describe('rest context', () => {
   it('should support dependency injection on rest api', async () => {
     const requestContextMiddleware = (req, res, next) => {

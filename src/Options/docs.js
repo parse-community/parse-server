@@ -59,6 +59,7 @@
  * @property {String} graphQLPath The mount path for the GraphQL endpoint<br><br>⚠️ File upload inside the GraphQL mutation system requires Parse Server to be able to call itself by making requests to the URL set in `serverURL`.<br><br>Defaults is `/graphql`.
  * @property {Boolean} graphQLPublicIntrospection Enable public introspection for the GraphQL endpoint, defaults to false
  * @property {String} graphQLSchema Full path to your GraphQL custom schema.graphql file
+ * @property {Object} headerAliases (Optional) Define aliases for Parse request headers. For each canonical Parse header, set an array of accepted alias headers. If the canonical header is not present in a request, Parse Server uses the first matching alias.<br><br>Example:<br>`{ "X-Parse-Application-Id": ["X-App-Id"], "X-Parse-Session-Token": ["X-Session-Token"] }`<br><br>When setting this option via an environment variable, provide a JSON object string.
  * @property {String} host The host to serve ParseServer on, defaults to 0.0.0.0
  * @property {IdempotencyOptions} idempotencyOptions Options for request idempotency to deduplicate identical requests that may be caused by network issues. Caution, this is an experimental feature that may not be appropriate for production.
  * @property {String} javascriptKey Key for the Javascript SDK

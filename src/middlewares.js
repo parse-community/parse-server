@@ -65,6 +65,59 @@ export const checkIp = (ip, ipRangeList, store) => {
   return result;
 };
 
+// Build a clean list of headers
+const getHeaderList = headers =>
+  headers
+    .split(',')
+    .map(header => header.trim())
+    .filter(Boolean);
+
+// Merge all headers into a single list
+const mergeHeaders = (...headerSources) => {
+  const reduced = headerSources.reduce((acc, source) => {
+    const headers = Array.isArray(source) ? source : getHeaderList(source || '');
+    const trimmedHeaders = headers.map(header => header.trim());
+    acc.push(...trimmedHeaders);
+    return acc;
+  }, []).filter(header => Boolean(header));
+  return [...new Set(reduced)];
+};
+
+export function getHeaderAliases(headerAliases, canonicalHeader) {
+  const aliases = headerAliases[canonicalHeader];
+  if (!Array.isArray(aliases)) {
+    return [];
+  }
+  // Clean up the aliases and remove any empty strings
+  return aliases.map(alias => alias.trim()).filter(Boolean);
+}
+
+function applyHeaderAliases(req, headerAliases) {
+  req.headers = req.headers || {};
+  const indexHeaderByAlias = Object.fromEntries(
+    Object.entries(headerAliases)
+      .map(([source, aliases]) =>
+        aliases
+          .map(alias => [alias.toLowerCase(), source.toLowerCase()])
+      )
+      .flat()
+  );
+  Object.entries(req.headers).forEach(([header, value]) => {
+    const targetHeader = indexHeaderByAlias[header.toLowerCase()];
+    if (targetHeader) {
+      req.headers[targetHeader] = value;
+    }
+  });
+}
+
+export function handleHeaderAliases(appId) {
+  return (req, res, next) => {
+    const config = Config.get(appId, getMountForRequest(req));
+    applyHeaderAliases(req, config?.headerAliases);
+    next();
+  };
+}
+
 // Checks that the request is authorized for this app and checks user
 // auth too.
 // The bodyparser should run before this middleware.
@@ -411,10 +464,11 @@ function decodeBase64(str) {
 export function allowCrossDomain(appId) {
   return (req, res, next) => {
     const config = Config.get(appId, getMountForRequest(req));
-    let allowHeaders = DEFAULT_ALLOWED_HEADERS;
-    if (config && config.allowHeaders) {
-      allowHeaders += `, ${config.allowHeaders.join(', ')}`;
-    }
+    const allowHeaders = mergeHeaders(
+      DEFAULT_ALLOWED_HEADERS,
+      mergeHeaders(...Object.values(config?.headerAliases || {})),
+      config?.allowHeaders
+    ).join(', ');
 
     const baseOrigins =
       typeof config?.allowOrigin === 'string' ? [config.allowOrigin] : config?.allowOrigin ?? ['*'];

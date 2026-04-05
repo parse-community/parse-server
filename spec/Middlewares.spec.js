@@ -339,6 +339,25 @@ describe('middlewares', () => {
     expect(headers['Access-Control-Allow-Headers']).toContain(middlewares.DEFAULT_ALLOWED_HEADERS);
   });
 
+  it('should append configured header aliases to Access-Control-Allow-Headers', () => {
+    AppCachePut(fakeReq.body._ApplicationId, {
+      headerAliases: {
+        'X-Parse-Application-Id': ['X-App-Id'],
+        'X-Parse-Session-Token': ['X-Session-Token-Alias'],
+      },
+    });
+    const headers = {};
+    const res = {
+      header: (key, value) => {
+        headers[key] = value;
+      },
+    };
+    const allowCrossDomain = middlewares.allowCrossDomain(fakeReq.body._ApplicationId);
+    allowCrossDomain(fakeReq, res, () => {});
+    expect(headers['Access-Control-Allow-Headers']).toContain('X-App-Id');
+    expect(headers['Access-Control-Allow-Headers']).toContain('X-Session-Token-Alias');
+  });
+
   it('should set default Access-Control-Allow-Origin if allowOrigin is empty', () => {
     AppCachePut(fakeReq.body._ApplicationId, {
       allowOrigin: undefined,
@@ -407,6 +426,58 @@ describe('middlewares', () => {
       expect(fakeReq.auth.user).toEqual('fake-user');
       done();
     });
+  });
+
+  it('should resolve app id from configured header alias', done => {
+    AppCachePut(fakeReq.body._ApplicationId, {
+      headerAliases: {
+        'X-Parse-Application-Id': ['X-App-Id'],
+      },
+      masterKeyIps: ['0.0.0.0/0'],
+    });
+    fakeReq.headers['x-app-id'] = fakeReq.body._ApplicationId;
+    middlewares.handleHeaderAliases(fakeReq.body._ApplicationId)(fakeReq, fakeRes, () => {
+      expect(fakeReq.headers['x-parse-application-id']).toEqual(fakeReq.body._ApplicationId);
+      middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
+        expect(fakeReq.info.appId).toEqual(fakeReq.body._ApplicationId);
+        done();
+      });
+    });
+  });
+
+  it('should resolve session token from configured header alias', done => {
+    const sessionToken = 'session-token-via-alias';
+    AppCachePut(fakeReq.body._ApplicationId, {
+      headerAliases: {
+        'X-Parse-Session-Token': ['X-Session-Token-Alias'],
+      },
+      masterKeyIps: ['0.0.0.0/0'],
+    });
+    fakeReq.headers['x-session-token-alias'] = sessionToken;
+    middlewares.handleHeaderAliases(fakeReq.body._ApplicationId)(fakeReq, fakeRes, () => {
+      middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
+        expect(fakeReq.info.sessionToken).toEqual(sessionToken);
+        done();
+      });
+    });
+  });
+
+  it('should resolve master key from configured alias in handleParseAuth', async () => {
+    AppCachePut(fakeReq.body._ApplicationId, {
+      headerAliases: {
+        'X-Parse-Master-Key': ['X-Master-Key-Alias'],
+      },
+      masterKey: 'masterKey',
+      masterKeyIps: ['0.0.0.0/0'],
+    });
+    fakeReq.headers['x-master-key-alias'] = 'masterKey';
+    await new Promise(resolve =>
+      middlewares.handleHeaderAliases(fakeReq.body._ApplicationId)(fakeReq, fakeRes, resolve)
+    );
+    await new Promise(resolve =>
+      middlewares.handleParseAuth(fakeReq.body._ApplicationId)(fakeReq, fakeRes, resolve)
+    );
+    expect(fakeReq.auth.isMaster).toBe(true);
   });
 
   it('should give invalid response when upload file without x-parse-application-id in header', () => {

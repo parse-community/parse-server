@@ -52,6 +52,7 @@ export interface ParseServerOptions {
     maintenanceKeyIps?: (string[]);
     appName?: string;
     allowHeaders?: (string[]);
+    headerAliases?: { [headerName: string]: string[] };
     allowOrigin?: StringOrStringArray;
     analyticsAdapter?: Adapter<AnalyticsAdapter>;
     filesAdapter?: Adapter<FilesAdapter>;

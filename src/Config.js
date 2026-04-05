@@ -129,6 +129,7 @@ export class Config {
     readOnlyMasterKey,
     readOnlyMasterKeyIps,
     allowHeaders,
+    headerAliases,
     idempotencyOptions,
     fileUpload,
     fileDownload,
@@ -181,6 +182,7 @@ export class Config {
     this.validateDefaultLimit(defaultLimit);
     this.validateMaxLimit(maxLimit);
     this.validateAllowHeaders(allowHeaders);
+    this.validateHeaderAliases(headerAliases);
     this.validateIdempotencyOptions(idempotencyOptions);
     this.validatePagesOptions(pages);
     this.validateSecurityOptions(security);
@@ -718,6 +720,29 @@ export class Config {
         });
       } else {
         throw 'Allow headers must be an array';
+      }
+    }
+  }
+
+  static validateHeaderAliases(headerAliases) {
+    if (![null, undefined].includes(headerAliases)) {
+      if (Object.prototype.toString.call(headerAliases) !== '[object Object]') {
+        throw 'Header aliases must be an object';
+      }
+      for (const [canonicalHeader, aliases] of Object.entries(headerAliases)) {
+        if (typeof canonicalHeader !== 'string' || !canonicalHeader.trim().length) {
+          throw 'Header aliases must contain non-empty string keys';
+        }
+        if (!Array.isArray(aliases)) {
+          throw `Header aliases for '${canonicalHeader}' must be an array`;
+        }
+        aliases.forEach(alias => {
+          if (typeof alias !== 'string') {
+            throw `Header aliases for '${canonicalHeader}' must only contain strings`;
+          } else if (!alias.trim().length) {
+            throw `Header aliases for '${canonicalHeader}' must not contain empty strings`;
+          }
+        });
       }
     }
   }
