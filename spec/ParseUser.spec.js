@@ -88,24 +88,21 @@ describe('Parse.User testing', () => {
     await Parse.User.signUp('existinguser', 'password123');
     compareSpy.calls.reset();
 
-    // Login with non-existent user
-    try {
-      await Parse.User.logIn('nonexistentuser', 'wrongpassword');
-    } catch (e) {
-      expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
-    }
-    // bcrypt.compare should have been called even for non-existent user
+    // Login with non-existent user — should use dummy hash
+    await expectAsync(
+      Parse.User.logIn('nonexistentuser', 'wrongpassword')
+    ).toBeRejected();
     expect(compareSpy).toHaveBeenCalledTimes(1);
+    expect(compareSpy).toHaveBeenCalledWith('wrongpassword', passwordCrypto.dummyHash);
     compareSpy.calls.reset();
 
-    // Login with existing user but wrong password
-    try {
-      await Parse.User.logIn('existinguser', 'wrongpassword');
-    } catch (e) {
-      expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
-    }
-    // bcrypt.compare should have been called for existing user
+    // Login with existing user but wrong password — should use real hash
+    await expectAsync(
+      Parse.User.logIn('existinguser', 'wrongpassword')
+    ).toBeRejected();
     expect(compareSpy).toHaveBeenCalledTimes(1);
+    expect(compareSpy.calls.mostRecent().args[0]).toBe('wrongpassword');
+    expect(compareSpy.calls.mostRecent().args[1]).not.toBe(passwordCrypto.dummyHash);
   });
 
   it('logs username taken with configured log level', async () => {
