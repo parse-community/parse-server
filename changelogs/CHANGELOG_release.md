@@ -1,3 +1,10 @@
+## [8.6.75](https://github.com/parse-community/parse-server/compare/8.6.74...8.6.75) (2026-04-06)
+
+
+### Bug Fixes
+
+* Endpoint `/sessions/me` bypasses `_Session` `protectedFields` ([GHSA-g4v2-qx3q-4p64](https://github.com/parse-community/parse-server/security/advisories/GHSA-g4v2-qx3q-4p64)) ([#10407](https://github.com/parse-community/parse-server/issues/10407)) ([6ecc642](https://github.com/parse-community/parse-server/commit/6ecc6422c8624ba89a0fa71090d2c5f45d07d8de))
+
 ## [8.6.74](https://github.com/parse-community/parse-server/compare/8.6.73...8.6.74) (2026-04-05)
 
 
