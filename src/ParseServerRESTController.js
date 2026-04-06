@@ -115,7 +115,12 @@ function ParseServerRESTController(applicationId, router) {
       try {
         requestContext = structuredClone(options.context || {});
       } catch (error) {
-        reject(error);
+        reject(
+          new Parse.Error(
+            Parse.Error.INVALID_VALUE,
+            `Context contains non-cloneable values: ${error.message}`
+          )
+        );
         return;
       }
       getAuth(options, config).then(auth => {

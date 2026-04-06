@@ -605,7 +605,8 @@ describe('ParseServerRESTController', () => {
       fail('should have rejected for non-cloneable context');
     } catch (error) {
       expect(error).toBeDefined();
-      expect(error.name).toEqual('DataCloneError');
+      expect(error.code).toEqual(Parse.Error.INVALID_VALUE);
+      expect(error.message).toContain('Context contains non-cloneable values');
     }
   });
 
