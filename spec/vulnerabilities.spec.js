@@ -5685,4 +5685,65 @@ describe('Vulnerabilities', () => {
       expect(response.status).toBe(403);
     });
   });
+
+  describe('(GHSA-g4v2-qx3q-4p64) /sessions/me bypasses _Session protectedFields', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+
+    it('should not return protected fields on GET /sessions/me', async () => {
+      await reconfigureServer({
+        protectedFields: {
+          _Session: { '*': ['createdWith'] },
+        },
+      });
+      const user = new Parse.User();
+      user.setUsername('session-pf-user');
+      user.setPassword('password123');
+      user.set('email', 'session-pf@example.com');
+      await user.signUp();
+      const sessionToken = user.getSessionToken();
+
+      // Normal GET /sessions should strip createdWith
+      const sessionsResponse = await request({
+        method: 'GET',
+        url: 'http://localhost:8378/1/sessions',
+        headers: { ...headers, 'X-Parse-Session-Token': sessionToken },
+      });
+      expect(sessionsResponse.data.results[0].createdWith).toBeUndefined();
+
+      // GET /sessions/me should also strip createdWith
+      const meResponse = await request({
+        method: 'GET',
+        url: 'http://localhost:8378/1/sessions/me',
+        headers: { ...headers, 'X-Parse-Session-Token': sessionToken },
+      });
+      expect(meResponse.data.createdWith).toBeUndefined();
+    });
+
+    it('should return non-protected fields on GET /sessions/me', async () => {
+      await reconfigureServer({
+        protectedFields: {
+          _Session: { '*': ['createdWith'] },
+        },
+      });
+      const user = new Parse.User();
+      user.setUsername('session-pf-user2');
+      user.setPassword('password123');
+      user.set('email', 'session-pf2@example.com');
+      await user.signUp();
+      const sessionToken = user.getSessionToken();
+
+      const meResponse = await request({
+        method: 'GET',
+        url: 'http://localhost:8378/1/sessions/me',
+        headers: { ...headers, 'X-Parse-Session-Token': sessionToken },
+      });
+      expect(meResponse.data.sessionToken).toBe(sessionToken);
+      expect(meResponse.data.objectId).toBeDefined();
+      expect(meResponse.data.user).toBeDefined();
+    });
+  });
 });

@@ -1,3 +1,17 @@
+# [9.8.0-alpha.7](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.6...9.8.0-alpha.7) (2026-04-06)
+
+
+### Bug Fixes
+
+* Endpoint `/sessions/me` bypasses `_Session` `protectedFields` ([GHSA-g4v2-qx3q-4p64](https://github.com/parse-community/parse-server/security/advisories/GHSA-g4v2-qx3q-4p64)) ([#10406](https://github.com/parse-community/parse-server/issues/10406)) ([d507575](https://github.com/parse-community/parse-server/commit/d5075758f6c3ae9d806671de196fd8b419bc517e))
+
+# [9.8.0-alpha.6](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.5...9.8.0-alpha.6) (2026-04-05)
+
+
+### Bug Fixes
+
+* Login timing side-channel reveals user existence ([GHSA-mmpq-5hcv-hf2v](https://github.com/parse-community/parse-server/security/advisories/GHSA-mmpq-5hcv-hf2v)) ([#10398](https://github.com/parse-community/parse-server/issues/10398)) ([531b9ab](https://github.com/parse-community/parse-server/commit/531b9ab6dda4268ede365367fcdc6d98e737ccc3))
+
 # [9.8.0-alpha.5](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.4...9.8.0-alpha.5) (2026-04-04)
 
 

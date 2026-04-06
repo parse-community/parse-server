@@ -635,6 +635,19 @@ describe('Hooks', () => {
         done();
       });
   });
+
+  it('should log warning when webhook overwrites existing Cloud Code function', async () => {
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'warn').and.callFake(() => {});
+    Parse.Cloud.define('myCloudFunction', () => 'cloud result', { requireMaster: true });
+    expect(triggers.getFunction('myCloudFunction', Parse.applicationId)).toBeDefined();
+    expect(triggers.getValidator('myCloudFunction', Parse.applicationId)).toBeDefined();
+    await Parse.Hooks.createFunction('myCloudFunction', hookServerURL + '/hook');
+    expect(logger.warn).toHaveBeenCalledWith(
+      'Warning: Duplicate cloud functions exist for myCloudFunction. Only the last one will be used and the others will be ignored.'
+    );
+    await Parse.Hooks.removeFunction('myCloudFunction');
+  });
 });
 
 describe('triggers', () => {
