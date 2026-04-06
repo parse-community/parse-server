@@ -9,29 +9,53 @@ export class SessionsRouter extends ClassesRouter {
     return '_Session';
   }
 
-  handleMe(req) {
-    // TODO: Verify correct behavior
+  async handleMe(req) {
     if (!req.info || !req.info.sessionToken) {
       throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token required.');
     }
-    return rest
-      .find(
-        req.config,
-        Auth.master(req.config),
-        '_Session',
-        { sessionToken: req.info.sessionToken },
-        undefined,
-        req.info.clientSDK,
-        req.info.context
-      )
-      .then(response => {
-        if (!response.results || response.results.length == 0) {
-          throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token not found.');
-        }
-        return {
-          response: response.results[0],
-        };
-      });
+    const sessionToken = req.info.sessionToken;
+    // Query with master key to validate the session token and get the session objectId
+    const sessionResponse = await rest.find(
+      req.config,
+      Auth.master(req.config),
+      '_Session',
+      { sessionToken },
+      {},
+      req.info.clientSDK,
+      req.info.context
+    );
+    if (
+      !sessionResponse.results ||
+      sessionResponse.results.length == 0 ||
+      !sessionResponse.results[0].user
+    ) {
+      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token not found.');
+    }
+    const sessionObjectId = sessionResponse.results[0].objectId;
+    const userId = sessionResponse.results[0].user.objectId;
+    // Re-fetch the session with the caller's auth context so that
+    // protectedFields and CLP apply correctly
+    const userAuth = new Auth.Auth({
+      config: req.config,
+      isMaster: false,
+      user: Parse.Object.fromJSON({ className: '_User', objectId: userId }),
+      installationId: req.info.installationId,
+    });
+    const response = await rest.get(
+      req.config,
+      userAuth,
+      '_Session',
+      sessionObjectId,
+      {},
+      req.info.clientSDK,
+      req.info.context
+    );
+    if (!response.results || response.results.length == 0) {
+      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token not found.');
+    }
+    return {
+      response: response.results[0],
+    };
   }
 
   handleUpdateToRevocableSession(req) {
