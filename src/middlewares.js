@@ -104,7 +104,7 @@ function applyHeaderAliases(req, headerAliases) {
   );
   Object.entries(req.headers).forEach(([header, value]) => {
     const targetHeader = indexHeaderByAlias[header.toLowerCase()];
-    if (targetHeader) {
+    if (targetHeader && !req.headers[targetHeader]) {
       req.headers[targetHeader] = value;
     }
   });

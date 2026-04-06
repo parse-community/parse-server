@@ -462,6 +462,25 @@ describe('middlewares', () => {
     });
   });
 
+  it('should prefer canonical session token over alias when both headers are present', done => {
+    const canonicalToken = 'session-token-canonical';
+    const aliasToken = 'session-token-alias-value';
+    AppCachePut(fakeReq.body._ApplicationId, {
+      headerAliases: {
+        'X-Parse-Session-Token': ['X-Session-Token-Alias'],
+      },
+      masterKeyIps: ['0.0.0.0/0'],
+    });
+    fakeReq.headers['x-parse-session-token'] = canonicalToken;
+    fakeReq.headers['x-session-token-alias'] = aliasToken;
+    middlewares.handleHeaderAliases(fakeReq.body._ApplicationId)(fakeReq, fakeRes, () => {
+      middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
+        expect(fakeReq.info.sessionToken).toEqual(canonicalToken);
+        done();
+      });
+    });
+  });
+
   it('should resolve master key from configured alias in handleParseAuth', async () => {
     AppCachePut(fakeReq.body._ApplicationId, {
       headerAliases: {
