@@ -108,7 +108,13 @@ export class UsersRouter extends ClassesRouter {
         .find('_User', query, {}, Auth.maintenance(req.config))
         .then(results => {
           if (!results.length) {
-            throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+            // Perform a dummy bcrypt compare to normalize response timing,
+            // preventing user enumeration via timing side-channel
+            return passwordCrypto
+              .compare(password, passwordCrypto.dummyHash)
+              .then(() => {
+                throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+              });
           }
 
           if (results.length > 1) {
@@ -121,6 +127,11 @@ export class UsersRouter extends ClassesRouter {
             user = results[0];
           }
 
+          if (typeof user.password !== 'string' || user.password.length === 0) {
+            // Passwordless account (e.g. OAuth-only): run dummy compare for
+            // timing normalization, discard result, always reject
+            return passwordCrypto.compare(password, passwordCrypto.dummyHash).then(() => false);
+          }
           return passwordCrypto.compare(password, user.password);
         })
         .then(correct => {

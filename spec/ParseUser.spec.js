@@ -82,6 +82,29 @@ describe('Parse.User testing', () => {
     }
   });
 
+  it('normalizes login response time for non-existent and existing users', async () => {
+    const passwordCrypto = require('../lib/password');
+    const compareSpy = spyOn(passwordCrypto, 'compare').and.callThrough();
+    await Parse.User.signUp('existinguser', 'password123');
+    compareSpy.calls.reset();
+
+    // Login with non-existent user — should use dummy hash
+    await expectAsync(
+      Parse.User.logIn('nonexistentuser', 'wrongpassword')
+    ).toBeRejected();
+    expect(compareSpy).toHaveBeenCalledTimes(1);
+    expect(compareSpy).toHaveBeenCalledWith('wrongpassword', passwordCrypto.dummyHash);
+    compareSpy.calls.reset();
+
+    // Login with existing user but wrong password — should use real hash
+    await expectAsync(
+      Parse.User.logIn('existinguser', 'wrongpassword')
+    ).toBeRejected();
+    expect(compareSpy).toHaveBeenCalledTimes(1);
+    expect(compareSpy.calls.mostRecent().args[0]).toBe('wrongpassword');
+    expect(compareSpy.calls.mostRecent().args[1]).not.toBe(passwordCrypto.dummyHash);
+  });
+
   it('logs username taken with configured log level', async () => {
     await reconfigureServer({ logLevels: { signupUsernameTaken: 'warn' } });
     const logger = require('../lib/logger').default;

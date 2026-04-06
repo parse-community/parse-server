@@ -15,6 +15,7 @@ const parsers = require('../src/Options/parsers');
 const nestedOptionTypes = [
   'CustomPagesOptions',
   'DatabaseOptions',
+  'FileDownloadOptions',
   'FileUploadOptions',
   'IdempotencyOptions',
   'Object',
@@ -34,6 +35,7 @@ const nestedOptionEnvPrefix = {
   DatabaseOptionsClientMetadata: 'PARSE_SERVER_DATABASE_CLIENT_METADATA_',
   CustomPagesOptions: 'PARSE_SERVER_CUSTOM_PAGES_',
   DatabaseOptions: 'PARSE_SERVER_DATABASE_',
+  FileDownloadOptions: 'PARSE_SERVER_FILE_DOWNLOAD_',
   FileUploadOptions: 'PARSE_SERVER_FILE_UPLOAD_',
   IdempotencyOptions: 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_',
   LiveQueryOptions: 'PARSE_SERVER_LIVEQUERY_',

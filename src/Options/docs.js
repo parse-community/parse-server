@@ -52,6 +52,7 @@
  * @property {Boolean} enforcePrivateUsers Set to true if new users should be created without public read and write access.
  * @property {Boolean} expireInactiveSessions Sets whether we should expire the inactive sessions, defaults to true. If false, all new sessions are created with no expiration date.
  * @property {Boolean} extendSessionOnUse Whether Parse Server should automatically extend a valid session by the sessionLength. In order to reduce the number of session updates in the database, a session will only be extended when a request is received after at least half of the current session's lifetime has passed.
+ * @property {FileDownloadOptions} fileDownload Options for file downloads
  * @property {String} fileKey Key for your files
  * @property {Adapter<FilesAdapter>} filesAdapter Adapter module for the files sub-system
  * @property {FileUploadOptions} fileUpload Options for file uploads
@@ -102,6 +103,7 @@
  * @property {RequestKeywordDenylist[]} requestKeywordDenylist An array of keys and values that are prohibited in database read and write requests to prevent potential security vulnerabilities. It is possible to specify only a key (`{"key":"..."}`), only a value (`{"value":"..."}`) or a key-value pair (`{"key":"...","value":"..."}`). The specification can use the following types: `boolean`, `numeric` or `string`, where `string` will be interpreted as a regex notation. Request data is deep-scanned for matching definitions to detect also any nested occurrences. Defaults are patterns that are likely to be used in malicious requests. Setting this option will override the default patterns.
  * @property {String} restAPIKey Key for REST calls
  * @property {Boolean} revokeSessionOnPasswordReset When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.
+ * @property {String[]} routeAllowList (Optional) Restricts external client access to a list of allowed API routes.<br><br>When this option is set, all external non-master-key requests are denied by default. Only routes matching at least one of the configured regex patterns are allowed through. Internal calls from Cloud Code, Cloud Jobs, and triggers are not affected.<br><br>Each entry is a regex pattern string matched against the normalized route identifier (request path with mount prefix and leading slash stripped). Patterns are auto-anchored with `^` and `$` for full-match semantics.<br><br><b>Examples of normalized route identifiers:</b><ul><li>`classes/GameScore` (class CRUD)</li><li>`classes/GameScore/abc123` (object by ID)</li><li>`users` (user operations)</li><li>`login` (login endpoint)</li><li>`functions/sendEmail` (Cloud Function)</li><li>`jobs/cleanup` (Cloud Job)</li><li>`push` (push notifications)</li><li>`config` (client config)</li><li>`installations` (installations)</li><li>`files/picture.jpg` (file operations)</li></ul><b>Example patterns:</b><ul><li>`classes/ChatMessage` matches only `classes/ChatMessage`</li><li>`classes/Chat.*` matches `classes/ChatMessage`, `classes/ChatRoom`, etc.</li><li>`functions/.*` matches all Cloud Functions</li></ul>Setting an empty array `[]` blocks all external non-master-key requests (full lockdown).<br><br>When setting the option via an environment variable, the notation is a comma-separated string, for example `"classes/ChatMessage,users,functions/.*"`.<br><br>Defaults to `undefined` which means the feature is inactive and all routes are accessible.
  * @property {Boolean} scheduledPush Configuration for push scheduling, defaults to false.
  * @property {SchemaOptions} schema Defined schema
  * @property {SecurityOptions} security The security options to identify and report weak security settings.
@@ -256,6 +258,13 @@
  * @property {Boolean} enableForAuthenticatedUser Is true if file upload should be allowed for authenticated users.
  * @property {Boolean} enableForPublic Is true if file upload should be allowed for anyone, regardless of user authentication.
  * @property {String[]} fileExtensions Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to only allow the file extensions that your app actually needs, rather than relying on blocking dangerous extensions. This allowlist approach is more secure because new dangerous file extensions may emerge that are not covered by the default blocklist.<br><br>The default blocks the most common file extensions that are known to be rendered as active content by web browsers, such as HTML, SVG, and XML files, which may be used by an attacker to compromise the session token of another user via accessing the browser's local storage. The blocked extensions are: `html`, `htm`, `shtml`, `xhtml`, `xhtml+xml`, `xht`, `svg`, `svgz`, `svg+xml`, `xml`, `xsl`, `xslt`, `xslt+xml`, `xsd`, `rng`, `rdf`, `rdf+xml`, `owl`, `mathml`, `mathml+xml`.<br><br>Defaults to `["^(?!([xXsS]?[hH][tT][mM][lL]?(\\+[xX][mM][lL])?|[xX][hH][tT]|[sS][vV][gG]([zZ]|\\+[xX][mM][lL])?|[xX][mM][lL]|[xX][sS][lL][tT]?(\\+[xX][mM][lL])?|[xX][sS][dD]|[rR][nN][gG]|[rR][dD][fF](\\+[xX][mM][lL])?|[oO][wW][lL]|[mM][aA][tT][hH][mM][lL](\\+[xX][mM][lL])?)$)"]`.
+ */
+
+/**
+ * @interface FileDownloadOptions
+ * @property {Boolean} enableForAnonymousUser Is true if file download should be allowed for anonymous users.
+ * @property {Boolean} enableForAuthenticatedUser Is true if file download should be allowed for authenticated users.
+ * @property {Boolean} enableForPublic Is true if file download should be allowed for anyone, regardless of user authentication.
  */
 
 /**

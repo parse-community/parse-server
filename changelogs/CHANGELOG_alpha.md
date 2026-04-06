@@ -1,3 +1,45 @@
+# [9.8.0-alpha.6](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.5...9.8.0-alpha.6) (2026-04-05)
+
+
+### Bug Fixes
+
+* Login timing side-channel reveals user existence ([GHSA-mmpq-5hcv-hf2v](https://github.com/parse-community/parse-server/security/advisories/GHSA-mmpq-5hcv-hf2v)) ([#10398](https://github.com/parse-community/parse-server/issues/10398)) ([531b9ab](https://github.com/parse-community/parse-server/commit/531b9ab6dda4268ede365367fcdc6d98e737ccc3))
+
+# [9.8.0-alpha.5](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.4...9.8.0-alpha.5) (2026-04-04)
+
+
+### Features
+
+* Add support for invoking Cloud Function with `multipart/form-data` protocol ([#10395](https://github.com/parse-community/parse-server/issues/10395)) ([a3f36a2](https://github.com/parse-community/parse-server/commit/a3f36a2ddb981d9868ddf26b128e24b2d58214bd))
+
+# [9.8.0-alpha.4](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.3...9.8.0-alpha.4) (2026-04-03)
+
+
+### Features
+
+* Add server option `fileDownload` to restrict file download ([#10394](https://github.com/parse-community/parse-server/issues/10394)) ([fc117ef](https://github.com/parse-community/parse-server/commit/fc117efa4dc233ad6dfee6f46d80991b10927ba8))
+
+# [9.8.0-alpha.3](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.2...9.8.0-alpha.3) (2026-04-03)
+
+
+### Bug Fixes
+
+* Bump lodash from 4.17.23 to 4.18.1 ([#10393](https://github.com/parse-community/parse-server/issues/10393)) ([19716ad](https://github.com/parse-community/parse-server/commit/19716ad9afe9400ad2440c0ed3c5fbfe376a8585))
+
+# [9.8.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.1...9.8.0-alpha.2) (2026-04-03)
+
+
+### Bug Fixes
+
+* Maintenance key IP mismatch silently downgrades to regular auth instead of rejecting ([#10391](https://github.com/parse-community/parse-server/issues/10391)) ([7d8b367](https://github.com/parse-community/parse-server/commit/7d8b367e0b3ef9e9dd6735408068895ead873a0c))
+
+# [9.8.0-alpha.1](https://github.com/parse-community/parse-server/compare/9.7.1-alpha.4...9.8.0-alpha.1) (2026-04-03)
+
+
+### Features
+
+* Add route block with new server option `routeAllowList` ([#10389](https://github.com/parse-community/parse-server/issues/10389)) ([f2d06e7](https://github.com/parse-community/parse-server/commit/f2d06e7b95242268607bfa5205b4e86ba7c7698e))
+
 ## [9.7.1-alpha.4](https://github.com/parse-community/parse-server/compare/9.7.1-alpha.3...9.7.1-alpha.4) (2026-04-02)
 
 

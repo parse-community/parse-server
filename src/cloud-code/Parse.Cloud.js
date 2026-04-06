@@ -821,7 +821,9 @@ module.exports = ParseCloud;
  * @property {Boolean} master If true, means the master key or the read-only master key was used.
  * @property {Boolean} isReadOnly If true, means the read-only master key was used. This is a subset of `master`, so `master` will also be true. Use `master && !isReadOnly` to check for full master key access.
  * @property {Parse.User} user If set, the user that made the request.
- * @property {Object} params The params passed to the cloud function.
+ * @property {Object} params The params passed to the cloud function. For JSON requests, values
+ * retain their JSON types. For multipart/form-data requests, text fields are strings and file
+ * fields are objects with `{ filename: string, contentType: string, data: Buffer }`.
  * @property {String} ip The IP address of the client making the request.
  * @property {Object} headers The original HTTP headers for the request.
  * @property {Object} log The current logger inside Parse Server.
