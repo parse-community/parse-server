@@ -729,7 +729,8 @@ export class Config {
       if (Object.prototype.toString.call(headerAliases) !== '[object Object]') {
         throw 'Header aliases must be an object';
       }
-      for (const [canonicalHeader, aliases] of Object.entries(headerAliases)) {
+      const entries = Object.entries(headerAliases);
+      for (const [canonicalHeader, aliases] of entries) {
         if (typeof canonicalHeader !== 'string' || !canonicalHeader.trim().length) {
           throw 'Header aliases must contain non-empty string keys';
         }
@@ -743,6 +744,59 @@ export class Config {
             throw `Header aliases for '${canonicalHeader}' must not contain empty strings`;
           }
         });
+      }
+
+      const normalizeHeaderAliasIdentifier = s => s.trim().toLowerCase();
+
+      const canonicalNormToKey = new Map();
+      for (const [canonicalHeader] of entries) {
+        const norm = normalizeHeaderAliasIdentifier(canonicalHeader);
+        if (canonicalNormToKey.has(norm)) {
+          throw new Error(
+            `Header aliases canonical '${canonicalHeader}' collides with '${canonicalNormToKey.get(
+              norm
+            )}' after trim and lowercasing.`
+          );
+        }
+        canonicalNormToKey.set(norm, canonicalHeader);
+      }
+
+      const globalAliasNorm = new Map();
+
+      for (const [canonicalHeader, aliases] of entries) {
+        const normCanon = normalizeHeaderAliasIdentifier(canonicalHeader);
+        const seenInArray = new Set();
+
+        for (const alias of aliases) {
+          const normAlias = normalizeHeaderAliasIdentifier(alias);
+
+          if (normAlias === normCanon) {
+            throw new Error(
+              `Header alias '${alias}' for canonical header '${canonicalHeader}' must not normalize to the same value as the canonical header name.`
+            );
+          }
+          if (canonicalNormToKey.has(normAlias) && normAlias !== normCanon) {
+            throw new Error(
+              `Header alias '${alias}' for canonical header '${canonicalHeader}' collides with canonical header '${canonicalNormToKey.get(
+                normAlias
+              )}'.`
+            );
+          }
+          if (seenInArray.has(normAlias)) {
+            throw new Error(
+              `Duplicate normalized header alias '${alias}' for canonical header '${canonicalHeader}'.`
+            );
+          }
+          seenInArray.add(normAlias);
+
+          if (globalAliasNorm.has(normAlias)) {
+            const prev = globalAliasNorm.get(normAlias);
+            throw new Error(
+              `Header alias '${alias}' for canonical header '${canonicalHeader}' collides with alias '${prev.alias}' for canonical header '${prev.canonicalHeader}'.`
+            );
+          }
+          globalAliasNorm.set(normAlias, { canonicalHeader, alias });
+        }
       }
     }
   }
