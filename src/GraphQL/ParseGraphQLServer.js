@@ -97,8 +97,25 @@ const IntrospectionControlPlugin = (publicIntrospection) => ({
 
 });
 
+// Fetch no-CORS-safelisted request-header names (case-insensitive) plus Range, which
+// can also be CORS-safelisted for certain values. Apollo preventCsrf treats any
+// whitelisted header with a non-empty value as sufficient for multipart/simple
+// bodies; aliases that match these names must not be listed or browsers could
+// satisfy CSRF with ambient headers.
+const APOLLO_CSRF_ALIAS_BLOCKLIST = new Set([
+  'accept',
+  'accept-language',
+  'content-language',
+  'content-type',
+  'range',
+]);
+
 export const getCSRFRequestHeaders = headerAliases => {
-  return [...new Set(['X-Parse-Application-Id', ...getHeaderAliases(headerAliases, 'X-Parse-Application-Id')])];
+  const aliases = getHeaderAliases(headerAliases, 'X-Parse-Application-Id');
+  const safeAliases = aliases.filter(
+    alias => !APOLLO_CSRF_ALIAS_BLOCKLIST.has(alias.trim().toLowerCase())
+  );
+  return [...new Set(['X-Parse-Application-Id', ...safeAliases])];
 };
 
 class ParseGraphQLServer {
@@ -159,7 +176,8 @@ class ParseGraphQLServer {
         const apollo = new ApolloServer({
           csrfPrevention: {
             // See https://www.apollographql.com/docs/router/configuration/csrf/
-            // needed since we use graphql upload
+            // needed since we use graphql upload. handleHeaderAliases runs on this path
+            // before Apollo; getCSRFRequestHeaders lists canonical + safe aliases only.
             requestHeaders: csrfRequestHeaders,
           },
           // We need always true introspection because apollo server have changing behavior based on the NODE_ENV variable

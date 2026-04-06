@@ -105,6 +105,30 @@ describe('ParseGraphQLServer', () => {
     });
   });
 
+  describe('getCSRFRequestHeaders', () => {
+    it('should include safe application-id header aliases with canonical header', () => {
+      const headers = getCSRFRequestHeaders({
+        'X-Parse-Application-Id': ['X-App-Id', 'X-Client-App'],
+      });
+      expect(headers).toEqual(['X-Parse-Application-Id', 'X-App-Id', 'X-Client-App']);
+    });
+
+    it('should exclude CORS-safelisted request-header names and Range from CSRF whitelist', () => {
+      const headers = getCSRFRequestHeaders({
+        'X-Parse-Application-Id': [
+          'Accept',
+          'accept-language',
+          'Content-Language',
+          'Content-Type',
+          'Range',
+          'rAnGe',
+          'X-Safe-Custom',
+        ],
+      });
+      expect(headers).toEqual(['X-Parse-Application-Id', 'X-Safe-Custom']);
+    });
+  });
+
   describe('_getServer', () => {
     it('should only return new server on schema changes', async () => {
       parseGraphQLServer.server = undefined;
@@ -136,12 +160,6 @@ describe('ParseGraphQLServer', () => {
       });
     });
 
-    it('should include application-id header aliases in GraphQL CSRF request headers', () => {
-      const headers = getCSRFRequestHeaders({
-        'X-Parse-Application-Id': ['X-App-Id', 'X-Client-App'],
-      });
-      expect(headers).toEqual(['X-Parse-Application-Id', 'X-App-Id', 'X-Client-App']);
-    });
   });
 
   describe('_getGraphQLOptions', () => {
