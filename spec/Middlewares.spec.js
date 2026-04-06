@@ -480,6 +480,27 @@ describe('middlewares', () => {
     expect(fakeReq.auth.isMaster).toBe(true);
   });
 
+  it('should call next without throwing when app is not in AppCache', () => {
+    const next = jasmine.createSpy('next');
+    middlewares.handleHeaderAliases('NotInCacheAppId')(fakeReq, fakeRes, next);
+    expect(next).toHaveBeenCalled();
+  });
+
+  it('should call next without throwing when headerAliases is missing or null', done => {
+    AppCachePut(fakeReq.body._ApplicationId, {
+      masterKey: 'masterKey',
+      masterKeyIps: ['0.0.0.0/0'],
+    });
+    middlewares.handleHeaderAliases(fakeReq.body._ApplicationId)(fakeReq, fakeRes, () => {
+      AppCachePut(fakeReq.body._ApplicationId, {
+        masterKey: 'masterKey',
+        masterKeyIps: ['0.0.0.0/0'],
+        headerAliases: null,
+      });
+      middlewares.handleHeaderAliases(fakeReq.body._ApplicationId)(fakeReq, fakeRes, done);
+    });
+  });
+
   it('should give invalid response when upload file without x-parse-application-id in header', () => {
     AppCachePut(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',

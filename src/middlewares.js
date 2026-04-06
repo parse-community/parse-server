@@ -113,7 +113,7 @@ function applyHeaderAliases(req, headerAliases) {
 export function handleHeaderAliases(appId) {
   return (req, res, next) => {
     const config = Config.get(appId, getMountForRequest(req));
-    applyHeaderAliases(req, config?.headerAliases);
+    applyHeaderAliases(req, config?.headerAliases || {});
     next();
   };
 }
