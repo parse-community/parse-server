@@ -662,8 +662,14 @@ describe('ParseLiveQueryServer', function () {
     // Register message handlers (sets up disconnect handler)
     parseLiveQueryServer._onConnect(parseWebSocket);
 
+    // Verify client exists before disconnect
+    expect(parseLiveQueryServer.clients.has(clientId)).toBeTrue();
+
     // Trigger disconnect
     parseWebSocket.emit('disconnect');
+
+    // Prove disconnect handler executed: client removed from server
+    expect(parseLiveQueryServer.clients.has(clientId)).toBeFalse();
 
     // The disconnect handler must NOT call deleteSubscriptionInfo;
     // only the explicit unsubscribe handler does.
