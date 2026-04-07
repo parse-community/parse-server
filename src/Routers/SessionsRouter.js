@@ -58,7 +58,7 @@ export class SessionsRouter extends ClassesRouter {
     };
   }
 
-  handleUpdateToRevocableSession(req) {
+  async handleUpdateToRevocableSession(req) {
     const config = req.config;
     const user = req.auth.user;
     // Issue #2720
@@ -74,22 +74,31 @@ export class SessionsRouter extends ClassesRouter {
       installationId: req.auth.installationId,
     });
 
-    return createSession()
-      .then(() => {
-        // delete the session token, use the db to skip beforeSave
-        return config.database.update(
-          '_User',
-          {
-            objectId: user.id,
-          },
-          {
-            sessionToken: { __op: 'Delete' },
-          }
-        );
-      })
-      .then(() => {
-        return Promise.resolve({ response: sessionData });
-      });
+    await createSession();
+    // delete the session token, use the db to skip beforeSave
+    await config.database.update(
+      '_User',
+      { objectId: user.id },
+      { sessionToken: { __op: 'Delete' } }
+    );
+    // Re-fetch the session with the caller's auth context so that
+    // protectedFields filtering applies correctly
+    const userAuth = new Auth.Auth({
+      config,
+      isMaster: false,
+      user: Parse.Object.fromJSON({ className: '_User', objectId: user.id }),
+      installationId: req.auth.installationId,
+    });
+    const response = await rest.find(
+      config,
+      userAuth,
+      '_Session',
+      { sessionToken: sessionData.sessionToken },
+      {},
+      req.info.clientSDK,
+      req.info.context
+    );
+    return { response: response.results[0] };
   }
 
   mountRoutes() {
