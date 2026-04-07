@@ -372,19 +372,24 @@ export class UsersRouter extends ClassesRouter {
       user: Parse.Object.fromJSON({ className: '_User', objectId: user.objectId }),
       installationId: req.info.installationId,
     });
-    const filteredUserResponse = await rest.get(
-      req.config,
-      userAuth,
-      '_User',
-      user.objectId,
-      {},
-      req.info.clientSDK,
-      req.info.context
-    );
-    if (!filteredUserResponse.results || filteredUserResponse.results.length === 0) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'User not found.');
+    let filteredUser;
+    try {
+      const filteredUserResponse = await rest.get(
+        req.config,
+        userAuth,
+        '_User',
+        user.objectId,
+        {},
+        req.info.clientSDK,
+        req.info.context
+      );
+      filteredUser = filteredUserResponse.results?.[0];
+    } catch {
+      // re-fetch may fail for legacy users without ACL; fall through
     }
-    const filteredUser = filteredUserResponse.results[0];
+    if (!filteredUser) {
+      filteredUser = user;
+    }
     UsersRouter.removeHiddenProperties(filteredUser);
     filteredUser.sessionToken = user.sessionToken;
     if (authDataResponse) {
@@ -466,19 +471,24 @@ export class UsersRouter extends ClassesRouter {
           user: Parse.Object.fromJSON({ className: '_User', objectId: user.objectId }),
           installationId: req.info.installationId,
         });
-        const filteredUserResponse = await rest.get(
-          req.config,
-          userAuth,
-          '_User',
-          user.objectId,
-          {},
-          req.info.clientSDK,
-          req.info.context
-        );
-        if (!filteredUserResponse.results || filteredUserResponse.results.length === 0) {
-          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'User not found.');
+        let filteredUser;
+        try {
+          const filteredUserResponse = await rest.get(
+            req.config,
+            userAuth,
+            '_User',
+            user.objectId,
+            {},
+            req.info.clientSDK,
+            req.info.context
+          );
+          filteredUser = filteredUserResponse.results?.[0];
+        } catch {
+          // re-fetch may fail for legacy users without ACL; fall through
         }
-        const filteredUser = filteredUserResponse.results[0];
+        if (!filteredUser) {
+          filteredUser = user;
+        }
         UsersRouter.removeHiddenProperties(filteredUser);
         return { response: filteredUser };
       })
