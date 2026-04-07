@@ -5745,5 +5745,31 @@ describe('Vulnerabilities', () => {
       expect(meResponse.data.objectId).toBeDefined();
       expect(meResponse.data.user).toBeDefined();
     });
+
+    it('should return protected fields on GET /sessions/me with master key', async () => {
+      await reconfigureServer({
+        protectedFields: {
+          _Session: { '*': ['createdWith'] },
+        },
+      });
+      const user = new Parse.User();
+      user.setUsername('session-pf-mk');
+      user.setPassword('password123');
+      user.set('email', 'session-pf-mk@example.com');
+      await user.signUp();
+      const sessionToken = user.getSessionToken();
+
+      const meResponse = await request({
+        method: 'GET',
+        url: 'http://localhost:8378/1/sessions/me',
+        headers: {
+          ...headers,
+          'X-Parse-Session-Token': sessionToken,
+          'X-Parse-Master-Key': 'test',
+        },
+      });
+      expect(meResponse.data.createdWith).toBeDefined();
+      expect(meResponse.data.sessionToken).toBe(sessionToken);
+    });
   });
 });

@@ -34,16 +34,20 @@ export class SessionsRouter extends ClassesRouter {
     const sessionObjectId = sessionResponse.results[0].objectId;
     const userId = sessionResponse.results[0].user.objectId;
     // Re-fetch the session with the caller's auth context so that
-    // protectedFields and CLP apply correctly
-    const userAuth = new Auth.Auth({
-      config: req.config,
-      isMaster: false,
-      user: Parse.Object.fromJSON({ className: '_User', objectId: userId }),
-      installationId: req.info.installationId,
-    });
+    // protectedFields and CLP apply correctly; if the caller used master key,
+    // protectedFields are bypassed, matching the behavior of GET /sessions/:id
+    const refetchAuth =
+      req.auth?.isMaster || req.auth?.isMaintenance
+        ? req.auth
+        : new Auth.Auth({
+          config: req.config,
+          isMaster: false,
+          user: Parse.Object.fromJSON({ className: '_User', objectId: userId }),
+          installationId: req.info.installationId,
+        });
     const response = await rest.get(
       req.config,
-      userAuth,
+      refetchAuth,
       '_Session',
       sessionObjectId,
       {},
@@ -82,16 +86,20 @@ export class SessionsRouter extends ClassesRouter {
       { sessionToken: { __op: 'Delete' } }
     );
     // Re-fetch the session with the caller's auth context so that
-    // protectedFields filtering applies correctly
-    const userAuth = new Auth.Auth({
-      config,
-      isMaster: false,
-      user: Parse.Object.fromJSON({ className: '_User', objectId: user.id }),
-      installationId: req.auth.installationId,
-    });
+    // protectedFields filtering applies correctly; if the caller used master key,
+    // protectedFields are bypassed, matching the behavior of GET /sessions/:id
+    const refetchAuth =
+      req.auth.isMaster || req.auth.isMaintenance
+        ? req.auth
+        : new Auth.Auth({
+          config,
+          isMaster: false,
+          user: Parse.Object.fromJSON({ className: '_User', objectId: user.id }),
+          installationId: req.auth.installationId,
+        });
     const response = await rest.find(
       config,
-      userAuth,
+      refetchAuth,
       '_Session',
       { sessionToken: sessionData.sessionToken },
       {},

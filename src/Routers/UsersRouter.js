@@ -365,18 +365,22 @@ export class UsersRouter extends ClassesRouter {
     );
 
     // Re-fetch the user with the caller's auth context so that
-    // protectedFields and CLP apply correctly
-    const userAuth = new Auth.Auth({
-      config: req.config,
-      isMaster: false,
-      user: Parse.Object.fromJSON({ className: '_User', objectId: user.objectId }),
-      installationId: req.info.installationId,
-    });
+    // protectedFields and CLP apply correctly; if the caller used master key,
+    // protectedFields are bypassed, matching the behavior of GET /users/:id
+    const refetchAuth =
+      req.auth.isMaster || req.auth.isMaintenance
+        ? req.auth
+        : new Auth.Auth({
+          config: req.config,
+          isMaster: false,
+          user: Parse.Object.fromJSON({ className: '_User', objectId: user.objectId }),
+          installationId: req.info.installationId,
+        });
     let filteredUser;
     try {
       const filteredUserResponse = await rest.get(
         req.config,
-        userAuth,
+        refetchAuth,
         '_User',
         user.objectId,
         {},
@@ -464,18 +468,22 @@ export class UsersRouter extends ClassesRouter {
         // Remove hidden properties.
         UsersRouter.removeHiddenProperties(user);
         // Re-fetch the user with the caller's auth context so that
-        // protectedFields and CLP apply correctly
-        const userAuth = new Auth.Auth({
-          config: req.config,
-          isMaster: false,
-          user: Parse.Object.fromJSON({ className: '_User', objectId: user.objectId }),
-          installationId: req.info.installationId,
-        });
+        // protectedFields and CLP apply correctly; if the caller used master key,
+        // protectedFields are bypassed, matching the behavior of GET /users/:id
+        const refetchAuth =
+          req.auth.isMaster || req.auth.isMaintenance
+            ? req.auth
+            : new Auth.Auth({
+              config: req.config,
+              isMaster: false,
+              user: Parse.Object.fromJSON({ className: '_User', objectId: user.objectId }),
+              installationId: req.info.installationId,
+            });
         let filteredUser;
         try {
           const filteredUserResponse = await rest.get(
             req.config,
-            userAuth,
+            refetchAuth,
             '_User',
             user.objectId,
             {},
