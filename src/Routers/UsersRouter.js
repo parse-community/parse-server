@@ -381,7 +381,11 @@ export class UsersRouter extends ClassesRouter {
       req.info.clientSDK,
       req.info.context
     );
-    const filteredUser = filteredUserResponse.results?.[0] || user;
+    if (!filteredUserResponse.results || filteredUserResponse.results.length === 0) {
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'User not found.');
+    }
+    const filteredUser = filteredUserResponse.results[0];
+    UsersRouter.removeHiddenProperties(filteredUser);
     filteredUser.sessionToken = user.sessionToken;
     if (authDataResponse) {
       filteredUser.authDataResponse = authDataResponse;
@@ -471,7 +475,12 @@ export class UsersRouter extends ClassesRouter {
           req.info.clientSDK,
           req.info.context
         );
-        return { response: filteredUserResponse.results?.[0] || user };
+        if (!filteredUserResponse.results || filteredUserResponse.results.length === 0) {
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'User not found.');
+        }
+        const filteredUser = filteredUserResponse.results[0];
+        UsersRouter.removeHiddenProperties(filteredUser);
+        return { response: filteredUser };
       })
       .catch(error => {
         throw error;
