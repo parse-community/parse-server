@@ -364,12 +364,30 @@ export class UsersRouter extends ClassesRouter {
       req.info.context
     );
 
+    // Re-fetch the user with the caller's auth context so that
+    // protectedFields and CLP apply correctly
+    const userAuth = new Auth.Auth({
+      config: req.config,
+      isMaster: false,
+      user: Parse.Object.fromJSON({ className: '_User', objectId: user.objectId }),
+      installationId: req.info.installationId,
+    });
+    const filteredUserResponse = await rest.get(
+      req.config,
+      userAuth,
+      '_User',
+      user.objectId,
+      {},
+      req.info.clientSDK,
+      req.info.context
+    );
+    const filteredUser = filteredUserResponse.results?.[0] || user;
+    filteredUser.sessionToken = user.sessionToken;
     if (authDataResponse) {
-      user.authDataResponse = authDataResponse;
+      filteredUser.authDataResponse = authDataResponse;
     }
-    await req.config.authDataManager.runAfterFind(req, user.authData);
 
-    return { response: user };
+    return { response: filteredUser };
   }
 
   /**
@@ -436,8 +454,24 @@ export class UsersRouter extends ClassesRouter {
       .then(async user => {
         // Remove hidden properties.
         UsersRouter.removeHiddenProperties(user);
-        await req.config.authDataManager.runAfterFind(req, user.authData);
-        return { response: user };
+        // Re-fetch the user with the caller's auth context so that
+        // protectedFields and CLP apply correctly
+        const userAuth = new Auth.Auth({
+          config: req.config,
+          isMaster: false,
+          user: Parse.Object.fromJSON({ className: '_User', objectId: user.objectId }),
+          installationId: req.info.installationId,
+        });
+        const filteredUserResponse = await rest.get(
+          req.config,
+          userAuth,
+          '_User',
+          user.objectId,
+          {},
+          req.info.clientSDK,
+          req.info.context
+        );
+        return { response: filteredUserResponse.results?.[0] || user };
       })
       .catch(error => {
         throw error;
