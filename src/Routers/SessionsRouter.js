@@ -98,6 +98,9 @@ export class SessionsRouter extends ClassesRouter {
       req.info.clientSDK,
       req.info.context
     );
+    if (!response.results || response.results.length === 0) {
+      throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Failed to load upgraded session.');
+    }
     return { response: response.results[0] };
   }
 
