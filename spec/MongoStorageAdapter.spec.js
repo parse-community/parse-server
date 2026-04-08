@@ -7,7 +7,7 @@ const request = require('../lib/request');
 const Config = require('../lib/Config');
 const TestUtils = require('../lib/TestUtils');
 const Utils = require('../lib/Utils');
-let uuidv4;
+const { randomUUID: uuidv4 } = require('crypto');
 
 const fakeClient = {
   s: { options: { dbName: null } },
@@ -17,9 +17,6 @@ const fakeClient = {
 // These tests are specific to the mongo storage adapter + mongo storage format
 // and will eventually be moved into their own repo
 describe_only_db('mongo')('MongoStorageAdapter', () => {
-  beforeAll(async () => {
-    ({ v4: uuidv4 } = await import('uuid'));
-  });
   beforeEach(async () => {
     await new MongoStorageAdapter({ uri: databaseURI }).deleteAllClasses();
     Config.get(Parse.applicationId).schemaCache.clear();
