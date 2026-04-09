@@ -1973,6 +1973,120 @@ describe('ProtectedFields', function () {
       expect(response.data.objectId).toBe(user.id);
     });
 
+    it('/login respects protectedFieldsOwnerExempt: false', async function () {
+      await reconfigureServer({
+        protectedFields: {
+          _User: {
+            '*': ['phone'],
+          },
+        },
+        protectedFieldsOwnerExempt: false,
+      });
+      const user = await Parse.User.signUp('user1', 'password');
+      const sessionToken = user.getSessionToken();
+      user.set('phone', '555-1234');
+      await user.save(null, { sessionToken });
+
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/login',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: 'user1', password: 'password' }),
+      });
+      expect(response.data.phone).toBeUndefined();
+      expect(response.data.objectId).toBe(user.id);
+      expect(response.data.sessionToken).toBeDefined();
+    });
+
+    it('/verifyPassword respects protectedFieldsOwnerExempt: false', async function () {
+      await reconfigureServer({
+        protectedFields: {
+          _User: {
+            '*': ['phone'],
+          },
+        },
+        protectedFieldsOwnerExempt: false,
+        verifyUserEmails: false,
+      });
+      const user = await Parse.User.signUp('user1', 'password');
+      const sessionToken = user.getSessionToken();
+      user.set('phone', '555-1234');
+      await user.save(null, { sessionToken });
+
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/verifyPassword',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: 'user1', password: 'password' }),
+      });
+      expect(response.data.phone).toBeUndefined();
+      expect(response.data.objectId).toBe(user.id);
+    });
+
+    it('/login with master key bypasses protectedFields', async function () {
+      await reconfigureServer({
+        protectedFields: {
+          _User: {
+            '*': ['phone'],
+          },
+        },
+        protectedFieldsOwnerExempt: false,
+      });
+      const user = await Parse.User.signUp('user1', 'password');
+      const sessionToken = user.getSessionToken();
+      user.set('phone', '555-1234');
+      await user.save(null, { sessionToken });
+
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/login',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: 'user1', password: 'password' }),
+      });
+      expect(response.data.phone).toBe('555-1234');
+      expect(response.data.sessionToken).toBeDefined();
+    });
+
+    it('/verifyPassword with master key bypasses protectedFields', async function () {
+      await reconfigureServer({
+        protectedFields: {
+          _User: {
+            '*': ['phone'],
+          },
+        },
+        protectedFieldsOwnerExempt: false,
+        verifyUserEmails: false,
+      });
+      const user = await Parse.User.signUp('user1', 'password');
+      const sessionToken = user.getSessionToken();
+      user.set('phone', '555-1234');
+      await user.save(null, { sessionToken });
+
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/verifyPassword',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: 'user1', password: 'password' }),
+      });
+      expect(response.data.phone).toBe('555-1234');
+    });
+
     it('owner sees non-protected fields like email when protectedFieldsOwnerExempt is true', async function () {
       await reconfigureServer({
         protectedFields: {

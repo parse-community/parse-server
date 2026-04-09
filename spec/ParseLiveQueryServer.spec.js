@@ -648,7 +648,35 @@ describe('ParseLiveQueryServer', function () {
     expect(spy.calls.count()).toBe(2);
   });
 
-  // TODO: Test server can set disconnect command message handler for a parseWebSocket
+  it('does not delete subscription info on client disconnect', async () => {
+    const parseLiveQueryServer = new ParseLiveQueryServer({});
+    // Add mock client and subscription
+    const clientId = 1;
+    const client = addMockClient(parseLiveQueryServer, clientId);
+    const requestId = 2;
+    const EventEmitter = require('events');
+    const parseWebSocket = new EventEmitter();
+    parseWebSocket.clientId = clientId;
+    await addMockSubscription(parseLiveQueryServer, clientId, requestId, parseWebSocket);
+
+    // Register message handlers (sets up disconnect handler)
+    parseLiveQueryServer._onConnect(parseWebSocket);
+
+    // Verify client exists before disconnect
+    expect(parseLiveQueryServer.clients.has(clientId)).toBeTrue();
+
+    // Trigger disconnect
+    parseWebSocket.emit('disconnect');
+
+    // Prove disconnect handler executed: client removed from server
+    expect(parseLiveQueryServer.clients.has(clientId)).toBeFalse();
+
+    // The disconnect handler must NOT call deleteSubscriptionInfo;
+    // only the explicit unsubscribe handler does.
+    // The advisory GHSA-3rpv-5775-m86r claims subscriptionInfo
+    // becomes undefined on disconnect, but it does not.
+    expect(client.deleteSubscriptionInfo).not.toHaveBeenCalled();
+  });
 
   it('has no subscription and can handle object delete command', function () {
     const parseLiveQueryServer = new ParseLiveQueryServer({});

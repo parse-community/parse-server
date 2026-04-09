@@ -186,6 +186,31 @@ describe('middlewares', () => {
     );
   });
 
+  it_id('5b8b9280-53ec-445a-b868-6992931d2236')(it)('should reject maintenance key from non-allowed IP instead of downgrading to anonymous auth', async () => {
+    await reconfigureServer({
+      maintenanceKeyIps: ['10.0.0.1'],
+    });
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'error').and.callFake(() => {});
+    AppCachePut(fakeReq.body._ApplicationId, {
+      maintenanceKey: 'maintenanceKey',
+      maintenanceKeyIps: ['10.0.0.1'],
+      masterKey: 'masterKey',
+      masterKeyIps: ['0.0.0.0/0', '::0'],
+    });
+    fakeReq.ip = '127.0.0.1';
+    fakeReq.headers['x-parse-maintenance-key'] = 'maintenanceKey';
+
+    const error = await middlewares.handleParseHeaders(fakeReq, fakeRes, () => {}).catch(e => e);
+
+    expect(error).toBeDefined();
+    expect(error.status).toBe(403);
+    expect(error.message).toEqual('unauthorized');
+    expect(logger.error).toHaveBeenCalledWith(
+      `Request using maintenance key rejected as the request IP address '127.0.0.1' is not set in Parse Server option 'maintenanceKeyIps'.`
+    );
+  });
+
   it_id('2f7fadec-a87c-4626-90d1-65c75653aea9')(it)('should succeed if the ip does belong to masterKeyIps list', async () => {
     AppCachePut(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
