@@ -5,7 +5,7 @@ import Parse from 'parse/node';
 // @flow-disable-next
 import _ from 'lodash';
 // @flow-disable-next
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import sql from './sql';
 import { StorageAdapter } from '../StorageAdapter';
 import type { SchemaType, QueryType, QueryOptions } from '../StorageAdapter';
@@ -915,7 +915,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     this._client = client;
     this._onchange = () => { };
     this._pgp = pgp;
-    this._uuid = uuidv4();
+    this._uuid = randomUUID();
     this.canSortOnJoinTables = false;
   }
 

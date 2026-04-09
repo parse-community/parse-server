@@ -136,4 +136,36 @@ describe_only_db('mongo')('revocable sessions', () => {
         done();
       });
   });
+
+  it('should strip protected fields from upgrade response when protectedFieldsSaveResponseExempt is false', async () => {
+    await reconfigureServer({
+      protectedFields: {
+        _Session: { '*': ['createdWith', 'installationId'] },
+      },
+      protectedFieldsSaveResponseExempt: false,
+    });
+    const config = Config.get(Parse.applicationId);
+    const user = {
+      objectId: 'pfUser123',
+      username: 'pfuser',
+      password: 'pass',
+      _session_token: 'legacySessionTokenPf',
+    };
+    await config.database.create('_User', user);
+
+    const response = await request({
+      method: 'POST',
+      url: Parse.serverURL + '/upgradeToRevocableSession',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Rest-API-Key': 'rest',
+        'X-Parse-Session-Token': 'legacySessionTokenPf',
+        'X-Parse-Installation-Id': 'test-install-id',
+      },
+    });
+    expect(response.data.sessionToken).toBeDefined();
+    expect(response.data.sessionToken.indexOf('r:')).toBe(0);
+    expect(response.data.createdWith).toBeUndefined();
+    expect(response.data.installationId).toBeUndefined();
+  });
 });

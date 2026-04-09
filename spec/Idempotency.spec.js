@@ -4,12 +4,9 @@ const Definitions = require('../lib/Options/Definitions');
 const request = require('../lib/request');
 const rest = require('../lib/rest');
 const auth = require('../lib/Auth');
-let uuidv4;
+const { randomUUID: uuidv4 } = require('crypto');
 
 describe('Idempotency', () => {
-  beforeAll(async () => {
-    ({ v4: uuidv4 } = await import('uuid'));
-  });
   // Parameters
   /** Enable TTL expiration simulated by removing entry instead of waiting for MongoDB TTL monitor which
    runs only every 60s, so it can take up to 119s until entry removal - ain't nobody got time for that */

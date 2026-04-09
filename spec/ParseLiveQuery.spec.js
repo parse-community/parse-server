@@ -916,7 +916,7 @@ describe('ParseLiveQuery', function () {
     ]);
   });
 
-  it('liveQuery on Session class', async done => {
+  it('liveQuery on Session class', async () => {
     await reconfigureServer({
       liveQuery: { classNames: [Parse.Session] },
       startLiveQueryServer: true,
@@ -932,17 +932,19 @@ describe('ParseLiveQuery', function () {
     const query = new Parse.Query(Parse.Session);
     const subscription = await query.subscribe();
 
-    subscription.on('create', async obj => {
-      expect(obj.get('user').id).toBe(user.id);
-      expect(obj.get('createdWith')).toEqual({ action: 'login', authProvider: 'password' });
-      expect(obj.get('expiresAt')).toBeInstanceOf(Date);
-      expect(obj.get('installationId')).toBeDefined();
-      expect(obj.get('createdAt')).toBeInstanceOf(Date);
-      expect(obj.get('updatedAt')).toBeInstanceOf(Date);
-      done();
+    const createEvent = new Promise(resolve => {
+      subscription.on('create', resolve);
     });
 
     await Parse.User.logIn('username', 'password');
+
+    const obj = await createEvent;
+    expect(obj.get('user').id).toBe(user.id);
+    expect(obj.get('createdWith')).toEqual({ action: 'login', authProvider: 'password' });
+    expect(obj.get('expiresAt')).toBeInstanceOf(Date);
+    expect(obj.get('installationId')).toBeDefined();
+    expect(obj.get('createdAt')).toBeInstanceOf(Date);
+    expect(obj.get('updatedAt')).toBeInstanceOf(Date);
   });
 
   it('prevent liveQuery on Session class when not logged in', async () => {

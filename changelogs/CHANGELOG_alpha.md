@@ -1,3 +1,31 @@
+# [9.8.0-alpha.10](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.9...9.8.0-alpha.10) (2026-04-07)
+
+
+### Bug Fixes
+
+* Master key does not bypass `protectedFields` on various endpoints ([#10412](https://github.com/parse-community/parse-server/issues/10412)) ([c0889c8](https://github.com/parse-community/parse-server/commit/c0889c8575ee6c6ee01c79cd1ae457124e2a08b3))
+
+# [9.8.0-alpha.9](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.8...9.8.0-alpha.9) (2026-04-07)
+
+
+### Bug Fixes
+
+* Endpoints `/login` and `/verifyPassword` ignore `_User` `protectedFields` ([#10409](https://github.com/parse-community/parse-server/issues/10409)) ([8a3db3b](https://github.com/parse-community/parse-server/commit/8a3db3b9666ea998a8843c629e1af55b105e22e0))
+
+# [9.8.0-alpha.8](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.7...9.8.0-alpha.8) (2026-04-07)
+
+
+### Bug Fixes
+
+* Endpoint `/upgradeToRevocableSession` ignores `_Session` `protectedFields` ([#10408](https://github.com/parse-community/parse-server/issues/10408)) ([c136e2b](https://github.com/parse-community/parse-server/commit/c136e2b7ab74609a5127fb68fc5ba40fef440f48))
+
+# [9.8.0-alpha.7](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.6...9.8.0-alpha.7) (2026-04-06)
+
+
+### Bug Fixes
+
+* Endpoint `/sessions/me` bypasses `_Session` `protectedFields` ([GHSA-g4v2-qx3q-4p64](https://github.com/parse-community/parse-server/security/advisories/GHSA-g4v2-qx3q-4p64)) ([#10406](https://github.com/parse-community/parse-server/issues/10406)) ([d507575](https://github.com/parse-community/parse-server/commit/d5075758f6c3ae9d806671de196fd8b419bc517e))
+
 # [9.8.0-alpha.6](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.5...9.8.0-alpha.6) (2026-04-05)
 
 
