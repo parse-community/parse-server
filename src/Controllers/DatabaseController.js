@@ -159,7 +159,7 @@ const validateQuery = (
   }
 
   Object.keys(query).forEach(key => {
-    if (query && query[key] && query[key].$regex) {
+    if (query && query[key] && query[key].$regex !== undefined) {
       if (!isMaster && rc && rc.allowRegex === false) {
         throw new Parse.Error(Parse.Error.INVALID_QUERY, '$regex operator is not allowed');
       }

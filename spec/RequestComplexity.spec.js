@@ -657,6 +657,17 @@ describe('request complexity', () => {
       ).toBeResolved();
     });
 
+    it('should reject empty-string $regex when allowRegex is false', async () => {
+      const where = { username: { $regex: '' } };
+      await expectAsync(
+        rest.find(config, auth.nobody(config), '_User', where)
+      ).toBeRejectedWith(
+        jasmine.objectContaining({
+          message: '$regex operator is not allowed',
+        })
+      );
+    });
+
     it('should allow $regex with maintenance key when allowRegex is false', async () => {
       const where = { username: { $regex: 'test' } };
       await expectAsync(
