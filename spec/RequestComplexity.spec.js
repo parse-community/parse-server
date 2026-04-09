@@ -112,6 +112,16 @@ describe('request complexity', () => {
       );
     });
 
+    it('should reject non-boolean value for allowRegex', async () => {
+      await expectAsync(
+        reconfigureServer({
+          requestComplexity: { allowRegex: 'yes' },
+        })
+      ).toBeRejectedWith(
+        new Error('requestComplexity.allowRegex must be a boolean.')
+      );
+    });
+
     it('should reject unknown properties', async () => {
       await expectAsync(
         reconfigureServer({
