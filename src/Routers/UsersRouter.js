@@ -108,7 +108,13 @@ export class UsersRouter extends ClassesRouter {
         .find('_User', query, {}, Auth.maintenance(req.config))
         .then(results => {
           if (!results.length) {
-            throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+            // Perform a dummy bcrypt compare to normalize response timing,
+            // preventing user enumeration via timing side-channel
+            return passwordCrypto
+              .compare(password, passwordCrypto.dummyHash)
+              .then(() => {
+                throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+              });
           }
 
           if (results.length > 1) {
@@ -121,6 +127,11 @@ export class UsersRouter extends ClassesRouter {
             user = results[0];
           }
 
+          if (typeof user.password !== 'string' || user.password.length === 0) {
+            // Passwordless account (e.g. OAuth-only): run dummy compare for
+            // timing normalization, discard result, always reject
+            return passwordCrypto.compare(password, passwordCrypto.dummyHash).then(() => false);
+          }
           return passwordCrypto.compare(password, user.password);
         })
         .then(correct => {
@@ -353,12 +364,43 @@ export class UsersRouter extends ClassesRouter {
       req.info.context
     );
 
-    if (authDataResponse) {
-      user.authDataResponse = authDataResponse;
+    // Re-fetch the user with the caller's auth context so that
+    // protectedFields and CLP apply correctly; if the caller used master key,
+    // protectedFields are bypassed, matching the behavior of GET /users/:id
+    const refetchAuth =
+      req.auth.isMaster || req.auth.isMaintenance
+        ? req.auth
+        : new Auth.Auth({
+          config: req.config,
+          isMaster: false,
+          user: Parse.Object.fromJSON({ className: '_User', objectId: user.objectId }),
+          installationId: req.info.installationId,
+        });
+    let filteredUser;
+    try {
+      const filteredUserResponse = await rest.get(
+        req.config,
+        refetchAuth,
+        '_User',
+        user.objectId,
+        {},
+        req.info.clientSDK,
+        req.info.context
+      );
+      filteredUser = filteredUserResponse.results?.[0];
+    } catch {
+      // re-fetch may fail for legacy users without ACL; fall through
     }
-    await req.config.authDataManager.runAfterFind(req, user.authData);
+    if (!filteredUser) {
+      filteredUser = user;
+    }
+    UsersRouter.removeHiddenProperties(filteredUser);
+    filteredUser.sessionToken = user.sessionToken;
+    if (authDataResponse) {
+      filteredUser.authDataResponse = authDataResponse;
+    }
 
-    return { response: user };
+    return { response: filteredUser };
   }
 
   /**
@@ -425,8 +467,38 @@ export class UsersRouter extends ClassesRouter {
       .then(async user => {
         // Remove hidden properties.
         UsersRouter.removeHiddenProperties(user);
-        await req.config.authDataManager.runAfterFind(req, user.authData);
-        return { response: user };
+        // Re-fetch the user with the caller's auth context so that
+        // protectedFields and CLP apply correctly; if the caller used master key,
+        // protectedFields are bypassed, matching the behavior of GET /users/:id
+        const refetchAuth =
+          req.auth.isMaster || req.auth.isMaintenance
+            ? req.auth
+            : new Auth.Auth({
+              config: req.config,
+              isMaster: false,
+              user: Parse.Object.fromJSON({ className: '_User', objectId: user.objectId }),
+              installationId: req.info.installationId,
+            });
+        let filteredUser;
+        try {
+          const filteredUserResponse = await rest.get(
+            req.config,
+            refetchAuth,
+            '_User',
+            user.objectId,
+            {},
+            req.info.clientSDK,
+            req.info.context
+          );
+          filteredUser = filteredUserResponse.results?.[0];
+        } catch {
+          // re-fetch may fail for legacy users without ACL; fall through
+        }
+        if (!filteredUser) {
+          filteredUser = user;
+        }
+        UsersRouter.removeHiddenProperties(filteredUser);
+        return { response: filteredUser };
       })
       .catch(error => {
         throw error;

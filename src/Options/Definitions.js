@@ -272,6 +272,13 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  fileDownload: {
+    env: 'PARSE_SERVER_FILE_DOWNLOAD_OPTIONS',
+    help: 'Options for file downloads',
+    action: parsers.objectParser,
+    type: 'FileDownloadOptions',
+    default: {},
+  },
   fileKey: {
     env: 'PARSE_SERVER_FILE_KEY',
     help: 'Key for your files',
@@ -559,6 +566,11 @@ module.exports.ParseServerOptions = {
     help: "When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.",
     action: parsers.booleanParser,
     default: true,
+  },
+  routeAllowList: {
+    env: 'PARSE_SERVER_ROUTE_ALLOW_LIST',
+    help: '(Optional) Restricts external client access to a list of allowed API routes.<br><br>When this option is set, all external non-master-key requests are denied by default. Only routes matching at least one of the configured regex patterns are allowed through. Internal calls from Cloud Code, Cloud Jobs, and triggers are not affected.<br><br>Each entry is a regex pattern string matched against the normalized route identifier (request path with mount prefix and leading slash stripped). Patterns are auto-anchored with `^` and `$` for full-match semantics.<br><br><b>Examples of normalized route identifiers:</b><ul><li>`classes/GameScore` (class CRUD)</li><li>`classes/GameScore/abc123` (object by ID)</li><li>`users` (user operations)</li><li>`login` (login endpoint)</li><li>`functions/sendEmail` (Cloud Function)</li><li>`jobs/cleanup` (Cloud Job)</li><li>`push` (push notifications)</li><li>`config` (client config)</li><li>`installations` (installations)</li><li>`files/picture.jpg` (file operations)</li></ul><b>Example patterns:</b><ul><li>`classes/ChatMessage` matches only `classes/ChatMessage`</li><li>`classes/Chat.*` matches `classes/ChatMessage`, `classes/ChatRoom`, etc.</li><li>`functions/.*` matches all Cloud Functions</li></ul>Setting an empty array `[]` blocks all external non-master-key requests (full lockdown).<br><br>When setting the option via an environment variable, the notation is a comma-separated string, for example `"classes/ChatMessage,users,functions/.*"`.<br><br>Defaults to `undefined` which means the feature is inactive and all routes are accessible.',
+    action: parsers.arrayParser,
   },
   scheduledPush: {
     env: 'PARSE_SERVER_SCHEDULED_PUSH',
@@ -1106,6 +1118,26 @@ module.exports.FileUploadOptions = {
     default: [
       '^(?!([xXsS]?[hH][tT][mM][lL]?(\\+[xX][mM][lL])?|[xX][hH][tT]|[sS][vV][gG]([zZ]|\\+[xX][mM][lL])?|[xX][mM][lL]|[xX][sS][lL][tT]?(\\+[xX][mM][lL])?|[xX][sS][dD]|[rR][nN][gG]|[rR][dD][fF](\\+[xX][mM][lL])?|[oO][wW][lL]|[mM][aA][tT][hH][mM][lL](\\+[xX][mM][lL])?)$)',
     ],
+  },
+};
+module.exports.FileDownloadOptions = {
+  enableForAnonymousUser: {
+    env: 'PARSE_SERVER_FILE_DOWNLOAD_ENABLE_FOR_ANONYMOUS_USER',
+    help: 'Is true if file download should be allowed for anonymous users.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  enableForAuthenticatedUser: {
+    env: 'PARSE_SERVER_FILE_DOWNLOAD_ENABLE_FOR_AUTHENTICATED_USER',
+    help: 'Is true if file download should be allowed for authenticated users.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  enableForPublic: {
+    env: 'PARSE_SERVER_FILE_DOWNLOAD_ENABLE_FOR_PUBLIC',
+    help: 'Is true if file download should be allowed for anyone, regardless of user authentication.',
+    action: parsers.booleanParser,
+    default: true,
   },
 };
 /* The available log levels for Parse Server logging. Valid values are:<br>- `'error'` - Error level (highest priority)<br>- `'warn'` - Warning level<br>- `'info'` - Info level (default)<br>- `'verbose'` - Verbose level<br>- `'debug'` - Debug level<br>- `'silly'` - Silly level (lowest priority) */

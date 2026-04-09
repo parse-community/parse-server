@@ -10,7 +10,7 @@ import { matchesQuery, queryHash } from './QueryTools';
 import { ParsePubSub } from './ParsePubSub';
 import SchemaController from '../Controllers/SchemaController';
 import _ from 'lodash';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import {
   runLiveQueryEventHandlers,
   getTrigger,
@@ -906,7 +906,7 @@ class ParseLiveQueryServer {
       return;
     }
     const hasMasterKey = this._hasMasterKey(request, this.keyPairs);
-    const clientId = uuidv4();
+    const clientId = randomUUID();
     const client = new Client(
       clientId,
       parseWebsocket,

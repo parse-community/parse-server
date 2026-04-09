@@ -9,6 +9,25 @@ import { jobStatusHandler } from '../StatusHandler';
 import _ from 'lodash';
 import { logger } from '../logger';
 import { createSanitizedError } from '../Error';
+import Busboy from '@fastify/busboy';
+import Utils from '../Utils';
+
+function redactBuffers(obj) {
+  if (Buffer.isBuffer(obj)) {
+    return `[Buffer: ${obj.length} bytes]`;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(redactBuffers);
+  }
+  if (obj && typeof obj === 'object') {
+    const result = {};
+    for (const key of Object.keys(obj)) {
+      result[key] = redactBuffers(obj[key]);
+    }
+    return result;
+  }
+  return obj;
+}
 
 function parseObject(obj, config) {
   if (Array.isArray(obj)) {
@@ -29,6 +48,8 @@ function parseObject(obj, config) {
       className: obj.className,
       objectId: obj.objectId,
     });
+  } else if (Buffer.isBuffer(obj)) {
+    return obj;
   } else if (obj && typeof obj === 'object') {
     return parseParams(obj, config);
   } else {
@@ -46,6 +67,7 @@ export class FunctionsRouter extends PromiseRouter {
       'POST',
       '/functions/:functionName',
       promiseEnsureIdempotency,
+      FunctionsRouter.multipartMiddleware,
       FunctionsRouter.handleCloudFunction
     );
     this.route(
@@ -162,6 +184,106 @@ export class FunctionsRouter extends PromiseRouter {
     };
     return responseObject;
   }
+
+  /**
+   * Parses multipart/form-data requests for Cloud Function invocation.
+   * For non-multipart requests, this is a no-op.
+   *
+   * Text fields are set as strings in `req.body`. File fields are set as
+   * objects with the shape `{ filename: string, contentType: string, data: Buffer }`.
+   * All fields are merged flat into `req.body`; the caller is responsible for
+   * avoiding name collisions between text and file fields.
+   *
+   * The total request size is limited by the server's `maxUploadSize` option.
+   */
+  static multipartMiddleware(req) {
+    if (!req.is || !req.is('multipart/form-data')) {
+      return Promise.resolve();
+    }
+    const maxBytes = Utils.parseSizeToBytes(req.config.maxUploadSize);
+    return new Promise((resolve, reject) => {
+      const fields = Object.create(null);
+      let totalBytes = 0;
+      let settled = false;
+      let busboy;
+      try {
+        busboy = Busboy({ headers: req.headers, limits: { fieldSize: maxBytes } });
+      } catch (err) {
+        return reject(
+          new Parse.Error(Parse.Error.INVALID_JSON, `Invalid multipart request: ${err.message}`)
+        );
+      }
+      const safeReject = (err) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        busboy.destroy();
+        reject(err);
+      };
+      busboy.on('field', (name, value, fieldnameTruncated, valueTruncated) => {
+        if (valueTruncated) {
+          return safeReject(
+            new Parse.Error(
+              Parse.Error.OBJECT_TOO_LARGE,
+              'Multipart request exceeds maximum upload size.'
+            )
+          );
+        }
+        totalBytes += Buffer.byteLength(value);
+        if (totalBytes > maxBytes) {
+          return safeReject(
+            new Parse.Error(
+              Parse.Error.OBJECT_TOO_LARGE,
+              'Multipart request exceeds maximum upload size.'
+            )
+          );
+        }
+        fields[name] = value;
+      });
+      busboy.on('file', (name, stream, filename, transferEncoding, mimeType) => {
+        const chunks = [];
+        stream.on('data', chunk => {
+          totalBytes += chunk.length;
+          if (totalBytes > maxBytes) {
+            stream.destroy();
+            return safeReject(
+              new Parse.Error(
+                Parse.Error.OBJECT_TOO_LARGE,
+                'Multipart request exceeds maximum upload size.'
+              )
+            );
+          }
+          chunks.push(chunk);
+        });
+        stream.on('end', () => {
+          if (settled) {
+            return;
+          }
+          fields[name] = {
+            filename,
+            contentType: mimeType || 'application/octet-stream',
+            data: Buffer.concat(chunks),
+          };
+        });
+      });
+      busboy.on('finish', () => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        req.body = fields;
+        resolve();
+      });
+      busboy.on('error', err => {
+        safeReject(
+          new Parse.Error(Parse.Error.INVALID_JSON, `Invalid multipart request: ${err.message}`)
+        );
+      });
+      req.pipe(busboy);
+    });
+  }
+
   static handleCloudFunction(req) {
     const functionName = req.params.functionName;
     const applicationId = req.config.applicationId;
@@ -192,7 +314,7 @@ export class FunctionsRouter extends PromiseRouter {
         result => {
           try {
             if (req.config.logLevels.cloudFunctionSuccess !== 'silent') {
-              const cleanInput = logger.truncateLogMessage(JSON.stringify(params));
+              const cleanInput = logger.truncateLogMessage(JSON.stringify(redactBuffers(params)));
               const cleanResult = logger.truncateLogMessage(JSON.stringify(result.response.result));
               logger[req.config.logLevels.cloudFunctionSuccess](
                 `Ran cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput}\n  Result: ${cleanResult}`,
@@ -211,7 +333,7 @@ export class FunctionsRouter extends PromiseRouter {
         error => {
           try {
             if (req.config.logLevels.cloudFunctionError !== 'silent') {
-              const cleanInput = logger.truncateLogMessage(JSON.stringify(params));
+              const cleanInput = logger.truncateLogMessage(JSON.stringify(redactBuffers(params)));
               logger[req.config.logLevels.cloudFunctionError](
                 `Failed running cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput}\n  Error: ` +
                   JSON.stringify(error),

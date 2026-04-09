@@ -14,7 +14,7 @@ import { pathToRegexp } from 'path-to-regexp';
 import RedisStore from 'rate-limit-redis';
 import { createClient } from 'redis';
 import { BlockList, isIPv4 } from 'net';
-import { createSanitizedHttpError } from './Error';
+import { createSanitizedHttpError, createSanitizedError } from './Error';
 
 export const DEFAULT_ALLOWED_HEADERS =
   'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, X-Parse-Request-Id, Content-Type, Pragma, Cache-Control';
@@ -224,7 +224,7 @@ export async function handleParseHeaders(req, res, next) {
   }
 
   const clientIp = getClientIp(req);
-  const config = Config.get(info.appId, mount);
+  const config = req.config || Config.get(info.appId, mount);
   if (config.state && config.state !== 'ok') {
     res.status(500);
     res.json({
@@ -233,7 +233,9 @@ export async function handleParseHeaders(req, res, next) {
     });
     return;
   }
-  await config.loadKeys();
+  if (!req.config) {
+    await config.loadKeys();
+  }
 
   info.app = AppCache.get(info.appId);
   req.config = config;
@@ -241,70 +243,22 @@ export async function handleParseHeaders(req, res, next) {
   req.config.ip = clientIp;
   req.info = info;
 
-  const isMaintenance =
-    req.config.maintenanceKey && info.maintenanceKey === req.config.maintenanceKey;
-  if (isMaintenance) {
-    if (checkIp(clientIp, req.config.maintenanceKeyIps || [], req.config.maintenanceKeyIpsStore)) {
-      req.auth = new auth.Auth({
-        config: req.config,
-        installationId: info.installationId,
-        isMaintenance: true,
-      });
-      next();
-      return;
-    }
-    const log = req.config?.loggerController || defaultLogger;
-    log.error(
-      `Request using maintenance key rejected as the request IP address '${clientIp}' is not set in Parse Server option 'maintenanceKeyIps'.`
-    );
-  }
-
-  const masterKey = await req.config.loadMasterKey();
-  let isMaster = info.masterKey === masterKey;
-
-  if (isMaster && !checkIp(clientIp, req.config.masterKeyIps || [], req.config.masterKeyIpsStore)) {
-    const log = req.config?.loggerController || defaultLogger;
-    log.error(
-      `Request using master key rejected as the request IP address '${clientIp}' is not set in Parse Server option 'masterKeyIps'.`
-    );
-    isMaster = false;
-    const error = new Error();
-    error.status = 403;
-    error.message = `unauthorized`;
-    throw error;
-  }
-
-  if (isMaster) {
-    req.auth = new auth.Auth({
+  // Skip key detection if already resolved by handleParseAuth (header-based).
+  // Only resolve here for body-based _MasterKey (info.masterKey may come from body).
+  if (!req.auth || (!req.auth.isMaster && !req.auth.isMaintenance)) {
+    const resolved = await resolveKeyAuth({
       config: req.config,
+      keyValue: info.masterKey,
+      maintenanceKeyValue: info.maintenanceKey,
       installationId: info.installationId,
-      isMaster: true,
+      clientIp,
     });
-    return handleRateLimit(req, res, next);
+    if (resolved) {
+      req.auth = resolved;
+    }
   }
 
-  var isReadOnlyMaster = info.masterKey === req.config.readOnlyMasterKey;
-  if (
-    typeof req.config.readOnlyMasterKey != 'undefined' &&
-    req.config.readOnlyMasterKey &&
-    isReadOnlyMaster
-  ) {
-    if (!checkIp(clientIp, req.config.readOnlyMasterKeyIps || [], req.config.readOnlyMasterKeyIpsStore)) {
-      const log = req.config?.loggerController || defaultLogger;
-      log.error(
-        `Request using read-only master key rejected as the request IP address '${clientIp}' is not set in Parse Server option 'readOnlyMasterKeyIps'.`
-      );
-      const error = new Error();
-      error.status = 403;
-      error.message = 'unauthorized';
-      throw error;
-    }
-    req.auth = new auth.Auth({
-      config: req.config,
-      installationId: info.installationId,
-      isMaster: true,
-      isReadOnly: true,
-    });
+  if (req.auth && (req.auth.isMaster || req.auth.isMaintenance)) {
     return handleRateLimit(req, res, next);
   }
 
@@ -489,6 +443,130 @@ export function allowMethodOverride(req, res, next) {
     delete req.body._method;
   }
   next();
+}
+
+async function resolveKeyAuth({ config, keyValue, maintenanceKeyValue, installationId, clientIp }) {
+  if (maintenanceKeyValue && maintenanceKeyValue === config.maintenanceKey) {
+    if (checkIp(clientIp, config.maintenanceKeyIps || [], config.maintenanceKeyIpsStore)) {
+      return new auth.Auth({ config, installationId, isMaintenance: true });
+    }
+    const log = config.loggerController || defaultLogger;
+    log.error(
+      `Request using maintenance key rejected as the request IP address '${clientIp}' is not set in Parse Server option 'maintenanceKeyIps'.`
+    );
+    const error = new Error();
+    error.status = 403;
+    error.message = 'unauthorized';
+    throw error;
+  }
+  const masterKey = await config.loadMasterKey();
+  if (keyValue === masterKey) {
+    if (checkIp(clientIp, config.masterKeyIps || [], config.masterKeyIpsStore)) {
+      return new auth.Auth({ config, installationId, isMaster: true });
+    }
+    const log = config.loggerController || defaultLogger;
+    log.error(
+      `Request using master key rejected as the request IP address '${clientIp}' is not set in Parse Server option 'masterKeyIps'.`
+    );
+    const error = new Error();
+    error.status = 403;
+    error.message = 'unauthorized';
+    throw error;
+  }
+  if (
+    keyValue &&
+    typeof config.readOnlyMasterKey !== 'undefined' &&
+    config.readOnlyMasterKey &&
+    keyValue === config.readOnlyMasterKey
+  ) {
+    if (checkIp(clientIp, config.readOnlyMasterKeyIps || [], config.readOnlyMasterKeyIpsStore)) {
+      return new auth.Auth({ config, installationId, isMaster: true, isReadOnly: true });
+    }
+    const log = config.loggerController || defaultLogger;
+    log.error(
+      `Request using read-only master key rejected as the request IP address '${clientIp}' is not set in Parse Server option 'readOnlyMasterKeyIps'.`
+    );
+    const error = new Error();
+    error.status = 403;
+    error.message = 'unauthorized';
+    throw error;
+  }
+  return null;
+}
+
+export function handleParseAuth(appId) {
+  return async (req, res, next) => {
+    const mount = getMountForRequest(req);
+    const config = Config.get(appId, mount);
+    if (!config) {
+      return next();
+    }
+    req.config = config;
+    const clientIp = getClientIp(req);
+    req.config.ip = clientIp;
+    await config.loadKeys();
+    const resolved = await resolveKeyAuth({
+      config,
+      keyValue: req.get('X-Parse-Master-Key') || null,
+      maintenanceKeyValue: req.get('X-Parse-Maintenance-Key') || null,
+      installationId: req.get('X-Parse-Installation-Id') || 'cloud',
+      clientIp,
+    });
+    if (resolved) {
+      req.auth = resolved;
+    }
+    return next();
+  };
+}
+
+export function handleParseHealth(options) {
+  return (req, res) => {
+    res.status(options.state === 'ok' ? 200 : 503);
+    if (options.state === 'starting') {
+      res.set('Retry-After', 1);
+    }
+    res.json({
+      status: options.state,
+    });
+  };
+}
+
+export function enforceRouteAllowList(req, res, next) {
+  const config = req.config;
+  if (!config || config.routeAllowList === undefined || config.routeAllowList === null) {
+    return next();
+  }
+  if (req.auth && (req.auth.isMaster || req.auth.isMaintenance)) {
+    return next();
+  }
+  let path = req.originalUrl;
+  if (config.mount) {
+    const mountPath = new URL(config.mount).pathname;
+    if (path.startsWith(mountPath)) {
+      path = path.substring(mountPath.length);
+    }
+  }
+  if (path.startsWith('/')) {
+    path = path.substring(1);
+  }
+  if (path.endsWith('/')) {
+    path = path.substring(0, path.length - 1);
+  }
+  const queryIndex = path.indexOf('?');
+  if (queryIndex !== -1) {
+    path = path.substring(0, queryIndex);
+  }
+  const regexes = config._routeAllowListRegex || [];
+  for (const regex of regexes) {
+    if (regex.test(path)) {
+      return next();
+    }
+  }
+  throw createSanitizedError(
+    Parse.Error.OPERATION_FORBIDDEN,
+    `Route not allowed by routeAllowList: ${req.method} ${path}`,
+    config
+  );
 }
 
 export function handleParseErrors(err, req, res, next) {

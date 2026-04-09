@@ -9,32 +9,60 @@ export class SessionsRouter extends ClassesRouter {
     return '_Session';
   }
 
-  handleMe(req) {
-    // TODO: Verify correct behavior
+  async handleMe(req) {
     if (!req.info || !req.info.sessionToken) {
       throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token required.');
     }
-    return rest
-      .find(
-        req.config,
-        Auth.master(req.config),
-        '_Session',
-        { sessionToken: req.info.sessionToken },
-        undefined,
-        req.info.clientSDK,
-        req.info.context
-      )
-      .then(response => {
-        if (!response.results || response.results.length == 0) {
-          throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token not found.');
-        }
-        return {
-          response: response.results[0],
-        };
-      });
+    const sessionToken = req.info.sessionToken;
+    // Query with master key to validate the session token and get the session objectId
+    const sessionResponse = await rest.find(
+      req.config,
+      Auth.master(req.config),
+      '_Session',
+      { sessionToken },
+      {},
+      req.info.clientSDK,
+      req.info.context
+    );
+    if (
+      !sessionResponse.results ||
+      sessionResponse.results.length == 0 ||
+      !sessionResponse.results[0].user
+    ) {
+      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token not found.');
+    }
+    const sessionObjectId = sessionResponse.results[0].objectId;
+    const userId = sessionResponse.results[0].user.objectId;
+    // Re-fetch the session with the caller's auth context so that
+    // protectedFields and CLP apply correctly; if the caller used master key,
+    // protectedFields are bypassed, matching the behavior of GET /sessions/:id
+    const refetchAuth =
+      req.auth?.isMaster || req.auth?.isMaintenance
+        ? req.auth
+        : new Auth.Auth({
+          config: req.config,
+          isMaster: false,
+          user: Parse.Object.fromJSON({ className: '_User', objectId: userId }),
+          installationId: req.info.installationId,
+        });
+    const response = await rest.get(
+      req.config,
+      refetchAuth,
+      '_Session',
+      sessionObjectId,
+      {},
+      req.info.clientSDK,
+      req.info.context
+    );
+    if (!response.results || response.results.length == 0) {
+      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token not found.');
+    }
+    return {
+      response: response.results[0],
+    };
   }
 
-  handleUpdateToRevocableSession(req) {
+  async handleUpdateToRevocableSession(req) {
     const config = req.config;
     const user = req.auth.user;
     // Issue #2720
@@ -50,22 +78,38 @@ export class SessionsRouter extends ClassesRouter {
       installationId: req.auth.installationId,
     });
 
-    return createSession()
-      .then(() => {
-        // delete the session token, use the db to skip beforeSave
-        return config.database.update(
-          '_User',
-          {
-            objectId: user.id,
-          },
-          {
-            sessionToken: { __op: 'Delete' },
-          }
-        );
-      })
-      .then(() => {
-        return Promise.resolve({ response: sessionData });
-      });
+    await createSession();
+    // delete the session token, use the db to skip beforeSave
+    await config.database.update(
+      '_User',
+      { objectId: user.id },
+      { sessionToken: { __op: 'Delete' } }
+    );
+    // Re-fetch the session with the caller's auth context so that
+    // protectedFields filtering applies correctly; if the caller used master key,
+    // protectedFields are bypassed, matching the behavior of GET /sessions/:id
+    const refetchAuth =
+      req.auth.isMaster || req.auth.isMaintenance
+        ? req.auth
+        : new Auth.Auth({
+          config,
+          isMaster: false,
+          user: Parse.Object.fromJSON({ className: '_User', objectId: user.id }),
+          installationId: req.auth.installationId,
+        });
+    const response = await rest.find(
+      config,
+      refetchAuth,
+      '_Session',
+      { sessionToken: sessionData.sessionToken },
+      {},
+      req.info.clientSDK,
+      req.info.context
+    );
+    if (!response.results || response.results.length === 0) {
+      throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Failed to load upgraded session.');
+    }
+    return { response: response.results[0] };
   }
 
   mountRoutes() {
