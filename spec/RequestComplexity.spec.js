@@ -814,6 +814,16 @@ describe('request complexity', () => {
       expect(result.results.length).toBe(totalObjects);
     });
 
+    it('should allow unlimited subquery results with maintenance key', async () => {
+      const where = {
+        ref: {
+          $inQuery: { className: 'Target', where: {} },
+        },
+      };
+      const result = await rest.find(config, auth.maintenance(config), 'Source', where);
+      expect(result.results.length).toBe(totalObjects);
+    });
+
     it('should allow unlimited subquery results when subqueryLimit is -1', async () => {
       await reconfigureServer({
         requestComplexity: { subqueryLimit: -1 },
