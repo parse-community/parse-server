@@ -704,6 +704,12 @@ module.exports.RateLimitOptions = {
   },
 };
 module.exports.RequestComplexityOptions = {
+  allowRegex: {
+    env: 'PARSE_SERVER_REQUEST_COMPLEXITY_ALLOW_REGEX',
+    help: 'Whether to allow the `$regex` query operator. Set to `false` to reject `$regex` in queries for non-master-key users. Default is `true`.',
+    action: parsers.booleanParser,
+    default: true,
+  },
   batchRequestLimit: {
     env: 'PARSE_SERVER_REQUEST_COMPLEXITY_BATCH_REQUEST_LIMIT',
     help: 'Maximum number of sub-requests in a single batch request. Set to `-1` to disable. Default is `-1`.',

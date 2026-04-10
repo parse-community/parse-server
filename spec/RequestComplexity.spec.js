@@ -112,6 +112,16 @@ describe('request complexity', () => {
       );
     });
 
+    it('should reject non-boolean value for allowRegex', async () => {
+      await expectAsync(
+        reconfigureServer({
+          requestComplexity: { allowRegex: 'yes' },
+        })
+      ).toBeRejectedWith(
+        new Error('requestComplexity.allowRegex must be a boolean.')
+      );
+    });
+
     it('should reject unknown properties', async () => {
       await expectAsync(
         reconfigureServer({
@@ -147,6 +157,7 @@ describe('request complexity', () => {
       await reconfigureServer({});
       const config = Config.get('test');
       expect(config.requestComplexity).toEqual({
+        allowRegex: true,
         batchRequestLimit: -1,
         includeDepth: -1,
         includeCount: -1,
@@ -538,6 +549,187 @@ describe('request complexity', () => {
       await expectAsync(
         rest.find(config, auth.nobody(config), '_User', {}, { include: includes })
       ).toBeResolved();
+    });
+  });
+
+  describe('allowRegex', () => {
+    let config;
+
+    beforeEach(async () => {
+      await reconfigureServer({
+        requestComplexity: { allowRegex: false },
+      });
+      config = Config.get('test');
+    });
+
+    it('should reject $regex query when allowRegex is false (unauthenticated)', async () => {
+      const where = { username: { $regex: 'test' } };
+      await expectAsync(
+        rest.find(config, auth.nobody(config), '_User', where)
+      ).toBeRejectedWith(
+        jasmine.objectContaining({
+          message: '$regex operator is not allowed',
+        })
+      );
+    });
+
+    it('should reject $regex query when allowRegex is false (authenticated user)', async () => {
+      const user = new Parse.User();
+      user.setUsername('testuser');
+      user.setPassword('testpass');
+      await user.signUp();
+      const userAuth = new auth.Auth({
+        config,
+        isMaster: false,
+        user,
+      });
+      const where = { username: { $regex: 'test' } };
+      await expectAsync(
+        rest.find(config, userAuth, '_User', where)
+      ).toBeRejectedWith(
+        jasmine.objectContaining({
+          message: '$regex operator is not allowed',
+        })
+      );
+    });
+
+    it('should allow $regex query when allowRegex is false with master key', async () => {
+      const where = { username: { $regex: 'test' } };
+      await expectAsync(
+        rest.find(config, auth.master(config), '_User', where)
+      ).toBeResolved();
+    });
+
+    it('should allow $regex query when allowRegex is true (default)', async () => {
+      await reconfigureServer({
+        requestComplexity: { allowRegex: true },
+      });
+      config = Config.get('test');
+      const where = { username: { $regex: 'test' } };
+      await expectAsync(
+        rest.find(config, auth.nobody(config), '_User', where)
+      ).toBeResolved();
+    });
+
+    it('should reject $regex inside $or when allowRegex is false', async () => {
+      const where = {
+        $or: [
+          { username: { $regex: 'test' } },
+          { username: 'exact' },
+        ],
+      };
+      await expectAsync(
+        rest.find(config, auth.nobody(config), '_User', where)
+      ).toBeRejectedWith(
+        jasmine.objectContaining({
+          message: '$regex operator is not allowed',
+        })
+      );
+    });
+
+    it('should reject $regex inside $and when allowRegex is false', async () => {
+      const where = {
+        $and: [
+          { username: { $regex: 'test' } },
+          { username: 'exact' },
+        ],
+      };
+      await expectAsync(
+        rest.find(config, auth.nobody(config), '_User', where)
+      ).toBeRejectedWith(
+        jasmine.objectContaining({
+          message: '$regex operator is not allowed',
+        })
+      );
+    });
+
+    it('should reject $regex inside $nor when allowRegex is false', async () => {
+      const where = {
+        $nor: [
+          { username: { $regex: 'test' } },
+        ],
+      };
+      await expectAsync(
+        rest.find(config, auth.nobody(config), '_User', where)
+      ).toBeRejectedWith(
+        jasmine.objectContaining({
+          message: '$regex operator is not allowed',
+        })
+      );
+    });
+
+    it('should allow $regex by default when allowRegex is not configured', async () => {
+      await reconfigureServer({});
+      config = Config.get('test');
+      const where = { username: { $regex: 'test' } };
+      await expectAsync(
+        rest.find(config, auth.nobody(config), '_User', where)
+      ).toBeResolved();
+    });
+
+    it('should reject empty-string $regex when allowRegex is false', async () => {
+      const where = { username: { $regex: '' } };
+      await expectAsync(
+        rest.find(config, auth.nobody(config), '_User', where)
+      ).toBeRejectedWith(
+        jasmine.objectContaining({
+          message: '$regex operator is not allowed',
+        })
+      );
+    });
+
+    it('should allow $regex with maintenance key when allowRegex is false', async () => {
+      const where = { username: { $regex: 'test' } };
+      await expectAsync(
+        rest.find(config, auth.maintenance(config), '_User', where)
+      ).toBeResolved();
+    });
+
+    describe('LiveQuery', () => {
+      beforeEach(async () => {
+        await reconfigureServer({
+          requestComplexity: { allowRegex: false },
+          liveQuery: { classNames: ['TestObject'] },
+          startLiveQueryServer: true,
+        });
+        config = Config.get('test');
+      });
+
+      afterEach(async () => {
+        const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+        if (client) {
+          await client.close();
+        }
+      });
+
+      it('should reject LiveQuery subscription with $regex when allowRegex is false', async () => {
+        const query = new Parse.Query('TestObject');
+        query.matches('field', /test/);
+        await expectAsync(query.subscribe()).toBeRejectedWith(
+          jasmine.objectContaining({ code: Parse.Error.INVALID_QUERY })
+        );
+      });
+
+      it('should reject LiveQuery subscription with $regex inside $or when allowRegex is false', async () => {
+        const query = new Parse.Query('TestObject');
+        query._where = {
+          $or: [
+            { field: { $regex: 'test' } },
+            { field: 'exact' },
+          ],
+        };
+        await expectAsync(query.subscribe()).toBeRejectedWith(
+          jasmine.objectContaining({ code: Parse.Error.INVALID_QUERY })
+        );
+      });
+
+      it('should allow LiveQuery subscription without $regex when allowRegex is false', async () => {
+        const query = new Parse.Query('TestObject');
+        query.equalTo('field', 'test');
+        const subscription = await query.subscribe();
+        expect(subscription).toBeDefined();
+        subscription.unsubscribe();
+      });
     });
   });
 });

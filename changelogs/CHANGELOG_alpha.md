@@ -1,3 +1,10 @@
+# [9.8.0-alpha.11](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.10...9.8.0-alpha.11) (2026-04-09)
+
+
+### Features
+
+* Add `requestComplexity.allowRegex` option to disable `$regex` query operator ([#10418](https://github.com/parse-community/parse-server/issues/10418)) ([18482e3](https://github.com/parse-community/parse-server/commit/18482e386c1e723da2df3137f61fa5e2bc8983a6))
+
 # [9.8.0-alpha.10](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.9...9.8.0-alpha.10) (2026-04-07)
 
 

@@ -1060,6 +1060,32 @@ class ParseLiveQueryServer {
         }
       }
 
+      // Validate allowRegex
+      if (!client.hasMasterKey) {
+        const rc = appConfig.requestComplexity;
+        if (rc && rc.allowRegex === false) {
+          const checkRegex = (where: any) => {
+            if (typeof where !== 'object' || where === null) {
+              return;
+            }
+            for (const key of Object.keys(where)) {
+              const constraint = where[key];
+              if (typeof constraint === 'object' && constraint !== null && constraint.$regex !== undefined) {
+                throw new Parse.Error(Parse.Error.INVALID_QUERY, '$regex operator is not allowed');
+              }
+            }
+            for (const op of ['$or', '$and', '$nor']) {
+              if (Array.isArray(where[op])) {
+                for (const subQuery of where[op]) {
+                  checkRegex(subQuery);
+                }
+              }
+            }
+          };
+          checkRegex(request.query.where);
+        }
+      }
+
       // Check CLP for subscribe operation
       const schemaController = await appConfig.database.loadSchema();
       const classLevelPermissions = schemaController.getClassLevelPermissions(className);

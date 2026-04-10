@@ -447,6 +447,10 @@ export interface RateLimitOptions {
 }
 
 export interface RequestComplexityOptions {
+  /* Whether to allow the `$regex` query operator. Set to `false` to reject `$regex` in queries for non-master-key users. Default is `true`.
+  :ENV: PARSE_SERVER_REQUEST_COMPLEXITY_ALLOW_REGEX
+  :DEFAULT: true */
+  allowRegex: ?boolean;
   /* Maximum depth of include pointer chains (e.g. `a.b.c` = depth 3). Set to `-1` to disable. Default is `-1`.
   :DEFAULT: -1 */
   includeDepth: ?number;
