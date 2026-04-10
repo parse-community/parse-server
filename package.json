@@ -65,7 +65,7 @@
   "devDependencies": {
     "@actions/core": "3.0.0",
     "@apollo/client": "3.13.8",
-    "@babel/cli": "7.27.0",
+    "@babel/cli": "7.28.6",
     "@babel/core": "7.29.0",
     "@babel/eslint-parser": "7.28.6",
     "@babel/plugin-proposal-object-rest-spread": "7.20.7",
