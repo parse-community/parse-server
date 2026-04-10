@@ -563,6 +563,13 @@ _UnsafeRestQuery.prototype.replaceInQuery = async function () {
     additionalOptions.readPreference = this.restOptions.readPreference;
   }
 
+  if (!this.auth.isMaster && !this.auth.isMaintenance) {
+    const rc = this.config.requestComplexity;
+    if (rc && rc.subqueryLimit > 0) {
+      additionalOptions.limit = rc.subqueryLimit;
+    }
+  }
+
   const childContext = { ...this.context, _subqueryDepth: (this.context._subqueryDepth || 0) + 1 };
   const subquery = await RestQuery({
     method: RestQuery.Method.find,
@@ -622,6 +629,13 @@ _UnsafeRestQuery.prototype.replaceNotInQuery = async function () {
     additionalOptions.subqueryReadPreference = this.restOptions.subqueryReadPreference;
   } else if (this.restOptions.readPreference) {
     additionalOptions.readPreference = this.restOptions.readPreference;
+  }
+
+  if (!this.auth.isMaster && !this.auth.isMaintenance) {
+    const rc = this.config.requestComplexity;
+    if (rc && rc.subqueryLimit > 0) {
+      additionalOptions.limit = rc.subqueryLimit;
+    }
   }
 
   const childContext = { ...this.context, _subqueryDepth: (this.context._subqueryDepth || 0) + 1 };
@@ -698,6 +712,13 @@ _UnsafeRestQuery.prototype.replaceSelect = async function () {
     additionalOptions.readPreference = this.restOptions.readPreference;
   }
 
+  if (!this.auth.isMaster && !this.auth.isMaintenance) {
+    const rc = this.config.requestComplexity;
+    if (rc && rc.subqueryLimit > 0) {
+      additionalOptions.limit = rc.subqueryLimit;
+    }
+  }
+
   const childContext = { ...this.context, _subqueryDepth: (this.context._subqueryDepth || 0) + 1 };
   const subquery = await RestQuery({
     method: RestQuery.Method.find,
@@ -760,6 +781,13 @@ _UnsafeRestQuery.prototype.replaceDontSelect = async function () {
     additionalOptions.subqueryReadPreference = this.restOptions.subqueryReadPreference;
   } else if (this.restOptions.readPreference) {
     additionalOptions.readPreference = this.restOptions.readPreference;
+  }
+
+  if (!this.auth.isMaster && !this.auth.isMaintenance) {
+    const rc = this.config.requestComplexity;
+    if (rc && rc.subqueryLimit > 0) {
+      additionalOptions.limit = rc.subqueryLimit;
+    }
   }
 
   const childContext = { ...this.context, _subqueryDepth: (this.context._subqueryDepth || 0) + 1 };

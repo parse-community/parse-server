@@ -460,6 +460,9 @@ export interface RequestComplexityOptions {
   /* Maximum nesting depth of `$inQuery`, `$notInQuery`, `$select`, `$dontSelect` subqueries. Set to `-1` to disable. Default is `-1`.
   :DEFAULT: -1 */
   subqueryDepth: ?number;
+  /* Maximum number of results returned by a `$inQuery`, `$notInQuery`, `$select`, `$dontSelect` subquery. Set to `-1` to disable. Default is `-1`.
+  :DEFAULT: -1 */
+  subqueryLimit: ?number;
   /* Maximum nesting depth of `$or`, `$and`, `$nor` query operators. Set to `-1` to disable. Default is `-1`.
   :DEFAULT: -1 */
   queryDepth: ?number;
