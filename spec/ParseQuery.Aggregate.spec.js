@@ -473,6 +473,36 @@ describe('Parse.Query Aggregate testing', () => {
     expect(new Date(results[0].date.iso)).toEqual(obj1.get('date'));
   });
 
+  it_id('e09a170a-38fc-4439-9383-8d5270caad9e')(it_exclude_dbs(['postgres']))('converts JS Date values to BSON when using _created_at in $match', async () => {
+    const obj = new TestObject();
+    await obj.save();
+    await new Promise(r => setTimeout(r, 2000));
+    const date = new Date();
+    const pipeline = [
+      { $match: { _created_at: { $lte: date } } },
+      { $count: 'total' },
+    ];
+    const query = new Parse.Query('TestObject');
+    const results = await query.aggregate(pipeline, { useMasterKey: true });
+    expect(results.length).toBe(1);
+    expect(results[0].total).toBeGreaterThanOrEqual(1);
+  });
+
+  it_id('8234438d-44b7-4029-a202-433c55d673e3')(it_exclude_dbs(['postgres']))('converts JS Date values to BSON when using _updated_at in $match', async () => {
+    const obj = new TestObject();
+    await obj.save();
+    await new Promise(r => setTimeout(r, 2000));
+    const date = new Date();
+    const pipeline = [
+      { $match: { _updated_at: { $lte: date } } },
+      { $count: 'total' },
+    ];
+    const query = new Parse.Query('TestObject');
+    const results = await query.aggregate(pipeline, { useMasterKey: true });
+    expect(results.length).toBe(1);
+    expect(results[0].total).toBeGreaterThanOrEqual(1);
+  });
+
   it_only_db('postgres')(
     'can group by any date field postgres (it does not work if you have dirty data)', // rows in your collection with non date data in the field that is supposed to be a date
     done => {

@@ -1033,6 +1033,8 @@ export class MongoStorageAdapter implements StorageAdapter {
           }
         } else if (schema.fields[field] && schema.fields[field].type === 'Date') {
           returnValue[field] = this._convertToDate(pipeline[field]);
+        } else if (field === '_created_at' || field === '_updated_at') {
+          returnValue[field] = this._convertToDate(pipeline[field]);
         } else {
           returnValue[field] = this._parseAggregateArgs(schema, pipeline[field]);
         }
