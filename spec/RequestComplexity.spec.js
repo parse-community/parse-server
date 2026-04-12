@@ -162,6 +162,7 @@ describe('request complexity', () => {
         includeDepth: -1,
         includeCount: -1,
         subqueryDepth: -1,
+        subqueryLimit: -1,
         queryDepth: -1,
         graphQLDepth: -1,
         graphQLFields: -1,
@@ -730,6 +731,125 @@ describe('request complexity', () => {
         expect(subscription).toBeDefined();
         subscription.unsubscribe();
       });
+    });
+  });
+
+  describe('subquery result limit', () => {
+    let config;
+    const totalObjects = 5;
+    const resultLimit = 3;
+
+    beforeEach(async () => {
+      await reconfigureServer({
+        requestComplexity: { subqueryLimit: resultLimit },
+      });
+      config = Config.get('test');
+      // Create target objects
+      const targets = [];
+      for (let i = 0; i < totalObjects; i++) {
+        const obj = new Parse.Object('Target');
+        obj.set('value', `v${i}`);
+        targets.push(obj);
+      }
+      await Parse.Object.saveAll(targets);
+      // Create source objects, each pointing to a target
+      const sources = [];
+      for (let i = 0; i < totalObjects; i++) {
+        const obj = new Parse.Object('Source');
+        obj.set('ref', targets[i]);
+        obj.set('value', targets[i].get('value'));
+        sources.push(obj);
+      }
+      await Parse.Object.saveAll(sources);
+    });
+
+    it('should limit $inQuery subquery results', async () => {
+      const where = {
+        ref: {
+          $inQuery: { className: 'Target', where: {} },
+        },
+      };
+      const result = await rest.find(config, auth.nobody(config), 'Source', where);
+      expect(result.results.length).toBe(resultLimit);
+    });
+
+    it('should limit $notInQuery subquery results', async () => {
+      const where = {
+        ref: {
+          $notInQuery: { className: 'Target', where: {} },
+        },
+      };
+      const result = await rest.find(config, auth.nobody(config), 'Source', where);
+      // With limit, only `resultLimit` targets are excluded, so (totalObjects - resultLimit) sources remain
+      expect(result.results.length).toBe(totalObjects - resultLimit);
+    });
+
+    it('should limit $select subquery results', async () => {
+      const where = {
+        value: {
+          $select: { query: { className: 'Target', where: {} }, key: 'value' },
+        },
+      };
+      const result = await rest.find(config, auth.nobody(config), 'Source', where);
+      expect(result.results.length).toBe(resultLimit);
+    });
+
+    it('should limit $dontSelect subquery results', async () => {
+      const where = {
+        value: {
+          $dontSelect: { query: { className: 'Target', where: {} }, key: 'value' },
+        },
+      };
+      const result = await rest.find(config, auth.nobody(config), 'Source', where);
+      expect(result.results.length).toBe(totalObjects - resultLimit);
+    });
+
+    it('should allow unlimited subquery results with master key', async () => {
+      const where = {
+        ref: {
+          $inQuery: { className: 'Target', where: {} },
+        },
+      };
+      const result = await rest.find(config, auth.master(config), 'Source', where);
+      expect(result.results.length).toBe(totalObjects);
+    });
+
+    it('should allow unlimited subquery results with maintenance key', async () => {
+      const where = {
+        ref: {
+          $inQuery: { className: 'Target', where: {} },
+        },
+      };
+      const result = await rest.find(config, auth.maintenance(config), 'Source', where);
+      expect(result.results.length).toBe(totalObjects);
+    });
+
+    it('should allow unlimited subquery results when subqueryLimit is -1', async () => {
+      await reconfigureServer({
+        requestComplexity: { subqueryLimit: -1 },
+      });
+      config = Config.get('test');
+      const where = {
+        ref: {
+          $inQuery: { className: 'Target', where: {} },
+        },
+      };
+      const result = await rest.find(config, auth.nobody(config), 'Source', where);
+      expect(result.results.length).toBe(totalObjects);
+    });
+
+    it('should include subqueryLimit in config defaults', async () => {
+      await reconfigureServer({});
+      config = Config.get('test');
+      expect(config.requestComplexity.subqueryLimit).toBe(-1);
+    });
+
+    it('should accept subqueryLimit in config validation', async () => {
+      await expectAsync(
+        reconfigureServer({
+          requestComplexity: { subqueryLimit: 100 },
+        })
+      ).toBeResolved();
     });
   });
 });

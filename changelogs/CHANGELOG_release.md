@@ -1,3 +1,29 @@
+# [9.8.0](https://github.com/parse-community/parse-server/compare/9.7.0...9.8.0) (2026-04-12)
+
+
+### Bug Fixes
+
+* Bump lodash from 4.17.23 to 4.18.1 ([#10393](https://github.com/parse-community/parse-server/issues/10393)) ([19716ad](https://github.com/parse-community/parse-server/commit/19716ad9afe9400ad2440c0ed3c5fbfe376a8585))
+* Endpoint `/sessions/me` bypasses `_Session` `protectedFields` ([GHSA-g4v2-qx3q-4p64](https://github.com/parse-community/parse-server/security/advisories/GHSA-g4v2-qx3q-4p64)) ([#10406](https://github.com/parse-community/parse-server/issues/10406)) ([d507575](https://github.com/parse-community/parse-server/commit/d5075758f6c3ae9d806671de196fd8b419bc517e))
+* Endpoint `/upgradeToRevocableSession` ignores `_Session` `protectedFields` ([#10408](https://github.com/parse-community/parse-server/issues/10408)) ([c136e2b](https://github.com/parse-community/parse-server/commit/c136e2b7ab74609a5127fb68fc5ba40fef440f48))
+* Endpoints `/login` and `/verifyPassword` ignore `_User` `protectedFields` ([#10409](https://github.com/parse-community/parse-server/issues/10409)) ([8a3db3b](https://github.com/parse-community/parse-server/commit/8a3db3b9666ea998a8843c629e1af55b105e22e0))
+* Facebook Standard Login missing app ID validation ([#10429](https://github.com/parse-community/parse-server/issues/10429)) ([fd31159](https://github.com/parse-community/parse-server/commit/fd31159859ed90f57eb3713f82c9f5b04b20a28c))
+* File upload Content-Type override via extension mismatch ([GHSA-vr5f-2r24-w5hc](https://github.com/parse-community/parse-server/security/advisories/GHSA-vr5f-2r24-w5hc)) ([#10383](https://github.com/parse-community/parse-server/issues/10383)) ([dd7cc41](https://github.com/parse-community/parse-server/commit/dd7cc41a952b9ec6fa655a5655f106cca27d65c7))
+* Login timing side-channel reveals user existence ([GHSA-mmpq-5hcv-hf2v](https://github.com/parse-community/parse-server/security/advisories/GHSA-mmpq-5hcv-hf2v)) ([#10398](https://github.com/parse-community/parse-server/issues/10398)) ([531b9ab](https://github.com/parse-community/parse-server/commit/531b9ab6dda4268ede365367fcdc6d98e737ccc3))
+* Maintenance key IP mismatch silently downgrades to regular auth instead of rejecting ([#10391](https://github.com/parse-community/parse-server/issues/10391)) ([7d8b367](https://github.com/parse-community/parse-server/commit/7d8b367e0b3ef9e9dd6735408068895ead873a0c))
+* Master key does not bypass `protectedFields` on various endpoints ([#10412](https://github.com/parse-community/parse-server/issues/10412)) ([c0889c8](https://github.com/parse-community/parse-server/commit/c0889c8575ee6c6ee01c79cd1ae457124e2a08b3))
+* Nested batch sub-requests cause unclear error ([#10371](https://github.com/parse-community/parse-server/issues/10371)) ([6635096](https://github.com/parse-community/parse-server/commit/66350964c8a200eb9e4540f6fcdc0fe0099c5ff6))
+* Session field guard bypass via falsy values for ACL and user fields ([#10382](https://github.com/parse-community/parse-server/issues/10382)) ([ead12bd](https://github.com/parse-community/parse-server/commit/ead12bd1df7f11013d9266e41014dcb143351341))
+* Streaming file download bypasses afterFind file trigger authorization ([GHSA-hpm8-9qx6-jvwv](https://github.com/parse-community/parse-server/security/advisories/GHSA-hpm8-9qx6-jvwv)) ([#10361](https://github.com/parse-community/parse-server/issues/10361)) ([a0b0c69](https://github.com/parse-community/parse-server/commit/a0b0c69fc44f87f80d793d257344e7dcbf676e22))
+
+### Features
+
+* Add `requestComplexity.allowRegex` option to disable `$regex` query operator ([#10418](https://github.com/parse-community/parse-server/issues/10418)) ([18482e3](https://github.com/parse-community/parse-server/commit/18482e386c1e723da2df3137f61fa5e2bc8983a6))
+* Add `requestComplexity.subqueryLimit` option to limit subquery results ([#10420](https://github.com/parse-community/parse-server/issues/10420)) ([bf40004](https://github.com/parse-community/parse-server/commit/bf40004d258f114c06a3085052ca094384b52b43))
+* Add route block with new server option `routeAllowList` ([#10389](https://github.com/parse-community/parse-server/issues/10389)) ([f2d06e7](https://github.com/parse-community/parse-server/commit/f2d06e7b95242268607bfa5205b4e86ba7c7698e))
+* Add server option `fileDownload` to restrict file download ([#10394](https://github.com/parse-community/parse-server/issues/10394)) ([fc117ef](https://github.com/parse-community/parse-server/commit/fc117efa4dc233ad6dfee6f46d80991b10927ba8))
+* Add support for invoking Cloud Function with `multipart/form-data` protocol ([#10395](https://github.com/parse-community/parse-server/issues/10395)) ([a3f36a2](https://github.com/parse-community/parse-server/commit/a3f36a2ddb981d9868ddf26b128e24b2d58214bd))
+
 # [9.7.0](https://github.com/parse-community/parse-server/compare/9.6.1...9.7.0) (2026-03-30)
 
 

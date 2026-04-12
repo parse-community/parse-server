@@ -79,7 +79,10 @@ function getAppSecretPath(authData, options = {}) {
   return `&appsecret_proof=${appsecret_proof}`;
 }
 
-function validateGraphToken(authData, options) {
+function validateGraphToken(authData, options = {}) {
+  if (!Array.isArray(options.appIds) || !options.appIds.length) {
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Facebook auth is not configured.');
+  }
   return graphRequest(
     'me?fields=id&access_token=' + authData.access_token + getAppSecretPath(authData, options)
   ).then(data => {

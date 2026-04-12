@@ -752,6 +752,12 @@ module.exports.RequestComplexityOptions = {
     action: parsers.numberParser('subqueryDepth'),
     default: -1,
   },
+  subqueryLimit: {
+    env: 'PARSE_SERVER_REQUEST_COMPLEXITY_SUBQUERY_LIMIT',
+    help: 'Maximum number of results returned by a `$inQuery`, `$notInQuery`, `$select`, `$dontSelect` subquery. Set to `-1` to disable. Default is `-1`.',
+    action: parsers.numberParser('subqueryLimit'),
+    default: -1,
+  },
 };
 module.exports.SecurityOptions = {
   checkGroups: {
