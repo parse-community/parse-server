@@ -136,6 +136,7 @@
 
 /**
  * @interface RequestComplexityOptions
+ * @property {Boolean} allowRegex Whether to allow the `$regex` query operator. Set to `false` to reject `$regex` in queries for non-master-key users. Default is `true`.
  * @property {Number} batchRequestLimit Maximum number of sub-requests in a single batch request. Set to `-1` to disable. Default is `-1`.
  * @property {Number} graphQLDepth Maximum depth of GraphQL field selections. Set to `-1` to disable. Default is `-1`.
  * @property {Number} graphQLFields Maximum number of field selections in a GraphQL query. Set to `-1` to disable. Default is `-1`.
@@ -143,6 +144,7 @@
  * @property {Number} includeDepth Maximum depth of include pointer chains (e.g. `a.b.c` = depth 3). Set to `-1` to disable. Default is `-1`.
  * @property {Number} queryDepth Maximum nesting depth of `$or`, `$and`, `$nor` query operators. Set to `-1` to disable. Default is `-1`.
  * @property {Number} subqueryDepth Maximum nesting depth of `$inQuery`, `$notInQuery`, `$select`, `$dontSelect` subqueries. Set to `-1` to disable. Default is `-1`.
+ * @property {Number} subqueryLimit Maximum number of results returned by a `$inQuery`, `$notInQuery`, `$select`, `$dontSelect` subquery. Set to `-1` to disable. Default is `-1`.
  */
 
 /**

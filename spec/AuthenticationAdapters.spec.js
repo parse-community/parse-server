@@ -1732,6 +1732,24 @@ describe('facebook limited auth adapter', () => {
       expect(e.message).toBe('Facebook auth is not configured.');
     }
   });
+
+  it('should throw error when appIds is not configured for Standard Login', async () => {
+    try {
+      await facebook.validateAuthData({ id: 'the_user_id', access_token: 'the_token' }, {});
+      fail('should have thrown');
+    } catch (e) {
+      expect(e.message).toBe('Facebook auth is not configured.');
+    }
+  });
+
+  it('should throw error when appIds is empty array for Standard Login', async () => {
+    try {
+      await facebook.validateAuthData({ id: 'the_user_id', access_token: 'the_token' }, { appIds: [] });
+      fail('should have thrown');
+    } catch (e) {
+      expect(e.message).toBe('Facebook auth is not configured.');
+    }
+  });
 });
 
 describe('OTP TOTP auth adatper', () => {
