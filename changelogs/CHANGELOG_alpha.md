@@ -1,3 +1,10 @@
+## [9.8.1-alpha.1](https://github.com/parse-community/parse-server/compare/9.8.0...9.8.1-alpha.1) (2026-04-12)
+
+
+### Bug Fixes
+
+* Context mutations leak across requests in `ParseServerRESTController` ([#10291](https://github.com/parse-community/parse-server/issues/10291)) ([60a58ec](https://github.com/parse-community/parse-server/commit/60a58ec11a8bb67aaf217b1e7362b89d742b66da))
+
 # [9.8.0-alpha.13](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.12...9.8.0-alpha.13) (2026-04-12)
 
 
