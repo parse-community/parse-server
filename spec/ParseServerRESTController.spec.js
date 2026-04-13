@@ -827,6 +827,64 @@ describe('ParseServerRESTController', () => {
     expect(result.id).toBe(pushStatusId);
   });
 
+  it('should strip undefined values from GET query params with directAccess', async () => {
+    let capturedWhere;
+    Parse.Cloud.beforeFind('QueryStripObject', (req) => {
+      capturedWhere = req.query.toJSON().where;
+    });
+
+    const uniqueValue = `directAccess_${Date.now()}`;
+    await RESTController.request('POST', '/classes/QueryStripObject', {
+      presentField: uniqueValue,
+      absentField: undefined,
+    });
+
+    // If undefined values in "where" are not stripped, they would become null
+    // and the query would filter for absentField: null, failing to match the object.
+    const getRes = await RESTController.request('GET', '/classes/QueryStripObject', {
+      where: { presentField: uniqueValue, absentField: undefined },
+    });
+
+    expect(getRes.results.length).toBe(1);
+    expect(getRes.results[0].presentField).toBe(uniqueValue);
+    expect(capturedWhere.presentField).toBe(uniqueValue);
+    expect('absentField' in capturedWhere).toBe(false);
+  });
+
+  it('should strip undefined values from GET query params without directAccess (HTTP mode)', async () => {
+    let capturedWhere;
+    Parse.Cloud.beforeFind('QueryStripObjectHTTP', (req) => {
+      capturedWhere = req.query.toJSON().where;
+    });
+
+    const serverURL = 'http://localhost:8378/1';
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': Parse.applicationId,
+      'X-Parse-Master-Key': Parse.masterKey,
+    };
+    const uniqueValue = `httpMode_${Date.now()}`;
+
+    await request({
+      method: 'POST',
+      headers,
+      url: `${serverURL}/classes/QueryStripObjectHTTP`,
+      body: { presentField: uniqueValue, absentField: undefined },
+    });
+
+    // In HTTP mode, JSON.stringify naturally strips undefined values from the where clause.
+    const getRes = await request({
+      method: 'GET',
+      headers,
+      url: `${serverURL}/classes/QueryStripObjectHTTP?where=${encodeURIComponent(JSON.stringify({ presentField: uniqueValue, absentField: undefined }))}`,
+    });
+
+    expect(getRes.data.results.length).toBe(1);
+    expect(getRes.data.results[0].presentField).toBe(uniqueValue);
+    expect(capturedWhere.presentField).toBe(uniqueValue);
+    expect('absentField' in capturedWhere).toBe(false);
+  });
+
   it('should not convert undefined values to null on update with directAccess', async () => {
     const createRes = await RESTController.request('POST', '/classes/MyObject', {
       presentField: 'hello',
