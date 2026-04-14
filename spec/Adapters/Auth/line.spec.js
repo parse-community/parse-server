@@ -16,7 +16,7 @@ describe('LineAdapter', function () {
     const jwtClaims = {
       iss: 'https://access.line.me',
       aud: 'validClientId',
-      exp: Date.now() + 1000,
+      exp: Math.floor(Date.now() / 1000) + 3600,
       sub: 'mockUserId',
       ...claims,
     };
