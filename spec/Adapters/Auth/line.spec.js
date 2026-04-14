@@ -77,6 +77,7 @@ describe('LineAdapter', function () {
 
     it('should throw an error if public key used to encode token is not available', async function () {
       spyOn(authUtils, 'getHeaderFromToken').and.returnValue({ kid: '789', alg: 'ES256' });
+      spyOn(authUtils, 'getSigningKey').and.returnValue(Promise.reject(new Error('missing key')));
 
       await expectAsync(adapter.verifyIdToken({ id_token: 'the_token' })).toBeRejectedWithError(
         'Unable to find matching key for Key ID: 789'
