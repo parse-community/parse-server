@@ -27,6 +27,10 @@ export class AggregateRouter extends ClassesRouter {
       options.readPreference = body.readPreference;
       delete body.readPreference;
     }
+    if (typeof body.rawValues === 'boolean') {
+      options.rawValues = body.rawValues;
+      delete body.rawValues;
+    }
     options.pipeline = AggregateRouter.getPipeline(body);
     if (typeof body.where === 'string') {
       try {

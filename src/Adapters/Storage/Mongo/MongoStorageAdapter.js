@@ -17,6 +17,7 @@ import {
 import Parse from 'parse/node';
 // @flow-disable-next
 import _ from 'lodash';
+import { EJSON } from 'bson';
 import defaults, { ParseServerDatabaseOptions } from '../../../defaults';
 import logger from '../../../logger';
 
@@ -936,9 +937,13 @@ export class MongoStorageAdapter implements StorageAdapter {
     readPreference: ?string,
     hint: ?mixed,
     explain?: boolean,
-    comment: ?string
+    comment: ?string,
+    rawValues?: boolean
   ) {
     validateExplainValue(explain);
+    if (rawValues) {
+      pipeline = EJSON.deserialize(pipeline);
+    }
     let isPointerField = false;
     pipeline = pipeline.map(stage => {
       if (stage.$group) {
@@ -952,13 +957,13 @@ export class MongoStorageAdapter implements StorageAdapter {
         }
       }
       if (stage.$match) {
-        stage.$match = this._parseAggregateArgs(schema, stage.$match);
+        stage.$match = this._parseAggregateArgs(schema, stage.$match, rawValues);
       }
       if (stage.$project) {
         stage.$project = this._parseAggregateProjectArgs(schema, stage.$project);
       }
       if (stage.$geoNear && stage.$geoNear.query) {
-        stage.$geoNear.query = this._parseAggregateArgs(schema, stage.$geoNear.query);
+        stage.$geoNear.query = this._parseAggregateArgs(schema, stage.$geoNear.query, rawValues);
       }
       return stage;
     });
@@ -1016,25 +1021,28 @@ export class MongoStorageAdapter implements StorageAdapter {
   //
   // As much as I hate recursion...this seemed like a good fit for it. We're essentially traversing
   // down a tree to find a "leaf node" and checking to see if it needs to be converted.
-  _parseAggregateArgs(schema: any, pipeline: any): any {
+  _parseAggregateArgs(schema: any, pipeline: any, rawValues?: boolean): any {
     if (pipeline === null) {
       return null;
+    } else if (Utils.isDate(pipeline)) {
+      return pipeline;
     } else if (Array.isArray(pipeline)) {
-      return pipeline.map(value => this._parseAggregateArgs(schema, value));
+      return pipeline.map(value => this._parseAggregateArgs(schema, value, rawValues));
     } else if (typeof pipeline === 'object') {
       const returnValue = {};
       for (const field in pipeline) {
         if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
           if (typeof pipeline[field] === 'object') {
-            // Pass objects down to MongoDB...this is more than likely an $exists operator.
+            returnValue[`_p_${field}`] = pipeline[field];
+          } else if (rawValues) {
             returnValue[`_p_${field}`] = pipeline[field];
           } else {
             returnValue[`_p_${field}`] = `${schema.fields[field].targetClass}$${pipeline[field]}`;
           }
-        } else if (schema.fields[field] && schema.fields[field].type === 'Date') {
+        } else if (schema.fields[field] && schema.fields[field].type === 'Date' && !rawValues) {
           returnValue[field] = this._convertToDate(pipeline[field]);
         } else {
-          returnValue[field] = this._parseAggregateArgs(schema, pipeline[field]);
+          returnValue[field] = this._parseAggregateArgs(schema, pipeline[field], rawValues);
         }
 
         if (field === 'objectId') {

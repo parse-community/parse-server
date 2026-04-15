@@ -473,6 +473,20 @@ describe('Parse.Query Aggregate testing', () => {
     expect(new Date(results[0].date.iso)).toEqual(obj1.get('date'));
   });
 
+  it_id('f01a0001-0001-0001-0001-000000000001')(it_exclude_dbs(['postgres']))('rawValues: true converts $date EJSON marker to BSON Date in $match', async () => {
+    const obj = new TestObject();
+    await obj.save();
+    const iso = new Date(obj.createdAt.getTime() + 1).toISOString();
+    const pipeline = [
+      { $match: { objectId: obj.id, createdAt: { $lte: { $date: iso } } } },
+      { $count: 'total' },
+    ];
+    const query = new Parse.Query('TestObject');
+    const results = await query.aggregate(pipeline, { rawValues: true, useMasterKey: true });
+    expect(results.length).toBe(1);
+    expect(results[0].total).toBe(1);
+  });
+
   it_only_db('postgres')(
     'can group by any date field postgres (it does not work if you have dirty data)', // rows in your collection with non date data in the field that is supposed to be a date
     done => {

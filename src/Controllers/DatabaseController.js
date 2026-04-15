@@ -1269,6 +1269,7 @@ class DatabaseController {
       caseInsensitive = false,
       explain,
       comment,
+      rawValues,
     }: any = {},
     auth: any = {},
     validSchemaController: SchemaController.SchemaController
@@ -1409,7 +1410,8 @@ class DatabaseController {
                     readPreference,
                     hint,
                     explain,
-                    comment
+                    comment,
+                    rawValues
                   );
                 }
               } else if (explain) {
