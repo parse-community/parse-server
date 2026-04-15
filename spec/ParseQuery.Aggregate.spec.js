@@ -487,6 +487,60 @@ describe('Parse.Query Aggregate testing', () => {
     expect(results[0].total).toBe(1);
   });
 
+  it_id('f01a0001-0002-0002-0002-000000000002')(it_exclude_dbs(['postgres']))('rawValues: true deserializes $date at any nesting depth', async () => {
+    const obj = new TestObject();
+    await obj.save();
+    const iso = new Date(obj.createdAt.getTime() + 1).toISOString();
+    const pipeline = [
+      {
+        $match: {
+          $and: [
+            { objectId: obj.id },
+            { $or: [{ createdAt: { $lte: { $date: iso } } }] },
+          ],
+        },
+      },
+      { $count: 'total' },
+    ];
+    const query = new Parse.Query('TestObject');
+    const results = await query.aggregate(pipeline, { rawValues: true, useMasterKey: true });
+    expect(results.length).toBe(1);
+    expect(results[0].total).toBe(1);
+  });
+
+  it_id('f01a0001-0003-0003-0003-000000000003')(it_exclude_dbs(['postgres']))('rawValues: true does NOT coerce bare ISO strings', async () => {
+    const obj = new TestObject();
+    await obj.save();
+    const iso = new Date(obj.createdAt.getTime() + 1).toISOString();
+    const pipeline = [
+      { $match: { objectId: obj.id, createdAt: { $lte: iso } } },
+      { $count: 'total' },
+    ];
+    const query = new Parse.Query('TestObject');
+    const results = await query.aggregate(pipeline, { rawValues: true, useMasterKey: true });
+    // Bare ISO string compared against BSON Date: MongoDB string-vs-date comparison yields no matches.
+    expect(results.length).toBe(0);
+  });
+
+  it_id('f01a0001-0004-0004-0004-000000000004')(it_exclude_dbs(['postgres']))('rawValues: true does NOT coerce Parse Date encoding `{ __type: "Date", iso }`', async () => {
+    const obj = new TestObject();
+    await obj.save();
+    const iso = new Date(obj.createdAt.getTime() + 1).toISOString();
+    const pipeline = [
+      {
+        $match: {
+          objectId: obj.id,
+          createdAt: { $lte: { __type: 'Date', iso } },
+        },
+      },
+      { $count: 'total' },
+    ];
+    const query = new Parse.Query('TestObject');
+    const results = await query.aggregate(pipeline, { rawValues: true, useMasterKey: true });
+    // Parse Date encoding is not interpreted in rawValues mode; comparison fails silently.
+    expect(results.length).toBe(0);
+  });
+
   it_only_db('postgres')(
     'can group by any date field postgres (it does not work if you have dirty data)', // rows in your collection with non date data in the field that is supposed to be a date
     done => {
