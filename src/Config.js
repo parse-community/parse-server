@@ -697,7 +697,12 @@ export class Config {
     for (const key of validKeys) {
       if (requestComplexity[key] !== undefined) {
         const value = requestComplexity[key];
-        if (!Number.isInteger(value) || (value < 1 && value !== -1)) {
+        const def = RequestComplexityOptions[key];
+        if (typeof def.default === 'boolean') {
+          if (typeof value !== 'boolean') {
+            throw new Error(`requestComplexity.${key} must be a boolean.`);
+          }
+        } else if (!Number.isInteger(value) || (value < 1 && value !== -1)) {
           throw new Error(`requestComplexity.${key} must be a positive integer or -1 to disable.`);
         }
       } else {
