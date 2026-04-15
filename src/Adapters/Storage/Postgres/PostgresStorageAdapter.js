@@ -2272,6 +2272,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     readPreference: ?string,
     hint: ?mixed,
     explain?: boolean,
+    _comment?: ?string,
     _rawValues?: boolean
   ) {
     debug('aggregate');
