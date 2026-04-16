@@ -1675,4 +1675,43 @@ describe('Parse.Query Aggregate testing', () => {
     expect(results.length).toBe(1);
     expect(results[0].total).toBe(1);
   });
+
+  it_id('f01a0002-0002-0002-0002-000000000002')(it_exclude_dbs(['postgres']))('rawFieldNames: true does NOT rewrite Parse-style names', async () => {
+    const obj = new TestObject();
+    await obj.save();
+    const iso = new Date(obj.createdAt.getTime() + 1).toISOString();
+    // Using Parse-style `createdAt` under rawFieldNames should query a field that doesn't exist in MongoDB.
+    const pipeline = [
+      { $match: { _id: obj.id, createdAt: { $lte: { $date: iso } } } },
+      { $count: 'total' },
+    ];
+    const query = new Parse.Query('TestObject');
+    const results = await query.aggregate(pipeline, {
+      rawValues: true,
+      rawFieldNames: true,
+      useMasterKey: true,
+    });
+    // `createdAt` is not a MongoDB field name; no documents match.
+    expect(results.length).toBe(0);
+  });
+
+  it_id('f01a0002-0003-0003-0003-000000000003')(it_exclude_dbs(['postgres']))('rawFieldNames: true returns native field names in results', async () => {
+    const obj = new TestObject();
+    await obj.save();
+    const pipeline = [
+      { $match: { _id: obj.id } },
+      { $project: { _id: 1, _created_at: 1 } },
+    ];
+    const query = new Parse.Query('TestObject');
+    const results = await query.aggregate(pipeline, {
+      rawValues: true,
+      rawFieldNames: true,
+      useMasterKey: true,
+    });
+    expect(results.length).toBe(1);
+    expect(results[0]._id).toBe(obj.id);
+    expect(Object.prototype.hasOwnProperty.call(results[0], '_created_at')).toBe(true);
+    expect(Object.prototype.hasOwnProperty.call(results[0], 'objectId')).toBe(false);
+    expect(Object.prototype.hasOwnProperty.call(results[0], 'createdAt')).toBe(false);
+  });
 });
