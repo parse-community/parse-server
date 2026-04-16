@@ -126,7 +126,8 @@ export interface StorageAdapter {
     hint: ?mixed,
     explain?: boolean,
     comment?: string,
-    rawValues?: boolean
+    rawValues?: boolean,
+    rawFieldNames?: boolean
   ): Promise<any>;
   performInitialization(options: ?any): Promise<void>;
   watch(callback: () => void): void;

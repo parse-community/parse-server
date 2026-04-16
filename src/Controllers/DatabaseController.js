@@ -1270,6 +1270,7 @@ class DatabaseController {
       explain,
       comment,
       rawValues,
+      rawFieldNames,
     }: any = {},
     auth: any = {},
     validSchemaController: SchemaController.SchemaController
@@ -1411,7 +1412,8 @@ class DatabaseController {
                     hint,
                     explain,
                     comment,
-                    rawValues
+                    rawValues,
+                    rawFieldNames
                   );
                 }
               } else if (explain) {

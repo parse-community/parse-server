@@ -220,6 +220,7 @@ function _UnsafeRestQuery(
       case 'readPreference':
       case 'comment':
       case 'rawValues':
+      case 'rawFieldNames':
         this.findOptions[option] = restOptions[option];
         break;
       case 'order':

@@ -1652,4 +1652,27 @@ describe('Parse.Query Aggregate testing', () => {
       expect(e.code).toBe(Parse.Error.INVALID_QUERY);
     }
   });
+
+  it_id('f01a0002-0001-0001-0001-000000000001')(it_exclude_dbs(['postgres']))('rawFieldNames: true lets users write _created_at directly', async () => {
+    const obj = new TestObject();
+    await obj.save();
+    const iso = new Date(obj.createdAt.getTime() + 1).toISOString();
+    const pipeline = [
+      {
+        $match: {
+          _id: obj.id,
+          _created_at: { $lte: { $date: iso } },
+        },
+      },
+      { $count: 'total' },
+    ];
+    const query = new Parse.Query('TestObject');
+    const results = await query.aggregate(pipeline, {
+      rawValues: true,
+      rawFieldNames: true,
+      useMasterKey: true,
+    });
+    expect(results.length).toBe(1);
+    expect(results[0].total).toBe(1);
+  });
 });

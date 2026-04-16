@@ -31,6 +31,10 @@ export class AggregateRouter extends ClassesRouter {
       options.rawValues = body.rawValues;
       delete body.rawValues;
     }
+    if (typeof body.rawFieldNames === 'boolean') {
+      options.rawFieldNames = body.rawFieldNames;
+      delete body.rawFieldNames;
+    }
     options.pipeline = AggregateRouter.getPipeline(body);
     if (typeof body.where === 'string') {
       try {
@@ -49,7 +53,7 @@ export class AggregateRouter extends ClassesRouter {
         req.info.clientSDK,
         req.info.context
       );
-      if (!options.rawValues) {
+      if (!options.rawValues && !options.rawFieldNames) {
         for (const result of response.results) {
           if (typeof result === 'object') {
             UsersRouter.removeHiddenProperties(result);
