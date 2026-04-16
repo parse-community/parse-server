@@ -301,7 +301,7 @@ describe('LineAdapter', function () {
       ]);
 
       const accessToken = 'invalidAccessToken';
-      
+
       await expectAsync(adapter.getUserFromAccessToken(accessToken)).toBeRejectedWithError(
         'Failed to fetch Line user: Unauthorized'
       );
