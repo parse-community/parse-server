@@ -556,6 +556,21 @@ describe('Parse.Query Aggregate testing', () => {
     expect(results[0]._created_at).toEqual(jasmine.objectContaining({ $date: jasmine.any(String) }));
   });
 
+  it_id('f01a0001-0006-0006-0006-000000000006')(it_exclude_dbs(['postgres']))('rawValues: true deserializes EJSON in `$addFields`', async () => {
+    const obj = new TestObject();
+    await obj.save();
+    const iso = '2026-01-01T00:00:00.000Z';
+    const pipeline = [
+      { $match: { objectId: obj.id } },
+      { $addFields: { pinned: { $date: iso } } },
+      { $project: { _id: 1, pinned: 1 } },
+    ];
+    const query = new Parse.Query('TestObject');
+    const results = await query.aggregate(pipeline, { rawValues: true, useMasterKey: true });
+    expect(results.length).toBe(1);
+    expect(results[0].pinned).toEqual(jasmine.objectContaining({ $date: jasmine.any(String) }));
+  });
+
   it_only_db('postgres')(
     'can group by any date field postgres (it does not work if you have dirty data)', // rows in your collection with non date data in the field that is supposed to be a date
     done => {
