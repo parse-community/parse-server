@@ -63,6 +63,14 @@ describe('LineAdapter', function () {
       adapter.validateOptions(validOptions);
     });
 
+    it('should throw an error if LINE auth is not configured', async function () {
+      adapter = new LineAdapter.constructor();
+
+      await expectAsync(
+        adapter.verifyIdToken({ id_token: 'the_token' })
+      ).toBeRejectedWithError('Line auth is not configured.');
+    });
+
     it('should throw an error if id_token is missing', async function () {
       await expectAsync(adapter.verifyIdToken({})).toBeRejectedWithError(
         'id token is invalid for this user.'
@@ -158,6 +166,14 @@ describe('LineAdapter', function () {
 
       await expectAsync(adapter.verifyIdToken({ id_token: 'the_token' })).toBeRejectedWithError(
         'Line clientSecret is required to verify HS256 id_token.'
+      );
+    });
+
+    it('should reject an unsupported signing algorithm', async function () {
+      spyOn(authUtils, 'getHeaderFromToken').and.returnValue({ alg: 'RS256' });
+
+      await expectAsync(adapter.verifyIdToken({ id_token: 'the_token' })).toBeRejectedWithError(
+        'Unsupported Line id_token signing algorithm: RS256'
       );
     });
   });
