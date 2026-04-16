@@ -169,12 +169,14 @@ describe('LineAdapter', function () {
       );
     });
 
-    it('should reject an unsupported signing algorithm', async function () {
-      spyOn(authUtils, 'getHeaderFromToken').and.returnValue({ alg: 'RS256' });
+    it('should reject unsupported id_token signing algorithms', async function () {
+      spyOn(authUtils, 'getHeaderFromToken').and.returnValue({ kid: '123', alg: 'none' });
+      spyOn(jwt, 'verify');
 
       await expectAsync(adapter.verifyIdToken({ id_token: 'the_token' })).toBeRejectedWithError(
-        'Unsupported Line id_token signing algorithm: RS256'
+        'Unsupported Line id_token signing algorithm: none'
       );
+      expect(jwt.verify).not.toHaveBeenCalled();
     });
   });
 
