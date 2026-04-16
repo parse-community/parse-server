@@ -2271,10 +2271,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     pipeline: any,
     readPreference: ?string,
     hint: ?mixed,
-    explain?: boolean,
-    _comment?: ?string,
-    _rawValues?: boolean,
-    _rawFieldNames?: boolean
+    explain?: boolean
   ) {
     debug('aggregate');
     const values = [className];
