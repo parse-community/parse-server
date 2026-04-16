@@ -1714,4 +1714,63 @@ describe('Parse.Query Aggregate testing', () => {
     expect(Object.prototype.hasOwnProperty.call(results[0], 'objectId')).toBe(false);
     expect(Object.prototype.hasOwnProperty.call(results[0], 'createdAt')).toBe(false);
   });
+
+  it_id('f01a0003-0001-0001-0001-000000000001')(it_exclude_dbs(['postgres']))('server-level rawValues default applies when per-query omits it', async () => {
+    await reconfigureServer({ query: { aggregationRawValues: true } });
+    const obj = new TestObject();
+    await obj.save();
+    const iso = new Date(obj.createdAt.getTime() + 1).toISOString();
+    const pipeline = [
+      { $match: { objectId: obj.id, createdAt: { $lte: { $date: iso } } } },
+      { $count: 'total' },
+    ];
+    const query = new Parse.Query('TestObject');
+    // No rawValues in the per-query options — should inherit from the server default.
+    const results = await query.aggregate(pipeline, { useMasterKey: true });
+    expect(results.length).toBe(1);
+    expect(results[0].total).toBe(1);
+  });
+
+  it_id('f01a0003-0002-0002-0002-000000000002')(it_exclude_dbs(['postgres']))('per-query rawValues: false overrides server-level true', async () => {
+    await reconfigureServer({ query: { aggregationRawValues: true } });
+    const obj = new TestObject();
+    await obj.save();
+    const iso = new Date(obj.createdAt.getTime() + 1).toISOString();
+    // With server-level rawValues: true, EJSON `{ $date: iso }` would be converted to a BSON Date
+    // and the $match would succeed. Per-query rawValues: false overrides that, so `{ $date: iso }`
+    // is NOT deserialized as EJSON and the comparison fails — proving the override works.
+    const pipeline = [
+      { $match: { objectId: obj.id, createdAt: { $lte: { $date: iso } } } },
+      { $count: 'total' },
+    ];
+    const query = new Parse.Query('TestObject');
+    const results = await query.aggregate(pipeline, {
+      rawValues: false,
+      useMasterKey: true,
+    });
+    // Under rawValues: false the `{ $date: iso }` is not EJSON-deserialized; comparison yields no match.
+    expect(results.length).toBe(0);
+  });
+
+  it_id('f01a0003-0003-0003-0003-000000000003')(it_exclude_dbs(['postgres']))('server-level rawFieldNames default applies when per-query omits it', async () => {
+    await reconfigureServer({
+      query: { aggregationRawValues: true, aggregationRawFieldNames: true },
+    });
+    const obj = new TestObject();
+    await obj.save();
+    const iso = new Date(obj.createdAt.getTime() + 1).toISOString();
+    const pipeline = [
+      {
+        $match: {
+          _id: obj.id,
+          _created_at: { $lte: { $date: iso } },
+        },
+      },
+      { $count: 'total' },
+    ];
+    const query = new Parse.Query('TestObject');
+    const results = await query.aggregate(pipeline, { useMasterKey: true });
+    expect(results.length).toBe(1);
+    expect(results[0].total).toBe(1);
+  });
 });

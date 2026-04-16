@@ -35,6 +35,16 @@ export class AggregateRouter extends ClassesRouter {
       options.rawFieldNames = body.rawFieldNames;
       delete body.rawFieldNames;
     }
+    const queryOptions = (req.config && req.config.query) || {};
+    if (options.rawValues === undefined && typeof queryOptions.aggregationRawValues === 'boolean') {
+      options.rawValues = queryOptions.aggregationRawValues;
+    }
+    if (
+      options.rawFieldNames === undefined &&
+      typeof queryOptions.aggregationRawFieldNames === 'boolean'
+    ) {
+      options.rawFieldNames = queryOptions.aggregationRawFieldNames;
+    }
     options.pipeline = AggregateRouter.getPipeline(body);
     if (typeof body.where === 'string') {
       try {
