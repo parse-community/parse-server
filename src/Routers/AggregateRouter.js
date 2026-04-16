@@ -49,9 +49,11 @@ export class AggregateRouter extends ClassesRouter {
         req.info.clientSDK,
         req.info.context
       );
-      for (const result of response.results) {
-        if (typeof result === 'object') {
-          UsersRouter.removeHiddenProperties(result);
+      if (!options.rawValues) {
+        for (const result of response.results) {
+          if (typeof result === 'object') {
+            UsersRouter.removeHiddenProperties(result);
+          }
         }
       }
       return { response };

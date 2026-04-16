@@ -980,6 +980,9 @@ export class MongoStorageAdapter implements StorageAdapter {
         })
       )
       .then(results => {
+        if (rawValues) {
+          return results;
+        }
         results.forEach(result => {
           if (Object.prototype.hasOwnProperty.call(result, '_id')) {
             if (isPointerField && result._id) {
@@ -998,7 +1001,12 @@ export class MongoStorageAdapter implements StorageAdapter {
         });
         return results;
       })
-      .then(objects => objects.map(object => mongoObjectToParseObject(className, object, schema)))
+      .then(objects => {
+        if (rawValues) {
+          return objects.map(obj => EJSON.serialize(obj));
+        }
+        return objects.map(object => mongoObjectToParseObject(className, object, schema));
+      })
       .catch(err => this.handleError(err));
   }
 
