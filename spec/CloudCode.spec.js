@@ -3659,6 +3659,9 @@ describe('afterFind hooks', () => {
     acl.setRoleWriteAccess('admin', true);
     obj.setACL(acl);
 
+    const testDate = new Date('2025-01-01T00:00:00.000Z');
+    obj.set('dateField', testDate);
+
     const json = toJSONwithObjects(obj, 'Test');
 
     expect(json.ACL).toBeDefined();
@@ -3666,6 +3669,9 @@ describe('afterFind hooks', () => {
     expect(json.ACL.constructor).toBe(Object);
     expect(json.ACL['*']).toEqual({ read: true });
     expect(json.ACL['role:admin']).toEqual({ write: true });
+
+    expect(Utils.isDate(json.dateField)).toBe(true);
+    expect(json.dateField).toEqual(testDate);
   });
 
   it('should return valid ACL with directAccess enabled when afterFind hook calls setACL()', async () => {
