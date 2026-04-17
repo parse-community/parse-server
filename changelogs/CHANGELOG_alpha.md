@@ -1,3 +1,10 @@
+# [9.9.0-alpha.1](https://github.com/parse-community/parse-server/compare/9.8.1-alpha.1...9.9.0-alpha.1) (2026-04-17)
+
+
+### Features
+
+* Add `rawValues` and `rawFieldNames` options for aggregation queries ([#10438](https://github.com/parse-community/parse-server/issues/10438)) ([f26700e](https://github.com/parse-community/parse-server/commit/f26700e39d1980940467bee0d26ca3deb88e3924))
+
 ## [9.8.1-alpha.1](https://github.com/parse-community/parse-server/compare/9.8.0...9.8.1-alpha.1) (2026-04-12)
 
 

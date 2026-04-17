@@ -391,6 +391,10 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_REQUEST_COMPLEXITY
   :DEFAULT: {} */
   requestComplexity: ?RequestComplexityOptions;
+  /* Query-related server defaults.
+  :ENV: PARSE_SERVER_QUERY
+  :DEFAULT: {} */
+  query: ?QueryServerOptions;
   /* The security options to identify and report weak security settings.
   :DEFAULT: {} */
   security: ?SecurityOptions;
@@ -488,6 +492,17 @@ export interface SecurityOptions {
   enableCheckLog: ?boolean;
   /* The security check groups to run. This allows to add custom security checks or override existing ones. Default are the groups defined in `CheckGroups.js`. */
   checkGroups: ?(CheckGroup[]);
+}
+
+export interface QueryServerOptions {
+  /* When `true`, all aggregation queries default to using MongoDB Extended JSON (EJSON) for explicit value typing and skip schema-based value coercion. Individual queries can still override this via the `rawValues` option. Default is `false`.
+  :ENV: PARSE_SERVER_QUERY_AGGREGATION_RAW_VALUES
+  :DEFAULT: false */
+  aggregationRawValues: ?boolean;
+  /* When `true`, all aggregation queries default to using native MongoDB field names (no automatic `createdAt` → `_created_at` rewriting). Individual queries can still override this via the `rawFieldNames` option. Default is `false`.
+  :ENV: PARSE_SERVER_QUERY_AGGREGATION_RAW_FIELD_NAMES
+  :DEFAULT: false */
+  aggregationRawFieldNames: ?boolean;
 }
 
 export interface PagesOptions {

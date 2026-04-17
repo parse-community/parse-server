@@ -17,6 +17,7 @@ import {
 import Parse from 'parse/node';
 // @flow-disable-next
 import _ from 'lodash';
+import { EJSON } from 'bson';
 import defaults, { ParseServerDatabaseOptions } from '../../../defaults';
 import logger from '../../../logger';
 
@@ -936,13 +937,18 @@ export class MongoStorageAdapter implements StorageAdapter {
     readPreference: ?string,
     hint: ?mixed,
     explain?: boolean,
-    comment: ?string
+    comment: ?string,
+    rawValues?: boolean,
+    rawFieldNames?: boolean
   ) {
     validateExplainValue(explain);
+    if (rawValues) {
+      pipeline = EJSON.deserialize(pipeline);
+    }
     let isPointerField = false;
     pipeline = pipeline.map(stage => {
       if (stage.$group) {
-        stage.$group = this._parseAggregateGroupArgs(schema, stage.$group);
+        stage.$group = this._parseAggregateGroupArgs(schema, stage.$group, rawFieldNames);
         if (
           stage.$group._id &&
           typeof stage.$group._id === 'string' &&
@@ -952,13 +958,13 @@ export class MongoStorageAdapter implements StorageAdapter {
         }
       }
       if (stage.$match) {
-        stage.$match = this._parseAggregateArgs(schema, stage.$match);
+        stage.$match = this._parseAggregateArgs(schema, stage.$match, rawValues, rawFieldNames);
       }
       if (stage.$project) {
-        stage.$project = this._parseAggregateProjectArgs(schema, stage.$project);
+        stage.$project = this._parseAggregateProjectArgs(schema, stage.$project, rawValues, rawFieldNames);
       }
       if (stage.$geoNear && stage.$geoNear.query) {
-        stage.$geoNear.query = this._parseAggregateArgs(schema, stage.$geoNear.query);
+        stage.$geoNear.query = this._parseAggregateArgs(schema, stage.$geoNear.query, rawValues, rawFieldNames);
       }
       return stage;
     });
@@ -975,6 +981,9 @@ export class MongoStorageAdapter implements StorageAdapter {
         })
       )
       .then(results => {
+        if (rawFieldNames) {
+          return results;
+        }
         results.forEach(result => {
           if (Object.prototype.hasOwnProperty.call(result, '_id')) {
             if (isPointerField && result._id) {
@@ -993,7 +1002,15 @@ export class MongoStorageAdapter implements StorageAdapter {
         });
         return results;
       })
-      .then(objects => objects.map(object => mongoObjectToParseObject(className, object, schema)))
+      .then(objects => {
+        if (rawValues) {
+          return objects.map(obj => EJSON.serialize(obj));
+        }
+        if (rawFieldNames) {
+          return objects;
+        }
+        return objects.map(object => mongoObjectToParseObject(className, object, schema));
+      })
       .catch(err => this.handleError(err));
   }
 
@@ -1016,36 +1033,41 @@ export class MongoStorageAdapter implements StorageAdapter {
   //
   // As much as I hate recursion...this seemed like a good fit for it. We're essentially traversing
   // down a tree to find a "leaf node" and checking to see if it needs to be converted.
-  _parseAggregateArgs(schema: any, pipeline: any): any {
+  _parseAggregateArgs(schema: any, pipeline: any, rawValues?: boolean, rawFieldNames?: boolean): any {
     if (pipeline === null) {
       return null;
+    } else if (Utils.isDate(pipeline)) {
+      return pipeline;
     } else if (Array.isArray(pipeline)) {
-      return pipeline.map(value => this._parseAggregateArgs(schema, value));
+      return pipeline.map(value => this._parseAggregateArgs(schema, value, rawValues, rawFieldNames));
     } else if (typeof pipeline === 'object') {
       const returnValue = {};
       for (const field in pipeline) {
-        if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
+        if (!rawFieldNames && schema.fields[field] && schema.fields[field].type === 'Pointer') {
           if (typeof pipeline[field] === 'object') {
-            // Pass objects down to MongoDB...this is more than likely an $exists operator.
+            returnValue[`_p_${field}`] = pipeline[field];
+          } else if (rawValues) {
             returnValue[`_p_${field}`] = pipeline[field];
           } else {
             returnValue[`_p_${field}`] = `${schema.fields[field].targetClass}$${pipeline[field]}`;
           }
-        } else if (schema.fields[field] && schema.fields[field].type === 'Date') {
+        } else if (schema.fields[field] && schema.fields[field].type === 'Date' && !rawValues) {
           returnValue[field] = this._convertToDate(pipeline[field]);
         } else {
-          returnValue[field] = this._parseAggregateArgs(schema, pipeline[field]);
+          returnValue[field] = this._parseAggregateArgs(schema, pipeline[field], rawValues, rawFieldNames);
         }
 
-        if (field === 'objectId') {
-          returnValue['_id'] = returnValue[field];
-          delete returnValue[field];
-        } else if (field === 'createdAt') {
-          returnValue['_created_at'] = returnValue[field];
-          delete returnValue[field];
-        } else if (field === 'updatedAt') {
-          returnValue['_updated_at'] = returnValue[field];
-          delete returnValue[field];
+        if (!rawFieldNames) {
+          if (field === 'objectId') {
+            returnValue['_id'] = returnValue[field];
+            delete returnValue[field];
+          } else if (field === 'createdAt') {
+            returnValue['_created_at'] = returnValue[field];
+            delete returnValue[field];
+          } else if (field === 'updatedAt') {
+            returnValue['_updated_at'] = returnValue[field];
+            delete returnValue[field];
+          }
         }
       }
       return returnValue;
@@ -1057,24 +1079,26 @@ export class MongoStorageAdapter implements StorageAdapter {
   // two functions and making the code even harder to understand, I decided to split it up. The
   // difference with this function is we are not transforming the values, only the keys of the
   // pipeline.
-  _parseAggregateProjectArgs(schema: any, pipeline: any): any {
+  _parseAggregateProjectArgs(schema: any, pipeline: any, rawValues?: boolean, rawFieldNames?: boolean): any {
     const returnValue = {};
     for (const field in pipeline) {
-      if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
+      if (!rawFieldNames && schema.fields[field] && schema.fields[field].type === 'Pointer') {
         returnValue[`_p_${field}`] = pipeline[field];
       } else {
-        returnValue[field] = this._parseAggregateArgs(schema, pipeline[field]);
+        returnValue[field] = this._parseAggregateArgs(schema, pipeline[field], rawValues, rawFieldNames);
       }
 
-      if (field === 'objectId') {
-        returnValue['_id'] = returnValue[field];
-        delete returnValue[field];
-      } else if (field === 'createdAt') {
-        returnValue['_created_at'] = returnValue[field];
-        delete returnValue[field];
-      } else if (field === 'updatedAt') {
-        returnValue['_updated_at'] = returnValue[field];
-        delete returnValue[field];
+      if (!rawFieldNames) {
+        if (field === 'objectId') {
+          returnValue['_id'] = returnValue[field];
+          delete returnValue[field];
+        } else if (field === 'createdAt') {
+          returnValue['_created_at'] = returnValue[field];
+          delete returnValue[field];
+        } else if (field === 'updatedAt') {
+          returnValue['_updated_at'] = returnValue[field];
+          delete returnValue[field];
+        }
       }
     }
     return returnValue;
@@ -1085,16 +1109,16 @@ export class MongoStorageAdapter implements StorageAdapter {
   // The <expression> could be a column name, prefixed with the '$' character. We'll look for
   // these <expression> and check to see if it is a 'Pointer' or if it's one of createdAt,
   // updatedAt or objectId and change it accordingly.
-  _parseAggregateGroupArgs(schema: any, pipeline: any): any {
+  _parseAggregateGroupArgs(schema: any, pipeline: any, rawFieldNames?: boolean): any {
     if (Array.isArray(pipeline)) {
-      return pipeline.map(value => this._parseAggregateGroupArgs(schema, value));
+      return pipeline.map(value => this._parseAggregateGroupArgs(schema, value, rawFieldNames));
     } else if (typeof pipeline === 'object') {
       const returnValue = {};
       for (const field in pipeline) {
-        returnValue[field] = this._parseAggregateGroupArgs(schema, pipeline[field]);
+        returnValue[field] = this._parseAggregateGroupArgs(schema, pipeline[field], rawFieldNames);
       }
       return returnValue;
-    } else if (typeof pipeline === 'string') {
+    } else if (typeof pipeline === 'string' && !rawFieldNames) {
       const field = pipeline.substring(1);
       if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
         return `$_p_${field}`;

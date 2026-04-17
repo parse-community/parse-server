@@ -512,6 +512,13 @@ module.exports.ParseServerOptions = {
     help: 'Configuration for push, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#push-notifications',
     action: parsers.objectParser,
   },
+  query: {
+    env: 'PARSE_SERVER_QUERY',
+    help: 'Query-related server defaults.',
+    action: parsers.objectParser,
+    type: 'QueryServerOptions',
+    default: {},
+  },
   rateLimit: {
     env: 'PARSE_SERVER_RATE_LIMIT',
     help: "Options to limit repeated requests to Parse Server APIs. This can be used to protect sensitive endpoints such as `/requestPasswordReset` from brute-force attacks or Parse Server as a whole from denial-of-service (DoS) attacks.<br><br>\u2139\uFE0F Mind the following limitations:<br>- rate limits applied per IP address; this limits protection against distributed denial-of-service (DDoS) attacks where many requests are coming from various IP addresses<br>- if multiple Parse Server instances are behind a load balancer or ran in a cluster, each instance will calculate it's own request rates, independent from other instances; this limits the applicability of this feature when using a load balancer and another rate limiting solution that takes requests across all instances into account may be more suitable<br>- this feature provides basic protection against denial-of-service attacks, but a more sophisticated solution works earlier in the request flow and prevents a malicious requests to even reach a server instance; it's therefore recommended to implement a solution according to architecture and use case.",
@@ -774,6 +781,20 @@ module.exports.SecurityOptions = {
   enableCheckLog: {
     env: 'PARSE_SERVER_SECURITY_ENABLE_CHECK_LOG',
     help: 'Is true if the security check report should be written to logs. This should only be enabled temporarily to not expose weak security settings in logs.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+};
+module.exports.QueryServerOptions = {
+  aggregationRawFieldNames: {
+    env: 'PARSE_SERVER_QUERY_AGGREGATION_RAW_FIELD_NAMES',
+    help: 'When `true`, all aggregation queries default to using native MongoDB field names (no automatic `createdAt` \u2192 `_created_at` rewriting). Individual queries can still override this via the `rawFieldNames` option. Default is `false`.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  aggregationRawValues: {
+    env: 'PARSE_SERVER_QUERY_AGGREGATION_RAW_VALUES',
+    help: 'When `true`, all aggregation queries default to using MongoDB Extended JSON (EJSON) for explicit value typing and skip schema-based value coercion. Individual queries can still override this via the `rawValues` option. Default is `false`.',
     action: parsers.booleanParser,
     default: false,
   },
