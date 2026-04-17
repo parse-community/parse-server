@@ -1,7 +1,11 @@
 const http = require('http');
 const express = require('express');
 const req = require('../lib/request');
-const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+const fetch = (...args) =>
+  import('node-fetch').then(({ default: fetch }) => {
+    const [url, options = {}] = args;
+    return fetch(url, { agent: new http.Agent({ keepAlive: false }), ...options });
+  });
 const FormData = require('form-data');
 require('./helper');
 const { updateCLP } = require('./support/dev');

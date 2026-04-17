@@ -1,6 +1,10 @@
 const http = require('http');
 const express = require('express');
-const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+const fetch = (...args) =>
+  import('node-fetch').then(({ default: fetch }) => {
+    const [url, options = {}] = args;
+    return fetch(url, { agent: new http.Agent({ keepAlive: false }), ...options });
+  });
 const ws = require('ws');
 const request = require('../lib/request');
 const Config = require('../lib/Config');
