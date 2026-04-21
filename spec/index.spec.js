@@ -4,6 +4,7 @@ const parseServerPackage = require('../package.json');
 const MockEmailAdapterWithOptions = require('./support/MockEmailAdapterWithOptions');
 const ParseServer = require('../lib/index');
 const Config = require('../lib/Config');
+const adapterLoader = require('../lib/Adapters/AdapterLoader');
 const express = require('express');
 
 const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
@@ -209,6 +210,52 @@ describe('server', () => {
         });
       })
       .catch(done.fail);
+  });
+
+  it('can start when push is not configured and optional push adapter is missing', async () => {
+    const originalLoadModule = adapterLoader.loadModule;
+    const loadModuleSpy = spyOn(adapterLoader, 'loadModule').and.callFake(modulePath => {
+      if (modulePath === '@parse/push-adapter') {
+        const error = new Error("Cannot find package '@parse/push-adapter'");
+        error.code = 'ERR_MODULE_NOT_FOUND';
+        return Promise.reject(error);
+      }
+      return originalLoadModule(modulePath);
+    });
+
+    try {
+      await reconfigureServer({
+        push: undefined,
+      });
+      const config = Config.get('test');
+      expect(config.hasPushSupport).toEqual(false);
+    } finally {
+      loadModuleSpy.and.callThrough();
+    }
+  });
+
+  it('throws clear error when push is configured and optional push adapter is missing', async () => {
+    const originalLoadModule = adapterLoader.loadModule;
+    const loadModuleSpy = spyOn(adapterLoader, 'loadModule').and.callFake(modulePath => {
+      if (modulePath === '@parse/push-adapter') {
+        const error = new Error("Cannot find package '@parse/push-adapter'");
+        error.code = 'ERR_MODULE_NOT_FOUND';
+        return Promise.reject(error);
+      }
+      return originalLoadModule(modulePath);
+    });
+
+    try {
+      await expectAsync(
+        reconfigureServer({
+          push: {},
+        })
+      ).toBeRejectedWithError(
+        'Push is configured but the optional dependency "@parse/push-adapter" is not installed. Install "@parse/push-adapter" or configure "push.adapter".'
+      );
+    } finally {
+      loadModuleSpy.and.callThrough();
+    }
   });
 
   it('can properly sets the push support ', done => {
