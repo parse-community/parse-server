@@ -27,7 +27,6 @@
     "@graphql-tools/schema": "10.0.31",
     "@graphql-tools/utils": "11.0.0",
     "@parse/fs-files-adapter": "3.0.0",
-    "@parse/push-adapter": "8.4.0",
     "bcryptjs": "3.0.3",
     "commander": "14.0.3",
     "cors": "2.8.6",
@@ -146,7 +145,8 @@
     "parse-server": "bin/parse-server"
   },
   "optionalDependencies": {
-    "@node-rs/bcrypt": "1.10.7"
+    "@node-rs/bcrypt": "1.10.7",
+    "@parse/push-adapter": "8.4.0"
   },
   "collective": {
     "type": "opencollective",
