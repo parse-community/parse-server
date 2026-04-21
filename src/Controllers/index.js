@@ -169,6 +169,13 @@ interface PushControlling {
   pushWorker: PushWorker;
 }
 
+function isPushAdapterModuleMissing(error: any): boolean {
+  const message = `${error?.message || error || ''}`;
+  const hasMissingCode =
+    error?.code === 'ERR_MODULE_NOT_FOUND' || error?.code === 'MODULE_NOT_FOUND';
+  return hasMissingCode && message.includes('@parse/push-adapter');
+}
+
 export async function getPushController(options: ParseServerOptions): PushControlling {
   const { scheduledPush, push } = options;
 
@@ -179,7 +186,19 @@ export async function getPushController(options: ParseServerOptions): PushContro
   }
 
   // Pass the push options too as it works with the default
-  const ParsePushAdapter = await loadModule('@parse/push-adapter');
+  let ParsePushAdapter;
+  try {
+    ParsePushAdapter = await loadModule('@parse/push-adapter');
+  } catch (error) {
+    if (!isPushAdapterModuleMissing(error)) {
+      throw error;
+    }
+    if (push && !pushOptions.adapter) {
+      throw new Error(
+        'Push is configured but the optional dependency "@parse/push-adapter" is not installed. Install "@parse/push-adapter" or configure "push.adapter".'
+      );
+    }
+  }
   const pushAdapter = loadAdapter(
     pushOptions && pushOptions.adapter,
     ParsePushAdapter,
@@ -195,7 +214,7 @@ export async function getPushController(options: ParseServerOptions): PushContro
 
   const pushControllerQueue = new PushQueue(pushQueueOptions);
   let pushWorker;
-  if (!disablePushWorker) {
+  if (!disablePushWorker && hasPushSupport) {
     pushWorker = new PushWorker(pushAdapter, pushQueueOptions);
   }
   return {
