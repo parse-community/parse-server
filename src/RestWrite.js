@@ -585,15 +585,6 @@ RestWrite.prototype.handleAuthData = async function (authData) {
 
   // No user found with provided authData we need to validate
   if (!results.length) {
-    // Capture the original authData before validation mutates the adapter's view,
-    // so that the optimistic lock below can detect single-use token consumption.
-    const originalAuthData = currentUserAuthData
-      ? Object.fromEntries(
-        Object.entries(currentUserAuthData).map(([k, v]) =>
-          [k, v && typeof v === 'object' ? { ...v } : v]
-        )
-      )
-      : undefined;
     const { authData: validatedAuthData, authDataResponse } = await Auth.handleAuthDataValidation(
       authData,
       this
@@ -601,13 +592,6 @@ RestWrite.prototype.handleAuthData = async function (authData) {
     this.authDataResponse = authDataResponse;
     // Replace current authData by the new validated one
     this.data.authData = validatedAuthData;
-    // For UPDATE paths (e.g. PUT /users/:id during MFA SMS enrollment confirmation),
-    // extend the update WHERE clause so concurrent single-use token consumers cannot
-    // both succeed; the no-user branch is reached because findUsersWithAuthData has
-    // no way to key on provider fields like the MFA pending token.
-    if (this.query && this.query.objectId && Object.keys(this.data.authData).length) {
-      applyAuthDataOptimisticLock(this.query, originalAuthData, this.data.authData);
-    }
     return;
   }
 
