@@ -314,20 +314,27 @@ export class UsersRouter extends ClassesRouter {
     // If we have some new validated authData update directly
     if (validatedAuthData && Object.keys(validatedAuthData).length) {
       const query = { objectId: user.objectId };
-      // Optimistic locking: include the original array fields in the WHERE clause
-      // for providers whose data is being updated. This prevents concurrent requests
-      // from both succeeding when consuming single-use tokens (e.g. MFA recovery codes).
-      // Only array fields need locking — element removal is vulnerable to TOCTOU;
-      // scalar fields are simply overwritten and don't have concurrency issues.
+      // Optimistic locking: include each changed lockable original field in the WHERE
+      // clause for providers whose data is being updated. This prevents concurrent
+      // requests from both succeeding when consuming single-use tokens (e.g. MFA
+      // recovery codes as arrays, or MFA SMS OTP tokens as strings). Only primitives
+      // and arrays are locked — Date and object values are skipped because their
+      // stored representation differs between storage adapters; locking a companion
+      // primitive (e.g. the MFA token string) is sufficient.
+      const isLockable = v => {
+        if (v === null || v === undefined) { return false; }
+        const t = typeof v;
+        return t === 'string' || t === 'number' || t === 'boolean' || Array.isArray(v);
+      };
       if (user.authData) {
         for (const provider of Object.keys(validatedAuthData)) {
           const original = user.authData[provider];
           if (original && typeof original === 'object') {
             for (const [field, value] of Object.entries(original)) {
-              if (
-                Array.isArray(value) &&
-                JSON.stringify(value) !== JSON.stringify(validatedAuthData[provider]?.[field])
-              ) {
+              if (!isLockable(value)) {
+                continue;
+              }
+              if (JSON.stringify(value) !== JSON.stringify(validatedAuthData[provider]?.[field])) {
                 query[`authData.${provider}.${field}`] = value;
               }
             }
