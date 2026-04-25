@@ -18,6 +18,7 @@ import { promiseEnsureIdempotency } from '../middlewares';
 import RestWrite from '../RestWrite';
 import { logger } from '../logger';
 import { createSanitizedError } from '../Error';
+import { applyAuthDataOptimisticLock } from '../AuthDataLock';
 
 export class UsersRouter extends ClassesRouter {
   className() {
@@ -314,33 +315,10 @@ export class UsersRouter extends ClassesRouter {
     // If we have some new validated authData update directly
     if (validatedAuthData && Object.keys(validatedAuthData).length) {
       const query = { objectId: user.objectId };
-      // Optimistic locking: include each changed lockable original field in the WHERE
-      // clause for providers whose data is being updated. This prevents concurrent
-      // requests from both succeeding when consuming single-use tokens (e.g. MFA
-      // recovery codes as arrays, or MFA SMS OTP tokens as strings). Only primitives
-      // and arrays are locked — Date and object values are skipped because their
-      // stored representation differs between storage adapters; locking a companion
-      // primitive (e.g. the MFA token string) is sufficient.
-      const isLockable = v => {
-        if (v === null || v === undefined) { return false; }
-        const t = typeof v;
-        return t === 'string' || t === 'number' || t === 'boolean' || Array.isArray(v);
-      };
-      if (user.authData) {
-        for (const provider of Object.keys(validatedAuthData)) {
-          const original = user.authData[provider];
-          if (original && typeof original === 'object') {
-            for (const [field, value] of Object.entries(original)) {
-              if (!isLockable(value)) {
-                continue;
-              }
-              if (JSON.stringify(value) !== JSON.stringify(validatedAuthData[provider]?.[field])) {
-                query[`authData.${provider}.${field}`] = value;
-              }
-            }
-          }
-        }
-      }
+      // Prevent concurrent requests from both succeeding when consuming single-use
+      // tokens (e.g. MFA recovery codes or SMS OTP tokens) by extending the update
+      // WHERE clause with the original values of changed primitive/array fields.
+      applyAuthDataOptimisticLock(query, user.authData, validatedAuthData);
       try {
         await req.config.database.update('_User', query, { authData: validatedAuthData }, {});
       } catch (error) {
