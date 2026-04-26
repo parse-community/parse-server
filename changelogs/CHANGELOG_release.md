@@ -1,3 +1,10 @@
+## [8.6.76](https://github.com/parse-community/parse-server/compare/8.6.75...8.6.76) (2026-04-26)
+
+
+### Bug Fixes
+
+* MFA SMS one-time password accepted twice under concurrent login ([GHSA-jpq4-7fmq-q5fj](https://github.com/parse-community/parse-server/security/advisories/GHSA-jpq4-7fmq-q5fj)) ([#10449](https://github.com/parse-community/parse-server/issues/10449)) ([8681c60](https://github.com/parse-community/parse-server/commit/8681c600c5fe2924c9d6ae805482bbb2896d2958))
+
 ## [8.6.75](https://github.com/parse-community/parse-server/compare/8.6.74...8.6.75) (2026-04-06)
 
 
