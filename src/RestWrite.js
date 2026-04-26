@@ -16,6 +16,7 @@ const util = require('util');
 import RestQuery from './RestQuery';
 import _ from 'lodash';
 import logger from './logger';
+import { applyAuthDataOptimisticLock } from './AuthDataLock';
 import { requiredColumns } from './Controllers/SchemaController';
 import { createSanitizedError } from './Error';
 
@@ -645,20 +646,20 @@ RestWrite.prototype.handleAuthData = async function (authData) {
         this.authDataResponse = res.authDataResponse;
       }
 
+      // Capture original authData before mutating userResult via the response reference
+      const originalAuthData = userResult?.authData
+        ? Object.fromEntries(
+          Object.entries(userResult.authData).map(([k, v]) =>
+            [k, v && typeof v === 'object' ? { ...v } : v]
+          )
+        )
+        : undefined;
+
       // IF we are in login we'll skip the database operation / beforeSave / afterSave etc...
       // we need to set it up there.
       // We are supposed to have a response only on LOGIN with authData, so we skip those
       // If we're not logging in, but just updating the current user, we can safely skip that part
       if (this.response) {
-        // Capture original authData before mutating userResult via the response reference
-        const originalAuthData = userResult?.authData
-          ? Object.fromEntries(
-            Object.entries(userResult.authData).map(([k, v]) =>
-              [k, v && typeof v === 'object' ? { ...v } : v]
-            )
-          )
-          : undefined;
-
         // Assign the new authData in the response
         Object.keys(mutatedAuthData).forEach(provider => {
           this.response.response.authData[provider] = mutatedAuthData[provider];
@@ -670,24 +671,11 @@ RestWrite.prototype.handleAuthData = async function (authData) {
         // Then we're good for the user, early exit of sorts
         if (Object.keys(this.data.authData).length) {
           const query = { objectId: this.data.objectId };
-          // Optimistic locking: include the original array fields in the WHERE clause
+          // Optimistic locking: include each changed original field in the WHERE clause
           // for providers whose data is being updated. This prevents concurrent requests
-          // from both succeeding when consuming single-use tokens (e.g. MFA recovery codes).
-          if (originalAuthData) {
-            for (const provider of Object.keys(this.data.authData)) {
-              const original = originalAuthData[provider];
-              if (original && typeof original === 'object') {
-                for (const [field, value] of Object.entries(original)) {
-                  if (
-                    Array.isArray(value) &&
-                    JSON.stringify(value) !== JSON.stringify(this.data.authData[provider]?.[field])
-                  ) {
-                    query[`authData.${provider}.${field}`] = value;
-                  }
-                }
-              }
-            }
-          }
+          // from both succeeding when consuming single-use tokens (e.g. MFA recovery codes
+          // as arrays, or MFA SMS OTP tokens as strings).
+          applyAuthDataOptimisticLock(query, originalAuthData, this.data.authData);
           try {
             await this.config.database.update(
               this.className,
@@ -703,6 +691,11 @@ RestWrite.prototype.handleAuthData = async function (authData) {
             throw error;
           }
         }
+      } else if (this.query && this.data.authData && Object.keys(this.data.authData).length) {
+        // UPDATE path (e.g. PUT /users/:id during linked-provider re-auth): apply
+        // the same optimistic lock to the subsequent runDatabaseOperation update so
+        // concurrent single-use token consumers cannot both succeed.
+        applyAuthDataOptimisticLock(this.query, originalAuthData, this.data.authData);
       }
     }
   }

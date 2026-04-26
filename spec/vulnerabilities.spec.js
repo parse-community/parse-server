@@ -4698,6 +4698,115 @@ describe('Vulnerabilities', () => {
     });
   });
 
+  describe('(GHSA-jpq4-7fmq-q5fj) SMS MFA single-use token reuse via concurrent requests', () => {
+    const mfaHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+
+    let sentToken;
+
+    beforeEach(async () => {
+      sentToken = null;
+      await reconfigureServer({
+        auth: {
+          mfa: {
+            enabled: true,
+            options: ['SMS'],
+            algorithm: 'SHA1',
+            digits: 6,
+            period: 30,
+            sendSMS: token => {
+              sentToken = token;
+            },
+          },
+        },
+      });
+    });
+
+    async function setupSmsMfaUser() {
+      const user = await Parse.User.signUp('smsmfauser', 'password123');
+      // Enroll SMS MFA
+      await request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/users/${user.id}`,
+        headers: {
+          ...mfaHeaders,
+          'X-Parse-Session-Token': user.getSessionToken(),
+        },
+        body: JSON.stringify({
+          authData: { mfa: { mobile: '+15551234567' } },
+        }),
+      });
+      const enrollToken = sentToken;
+      // Confirm enrollment with the received OTP
+      await request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/users/${user.id}`,
+        headers: {
+          ...mfaHeaders,
+          'X-Parse-Session-Token': user.getSessionToken(),
+        },
+        body: JSON.stringify({
+          authData: { mfa: { mobile: '+15551234567', token: enrollToken } },
+        }),
+      });
+      sentToken = null;
+      return user;
+    }
+
+    async function requestLoginOtp(username, password) {
+      try {
+        await request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/login',
+          headers: mfaHeaders,
+          body: JSON.stringify({
+            username,
+            password,
+            authData: { mfa: { token: 'request' } },
+          }),
+        });
+      } catch (_err) {
+        // Expected: adapter throws "Please enter the token"
+      }
+      return sentToken;
+    }
+
+    it('rejects concurrent logins using the same SMS MFA OTP', async () => {
+      const user = await setupSmsMfaUser();
+      const otp = await requestLoginOtp('smsmfauser', 'password123');
+      expect(otp).toBeDefined();
+
+      const loginWithOtp = () =>
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/login',
+          headers: mfaHeaders,
+          body: JSON.stringify({
+            username: 'smsmfauser',
+            password: 'password123',
+            authData: { mfa: { token: otp } },
+          }),
+        });
+
+      const results = await Promise.allSettled(Array(10).fill().map(() => loginWithOtp()));
+
+      const succeeded = results.filter(r => r.status === 'fulfilled');
+      const failed = results.filter(r => r.status === 'rejected');
+
+      // Exactly one request should succeed; all others should fail
+      expect(succeeded.length).toBe(1);
+      expect(failed.length).toBe(9);
+
+      // Verify the OTP has been consumed
+      await user.fetch({ useMasterKey: true });
+      const mfa = user.get('authData').mfa;
+      expect(mfa.token).toBeUndefined();
+    });
+  });
+
   describe('(GHSA-37mj-c2wf-cx96) /users/me leaks raw authData via master context', () => {
     const headers = {
       'X-Parse-Application-Id': 'test',
