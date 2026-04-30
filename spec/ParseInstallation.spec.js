@@ -1299,6 +1299,7 @@ describe('Installations', () => {
   // TODO: Test deletion, badge increments
 
   describe('deviceToken deduplication on new install (no installationId match)', () => {
+    const { randomUUID } = require('crypto');
     const installationSchema = {
       fields: Object.assign({}, defaultColumns._Default, defaultColumns._Installation),
     };
@@ -1310,7 +1311,7 @@ describe('Installations', () => {
     }
 
     it('default options destroy conflicting rows', async () => {
-      const t = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      const t = randomUUID();
       await rest.create(config, auth.nobody(config), '_Installation', {
         deviceToken: t,
         deviceType: 'ios',
@@ -1334,7 +1335,7 @@ describe('Installations', () => {
 
     it('action="update" preserves channels on conflicting rows but clears deviceToken', async () => {
       await reconfigureWithInstallationOptions({ duplicateDeviceTokenAction: 'update' });
-      const t = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+      const t = randomUUID();
       await rest.create(config, auth.nobody(config), '_Installation', {
         deviceToken: t,
         deviceType: 'ios',
@@ -1367,7 +1368,7 @@ describe('Installations', () => {
 
     it('enforceAuth=true preserves ACL-protected rows from unauthenticated dedup', async () => {
       await reconfigureWithInstallationOptions({ duplicateDeviceTokenActionEnforceAuth: true });
-      const t = 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+      const t = randomUUID();
       const user = await Parse.User.signUp('alice-' + Date.now(), 'pass');
       const aliceId = user.id;
 
@@ -1396,7 +1397,7 @@ describe('Installations', () => {
 
     it('enforceAuth=true with master-key caller still bypasses ACL and dedups', async () => {
       await reconfigureWithInstallationOptions({ duplicateDeviceTokenActionEnforceAuth: true });
-      const t = 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+      const t = randomUUID();
       const user = await Parse.User.signUp('bob-' + Date.now(), 'pass');
       const bobId = user.id;
       await rest.create(config, auth.master(config), '_Installation', {
@@ -1419,6 +1420,112 @@ describe('Installations', () => {
       const all = await database.adapter.find('_Installation', installationSchema, {}, {});
       expect(all.length).toBe(1);
       expect(all[0].installationId).toBe('iid-3');
+    });
+  });
+
+  describe('deviceToken deduplication on existing install update (deviceToken changes)', () => {
+    const { randomUUID } = require('crypto');
+    const installationSchema = {
+      fields: Object.assign({}, defaultColumns._Default, defaultColumns._Installation),
+    };
+
+    async function reconfigureWithInstallationOptions(installationOpts) {
+      await reconfigureServer({ installation: installationOpts });
+      config = Config.get('test');
+      database = config.database;
+    }
+
+    it('default options destroy conflicting row when PUT sets a new deviceToken', async () => {
+      const t1 = randomUUID();
+      const t2 = randomUUID();
+      const a = await rest.create(config, auth.nobody(config), '_Installation', {
+        deviceToken: t1,
+        deviceType: 'ios',
+        installationId: 'iid-a',
+      });
+      await rest.create(config, auth.nobody(config), '_Installation', {
+        deviceToken: t2,
+        deviceType: 'ios',
+        installationId: 'iid-b',
+      });
+      await rest.update(
+        config,
+        auth.nobody(config),
+        '_Installation',
+        { objectId: a.response.objectId },
+        { deviceToken: t2, installationId: 'iid-a' }
+      );
+
+      const all = await database.adapter.find('_Installation', installationSchema, {}, {});
+      expect(all.length).toBe(1);
+      expect(all[0].deviceToken).toBe(t2);
+      expect(all[0].installationId).toBe('iid-a');
+    });
+
+    it('action="update" preserves the conflicting row and only clears its deviceToken', async () => {
+      await reconfigureWithInstallationOptions({ duplicateDeviceTokenAction: 'update' });
+      const t1 = randomUUID();
+      const t2 = randomUUID();
+      const a = await rest.create(config, auth.nobody(config), '_Installation', {
+        deviceToken: t1,
+        deviceType: 'ios',
+        installationId: 'iid-a',
+      });
+      await rest.create(config, auth.nobody(config), '_Installation', {
+        deviceToken: t2,
+        deviceType: 'ios',
+        installationId: 'iid-b',
+        channels: ['preserve-me'],
+      });
+      await rest.update(
+        config,
+        auth.nobody(config),
+        '_Installation',
+        { objectId: a.response.objectId },
+        { deviceToken: t2, installationId: 'iid-a' }
+      );
+
+      const all = await database.adapter.find('_Installation', installationSchema, {}, {});
+      expect(all.length).toBe(2);
+      const aRow = all.find(r => r.installationId === 'iid-a');
+      const bRow = all.find(r => r.installationId === 'iid-b');
+      expect(aRow.deviceToken).toBe(t2);
+      expect(bRow.deviceToken).toBeUndefined();
+      expect(bRow.channels).toEqual(['preserve-me']);
+    });
+
+    it('enforceAuth=true preserves ACL-protected conflicting rows', async () => {
+      await reconfigureWithInstallationOptions({ duplicateDeviceTokenActionEnforceAuth: true });
+      const t1 = randomUUID();
+      const t2 = randomUUID();
+      const user = await Parse.User.signUp('carol-' + Date.now(), 'pass');
+      const carolId = user.id;
+
+      const a = await rest.create(config, auth.nobody(config), '_Installation', {
+        deviceToken: t1,
+        deviceType: 'ios',
+        installationId: 'iid-a',
+      });
+      await rest.create(config, auth.master(config), '_Installation', {
+        deviceToken: t2,
+        deviceType: 'ios',
+        installationId: 'iid-b',
+        ACL: { [carolId]: { read: true, write: true } },
+      });
+      await rest.update(
+        config,
+        auth.nobody(config),
+        '_Installation',
+        { objectId: a.response.objectId },
+        { deviceToken: t2, installationId: 'iid-a' }
+      );
+
+      const all = await database.adapter.find('_Installation', installationSchema, {}, {});
+      const bRow = all.find(r => r.installationId === 'iid-b');
+      expect(bRow).toBeDefined();
+      expect(bRow.deviceToken).toBe(t2);
+      const aRow = all.find(r => r.installationId === 'iid-a');
+      expect(aRow.deviceToken).toBe(t2);
     });
   });
 

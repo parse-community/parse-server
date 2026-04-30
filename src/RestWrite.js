@@ -1518,14 +1518,15 @@ RestWrite.prototype.handleInstallation = function () {
             if (this.data.appIdentifier) {
               delQuery['appIdentifier'] = this.data.appIdentifier;
             }
-            this.config.database.destroy('_Installation', delQuery).catch(err => {
-              if (err.code == Parse.Error.OBJECT_NOT_FOUND) {
-                // no deletions were made. Can be ignored.
-                return;
-              }
-              // rethrow the error
-              throw err;
-            });
+            const installationOpts = this.config.installation || {};
+            return InstallationDedup.removeConflictingDeviceToken({
+              database: this.config.database,
+              query: delQuery,
+              action: installationOpts.duplicateDeviceTokenAction || 'delete',
+              enforceAuth: installationOpts.duplicateDeviceTokenActionEnforceAuth === true,
+              runOptions: this.runOptions,
+              validSchemaController: this.validSchemaController,
+            }).then(() => idMatch.objectId);
           }
           // In non-merge scenarios, just return the installation match id
           return idMatch.objectId;
