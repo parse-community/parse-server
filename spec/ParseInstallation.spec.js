@@ -1529,6 +1529,124 @@ describe('Installations', () => {
     });
   });
 
+  describe('deviceToken deduplication merge case (idMatch + deviceToken-only orphan)', () => {
+    const { randomUUID } = require('crypto');
+    const installationSchema = {
+      fields: Object.assign({}, defaultColumns._Default, defaultColumns._Installation),
+    };
+
+    async function reconfigureWithInstallationOptions(installationOpts) {
+      await reconfigureServer({ installation: installationOpts });
+      config = Config.get('test');
+      database = config.database;
+    }
+
+    /**
+     * Sets up the merge fixture:
+     *   Row A — { installationId: iid, deviceType: 'ios' }       (no deviceToken)
+     *   Row B — { deviceToken: t,    deviceType: 'ios', channels } (no installationId)
+     * Then triggers the merge by POSTing { installationId: iid, deviceToken: t }.
+     */
+    async function setupMergeFixture(t, iid, bChannels = ['orphan-history']) {
+      // Row A: matched by installationId, no deviceToken yet.
+      await rest.create(config, auth.master(config), '_Installation', {
+        deviceType: 'ios',
+        installationId: iid,
+      });
+      // Row B: deviceToken-only orphan. Insert via the storage adapter to bypass
+      // the require-at-least-one-ID check (the orphan has only deviceToken).
+      const objectId = 'orph' + Math.random().toString(36).substring(2, 12);
+      await database.adapter.createObject(
+        '_Installation',
+        installationSchema,
+        {
+          objectId,
+          deviceType: 'ios',
+          deviceToken: t,
+          channels: bChannels,
+          _created_at: new Date(),
+          _updated_at: new Date(),
+        },
+        null
+      );
+      return objectId;
+    }
+
+    it('default options merge: deviceToken-holder wins, idMatch destroyed', async () => {
+      const t = randomUUID();
+      const orphanObjectId = await setupMergeFixture(t, 'merge-iid-a');
+      // POST that triggers the merge.
+      await rest.create(config, auth.nobody(config), '_Installation', {
+        deviceType: 'ios',
+        installationId: 'merge-iid-a',
+        deviceToken: t,
+      });
+      const all = await database.adapter.find('_Installation', installationSchema, {}, {});
+      expect(all.length).toBe(1);
+      expect(all[0].objectId).toBe(orphanObjectId);
+      expect(all[0].installationId).toBe('merge-iid-a');
+      expect(all[0].deviceToken).toBe(t);
+      expect(all[0].channels).toEqual(['orphan-history']);
+    });
+
+    it('mergePriority=deviceToken, action=update clears installationId on idMatch (loser)', async () => {
+      await reconfigureWithInstallationOptions({ duplicateDeviceTokenAction: 'update' });
+      const t = randomUUID();
+      const orphanObjectId = await setupMergeFixture(t, 'merge-iid-a');
+      await rest.create(config, auth.nobody(config), '_Installation', {
+        deviceType: 'ios',
+        installationId: 'merge-iid-a',
+        deviceToken: t,
+      });
+      const all = await database.adapter.find('_Installation', installationSchema, {}, {});
+      expect(all.length).toBe(2);
+      const survivor = all.find(r => r.objectId === orphanObjectId);
+      expect(survivor.installationId).toBe('merge-iid-a');
+      expect(survivor.deviceToken).toBe(t);
+      const loser = all.find(r => r.objectId !== orphanObjectId);
+      expect(loser.installationId).toBeUndefined();
+    });
+
+    it('mergePriority=installationId, action=delete destroys orphan, idMatch wins', async () => {
+      await reconfigureWithInstallationOptions({
+        duplicateDeviceTokenMergePriority: 'installationId',
+      });
+      const t = randomUUID();
+      const orphanObjectId = await setupMergeFixture(t, 'merge-iid-a');
+      await rest.create(config, auth.nobody(config), '_Installation', {
+        deviceType: 'ios',
+        installationId: 'merge-iid-a',
+        deviceToken: t,
+      });
+      const all = await database.adapter.find('_Installation', installationSchema, {}, {});
+      expect(all.length).toBe(1);
+      expect(all[0].installationId).toBe('merge-iid-a');
+      expect(all[0].deviceToken).toBe(t);
+      expect(all[0].objectId).not.toBe(orphanObjectId);
+    });
+
+    it('mergePriority=installationId, action=update clears deviceToken on orphan', async () => {
+      await reconfigureWithInstallationOptions({
+        duplicateDeviceTokenMergePriority: 'installationId',
+        duplicateDeviceTokenAction: 'update',
+      });
+      const t = randomUUID();
+      const orphanObjectId = await setupMergeFixture(t, 'merge-iid-a');
+      await rest.create(config, auth.nobody(config), '_Installation', {
+        deviceType: 'ios',
+        installationId: 'merge-iid-a',
+        deviceToken: t,
+      });
+      const all = await database.adapter.find('_Installation', installationSchema, {}, {});
+      expect(all.length).toBe(2);
+      const survivor = all.find(r => r.installationId === 'merge-iid-a');
+      expect(survivor.deviceToken).toBe(t);
+      const loser = all.find(r => r.objectId === orphanObjectId);
+      expect(loser.deviceToken).toBeUndefined();
+      expect(loser.channels).toEqual(['orphan-history']);
+    });
+  });
+
   describe('options validation', () => {
     it('should accept default empty config', async () => {
       await expectAsync(reconfigureServer({})).toBeResolved();

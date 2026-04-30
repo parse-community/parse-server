@@ -1472,22 +1472,19 @@ RestWrite.prototype.handleInstallation = function () {
       } else {
         if (deviceTokenMatches.length == 1 && !deviceTokenMatches[0]['installationId']) {
           // Exactly one device token match and it doesn't have an installation
-          // ID. This is the one case where we want to merge with the existing
-          // object.
-          const delQuery = { objectId: idMatch.objectId };
-          return this.config.database
-            .destroy('_Installation', delQuery)
-            .then(() => {
-              return deviceTokenMatches[0]['objectId'];
-            })
-            .catch(err => {
-              if (err.code == Parse.Error.OBJECT_NOT_FOUND) {
-                // no deletions were made. Can be ignored
-                return;
-              }
-              // rethrow the error
-              throw err;
-            });
+          // ID. The two rows represent the same install; resolve the merge per
+          // the configured options.
+          const installationOpts = this.config.installation || {};
+          return InstallationDedup.applyDuplicateDeviceTokenMerge({
+            database: this.config.database,
+            idMatch,
+            deviceTokenMatch: deviceTokenMatches[0],
+            action: installationOpts.duplicateDeviceTokenAction || 'delete',
+            mergePriority: installationOpts.duplicateDeviceTokenMergePriority || 'deviceToken',
+            enforceAuth: installationOpts.duplicateDeviceTokenActionEnforceAuth === true,
+            runOptions: this.runOptions,
+            validSchemaController: this.validSchemaController,
+          });
         } else {
           if (this.data.deviceToken && idMatch.deviceToken != this.data.deviceToken) {
             // We're setting the device token on an existing installation, so
