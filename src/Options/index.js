@@ -392,9 +392,9 @@ export interface ParseServerOptions {
   :DEFAULT: {} */
   requestComplexity: ?RequestComplexityOptions;
   /* Options controlling how Parse Server deduplicates `_Installation` records that share the same `deviceToken`.
-  :ENV: PARSE_SERVER_INSTALLATIONS
+  :ENV: PARSE_SERVER_INSTALLATION
   :DEFAULT: {} */
-  installations: ?InstallationsOptions;
+  installation: ?InstallationOptions;
   /* Query-related server defaults.
   :ENV: PARSE_SERVER_QUERY
   :DEFAULT: {} */
@@ -487,7 +487,7 @@ export interface RequestComplexityOptions {
   batchRequestLimit: ?number;
 }
 
-export interface InstallationsOptions {
+export interface InstallationOptions {
   /* Whether the `_Installation` deduplication operation enforces the caller's auth context (and the resulting ACL and CLP). When `true`, the dedup `destroy`/`update` runs with the caller's `runOptions`, so ACL and CLP are honored. When `false`, the dedup runs as master and bypasses both. Master and maintenance keys always bypass regardless of this flag. Default is `false`.
   :DEFAULT: false */
   duplicateDeviceTokenActionEnforceAuth: ?boolean;

@@ -15,7 +15,7 @@ import {
   FileDownloadOptions,
   FileUploadOptions,
   IdempotencyOptions,
-  InstallationsOptions,
+  InstallationOptions,
   LiveQueryOptions,
   LogLevels,
   PagesOptions,
@@ -148,7 +148,7 @@ export class Config {
     requestComplexity,
     liveQuery,
     routeAllowList,
-    installations,
+    installation,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -199,7 +199,7 @@ export class Config {
     this.validateRequestComplexity(requestComplexity);
     this.validateLiveQueryOptions(liveQuery);
     this.validateRouteAllowList(routeAllowList);
-    this.validateInstallations(installations);
+    this.validateInstallation(installation);
   }
 
   static validateCustomPages(customPages) {
@@ -714,42 +714,42 @@ export class Config {
     }
   }
 
-  static validateInstallations(installations) {
-    if (installations === undefined) {
+  static validateInstallation(installation) {
+    if (installation === undefined) {
       return;
     }
-    if (typeof installations !== 'object' || Array.isArray(installations) || installations === null) {
-      throw 'installations must be an object.';
+    if (typeof installation !== 'object' || Array.isArray(installation) || installation === null) {
+      throw 'installation must be an object.';
     }
     const validKeys = [
       'duplicateDeviceTokenActionEnforceAuth',
       'duplicateDeviceTokenAction',
       'duplicateDeviceTokenMergePriority',
     ];
-    for (const key of Object.keys(installations)) {
+    for (const key of Object.keys(installation)) {
       if (!validKeys.includes(key)) {
-        throw `installations contains unknown property '${key}'.`;
+        throw `installation contains unknown property '${key}'.`;
       }
     }
-    if (installations.duplicateDeviceTokenActionEnforceAuth === undefined) {
-      installations.duplicateDeviceTokenActionEnforceAuth =
-        InstallationsOptions.duplicateDeviceTokenActionEnforceAuth.default;
-    } else if (typeof installations.duplicateDeviceTokenActionEnforceAuth !== 'boolean') {
-      throw 'installations.duplicateDeviceTokenActionEnforceAuth must be a boolean.';
+    if (installation.duplicateDeviceTokenActionEnforceAuth === undefined) {
+      installation.duplicateDeviceTokenActionEnforceAuth =
+        InstallationOptions.duplicateDeviceTokenActionEnforceAuth.default;
+    } else if (typeof installation.duplicateDeviceTokenActionEnforceAuth !== 'boolean') {
+      throw 'installation.duplicateDeviceTokenActionEnforceAuth must be a boolean.';
     }
     const validActions = ['delete', 'update'];
-    if (installations.duplicateDeviceTokenAction === undefined) {
-      installations.duplicateDeviceTokenAction =
-        InstallationsOptions.duplicateDeviceTokenAction.default;
-    } else if (!validActions.includes(installations.duplicateDeviceTokenAction)) {
-      throw "installations.duplicateDeviceTokenAction must be one of: 'delete', 'update'.";
+    if (installation.duplicateDeviceTokenAction === undefined) {
+      installation.duplicateDeviceTokenAction =
+        InstallationOptions.duplicateDeviceTokenAction.default;
+    } else if (!validActions.includes(installation.duplicateDeviceTokenAction)) {
+      throw "installation.duplicateDeviceTokenAction must be one of: 'delete', 'update'.";
     }
     const validPriorities = ['deviceToken', 'installationId'];
-    if (installations.duplicateDeviceTokenMergePriority === undefined) {
-      installations.duplicateDeviceTokenMergePriority =
-        InstallationsOptions.duplicateDeviceTokenMergePriority.default;
-    } else if (!validPriorities.includes(installations.duplicateDeviceTokenMergePriority)) {
-      throw "installations.duplicateDeviceTokenMergePriority must be one of: 'deviceToken', 'installationId'.";
+    if (installation.duplicateDeviceTokenMergePriority === undefined) {
+      installation.duplicateDeviceTokenMergePriority =
+        InstallationOptions.duplicateDeviceTokenMergePriority.default;
+    } else if (!validPriorities.includes(installation.duplicateDeviceTokenMergePriority)) {
+      throw "installation.duplicateDeviceTokenMergePriority must be one of: 'deviceToken', 'installationId'.";
     }
   }
 

@@ -109,8 +109,8 @@ module.exports = [
     solution: "Set 'protectedFieldsSaveResponseExempt' to 'false' to strip protected fields from write operation responses (create, update), consistent with how they are stripped from query results. Set to 'true' to keep the current behavior where protected fields are included in write responses.",
   },
   {
-    optionKey: 'installations.duplicateDeviceTokenActionEnforceAuth',
+    optionKey: 'installation.duplicateDeviceTokenActionEnforceAuth',
     changeNewDefault: 'true',
-    solution: "Set 'installations.duplicateDeviceTokenActionEnforceAuth' to 'true' to enforce the caller's auth context (and the resulting ACL and CLP) when Parse Server deduplicates _Installation records sharing the same deviceToken. Set to 'false' to keep the current behavior of bypassing permissions on the dedup operation.",
+    solution: "Set 'installation.duplicateDeviceTokenActionEnforceAuth' to 'true' to enforce the caller's auth context (and the resulting ACL and CLP) when Parse Server deduplicates _Installation records sharing the same deviceToken. Set to 'false' to keep the current behavior of bypassing permissions on the dedup operation.",
   },
 ];
