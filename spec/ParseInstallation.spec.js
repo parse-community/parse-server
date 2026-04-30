@@ -1425,11 +1425,19 @@ describe('Installations', () => {
     it('action="update" clears deviceToken on ALL matching rows (multi-row update)', async () => {
       await reconfigureWithInstallationOptions({ duplicateDeviceTokenAction: 'update' });
       const t = randomUUID();
-      // Insert three rows directly via the storage adapter so they all hold the
-      // same deviceToken simultaneously, bypassing the sequential REST dedup
-      // that would otherwise prevent this state.
+      // First REST create ensures the storage class/table exists before direct
+      // adapter inserts (relevant for Postgres, which creates tables lazily).
+      await rest.create(config, auth.master(config), '_Installation', {
+        deviceType: 'ios',
+        deviceToken: t,
+        installationId: 'multi-iid-a',
+        channels: ['c-multi-iid-a'],
+      });
+      // Insert two more rows directly via the storage adapter so all three hold
+      // the same deviceToken simultaneously — bypassing the sequential REST
+      // dedup that would otherwise prevent this state.
       const adapter = config.database.adapter;
-      for (const iid of ['multi-iid-a', 'multi-iid-b', 'multi-iid-c']) {
+      for (const iid of ['multi-iid-b', 'multi-iid-c']) {
         await adapter.createObject(
           '_Installation',
           installationSchema,
@@ -1439,8 +1447,6 @@ describe('Installations', () => {
             deviceToken: t,
             installationId: iid,
             channels: ['c-' + iid],
-            _created_at: new Date(),
-            _updated_at: new Date(),
           },
           null
         );
@@ -1606,8 +1612,6 @@ describe('Installations', () => {
           deviceType: 'ios',
           deviceToken: t,
           channels: bChannels,
-          _created_at: new Date(),
-          _updated_at: new Date(),
         },
         null
       );
