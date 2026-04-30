@@ -40,8 +40,9 @@ async function performAction({
       CLASS_NAME,
       query,
       { [fieldToClear]: { __op: 'Delete' } },
-      runOptions,
-      many,
+      { ...runOptions, many },
+      false,
+      false,
       validSchemaController
     );
   }

@@ -80,7 +80,7 @@ describe('InstallationDedup', () => {
       );
     });
 
-    it('action="update" calls update with deviceToken cleared and many=true', async () => {
+    it('action="update" calls update with deviceToken cleared and many=true in options', async () => {
       const database = {
         update: jasmine.createSpy('update').and.returnValue(Promise.resolve()),
       };
@@ -96,8 +96,9 @@ describe('InstallationDedup', () => {
         '_Installation',
         { deviceToken: 'X' },
         { deviceToken: { __op: 'Delete' } },
-        {},
-        true,
+        jasmine.objectContaining({ many: true }),
+        false,
+        false,
         undefined
       );
       expect(logSpy.verbose).toHaveBeenCalled();
@@ -195,7 +196,8 @@ describe('InstallationDedup', () => {
         '_Installation',
         { objectId: 'A' },
         { installationId: { __op: 'Delete' } },
-        {},
+        jasmine.objectContaining({ many: false }),
+        false,
         false,
         undefined
       );
@@ -243,7 +245,8 @@ describe('InstallationDedup', () => {
         '_Installation',
         { objectId: 'B' },
         { deviceToken: { __op: 'Delete' } },
-        {},
+        jasmine.objectContaining({ many: false }),
+        false,
         false,
         undefined
       );

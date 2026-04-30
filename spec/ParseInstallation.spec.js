@@ -1421,6 +1421,48 @@ describe('Installations', () => {
       expect(all.length).toBe(1);
       expect(all[0].installationId).toBe('iid-3');
     });
+
+    it('action="update" clears deviceToken on ALL matching rows (multi-row update)', async () => {
+      await reconfigureWithInstallationOptions({ duplicateDeviceTokenAction: 'update' });
+      const t = randomUUID();
+      // Insert three rows directly via the storage adapter so they all hold the
+      // same deviceToken simultaneously, bypassing the sequential REST dedup
+      // that would otherwise prevent this state.
+      const adapter = config.database.adapter;
+      for (const iid of ['multi-iid-a', 'multi-iid-b', 'multi-iid-c']) {
+        await adapter.createObject(
+          '_Installation',
+          installationSchema,
+          {
+            objectId: 'oid-' + iid,
+            deviceType: 'ios',
+            deviceToken: t,
+            installationId: iid,
+            channels: ['c-' + iid],
+            _created_at: new Date(),
+            _updated_at: new Date(),
+          },
+          null
+        );
+      }
+      // Trigger site 1: new install with same deviceToken, different installationId.
+      await rest.create(config, auth.nobody(config), '_Installation', {
+        deviceToken: t,
+        deviceType: 'ios',
+        installationId: 'multi-iid-d',
+        channels: ['fresh'],
+      });
+
+      const all = await database.adapter.find('_Installation', installationSchema, {}, {});
+      const survivor = all.find(r => r.installationId === 'multi-iid-d');
+      expect(survivor).toBeDefined();
+      expect(survivor.deviceToken).toBe(t);
+      const cleared = all.filter(r => r.installationId !== 'multi-iid-d');
+      expect(cleared.length).toBe(3);
+      cleared.forEach(r => {
+        expect(r.deviceToken).toBeUndefined();
+      });
+    });
   });
 
   describe('deviceToken deduplication on existing install update (deviceToken changes)', () => {
