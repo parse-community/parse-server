@@ -123,6 +123,12 @@ export async function applyDuplicateDeviceTokenMerge({
   runOptions,
   validSchemaController,
 }) {
+  // Self-merge guard: when both matches resolve to the same row, there's
+  // nothing to clean up. Skip the action so we don't destroy/update the row
+  // we're about to return as the survivor.
+  if (idMatch.objectId === deviceTokenMatch.objectId) {
+    return idMatch.objectId;
+  }
   const opts = enforceAuth ? runOptions : {};
   let loser;
   let survivorId;

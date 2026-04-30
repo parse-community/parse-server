@@ -269,6 +269,27 @@ describe('InstallationDedup', () => {
       expect(logSpy.warn).toHaveBeenCalled();
     });
 
+    it('returns the shared objectId without calling destroy/update when idMatch and deviceTokenMatch are the same row', async () => {
+      const sameRow = { objectId: 'SAME', installationId: 'I', deviceToken: 'X' };
+      const database = {
+        destroy: jasmine.createSpy('destroy').and.returnValue(Promise.resolve()),
+        update: jasmine.createSpy('update').and.returnValue(Promise.resolve()),
+      };
+      const result = await InstallationDedup.applyDuplicateDeviceTokenMerge({
+        database,
+        idMatch: sameRow,
+        deviceTokenMatch: sameRow,
+        action: 'delete',
+        mergePriority: 'deviceToken',
+        enforceAuth: false,
+        runOptions: {},
+        validSchemaController: undefined,
+      });
+      expect(result).toBe('SAME');
+      expect(database.destroy).not.toHaveBeenCalled();
+      expect(database.update).not.toHaveBeenCalled();
+    });
+
     it('enforceAuth=true passes runOptions to destroy', async () => {
       const database = {
         destroy: jasmine.createSpy('destroy').and.returnValue(Promise.resolve()),
