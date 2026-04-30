@@ -1297,4 +1297,90 @@ describe('Installations', () => {
   // TODO: Look at additional tests from installation_collection_test.go:882
   // TODO: Do we need to support _tombstone disabling of installations?
   // TODO: Test deletion, badge increments
+
+  describe('options validation', () => {
+    it('should accept default empty config', async () => {
+      await expectAsync(reconfigureServer({})).toBeResolved();
+    });
+
+    it('should accept fully specified valid config', async () => {
+      await expectAsync(
+        reconfigureServer({
+          installations: {
+            duplicateDeviceTokenActionEnforceAuth: true,
+            duplicateDeviceTokenAction: 'update',
+            duplicateDeviceTokenMergePriority: 'installationId',
+          },
+        })
+      ).toBeResolved();
+    });
+
+    it('should reject non-object values', async () => {
+      await expectAsync(
+        reconfigureServer({ installations: 'invalid' })
+      ).toBeRejectedWith('installations must be an object.');
+    });
+
+    it('should reject array values', async () => {
+      await expectAsync(
+        reconfigureServer({ installations: [] })
+      ).toBeRejectedWith('installations must be an object.');
+    });
+
+    it('should reject unknown nested keys', async () => {
+      await expectAsync(
+        reconfigureServer({
+          installations: { unknownKey: 'foo' },
+        })
+      ).toBeRejectedWith("installations contains unknown property 'unknownKey'.");
+    });
+
+    it('should reject non-boolean duplicateDeviceTokenActionEnforceAuth', async () => {
+      await expectAsync(
+        reconfigureServer({
+          installations: { duplicateDeviceTokenActionEnforceAuth: 'true' },
+        })
+      ).toBeRejectedWith('installations.duplicateDeviceTokenActionEnforceAuth must be a boolean.');
+    });
+
+    it('should reject invalid duplicateDeviceTokenAction value', async () => {
+      await expectAsync(
+        reconfigureServer({
+          installations: { duplicateDeviceTokenAction: 'merge' },
+        })
+      ).toBeRejectedWith(
+        "installations.duplicateDeviceTokenAction must be one of: 'delete', 'update'."
+      );
+    });
+
+    it('should reject invalid duplicateDeviceTokenMergePriority value', async () => {
+      await expectAsync(
+        reconfigureServer({
+          installations: { duplicateDeviceTokenMergePriority: 'objectId' },
+        })
+      ).toBeRejectedWith(
+        "installations.duplicateDeviceTokenMergePriority must be one of: 'deviceToken', 'installationId'."
+      );
+    });
+
+    it('should apply defaults for missing nested keys', async () => {
+      await reconfigureServer({
+        installations: { duplicateDeviceTokenActionEnforceAuth: true },
+      });
+      const config = Config.get('test');
+      expect(config.installations.duplicateDeviceTokenActionEnforceAuth).toBe(true);
+      expect(config.installations.duplicateDeviceTokenAction).toBe('delete');
+      expect(config.installations.duplicateDeviceTokenMergePriority).toBe('deviceToken');
+    });
+
+    it('should apply full defaults when block omitted', async () => {
+      await reconfigureServer({});
+      const config = Config.get('test');
+      expect(config.installations).toEqual({
+        duplicateDeviceTokenActionEnforceAuth: false,
+        duplicateDeviceTokenAction: 'delete',
+        duplicateDeviceTokenMergePriority: 'deviceToken',
+      });
+    });
+  });
 });

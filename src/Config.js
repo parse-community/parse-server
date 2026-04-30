@@ -15,6 +15,7 @@ import {
   FileDownloadOptions,
   FileUploadOptions,
   IdempotencyOptions,
+  InstallationsOptions,
   LiveQueryOptions,
   LogLevels,
   PagesOptions,
@@ -147,6 +148,7 @@ export class Config {
     requestComplexity,
     liveQuery,
     routeAllowList,
+    installations,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -197,6 +199,7 @@ export class Config {
     this.validateRequestComplexity(requestComplexity);
     this.validateLiveQueryOptions(liveQuery);
     this.validateRouteAllowList(routeAllowList);
+    this.validateInstallations(installations);
   }
 
   static validateCustomPages(customPages) {
@@ -708,6 +711,45 @@ export class Config {
       } else {
         requestComplexity[key] = RequestComplexityOptions[key].default;
       }
+    }
+  }
+
+  static validateInstallations(installations) {
+    if (installations === undefined) {
+      return;
+    }
+    if (typeof installations !== 'object' || Array.isArray(installations) || installations === null) {
+      throw 'installations must be an object.';
+    }
+    const validKeys = [
+      'duplicateDeviceTokenActionEnforceAuth',
+      'duplicateDeviceTokenAction',
+      'duplicateDeviceTokenMergePriority',
+    ];
+    for (const key of Object.keys(installations)) {
+      if (!validKeys.includes(key)) {
+        throw `installations contains unknown property '${key}'.`;
+      }
+    }
+    if (installations.duplicateDeviceTokenActionEnforceAuth === undefined) {
+      installations.duplicateDeviceTokenActionEnforceAuth =
+        InstallationsOptions.duplicateDeviceTokenActionEnforceAuth.default;
+    } else if (typeof installations.duplicateDeviceTokenActionEnforceAuth !== 'boolean') {
+      throw 'installations.duplicateDeviceTokenActionEnforceAuth must be a boolean.';
+    }
+    const validActions = ['delete', 'update'];
+    if (installations.duplicateDeviceTokenAction === undefined) {
+      installations.duplicateDeviceTokenAction =
+        InstallationsOptions.duplicateDeviceTokenAction.default;
+    } else if (!validActions.includes(installations.duplicateDeviceTokenAction)) {
+      throw "installations.duplicateDeviceTokenAction must be one of: 'delete', 'update'.";
+    }
+    const validPriorities = ['deviceToken', 'installationId'];
+    if (installations.duplicateDeviceTokenMergePriority === undefined) {
+      installations.duplicateDeviceTokenMergePriority =
+        InstallationsOptions.duplicateDeviceTokenMergePriority.default;
+    } else if (!validPriorities.includes(installations.duplicateDeviceTokenMergePriority)) {
+      throw "installations.duplicateDeviceTokenMergePriority must be one of: 'deviceToken', 'installationId'.";
     }
   }
 
