@@ -391,6 +391,10 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_REQUEST_COMPLEXITY
   :DEFAULT: {} */
   requestComplexity: ?RequestComplexityOptions;
+  /* Options controlling how Parse Server deduplicates `_Installation` records that share the same `deviceToken`.
+  :ENV: PARSE_SERVER_INSTALLATION
+  :DEFAULT: {} */
+  installation: ?InstallationOptions;
   /* Query-related server defaults.
   :ENV: PARSE_SERVER_QUERY
   :DEFAULT: {} */
@@ -481,6 +485,18 @@ export interface RequestComplexityOptions {
   /* Maximum number of sub-requests in a single batch request. Set to `-1` to disable. Default is `-1`.
   :DEFAULT: -1 */
   batchRequestLimit: ?number;
+}
+
+export interface InstallationOptions {
+  /* Whether the `_Installation` deduplication operation enforces the caller's auth context (and the resulting ACL and CLP). When `true`, the dedup `destroy`/`update` runs with the caller's `runOptions`, so ACL and CLP are honored. When `false`, the dedup runs as master and bypasses both. Master and maintenance keys always bypass regardless of this flag. Default is `false`.
+  :DEFAULT: false */
+  duplicateDeviceTokenActionEnforceAuth: ?boolean;
+  /* What Parse Server does to the conflicting `_Installation` row(s) when a new install's `deviceToken` collides with an existing row. `'delete'` destroys the conflicting row. `'update'` clears the now-conflicting ID field on the conflicting row, preserving custom fields, channels, and history. Default is `'delete'`.
+  :DEFAULT: delete */
+  duplicateDeviceTokenAction: ?string;
+  /* At the merge case (when an existing row holds the new `deviceToken` but has no `installationId` of its own), which side wins. `'deviceToken'` — the deviceToken-only row survives, the request's `idMatch` row is the loser. `'installationId'` — the request's `idMatch` (active install) survives, the deviceToken-only orphan is the loser. Default is `'deviceToken'`.
+  :DEFAULT: deviceToken */
+  duplicateDeviceTokenMergePriority: ?string;
 }
 
 export interface SecurityOptions {
