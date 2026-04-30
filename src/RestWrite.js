@@ -18,6 +18,7 @@ import logger from './logger';
 import { requiredColumns } from './Controllers/SchemaController';
 import { createSanitizedError } from './Error';
 import { applyAuthDataOptimisticLock } from './AuthDataLock';
+import * as InstallationDedup from './InstallationDedup';
 
 // query and data are both provided in REST API format. So data
 // types are encoded by plain old objects.
@@ -1446,10 +1447,10 @@ RestWrite.prototype.handleInstallation = function () {
         } else {
           // Multiple device token matches and we specified an installation ID,
           // or a single match where both the passed and matching objects have
-          // an installation ID. Try cleaning out old installations that match
-          // the deviceToken, and return nil to signal that a new object should
-          // be created.
-          var delQuery = {
+          // an installation ID. Clean out other installations that match the
+          // deviceToken, and return nil to signal that a new object should be
+          // created.
+          const delQuery = {
             deviceToken: this.data.deviceToken,
             installationId: {
               $ne: installationId,
@@ -1458,15 +1459,15 @@ RestWrite.prototype.handleInstallation = function () {
           if (this.data.appIdentifier) {
             delQuery['appIdentifier'] = this.data.appIdentifier;
           }
-          this.config.database.destroy('_Installation', delQuery).catch(err => {
-            if (err.code == Parse.Error.OBJECT_NOT_FOUND) {
-              // no deletions were made. Can be ignored.
-              return;
-            }
-            // rethrow the error
-            throw err;
+          const installationOpts = this.config.installation || {};
+          return InstallationDedup.removeConflictingDeviceToken({
+            database: this.config.database,
+            query: delQuery,
+            action: installationOpts.duplicateDeviceTokenAction || 'delete',
+            enforceAuth: installationOpts.duplicateDeviceTokenActionEnforceAuth === true,
+            runOptions: this.runOptions,
+            validSchemaController: this.validSchemaController,
           });
-          return;
         }
       } else {
         if (deviceTokenMatches.length == 1 && !deviceTokenMatches[0]['installationId']) {

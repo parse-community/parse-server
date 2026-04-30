@@ -1298,6 +1298,130 @@ describe('Installations', () => {
   // TODO: Do we need to support _tombstone disabling of installations?
   // TODO: Test deletion, badge increments
 
+  describe('deviceToken deduplication on new install (no installationId match)', () => {
+    const installationSchema = {
+      fields: Object.assign({}, defaultColumns._Default, defaultColumns._Installation),
+    };
+
+    async function reconfigureWithInstallationOptions(installationOpts) {
+      await reconfigureServer({ installation: installationOpts });
+      config = Config.get('test');
+      database = config.database;
+    }
+
+    it('default options destroy conflicting rows', async () => {
+      const t = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      await rest.create(config, auth.nobody(config), '_Installation', {
+        deviceToken: t,
+        deviceType: 'ios',
+        installationId: 'iid-a',
+      });
+      await rest.create(config, auth.nobody(config), '_Installation', {
+        deviceToken: t,
+        deviceType: 'ios',
+        installationId: 'iid-b',
+      });
+      await rest.create(config, auth.nobody(config), '_Installation', {
+        deviceToken: t,
+        deviceType: 'ios',
+        installationId: 'iid-c',
+      });
+
+      const results = await database.adapter.find('_Installation', installationSchema, {}, {});
+      expect(results.length).toBe(1);
+      expect(results[0].installationId).toBe('iid-c');
+    });
+
+    it('action="update" preserves channels on conflicting rows but clears deviceToken', async () => {
+      await reconfigureWithInstallationOptions({ duplicateDeviceTokenAction: 'update' });
+      const t = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+      await rest.create(config, auth.nobody(config), '_Installation', {
+        deviceToken: t,
+        deviceType: 'ios',
+        installationId: 'iid-a',
+        channels: ['old-news'],
+      });
+      await rest.create(config, auth.nobody(config), '_Installation', {
+        deviceToken: t,
+        deviceType: 'ios',
+        installationId: 'iid-b',
+        channels: ['old-sports'],
+      });
+      await rest.create(config, auth.nobody(config), '_Installation', {
+        deviceToken: t,
+        deviceType: 'ios',
+        installationId: 'iid-c',
+        channels: ['fresh'],
+      });
+
+      const all = await database.adapter.find('_Installation', installationSchema, {}, {});
+      expect(all.length).toBe(3);
+      const survivor = all.find(r => r.installationId === 'iid-c');
+      expect(survivor.deviceToken).toBe(t);
+      const cleared = all.filter(r => r.installationId !== 'iid-c');
+      cleared.forEach(r => {
+        expect(r.deviceToken).toBeUndefined();
+        expect(r.channels).toBeDefined();
+      });
+    });
+
+    it('enforceAuth=true preserves ACL-protected rows from unauthenticated dedup', async () => {
+      await reconfigureWithInstallationOptions({ duplicateDeviceTokenActionEnforceAuth: true });
+      const t = 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+      const user = await Parse.User.signUp('alice-' + Date.now(), 'pass');
+      const aliceId = user.id;
+
+      await rest.create(config, auth.master(config), '_Installation', {
+        deviceToken: t,
+        deviceType: 'ios',
+        installationId: 'iid-protected',
+        ACL: { [aliceId]: { read: true, write: true } },
+      });
+      await rest.create(config, auth.nobody(config), '_Installation', {
+        deviceToken: t,
+        deviceType: 'ios',
+        installationId: 'iid-other',
+      });
+      await rest.create(config, auth.nobody(config), '_Installation', {
+        deviceToken: t,
+        deviceType: 'ios',
+        installationId: 'iid-attacker',
+      });
+
+      const all = await database.adapter.find('_Installation', installationSchema, {}, {});
+      const protectedRow = all.find(r => r.installationId === 'iid-protected');
+      expect(protectedRow).toBeDefined();
+      expect(protectedRow.deviceToken).toBe(t);
+    });
+
+    it('enforceAuth=true with master-key caller still bypasses ACL and dedups', async () => {
+      await reconfigureWithInstallationOptions({ duplicateDeviceTokenActionEnforceAuth: true });
+      const t = 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+      const user = await Parse.User.signUp('bob-' + Date.now(), 'pass');
+      const bobId = user.id;
+      await rest.create(config, auth.master(config), '_Installation', {
+        deviceToken: t,
+        deviceType: 'ios',
+        installationId: 'iid-1',
+        ACL: { [bobId]: { read: true, write: true } },
+      });
+      await rest.create(config, auth.master(config), '_Installation', {
+        deviceToken: t,
+        deviceType: 'ios',
+        installationId: 'iid-2',
+      });
+      await rest.create(config, auth.master(config), '_Installation', {
+        deviceToken: t,
+        deviceType: 'ios',
+        installationId: 'iid-3',
+      });
+
+      const all = await database.adapter.find('_Installation', installationSchema, {}, {});
+      expect(all.length).toBe(1);
+      expect(all[0].installationId).toBe('iid-3');
+    });
+  });
+
   describe('options validation', () => {
     it('should accept default empty config', async () => {
       await expectAsync(reconfigureServer({})).toBeResolved();
