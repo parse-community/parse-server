@@ -82,7 +82,7 @@
     "all-node-versions": "13.0.1",
     "apollo-upload-client": "18.0.1",
     "clean-jsdoc-theme": "4.3.0",
-    "cross-env": "7.0.3",
+    "cross-env": "10.1.0",
     "deep-diff": "1.0.2",
     "eslint": "9.27.0",
     "eslint-plugin-expect-type": "0.6.2",
