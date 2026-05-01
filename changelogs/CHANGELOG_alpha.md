@@ -1,3 +1,31 @@
+# [9.9.0-alpha.3](https://github.com/parse-community/parse-server/compare/9.9.0-alpha.2...9.9.0-alpha.3) (2026-04-30)
+
+
+### Features
+
+* Add installation deviceToken deduplication options ([#10451](https://github.com/parse-community/parse-server/issues/10451)) ([9fee1a0](https://github.com/parse-community/parse-server/commit/9fee1a07080ab8bda2a3d4798881bcc288e5b37a))
+
+# [9.9.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.9.0-alpha.1...9.9.0-alpha.2) (2026-04-26)
+
+
+### Bug Fixes
+
+* MFA SMS one-time password accepted twice under concurrent login ([GHSA-jpq4-7fmq-q5fj](https://github.com/parse-community/parse-server/security/advisories/GHSA-jpq4-7fmq-q5fj)) ([#10448](https://github.com/parse-community/parse-server/issues/10448)) ([725be0d](https://github.com/parse-community/parse-server/commit/725be0d602baa619492606e7b3f6829082d93a4c))
+
+# [9.9.0-alpha.1](https://github.com/parse-community/parse-server/compare/9.8.1-alpha.1...9.9.0-alpha.1) (2026-04-17)
+
+
+### Features
+
+* Add `rawValues` and `rawFieldNames` options for aggregation queries ([#10438](https://github.com/parse-community/parse-server/issues/10438)) ([f26700e](https://github.com/parse-community/parse-server/commit/f26700e39d1980940467bee0d26ca3deb88e3924))
+
+## [9.8.1-alpha.1](https://github.com/parse-community/parse-server/compare/9.8.0...9.8.1-alpha.1) (2026-04-12)
+
+
+### Bug Fixes
+
+* Context mutations leak across requests in `ParseServerRESTController` ([#10291](https://github.com/parse-community/parse-server/issues/10291)) ([60a58ec](https://github.com/parse-community/parse-server/commit/60a58ec11a8bb67aaf217b1e7362b89d742b66da))
+
 # [9.8.0-alpha.13](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.12...9.8.0-alpha.13) (2026-04-12)
 
 
