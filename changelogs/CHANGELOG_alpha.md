@@ -1,3 +1,10 @@
+# [9.9.0-alpha.3](https://github.com/parse-community/parse-server/compare/9.9.0-alpha.2...9.9.0-alpha.3) (2026-04-30)
+
+
+### Features
+
+* Add installation deviceToken deduplication options ([#10451](https://github.com/parse-community/parse-server/issues/10451)) ([9fee1a0](https://github.com/parse-community/parse-server/commit/9fee1a07080ab8bda2a3d4798881bcc288e5b37a))
+
 # [9.9.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.9.0-alpha.1...9.9.0-alpha.2) (2026-04-26)
 
 

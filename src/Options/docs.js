@@ -61,6 +61,7 @@
  * @property {String} graphQLSchema Full path to your GraphQL custom schema.graphql file
  * @property {String} host The host to serve ParseServer on, defaults to 0.0.0.0
  * @property {IdempotencyOptions} idempotencyOptions Options for request idempotency to deduplicate identical requests that may be caused by network issues. Caution, this is an experimental feature that may not be appropriate for production.
+ * @property {InstallationOptions} installation Options controlling how Parse Server deduplicates `_Installation` records that share the same `deviceToken`.
  * @property {String} javascriptKey Key for the Javascript SDK
  * @property {Boolean} jsonLogs Log as structured JSON objects
  * @property {LiveQueryOptions} liveQuery parse-server's LiveQuery configuration object
@@ -146,6 +147,13 @@
  * @property {Number} queryDepth Maximum nesting depth of `$or`, `$and`, `$nor` query operators. Set to `-1` to disable. Default is `-1`.
  * @property {Number} subqueryDepth Maximum nesting depth of `$inQuery`, `$notInQuery`, `$select`, `$dontSelect` subqueries. Set to `-1` to disable. Default is `-1`.
  * @property {Number} subqueryLimit Maximum number of results returned by a `$inQuery`, `$notInQuery`, `$select`, `$dontSelect` subquery. Set to `-1` to disable. Default is `-1`.
+ */
+
+/**
+ * @interface InstallationOptions
+ * @property {String} duplicateDeviceTokenAction What Parse Server does to the conflicting `_Installation` row(s) when a new install's `deviceToken` collides with an existing row. `'delete'` destroys the conflicting row. `'update'` clears the now-conflicting ID field on the conflicting row, preserving custom fields, channels, and history. Default is `'delete'`.
+ * @property {Boolean} duplicateDeviceTokenActionEnforceAuth Whether the `_Installation` deduplication operation enforces the caller's auth context (and the resulting ACL and CLP). When `true`, the dedup `destroy`/`update` runs with the caller's `runOptions`, so ACL and CLP are honored. When `false`, the dedup runs as master and bypasses both. Master and maintenance keys always bypass regardless of this flag. Default is `false`.
+ * @property {String} duplicateDeviceTokenMergePriority At the merge case (when an existing row holds the new `deviceToken` but has no `installationId` of its own), which side wins. `'deviceToken'` — the deviceToken-only row survives, the request's `idMatch` row is the loser. `'installationId'` — the request's `idMatch` (active install) survives, the deviceToken-only orphan is the loser. Default is `'deviceToken'`.
  */
 
 /**
