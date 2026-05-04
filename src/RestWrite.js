@@ -1295,9 +1295,19 @@ RestWrite.prototype.handleInstallation = function () {
     return;
   }
 
+  // A client clearing the deviceToken sends either null or { __op: 'Delete' }.
+  // Treat that as "no deviceToken to identify/match by" so we do not feed the
+  // operator object into the lookup query (which would fail Mongo transform).
+  const clearingDeviceToken =
+    this.data.deviceToken === null ||
+    (typeof this.data.deviceToken === 'object' &&
+      this.data.deviceToken !== null &&
+      this.data.deviceToken.__op === 'Delete');
+  let deviceTokenForLookup = clearingDeviceToken ? undefined : this.data.deviceToken;
+
   if (
     !this.query &&
-    !this.data.deviceToken &&
+    !deviceTokenForLookup &&
     !this.data.installationId &&
     !this.auth.installationId
   ) {
@@ -1309,8 +1319,9 @@ RestWrite.prototype.handleInstallation = function () {
 
   // If the device token is 64 characters long, we assume it is for iOS
   // and lowercase it.
-  if (this.data.deviceToken && this.data.deviceToken.length == 64) {
-    this.data.deviceToken = this.data.deviceToken.toLowerCase();
+  if (deviceTokenForLookup && deviceTokenForLookup.length == 64) {
+    this.data.deviceToken = deviceTokenForLookup.toLowerCase();
+    deviceTokenForLookup = this.data.deviceToken;
   }
 
   // We lowercase the installationId if present
@@ -1330,7 +1341,7 @@ RestWrite.prototype.handleInstallation = function () {
   }
 
   // Updating _Installation but not updating anything critical
-  if (this.query && !this.data.deviceToken && !installationId && !this.data.deviceType) {
+  if (this.query && !deviceTokenForLookup && !installationId && !this.data.deviceType) {
     return;
   }
 
@@ -1353,8 +1364,8 @@ RestWrite.prototype.handleInstallation = function () {
       installationId: installationId,
     });
   }
-  if (this.data.deviceToken) {
-    orQueries.push({ deviceToken: this.data.deviceToken });
+  if (deviceTokenForLookup) {
+    orQueries.push({ deviceToken: deviceTokenForLookup });
   }
 
   if (orQueries.length == 0) {
@@ -1379,7 +1390,7 @@ RestWrite.prototype.handleInstallation = function () {
         if (result.installationId == installationId) {
           installationIdMatch = result;
         }
-        if (result.deviceToken == this.data.deviceToken) {
+        if (deviceTokenForLookup && result.deviceToken == deviceTokenForLookup) {
           deviceTokenMatches.push(result);
         }
       });
@@ -1397,9 +1408,9 @@ RestWrite.prototype.handleInstallation = function () {
           throw new Parse.Error(136, 'installationId may not be changed in this ' + 'operation');
         }
         if (
-          this.data.deviceToken &&
+          deviceTokenForLookup &&
           objectIdMatch.deviceToken &&
-          this.data.deviceToken !== objectIdMatch.deviceToken &&
+          deviceTokenForLookup !== objectIdMatch.deviceToken &&
           !this.data.installationId &&
           !objectIdMatch.installationId
         ) {
@@ -1451,7 +1462,7 @@ RestWrite.prototype.handleInstallation = function () {
           // deviceToken, and return nil to signal that a new object should be
           // created.
           const delQuery = {
-            deviceToken: this.data.deviceToken,
+            deviceToken: deviceTokenForLookup,
             installationId: {
               $ne: installationId,
             },
@@ -1486,12 +1497,12 @@ RestWrite.prototype.handleInstallation = function () {
             validSchemaController: this.validSchemaController,
           });
         } else {
-          if (this.data.deviceToken && idMatch.deviceToken != this.data.deviceToken) {
+          if (deviceTokenForLookup && idMatch.deviceToken != deviceTokenForLookup) {
             // We're setting the device token on an existing installation, so
             // we should try cleaning out old installations that match this
             // device token.
             const delQuery = {
-              deviceToken: this.data.deviceToken,
+              deviceToken: deviceTokenForLookup,
             };
             // We have a unique install Id, use that to preserve
             // the interesting installation
