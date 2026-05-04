@@ -544,6 +544,110 @@ describe('Installations', () => {
       });
   });
 
+  it('clears deviceToken via Delete op without crashing the lookup', done => {
+    const installId = '12345678-abcd-abcd-abcd-123456789abc';
+    const t = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
+    const input = {
+      installationId: installId,
+      deviceType: 'ios',
+      deviceToken: t,
+    };
+    rest
+      .create(config, auth.nobody(config), '_Installation', input)
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
+      .then(results => {
+        expect(results.length).toEqual(1);
+        return rest.update(
+          config,
+          auth.nobody(config),
+          '_Installation',
+          { objectId: results[0].objectId },
+          { deviceToken: { __op: 'Delete' } }
+        );
+      })
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
+      .then(results => {
+        expect(results.length).toEqual(1);
+        expect(results[0].deviceToken).toBeUndefined();
+        expect(results[0].installationId).toEqual(installId);
+        done();
+      })
+      .catch(err => {
+        jfail(err);
+        done();
+      });
+  });
+
+  it('clears deviceToken via null without crashing the lookup', done => {
+    const installId = '12345678-abcd-abcd-abcd-123456789abc';
+    const t = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
+    const input = {
+      installationId: installId,
+      deviceType: 'ios',
+      deviceToken: t,
+    };
+    rest
+      .create(config, auth.nobody(config), '_Installation', input)
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
+      .then(results => {
+        expect(results.length).toEqual(1);
+        return rest.update(
+          config,
+          auth.nobody(config),
+          '_Installation',
+          { objectId: results[0].objectId },
+          { deviceToken: null }
+        );
+      })
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
+      .then(results => {
+        expect(results.length).toEqual(1);
+        expect(results[0].deviceToken == null).toBeTrue();
+        expect(results[0].installationId).toEqual(installId);
+        done();
+      })
+      .catch(err => {
+        jfail(err);
+        done();
+      });
+  });
+
+  it('clears deviceToken alongside another field update', done => {
+    const installId = '12345678-abcd-abcd-abcd-123456789abc';
+    const t = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
+    const input = {
+      installationId: installId,
+      deviceType: 'ios',
+      deviceToken: t,
+      appVersion: '1',
+    };
+    rest
+      .create(config, auth.nobody(config), '_Installation', input)
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
+      .then(results => {
+        expect(results.length).toEqual(1);
+        return rest.update(
+          config,
+          auth.nobody(config),
+          '_Installation',
+          { objectId: results[0].objectId },
+          { deviceToken: { __op: 'Delete' }, deviceType: 'ios', appVersion: '2' }
+        );
+      })
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
+      .then(results => {
+        expect(results.length).toEqual(1);
+        expect(results[0].deviceToken).toBeUndefined();
+        expect(results[0].appVersion).toEqual('2');
+        expect(results[0].installationId).toEqual(installId);
+        done();
+      })
+      .catch(err => {
+        jfail(err);
+        done();
+      });
+  });
+
   it('update fails to change deviceType', done => {
     const installId = '12345678-abcd-abcd-abcd-123456789abc';
     let input = {
