@@ -132,7 +132,7 @@ module.exports.ParseServerOptions = {
   },
   cluster: {
     env: 'PARSE_SERVER_CLUSTER',
-    help: 'Run with cluster, optionally set the number of processes default to os.cpus().length',
+    help: 'Run with cluster, optionally set the number of processes default to os.cpus().length. This option only applies when Parse Server is started through the CLI; setting `cluster` on the ParseServer options object has no effect.',
     action: parsers.numberOrBooleanParser,
   },
   collectionPrefix: {
