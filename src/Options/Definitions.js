@@ -322,6 +322,13 @@ module.exports.ParseServerOptions = {
     type: 'IdempotencyOptions',
     default: {},
   },
+  installation: {
+    env: 'PARSE_SERVER_INSTALLATION',
+    help: 'Options controlling how Parse Server deduplicates `_Installation` records that share the same `deviceToken`.',
+    action: parsers.objectParser,
+    type: 'InstallationOptions',
+    default: {},
+  },
   javascriptKey: {
     env: 'PARSE_SERVER_JAVASCRIPT_KEY',
     help: 'Key for the Javascript SDK',
@@ -511,6 +518,13 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_PUSH',
     help: 'Configuration for push, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#push-notifications',
     action: parsers.objectParser,
+  },
+  query: {
+    env: 'PARSE_SERVER_QUERY',
+    help: 'Query-related server defaults.',
+    action: parsers.objectParser,
+    type: 'QueryServerOptions',
+    default: {},
   },
   rateLimit: {
     env: 'PARSE_SERVER_RATE_LIMIT',
@@ -759,6 +773,24 @@ module.exports.RequestComplexityOptions = {
     default: -1,
   },
 };
+module.exports.InstallationOptions = {
+  duplicateDeviceTokenAction: {
+    env: 'PARSE_SERVER_INSTALLATION_DUPLICATE_DEVICE_TOKEN_ACTION',
+    help: "What Parse Server does to the conflicting `_Installation` row(s) when a new install's `deviceToken` collides with an existing row. `'delete'` destroys the conflicting row. `'update'` clears the now-conflicting ID field on the conflicting row, preserving custom fields, channels, and history. Default is `'delete'`.",
+    default: 'delete',
+  },
+  duplicateDeviceTokenActionEnforceAuth: {
+    env: 'PARSE_SERVER_INSTALLATION_DUPLICATE_DEVICE_TOKEN_ACTION_ENFORCE_AUTH',
+    help: "Whether the `_Installation` deduplication operation enforces the caller's auth context (and the resulting ACL and CLP). When `true`, the dedup `destroy`/`update` runs with the caller's `runOptions`, so ACL and CLP are honored. When `false`, the dedup runs as master and bypasses both. Master and maintenance keys always bypass regardless of this flag. Default is `false`.",
+    action: parsers.booleanParser,
+    default: false,
+  },
+  duplicateDeviceTokenMergePriority: {
+    env: 'PARSE_SERVER_INSTALLATION_DUPLICATE_DEVICE_TOKEN_MERGE_PRIORITY',
+    help: "At the merge case (when an existing row holds the new `deviceToken` but has no `installationId` of its own), which side wins. `'deviceToken'` \u2014 the deviceToken-only row survives, the request's `idMatch` row is the loser. `'installationId'` \u2014 the request's `idMatch` (active install) survives, the deviceToken-only orphan is the loser. Default is `'deviceToken'`.",
+    default: 'deviceToken',
+  },
+};
 module.exports.SecurityOptions = {
   checkGroups: {
     env: 'PARSE_SERVER_SECURITY_CHECK_GROUPS',
@@ -774,6 +806,20 @@ module.exports.SecurityOptions = {
   enableCheckLog: {
     env: 'PARSE_SERVER_SECURITY_ENABLE_CHECK_LOG',
     help: 'Is true if the security check report should be written to logs. This should only be enabled temporarily to not expose weak security settings in logs.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+};
+module.exports.QueryServerOptions = {
+  aggregationRawFieldNames: {
+    env: 'PARSE_SERVER_QUERY_AGGREGATION_RAW_FIELD_NAMES',
+    help: 'When `true`, all aggregation queries default to using native MongoDB field names (no automatic `createdAt` \u2192 `_created_at` rewriting). Individual queries can still override this via the `rawFieldNames` option. Default is `false`.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  aggregationRawValues: {
+    env: 'PARSE_SERVER_QUERY_AGGREGATION_RAW_VALUES',
+    help: 'When `true`, all aggregation queries default to using MongoDB Extended JSON (EJSON) for explicit value typing and skip schema-based value coercion. Individual queries can still override this via the `rawValues` option. Default is `false`.',
     action: parsers.booleanParser,
     default: false,
   },

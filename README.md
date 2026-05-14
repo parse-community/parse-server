@@ -72,6 +72,7 @@ A big _thank you_ 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
   - [Configuring File Adapters](#configuring-file-adapters)
     - [Restricting File URL Domains](#restricting-file-url-domains)
   - [Idempotency Enforcement](#idempotency-enforcement)
+  - [Installations](#installations)
   - [Localization](#localization)
     - [Pages](#pages)
       - [Localization with Directory Structure](#localization-with-directory-structure)
@@ -656,6 +657,49 @@ Assuming the script above is named, `parse_idempotency_delete_expired_records.sh
 
 ```bash
 2 * * * * /root/parse_idempotency_delete_expired_records.sh >/dev/null 2>&1
+```
+
+## Installations
+
+Parse Server deduplicates `_Installation` records when a new install collides with an existing row's `deviceToken`. The `installation` option block configures the dedup behavior.
+
+### Options
+
+| Parameter | Optional | Type | Default | Environment Variable |
+|---|---|---|---|---|
+| `installation.duplicateDeviceTokenActionEnforceAuth` | yes | `Boolean` | `false` | `PARSE_SERVER_INSTALLATION_DUPLICATE_DEVICE_TOKEN_ACTION_ENFORCE_AUTH` |
+| `installation.duplicateDeviceTokenAction` | yes | `String` | `'delete'` | `PARSE_SERVER_INSTALLATION_DUPLICATE_DEVICE_TOKEN_ACTION` |
+| `installation.duplicateDeviceTokenMergePriority` | yes | `String` | `'deviceToken'` | `PARSE_SERVER_INSTALLATION_DUPLICATE_DEVICE_TOKEN_MERGE_PRIORITY` |
+
+#### `duplicateDeviceTokenActionEnforceAuth`
+
+When `true`, the dedup operation runs with the caller's auth context so ACL and CLP are honored. When `false`, the dedup runs as master and bypasses both. Master and maintenance keys always bypass regardless of this flag.
+
+#### `duplicateDeviceTokenAction`
+
+What Parse Server does to the conflicting `_Installation` row(s) when a new install's `deviceToken` collides with an existing row.
+
+- `'delete'`: destroys the conflicting row.
+- `'update'`: clears the now-conflicting ID field on the conflicting row, preserving custom fields, channels, and history.
+
+#### `duplicateDeviceTokenMergePriority`
+
+When an existing row holds the new `deviceToken` but has no `installationId` of its own, Parse Server merges the two rows. This option controls which side wins.
+
+- `'deviceToken'`: the deviceToken-only row survives; the request's installationId-matched row is the loser.
+- `'installationId'`: the request's installationId-matched row survives; the deviceToken-only orphan is the loser.
+
+### Configuration example
+
+```javascript
+const parseServer = new ParseServer({
+  ...otherOptions,
+  installation: {
+    duplicateDeviceTokenActionEnforceAuth: true,
+    duplicateDeviceTokenAction: 'update',
+    duplicateDeviceTokenMergePriority: 'installationId',
+  },
+});
 ```
 
 ## Localization
