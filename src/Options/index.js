@@ -391,6 +391,14 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_REQUEST_COMPLEXITY
   :DEFAULT: {} */
   requestComplexity: ?RequestComplexityOptions;
+  /* Options controlling how Parse Server deduplicates `_Installation` records that share the same `deviceToken`.
+  :ENV: PARSE_SERVER_INSTALLATION
+  :DEFAULT: {} */
+  installation: ?InstallationOptions;
+  /* Query-related server defaults.
+  :ENV: PARSE_SERVER_QUERY
+  :DEFAULT: {} */
+  query: ?QueryServerOptions;
   /* The security options to identify and report weak security settings.
   :DEFAULT: {} */
   security: ?SecurityOptions;
@@ -479,6 +487,18 @@ export interface RequestComplexityOptions {
   batchRequestLimit: ?number;
 }
 
+export interface InstallationOptions {
+  /* Whether the `_Installation` deduplication operation enforces the caller's auth context (and the resulting ACL and CLP). When `true`, the dedup `destroy`/`update` runs with the caller's `runOptions`, so ACL and CLP are honored. When `false`, the dedup runs as master and bypasses both. Master and maintenance keys always bypass regardless of this flag. Default is `false`.
+  :DEFAULT: false */
+  duplicateDeviceTokenActionEnforceAuth: ?boolean;
+  /* What Parse Server does to the conflicting `_Installation` row(s) when a new install's `deviceToken` collides with an existing row. `'delete'` destroys the conflicting row. `'update'` clears the now-conflicting ID field on the conflicting row, preserving custom fields, channels, and history. Default is `'delete'`.
+  :DEFAULT: delete */
+  duplicateDeviceTokenAction: ?string;
+  /* At the merge case (when an existing row holds the new `deviceToken` but has no `installationId` of its own), which side wins. `'deviceToken'` — the deviceToken-only row survives, the request's `idMatch` row is the loser. `'installationId'` — the request's `idMatch` (active install) survives, the deviceToken-only orphan is the loser. Default is `'deviceToken'`.
+  :DEFAULT: deviceToken */
+  duplicateDeviceTokenMergePriority: ?string;
+}
+
 export interface SecurityOptions {
   /* Is true if Parse Server should check for weak security settings.
   :DEFAULT: false */
@@ -488,6 +508,17 @@ export interface SecurityOptions {
   enableCheckLog: ?boolean;
   /* The security check groups to run. This allows to add custom security checks or override existing ones. Default are the groups defined in `CheckGroups.js`. */
   checkGroups: ?(CheckGroup[]);
+}
+
+export interface QueryServerOptions {
+  /* When `true`, all aggregation queries default to using MongoDB Extended JSON (EJSON) for explicit value typing and skip schema-based value coercion. Individual queries can still override this via the `rawValues` option. Default is `false`.
+  :ENV: PARSE_SERVER_QUERY_AGGREGATION_RAW_VALUES
+  :DEFAULT: false */
+  aggregationRawValues: ?boolean;
+  /* When `true`, all aggregation queries default to using native MongoDB field names (no automatic `createdAt` → `_created_at` rewriting). Individual queries can still override this via the `rawFieldNames` option. Default is `false`.
+  :ENV: PARSE_SERVER_QUERY_AGGREGATION_RAW_FIELD_NAMES
+  :DEFAULT: false */
+  aggregationRawFieldNames: ?boolean;
 }
 
 export interface PagesOptions {
