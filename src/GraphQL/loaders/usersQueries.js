@@ -59,7 +59,6 @@ const getUserFromSessionToken = async (context, queryInfo, keysPrefix, userId) =
     // Get the user it self from auth object
     { objectId: context.auth.user.id },
     options,
-    info.clientVersion,
     info.context
   );
   if (!response.results || response.results.length == 0) {

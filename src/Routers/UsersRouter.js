@@ -201,7 +201,6 @@ export class UsersRouter extends ClassesRouter {
       '_Session',
       { sessionToken },
       {},
-      req.info.clientSDK,
       req.info.context
     );
     if (
@@ -220,7 +219,6 @@ export class UsersRouter extends ClassesRouter {
       '_User',
       userId,
       {},
-      req.info.clientSDK,
       req.info.context
     );
     if (!userResponse.results || userResponse.results.length == 0) {
@@ -257,7 +255,6 @@ export class UsersRouter extends ClassesRouter {
           { objectId: user.objectId },
           req.body || {},
           user,
-          req.info.clientSDK,
           req.info.context
         ),
         user
@@ -369,7 +366,6 @@ export class UsersRouter extends ClassesRouter {
         '_User',
         user.objectId,
         {},
-        req.info.clientSDK,
         req.info.context
       );
       filteredUser = filteredUserResponse.results?.[0];
@@ -472,7 +468,6 @@ export class UsersRouter extends ClassesRouter {
             '_User',
             user.objectId,
             {},
-            req.info.clientSDK,
             req.info.context
           );
           filteredUser = filteredUserResponse.results?.[0];
@@ -499,7 +494,6 @@ export class UsersRouter extends ClassesRouter {
         '_Session',
         { sessionToken: req.info.sessionToken },
         undefined,
-        req.info.clientSDK,
         req.info.context
       );
       if (records.results && records.results.length) {

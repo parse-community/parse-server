@@ -5,8 +5,7 @@ const createObject = async (className, fields, config, auth, info) => {
     fields = {};
   }
 
-  return (await rest.create(config, auth, className, fields, info.clientSDK, info.context))
-    .response;
+  return (await rest.create(config, auth, className, fields, info.context)).response;
 };
 
 const updateObject = async (className, objectId, fields, config, auth, info) => {
@@ -14,9 +13,7 @@ const updateObject = async (className, objectId, fields, config, auth, info) => 
     fields = {};
   }
 
-  return (
-    await rest.update(config, auth, className, { objectId }, fields, info.clientSDK, info.context)
-  ).response;
+  return (await rest.update(config, auth, className, { objectId }, fields, info.context)).response;
 };
 
 const deleteObject = async (className, objectId, config, auth, info) => {
