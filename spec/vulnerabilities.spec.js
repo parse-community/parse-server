@@ -5245,4 +5245,102 @@ describe('Vulnerabilities', () => {
       expect(meResponse.data.user).toBeDefined();
     });
   });
+
+  describe('(GHSA-38m6-82c8-4xfm) Pre-auth polynomial ReDoS via client version parsing', () => {
+    const middlewares = require('../lib/middlewares');
+    const AppCache = require('../lib/cache').AppCache;
+
+    const AppCachePut = (appId, config) =>
+      AppCache.put(appId, {
+        ...config,
+        maintenanceKeyIpsStore: new Map(),
+        masterKeyIpsStore: new Map(),
+        readOnlyMasterKeyIpsStore: new Map(),
+      });
+
+    const buildFakeReq = ({ headers = {}, body = {} } = {}) => {
+      const req = {
+        ip: '127.0.0.1',
+        originalUrl: 'http://example.com/parse/',
+        url: 'http://example.com/',
+        body: { _ApplicationId: 'FakeAppId', ...body },
+        headers,
+        get: key => req.headers[key.toLowerCase()],
+      };
+      return req;
+    };
+
+    beforeEach(() => {
+      AppCachePut('FakeAppId', {
+        masterKeyIps: ['0.0.0.0/0'],
+      });
+    });
+
+    afterEach(() => {
+      AppCache.del('FakeAppId');
+    });
+
+    it('does not capture client version from X-Parse-Client-Version header into req.info', async () => {
+      const req = buildFakeReq({ headers: { 'x-parse-client-version': 'js5.0.0' } });
+      const res = jasmine.createSpyObj('res', ['end', 'status']);
+      let nextCalled = false;
+      await middlewares.handleParseHeaders(req, res, () => {
+        nextCalled = true;
+      });
+      expect(nextCalled).toBe(true);
+      expect(res.status).not.toHaveBeenCalled();
+      expect(req.info.clientVersion).toBeUndefined();
+      expect(req.info.clientSDK).toBeUndefined();
+    });
+
+    it('does not capture client version from _ClientVersion body field into req.info', async () => {
+      const req = buildFakeReq({ body: { _ClientVersion: 'js5.0.0' } });
+      const res = jasmine.createSpyObj('res', ['end', 'status']);
+      let nextCalled = false;
+      await middlewares.handleParseHeaders(req, res, () => {
+        nextCalled = true;
+      });
+      expect(nextCalled).toBe(true);
+      expect(res.status).not.toHaveBeenCalled();
+      expect(req.info.clientVersion).toBeUndefined();
+      expect(req.info.clientSDK).toBeUndefined();
+      expect(req.body._ClientVersion).toBeUndefined();
+    });
+
+    it('does not invoke any regex on adversarial X-Parse-Client-Version header (16 KB of dashes)', async () => {
+      const adversarial = '-'.repeat(16000);
+      const req = buildFakeReq({ headers: { 'x-parse-client-version': adversarial } });
+      const res = jasmine.createSpyObj('res', ['end', 'status']);
+      await middlewares.handleParseHeaders(req, res, () => {});
+      expect(req.info.clientVersion).toBeUndefined();
+      expect(req.info.clientSDK).toBeUndefined();
+    });
+
+    it('does not invoke any regex on adversarial _ClientVersion body field (200 KB of dashes)', async () => {
+      const adversarial = '-'.repeat(200000);
+      const req = buildFakeReq({ body: { _ClientVersion: adversarial } });
+      const res = jasmine.createSpyObj('res', ['end', 'status']);
+      const t0 = process.hrtime.bigint();
+      await middlewares.handleParseHeaders(req, res, () => {});
+      const elapsedMs = Number(process.hrtime.bigint() - t0) / 1e6;
+      expect(elapsedMs).toBeLessThan(3000);
+      expect(req.info.clientVersion).toBeUndefined();
+      expect(req.info.clientSDK).toBeUndefined();
+      expect(req.body._ClientVersion).toBeUndefined();
+    });
+
+    it('strips _ClientVersion from req.body even when value is non-string (no rejection, no capture)', async () => {
+      const req = buildFakeReq({ body: { _ClientVersion: { toLowerCase: 'evil' } } });
+      const res = jasmine.createSpyObj('res', ['end', 'status']);
+      let nextCalled = false;
+      await middlewares.handleParseHeaders(req, res, () => {
+        nextCalled = true;
+      });
+      expect(nextCalled).toBe(true);
+      expect(res.status).not.toHaveBeenCalled();
+      expect(req.body._ClientVersion).toBeUndefined();
+      expect(req.info.clientVersion).toBeUndefined();
+      expect(req.info.clientSDK).toBeUndefined();
+    });
+  });
 });

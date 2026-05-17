@@ -112,7 +112,6 @@ describe('middlewares', () => {
   });
 
   const BodyParams = {
-    clientVersion: '_ClientVersion',
     installationId: '_InstallationId',
     sessionToken: '_SessionToken',
     masterKey: '_MasterKey',

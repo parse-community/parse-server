@@ -30,7 +30,6 @@ async function runFindTriggers(
   className,
   restWhere,
   restOptions,
-  clientSDK,
   context,
   options = {}
 ) {
@@ -89,7 +88,6 @@ async function runFindTriggers(
           className,
           restWhere: refilterWhere,
           restOptions,
-          clientSDK,
           context,
           runBeforeFind: false,
           runAfterFind: false,
@@ -125,7 +123,6 @@ async function runFindTriggers(
     className,
     restWhere,
     restOptions,
-    clientSDK,
     context,
     runBeforeFind: false,
   });
@@ -134,7 +131,7 @@ async function runFindTriggers(
 }
 
 // Returns a promise for an object with optional keys 'results' and 'count'.
-const find = async (config, auth, className, restWhere, restOptions, clientSDK, context) => {
+const find = async (config, auth, className, restWhere, restOptions, context) => {
   enforceRoleSecurity('find', className, auth, config);
   return runFindTriggers(
     config,
@@ -142,14 +139,13 @@ const find = async (config, auth, className, restWhere, restOptions, clientSDK, 
     className,
     restWhere,
     restOptions,
-    clientSDK,
     context,
     { isGet: false }
   );
 };
 
 // get is just like find but only queries an objectId.
-const get = async (config, auth, className, objectId, restOptions, clientSDK, context) => {
+const get = async (config, auth, className, objectId, restOptions, context) => {
   enforceRoleSecurity('get', className, auth, config);
   return runFindTriggers(
     config,
@@ -157,7 +153,6 @@ const get = async (config, auth, className, objectId, restOptions, clientSDK, co
     className,
     { objectId },
     restOptions,
-    clientSDK,
     context,
     { isGet: true }
   );
@@ -263,16 +258,16 @@ function del(config, auth, className, objectId, context) {
 }
 
 // Returns a promise for a {response, status, location} object.
-function create(config, auth, className, restObject, clientSDK, context) {
+function create(config, auth, className, restObject, context) {
   enforceRoleSecurity('create', className, auth, config);
-  var write = new RestWrite(config, auth, className, null, restObject, null, clientSDK, context);
+  var write = new RestWrite(config, auth, className, null, restObject, null, context);
   return write.execute();
 }
 
 // Returns a promise that contains the fields of the update that the
 // REST API is supposed to return.
 // Usually, this is just updatedAt.
-function update(config, auth, className, restWhere, restObject, clientSDK, context) {
+function update(config, auth, className, restWhere, restObject, context) {
   enforceRoleSecurity('update', className, auth, config);
 
   return Promise.resolve()
@@ -309,7 +304,6 @@ function update(config, auth, className, restWhere, restObject, clientSDK, conte
         restWhere,
         restObject,
         originalRestObject,
-        clientSDK,
         context,
         'update'
       ).execute();
