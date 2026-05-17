@@ -21,7 +21,6 @@ export class SessionsRouter extends ClassesRouter {
       '_Session',
       { sessionToken },
       {},
-      req.info.clientSDK,
       req.info.context
     );
     if (
@@ -47,7 +46,6 @@ export class SessionsRouter extends ClassesRouter {
       '_Session',
       sessionObjectId,
       {},
-      req.info.clientSDK,
       req.info.context
     );
     if (!response.results || response.results.length == 0) {

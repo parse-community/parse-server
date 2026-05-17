@@ -38,7 +38,6 @@ export class AggregateRouter extends ClassesRouter {
         this.className(req),
         body.where,
         options,
-        req.info.clientSDK,
         req.info.context
       );
       for (const result of response.results) {

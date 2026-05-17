@@ -11,7 +11,6 @@ var cryptoUtils = require('./cryptoUtils');
 var passwordCrypto = require('./password');
 var Parse = require('parse/node');
 var triggers = require('./triggers');
-var ClientSDK = require('./ClientSDK');
 const util = require('util');
 import RestQuery from './RestQuery';
 import _ from 'lodash';
@@ -29,7 +28,7 @@ import { createSanitizedError } from './Error';
 // RestWrite will handle objectId, createdAt, and updatedAt for
 // everything. It also knows to use triggers and special modifications
 // for the _User class.
-function RestWrite(config, auth, className, query, data, originalData, clientSDK, context, action) {
+function RestWrite(config, auth, className, query, data, originalData, context, action) {
   if (auth.isReadOnly) {
     throw createSanitizedError(
       Parse.Error.OPERATION_FORBIDDEN,
@@ -40,7 +39,6 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
   this.config = config;
   this.auth = auth;
   this.className = className;
-  this.clientSDK = clientSDK;
   this.storage = {};
   this.runOptions = {};
   this.context = context || {};
@@ -1897,7 +1895,6 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
   if (_.isEmpty(this.storage.fieldsChangedByTrigger)) {
     return response;
   }
-  const clientSupportsDelete = ClientSDK.supportsForwardDelete(this.clientSDK);
   this.storage.fieldsChangedByTrigger.forEach(fieldName => {
     const dataValue = data[fieldName];
 
@@ -1905,10 +1902,9 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
       response[fieldName] = dataValue;
     }
 
-    // Strips operations from responses
     if (response[fieldName] && response[fieldName].__op) {
       delete response[fieldName];
-      if (clientSupportsDelete && dataValue.__op == 'Delete') {
+      if (dataValue.__op == 'Delete') {
         response[fieldName] = dataValue;
       }
     }
