@@ -1,3 +1,10 @@
+## [8.6.77](https://github.com/parse-community/parse-server/compare/8.6.76...8.6.77) (2026-05-17)
+
+
+### Bug Fixes
+
+* Pre-authentication denial of service via client version header regex backtracking ([GHSA-38m6-82c8-4xfm](https://github.com/parse-community/parse-server/security/advisories/GHSA-38m6-82c8-4xfm)) ([#10464](https://github.com/parse-community/parse-server/issues/10464)) ([8523425](https://github.com/parse-community/parse-server/commit/8523425525a16bbff13fa9718ca356a7e48caa0d))
+
 ## [8.6.76](https://github.com/parse-community/parse-server/compare/8.6.75...8.6.76) (2026-04-26)
 
 
