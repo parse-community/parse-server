@@ -1,3 +1,10 @@
+## [8.6.78](https://github.com/parse-community/parse-server/compare/8.6.77...8.6.78) (2026-05-18)
+
+
+### Bug Fixes
+
+* GraphQL "Did you mean" validation suggestions disclose schema to unauthenticated callers ([GHSA-8cph-rgr4-g5vj](https://github.com/parse-community/parse-server/security/advisories/GHSA-8cph-rgr4-g5vj)) ([#10468](https://github.com/parse-community/parse-server/issues/10468)) ([a0ddb85](https://github.com/parse-community/parse-server/commit/a0ddb850e1060908f7aac3755861fb4a3d364127))
+
 ## [8.6.77](https://github.com/parse-community/parse-server/compare/8.6.76...8.6.77) (2026-05-17)
 
 
