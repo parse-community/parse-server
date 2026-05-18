@@ -50,6 +50,33 @@ const IntrospectionControlPlugin = (publicIntrospection) => ({
 
 });
 
+// graphql-js validation rules (FieldsOnCorrectTypeRule, KnownArgumentNamesRule,
+// KnownTypeNamesRule, ...) embed "Did you mean ...?" hints sourced from the live
+// schema in their error messages. Those messages are returned to the caller
+// before didResolveOperation runs, so they sidestep IntrospectionControlPlugin
+// and disclose schema identifiers the introspection guard is meant to hide.
+// Strip the hint suffix for callers that are not allowed to introspect.
+const SchemaSuggestionsControlPlugin = (publicIntrospection) => ({
+  requestDidStart: async (requestContext) => ({
+    validationDidStart: async () => {
+      if (publicIntrospection) {
+        return;
+      }
+      const isMasterOrMaintenance =
+        requestContext.contextValue.auth?.isMaster ||
+        requestContext.contextValue.auth?.isMaintenance;
+      if (isMasterOrMaintenance) {
+        return;
+      }
+      return async (validationErrors) => {
+        validationErrors?.forEach(error => {
+          error.message = error.message.replace(/ ?Did you mean(.+?)\?$/, '');
+        });
+      };
+    },
+  }),
+});
+
 class ParseGraphQLServer {
   parseGraphQLController: ParseGraphQLController;
 
@@ -111,7 +138,7 @@ class ParseGraphQLServer {
             requestHeaders: ['X-Parse-Application-Id'],
           },
           introspection: this.config.graphQLPublicIntrospection,
-          plugins: [ApolloServerPluginCacheControlDisabled(), IntrospectionControlPlugin(this.config.graphQLPublicIntrospection), createComplexityValidationPlugin(() => this.parseServer.config.requestComplexity)],
+          plugins: [ApolloServerPluginCacheControlDisabled(), IntrospectionControlPlugin(this.config.graphQLPublicIntrospection), SchemaSuggestionsControlPlugin(this.config.graphQLPublicIntrospection), createComplexityValidationPlugin(() => this.parseServer.config.requestComplexity)],
           schema,
         });
         await apollo.start();

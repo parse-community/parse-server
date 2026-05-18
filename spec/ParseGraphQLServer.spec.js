@@ -715,6 +715,115 @@ describe('ParseGraphQLServer', () => {
             })
           expect(introspection.data).toBeDefined();
         });
+
+        it('should strip "Did you mean" field suggestions from validation errors without master or maintenance key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Typo {
+                  healt
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const message = e.networkError.result.errors[0].message;
+            expect(message).toContain('Cannot query field "healt"');
+            expect(message).not.toMatch(/Did you mean/);
+            expect(message).not.toContain('health');
+          }
+        });
+
+        it('should strip "Did you mean" argument suggestions from validation errors without master or maintenance key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                query UnknownArg {
+                  users(wher: {}) {
+                    edges {
+                      node {
+                        id
+                      }
+                    }
+                  }
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const message = e.networkError.result.errors[0].message;
+            expect(message).toContain('Unknown argument "wher"');
+            expect(message).not.toMatch(/Did you mean/);
+            expect(message).not.toContain('"where"');
+          }
+        });
+
+        it('should keep "Did you mean" suggestions with master key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Typo {
+                  healt
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const message = e.networkError.result.errors[0].message;
+            expect(message).toContain('Cannot query field "healt"');
+            expect(message).toMatch(/Did you mean/);
+            expect(message).toContain('health');
+          }
+        });
+
+        it('should keep "Did you mean" suggestions with maintenance key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Typo {
+                  healt
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Maintenance-Key': 'test2',
+                },
+              },
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const message = e.networkError.result.errors[0].message;
+            expect(message).toContain('Cannot query field "healt"');
+            expect(message).toMatch(/Did you mean/);
+            expect(message).toContain('health');
+          }
+        });
+
+        it('should keep "Did you mean" suggestions when public introspection is enabled', async () => {
+          const parseServer = await reconfigureServer();
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Typo {
+                  healt
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const message = e.networkError.result.errors[0].message;
+            expect(message).toContain('Cannot query field "healt"');
+            expect(message).toMatch(/Did you mean/);
+            expect(message).toContain('health');
+          }
+        });
       });
 
 
