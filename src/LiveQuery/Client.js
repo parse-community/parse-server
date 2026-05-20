@@ -22,6 +22,7 @@ class Client {
   pushUpdate: Function;
   pushDelete: Function;
   pushLeave: Function;
+  pushResult: Function;
 
   constructor(
     id: number,
@@ -45,6 +46,7 @@ class Client {
     this.pushUpdate = this._pushEvent('update');
     this.pushDelete = this._pushEvent('delete');
     this.pushLeave = this._pushEvent('leave');
+    this.pushResult = this._pushQueryResult.bind(this);
   }
 
   static pushResponse(parseWebSocket: any, message: Message): void {
@@ -125,6 +127,27 @@ class Client {
       }
     }
     return limitedParseObject;
+  }
+
+  _pushQueryResult(subscriptionId: number, results: any[]): void {
+    const response: Message = {
+      op: 'result',
+      clientId: this.id,
+      installationId: this.installationId,
+      requestId: subscriptionId,
+    };
+
+    if (results && Array.isArray(results)) {
+      let keys;
+      if (this.subscriptionInfos.has(subscriptionId)) {
+        keys = this.subscriptionInfos.get(subscriptionId).keys;
+      }
+      response['results'] = results.map(obj => this._toJSONWithFields(obj, keys));
+    } else {
+      response['results'] = [];
+    }
+
+    Client.pushResponse(this.parseWebSocket, JSON.stringify(response));
   }
 }
 
