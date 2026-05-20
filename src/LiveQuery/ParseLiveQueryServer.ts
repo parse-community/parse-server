@@ -1413,10 +1413,10 @@ class ParseLiveQueryServer {
     try {
       const sessionToken = subscriptionInfo.sessionToken || client.sessionToken;
       const parseQuery = new Parse.Query(className);
-
-      if (query && typeof query === 'object' && query !== null && Object.keys(query).length > 0) {
-        parseQuery._where = query;
-      }
+      parseQuery.withJSON({
+        className,
+        where: query || {},
+      });
 
       if (subscriptionInfo.keys && Array.isArray(subscriptionInfo.keys) && subscriptionInfo.keys.length > 0) {
         parseQuery.select(...subscriptionInfo.keys);
