@@ -1309,9 +1309,21 @@ RestWrite.prototype.handleInstallation = function () {
     if (this.query) {
       throw new Parse.Error(136, 'installationId may not be changed in this operation');
     }
-    // Create path: drop the operator/null so the "must specify ID"
-    // guard below fires with the correct 135 error.
+    // Create path: drop the invalid value so the existing "must specify
+    // ID" guard below can run. If no alternative ID (deviceToken,
+    // auth.installationId) is supplied the create is rejected with
+    // error 135; otherwise the create proceeds with the remaining ID.
     delete this.data.installationId;
+  }
+
+  // Any remaining non-string installationId (object, array, number, etc.)
+  // would crash on `.toLowerCase()` below; reject it as a Parse error
+  // rather than letting it surface as a 500.
+  if (
+    this.data.installationId !== undefined &&
+    typeof this.data.installationId !== 'string'
+  ) {
+    throw new Parse.Error(Parse.Error.INVALID_JSON, 'installationId must be a string');
   }
 
   if (

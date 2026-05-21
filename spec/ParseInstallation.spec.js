@@ -636,7 +636,53 @@ describe('Installations', () => {
       });
   });
 
-  it('master key cannot clear installationId', done => {
+  it('create fails when installationId is a non-string object', done => {
+    const input = {
+      installationId: { foo: 'bar' },
+      deviceType: 'ios',
+    };
+    rest
+      .create(config, auth.nobody(config), '_Installation', input)
+      .then(() => {
+        fail('Creating the installation should have failed.');
+        done();
+      })
+      .catch(error => {
+        expect(error.code).toEqual(Parse.Error.INVALID_JSON);
+        done();
+      });
+  });
+
+  it('update fails when installationId is a non-string object', done => {
+    const installId = '12345678-abcd-abcd-abcd-123456789abc';
+    const input = {
+      installationId: installId,
+      deviceType: 'ios',
+    };
+    rest
+      .create(config, auth.nobody(config), '_Installation', input)
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
+      .then(results => {
+        expect(results.length).toEqual(1);
+        return rest.update(
+          config,
+          auth.nobody(config),
+          '_Installation',
+          { objectId: results[0].objectId },
+          { installationId: { foo: 'bar' } }
+        );
+      })
+      .then(() => {
+        fail('Updating the installation should have failed.');
+        done();
+      })
+      .catch(error => {
+        expect(error.code).toEqual(Parse.Error.INVALID_JSON);
+        done();
+      });
+  });
+
+  it('master key cannot clear installationId via Delete op', done => {
     const installId = '12345678-abcd-abcd-abcd-123456789abc';
     const input = {
       installationId: installId,
@@ -657,6 +703,35 @@ describe('Installations', () => {
       })
       .then(() => {
         fail('Master key clearing of installationId should have been rejected.');
+        done();
+      })
+      .catch(error => {
+        expect(error.code).toEqual(136);
+        done();
+      });
+  });
+
+  it('master key cannot clear installationId via null', done => {
+    const installId = '12345678-abcd-abcd-abcd-123456789abc';
+    const input = {
+      installationId: installId,
+      deviceType: 'ios',
+    };
+    rest
+      .create(config, auth.master(config), '_Installation', input)
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
+      .then(results => {
+        expect(results.length).toEqual(1);
+        return rest.update(
+          config,
+          auth.master(config),
+          '_Installation',
+          { objectId: results[0].objectId },
+          { installationId: null }
+        );
+      })
+      .then(() => {
+        fail('Master key clearing of installationId via null should have been rejected.');
         done();
       })
       .catch(error => {
