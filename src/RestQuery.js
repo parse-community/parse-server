@@ -31,7 +31,6 @@ const { createSanitizedError } = require('./Error');
  * @param options.className {string} The name of the class to query
  * @param options.restWhere {object} The where object for the query
  * @param options.restOptions {object} The options object for the query
- * @param options.clientSDK {string} The client SDK that is performing the query
  * @param options.runAfterFind {boolean} Whether to run the afterFind trigger
  * @param options.runBeforeFind {boolean} Whether to run the beforeFind trigger
  * @param options.context {object} The context object for the query
@@ -44,7 +43,6 @@ async function RestQuery({
   className,
   restWhere = {},
   restOptions = {},
-  clientSDK,
   runAfterFind = true,
   runBeforeFind = true,
   context,
@@ -73,7 +71,6 @@ async function RestQuery({
     className,
     result.restWhere || restWhere,
     result.restOptions || restOptions,
-    clientSDK,
     runAfterFind,
     context,
     isGet
@@ -93,7 +90,6 @@ RestQuery.Method = Object.freeze({
  * @param className
  * @param restWhere
  * @param restOptions
- * @param clientSDK
  * @param runAfterFind
  * @param context
  */
@@ -103,7 +99,6 @@ function _UnsafeRestQuery(
   className,
   restWhere = {},
   restOptions = {},
-  clientSDK,
   runAfterFind = true,
   context,
   isGet
@@ -113,7 +108,6 @@ function _UnsafeRestQuery(
   this.className = className;
   this.restWhere = restWhere;
   this.restOptions = restOptions;
-  this.clientSDK = clientSDK;
   this.runAfterFind = runAfterFind;
   this.response = null;
   this.findOptions = {};
@@ -322,7 +316,7 @@ _UnsafeRestQuery.prototype.execute = function (executeOptions) {
 };
 
 _UnsafeRestQuery.prototype.each = function (callback) {
-  const { config, auth, className, restWhere, restOptions, clientSDK } = this;
+  const { config, auth, className, restWhere, restOptions } = this;
   // if the limit is set, use it
   restOptions.limit = restOptions.limit || 100;
   restOptions.order = 'objectId';
@@ -341,7 +335,6 @@ _UnsafeRestQuery.prototype.each = function (callback) {
         className,
         restWhere,
         restOptions,
-        clientSDK,
         this.runAfterFind,
         this.context
       );
