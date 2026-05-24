@@ -653,6 +653,40 @@ describe('Installations', () => {
       });
   });
 
+  it('create fails when installationId is a number', done => {
+    const input = {
+      installationId: 12345,
+      deviceType: 'ios',
+    };
+    rest
+      .create(config, auth.nobody(config), '_Installation', input)
+      .then(() => {
+        fail('Creating the installation should have failed.');
+        done();
+      })
+      .catch(error => {
+        expect(error.code).toEqual(Parse.Error.INVALID_JSON);
+        done();
+      });
+  });
+
+  it('create fails when installationId is an array', done => {
+    const input = {
+      installationId: ['abc'],
+      deviceType: 'ios',
+    };
+    rest
+      .create(config, auth.nobody(config), '_Installation', input)
+      .then(() => {
+        fail('Creating the installation should have failed.');
+        done();
+      })
+      .catch(error => {
+        expect(error.code).toEqual(Parse.Error.INVALID_JSON);
+        done();
+      });
+  });
+
   it('update fails when installationId is a non-string object', done => {
     const installId = '12345678-abcd-abcd-abcd-123456789abc';
     const input = {

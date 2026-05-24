@@ -1307,7 +1307,10 @@ RestWrite.prototype.handleInstallation = function () {
       this.data.installationId.__op === 'Delete');
   if (clearingInstallationId) {
     if (this.query) {
-      throw new Parse.Error(136, 'installationId may not be changed in this operation');
+      throw new Parse.Error(
+        136,
+        'installationId may not be changed or cleared in this operation'
+      );
     }
     // Create path: drop the invalid value so the existing "must specify
     // ID" guard below can run. If no alternative ID (deviceToken,
