@@ -940,14 +940,13 @@ RestWrite.prototype._validateEmail = function () {
     });
 };
 
-RestWrite.prototype._validatePasswordPolicy = function () {
+RestWrite.prototype._validatePasswordPolicy = async function () {
   if (!this.config.passwordPolicy) { return Promise.resolve(); }
-  return this._validatePasswordRequirements().then(() => {
-    return this._validatePasswordHistory();
-  });
+  await this._validatePasswordRequirements();
+  return this._validatePasswordHistory();
 };
 
-RestWrite.prototype._validatePasswordRequirements = function () {
+RestWrite.prototype._validatePasswordRequirements = async function () {
   // check if the password conforms to the defined password policy if configured
   // If we specified a custom error in our configuration use it.
   // Example: "Passwords must include a Capital Letter, Lowercase Letter, and a number."
@@ -961,14 +960,17 @@ RestWrite.prototype._validatePasswordRequirements = function () {
     : 'Password does not meet the Password Policy requirements.';
   const containsUsernameError = 'Password cannot contain your username.';
 
-  // check whether the password meets the password strength requirements
-  if (
-    (this.config.passwordPolicy.patternValidator &&
-      !this.config.passwordPolicy.patternValidator(this.data.password)) ||
-    (this.config.passwordPolicy.validatorCallback &&
-      !this.config.passwordPolicy.validatorCallback(this.data.password))
-  ) {
+  const patternValidator = this.config.passwordPolicy.patternValidator;
+  if (patternValidator && !patternValidator(this.data.password)) {
     return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, policyError));
+  }
+
+  const validatorCallback = this.config.passwordPolicy.validatorCallback;
+  if (validatorCallback) {
+    const isValid = await Promise.resolve(validatorCallback(this.data.password));
+    if (!isValid) {
+      return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, policyError));
+    }
   }
 
   // check whether password contain username

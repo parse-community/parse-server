@@ -1112,7 +1112,7 @@ module.exports.PasswordPolicyOptions = {
   },
   validatorCallback: {
     env: 'PARSE_SERVER_PASSWORD_POLICY_VALIDATOR_CALLBACK',
-    help: 'Set a callback function to validate a password to be accepted.<br><br>If used in combination with `validatorPattern`, the password must pass both to be accepted.',
+    help: 'Set a callback function to validate a password to be accepted. Can return a boolean or `Promise<boolean>`.<br><br>If used in combination with `validatorPattern`, the password must pass both to be accepted.',
   },
   validatorPattern: {
     env: 'PARSE_SERVER_PASSWORD_POLICY_VALIDATOR_PATTERN',
