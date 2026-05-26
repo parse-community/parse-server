@@ -130,7 +130,7 @@ class ParseGraphQLSchema {
     this.graphQLSchemaDirectives = {};
     this.relayNodeInterface = null;
 
-    defaultGraphQLTypes.load(this);
+    await defaultGraphQLTypes.load(this);
     defaultRelaySchema.load(this);
     schemaTypes.load(this);
 

@@ -20,13 +20,14 @@ const handleUpload = async (upload, config) => {
   try {
     const ext = mime.getExtension(mimetype);
     const fullFileName = filename.endsWith(`.${ext}`) ? filename : `${filename}.${ext}`;
+    const encodedFileName = fullFileName.split('/').map(encodeURIComponent).join('/');
     const serverUrl = new URL(config.serverURL);
     const fileInfo = await new Promise((resolve, reject) => {
       const req = request(
         {
           hostname: serverUrl.hostname,
           port: serverUrl.port,
-          path: `${serverUrl.pathname}/files/${fullFileName}`,
+          path: `${serverUrl.pathname}/files/${encodedFileName}`,
           method: 'POST',
           headers,
         },
@@ -37,7 +38,17 @@ const handleUpload = async (upload, config) => {
           });
           res.on('end', () => {
             try {
-              resolve(JSON.parse(data));
+              const parsedData = JSON.parse(data);
+              if (res.statusCode < 200 || res.statusCode >= 400) {
+                reject(
+                  new Parse.Error(
+                    parsedData.code || Parse.Error.FILE_SAVE_ERROR,
+                    parsedData.error || data
+                  )
+                );
+                return;
+              }
+              resolve(parsedData);
             } catch {
               reject(new Parse.Error(Parse.error, data));
             }

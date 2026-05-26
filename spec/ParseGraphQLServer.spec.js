@@ -7465,6 +7465,71 @@ describe('ParseGraphQLServer', () => {
             expect(res.status).toEqual(200);
             expect(await res.text()).toEqual('My File Content');
           });
+
+          it('should preserve accented characters in uploaded filenames', async () => {
+            const clientMutationId = uuidv4();
+
+            parseServer = await global.reconfigureServer({
+              publicServerURL: 'http://localhost:13377/parse',
+            });
+            await createGQLFromParseServer(parseServer);
+            const body = new FormData();
+            body.append(
+              'operations',
+              JSON.stringify({
+                query: `
+                  mutation CreateFile($input: CreateFileInput!) {
+                    createFile(input: $input) {
+                      clientMutationId
+                      fileInfo {
+                        name
+                        url
+                      }
+                    }
+                  }
+                `,
+                variables: {
+                  input: {
+                    clientMutationId,
+                    upload: null,
+                  },
+                },
+              })
+            );
+            body.append('map', JSON.stringify({ 1: ['variables.input.upload'] }));
+            body.append('1', 'My File Content', {
+              filename: 'café.txt',
+              contentType: 'text/plain',
+            });
+
+            let res = await fetch('http://localhost:13377/graphql', {
+              method: 'POST',
+              headers,
+              body,
+            });
+
+            expect(res.status).toEqual(200);
+
+            const result = JSON.parse(await res.text());
+
+            expect(result.errors).toBeUndefined();
+            expect(result.data?.createFile).not.toBeNull();
+            if (result.errors || !result.data?.createFile) {
+              return;
+            }
+            expect(result.data.createFile.clientMutationId).toEqual(clientMutationId);
+            expect(result.data.createFile.fileInfo.name).toEqual(
+              jasmine.stringMatching(/_café.txt$/)
+            );
+            expect(result.data.createFile.fileInfo.url).toEqual(
+              jasmine.stringMatching(/_caf%C3%A9.txt$/)
+            );
+
+            res = await fetch(result.data.createFile.fileInfo.url);
+
+            expect(res.status).toEqual(200);
+            expect(await res.text()).toEqual('My File Content');
+          });
         });
       });
 
