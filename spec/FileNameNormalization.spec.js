@@ -94,4 +94,23 @@ describe_only_db('mongo')('Unicode filename normalization', () => {
     documents = await bucket.find({ filename: normalizedFilename }).toArray();
     expect(documents.length).toBe(0);
   });
+
+  it('rejects path traversal in metadata download routes', async () => {
+    const gfsAdapter = new GridFSBucketAdapter(databaseURI);
+    await reconfigureServer({
+      filesAdapter: gfsAdapter,
+      preserveFileName: true,
+    });
+
+    try {
+      await request({
+        method: 'GET',
+        url: 'http://localhost:8378/1/files/test/metadata/..%2F..%2F..%2Fetc%2Fpasswd',
+      });
+      fail('should have rejected path traversal');
+    } catch (error) {
+      expect(error.status).toBe(400);
+      expect(error.data.code).toBe(Parse.Error.INVALID_FILE_NAME);
+    }
+  });
 });

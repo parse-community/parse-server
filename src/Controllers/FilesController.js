@@ -1,7 +1,12 @@
 // FilesController.js
 import { randomHexString } from '../cryptoUtils';
 import AdaptableController from './AdaptableController';
-import { normalizeFilename, validateFilename, FilesAdapter } from '../Adapters/Files/FilesAdapter';
+import {
+  normalizeFilename,
+  validateFilename,
+  validateFilepath,
+  FilesAdapter,
+} from '../Adapters/Files/FilesAdapter';
 import path from 'path';
 const Parse = require('parse/node').Parse;
 
@@ -120,6 +125,9 @@ export class FilesController extends AdaptableController {
   }
 
   validateFilename(filename) {
+    if (!filename || typeof filename !== 'string') {
+      return new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Filename must be a string.');
+    }
     filename = this.normalizeFilename(filename);
     if (typeof this.adapter.validateFilename === 'function') {
       const error = this.adapter.validateFilename(filename);
@@ -129,6 +137,10 @@ export class FilesController extends AdaptableController {
       return new Parse.Error(Parse.Error.INVALID_FILE_NAME, error);
     }
     return validateFilename(filename);
+  }
+
+  validateFilepath(filepath) {
+    return validateFilepath(filepath);
   }
 }
 

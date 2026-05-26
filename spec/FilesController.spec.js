@@ -5,6 +5,10 @@ const GridFSBucketAdapter = require('../lib/Adapters/Files/GridFSBucketAdapter')
   .GridFSBucketAdapter;
 const Config = require('../lib/Config');
 const FilesController = require('../lib/Controllers/FilesController').default;
+const {
+  validateFilename,
+  validateFilepath,
+} = require('../lib/Adapters/Files/FilesAdapter');
 const databaseURI = 'mongodb://localhost:27017/parse';
 
 const mockAdapter = {
@@ -151,7 +155,7 @@ describe('FilesController', () => {
       return 'Bad file! No biscuit!';
     };
     const filesController = new FilesController(mockAdapter);
-    const error = filesController.validateFilename();
+    const error = filesController.validateFilename('test.txt');
     expect(typeof error).toBe('object');
     expect(error.message.indexOf('biscuit')).toBe(13);
     expect(error.code).toBe(Parse.Error.INVALID_FILE_NAME);
@@ -224,5 +228,36 @@ describe('FilesController', () => {
     const fileName = 'café.txt';
     expect(gridFSAdapter.validateFilename(fileName)).toBe(null);
     done();
+  });
+
+  it('rejects non-string filenames without throwing', () => {
+    for (const bad of [null, undefined, 42, {}]) {
+      const error = validateFilename(bad);
+      expect(error).not.toBeNull();
+      expect(error.code).toBe(Parse.Error.INVALID_FILE_NAME);
+      expect(error.message).toMatch(/string/i);
+    }
+  });
+
+  it('rejects non-string filenames from FilesController without throwing', () => {
+    const filesController = new FilesController(mockAdapter);
+    const error = filesController.validateFilename();
+    expect(typeof error).toBe('object');
+    expect(error.code).toBe(Parse.Error.INVALID_FILE_NAME);
+    expect(error.message).toMatch(/string/i);
+  });
+
+  it('accepts NFC and NFD accented filenames after normalization', () => {
+    expect(validateFilename('caf\u00e9.txt')).toBeNull();
+    expect(validateFilename('cafe\u0301.txt')).toBeNull();
+  });
+
+  it('validates multi-segment filepaths', () => {
+    expect(validateFilepath('docs/caf\u00e9.txt')).toBeNull();
+    expect(validateFilepath(`docs/cafe\u0301.txt`)).toBeNull();
+    for (const bad of ['foo/../bar', '..', 'foo//bar', '/foo', 'foo/']) {
+      expect(validateFilepath(bad)).not.toBeNull();
+      expect(validateFilepath(bad).code).toBe(Parse.Error.INVALID_FILE_NAME);
+    }
   });
 });
