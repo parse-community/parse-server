@@ -255,6 +255,8 @@ describe('FilesController', () => {
   it('validates multi-segment filepaths', () => {
     expect(validateFilepath('docs/caf\u00e9.txt')).toBeNull();
     expect(validateFilepath(`docs/cafe\u0301.txt`)).toBeNull();
+    expect(validateFilepath('a..b.txt')).toBeNull();
+    expect(validateFilepath('docs/a..b.txt')).toBeNull();
     for (const bad of ['foo/../bar', '..', 'foo//bar', '/foo', 'foo/']) {
       expect(validateFilepath(bad)).not.toBeNull();
       expect(validateFilepath(bad).code).toBe(Parse.Error.INVALID_FILE_NAME);
