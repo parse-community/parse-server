@@ -314,6 +314,67 @@ describe('routeAllowList', () => {
       }
     });
 
+    describe('GraphQL exemption', () => {
+      // routeAllowList is a path-based REST API control. The GraphQL endpoint
+      // collapses every operation onto a single URL (graphQLPath), so a
+      // per-route allow-list cannot meaningfully gate individual GraphQL
+      // operations.
+      const gqlRequest = body =>
+        require('../lib/request')({
+          method: 'POST',
+          url: 'http://localhost:8378/graphql',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-Javascript-Key': 'test',
+          },
+          body: JSON.stringify(body),
+        });
+
+      it('reaches GraphQL endpoint when routeAllowList is empty array', async () => {
+        await reconfigureServer({ mountGraphQL: true, routeAllowList: [] });
+        const restRequest = require('../lib/request');
+        await expectAsync(
+          restRequest({
+            method: 'GET',
+            url: 'http://localhost:8378/1/classes/GameScore',
+            headers: {
+              'X-Parse-Application-Id': 'test',
+              'X-Parse-REST-API-Key': 'rest',
+            },
+          })
+        ).toBeRejectedWith(
+          jasmine.objectContaining({
+            data: jasmine.objectContaining({ code: Parse.Error.OPERATION_FORBIDDEN }),
+          })
+        );
+        const response = await gqlRequest({ query: '{ health }' });
+        expect(response.data.data.health).toBeTrue();
+      });
+
+      it('reaches GraphQL endpoint when routeAllowList contains only REST routes', async () => {
+        await reconfigureServer({
+          mountGraphQL: true,
+          routeAllowList: ['classes/AllowedClass'],
+        });
+        const response = await gqlRequest({ query: '{ health }' });
+        expect(response.data.data.health).toBeTrue();
+      });
+
+      it('keeps class CLP enforced through GraphQL when routeAllowList is empty array', async () => {
+        await reconfigureServer({ mountGraphQL: true, routeAllowList: [] });
+        const { updateCLP } = require('./support/dev');
+        const obj = new Parse.Object('CLPGuarded');
+        await obj.save(null, { useMasterKey: true });
+        await updateCLP({ find: {}, get: {}, create: {}, update: {}, delete: {} }, 'CLPGuarded');
+        const response = await gqlRequest({
+          query: '{ cLPGuardeds { edges { node { objectId } } } }',
+        });
+        expect(response.data.errors).toBeDefined();
+        expect(response.data.errors[0].extensions.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      });
+    });
+
     it_id('229cab22-dad3-4d08-8de5-64d813658596')(it)('should block all route groups when not in allow list', async () => {
       await reconfigureServer({
         routeAllowList: ['classes/GameScore'],
