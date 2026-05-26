@@ -39,7 +39,7 @@ const handleUpload = async (upload, config) => {
           res.on('end', () => {
             try {
               const parsedData = JSON.parse(data);
-              if (res.statusCode < 200 || res.statusCode >= 400) {
+              if (res.statusCode < 200 || res.statusCode >= 300) {
                 reject(
                   new Parse.Error(
                     parsedData.code || Parse.Error.FILE_SAVE_ERROR,
@@ -49,8 +49,8 @@ const handleUpload = async (upload, config) => {
                 return;
               }
               resolve(parsedData);
-            } catch {
-              reject(new Parse.Error(Parse.error, data));
+            } catch (error) {
+              reject(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, error?.message || data));
             }
           });
         }

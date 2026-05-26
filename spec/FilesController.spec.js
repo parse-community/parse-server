@@ -218,4 +218,11 @@ describe('FilesController', () => {
     expect(gridFSAdapter.validateFilename(fileName)).not.toBe(null);
     done();
   });
+
+  it('should allow accented characters in file names', done => {
+    const gridFSAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
+    const fileName = 'café.txt';
+    expect(gridFSAdapter.validateFilename(fileName)).toBe(null);
+    done();
+  });
 });
