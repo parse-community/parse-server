@@ -1,7 +1,7 @@
 // FilesController.js
 import { randomHexString } from '../cryptoUtils';
 import AdaptableController from './AdaptableController';
-import { validateFilename, FilesAdapter } from '../Adapters/Files/FilesAdapter';
+import { normalizeFilename, validateFilename, FilesAdapter } from '../Adapters/Files/FilesAdapter';
 import path from 'path';
 const Parse = require('parse/node').Parse;
 
@@ -10,8 +10,12 @@ const legacyFilesRegex = new RegExp(
 );
 
 export class FilesController extends AdaptableController {
+  normalizeFilename(filename) {
+    return normalizeFilename(filename);
+  }
+
   getFileData(config, filename) {
-    return this.adapter.getFileData(filename);
+    return this.adapter.getFileData(this.normalizeFilename(filename));
   }
 
   async createFile(config, filename, data, contentType, options) {
@@ -35,6 +39,8 @@ export class FilesController extends AdaptableController {
       delete options.directory;
     }
 
+    filename = this.normalizeFilename(filename);
+
     // Fallback: buffer stream for adapters that don't support streaming
     if (typeof data?.pipe === 'function' && !this.adapter.supportsStreaming) {
       data = await new Promise((resolve, reject) => {
@@ -54,12 +60,12 @@ export class FilesController extends AdaptableController {
   }
 
   deleteFile(config, filename) {
-    return this.adapter.deleteFile(filename);
+    return this.adapter.deleteFile(this.normalizeFilename(filename));
   }
 
   getMetadata(filename) {
     if (typeof this.adapter.getMetadata === 'function') {
-      return this.adapter.getMetadata(filename);
+      return this.adapter.getMetadata(this.normalizeFilename(filename));
     }
     return Promise.resolve({});
   }
@@ -110,10 +116,11 @@ export class FilesController extends AdaptableController {
   }
 
   handleFileStream(config, filename, req, res, contentType) {
-    return this.adapter.handleFileStream(filename, req, res, contentType);
+    return this.adapter.handleFileStream(this.normalizeFilename(filename), req, res, contentType);
   }
 
   validateFilename(filename) {
+    filename = this.normalizeFilename(filename);
     if (typeof this.adapter.validateFilename === 'function') {
       const error = this.adapter.validateFilename(filename);
       if (typeof error !== 'string') {

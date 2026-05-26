@@ -219,9 +219,10 @@ export class FilesRouter {
 
     FilesRouter._validateFileDownload(req, config);
 
+    const filesController = config.filesController;
     let filename = FilesRouter._getFilenameFromParams(req);
+    filename = filesController.normalizeFilename(filename);
     try {
-      const filesController = config.filesController;
       const mime = (await import('mime')).default;
       let contentType = mime.getType(filename);
       let file = new Parse.File(filename, { base64: '' }, contentType);
@@ -233,7 +234,7 @@ export class FilesRouter {
         fileAuth
       );
       if (triggerResult?.file?._name) {
-        filename = triggerResult?.file?._name;
+        filename = filesController.normalizeFilename(triggerResult.file._name);
         contentType = mime.getType(filename);
       }
 
@@ -401,7 +402,8 @@ export class FilesRouter {
       }
     }
     const filesController = config.filesController;
-    const { filename } = req.params;
+    const filename = filesController.normalizeFilename(req.params.filename);
+    req.params.filename = filename;
     const contentType = req.get('Content-type');
 
     const error = filesController.validateFilename(filename);
@@ -753,7 +755,7 @@ export class FilesRouter {
     }
     try {
       const { filesController } = req.config;
-      const filename = FilesRouter._getFilenameFromParams(req);
+      const filename = filesController.normalizeFilename(FilesRouter._getFilenameFromParams(req));
       // run beforeDeleteFile trigger
       const file = new Parse.File(filename);
       file._url = await filesController.adapter.getFileLocation(req.config, filename);
@@ -797,6 +799,7 @@ export class FilesRouter {
       FilesRouter._validateFileDownload(req, config);
       const { filesController } = config;
       let filename = FilesRouter._getFilenameFromParams(req);
+      filename = filesController.normalizeFilename(filename);
       const file = new Parse.File(filename, { base64: '' });
       const fileAuth = req.auth;
       const triggerResult = await triggers.maybeRunFileTrigger(
@@ -806,7 +809,7 @@ export class FilesRouter {
         fileAuth
       );
       if (triggerResult?.file?._name) {
-        filename = triggerResult.file._name;
+        filename = filesController.normalizeFilename(triggerResult.file._name);
       }
       const data = await filesController.getMetadata(filename).catch(() => {
         res.status(200);

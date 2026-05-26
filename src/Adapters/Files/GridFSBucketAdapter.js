@@ -8,7 +8,7 @@
 
 // @flow-disable-next
 import { MongoClient, GridFSBucket, Db } from 'mongodb';
-import { FilesAdapter, validateFilename } from './FilesAdapter';
+import { FilesAdapter, normalizeFilename, validateFilename } from './FilesAdapter';
 import defaults, { ParseServerDatabaseOptions } from '../../defaults';
 const crypto = require('crypto');
 
@@ -78,6 +78,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
   // For a given config object, filename, and data, store a file
   // Returns a promise
   async createFile(filename: string, data, contentType, options = {}) {
+    filename = normalizeFilename(filename);
     const bucket = await this._getBucket();
     const stream = await bucket.openUploadStream(filename, {
       metadata: options.metadata,
@@ -135,6 +136,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
   }
 
   async deleteFile(filename: string) {
+    filename = normalizeFilename(filename);
     const bucket = await this._getBucket();
     const documents = await bucket.find({ filename }, { batchSize: this._batchSize }).toArray();
     if (documents.length === 0) {
@@ -148,6 +150,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
   }
 
   async getFileData(filename: string) {
+    filename = normalizeFilename(filename);
     const bucket = await this._getBucket();
     const stream = bucket.openDownloadStreamByName(filename);
     stream.read();
@@ -221,11 +224,13 @@ export class GridFSBucketAdapter extends FilesAdapter {
   }
 
   getFileLocation(config, filename) {
+    filename = normalizeFilename(filename);
     const encodedFilename = filename.split('/').map(encodeURIComponent).join('/');
     return config.mount + '/files/' + config.applicationId + '/' + encodedFilename;
   }
 
   async getMetadata(filename) {
+    filename = normalizeFilename(filename);
     const bucket = await this._getBucket();
     const files = await bucket.find({ filename }, { batchSize: this._batchSize }).toArray();
     if (files.length === 0) {
@@ -236,6 +241,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
   }
 
   async handleFileStream(filename: string, req, res, contentType) {
+    filename = normalizeFilename(filename);
     const bucket = await this._getBucket();
     const files = await bucket.find({ filename }, { batchSize: this._batchSize }).toArray();
     if (files.length === 0) {

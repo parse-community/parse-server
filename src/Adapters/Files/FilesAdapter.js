@@ -101,6 +101,16 @@ export class FilesAdapter {
   // getMetadata(filename: string): Promise<any> {}
 }
 
+export function normalizeFilename(filename: any): any {
+  if (typeof filename !== 'string') {
+    return filename;
+  }
+  return filename
+    .split('/')
+    .map(segment => segment.normalize('NFC'))
+    .join('/');
+}
+
 /**
  * Simple filename validation
  *
@@ -108,6 +118,7 @@ export class FilesAdapter {
  * @returns {null|Parse.Error}
  */
 export function validateFilename(filename): ?Parse.Error {
+  filename = normalizeFilename(filename);
   if (filename.length > 128) {
     return new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Filename too long.');
   }
