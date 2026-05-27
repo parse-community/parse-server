@@ -519,41 +519,53 @@ export function handleParseHealth(options) {
   };
 }
 
-export function enforceRouteAllowList(req, res, next) {
-  const config = req.config;
-  if (!config || config.routeAllowList === undefined || config.routeAllowList === null) {
-    return next();
-  }
-  if (req.auth && (req.auth.isMaster || req.auth.isMaintenance)) {
-    return next();
-  }
-  let path = req.originalUrl;
-  if (config.mount) {
-    const mountPath = new URL(config.mount).pathname;
-    if (path.startsWith(mountPath)) {
-      path = path.substring(mountPath.length);
+function normalizeRouteAllowListPath(path, mount) {
+  let normalized = path;
+  if (mount) {
+    const mountPath = new URL(mount).pathname;
+    if (normalized.startsWith(mountPath)) {
+      normalized = normalized.substring(mountPath.length);
     }
   }
-  if (path.startsWith('/')) {
-    path = path.substring(1);
+  if (normalized.startsWith('/')) {
+    normalized = normalized.substring(1);
   }
-  if (path.endsWith('/')) {
-    path = path.substring(0, path.length - 1);
+  if (normalized.endsWith('/')) {
+    normalized = normalized.substring(0, normalized.length - 1);
   }
-  const queryIndex = path.indexOf('?');
+  const queryIndex = normalized.indexOf('?');
   if (queryIndex !== -1) {
-    path = path.substring(0, queryIndex);
+    normalized = normalized.substring(0, queryIndex);
   }
+  return normalized;
+}
+
+export function isRouteAllowed(path, config, auth) {
+  if (!config || config.routeAllowList === undefined || config.routeAllowList === null) {
+    return true;
+  }
+  if (auth && (auth.isMaster || auth.isMaintenance)) {
+    return true;
+  }
+  const normalized = normalizeRouteAllowListPath(path, config.mount);
   const regexes = config._routeAllowListRegex || [];
   for (const regex of regexes) {
-    if (regex.test(path)) {
-      return next();
+    if (regex.test(normalized)) {
+      return true;
     }
   }
+  return false;
+}
+
+export function enforceRouteAllowList(req, res, next) {
+  if (isRouteAllowed(req.originalUrl, req.config, req.auth)) {
+    return next();
+  }
+  const path = normalizeRouteAllowListPath(req.originalUrl, req.config?.mount);
   throw createSanitizedError(
     Parse.Error.OPERATION_FORBIDDEN,
     `Route not allowed by routeAllowList: ${req.method} ${path}`,
-    config
+    req.config
   );
 }
 
