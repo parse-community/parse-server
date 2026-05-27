@@ -322,6 +322,13 @@ module.exports.ParseServerOptions = {
     type: 'IdempotencyOptions',
     default: {},
   },
+  installation: {
+    env: 'PARSE_SERVER_INSTALLATION',
+    help: 'Options controlling how Parse Server deduplicates `_Installation` records that share the same `deviceToken`.',
+    action: parsers.objectParser,
+    type: 'InstallationOptions',
+    default: {},
+  },
   javascriptKey: {
     env: 'PARSE_SERVER_JAVASCRIPT_KEY',
     help: 'Key for the Javascript SDK',
@@ -576,7 +583,7 @@ module.exports.ParseServerOptions = {
   },
   routeAllowList: {
     env: 'PARSE_SERVER_ROUTE_ALLOW_LIST',
-    help: '(Optional) Restricts external client access to a list of allowed API routes.<br><br>When this option is set, all external non-master-key requests are denied by default. Only routes matching at least one of the configured regex patterns are allowed through. Internal calls from Cloud Code, Cloud Jobs, and triggers are not affected.<br><br>Each entry is a regex pattern string matched against the normalized route identifier (request path with mount prefix and leading slash stripped). Patterns are auto-anchored with `^` and `$` for full-match semantics.<br><br><b>Examples of normalized route identifiers:</b><ul><li>`classes/GameScore` (class CRUD)</li><li>`classes/GameScore/abc123` (object by ID)</li><li>`users` (user operations)</li><li>`login` (login endpoint)</li><li>`functions/sendEmail` (Cloud Function)</li><li>`jobs/cleanup` (Cloud Job)</li><li>`push` (push notifications)</li><li>`config` (client config)</li><li>`installations` (installations)</li><li>`files/picture.jpg` (file operations)</li></ul><b>Example patterns:</b><ul><li>`classes/ChatMessage` matches only `classes/ChatMessage`</li><li>`classes/Chat.*` matches `classes/ChatMessage`, `classes/ChatRoom`, etc.</li><li>`functions/.*` matches all Cloud Functions</li></ul>Setting an empty array `[]` blocks all external non-master-key requests (full lockdown).<br><br>When setting the option via an environment variable, the notation is a comma-separated string, for example `"classes/ChatMessage,users,functions/.*"`.<br><br>Defaults to `undefined` which means the feature is inactive and all routes are accessible.',
+    help: '(Optional) Restricts external client access to a list of allowed REST API routes.<br><br>When this option is set, all external non-master-key REST API requests are denied by default. Only routes matching at least one of the configured regex patterns are allowed through. Internal calls from Cloud Code, Cloud Jobs, and triggers are not affected.<br><br>Each entry is a regex pattern string matched against the normalized route identifier (request path with mount prefix and leading slash stripped). Patterns are auto-anchored with `^` and `$` for full-match semantics.<br><br><b>Examples of normalized route identifiers:</b><ul><li>`classes/GameScore` (class CRUD)</li><li>`classes/GameScore/abc123` (object by ID)</li><li>`users` (user operations)</li><li>`login` (login endpoint)</li><li>`functions/sendEmail` (Cloud Function)</li><li>`jobs/cleanup` (Cloud Job)</li><li>`push` (push notifications)</li><li>`config` (client config)</li><li>`installations` (installations)</li></ul><b>Example patterns:</b><ul><li>`classes/ChatMessage` matches only `classes/ChatMessage`</li><li>`classes/Chat.*` matches `classes/ChatMessage`, `classes/ChatRoom`, etc.</li><li>`functions/.*` matches all Cloud Functions</li></ul>Setting an empty array `[]` blocks all external non-master-key REST API requests (full lockdown of REST API routes).<br><br>When setting the option via an environment variable, the notation is a comma-separated string, for example `"classes/ChatMessage,users,functions/.*"`.<br><br>Defaults to `undefined` which means the feature is inactive and all routes are accessible.<br><br><b>Note:</b> File routes and the GraphQL API are not covered by this option.',
     action: parsers.arrayParser,
   },
   scheduledPush: {
@@ -764,6 +771,24 @@ module.exports.RequestComplexityOptions = {
     help: 'Maximum number of results returned by a `$inQuery`, `$notInQuery`, `$select`, `$dontSelect` subquery. Set to `-1` to disable. Default is `-1`.',
     action: parsers.numberParser('subqueryLimit'),
     default: -1,
+  },
+};
+module.exports.InstallationOptions = {
+  duplicateDeviceTokenAction: {
+    env: 'PARSE_SERVER_INSTALLATION_DUPLICATE_DEVICE_TOKEN_ACTION',
+    help: "What Parse Server does to the conflicting `_Installation` row(s) when a new install's `deviceToken` collides with an existing row. `'delete'` destroys the conflicting row. `'update'` clears the now-conflicting ID field on the conflicting row, preserving custom fields, channels, and history. Default is `'delete'`.",
+    default: 'delete',
+  },
+  duplicateDeviceTokenActionEnforceAuth: {
+    env: 'PARSE_SERVER_INSTALLATION_DUPLICATE_DEVICE_TOKEN_ACTION_ENFORCE_AUTH',
+    help: "Whether the `_Installation` deduplication operation enforces the caller's auth context (and the resulting ACL and CLP). When `true`, the dedup `destroy`/`update` runs with the caller's `runOptions`, so ACL and CLP are honored. When `false`, the dedup runs as master and bypasses both. Master and maintenance keys always bypass regardless of this flag. Default is `false`.",
+    action: parsers.booleanParser,
+    default: false,
+  },
+  duplicateDeviceTokenMergePriority: {
+    env: 'PARSE_SERVER_INSTALLATION_DUPLICATE_DEVICE_TOKEN_MERGE_PRIORITY',
+    help: "At the merge case (when an existing row holds the new `deviceToken` but has no `installationId` of its own), which side wins. `'deviceToken'` \u2014 the deviceToken-only row survives, the request's `idMatch` row is the loser. `'installationId'` \u2014 the request's `idMatch` (active install) survives, the deviceToken-only orphan is the loser. Default is `'deviceToken'`.",
+    default: 'deviceToken',
   },
 };
 module.exports.SecurityOptions = {

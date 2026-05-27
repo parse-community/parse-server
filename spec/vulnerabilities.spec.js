@@ -4995,6 +4995,115 @@ describe('Vulnerabilities', () => {
     });
   });
 
+  describe('(GHSA-jpq4-7fmq-q5fj) SMS MFA single-use token reuse via concurrent requests', () => {
+    const mfaHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+
+    let sentToken;
+
+    beforeEach(async () => {
+      sentToken = null;
+      await reconfigureServer({
+        auth: {
+          mfa: {
+            enabled: true,
+            options: ['SMS'],
+            algorithm: 'SHA1',
+            digits: 6,
+            period: 30,
+            sendSMS: token => {
+              sentToken = token;
+            },
+          },
+        },
+      });
+    });
+
+    async function setupSmsMfaUser() {
+      const user = await Parse.User.signUp('smsmfauser', 'password123');
+      // Enroll SMS MFA
+      await request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/users/${user.id}`,
+        headers: {
+          ...mfaHeaders,
+          'X-Parse-Session-Token': user.getSessionToken(),
+        },
+        body: JSON.stringify({
+          authData: { mfa: { mobile: '+15551234567' } },
+        }),
+      });
+      const enrollToken = sentToken;
+      // Confirm enrollment with the received OTP
+      await request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/users/${user.id}`,
+        headers: {
+          ...mfaHeaders,
+          'X-Parse-Session-Token': user.getSessionToken(),
+        },
+        body: JSON.stringify({
+          authData: { mfa: { mobile: '+15551234567', token: enrollToken } },
+        }),
+      });
+      sentToken = null;
+      return user;
+    }
+
+    async function requestLoginOtp(username, password) {
+      try {
+        await request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/login',
+          headers: mfaHeaders,
+          body: JSON.stringify({
+            username,
+            password,
+            authData: { mfa: { token: 'request' } },
+          }),
+        });
+      } catch (_err) {
+        // Expected: adapter throws "Please enter the token"
+      }
+      return sentToken;
+    }
+
+    it('rejects concurrent logins using the same SMS MFA OTP', async () => {
+      const user = await setupSmsMfaUser();
+      const otp = await requestLoginOtp('smsmfauser', 'password123');
+      expect(otp).toBeDefined();
+
+      const loginWithOtp = () =>
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/login',
+          headers: mfaHeaders,
+          body: JSON.stringify({
+            username: 'smsmfauser',
+            password: 'password123',
+            authData: { mfa: { token: otp } },
+          }),
+        });
+
+      const results = await Promise.allSettled(Array(10).fill().map(() => loginWithOtp()));
+
+      const succeeded = results.filter(r => r.status === 'fulfilled');
+      const failed = results.filter(r => r.status === 'rejected');
+
+      // Exactly one request should succeed; all others should fail
+      expect(succeeded.length).toBe(1);
+      expect(failed.length).toBe(9);
+
+      // Verify the OTP has been consumed
+      await user.fetch({ useMasterKey: true });
+      const mfa = user.get('authData').mfa;
+      expect(mfa.token).toBeUndefined();
+    });
+  });
+
   describe('(GHSA-p2w6-rmh7-w8q3) SQL Injection via aggregate and distinct field names in PostgreSQL adapter', () => {
     const headers = {
       'Content-Type': 'application/json',
@@ -5774,6 +5883,104 @@ describe('Vulnerabilities', () => {
       });
       expect(meResponse.data.createdWith).toBeDefined();
       expect(meResponse.data.sessionToken).toBe(sessionToken);
+    });
+  });
+
+  describe('(GHSA-38m6-82c8-4xfm) Pre-auth polynomial ReDoS via client version parsing', () => {
+    const middlewares = require('../lib/middlewares');
+    const AppCache = require('../lib/cache').AppCache;
+
+    const AppCachePut = (appId, config) =>
+      AppCache.put(appId, {
+        ...config,
+        maintenanceKeyIpsStore: new Map(),
+        masterKeyIpsStore: new Map(),
+        readOnlyMasterKeyIpsStore: new Map(),
+      });
+
+    const buildFakeReq = ({ headers = {}, body = {} } = {}) => {
+      const req = {
+        ip: '127.0.0.1',
+        originalUrl: 'http://example.com/parse/',
+        url: 'http://example.com/',
+        body: { _ApplicationId: 'FakeAppId', ...body },
+        headers,
+        get: key => req.headers[key.toLowerCase()],
+      };
+      return req;
+    };
+
+    beforeEach(() => {
+      AppCachePut('FakeAppId', {
+        masterKeyIps: ['0.0.0.0/0'],
+      });
+    });
+
+    afterEach(() => {
+      AppCache.del('FakeAppId');
+    });
+
+    it('does not capture client version from X-Parse-Client-Version header into req.info', async () => {
+      const req = buildFakeReq({ headers: { 'x-parse-client-version': 'js5.0.0' } });
+      const res = jasmine.createSpyObj('res', ['end', 'status']);
+      let nextCalled = false;
+      await middlewares.handleParseHeaders(req, res, () => {
+        nextCalled = true;
+      });
+      expect(nextCalled).toBe(true);
+      expect(res.status).not.toHaveBeenCalled();
+      expect(req.info.clientVersion).toBeUndefined();
+      expect(req.info.clientSDK).toBeUndefined();
+    });
+
+    it('does not capture client version from _ClientVersion body field into req.info', async () => {
+      const req = buildFakeReq({ body: { _ClientVersion: 'js5.0.0' } });
+      const res = jasmine.createSpyObj('res', ['end', 'status']);
+      let nextCalled = false;
+      await middlewares.handleParseHeaders(req, res, () => {
+        nextCalled = true;
+      });
+      expect(nextCalled).toBe(true);
+      expect(res.status).not.toHaveBeenCalled();
+      expect(req.info.clientVersion).toBeUndefined();
+      expect(req.info.clientSDK).toBeUndefined();
+      expect(req.body._ClientVersion).toBeUndefined();
+    });
+
+    it('does not invoke any regex on adversarial X-Parse-Client-Version header (16 KB of dashes)', async () => {
+      const adversarial = '-'.repeat(16000);
+      const req = buildFakeReq({ headers: { 'x-parse-client-version': adversarial } });
+      const res = jasmine.createSpyObj('res', ['end', 'status']);
+      await middlewares.handleParseHeaders(req, res, () => {});
+      expect(req.info.clientVersion).toBeUndefined();
+      expect(req.info.clientSDK).toBeUndefined();
+    });
+
+    it('does not invoke any regex on adversarial _ClientVersion body field (200 KB of dashes)', async () => {
+      const adversarial = '-'.repeat(200000);
+      const req = buildFakeReq({ body: { _ClientVersion: adversarial } });
+      const res = jasmine.createSpyObj('res', ['end', 'status']);
+      const t0 = process.hrtime.bigint();
+      await middlewares.handleParseHeaders(req, res, () => {});
+      const elapsedMs = Number(process.hrtime.bigint() - t0) / 1e6;
+      expect(elapsedMs).toBeLessThan(3000);
+      expect(req.info.clientVersion).toBeUndefined();
+      expect(req.info.clientSDK).toBeUndefined();
+      expect(req.body._ClientVersion).toBeUndefined();
+    });
+
+    it('strips _ClientVersion from req.body even when value is non-string (no rejection, no capture)', async () => {
+      const req = buildFakeReq({ body: { _ClientVersion: { toLowerCase: 'evil' } } });
+      const res = jasmine.createSpyObj('res', ['end', 'status']);
+      let nextCalled = false;
+      await middlewares.handleParseHeaders(req, res, () => {
+        nextCalled = true;
+      });
+      expect(nextCalled).toBe(true);
+      expect(res.status).not.toHaveBeenCalled();
+      expect(req.body._ClientVersion).toBeUndefined();
+      expect(req.info.clientVersion).toBeUndefined();
+      expect(req.info.clientSDK).toBeUndefined();
     });
   });
 });

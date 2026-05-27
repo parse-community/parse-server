@@ -1,3 +1,31 @@
+## [9.9.1-alpha.2](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.1...9.9.1-alpha.2) (2026-05-18)
+
+
+### Bug Fixes
+
+* GraphQL "Did you mean" validation suggestions disclose schema to unauthenticated callers ([GHSA-8cph-rgr4-g5vj](https://github.com/parse-community/parse-server/security/advisories/GHSA-8cph-rgr4-g5vj)) ([#10467](https://github.com/parse-community/parse-server/issues/10467)) ([155123a](https://github.com/parse-community/parse-server/commit/155123ade9bc88cdf4807cf267ea1196f9274773))
+
+## [9.9.1-alpha.1](https://github.com/parse-community/parse-server/compare/9.9.0...9.9.1-alpha.1) (2026-05-17)
+
+
+### Bug Fixes
+
+* Pre-authentication denial of service via client version header regex backtracking ([GHSA-38m6-82c8-4xfm](https://github.com/parse-community/parse-server/security/advisories/GHSA-38m6-82c8-4xfm)) ([#10463](https://github.com/parse-community/parse-server/issues/10463)) ([56c159e](https://github.com/parse-community/parse-server/commit/56c159ec962d729df09ccaa5cc2537751511e375))
+
+# [9.9.0-alpha.3](https://github.com/parse-community/parse-server/compare/9.9.0-alpha.2...9.9.0-alpha.3) (2026-04-30)
+
+
+### Features
+
+* Add installation deviceToken deduplication options ([#10451](https://github.com/parse-community/parse-server/issues/10451)) ([9fee1a0](https://github.com/parse-community/parse-server/commit/9fee1a07080ab8bda2a3d4798881bcc288e5b37a))
+
+# [9.9.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.9.0-alpha.1...9.9.0-alpha.2) (2026-04-26)
+
+
+### Bug Fixes
+
+* MFA SMS one-time password accepted twice under concurrent login ([GHSA-jpq4-7fmq-q5fj](https://github.com/parse-community/parse-server/security/advisories/GHSA-jpq4-7fmq-q5fj)) ([#10448](https://github.com/parse-community/parse-server/issues/10448)) ([725be0d](https://github.com/parse-community/parse-server/commit/725be0d602baa619492606e7b3f6829082d93a4c))
+
 # [9.9.0-alpha.1](https://github.com/parse-community/parse-server/compare/9.8.1-alpha.1...9.9.0-alpha.1) (2026-04-17)
 
 
