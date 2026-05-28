@@ -6,6 +6,7 @@ const GridFSBucketAdapter = require('../lib/Adapters/Files/GridFSBucketAdapter')
 const Config = require('../lib/Config');
 const FilesController = require('../lib/Controllers/FilesController').default;
 const {
+  normalizeFilename,
   validateFilename,
   validateFilepath,
 } = require('../lib/Adapters/Files/FilesAdapter');
@@ -261,5 +262,24 @@ describe('FilesController', () => {
       expect(validateFilepath(bad)).not.toBeNull();
       expect(validateFilepath(bad).code).toBe(Parse.Error.INVALID_FILE_NAME);
     }
+  });
+
+  it('returns non-string filenames unchanged from normalizeFilename', () => {
+    expect(normalizeFilename(null)).toBeNull();
+    expect(normalizeFilename(42)).toBe(42);
+  });
+
+  it('rejects reserved filepath segments and invalid filename segments', () => {
+    const reservedError = validateFilepath('metadata/evil.txt');
+    expect(reservedError).not.toBeNull();
+    expect(reservedError.message).toContain('reserved segment');
+
+    const tooLongError = validateFilename(`_${'a'.repeat(128)}`);
+    expect(tooLongError).not.toBeNull();
+    expect(tooLongError.message).toContain('too long');
+
+    const invalidCharsError = validateFilename('bad?.txt');
+    expect(invalidCharsError).not.toBeNull();
+    expect(invalidCharsError.message).toContain('invalid characters');
   });
 });

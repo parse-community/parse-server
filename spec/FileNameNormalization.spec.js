@@ -95,6 +95,85 @@ describe_only_db('mongo')('Unicode filename normalization', () => {
     expect(documents.length).toBe(0);
   });
 
+  it('rejects invalid filepaths on download and delete routes', async () => {
+    const gfsAdapter = new GridFSBucketAdapter(databaseURI);
+    await reconfigureServer({
+      filesAdapter: gfsAdapter,
+      preserveFileName: true,
+    });
+
+    for (const method of ['GET', 'DELETE']) {
+      try {
+        await request({
+          method,
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-Master-Key': 'test',
+          },
+          url:
+            method === 'GET'
+              ? 'http://localhost:8378/1/files/test/foo%2F..%2Fbar'
+              : 'http://localhost:8378/1/files/foo%2F..%2Fbar',
+        });
+        fail(`should have rejected invalid filepath for ${method}`);
+      } catch (error) {
+        expect(error.status).toBe(400);
+        expect(error.data.code).toBe(Parse.Error.INVALID_FILE_NAME);
+      }
+    }
+  });
+
+  it('rejects reserved filepath segments on download routes', async () => {
+    const gfsAdapter = new GridFSBucketAdapter(databaseURI);
+    await reconfigureServer({
+      filesAdapter: gfsAdapter,
+      preserveFileName: true,
+    });
+
+    try {
+      await request({
+        method: 'GET',
+        url: 'http://localhost:8378/1/files/test/metadata%2Fevil.txt',
+      });
+      fail('should have rejected reserved filepath segment');
+    } catch (error) {
+      expect(error.status).toBe(400);
+      expect(error.data.code).toBe(Parse.Error.INVALID_FILE_NAME);
+      expect(error.data.error).toContain('reserved segment');
+    }
+  });
+
+  it('rejects invalid filepath renamed by beforeFind on download and metadata routes', async () => {
+    const gfsAdapter = new GridFSBucketAdapter(databaseURI);
+    await reconfigureServer({
+      filesAdapter: gfsAdapter,
+      preserveFileName: true,
+    });
+
+    const file = new Parse.File('good.txt', [1, 2, 3], 'text/plain');
+    await file.save({ useMasterKey: true });
+    Parse.Cloud.beforeFind(Parse.File, req => {
+      req.file._name = '../evil.txt';
+      return { file: req.file };
+    });
+
+    for (const url of [file.url(), `http://localhost:8378/1/files/test/metadata/${file._name}`]) {
+      try {
+        await request({
+          url,
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-Master-Key': 'test',
+          },
+        });
+        fail(`should have rejected renamed filepath for ${url}`);
+      } catch (error) {
+        expect(error.status).toBe(400);
+        expect(error.data.code).toBe(Parse.Error.INVALID_FILE_NAME);
+      }
+    }
+  });
+
   it('rejects path traversal in metadata download routes', async () => {
     const gfsAdapter = new GridFSBucketAdapter(databaseURI);
     await reconfigureServer({
