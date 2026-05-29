@@ -1,5 +1,6 @@
-import { TestConfig } from './config';
-import { buildHeaders, AuthOptions, ParseHeaders } from './headers';
+import { TestConfig } from './config.ts';
+import { buildHeaders } from './headers.ts';
+import type { AuthOptions, ParseHeaders } from './headers.ts';
 
 // Uses the global fetch (Node 18+). Reading `global.fetch` dynamically keeps the
 // client compatible with spec/helper.js's mockFetch, which intercepts external

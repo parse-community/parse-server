@@ -1,5 +1,6 @@
-import { restRequest, ParseResponse } from './request';
-import { AuthOptions } from './headers';
+import { restRequest } from './request.ts';
+import type { ParseResponse } from './request.ts';
+import type { AuthOptions } from './headers.ts';
 
 export type Dimensions = Record<string, string>;
 
