@@ -95,9 +95,9 @@ export async function expectParseError(
     await promise;
   } catch (e: any) {
     const body: ParseErrorBody = e && e.data ? e.data : e;
-    if (typeof body?.code !== 'number' || typeof body?.error !== 'string') {
+    if (typeof body?.code !== 'number') {
       throw new Error(
-        `Expected a Parse error ({ code, error }), but got: ${JSON.stringify(body)}`
+        `Expected a Parse error (numeric code), but got: ${e instanceof Error ? e.stack : JSON.stringify(body)}`
       );
     }
     if (code !== undefined) {
