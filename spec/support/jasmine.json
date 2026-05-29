@@ -2,5 +2,6 @@
   "spec_dir": "spec",
   "spec_files": ["**/*.[sS]pec.[jt]s"],
   "helpers": ["support/tsRegister.js", "helper.js"],
+  "jsLoader": "require",
   "random": true
 }

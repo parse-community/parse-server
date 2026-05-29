@@ -1,5 +1,5 @@
-import { restRequest } from './request';
-import { AuthOptions } from './headers';
+import { restRequest } from './request.ts';
+import type { AuthOptions } from './headers.ts';
 
 // Core object CRUD + query over the REST API. Defaults to REST API key auth;
 // pass an explicit AuthOptions (e.g. { masterKey: true }) to override.

@@ -1,4 +1,4 @@
-import { TestConfig } from './config';
+import { TestConfig } from './config.ts';
 
 export type ParseHeaders = Record<string, string>;
 

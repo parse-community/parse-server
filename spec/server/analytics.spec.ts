@@ -1,4 +1,4 @@
-import { track, appOpened } from '../helpers/analytics';
+import { track, appOpened } from '../helpers/analytics.ts';
 
 declare const reconfigureServer: (config?: Record<string, unknown>) => Promise<unknown>;
 
