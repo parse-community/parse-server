@@ -72,6 +72,7 @@
     "@babel/plugin-transform-flow-strip-types": "7.27.1",
     "@babel/preset-env": "7.29.2",
     "@babel/preset-typescript": "7.27.1",
+    "@babel/register": "7.27.1",
     "@saithodev/semantic-release-backmerge": "4.0.1",
     "@semantic-release/changelog": "6.0.3",
     "@semantic-release/commit-analyzer": "13.0.1",
