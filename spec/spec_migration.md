@@ -65,7 +65,7 @@ Measured at the time of writing — re-measure before starting to confirm.
 | Decision | Choice |
 |---|---|
 | Roll-out | **Incremental, in-place** — convert files where they live, reorganise directories as part of each migration. |
-| Server access | **New typed REST test client** wrapping `lib/request.js`. |
+| Server access | **New typed REST test client** — a small, typed layer over the native `fetch` API (Node 18+). |
 | SDK | **Eliminate the Parse JS SDK** from all HTTP-level tests. Retain only a thin WS client for LiveQuery (not the SDK's LiveQuery client). |
 | Quality | **Full cleanup bundled into each file's migration** — async/await, no `setTimeout` timing, cleanup hooks, monolith splitting, eslint tightening, `xit`/`fit` triage. |
 | Language | **TypeScript** for helpers/clients (and incrementally for specs). |

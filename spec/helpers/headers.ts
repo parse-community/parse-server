@@ -21,7 +21,7 @@ export function buildHeaders(auth: AuthOptions = {}): ParseHeaders {
   const headers: ParseHeaders = { 'X-Parse-Application-Id': TestConfig.appId };
   if (auth.json !== false) headers['Content-Type'] = 'application/json';
   if (auth.masterKey) headers['X-Parse-Master-Key'] = TestConfig.masterKey;
-  if (auth.maintenanceKey) headers['X-Parse-Maintenance-Key'] = TestConfig.masterKey;
+  if (auth.maintenanceKey) headers['X-Parse-Maintenance-Key'] = TestConfig.maintenanceKey;
   if (auth.restAPIKey) headers['X-Parse-REST-API-Key'] = TestConfig.restAPIKey;
   if (auth.clientKey) headers['X-Parse-Client-Key'] = TestConfig.clientKey;
   if (auth.javascriptKey) headers['X-Parse-JavaScript-Key'] = TestConfig.javascriptKey;

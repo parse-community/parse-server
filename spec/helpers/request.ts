@@ -95,6 +95,11 @@ export async function expectParseError(
     await promise;
   } catch (e: any) {
     const body: ParseErrorBody = e && e.data ? e.data : e;
+    if (typeof body?.code !== 'number' || typeof body?.error !== 'string') {
+      throw new Error(
+        `Expected a Parse error ({ code, error }), but got: ${JSON.stringify(body)}`
+      );
+    }
     if (code !== undefined) {
       expect(body.code).toBe(code);
     }

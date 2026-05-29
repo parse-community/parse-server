@@ -1,7 +1,5 @@
 import { track, appOpened } from '../helpers/analytics.ts';
 
-declare const reconfigureServer: (config?: Record<string, unknown>) => Promise<unknown>;
-
 describe('AnalyticsController', () => {
   const analyticsAdapter = {
     appOpened: function () {},
