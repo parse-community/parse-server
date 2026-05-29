@@ -9,12 +9,21 @@ export interface GeoPointLiteral {
   longitude: number;
 }
 
+export interface PolygonLiteral {
+  __type: 'Polygon';
+  coordinates: number[][];
+}
+
 // Earth radii used by the Parse SDK to convert distances to radians.
 const EARTH_RADIUS_MILES = 3958.8;
 const EARTH_RADIUS_KM = 6371.0;
 
 export function geoPoint(latitude: number, longitude: number): GeoPointLiteral {
   return { __type: 'GeoPoint', latitude, longitude };
+}
+
+export function polygon(coordinates: number[][]): PolygonLiteral {
+  return { __type: 'Polygon', coordinates };
 }
 
 /** Sorted proximity search with no max distance ($nearSphere). */
@@ -49,6 +58,11 @@ export function withinGeoBox(southwest: GeoPointLiteral, northeast: GeoPointLite
  */
 export function withinPolygon(polygon: unknown) {
   return { $geoWithin: { $polygon: polygon } };
+}
+
+/** Point-in-polygon search: matches stored polygons containing the point ($geoIntersects). */
+export function geoIntersects(point: unknown) {
+  return { $geoIntersects: { $point: point } };
 }
 
 /** Inequality constraint ($ne). */

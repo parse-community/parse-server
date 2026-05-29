@@ -16,3 +16,6 @@ declare function it_exclude_dbs(dbs: string[]): SpecFn;
 
 /** Run a test only on the given database. */
 declare function it_only_db(db: string): SpecFn;
+
+/** Run a describe block only on the given database. */
+declare function describe_only_db(db: string): (name: string, body: () => void) => void;
