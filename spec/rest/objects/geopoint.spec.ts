@@ -30,7 +30,7 @@ describe('GeoPoint REST', () => {
       location: geoPoint(44.0, -11.0),
       name: 'Zhoul',
     });
-    const result = await getObject('TestObject', created.objectId, { masterKey: true });
+    const result = await getObject('TestObject', created.objectId);
     expect(result.location.__type).toEqual('GeoPoint');
   });
 
@@ -53,8 +53,11 @@ describe('GeoPoint REST', () => {
   });
 
   it('supports a sub-object with a geo point', async () => {
-    await createObject('TestObject', { subobject: { location: geoPoint(44.0, -11.0) } });
-    const results = await find('TestObject');
+    await createObject('TestObject', {
+      subobject: { location: geoPoint(44.0, -11.0) },
+      tag: 'subobject-geo',
+    });
+    const results = await find('TestObject', { where: { tag: 'subobject-geo' } });
     expect(results.length).toEqual(1);
     const pointAgain = results[0].subobject.location;
     expect(pointAgain).toBeTruthy();
@@ -65,8 +68,8 @@ describe('GeoPoint REST', () => {
   it('supports array of geo points', async () => {
     const point1 = geoPoint(44.0, -11.0);
     const point2 = geoPoint(22.0, -55.0);
-    await createObject('TestObject', { locations: [point1, point2] });
-    const results = await find('TestObject');
+    await createObject('TestObject', { locations: [point1, point2], tag: 'array-geo' });
+    const results = await find('TestObject', { where: { tag: 'array-geo' } });
     expect(results.length).toEqual(1);
     const locations = results[0].locations;
     expect(locations.length).toEqual(2);

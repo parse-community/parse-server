@@ -7,9 +7,9 @@ import { ParseError } from '../../helpers/errors.ts';
 
 function seedPolygonPoints() {
   return createObjects('Polygon', [
-    { location: geoPoint(1.5, 1.5) }, // inbound
-    { location: geoPoint(10, 10) }, // onbound
-    { location: geoPoint(20, 20) }, // outbound
+    { location: geoPoint(1.5, 1.5) }, // inside
+    { location: geoPoint(10, 10) }, // on boundary
+    { location: geoPoint(20, 20) }, // outside
   ]);
 }
 

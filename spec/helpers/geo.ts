@@ -42,8 +42,12 @@ export function withinGeoBox(southwest: GeoPointLiteral, northeast: GeoPointLite
   return { $within: { $box: [southwest, northeast] } };
 }
 
-/** Search within a polygon, given either a list of points or a Polygon object. */
-export function withinPolygon(polygon: GeoPointLiteral[] | unknown) {
+/**
+ * Search within a polygon, given a list of GeoPoints or a Polygon object.
+ * Typed as `unknown` because the negative-path specs deliberately pass invalid
+ * values (numbers, empty arrays, malformed points) to exercise server validation.
+ */
+export function withinPolygon(polygon: unknown) {
   return { $geoWithin: { $polygon: polygon } };
 }
 
