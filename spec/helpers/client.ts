@@ -96,7 +96,7 @@ export async function find<T = any>(
     body: { ...params, _method: 'GET' },
     auth,
   });
-  return (res.data as { results: T[] }).results;
+  return (res.data as { results: T[] } | undefined)?.results ?? [];
 }
 
 /** Count matching objects (count=1, limit=0). Returns the count. */
@@ -111,5 +111,5 @@ export async function count(
     body: { ...params, count: 1, limit: 0, _method: 'GET' },
     auth,
   });
-  return (res.data as { count: number }).count;
+  return (res.data as { count: number } | undefined)?.count ?? 0;
 }

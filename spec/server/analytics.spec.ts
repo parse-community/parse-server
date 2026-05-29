@@ -20,7 +20,7 @@ describe('AnalyticsController', () => {
     expect(args[1]).toEqual({ dimensions: { key: 'value', count: '0' } });
   });
 
-  it('should track a app opened event', async () => {
+  it('should track an app opened event', async () => {
     const appOpenedSpy = spyOn(analyticsAdapter, 'appOpened').and.callThrough();
     await reconfigureServer({ analyticsAdapter });
 
