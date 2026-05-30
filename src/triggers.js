@@ -2,6 +2,7 @@
 import Parse from 'parse/node';
 import { logger } from './logger';
 import Utils from './Utils';
+import { inflateQuery, isQuery, applyQueryToRest } from './cloud-code/QueryAdapter';
 
 export const Types = {
   beforeLogin: 'beforeLogin',
@@ -493,16 +494,12 @@ export function maybeRunAfterFindTrigger(
 
     const request = getRequestObject(triggerType, auth, null, null, config, context, isGet);
     // Convert query parameter to Parse.Query instance
-    if (query instanceof Parse.Query) {
+    if (isQuery(query)) {
       request.query = query;
     } else if (typeof query === 'object' && query !== null) {
-      const parseQueryInstance = new Parse.Query(classNameQuery);
-      if (query.where) {
-        parseQueryInstance.withJSON(query);
-      }
-      request.query = parseQueryInstance;
+      request.query = inflateQuery(classNameQuery, query);
     } else {
-      request.query = new Parse.Query(classNameQuery);
+      request.query = inflateQuery(classNameQuery);
     }
 
     const { success, error } = getResponseObject(
@@ -584,8 +581,7 @@ export function maybeRunQueryTrigger(
   const json = Object.assign({}, restOptions);
   json.where = restWhere;
 
-  const parseQuery = new Parse.Query(className);
-  parseQuery.withJSON(json);
+  const parseQuery = inflateQuery(className, json);
 
   let count = false;
   if (restOptions) {
@@ -613,49 +609,10 @@ export function maybeRunQueryTrigger(
     .then(
       result => {
         let queryResult = parseQuery;
-        if (result && result instanceof Parse.Query) {
+        if (result && isQuery(result)) {
           queryResult = result;
         }
-        const jsonQuery = queryResult.toJSON();
-        if (jsonQuery.where) {
-          restWhere = jsonQuery.where;
-        }
-        if (jsonQuery.limit) {
-          restOptions = restOptions || {};
-          restOptions.limit = jsonQuery.limit;
-        }
-        if (jsonQuery.skip) {
-          restOptions = restOptions || {};
-          restOptions.skip = jsonQuery.skip;
-        }
-        if (jsonQuery.include) {
-          restOptions = restOptions || {};
-          restOptions.include = jsonQuery.include;
-        }
-        if (jsonQuery.excludeKeys) {
-          restOptions = restOptions || {};
-          restOptions.excludeKeys = jsonQuery.excludeKeys;
-        }
-        if (jsonQuery.explain) {
-          restOptions = restOptions || {};
-          restOptions.explain = jsonQuery.explain;
-        }
-        if (jsonQuery.keys) {
-          restOptions = restOptions || {};
-          restOptions.keys = jsonQuery.keys;
-        }
-        if (jsonQuery.order) {
-          restOptions = restOptions || {};
-          restOptions.order = jsonQuery.order;
-        }
-        if (jsonQuery.hint) {
-          restOptions = restOptions || {};
-          restOptions.hint = jsonQuery.hint;
-        }
-        if (jsonQuery.comment) {
-          restOptions = restOptions || {};
-          restOptions.comment = jsonQuery.comment;
-        }
+        ({ restWhere, restOptions } = applyQueryToRest(queryResult, restWhere, restOptions));
         if (requestObject.readPreference) {
           restOptions = restOptions || {};
           restOptions.readPreference = requestObject.readPreference;

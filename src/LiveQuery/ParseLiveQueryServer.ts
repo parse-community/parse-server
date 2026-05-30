@@ -20,6 +20,7 @@ import {
 } from '../triggers';
 import { getAuthForSessionToken, master, Auth } from '../Auth';
 import RestQuery from '../RestQuery';
+import { inflateQuery, deflateQuery } from '../cloud-code/QueryAdapter';
 import { getCacheController, getDatabaseController } from '../Controllers';
 import Config from '../Config';
 import { LRUCache as LRU } from 'lru-cache';
@@ -1015,13 +1016,10 @@ class ParseLiveQueryServer {
           request.user = auth.user;
         }
 
-        const parseQuery = new Parse.Query(className);
-        parseQuery.withJSON(request.query);
-        request.query = parseQuery;
+        request.query = inflateQuery(className, request.query);
         await runTrigger(trigger, `beforeSubscribe.${className}`, request, auth);
 
-        const query = request.query.toJSON();
-        request.query = query;
+        request.query = deflateQuery(request.query);
       }
 
       if (className === '_Session') {

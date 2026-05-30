@@ -5,6 +5,7 @@ var SchemaController = require('./Controllers/SchemaController');
 var Parse = require('parse/node').Parse;
 var logger = require('./logger').default;
 const triggers = require('./triggers');
+const { inflateQuery } = require('./cloud-code/QueryAdapter');
 const { continueWhile } = require('parse/lib/node/promiseUtils');
 const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt', 'ACL'];
 const { enforceRoleSecurity } = require('./SharedRest');
@@ -1121,8 +1122,7 @@ _UnsafeRestQuery.prototype.runAfterFindTrigger = function () {
 
   const json = Object.assign({}, this.restOptions);
   json.where = this.restWhere;
-  const parseQuery = new Parse.Query(this.className);
-  parseQuery.withJSON(json);
+  const parseQuery = inflateQuery(this.className, json);
   // Run afterFind trigger and set the new results
   return triggers
     .maybeRunAfterFindTrigger(
