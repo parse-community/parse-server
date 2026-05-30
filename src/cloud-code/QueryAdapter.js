@@ -49,15 +49,16 @@ export function isQuery(value) {
 }
 
 // Merge the JSON of a (possibly trigger-modified) `Parse.Query` onto existing
-// `restWhere` / `restOptions`, preserving the field-by-field override semantics
-// the `beforeFind` trigger has always used.
+// `restWhere` / `restOptions` with the field-by-field override semantics the
+// `beforeFind` trigger uses. Presence is tested via `hasOwnProperty` so an
+// explicit falsy override (e.g. `limit(0)`) is preserved rather than dropped.
 export function applyQueryToRest(query, restWhere, restOptions) {
   const jsonQuery = deflateQuery(query);
   if (jsonQuery.where) {
     restWhere = jsonQuery.where;
   }
   for (const key of REST_OPTION_KEYS) {
-    if (jsonQuery[key]) {
+    if (Object.prototype.hasOwnProperty.call(jsonQuery, key)) {
       restOptions = restOptions || {};
       restOptions[key] = jsonQuery[key];
     }
