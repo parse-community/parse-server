@@ -8,6 +8,11 @@ import logger from '../logger';
 import RequestSchema from './RequestSchema';
 import { matchesQuery, queryHash } from './QueryTools';
 import { ParsePubSub } from './ParsePubSub';
+import {
+  inflateObject,
+  hydrateFromFullJSON,
+  disableSingleInstance,
+} from '../cloud-code/ObjectAdapter';
 import SchemaController from '../Controllers/SchemaController';
 import _ from 'lodash';
 import { randomUUID } from 'crypto';
@@ -60,7 +65,7 @@ class ParseLiveQueryServer {
     logger.verbose('Support key pairs', this.keyPairs);
 
     // Initialize Parse
-    Parse.Object.disableSingleInstance();
+    disableSingleInstance();
     const serverURL = config.serverURL || Parse.serverURL;
     Parse.serverURL = serverURL;
     Parse.initialize(config.appId, Parse.javaScriptKey, config.masterKey);
@@ -159,18 +164,18 @@ class ParseLiveQueryServer {
     // Inflate merged object
     const currentParseObject = message.currentParseObject;
     UserRouter.removeHiddenProperties(currentParseObject);
-    let className = currentParseObject.className;
-    let parseObject = new Parse.Object(className);
-    parseObject._finishFetch(currentParseObject);
-    message.currentParseObject = parseObject;
+    message.currentParseObject = hydrateFromFullJSON(
+      currentParseObject.className,
+      currentParseObject
+    );
     // Inflate original object
     const originalParseObject = message.originalParseObject;
     if (originalParseObject) {
       UserRouter.removeHiddenProperties(originalParseObject);
-      className = originalParseObject.className;
-      parseObject = new Parse.Object(className);
-      parseObject._finishFetch(originalParseObject);
-      message.originalParseObject = parseObject;
+      message.originalParseObject = hydrateFromFullJSON(
+        originalParseObject.className,
+        originalParseObject
+      );
     }
   }
 
@@ -246,7 +251,7 @@ class ParseLiveQueryServer {
                 res.user = auth.user;
               }
               if (res.object) {
-                res.object = Parse.Object.fromJSON(res.object);
+                res.object = inflateObject(res.object);
               }
               await runTrigger(trigger, `afterEvent.${className}`, res, auth);
             }
@@ -409,10 +414,10 @@ class ParseLiveQueryServer {
             const trigger = getTrigger(className, 'afterEvent', Parse.applicationId);
             if (trigger) {
               if (res.object) {
-                res.object = Parse.Object.fromJSON(res.object);
+                res.object = inflateObject(res.object);
               }
               if (res.original) {
-                res.original = Parse.Object.fromJSON(res.original);
+                res.original = inflateObject(res.original);
               }
               const auth = await this.getAuthFromClient(client, requestId);
               if (auth && auth.user) {

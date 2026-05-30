@@ -6,6 +6,7 @@ var Parse = require('parse/node').Parse;
 var logger = require('./logger').default;
 const triggers = require('./triggers');
 const { inflateQuery } = require('./cloud-code/QueryAdapter');
+const { isObject } = require('./cloud-code/ObjectAdapter');
 const { continueWhile } = require('parse/lib/node/promiseUtils');
 const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt', 'ACL'];
 const { enforceRoleSecurity } = require('./SharedRest');
@@ -1139,7 +1140,7 @@ _UnsafeRestQuery.prototype.runAfterFindTrigger = function () {
       // Ensure we properly set the className back
       if (this.redirectClassName) {
         this.response.results = results.map(object => {
-          if (object instanceof Parse.Object) {
+          if (isObject(object)) {
             object = object.toJSON();
           }
           object.className = this.redirectClassName;

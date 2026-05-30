@@ -1,6 +1,7 @@
 const Parse = require('parse/node');
 import { isDeepStrictEqual } from 'util';
 import { getRequestObject, resolveError } from './triggers';
+import { inflateObject } from './cloud-code/ObjectAdapter';
 import { logger } from './logger';
 import { LRUCache as LRU } from 'lru-cache';
 import RestQuery from './RestQuery';
@@ -140,7 +141,7 @@ const getAuthForSessionToken = async function ({
         cacheController.user.del(sessionToken);
         throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token is expired.');
       }
-      const cachedUser = Parse.Object.fromJSON(userJSON);
+      const cachedUser = inflateObject(userJSON);
       renewSessionIfNeeded({ config, sessionToken });
       return Promise.resolve(
         new Auth({
@@ -192,7 +193,7 @@ const getAuthForSessionToken = async function ({
     cacheController.user.put(sessionToken, { ...obj, expiresAt: expiresAt?.toISOString() });
   }
   renewSessionIfNeeded({ config, session, sessionToken });
-  const userObject = Parse.Object.fromJSON(obj);
+  const userObject = inflateObject(obj);
   return new Auth({
     config,
     cacheController,
@@ -228,7 +229,7 @@ var getAuthForLegacySessionToken = async function ({ config, sessionToken, insta
     }
 
     obj.className = '_User';
-    const userObject = Parse.Object.fromJSON(obj);
+    const userObject = inflateObject(obj);
     return new Auth({
       config,
       isMaster: false,
@@ -555,7 +556,7 @@ const checkIfUserHasProvidedConfiguredProvidersForLogin = (
 const handleAuthDataValidation = async (authData, req, foundUser) => {
   let user;
   if (foundUser) {
-    user = Parse.User.fromJSON({ className: '_User', ...foundUser });
+    user = inflateObject({ className: '_User', ...foundUser });
     // Find user by session and current objectId; only pass user if it's the current user or master key is provided
   } else if (
     (req.auth &&
