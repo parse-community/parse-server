@@ -154,32 +154,21 @@ const getAuthForSessionToken = async function ({
     }
   }
 
-  let results;
-  if (config) {
-    const restOptions = {
-      limit: 1,
-      include: 'user',
-    };
-    const RestQuery = require('./RestQuery');
-    const query = await RestQuery({
-      method: RestQuery.Method.get,
-      config,
-      runBeforeFind: false,
-      auth: master(config),
-      className: '_Session',
-      restWhere: { sessionToken },
-      restOptions,
-    });
-    results = (await query.execute()).results;
-  } else {
-    results = (
-      await new Parse.Query(Parse.Session)
-        .limit(1)
-        .include('user')
-        .equalTo('sessionToken', sessionToken)
-        .find({ useMasterKey: true })
-    ).map(obj => obj.toJSON());
-  }
+  const restOptions = {
+    limit: 1,
+    include: 'user',
+  };
+  const RestQuery = require('./RestQuery');
+  const query = await RestQuery({
+    method: RestQuery.Method.get,
+    config,
+    runBeforeFind: false,
+    auth: master(config),
+    className: '_Session',
+    restWhere: { sessionToken },
+    restOptions,
+  });
+  const results = (await query.execute()).results;
 
   if (results.length !== 1 || !results[0]['user']) {
     throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
@@ -267,29 +256,23 @@ Auth.prototype.getUserRoles = function () {
 Auth.prototype.getRolesForUser = async function () {
   //Stack all Parse.Role
   const results = [];
-  if (this.config) {
-    const restWhere = {
-      users: {
-        __type: 'Pointer',
-        className: '_User',
-        objectId: this.user.id,
-      },
-    };
-    const RestQuery = require('./RestQuery');
-    const query = await RestQuery({
-      method: RestQuery.Method.find,
-      runBeforeFind: false,
-      config: this.config,
-      auth: master(this.config),
-      className: '_Role',
-      restWhere,
-    });
-    await query.each(result => results.push(result));
-  } else {
-    await new Parse.Query(Parse.Role)
-      .equalTo('users', this.user)
-      .each(result => results.push(result.toJSON()), { useMasterKey: true });
-  }
+  const restWhere = {
+    users: {
+      __type: 'Pointer',
+      className: '_User',
+      objectId: this.user.id,
+    },
+  };
+  const RestQuery = require('./RestQuery');
+  const query = await RestQuery({
+    method: RestQuery.Method.find,
+    runBeforeFind: false,
+    config: this.config,
+    auth: master(this.config),
+    className: '_Role',
+    restWhere,
+  });
+  await query.each(result => results.push(result));
   return results;
 };
 
@@ -355,37 +338,24 @@ Auth.prototype.clearRoleCache = function (sessionToken) {
 Auth.prototype.getRolesByIds = async function (ins) {
   const results = [];
   // Build an OR query across all parentRoles
-  if (!this.config) {
-    await new Parse.Query(Parse.Role)
-      .containedIn(
-        'roles',
-        ins.map(id => {
-          const role = new Parse.Object(Parse.Role);
-          role.id = id;
-          return role;
-        })
-      )
-      .each(result => results.push(result.toJSON()), { useMasterKey: true });
-  } else {
-    const roles = ins.map(id => {
-      return {
-        __type: 'Pointer',
-        className: '_Role',
-        objectId: id,
-      };
-    });
-    const restWhere = { roles: { $in: roles } };
-    const RestQuery = require('./RestQuery');
-    const query = await RestQuery({
-      method: RestQuery.Method.find,
-      config: this.config,
-      runBeforeFind: false,
-      auth: master(this.config),
+  const roles = ins.map(id => {
+    return {
+      __type: 'Pointer',
       className: '_Role',
-      restWhere,
-    });
-    await query.each(result => results.push(result));
-  }
+      objectId: id,
+    };
+  });
+  const restWhere = { roles: { $in: roles } };
+  const RestQuery = require('./RestQuery');
+  const query = await RestQuery({
+    method: RestQuery.Method.find,
+    config: this.config,
+    runBeforeFind: false,
+    auth: master(this.config),
+    className: '_Role',
+    restWhere,
+  });
+  await query.each(result => results.push(result));
   return results;
 };
 
