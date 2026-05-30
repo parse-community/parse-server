@@ -375,6 +375,113 @@ describe('routeAllowList', () => {
       });
     });
 
+    describe('batch sub-requests', () => {
+      // routeAllowList must be enforced per batch sub-request. The outer
+      // enforceRouteAllowList middleware runs only on the outer /batch URL,
+      // so without per-sub-request enforcement an operator who allowlists
+      // `batch` would accidentally expose every REST route reachable through
+      // batch sub-request dispatch.
+      const restRequest = require('../lib/request');
+      const headers = {
+        'Content-Type': 'application/json',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      };
+
+      it('blocks a batch GET sub-request whose path is not allowlisted', async () => {
+        await reconfigureServer({ routeAllowList: ['batch'] });
+        await new Parse.Object('Blocked').save({ secret: 'x' }, { useMasterKey: true });
+        try {
+          await restRequest({
+            method: 'POST',
+            headers,
+            url: 'http://localhost:8378/1/batch',
+            body: JSON.stringify({
+              requests: [{ method: 'GET', path: '/1/classes/Blocked' }],
+            }),
+          });
+          fail('batch sub-request to a blocked route should have been rejected');
+        } catch (e) {
+          expect(e.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        }
+      });
+
+      it('blocks a batch POST sub-request whose path is not allowlisted', async () => {
+        await reconfigureServer({ routeAllowList: ['batch'] });
+        try {
+          await restRequest({
+            method: 'POST',
+            headers,
+            url: 'http://localhost:8378/1/batch',
+            body: JSON.stringify({
+              requests: [{ method: 'POST', path: '/1/classes/Blocked', body: { x: 1 } }],
+            }),
+          });
+          fail('batch sub-request POST to a blocked route should have been rejected');
+        } catch (e) {
+          expect(e.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        }
+        const query = new Parse.Query('Blocked');
+        const results = await query.find({ useMasterKey: true });
+        expect(results.length).toBe(0);
+      });
+
+      it('allows a batch sub-request whose path matches the allow list', async () => {
+        await reconfigureServer({ routeAllowList: ['batch', 'classes/Allowed'] });
+        const response = await restRequest({
+          method: 'POST',
+          headers,
+          url: 'http://localhost:8378/1/batch',
+          body: JSON.stringify({
+            requests: [{ method: 'POST', path: '/1/classes/Allowed', body: { x: 1 } }],
+          }),
+        });
+        expect(response.data.length).toBe(1);
+        expect(response.data[0].success.objectId).toBeDefined();
+      });
+
+      it('rejects the entire batch if any sub-request is not allowlisted', async () => {
+        await reconfigureServer({ routeAllowList: ['batch', 'classes/Allowed'] });
+        try {
+          await restRequest({
+            method: 'POST',
+            headers,
+            url: 'http://localhost:8378/1/batch',
+            body: JSON.stringify({
+              requests: [
+                { method: 'POST', path: '/1/classes/Allowed', body: { x: 1 } },
+                { method: 'POST', path: '/1/classes/Blocked', body: { y: 2 } },
+              ],
+            }),
+          });
+          fail('batch with any disallowed sub-request should have been rejected');
+        } catch (e) {
+          expect(e.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        }
+        const allowedQuery = new Parse.Query('Allowed');
+        const allowedResults = await allowedQuery.find({ useMasterKey: true });
+        expect(allowedResults.length).toBe(0);
+      });
+
+      it('allows master key to bypass sub-request allow-list check', async () => {
+        await reconfigureServer({ routeAllowList: ['batch'] });
+        const response = await restRequest({
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-Master-Key': 'test',
+          },
+          url: 'http://localhost:8378/1/batch',
+          body: JSON.stringify({
+            requests: [{ method: 'POST', path: '/1/classes/Blocked', body: { x: 1 } }],
+          }),
+        });
+        expect(response.data.length).toBe(1);
+        expect(response.data[0].success.objectId).toBeDefined();
+      });
+    });
+
     it_id('229cab22-dad3-4d08-8de5-64d813658596')(it)('should block all route groups when not in allow list', async () => {
       await reconfigureServer({
         routeAllowList: ['classes/GameScore'],
