@@ -1749,6 +1749,131 @@ describe('Vulnerabilities', () => {
     });
   });
 
+  describe('(GHSA-7wqv-xjf3-x35v) Stored XSS via trailing-dot filename bypassing file extension blocklist', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+
+    beforeEach(async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+        },
+      });
+    });
+
+    it('blocks trailing-dot SVG filename with dangerous _ContentType on JSON-body upload', async () => {
+      const svgContent = Buffer.from(
+        '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'
+      ).toString('base64');
+      // No X-Parse-Application-Id header — must be in JSON body to trigger
+      // _ContentType extraction via the fileViaJSON middleware path.
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/files/poc.svg.',
+          body: JSON.stringify({
+            _ApplicationId: 'test',
+            _JavaScriptKey: 'test',
+            _ContentType: 'image/svg+xml',
+            base64: svgContent,
+          }),
+        }).catch(e => {
+          throw new Error(e.data.error);
+        })
+      ).toBeRejectedWith(jasmine.objectContaining({
+        message: jasmine.stringMatching(/File upload of extension .+ is disabled/),
+      }));
+    });
+
+    it('blocks trailing-dot SVG filename with dangerous Content-Type on binary upload', async () => {
+      await expectAsync(
+        request({
+          method: 'POST',
+          headers: {
+            ...headers,
+            'Content-Type': 'image/svg+xml',
+          },
+          url: 'http://localhost:8378/1/files/poc.svg.',
+          body: '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+        }).catch(e => {
+          throw new Error(e.data.error);
+        })
+      ).toBeRejectedWith(jasmine.objectContaining({
+        message: jasmine.stringMatching(/File upload of extension .+ is disabled/),
+      }));
+    });
+
+    it('blocks filename with mixed trailing dots and whitespace', async () => {
+      for (const filename of ['poc.svg..', 'poc.svg. ', 'poc.svg . ']) {
+        await expectAsync(
+          request({
+            method: 'POST',
+            headers: {
+              ...headers,
+              'Content-Type': 'image/svg+xml',
+            },
+            url: `http://localhost:8378/1/files/${encodeURIComponent(filename)}`,
+            body: '<svg/>',
+          }).catch(e => {
+            throw new Error(e.data.error);
+          })
+        ).toBeRejectedWith(jasmine.objectContaining({
+          message: jasmine.stringMatching(/File upload of extension .+ is disabled/),
+        }));
+      }
+    });
+
+    it('still allows trailing-dot filename with allowed Content-Type', async () => {
+      const adapter = Config.get('test').filesController.adapter;
+      const spy = spyOn(adapter, 'createFile').and.callThrough();
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/files/notes.txt.',
+        body: JSON.stringify({
+          _ApplicationId: 'test',
+          _JavaScriptKey: 'test',
+          _ContentType: 'text/plain',
+          base64: Buffer.from('hello').toString('base64'),
+        }),
+        headers,
+      });
+      expect(response.status).toBe(201);
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it('FilesController treats trailing-dot filename as extensionless when appending derived extension via master key upload', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+        },
+        preserveFileName: true,
+      });
+      const adapter = Config.get('test').filesController.adapter;
+      const spy = spyOn(adapter, 'createFile').and.callThrough();
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/files/poc.svg.',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+          'Content-Type': 'image/svg+xml',
+        },
+        body: '<svg/>',
+      });
+      expect(response.status).toBe(201);
+      expect(spy).toHaveBeenCalled();
+      const filenameArg = spy.calls.mostRecent().args[0];
+      const contentTypeArg = spy.calls.mostRecent().args[2];
+      // Trailing-dot filename is treated as extensionless: derived extension appended without doubling the dot
+      expect(filenameArg).toBe('poc.svg.svg');
+      // Caller-supplied Content-Type is preserved on the extensionless path
+      expect(contentTypeArg).toBe('image/svg+xml');
+    });
+
+  });
+
   describe('(GHSA-q3vj-96h2-gwvg) SQL Injection via Increment amount on nested Object field', () => {
     const headers = {
       'Content-Type': 'application/json',
