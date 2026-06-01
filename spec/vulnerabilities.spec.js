@@ -1872,6 +1872,27 @@ describe('Vulnerabilities', () => {
       expect(contentTypeArg).toBe('image/svg+xml');
     });
 
+    it('allows trailing-dot filename when no Content-Type is supplied (no XSS path)', async () => {
+      // Trailing-dot filename with no caller-supplied Content-Type: the
+      // blocklist gate skips because no extension can be determined, but no
+      // attacker-controlled Content-Type reaches the storage adapter — only
+      // the SDK's benign default — so no stored XSS is possible.
+      const adapter = Config.get('test').filesController.adapter;
+      const spy = spyOn(adapter, 'createFile').and.callThrough();
+      const response = await request({
+        method: 'POST',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        url: 'http://localhost:8378/1/files/poc.svg.',
+        body: '<svg/>',
+      });
+      expect(response.status).toBe(201);
+      expect(spy).toHaveBeenCalled();
+      const contentTypeArg = spy.calls.mostRecent().args[2];
+      expect(contentTypeArg).not.toMatch(/svg|html|xml|xhtml|xslt|mathml/i);
+    });
   });
 
   describe('(GHSA-q3vj-96h2-gwvg) SQL Injection via Increment amount on nested Object field', () => {
