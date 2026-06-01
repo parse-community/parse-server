@@ -478,6 +478,23 @@ class Utils {
     }
     return current;
   }
+
+  /**
+   * Returns the file extension as the substring after the last dot in the
+   * filename. A trailing dot or a filename without a dot yields an empty
+   * string. Callers apply any further normalization (whitespace, MIME
+   * parameters, etc.) for their use case — this is a pure parser, not a
+   * policy.
+   *
+   * @param {string} filename
+   * @returns {string} the extension, or `''` if none
+   */
+  static getFileExtension(filename) {
+    if (!filename || !filename.includes('.')) {
+      return '';
+    }
+    return filename.substring(filename.lastIndexOf('.') + 1);
+  }
 }
 
 module.exports = Utils;
