@@ -1893,6 +1893,28 @@ describe('Vulnerabilities', () => {
       const contentTypeArg = spy.calls.mostRecent().args[2];
       expect(contentTypeArg).not.toMatch(/svg|html|xml|xhtml|xslt|mathml/i);
     });
+
+    it('falls back to raw Content-Type when Content-Type is malformed (no slash)', async () => {
+      // Exercises the last-resort branch: when both the filename has no usable
+      // extension AND the Content-Type lacks a "/" subtype to parse, the raw
+      // Content-Type is used as the extension so a malformed header that
+      // matches a blocked pattern still trips the blocklist.
+      await expectAsync(
+        request({
+          method: 'POST',
+          headers: {
+            ...headers,
+            'Content-Type': 'svg',
+          },
+          url: 'http://localhost:8378/1/files/poc',
+          body: '<svg/>',
+        }).catch(e => {
+          throw new Error(e.data.error);
+        })
+      ).toBeRejectedWith(jasmine.objectContaining({
+        message: jasmine.stringMatching(/File upload of extension svg is disabled/),
+      }));
+    });
   });
 
   describe('(GHSA-q3vj-96h2-gwvg) SQL Injection via Increment amount on nested Object field', () => {
