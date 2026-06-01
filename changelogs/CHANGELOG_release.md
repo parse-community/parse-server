@@ -1,3 +1,10 @@
+## [8.6.79](https://github.com/parse-community/parse-server/compare/8.6.78...8.6.79) (2026-06-01)
+
+
+### Bug Fixes
+
+* Stored XSS via trailing-dot filename bypassing file upload extension blocklist ([GHSA-7wqv-xjf3-x35v](https://github.com/parse-community/parse-server/security/advisories/GHSA-7wqv-xjf3-x35v)) ([#10490](https://github.com/parse-community/parse-server/issues/10490)) ([9e99279](https://github.com/parse-community/parse-server/commit/9e992797ebd47df8143d4530fce4cc46fefb6532))
+
 ## [8.6.78](https://github.com/parse-community/parse-server/compare/8.6.77...8.6.78) (2026-05-18)
 
 
