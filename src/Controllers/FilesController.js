@@ -7,8 +7,8 @@ import {
   validateFilepath,
   FilesAdapter,
 } from '../Adapters/Files/FilesAdapter';
-import path from 'path';
 const Parse = require('parse/node').Parse;
+const Utils = require('../Utils');
 
 const legacyFilesRegex = new RegExp(
   '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}-.*'
@@ -24,12 +24,13 @@ export class FilesController extends AdaptableController {
   }
 
   async createFile(config, filename, data, contentType, options) {
-    const extname = path.extname(filename);
-
+    const extname = Utils.getFileExtension(filename);
     const hasExtension = extname.length > 0;
     const mime = (await import('mime')).default
     if (!hasExtension && contentType && mime.getExtension(contentType)) {
-      filename = filename + '.' + mime.getExtension(contentType);
+      // Avoid producing a doubled dot when the filename already ends in one
+      const separator = filename.endsWith('.') ? '' : '.';
+      filename = filename + separator + mime.getExtension(contentType);
     } else if (hasExtension) {
       contentType = mime.getType(filename) || contentType;
     }

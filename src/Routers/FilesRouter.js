@@ -438,14 +438,20 @@ export class FilesRouter {
           }
         });
       };
-      let extension = contentType;
-      if (filename && filename.includes('.')) {
-        extension = filename.substring(filename.lastIndexOf('.') + 1);
-      } else if (contentType && contentType.includes('/')) {
-        extension = contentType.split('/')[1];
-      }
+      let extension = Utils.getFileExtension(filename);
       // Strip MIME parameters (e.g. ";charset=utf-8") and whitespace
       extension = extension?.split(';')[0]?.replace(/\s+/g, '');
+      // If the filename has no usable extension (no dot, trailing dot, or
+      // whitespace-only suffix), fall back to the Content-Type subtype — same
+      // as a dotless filename.
+      if (!extension && contentType && contentType.includes('/')) {
+        extension = contentType.split('/')[1]?.split(';')[0]?.replace(/\s+/g, '');
+      }
+      // Last resort for malformed inputs (e.g. Content-Type without a slash):
+      // use the raw Content-Type so the existing rejection path still fires.
+      if (!extension && contentType) {
+        extension = contentType.split(';')[0]?.replace(/\s+/g, '');
+      }
 
       if (extension && !isValidExtension(extension)) {
         next(

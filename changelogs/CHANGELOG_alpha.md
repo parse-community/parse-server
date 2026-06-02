@@ -1,3 +1,17 @@
+## [9.9.1-alpha.4](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.3...9.9.1-alpha.4) (2026-06-01)
+
+
+### Bug Fixes
+
+* Stored XSS via trailing-dot filename bypassing file upload extension blocklist ([GHSA-7wqv-xjf3-x35v](https://github.com/parse-community/parse-server/security/advisories/GHSA-7wqv-xjf3-x35v)) ([#10489](https://github.com/parse-community/parse-server/issues/10489)) ([66484ce](https://github.com/parse-community/parse-server/commit/66484ce8fdd87a5d4c23bf9e40f7ea379b4dce79))
+
+## [9.9.1-alpha.3](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.2...9.9.1-alpha.3) (2026-05-27)
+
+
+### Bug Fixes
+
+* Server option routeAllowList is bypassable through batch sub-requests ([GHSA-p84r-h6rx-f2xr](https://github.com/parse-community/parse-server/security/advisories/GHSA-p84r-h6rx-f2xr)) ([#10482](https://github.com/parse-community/parse-server/issues/10482)) ([552c6dd](https://github.com/parse-community/parse-server/commit/552c6dd754638c9f546fbceecd2ba0f7225a95d1))
+
 ## [9.9.1-alpha.2](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.1...9.9.1-alpha.2) (2026-05-18)
 
 
