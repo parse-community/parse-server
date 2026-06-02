@@ -232,8 +232,17 @@ describe('FilesController', () => {
   });
 
   it('rejects non-string filenames without throwing', () => {
-    for (const bad of [null, undefined, 42, {}]) {
+    for (const bad of [null, undefined, 42, {}, '']) {
       const error = validateFilename(bad);
+      expect(error).not.toBeNull();
+      expect(error.code).toBe(Parse.Error.INVALID_FILE_NAME);
+      expect(error.message).toMatch(/string/i);
+    }
+  });
+
+  it('rejects non-string filepaths without throwing', () => {
+    for (const bad of [null, undefined, 42, {}]) {
+      const error = validateFilepath(bad);
       expect(error).not.toBeNull();
       expect(error.code).toBe(Parse.Error.INVALID_FILE_NAME);
       expect(error.message).toMatch(/string/i);
@@ -262,6 +271,7 @@ describe('FilesController', () => {
       expect(validateFilepath(bad)).not.toBeNull();
       expect(validateFilepath(bad).code).toBe(Parse.Error.INVALID_FILE_NAME);
     }
+    expect(validateFilepath('foo//bar').message).toContain('consecutive slashes');
   });
 
   it('returns non-string filenames unchanged from normalizeFilename', () => {
@@ -281,5 +291,13 @@ describe('FilesController', () => {
     const invalidCharsError = validateFilename('bad?.txt');
     expect(invalidCharsError).not.toBeNull();
     expect(invalidCharsError.message).toContain('invalid characters');
+
+    const nestedInvalidCharsError = validateFilepath('docs/bad?.txt');
+    expect(nestedInvalidCharsError).not.toBeNull();
+    expect(nestedInvalidCharsError.message).toContain('invalid characters');
+
+    const nestedTooLongError = validateFilepath(`docs/_${'a'.repeat(128)}`);
+    expect(nestedTooLongError).not.toBeNull();
+    expect(nestedTooLongError.message).toContain('too long');
   });
 });
