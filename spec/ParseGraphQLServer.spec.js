@@ -107,7 +107,7 @@ describe('ParseGraphQLServer', () => {
 
   describe('_getServer', () => {
     it('should only return new server on schema changes', async () => {
-      parseGraphQLServer.server = undefined;
+      parseGraphQLServer._server = undefined;
       const server1 = await parseGraphQLServer._getServer();
       const server2 = await parseGraphQLServer._getServer();
       expect(server1).toBe(server2);
@@ -123,7 +123,7 @@ describe('ParseGraphQLServer', () => {
     });
 
     it('should return same server reference when called 100 times in parallel', async () => {
-      parseGraphQLServer.server = undefined;
+      parseGraphQLServer._server = undefined;
 
       // Call _getServer 100 times in parallel
       const promises = Array.from({ length: 100 }, () => parseGraphQLServer._getServer());

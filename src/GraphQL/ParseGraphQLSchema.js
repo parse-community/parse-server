@@ -94,6 +94,15 @@ class ParseGraphQLSchema {
   }
 
   async load() {
+    if (!this._loadPromise) {
+      this._loadPromise = this._load().finally(() => {
+        this._loadPromise = null;
+      });
+    }
+    return this._loadPromise;
+  }
+
+  async _load() {
     const { parseGraphQLConfig } = await this._initializeSchemaAndConfig();
     const parseClassesArray = await this._getClassesForSchema(parseGraphQLConfig);
     const functionNames = await this._getFunctionNames();
