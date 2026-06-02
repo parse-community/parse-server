@@ -6151,4 +6151,119 @@ describe('Vulnerabilities', () => {
       expect(req.info.clientSDK).toBeUndefined();
     });
   });
+
+  describe('(GHSA-75v4-m273-5j49) _User CLP refetch fallback leaks raw MFA secrets and protected fields', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+
+    const denyGetCLP = {
+      get: {},
+      find: {},
+      create: { '*': true },
+      update: { '*': true },
+      delete: {},
+    };
+
+    const updateUserCLP = classLevelPermissions =>
+      request({
+        method: 'PUT',
+        url: Parse.serverURL + '/schemas/_User',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ classLevelPermissions }),
+      });
+
+    async function setupMfaUser() {
+      const OTPAuth = require('otpauth');
+      const user = await Parse.User.signUp('victim', 'password');
+      const sessionToken = user.getSessionToken();
+      user.set('phone', '555-1234');
+      await user.save(null, { sessionToken });
+      const secret = new OTPAuth.Secret();
+      const totp = new OTPAuth.TOTP({ algorithm: 'SHA1', digits: 6, period: 30, secret });
+      await user.save(
+        { authData: { mfa: { secret: secret.base32, token: totp.generate() } } },
+        { sessionToken }
+      );
+      return { user, totp, secret };
+    }
+
+    beforeEach(async () => {
+      await reconfigureServer({
+        auth: {
+          mfa: { enabled: true, options: ['TOTP'], algorithm: 'SHA1', digits: 6, period: 30 },
+        },
+        protectedFields: { _User: { '*': ['phone'] } },
+        protectedFieldsOwnerExempt: false,
+      });
+    });
+
+    it('does not leak raw MFA secrets or protected fields from /verifyPassword when _User get CLP denies the re-fetch', async () => {
+      await setupMfaUser();
+      await updateUserCLP(denyGetCLP);
+
+      const response = await request({
+        method: 'POST',
+        url: Parse.serverURL + '/verifyPassword',
+        headers,
+        body: JSON.stringify({ username: 'victim', password: 'password' }),
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.data.objectId).toBeDefined();
+      // Access control denied the re-fetch, so no stored fields may be disclosed
+      expect(response.data.authData).toBeUndefined();
+      expect(response.data.phone).toBeUndefined();
+    });
+
+    it('does not leak raw MFA secrets or protected fields from /login when _User get CLP denies the re-fetch', async () => {
+      const { totp } = await setupMfaUser();
+      await updateUserCLP(denyGetCLP);
+
+      const response = await request({
+        method: 'POST',
+        url: Parse.serverURL + '/login',
+        headers,
+        body: JSON.stringify({
+          username: 'victim',
+          password: 'password',
+          authData: { mfa: { token: totp.generate() } },
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      // Login still succeeds and issues a session for the authenticated user
+      expect(response.data.objectId).toBeDefined();
+      expect(response.data.sessionToken).toBeDefined();
+      // But discloses no stored fields the caller may not read
+      expect(response.data.authData).toBeUndefined();
+      expect(response.data.phone).toBeUndefined();
+    });
+
+    it('sanitizes MFA secrets and protected fields on /verifyPassword when get CLP permits the re-fetch', async () => {
+      await setupMfaUser();
+
+      const response = await request({
+        method: 'POST',
+        url: Parse.serverURL + '/verifyPassword',
+        headers,
+        body: JSON.stringify({ username: 'victim', password: 'password' }),
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.data.objectId).toBeDefined();
+      // afterFind replaces raw MFA material with a status flag
+      expect(response.data.authData.mfa.status).toBe('enabled');
+      expect(response.data.authData.mfa.secret).toBeUndefined();
+      expect(response.data.authData.mfa.recovery).toBeUndefined();
+      // protectedFieldsOwnerExempt:false strips protected fields even for the owner
+      expect(response.data.phone).toBeUndefined();
+    });
+  });
 });

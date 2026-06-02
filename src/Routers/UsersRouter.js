@@ -370,10 +370,18 @@ export class UsersRouter extends ClassesRouter {
       );
       filteredUser = filteredUserResponse.results?.[0];
     } catch {
-      // re-fetch may fail for legacy users without ACL; fall through
+      // The re-fetch enforces `_User` `get` CLP and may be denied by access
+      // control (e.g. CLP `get: {}` or an ACL that excludes the caller).
+      // Handled below; never fall back to the raw row.
     }
     if (!filteredUser) {
-      filteredUser = user;
+      // The caller's access context does not permit reading the user record, so
+      // disclose nothing from it. Falling back to the raw row would leak fields
+      // hidden by `protectedFields` and raw `authData` (e.g. MFA secrets and
+      // recovery codes) that the sanitizing re-fetch would have removed. Return
+      // only the identity this operation intrinsically produces; the session
+      // token is still attached below so login succeeds.
+      filteredUser = { objectId: user.objectId };
     }
     UsersRouter.removeHiddenProperties(filteredUser);
     filteredUser.sessionToken = user.sessionToken;
@@ -472,10 +480,17 @@ export class UsersRouter extends ClassesRouter {
           );
           filteredUser = filteredUserResponse.results?.[0];
         } catch {
-          // re-fetch may fail for legacy users without ACL; fall through
+          // The re-fetch enforces `_User` `get` CLP and may be denied by access
+          // control (e.g. CLP `get: {}` or an ACL that excludes the caller).
+          // Handled below; never fall back to the raw row.
         }
         if (!filteredUser) {
-          filteredUser = user;
+          // The caller's access context does not permit reading the user
+          // record, so disclose nothing from it. Falling back to the raw row
+          // would leak fields hidden by `protectedFields` and raw `authData`
+          // (e.g. MFA secrets and recovery codes) that the sanitizing re-fetch
+          // would have removed. Return only the user's identity.
+          filteredUser = { objectId: user.objectId };
         }
         UsersRouter.removeHiddenProperties(filteredUser);
         return { response: filteredUser };
