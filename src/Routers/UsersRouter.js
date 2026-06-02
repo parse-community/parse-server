@@ -375,13 +375,16 @@ export class UsersRouter extends ClassesRouter {
       // Handled below; never fall back to the raw row.
     }
     if (!filteredUser) {
-      // The caller's access context does not permit reading the user record, so
-      // disclose nothing from it. Falling back to the raw row would leak fields
-      // hidden by `protectedFields` and raw `authData` (e.g. MFA secrets and
-      // recovery codes) that the sanitizing re-fetch would have removed. Return
-      // only the identity this operation intrinsically produces; the session
-      // token is still attached below so login succeeds.
-      filteredUser = { objectId: user.objectId };
+      // Master/maintenance callers bypass CLP, protectedFields, and authData
+      // afterFind, so for them an empty re-fetch is a genuine not-found edge, not
+      // an access-control denial; they are entitled to the full row. For every
+      // other caller, an empty/denied re-fetch means access control withheld the
+      // record, so disclose only the identity — never the raw row, which would
+      // leak fields hidden by `protectedFields` and raw `authData` (e.g. MFA
+      // secrets and recovery codes) that the sanitizing re-fetch would remove.
+      // The session token is still attached below so login succeeds.
+      filteredUser =
+        req.auth.isMaster || req.auth.isMaintenance ? user : { objectId: user.objectId };
     }
     UsersRouter.removeHiddenProperties(filteredUser);
     filteredUser.sessionToken = user.sessionToken;
@@ -485,12 +488,15 @@ export class UsersRouter extends ClassesRouter {
           // Handled below; never fall back to the raw row.
         }
         if (!filteredUser) {
-          // The caller's access context does not permit reading the user
-          // record, so disclose nothing from it. Falling back to the raw row
-          // would leak fields hidden by `protectedFields` and raw `authData`
-          // (e.g. MFA secrets and recovery codes) that the sanitizing re-fetch
-          // would have removed. Return only the user's identity.
-          filteredUser = { objectId: user.objectId };
+          // See handleLogIn: master/maintenance callers bypass CLP,
+          // protectedFields, and authData afterFind, so an empty re-fetch is a
+          // genuine not-found edge for them and they are entitled to the full
+          // row. For all other callers, an empty/denied re-fetch means access
+          // control withheld the record, so disclose only the identity rather
+          // than the raw row, which would leak protectedFields and raw authData
+          // (e.g. MFA secrets and recovery codes).
+          filteredUser =
+            req.auth.isMaster || req.auth.isMaintenance ? user : { objectId: user.objectId };
         }
         UsersRouter.removeHiddenProperties(filteredUser);
         return { response: filteredUser };

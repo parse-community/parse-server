@@ -6265,5 +6265,28 @@ describe('Vulnerabilities', () => {
       // protectedFieldsOwnerExempt:false strips protected fields even for the owner
       expect(response.data.phone).toBeUndefined();
     });
+
+    it('returns the full user to a master-key /verifyPassword even when get CLP is denied', async () => {
+      await setupMfaUser();
+      await updateUserCLP(denyGetCLP);
+
+      const response = await request({
+        method: 'POST',
+        url: Parse.serverURL + '/verifyPassword',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: 'victim', password: 'password' }),
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.data.objectId).toBeDefined();
+      // Master bypasses CLP and protectedFields by design, so it still receives
+      // the full record (auth hierarchy preserved); the minimal denied-path
+      // response only applies to non-master callers.
+      expect(response.data.phone).toBe('555-1234');
+    });
   });
 });
