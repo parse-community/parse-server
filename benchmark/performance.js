@@ -558,6 +558,40 @@ async function benchmarkObjectCreateNestedDenylist(name) {
 }
 
 /**
+ * Benchmark: $relatedTo relation query (public, non-master)
+ *
+ * Measures a public `$relatedTo` query, which now performs an owning-object
+ * read-access check before reading the relation join table (GHSA-wmwx-jr2p-4j4r).
+ * This captures the cost of that added authorization read on the relation path.
+ */
+async function benchmarkRelatedToQuery(name) {
+  const Child = Parse.Object.extend('BenchmarkRelChild');
+  const children = [];
+  for (let i = 0; i < 50; i++) {
+    children.push(new Child({ value: i }));
+  }
+  await Parse.Object.saveAll(children, { useMasterKey: true });
+
+  // Publicly readable owning object, so the authorized relation path runs fully.
+  const Parent = Parse.Object.extend('BenchmarkRelParent');
+  const parent = new Parent({ name: 'benchmark-parent' });
+  const acl = new Parse.ACL();
+  acl.setPublicReadAccess(true);
+  parent.setACL(acl);
+  parent.relation('members').add(children);
+  await parent.save(null, { useMasterKey: true });
+
+  return measureOperation({
+    name,
+    iterations: 1_000,
+    operation: async () => {
+      // Non-master query exercises the owning-object read-access check.
+      await parent.relation('members').query().find();
+    },
+  });
+}
+
+/**
  * Run all benchmarks
  */
 async function runBenchmarks() {
@@ -582,6 +616,7 @@ async function runBenchmarks() {
       { name: 'Object.saveAll (batch save)', fn: benchmarkBatchSave },
       { name: 'Query.get (by objectId)', fn: benchmarkObjectRead },
       { name: 'Query.find (simple query)', fn: benchmarkSimpleQuery },
+      { name: 'Query.find ($relatedTo relation)', fn: benchmarkRelatedToQuery },
       { name: 'User.signUp', fn: benchmarkUserSignup },
       { name: 'User.login', fn: benchmarkUserLogin },
       { name: 'Query.include (parallel pointers)', fn: benchmarkQueryWithIncludeParallel },
