@@ -1,3 +1,10 @@
+## [9.9.1-alpha.5](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.4...9.9.1-alpha.5) (2026-06-03)
+
+
+### Bug Fixes
+
+* Endpoints `/login` and `/verifyPassword` disclose MFA secrets and protected fields when `_User` get is denied ([GHSA-75v4-m273-5j49](https://github.com/parse-community/parse-server/security/advisories/GHSA-75v4-m273-5j49)) ([#10492](https://github.com/parse-community/parse-server/issues/10492)) ([83e90ed](https://github.com/parse-community/parse-server/commit/83e90edbe4224c81172a20e40fa986662c9394ca))
+
 ## [9.9.1-alpha.4](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.3...9.9.1-alpha.4) (2026-06-01)
 
 
