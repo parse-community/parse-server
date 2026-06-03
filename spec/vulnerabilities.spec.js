@@ -2396,6 +2396,22 @@ describe('Vulnerabilities', () => {
       expect(res.data.error).toBe('Permission denied');
     });
 
+    it('denies $relatedTo on a protected relation field nested in $and', async () => {
+      const res = await queryChild({
+        $and: [relatedToWhere(parentProtectedKey.id, 'secretRel')],
+      });
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    });
+
+    it('denies $relatedTo on a protected relation field nested in $nor', async () => {
+      const res = await queryChild({
+        $nor: [relatedToWhere(parentProtectedKey.id, 'secretRel')],
+      });
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    });
+
     it('returns no results when the owning object is not readable by the caller', async () => {
       const res = await queryChild(relatedToWhere(parentPrivate.id, 'openRel'));
       expect(res.data.results).toEqual([]);

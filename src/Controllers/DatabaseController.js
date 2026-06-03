@@ -1183,6 +1183,24 @@ class DatabaseController {
         })
       );
     }
+    if (Array.isArray(query['$nor'])) {
+      // Guard with Array.isArray (unlike the legacy $or/$and checks above) so a
+      // malformed non-array $nor still falls through to validateQuery and yields
+      // the existing INVALID_QUERY error instead of throwing here.
+      return Promise.all(
+        query['$nor'].map(aQuery => {
+          return this.reduceRelationKeys(
+            className,
+            aQuery,
+            queryOptions,
+            auth,
+            aclGroup,
+            isMaster,
+            schemaController
+          );
+        })
+      );
+    }
     var relatedTo = query['$relatedTo'];
     if (relatedTo) {
       return this.authorizeRelatedToQuery(relatedTo, auth, aclGroup, isMaster, schemaController)
