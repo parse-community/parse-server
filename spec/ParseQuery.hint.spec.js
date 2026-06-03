@@ -39,7 +39,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     expect(explain.queryPlanner.winningPlan.inputStage.indexName).toBe('_id_');
   });
 
-  it_only_mongodb_version('>=8')('query find with hint string', async () => {
+  it_only_mongodb_version('>=8')('query find with hint string mongodb 8', async () => {
     const object = new TestObject();
     await object.save();
 
@@ -65,7 +65,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     });
   });
 
-  it_only_mongodb_version('>=8')('query find with hint object', async () => {
+  it_only_mongodb_version('>=8')('query find with hint object mongodb 8', async () => {
     const object = new TestObject();
     await object.save();
 

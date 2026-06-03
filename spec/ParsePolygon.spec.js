@@ -423,7 +423,7 @@ describe('Parse.Polygon testing', () => {
   });
 });
 
-describe_only_db('mongo')('Parse.Polygon testing', () => {
+describe_only_db('mongo')('Parse.Polygon testing mongo', () => {
   const Config = require('../lib/Config');
   let config;
   beforeEach(async () => {

@@ -4,7 +4,7 @@ const Definitions = require('../lib/Options/Definitions');
 const request = require('../lib/request');
 const rest = require('../lib/rest');
 const auth = require('../lib/Auth');
-const uuid = require('uuid');
+const { randomUUID: uuidv4 } = require('crypto');
 
 describe('Idempotency', () => {
   // Parameters
@@ -231,7 +231,7 @@ describe('Idempotency', () => {
         headers: {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-Master-Key': Parse.masterKey,
-          'X-Parse-Request-Id': uuid.v4(),
+          'X-Parse-Request-Id': uuidv4(),
         },
       };
       return request(params);

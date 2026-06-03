@@ -18,6 +18,7 @@ import { promiseEnsureIdempotency } from '../middlewares';
 import RestWrite from '../RestWrite';
 import { logger } from '../logger';
 import { createSanitizedError } from '../Error';
+import { applyAuthDataOptimisticLock } from '../AuthDataLock';
 
 export class UsersRouter extends ClassesRouter {
   className() {
@@ -108,7 +109,13 @@ export class UsersRouter extends ClassesRouter {
         .find('_User', query, {}, Auth.maintenance(req.config))
         .then(results => {
           if (!results.length) {
-            throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+            // Perform a dummy bcrypt compare to normalize response timing,
+            // preventing user enumeration via timing side-channel
+            return passwordCrypto
+              .compare(password, passwordCrypto.dummyHash)
+              .then(() => {
+                throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+              });
           }
 
           if (results.length > 1) {
@@ -121,6 +128,11 @@ export class UsersRouter extends ClassesRouter {
             user = results[0];
           }
 
+          if (typeof user.password !== 'string' || user.password.length === 0) {
+            // Passwordless account (e.g. OAuth-only): run dummy compare for
+            // timing normalization, discard result, always reject
+            return passwordCrypto.compare(password, passwordCrypto.dummyHash).then(() => false);
+          }
           return passwordCrypto.compare(password, user.password);
         })
         .then(correct => {
@@ -176,34 +188,48 @@ export class UsersRouter extends ClassesRouter {
     });
   }
 
-  handleMe(req) {
+  async handleMe(req) {
     if (!req.info || !req.info.sessionToken) {
       throw createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token', req.config);
     }
     const sessionToken = req.info.sessionToken;
-    return rest
-      .find(
-        req.config,
-        Auth.master(req.config),
-        '_Session',
-        { sessionToken },
-        { include: 'user' },
-        req.info.clientSDK,
-        req.info.context
-      )
-      .then(response => {
-        if (!response.results || response.results.length == 0 || !response.results[0].user) {
-          throw createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token', req.config);
-        } else {
-          const user = response.results[0].user;
-          // Send token back on the login, because SDKs expect that.
-          user.sessionToken = sessionToken;
-
-          // Remove hidden properties.
-          UsersRouter.removeHiddenProperties(user);
-          return { response: user };
-        }
-      });
+    // Query the session with master key to validate the session token,
+    // but do NOT include 'user' to avoid leaking user data via master context
+    const sessionResponse = await rest.find(
+      req.config,
+      Auth.master(req.config),
+      '_Session',
+      { sessionToken },
+      {},
+      req.info.context
+    );
+    if (
+      !sessionResponse.results ||
+      sessionResponse.results.length == 0 ||
+      !sessionResponse.results[0].user
+    ) {
+      throw createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token', req.config);
+    }
+    const userId = sessionResponse.results[0].user.objectId;
+    // Re-fetch the user with the caller's auth context so that
+    // protectedFields, CLP, and auth adapter afterFind apply correctly
+    const userResponse = await rest.get(
+      req.config,
+      req.auth,
+      '_User',
+      userId,
+      {},
+      req.info.context
+    );
+    if (!userResponse.results || userResponse.results.length == 0) {
+      throw createSanitizedError(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token', req.config);
+    }
+    const user = userResponse.results[0];
+    // Send token back on the login, because SDKs expect that.
+    user.sessionToken = sessionToken;
+    // Remove hidden properties.
+    UsersRouter.removeHiddenProperties(user);
+    return { response: user };
   }
 
   async handleLogIn(req) {
@@ -229,7 +255,6 @@ export class UsersRouter extends ClassesRouter {
           { objectId: user.objectId },
           req.body || {},
           user,
-          req.info.clientSDK,
           req.info.context
         ),
         user
@@ -286,12 +311,19 @@ export class UsersRouter extends ClassesRouter {
 
     // If we have some new validated authData update directly
     if (validatedAuthData && Object.keys(validatedAuthData).length) {
-      await req.config.database.update(
-        '_User',
-        { objectId: user.objectId },
-        { authData: validatedAuthData },
-        {}
-      );
+      const query = { objectId: user.objectId };
+      // Prevent concurrent requests from both succeeding when consuming single-use
+      // tokens (e.g. MFA recovery codes or SMS OTP tokens) by extending the update
+      // WHERE clause with the original values of changed primitive/array fields.
+      applyAuthDataOptimisticLock(query, user.authData, validatedAuthData);
+      try {
+        await req.config.database.update('_User', query, { authData: validatedAuthData }, {});
+      } catch (error) {
+        if (error.code === Parse.Error.OBJECT_NOT_FOUND) {
+          throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Invalid auth data');
+        }
+        throw error;
+      }
     }
 
     const { sessionData, createSession } = RestWrite.createSession(req.config, {
@@ -314,12 +346,42 @@ export class UsersRouter extends ClassesRouter {
       req.info.context
     );
 
-    if (authDataResponse) {
-      user.authDataResponse = authDataResponse;
+    // Re-fetch the user with the caller's auth context so that
+    // protectedFields and CLP apply correctly; if the caller used master key,
+    // protectedFields are bypassed, matching the behavior of GET /users/:id
+    const refetchAuth =
+      req.auth.isMaster || req.auth.isMaintenance
+        ? req.auth
+        : new Auth.Auth({
+          config: req.config,
+          isMaster: false,
+          user: Parse.Object.fromJSON({ className: '_User', objectId: user.objectId }),
+          installationId: req.info.installationId,
+        });
+    let filteredUser;
+    try {
+      const filteredUserResponse = await rest.get(
+        req.config,
+        refetchAuth,
+        '_User',
+        user.objectId,
+        {},
+        req.info.context
+      );
+      filteredUser = filteredUserResponse.results?.[0];
+    } catch {
+      // re-fetch may fail for legacy users without ACL; fall through
     }
-    await req.config.authDataManager.runAfterFind(req, user.authData);
+    if (!filteredUser) {
+      filteredUser = user;
+    }
+    UsersRouter.removeHiddenProperties(filteredUser);
+    filteredUser.sessionToken = user.sessionToken;
+    if (authDataResponse) {
+      filteredUser.authDataResponse = authDataResponse;
+    }
 
-    return { response: user };
+    return { response: filteredUser };
   }
 
   /**
@@ -383,11 +445,40 @@ export class UsersRouter extends ClassesRouter {
 
   handleVerifyPassword(req) {
     return this._authenticateUserFromRequest(req)
-      .then(user => {
+      .then(async user => {
         // Remove hidden properties.
         UsersRouter.removeHiddenProperties(user);
-
-        return { response: user };
+        // Re-fetch the user with the caller's auth context so that
+        // protectedFields and CLP apply correctly; if the caller used master key,
+        // protectedFields are bypassed, matching the behavior of GET /users/:id
+        const refetchAuth =
+          req.auth.isMaster || req.auth.isMaintenance
+            ? req.auth
+            : new Auth.Auth({
+              config: req.config,
+              isMaster: false,
+              user: Parse.Object.fromJSON({ className: '_User', objectId: user.objectId }),
+              installationId: req.info.installationId,
+            });
+        let filteredUser;
+        try {
+          const filteredUserResponse = await rest.get(
+            req.config,
+            refetchAuth,
+            '_User',
+            user.objectId,
+            {},
+            req.info.context
+          );
+          filteredUser = filteredUserResponse.results?.[0];
+        } catch {
+          // re-fetch may fail for legacy users without ACL; fall through
+        }
+        if (!filteredUser) {
+          filteredUser = user;
+        }
+        UsersRouter.removeHiddenProperties(filteredUser);
+        return { response: filteredUser };
       })
       .catch(error => {
         throw error;
@@ -403,7 +494,6 @@ export class UsersRouter extends ClassesRouter {
         '_Session',
         { sessionToken: req.info.sessionToken },
         undefined,
-        req.info.clientSDK,
         req.info.context
       );
       if (records.results && records.results.length) {

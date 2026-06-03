@@ -88,9 +88,27 @@ export const RESERVED_DIRECTORY_SEGMENTS = ['metadata'];
 export class FilesRouter {
   expressRouter({ maxUploadSize = '20Mb' } = {}) {
     var router = express.Router();
+    // Lightweight info initializer so handleParseSession can resolve session tokens.
+    // Unlike POST/DELETE routes, GET file routes skip handleParseHeaders (which
+    // normally sets req.info) because those requests may not carry Parse headers.
+    const initInfo = (req, res, next) => {
+      if (!req.info) {
+        const sessionToken = req.get('X-Parse-Session-Token');
+        req.info = {
+          sessionToken,
+          installationId: req.get('X-Parse-Installation-Id'),
+        };
+        // If no session token and no auth yet (public access), set a minimal
+        // auth object so handleParseSession skips session resolution.
+        if (!sessionToken && !req.auth) {
+          req.auth = { isMaster: false };
+        }
+      }
+      next();
+    };
     // Metadata route must come before the catch-all GET route
-    router.get('/files/:appId/metadata/*filepath', this.metadataHandler);
-    router.get('/files/:appId/*filepath', this.getHandler);
+    router.get('/files/:appId/metadata/*filepath', initInfo, Middlewares.handleParseSession, this.metadataHandler);
+    router.get('/files/:appId/*filepath', initInfo, Middlewares.handleParseSession, this.getHandler);
 
     router.post('/files', function (req, res, next) {
       next(new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Filename not provided.'));
@@ -162,6 +180,34 @@ export class FilesRouter {
     return null;
   }
 
+  static _validateFileDownload(req, config) {
+    const isMaster = req.auth?.isMaster;
+    const isMaintenance = req.auth?.isMaintenance;
+    if (isMaster || isMaintenance) {
+      return;
+    }
+    const user = req.auth?.user;
+    const isLinked = user && Parse.AnonymousUtils.isLinked(user);
+    if (!config.fileDownload.enableForAnonymousUser && isLinked) {
+      throw new Parse.Error(
+        Parse.Error.OPERATION_FORBIDDEN,
+        'File download by anonymous user is disabled.'
+      );
+    }
+    if (!config.fileDownload.enableForAuthenticatedUser && !isLinked && user) {
+      throw new Parse.Error(
+        Parse.Error.OPERATION_FORBIDDEN,
+        'File download by authenticated user is disabled.'
+      );
+    }
+    if (!config.fileDownload.enableForPublic && !user) {
+      throw new Parse.Error(
+        Parse.Error.OPERATION_FORBIDDEN,
+        'File download by public is disabled.'
+      );
+    }
+  }
+
   async getHandler(req, res) {
     const config = Config.get(req.params.appId);
     if (!config) {
@@ -171,17 +217,20 @@ export class FilesRouter {
       return;
     }
 
+    FilesRouter._validateFileDownload(req, config);
+
     let filename = FilesRouter._getFilenameFromParams(req);
     try {
       const filesController = config.filesController;
       const mime = (await import('mime')).default;
       let contentType = mime.getType(filename);
       let file = new Parse.File(filename, { base64: '' }, contentType);
+      const fileAuth = req.auth;
       const triggerResult = await triggers.maybeRunFileTrigger(
         triggers.Types.beforeFind,
         { file },
         config,
-        req.auth
+        fileAuth
       );
       if (triggerResult?.file?._name) {
         filename = triggerResult?.file?._name;
@@ -191,7 +240,16 @@ export class FilesRouter {
       const defaultResponseHeaders = { 'X-Content-Type-Options': 'nosniff' };
 
       if (isFileStreamable(req, filesController)) {
-        for (const [key, value] of Object.entries(defaultResponseHeaders)) {
+        const afterFind = await triggers.maybeRunFileTrigger(
+          triggers.Types.afterFind,
+          { file, forceDownload: false, responseHeaders: { ...defaultResponseHeaders } },
+          config,
+          fileAuth
+        );
+        if (afterFind?.forceDownload) {
+          res.set('Content-Disposition', `attachment;filename=${afterFind.file?._name || filename}`);
+        }
+        for (const [key, value] of Object.entries(afterFind?.responseHeaders ?? defaultResponseHeaders)) {
           res.set(key, value);
         }
         filesController.handleFileStream(config, filename, req, res, contentType).catch(() => {
@@ -215,7 +273,7 @@ export class FilesRouter {
         triggers.Types.afterFind,
         { file, forceDownload: false, responseHeaders: { ...defaultResponseHeaders } },
         config,
-        req.auth
+        fileAuth
       );
 
       if (afterFind?.file) {
@@ -317,27 +375,30 @@ export class FilesRouter {
       return;
     }
     const config = req.config;
-    const user = req.auth.user;
     const isMaster = req.auth.isMaster;
-    const isLinked = user && Parse.AnonymousUtils.isLinked(user);
-    if (!isMaster && !config.fileUpload.enableForAnonymousUser && isLinked) {
-      next(
-        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by anonymous user is disabled.')
-      );
-      return;
-    }
-    if (!isMaster && !config.fileUpload.enableForAuthenticatedUser && !isLinked && user) {
-      next(
-        new Parse.Error(
-          Parse.Error.FILE_SAVE_ERROR,
-          'File upload by authenticated user is disabled.'
-        )
-      );
-      return;
-    }
-    if (!isMaster && !config.fileUpload.enableForPublic && !user) {
-      next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by public is disabled.'));
-      return;
+    const isMaintenance = req.auth.isMaintenance;
+    if (!isMaster && !isMaintenance) {
+      const user = req.auth.user;
+      const isLinked = user && Parse.AnonymousUtils.isLinked(user);
+      if (!config.fileUpload.enableForAnonymousUser && isLinked) {
+        next(
+          new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by anonymous user is disabled.')
+        );
+        return;
+      }
+      if (!config.fileUpload.enableForAuthenticatedUser && !isLinked && user) {
+        next(
+          new Parse.Error(
+            Parse.Error.FILE_SAVE_ERROR,
+            'File upload by authenticated user is disabled.'
+          )
+        );
+        return;
+      }
+      if (!config.fileUpload.enableForPublic && !user) {
+        next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by public is disabled.'));
+        return;
+      }
     }
     const filesController = config.filesController;
     const { filename } = req.params;
@@ -362,14 +423,20 @@ export class FilesRouter {
           }
         });
       };
-      let extension = contentType;
-      if (filename && filename.includes('.')) {
-        extension = filename.substring(filename.lastIndexOf('.') + 1);
-      } else if (contentType && contentType.includes('/')) {
-        extension = contentType.split('/')[1];
-      }
+      let extension = Utils.getFileExtension(filename);
       // Strip MIME parameters (e.g. ";charset=utf-8") and whitespace
       extension = extension?.split(';')[0]?.replace(/\s+/g, '');
+      // If the filename has no usable extension (no dot, trailing dot, or
+      // whitespace-only suffix), fall back to the Content-Type subtype — same
+      // as a dotless filename.
+      if (!extension && contentType && contentType.includes('/')) {
+        extension = contentType.split('/')[1]?.split(';')[0]?.replace(/\s+/g, '');
+      }
+      // Last resort for malformed inputs (e.g. Content-Type without a slash):
+      // use the raw Content-Type so the existing rejection path still fires.
+      if (!extension && contentType) {
+        extension = contentType.split(';')[0]?.replace(/\s+/g, '');
+      }
 
       if (extension && !isValidExtension(extension)) {
         next(
@@ -733,14 +800,16 @@ export class FilesRouter {
         res.json({});
         return;
       }
+      FilesRouter._validateFileDownload(req, config);
       const { filesController } = config;
       let filename = FilesRouter._getFilenameFromParams(req);
       const file = new Parse.File(filename, { base64: '' });
+      const fileAuth = req.auth;
       const triggerResult = await triggers.maybeRunFileTrigger(
         triggers.Types.beforeFind,
         { file },
         config,
-        req.auth
+        fileAuth
       );
       if (triggerResult?.file?._name) {
         filename = triggerResult.file._name;
@@ -756,7 +825,7 @@ export class FilesRouter {
         triggers.Types.afterFind,
         { file },
         config,
-        req.auth
+        fileAuth
       );
       res.status(200);
       res.json(data);

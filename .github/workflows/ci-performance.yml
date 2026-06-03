@@ -68,6 +68,7 @@ jobs:
         env:
           NODE_ENV: production
         run: |
+          set -o pipefail
           echo "Running baseline benchmarks..."
           if [ ! -f "benchmark/performance.js" ]; then
             echo "⚠️ Benchmark script not found - this is expected for new features"
@@ -76,17 +77,9 @@ jobs:
             echo "Baseline: N/A (no benchmark script)" > baseline-output.txt
             exit 0
           fi
-          taskset -c 0 npm run benchmark > baseline-output.txt 2>&1 || npm run benchmark > baseline-output.txt 2>&1 || true
-          echo "Benchmark command completed with exit code: $?"
-          echo "Output file size: $(wc -c < baseline-output.txt) bytes"
-          echo "--- Begin baseline-output.txt ---"
-          cat baseline-output.txt
-          echo "--- End baseline-output.txt ---"
+          taskset -c 0 npm run benchmark 2>&1 | tee baseline-output.txt || npm run benchmark 2>&1 | tee baseline-output.txt || true
           # Extract JSON from output (everything between first [ and last ])
           sed -n '/^\[/,/^\]/p' baseline-output.txt > baseline.json || echo '[]' > baseline.json
-          echo "Extracted JSON size: $(wc -c < baseline.json) bytes"
-          echo "Baseline benchmark results:"
-          cat baseline.json
         continue-on-error: true
 
       - name: Save baseline results to temp location
@@ -133,18 +126,11 @@ jobs:
         env:
           NODE_ENV: production
         run: |
+          set -o pipefail
           echo "Running PR benchmarks..."
-          taskset -c 0 npm run benchmark > pr-output.txt 2>&1 || npm run benchmark > pr-output.txt 2>&1 || true
-          echo "Benchmark command completed with exit code: $?"
-          echo "Output file size: $(wc -c < pr-output.txt) bytes"
-          echo "--- Begin pr-output.txt ---"
-          cat pr-output.txt
-          echo "--- End pr-output.txt ---"
+          taskset -c 0 npm run benchmark 2>&1 | tee pr-output.txt || npm run benchmark 2>&1 | tee pr-output.txt || true
           # Extract JSON from output (everything between first [ and last ])
           sed -n '/^\[/,/^\]/p' pr-output.txt > pr.json || echo '[]' > pr.json
-          echo "Extracted JSON size: $(wc -c < pr.json) bytes"
-          echo "PR benchmark results:"
-          cat pr.json
         continue-on-error: true
 
       - name: Upload PR results

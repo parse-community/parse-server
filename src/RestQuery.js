@@ -31,7 +31,6 @@ const { createSanitizedError } = require('./Error');
  * @param options.className {string} The name of the class to query
  * @param options.restWhere {object} The where object for the query
  * @param options.restOptions {object} The options object for the query
- * @param options.clientSDK {string} The client SDK that is performing the query
  * @param options.runAfterFind {boolean} Whether to run the afterFind trigger
  * @param options.runBeforeFind {boolean} Whether to run the beforeFind trigger
  * @param options.context {object} The context object for the query
@@ -44,7 +43,6 @@ async function RestQuery({
   className,
   restWhere = {},
   restOptions = {},
-  clientSDK,
   runAfterFind = true,
   runBeforeFind = true,
   context,
@@ -73,7 +71,6 @@ async function RestQuery({
     className,
     result.restWhere || restWhere,
     result.restOptions || restOptions,
-    clientSDK,
     runAfterFind,
     context,
     isGet
@@ -93,7 +90,6 @@ RestQuery.Method = Object.freeze({
  * @param className
  * @param restWhere
  * @param restOptions
- * @param clientSDK
  * @param runAfterFind
  * @param context
  */
@@ -103,7 +99,6 @@ function _UnsafeRestQuery(
   className,
   restWhere = {},
   restOptions = {},
-  clientSDK,
   runAfterFind = true,
   context,
   isGet
@@ -113,7 +108,6 @@ function _UnsafeRestQuery(
   this.className = className;
   this.restWhere = restWhere;
   this.restOptions = restOptions;
-  this.clientSDK = clientSDK;
   this.runAfterFind = runAfterFind;
   this.response = null;
   this.findOptions = {};
@@ -219,6 +213,8 @@ function _UnsafeRestQuery(
       case 'limit':
       case 'readPreference':
       case 'comment':
+      case 'rawValues':
+      case 'rawFieldNames':
         this.findOptions[option] = restOptions[option];
         break;
       case 'order':
@@ -282,6 +278,9 @@ function _UnsafeRestQuery(
 _UnsafeRestQuery.prototype.execute = function (executeOptions) {
   return Promise.resolve()
     .then(() => {
+      return this.validateQueryDepth();
+    })
+    .then(() => {
       return this.buildRestWhere();
     })
     .then(() => {
@@ -317,7 +316,7 @@ _UnsafeRestQuery.prototype.execute = function (executeOptions) {
 };
 
 _UnsafeRestQuery.prototype.each = function (callback) {
-  const { config, auth, className, restWhere, restOptions, clientSDK } = this;
+  const { config, auth, className, restWhere, restOptions } = this;
   // if the limit is set, use it
   restOptions.limit = restOptions.limit || 100;
   restOptions.order = 'objectId';
@@ -336,7 +335,6 @@ _UnsafeRestQuery.prototype.each = function (callback) {
         className,
         restWhere,
         restOptions,
-        clientSDK,
         this.runAfterFind,
         this.context
       );
@@ -350,6 +348,36 @@ _UnsafeRestQuery.prototype.each = function (callback) {
       }
     }
   );
+};
+
+_UnsafeRestQuery.prototype.validateQueryDepth = function () {
+  if (this.auth.isMaster || this.auth.isMaintenance) {
+    return;
+  }
+  const rc = this.config.requestComplexity;
+  if (!rc || rc.queryDepth === -1) {
+    return;
+  }
+  const maxDepth = rc.queryDepth;
+  const checkDepth = (where, depth) => {
+    if (depth > maxDepth) {
+      throw new Parse.Error(
+        Parse.Error.INVALID_QUERY,
+        `Query condition nesting depth exceeds maximum allowed depth of ${maxDepth}`
+      );
+    }
+    if (typeof where !== 'object' || where === null) {
+      return;
+    }
+    for (const op of ['$or', '$and', '$nor']) {
+      if (Array.isArray(where[op])) {
+        for (const subQuery of where[op]) {
+          checkDepth(subQuery, depth + 1);
+        }
+      }
+    }
+  };
+  checkDepth(this.restWhere, 0);
 };
 
 _UnsafeRestQuery.prototype.buildRestWhere = function () {
@@ -530,6 +558,13 @@ _UnsafeRestQuery.prototype.replaceInQuery = async function () {
     additionalOptions.readPreference = this.restOptions.readPreference;
   }
 
+  if (!this.auth.isMaster && !this.auth.isMaintenance) {
+    const rc = this.config.requestComplexity;
+    if (rc && rc.subqueryLimit > 0) {
+      additionalOptions.limit = rc.subqueryLimit;
+    }
+  }
+
   const childContext = { ...this.context, _subqueryDepth: (this.context._subqueryDepth || 0) + 1 };
   const subquery = await RestQuery({
     method: RestQuery.Method.find,
@@ -589,6 +624,13 @@ _UnsafeRestQuery.prototype.replaceNotInQuery = async function () {
     additionalOptions.subqueryReadPreference = this.restOptions.subqueryReadPreference;
   } else if (this.restOptions.readPreference) {
     additionalOptions.readPreference = this.restOptions.readPreference;
+  }
+
+  if (!this.auth.isMaster && !this.auth.isMaintenance) {
+    const rc = this.config.requestComplexity;
+    if (rc && rc.subqueryLimit > 0) {
+      additionalOptions.limit = rc.subqueryLimit;
+    }
   }
 
   const childContext = { ...this.context, _subqueryDepth: (this.context._subqueryDepth || 0) + 1 };
@@ -665,6 +707,13 @@ _UnsafeRestQuery.prototype.replaceSelect = async function () {
     additionalOptions.readPreference = this.restOptions.readPreference;
   }
 
+  if (!this.auth.isMaster && !this.auth.isMaintenance) {
+    const rc = this.config.requestComplexity;
+    if (rc && rc.subqueryLimit > 0) {
+      additionalOptions.limit = rc.subqueryLimit;
+    }
+  }
+
   const childContext = { ...this.context, _subqueryDepth: (this.context._subqueryDepth || 0) + 1 };
   const subquery = await RestQuery({
     method: RestQuery.Method.find,
@@ -727,6 +776,13 @@ _UnsafeRestQuery.prototype.replaceDontSelect = async function () {
     additionalOptions.subqueryReadPreference = this.restOptions.subqueryReadPreference;
   } else if (this.restOptions.readPreference) {
     additionalOptions.readPreference = this.restOptions.readPreference;
+  }
+
+  if (!this.auth.isMaster && !this.auth.isMaintenance) {
+    const rc = this.config.requestComplexity;
+    if (rc && rc.subqueryLimit > 0) {
+      additionalOptions.limit = rc.subqueryLimit;
+    }
   }
 
   const childContext = { ...this.context, _subqueryDepth: (this.context._subqueryDepth || 0) + 1 };
@@ -863,7 +919,7 @@ _UnsafeRestQuery.prototype.runCount = function () {
 };
 
 _UnsafeRestQuery.prototype.denyProtectedFields = async function () {
-  if (this.auth.isMaster) {
+  if (this.auth.isMaster || this.auth.isMaintenance) {
     return;
   }
   const schemaController = await this.config.database.loadSchema();
@@ -891,6 +947,13 @@ _UnsafeRestQuery.prototype.denyProtectedFields = async function () {
       }
     }
     for (const op of ['$or', '$and', '$nor']) {
+      if (where[op] !== undefined && !Array.isArray(where[op])) {
+        throw createSanitizedError(
+          Parse.Error.INVALID_QUERY,
+          `${op} must be an array`,
+          this.config
+        );
+      }
       if (Array.isArray(where[op])) {
         where[op].forEach(subQuery => checkWhere(subQuery));
       }

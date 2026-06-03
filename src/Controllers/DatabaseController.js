@@ -159,7 +159,16 @@ const validateQuery = (
   }
 
   Object.keys(query).forEach(key => {
-    if (query && query[key] && query[key].$regex) {
+    if (query && query[key] && query[key].$regex !== undefined) {
+      if (!isMaster && rc && rc.allowRegex === false) {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, '$regex operator is not allowed');
+      }
+      if (typeof query[key].$regex !== 'string') {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, '$regex value must be a string');
+      }
+      if (query[key].$options !== undefined && typeof query[key].$options !== 'string') {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, '$options value must be a string');
+      }
       if (typeof query[key].$options === 'string') {
         if (!query[key].$options.match(/^[imxsu]+$/)) {
           throw new Parse.Error(
@@ -189,7 +198,8 @@ const filterSensitiveData = (
   schema: SchemaController.SchemaController | any,
   className: string,
   protectedFields: null | Array<any>,
-  object: any
+  object: any,
+  protectedFieldsOwnerExempt: ?boolean
 ) => {
   let userId = null;
   if (auth && auth.user) { userId = auth.user.id; }
@@ -265,8 +275,9 @@ const filterSensitiveData = (
   }
 
   /* special treat for the user class: don't filter protectedFields if currently loggedin user is
-  the retrieved user */
-  if (!(isUserClass && userId && object.objectId === userId)) {
+  the retrieved user, unless protectedFieldsOwnerExempt is false */
+  const isOwnerExempt = protectedFieldsOwnerExempt !== false && isUserClass && userId && object.objectId === userId;
+  if (!isOwnerExempt) {
     protectedFields && protectedFields.forEach(k => delete object[k]);
 
     // fields not requested by client (excluded),
@@ -525,6 +536,13 @@ class DatabaseController {
       });
   }
 
+  /**
+   * Updates objects in the database that match the given query.
+   * @param {Object} options
+   * @param {boolean} [options.many=false] When true, updates all matching documents
+   *   and returns `{ matchedCount, modifiedCount }` where values are numbers if the
+   *   storage adapter supports `UpdateManyResult`, or `undefined` otherwise.
+   */
   update(
     className: string,
     query: any,
@@ -537,7 +555,7 @@ class DatabaseController {
     try {
       Utils.checkProhibitedKeywords(this.options, update);
     } catch (error) {
-      return Promise.reject(new Parse.Error(Parse.Error.INVALID_KEY_NAME, error));
+      return Promise.reject(new Parse.Error(Parse.Error.INVALID_KEY_NAME, `${error}`));
     }
     try {
       const { validateFileUrlsInObject } = require('../FileUrlValidator');
@@ -692,6 +710,16 @@ class DatabaseController {
         .then(result => {
           if (skipSanitization) {
             return Promise.resolve(result);
+          }
+          if (many) {
+            return {
+              matchedCount: typeof result?.matchedCount === 'number'
+                ? result.matchedCount
+                : undefined,
+              modifiedCount: typeof result?.modifiedCount === 'number'
+                ? result.modifiedCount
+                : undefined,
+            };
           }
           return this._sanitizeDatabaseResult(originalUpdate, result);
         });
@@ -880,7 +908,7 @@ class DatabaseController {
     try {
       Utils.checkProhibitedKeywords(this.options, object);
     } catch (error) {
-      return Promise.reject(new Parse.Error(Parse.Error.INVALID_KEY_NAME, error));
+      return Promise.reject(new Parse.Error(Parse.Error.INVALID_KEY_NAME, `${error}`));
     }
     try {
       const { validateFileUrlsInObject } = require('../FileUrlValidator');
@@ -1241,6 +1269,8 @@ class DatabaseController {
       caseInsensitive = false,
       explain,
       comment,
+      rawValues,
+      rawFieldNames,
     }: any = {},
     auth: any = {},
     validSchemaController: SchemaController.SchemaController
@@ -1381,7 +1411,9 @@ class DatabaseController {
                     readPreference,
                     hint,
                     explain,
-                    comment
+                    comment,
+                    rawValues,
+                    rawFieldNames
                   );
                 }
               } else if (explain) {
@@ -1401,7 +1433,8 @@ class DatabaseController {
                         schemaController,
                         className,
                         protectedFields,
-                        object
+                        object,
+                        this.options.protectedFieldsOwnerExempt
                       );
                     })
                   )
@@ -1661,7 +1694,7 @@ class DatabaseController {
     const protectedFields = perms.protectedFields;
     if (!protectedFields) { return null; }
 
-    if (aclGroup.indexOf(query.objectId) > -1) { return null; }
+    if (className === '_User' && this.options.protectedFieldsOwnerExempt !== false && aclGroup.indexOf(query.objectId) > -1) { return null; }
 
     // for queries where "keys" are set and do not include all 'userField':{field},
     // we have to transparently include it, and then remove before returning to client
@@ -1983,7 +2016,7 @@ class DatabaseController {
   }
 
   static _validateQuery: (any, boolean, boolean, boolean) => void;
-  static filterSensitiveData: (boolean, boolean, any[], any, any, any, string, any[], any) => void;
+  static filterSensitiveData: (boolean, boolean, any[], any, any, any, string, any[], any, ?boolean) => void;
 }
 
 module.exports = DatabaseController;

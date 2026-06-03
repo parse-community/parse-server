@@ -1,11 +1,10 @@
-import corsMiddleware from 'cors';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.js';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@as-integrations/express5';
 import { ApolloServerPluginCacheControlDisabled } from '@apollo/server/plugin/disabled';
 import express from 'express';
 import { GraphQLError, parse } from 'graphql';
-import { handleParseErrors, handleParseHeaders, handleParseSession } from '../middlewares';
+import { allowCrossDomain, handleParseErrors, handleParseHeaders, handleParseSession } from '../middlewares';
 import requiredParameter from '../requiredParameter';
 import defaultLogger from '../logger';
 import { ParseGraphQLSchema } from './ParseGraphQLSchema';
@@ -91,6 +90,33 @@ const IntrospectionControlPlugin = (publicIntrospection) => ({
 
 });
 
+// graphql-js validation rules (FieldsOnCorrectTypeRule, KnownArgumentNamesRule,
+// KnownTypeNamesRule, ...) embed "Did you mean ...?" hints sourced from the live
+// schema in their error messages. Those messages are returned to the caller
+// before didResolveOperation runs, so they sidestep IntrospectionControlPlugin
+// and disclose schema identifiers the introspection guard is meant to hide.
+// Strip the hint suffix for callers that are not allowed to introspect.
+const SchemaSuggestionsControlPlugin = (publicIntrospection) => ({
+  requestDidStart: async (requestContext) => ({
+    validationDidStart: async () => {
+      if (publicIntrospection) {
+        return;
+      }
+      const isMasterOrMaintenance =
+        requestContext.contextValue.auth?.isMaster ||
+        requestContext.contextValue.auth?.isMaintenance;
+      if (isMasterOrMaintenance) {
+        return;
+      }
+      return async (validationErrors) => {
+        validationErrors?.forEach(error => {
+          error.message = error.message.replace(/ ?Did you mean(.+?)\?$/, '');
+        });
+      };
+    },
+  }),
+});
+
 class ParseGraphQLServer {
   parseGraphQLController: ParseGraphQLController;
 
@@ -116,8 +142,7 @@ class ParseGraphQLServer {
     try {
       return {
         schema: await this.parseGraphQLSchema.load(),
-        context: async ({ req, res }) => {
-          res.set('access-control-allow-origin', req.get('origin') || '*');
+        context: async ({ req }) => {
           return {
             info: req.info,
             config: req.config,
@@ -155,7 +180,7 @@ class ParseGraphQLServer {
           // We need always true introspection because apollo server have changing behavior based on the NODE_ENV variable
           // we delegate the introspection control to the IntrospectionControlPlugin
           introspection: true,
-          plugins: [ApolloServerPluginCacheControlDisabled(), IntrospectionControlPlugin(this.config.graphQLPublicIntrospection), createComplexityValidationPlugin(() => this.parseServer.config.requestComplexity)],
+          plugins: [ApolloServerPluginCacheControlDisabled(), IntrospectionControlPlugin(this.config.graphQLPublicIntrospection), SchemaSuggestionsControlPlugin(this.config.graphQLPublicIntrospection), createComplexityValidationPlugin(() => this.parseServer.config.requestComplexity)],
           schema,
         });
         await apollo.start();
@@ -204,7 +229,7 @@ class ParseGraphQLServer {
     if (!app || !app.use) {
       requiredParameter('You must provide an Express.js app instance!');
     }
-    app.use(this.config.graphQLPath, corsMiddleware());
+    app.use(this.config.graphQLPath, allowCrossDomain(this.parseServer.config.appId));
     app.use(this.config.graphQLPath, handleParseHeaders);
     app.use(this.config.graphQLPath, handleParseSession);
     this.applyRequestContextMiddleware(app, this.parseServer.config);

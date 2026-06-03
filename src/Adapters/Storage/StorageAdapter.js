@@ -29,6 +29,11 @@ export type UpdateQueryOptions = {
 
 export type FullQueryOptions = QueryOptions & UpdateQueryOptions;
 
+export type UpdateManyResult = {
+  matchedCount?: number,
+  modifiedCount?: number,
+};
+
 export interface StorageAdapter {
   canSortOnJoinTables: boolean;
   schemaCacheTtl: ?number;
@@ -56,13 +61,19 @@ export interface StorageAdapter {
     query: QueryType,
     transactionalSession: ?any
   ): Promise<void>;
+  /**
+   * Updates all objects that match the given query.
+   * Adapters may return an `UpdateManyResult` with optional `matchedCount` and `modifiedCount`
+   * to indicate how many documents were matched and modified. If not provided, the caller
+   * receives `undefined` for these fields.
+   */
   updateObjectsByQuery(
     className: string,
     schema: SchemaType,
     query: QueryType,
     update: any,
     transactionalSession: ?any
-  ): Promise<[any]>;
+  ): Promise<[any] | UpdateManyResult>;
   findOneAndUpdate(
     className: string,
     schema: SchemaType,
@@ -114,7 +125,9 @@ export interface StorageAdapter {
     readPreference: ?string,
     hint: ?mixed,
     explain?: boolean,
-    comment?: string
+    comment?: string,
+    rawValues?: boolean,
+    rawFieldNames?: boolean
   ): Promise<any>;
   performInitialization(options: ?any): Promise<void>;
   watch(callback: () => void): void;

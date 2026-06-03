@@ -740,10 +740,39 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     });
   });
 
-  it('redirects you to link send fail page if you try to resend a link for a nonexistant user', done => {
+  it('redirects you to link send success page if you try to resend a link for a nonexistent user', done => {
     reconfigureServer({
       appName: 'emailing app',
       verifyUserEmails: true,
+      emailAdapter: {
+        sendVerificationEmail: () => Promise.resolve(),
+        sendPasswordResetEmail: () => Promise.resolve(),
+        sendMail: () => {},
+      },
+      publicServerURL: 'http://localhost:8378/1',
+    }).then(() => {
+      request({
+        url: 'http://localhost:8378/1/apps/test/resend_verification_email',
+        method: 'POST',
+        followRedirects: false,
+        body: {
+          username: 'sadfasga',
+        },
+      }).then(response => {
+        expect(response.status).toEqual(303);
+        // With emailVerifySuccessOnInvalidEmail: true (default), the resend
+        // page redirects to success to prevent user enumeration
+        expect(response.text).toContain('email_verification_send_success.html');
+        done();
+      });
+    });
+  });
+
+  it('redirects you to link send fail page if you try to resend a link for a nonexistent user with emailVerifySuccessOnInvalidEmail disabled', done => {
+    reconfigureServer({
+      appName: 'emailing app',
+      verifyUserEmails: true,
+      emailVerifySuccessOnInvalidEmail: false,
       emailAdapter: {
         sendVerificationEmail: () => Promise.resolve(),
         sendPasswordResetEmail: () => Promise.resolve(),

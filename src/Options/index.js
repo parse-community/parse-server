@@ -79,6 +79,8 @@ export interface ParseServerOptions {
   /* (Optional) Restricts the use of master key permissions to a list of IP addresses or ranges.<br><br>This option accepts a list of single IP addresses, for example `['10.0.0.1', '10.0.0.2']`. You can also use CIDR notation to specify an IP address range, for example `['10.0.1.0/24']`.<br><br><b>Special scenarios:</b><br>- Setting an empty array `[]` means that the master key cannot be used even in Parse Server Cloud Code. This value cannot be set via an environment variable as there is no way to pass an empty array to Parse Server via an environment variable.<br>- Setting `['0.0.0.0/0', '::0']` means to allow any IPv4 and IPv6 address to use the master key and effectively disables the IP filter.<br><br><b>Considerations:</b><br>- IPv4 and IPv6 addresses are not compared against each other. Each IP version (IPv4 and IPv6) needs to be considered separately. For example, `['0.0.0.0/0']` allows any IPv4 address and blocks every IPv6 address. Conversely, `['::0']` allows any IPv6 address and blocks every IPv4 address.<br>- Keep in mind that the IP version in use depends on the network stack of the environment in which Parse Server runs. A local environment may use a different IP version than a remote environment. For example, it's possible that locally the value `['0.0.0.0/0']` allows the request IP because the environment is using IPv4, but when Parse Server is deployed remotely the request IP is blocked because the remote environment is using IPv6.<br>- When setting the option via an environment variable the notation is a comma-separated string, for example `"0.0.0.0/0,::0"`.<br>- IPv6 zone indices (`%` suffix) are not supported, for example `fe80::1%eth0`, `fe80::1%1` or `::1%lo`.<br><br>Defaults to `['127.0.0.1', '::1']` which means that only `localhost`, the server instance on which Parse Server runs, is allowed to use the master key.
   :DEFAULT: ["127.0.0.1","::1"] */
   masterKeyIps: ?(string[]);
+  /* (Optional) Restricts external client access to a list of allowed REST API routes.<br><br>When this option is set, all external non-master-key REST API requests are denied by default. Only routes matching at least one of the configured regex patterns are allowed through. Internal calls from Cloud Code, Cloud Jobs, and triggers are not affected.<br><br>Each entry is a regex pattern string matched against the normalized route identifier (request path with mount prefix and leading slash stripped). Patterns are auto-anchored with `^` and `$` for full-match semantics.<br><br><b>Examples of normalized route identifiers:</b><ul><li>`classes/GameScore` (class CRUD)</li><li>`classes/GameScore/abc123` (object by ID)</li><li>`users` (user operations)</li><li>`login` (login endpoint)</li><li>`functions/sendEmail` (Cloud Function)</li><li>`jobs/cleanup` (Cloud Job)</li><li>`push` (push notifications)</li><li>`config` (client config)</li><li>`installations` (installations)</li></ul><b>Example patterns:</b><ul><li>`classes/ChatMessage` matches only `classes/ChatMessage`</li><li>`classes/Chat.*` matches `classes/ChatMessage`, `classes/ChatRoom`, etc.</li><li>`functions/.*` matches all Cloud Functions</li></ul>Setting an empty array `[]` blocks all external non-master-key REST API requests (full lockdown of REST API routes).<br><br>When setting the option via an environment variable, the notation is a comma-separated string, for example `"classes/ChatMessage,users,functions/.*"`.<br><br>Defaults to `undefined` which means the feature is inactive and all routes are accessible.<br><br><b>Note:</b> File routes and the GraphQL API are not covered by this option.*/
+  routeAllowList: ?(string[]);
   /* (Optional) Restricts the use of maintenance key permissions to a list of IP addresses or ranges.<br><br>This option accepts a list of single IP addresses, for example `['10.0.0.1', '10.0.0.2']`. You can also use CIDR notation to specify an IP address range, for example `['10.0.1.0/24']`.<br><br><b>Special scenarios:</b><br>- Setting an empty array `[]` means that the maintenance key cannot be used even in Parse Server Cloud Code. This value cannot be set via an environment variable as there is no way to pass an empty array to Parse Server via an environment variable.<br>- Setting `['0.0.0.0/0', '::0']` means to allow any IPv4 and IPv6 address to use the maintenance key and effectively disables the IP filter.<br><br><b>Considerations:</b><br>- IPv4 and IPv6 addresses are not compared against each other. Each IP version (IPv4 and IPv6) needs to be considered separately. For example, `['0.0.0.0/0']` allows any IPv4 address and blocks every IPv6 address. Conversely, `['::0']` allows any IPv6 address and blocks every IPv4 address.<br>- Keep in mind that the IP version in use depends on the network stack of the environment in which Parse Server runs. A local environment may use a different IP version than a remote environment. For example, it's possible that locally the value `['0.0.0.0/0']` allows the request IP because the environment is using IPv4, but when Parse Server is deployed remotely the request IP is blocked because the remote environment is using IPv6.<br>- When setting the option via an environment variable the notation is a comma-separated string, for example `"0.0.0.0/0,::0"`.<br>- IPv6 zone indices (`%` suffix) are not supported, for example `fe80::1%eth0`, `fe80::1%1` or `::1%lo`.<br><br>Defaults to `['127.0.0.1', '::1']` which means that only `localhost`, the server instance on which Parse Server runs, is allowed to use the maintenance key.
   :DEFAULT: ["127.0.0.1","::1"] */
   maintenanceKeyIps: ?(string[]);
@@ -168,9 +170,21 @@ export interface ParseServerOptions {
   preserveFileName: ?boolean;
   /* Personally identifiable information fields in the user table the should be removed for non-authorized users. Deprecated @see protectedFields */
   userSensitiveFields: ?(string[]);
-  /* Protected fields that should be treated with extra security when fetching details.
+  /* Fields per class that are hidden from query results for specific user groups. Protected fields are stripped from the server response, but can still be used internally (e.g. in Cloud Code triggers). Configure as `{ 'ClassName': { 'UserGroup': ['field1', 'field2'] } }` where `UserGroup` is one of: `'*'` (all users), `'authenticated'` (authenticated users), `'role:RoleName'` (users with a specific role), `'userField:FieldName'` (users referenced by a pointer field), or a user `objectId` to target a specific user. When multiple groups apply, the intersection of their protected fields is used. Any field can be protected, including system fields like `createdAt` and `updatedAt`. By default, `email` is protected on the `_User` class for all users. On the `_User` class, the object owner is exempt from protected fields by default; see `protectedFieldsOwnerExempt` to change this.
   :DEFAULT: {"_User": {"*": ["email"]}} */
   protectedFields: ?ProtectedFields;
+  /* Whether the `_User` class is exempt from `protectedFields` when the logged-in user queries their own user object. If `true` (default), a user can see all their own fields regardless of `protectedFields` configuration; default protected fields (e.g. `email`) are merged into any custom `protectedFields` configuration. If `false`, `protectedFields` applies equally to the user's own object, consistent with all other classes; only explicitly configured protected fields apply, defaults are not merged. Defaults to `true`.
+  :ENV: PARSE_SERVER_PROTECTED_FIELDS_OWNER_EXEMPT
+  :DEFAULT: true */
+  protectedFieldsOwnerExempt: ?boolean;
+  /* Whether Cloud Code triggers (e.g. `beforeSave`, `afterSave`) are exempt from `protectedFields`. If `true`, triggers receive the full object including protected fields in `request.object` and `request.original`, regardless of the caller's auth context. If `false`, protected fields are stripped from the original object fetch used to build trigger objects. Defaults to `false`.
+  :ENV: PARSE_SERVER_PROTECTED_FIELDS_TRIGGER_EXEMPT
+  :DEFAULT: false */
+  protectedFieldsTriggerExempt: ?boolean;
+  /* Whether save operation responses (create, update) are exempt from `protectedFields`. If `true` (default), protected fields modified during a save are included in the response to the client. If `false`, protected fields are stripped from save responses, consistent with how they are stripped from query results. Defaults to `true`.
+  :ENV: PARSE_SERVER_PROTECTED_FIELDS_SAVE_RESPONSE_EXEMPT
+  :DEFAULT: true */
+  protectedFieldsSaveResponseExempt: ?boolean;
   /* Enable (or disable) anonymous users, defaults to true
   :ENV: PARSE_SERVER_ENABLE_ANON_USERS
   :DEFAULT: true */
@@ -341,6 +355,10 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_FILE_UPLOAD_OPTIONS
   :DEFAULT: {} */
   fileUpload: ?FileUploadOptions;
+  /* Options for file downloads
+  :ENV: PARSE_SERVER_FILE_DOWNLOAD_OPTIONS
+  :DEFAULT: {} */
+  fileDownload: ?FileDownloadOptions;
   /* Full path to your GraphQL custom schema.graphql file */
   graphQLSchema: ?string;
   /* Mounts the GraphQL endpoint
@@ -373,19 +391,27 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_REQUEST_COMPLEXITY
   :DEFAULT: {} */
   requestComplexity: ?RequestComplexityOptions;
+  /* Options controlling how Parse Server deduplicates `_Installation` records that share the same `deviceToken`.
+  :ENV: PARSE_SERVER_INSTALLATION
+  :DEFAULT: {} */
+  installation: ?InstallationOptions;
+  /* Query-related server defaults.
+  :ENV: PARSE_SERVER_QUERY
+  :DEFAULT: {} */
+  query: ?QueryServerOptions;
   /* The security options to identify and report weak security settings.
   :DEFAULT: {} */
   security: ?SecurityOptions;
   /* Set to true if new users should be created without public read and write access.
   :DEFAULT: true */
   enforcePrivateUsers: ?boolean;
-  /* Allow a user to log in even if the 3rd party authentication token that was used to sign in to their account has expired. If this is set to `false`, then the token will be validated every time the user signs in to their account. This refers to the token that is stored in the `_User.authData` field. Defaults to `false`.
+  /* Deprecated. This option will be removed in a future version. Auth providers are always validated on login. On update, if this is set to `true`, auth providers are only re-validated when the auth data has changed. If this is set to `false`, auth providers are re-validated on every update. Defaults to `false`.
   :DEFAULT: false */
   allowExpiredAuthDataToken: ?boolean;
   /* An array of keys and values that are prohibited in database read and write requests to prevent potential security vulnerabilities. It is possible to specify only a key (`{"key":"..."}`), only a value (`{"value":"..."}`) or a key-value pair (`{"key":"...","value":"..."}`). The specification can use the following types: `boolean`, `numeric` or `string`, where `string` will be interpreted as a regex notation. Request data is deep-scanned for matching definitions to detect also any nested occurrences. Defaults are patterns that are likely to be used in malicious requests. Setting this option will override the default patterns.
   :DEFAULT: [{"key":"_bsontype","value":"Code"},{"key":"constructor"},{"key":"__proto__"}] */
   requestKeywordDenylist: ?(RequestKeywordDenylist[]);
-  /* Options to limit repeated requests to Parse Server APIs. This can be used to protect sensitive endpoints such as `/requestPasswordReset` from brute-force attacks or Parse Server as a whole from denial-of-service (DoS) attacks.<br><br>ℹ️ Mind the following limitations:<br>- rate limits applied per IP address; this limits protection against distributed denial-of-service (DDoS) attacks where many requests are coming from various IP addresses<br>- if multiple Parse Server instances are behind a load balancer or ran in a cluster, each instance will calculate it's own request rates, independent from other instances; this limits the applicability of this feature when using a load balancer and another rate limiting solution that takes requests across all instances into account may be more suitable<br>- this feature provides basic protection against denial-of-service attacks, but a more sophisticated solution works earlier in the request flow and prevents a malicious requests to even reach a server instance; it's therefore recommended to implement a solution according to architecture and user case.
+  /* Options to limit repeated requests to Parse Server APIs. This can be used to protect sensitive endpoints such as `/requestPasswordReset` from brute-force attacks or Parse Server as a whole from denial-of-service (DoS) attacks.<br><br>ℹ️ Mind the following limitations:<br>- rate limits applied per IP address; this limits protection against distributed denial-of-service (DDoS) attacks where many requests are coming from various IP addresses<br>- if multiple Parse Server instances are behind a load balancer or ran in a cluster, each instance will calculate it's own request rates, independent from other instances; this limits the applicability of this feature when using a load balancer and another rate limiting solution that takes requests across all instances into account may be more suitable<br>- this feature provides basic protection against denial-of-service attacks, but a more sophisticated solution works earlier in the request flow and prevents a malicious requests to even reach a server instance; it's therefore recommended to implement a solution according to architecture and use case.
   :DEFAULT: [] */
   rateLimit: ?(RateLimitOptions[]);
   /* Options to customize the request context using inversion of control/dependency injection.*/
@@ -429,6 +455,10 @@ export interface RateLimitOptions {
 }
 
 export interface RequestComplexityOptions {
+  /* Whether to allow the `$regex` query operator. Set to `false` to reject `$regex` in queries for non-master-key users. Default is `true`.
+  :ENV: PARSE_SERVER_REQUEST_COMPLEXITY_ALLOW_REGEX
+  :DEFAULT: true */
+  allowRegex: ?boolean;
   /* Maximum depth of include pointer chains (e.g. `a.b.c` = depth 3). Set to `-1` to disable. Default is `-1`.
   :DEFAULT: -1 */
   includeDepth: ?number;
@@ -438,6 +468,9 @@ export interface RequestComplexityOptions {
   /* Maximum nesting depth of `$inQuery`, `$notInQuery`, `$select`, `$dontSelect` subqueries. Set to `-1` to disable. Default is `-1`.
   :DEFAULT: -1 */
   subqueryDepth: ?number;
+  /* Maximum number of results returned by a `$inQuery`, `$notInQuery`, `$select`, `$dontSelect` subquery. Set to `-1` to disable. Default is `-1`.
+  :DEFAULT: -1 */
+  subqueryLimit: ?number;
   /* Maximum nesting depth of `$or`, `$and`, `$nor` query operators. Set to `-1` to disable. Default is `-1`.
   :DEFAULT: -1 */
   queryDepth: ?number;
@@ -449,6 +482,21 @@ export interface RequestComplexityOptions {
   :ENV: PARSE_SERVER_REQUEST_COMPLEXITY_GRAPHQL_FIELDS
   :DEFAULT: -1 */
   graphQLFields: ?number;
+  /* Maximum number of sub-requests in a single batch request. Set to `-1` to disable. Default is `-1`.
+  :DEFAULT: -1 */
+  batchRequestLimit: ?number;
+}
+
+export interface InstallationOptions {
+  /* Whether the `_Installation` deduplication operation enforces the caller's auth context (and the resulting ACL and CLP). When `true`, the dedup `destroy`/`update` runs with the caller's `runOptions`, so ACL and CLP are honored. When `false`, the dedup runs as master and bypasses both. Master and maintenance keys always bypass regardless of this flag. Default is `false`.
+  :DEFAULT: false */
+  duplicateDeviceTokenActionEnforceAuth: ?boolean;
+  /* What Parse Server does to the conflicting `_Installation` row(s) when a new install's `deviceToken` collides with an existing row. `'delete'` destroys the conflicting row. `'update'` clears the now-conflicting ID field on the conflicting row, preserving custom fields, channels, and history. Default is `'delete'`.
+  :DEFAULT: delete */
+  duplicateDeviceTokenAction: ?string;
+  /* At the merge case (when an existing row holds the new `deviceToken` but has no `installationId` of its own), which side wins. `'deviceToken'` — the deviceToken-only row survives, the request's `idMatch` row is the loser. `'installationId'` — the request's `idMatch` (active install) survives, the deviceToken-only orphan is the loser. Default is `'deviceToken'`.
+  :DEFAULT: deviceToken */
+  duplicateDeviceTokenMergePriority: ?string;
 }
 
 export interface SecurityOptions {
@@ -460,6 +508,17 @@ export interface SecurityOptions {
   enableCheckLog: ?boolean;
   /* The security check groups to run. This allows to add custom security checks or override existing ones. Default are the groups defined in `CheckGroups.js`. */
   checkGroups: ?(CheckGroup[]);
+}
+
+export interface QueryServerOptions {
+  /* When `true`, all aggregation queries default to using MongoDB Extended JSON (EJSON) for explicit value typing and skip schema-based value coercion. Individual queries can still override this via the `rawValues` option. Default is `false`.
+  :ENV: PARSE_SERVER_QUERY_AGGREGATION_RAW_VALUES
+  :DEFAULT: false */
+  aggregationRawValues: ?boolean;
+  /* When `true`, all aggregation queries default to using native MongoDB field names (no automatic `createdAt` → `_created_at` rewriting). Individual queries can still override this via the `rawFieldNames` option. Default is `false`.
+  :ENV: PARSE_SERVER_QUERY_AGGREGATION_RAW_FIELD_NAMES
+  :DEFAULT: false */
+  aggregationRawFieldNames: ?boolean;
 }
 
 export interface PagesOptions {
@@ -679,6 +738,18 @@ export interface FileUploadOptions {
   /* Sets the allowed hostnames for file URLs referenced in Parse objects. When a File object includes a URL, its hostname must match one of these entries to be accepted. Supports exact hostnames (e.g., `'cdn.example.com'`) and wildcard subdomains (e.g., `'*.example.com'`). Use `['*']` to allow any domain. Use `[]` to block all file URLs (only name-based files allowed).
   :DEFAULT: ["*"] */
   allowedFileUrlDomains: ?(string[]);
+}
+
+export interface FileDownloadOptions {
+  /* Is true if file download should be allowed for anonymous users.
+  :DEFAULT: true */
+  enableForAnonymousUser: ?boolean;
+  /* Is true if file download should be allowed for authenticated users.
+  :DEFAULT: true */
+  enableForAuthenticatedUser: ?boolean;
+  /* Is true if file download should be allowed for anyone, regardless of user authentication.
+  :DEFAULT: true */
+  enableForPublic: ?boolean;
 }
 
 /* The available log levels for Parse Server logging. Valid values are:<br>- `'error'` - Error level (highest priority)<br>- `'warn'` - Warning level<br>- `'info'` - Info level (default)<br>- `'verbose'` - Verbose level<br>- `'debug'` - Debug level<br>- `'silly'` - Silly level (lowest priority) */

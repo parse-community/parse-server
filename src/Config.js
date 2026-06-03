@@ -12,8 +12,10 @@ import { version } from '../package.json';
 import {
   AccountLockoutOptions,
   DatabaseOptions,
+  FileDownloadOptions,
   FileUploadOptions,
   IdempotencyOptions,
+  InstallationOptions,
   LiveQueryOptions,
   LogLevels,
   PagesOptions,
@@ -100,6 +102,11 @@ export class Config {
   static put(serverConfiguration) {
     Config.validateOptions(serverConfiguration);
     Config.validateControllers(serverConfiguration);
+    if (serverConfiguration.routeAllowList) {
+      serverConfiguration._routeAllowListRegex = serverConfiguration.routeAllowList.map(
+        pattern => new RegExp('^' + pattern + '$')
+      );
+    }
     Config.transformConfiguration(serverConfiguration);
     AppCache.put(serverConfiguration.appId, serverConfiguration);
     Config.setupPasswordValidator(serverConfiguration.passwordPolicy);
@@ -125,6 +132,7 @@ export class Config {
     allowHeaders,
     idempotencyOptions,
     fileUpload,
+    fileDownload,
     pages,
     security,
     enforcePrivateUsers,
@@ -139,6 +147,8 @@ export class Config {
     allowClientClassCreation,
     requestComplexity,
     liveQuery,
+    routeAllowList,
+    installation,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -151,6 +161,11 @@ export class Config {
     this.validateAccountLockoutPolicy(accountLockout);
     this.validatePasswordPolicy(passwordPolicy);
     this.validateFileUploadOptions(fileUpload);
+    if (fileDownload == null) {
+      fileDownload = {};
+      arguments[0].fileDownload = fileDownload;
+    }
+    this.validateFileDownloadOptions(fileDownload);
 
     if (typeof revokeSessionOnPasswordReset !== 'boolean') {
       throw 'revokeSessionOnPasswordReset must be a boolean value';
@@ -183,6 +198,8 @@ export class Config {
     this.validateAllowClientClassCreation(allowClientClassCreation);
     this.validateRequestComplexity(requestComplexity);
     this.validateLiveQueryOptions(liveQuery);
+    this.validateRouteAllowList(routeAllowList);
+    this.validateInstallation(installation);
   }
 
   static validateCustomPages(customPages) {
@@ -579,6 +596,34 @@ export class Config {
     }
   }
 
+  static validateFileDownloadOptions(fileDownload) {
+    try {
+      if (fileDownload == null || typeof fileDownload !== 'object' || Array.isArray(fileDownload)) {
+        throw 'fileDownload must be an object value.';
+      }
+    } catch (e) {
+      if (e instanceof ReferenceError) {
+        return;
+      }
+      throw e;
+    }
+    if (fileDownload.enableForAnonymousUser === undefined) {
+      fileDownload.enableForAnonymousUser = FileDownloadOptions.enableForAnonymousUser.default;
+    } else if (typeof fileDownload.enableForAnonymousUser !== 'boolean') {
+      throw 'fileDownload.enableForAnonymousUser must be a boolean value.';
+    }
+    if (fileDownload.enableForPublic === undefined) {
+      fileDownload.enableForPublic = FileDownloadOptions.enableForPublic.default;
+    } else if (typeof fileDownload.enableForPublic !== 'boolean') {
+      throw 'fileDownload.enableForPublic must be a boolean value.';
+    }
+    if (fileDownload.enableForAuthenticatedUser === undefined) {
+      fileDownload.enableForAuthenticatedUser = FileDownloadOptions.enableForAuthenticatedUser.default;
+    } else if (typeof fileDownload.enableForAuthenticatedUser !== 'boolean') {
+      throw 'fileDownload.enableForAuthenticatedUser must be a boolean value.';
+    }
+  }
+
   static validateIps(field, masterKeyIps) {
     for (let ip of masterKeyIps) {
       if (ip.includes('/')) {
@@ -655,12 +700,56 @@ export class Config {
     for (const key of validKeys) {
       if (requestComplexity[key] !== undefined) {
         const value = requestComplexity[key];
-        if (!Number.isInteger(value) || (value < 1 && value !== -1)) {
+        const def = RequestComplexityOptions[key];
+        if (typeof def.default === 'boolean') {
+          if (typeof value !== 'boolean') {
+            throw new Error(`requestComplexity.${key} must be a boolean.`);
+          }
+        } else if (!Number.isInteger(value) || (value < 1 && value !== -1)) {
           throw new Error(`requestComplexity.${key} must be a positive integer or -1 to disable.`);
         }
       } else {
         requestComplexity[key] = RequestComplexityOptions[key].default;
       }
+    }
+  }
+
+  static validateInstallation(installation) {
+    if (installation === undefined) {
+      return;
+    }
+    if (typeof installation !== 'object' || Array.isArray(installation) || installation === null) {
+      throw 'installation must be an object.';
+    }
+    const validKeys = [
+      'duplicateDeviceTokenActionEnforceAuth',
+      'duplicateDeviceTokenAction',
+      'duplicateDeviceTokenMergePriority',
+    ];
+    for (const key of Object.keys(installation)) {
+      if (!validKeys.includes(key)) {
+        throw `installation contains unknown property '${key}'.`;
+      }
+    }
+    if (installation.duplicateDeviceTokenActionEnforceAuth === undefined) {
+      installation.duplicateDeviceTokenActionEnforceAuth =
+        InstallationOptions.duplicateDeviceTokenActionEnforceAuth.default;
+    } else if (typeof installation.duplicateDeviceTokenActionEnforceAuth !== 'boolean') {
+      throw 'installation.duplicateDeviceTokenActionEnforceAuth must be a boolean.';
+    }
+    const validActions = ['delete', 'update'];
+    if (installation.duplicateDeviceTokenAction === undefined) {
+      installation.duplicateDeviceTokenAction =
+        InstallationOptions.duplicateDeviceTokenAction.default;
+    } else if (!validActions.includes(installation.duplicateDeviceTokenAction)) {
+      throw "installation.duplicateDeviceTokenAction must be one of: 'delete', 'update'.";
+    }
+    const validPriorities = ['deviceToken', 'installationId'];
+    if (installation.duplicateDeviceTokenMergePriority === undefined) {
+      installation.duplicateDeviceTokenMergePriority =
+        InstallationOptions.duplicateDeviceTokenMergePriority.default;
+    } else if (!validPriorities.includes(installation.duplicateDeviceTokenMergePriority)) {
+      throw "installation.duplicateDeviceTokenMergePriority must be one of: 'deviceToken', 'installationId'.";
     }
   }
 
@@ -725,6 +814,25 @@ export class Config {
       liveQuery.regexTimeout = LiveQueryOptions.regexTimeout.default;
     } else if (typeof liveQuery.regexTimeout !== 'number') {
       throw `liveQuery.regexTimeout must be a number`;
+    }
+  }
+
+  static validateRouteAllowList(routeAllowList) {
+    if (routeAllowList === undefined || routeAllowList === null) {
+      return;
+    }
+    if (!Array.isArray(routeAllowList)) {
+      throw 'Parse Server option routeAllowList must be an array of strings.';
+    }
+    for (const pattern of routeAllowList) {
+      if (typeof pattern !== 'string') {
+        throw `Parse Server option routeAllowList contains a non-string value.`;
+      }
+      try {
+        new RegExp('^' + pattern + '$');
+      } catch {
+        throw `Parse Server option routeAllowList contains an invalid regex pattern: "${pattern}".`;
+      }
     }
   }
 
