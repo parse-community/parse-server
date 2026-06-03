@@ -1,3 +1,10 @@
+## [9.9.1-alpha.6](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.5...9.9.1-alpha.6) (2026-06-03)
+
+
+### Bug Fixes
+
+* Relation `$relatedTo` query bypasses `protectedFields` and owning-object ACL ([GHSA-wmwx-jr2p-4j4r](https://github.com/parse-community/parse-server/security/advisories/GHSA-wmwx-jr2p-4j4r)) ([#10493](https://github.com/parse-community/parse-server/issues/10493)) ([43658f1](https://github.com/parse-community/parse-server/commit/43658f1fd83689b24a4350094f1071ac555ac9b3))
+
 ## [9.9.1-alpha.5](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.4...9.9.1-alpha.5) (2026-06-03)
 
 
