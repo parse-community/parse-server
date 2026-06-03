@@ -73,6 +73,11 @@ A big _thank you_ 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
     - [Restricting File URL Domains](#restricting-file-url-domains)
   - [Idempotency Enforcement](#idempotency-enforcement)
   - [Installations](#installations)
+    - [Options](#options)
+      - [`duplicateDeviceTokenActionEnforceAuth`](#duplicatedevicetokenactionenforceauth)
+      - [`duplicateDeviceTokenAction`](#duplicatedevicetokenaction)
+      - [`duplicateDeviceTokenMergePriority`](#duplicatedevicetokenmergepriority)
+    - [Configuration example](#configuration-example)
   - [Localization](#localization)
     - [Pages](#pages)
       - [Localization with Directory Structure](#localization-with-directory-structure)
@@ -314,7 +319,7 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 
 ## Route Allow List
 
-The `routeAllowList` option restricts which API routes are accessible to external clients. When set, all external requests are denied by default unless the route matches one of the configured regex patterns. This is useful for apps where all logic runs in Cloud Code and clients should not access the API directly.
+The `routeAllowList` option restricts which REST API routes are accessible to external clients. When set, all external REST API requests are denied by default unless the route matches one of the configured regex patterns. This is useful for apps where all logic runs in Cloud Code and clients should not access the REST API directly.
 
 Internal calls from Cloud Code, Cloud Jobs, and triggers are not affected. Master key and maintenance key requests bypass the restriction.
 
@@ -334,7 +339,7 @@ const server = ParseServer({
 
 Each entry is a regex pattern matched against the normalized route identifier. Patterns are auto-anchored with `^` and `$` for full-match semantics. For example, `classes/Chat` matches only `classes/Chat`, not `classes/ChatRoom`. Use `classes/Chat.*` to match both.
 
-Setting an empty array `[]` blocks all external non-master-key requests (full lockdown). Not setting the option preserves current behavior (all routes accessible).
+Setting an empty array `[]` blocks all external non-master-key REST API requests (full lockdown of REST API routes). Not setting the option preserves current behavior (all routes accessible).
 
 ### Covered Routes
 
@@ -394,6 +399,9 @@ The following table lists all route groups covered by `routeAllowList` with exam
 
 > [!NOTE]
 > File routes are not covered by `routeAllowList`. File upload access is controlled via the `fileUpload` option. File download and metadata access is controlled via the `fileDownload` option.
+
+> [!NOTE]
+> The GraphQL API is not covered by `routeAllowList`. `routeAllowList` gates the REST API per route, while every GraphQL operation is transported over a single endpoint with the operation, target class, and field set encoded in the request body — so per-route allow-list semantics do not compose with it.
 
 ## Email Verification and Password Reset
 

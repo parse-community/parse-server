@@ -1,3 +1,31 @@
+## [9.9.1-alpha.4](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.3...9.9.1-alpha.4) (2026-06-01)
+
+
+### Bug Fixes
+
+* Stored XSS via trailing-dot filename bypassing file upload extension blocklist ([GHSA-7wqv-xjf3-x35v](https://github.com/parse-community/parse-server/security/advisories/GHSA-7wqv-xjf3-x35v)) ([#10489](https://github.com/parse-community/parse-server/issues/10489)) ([66484ce](https://github.com/parse-community/parse-server/commit/66484ce8fdd87a5d4c23bf9e40f7ea379b4dce79))
+
+## [9.9.1-alpha.3](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.2...9.9.1-alpha.3) (2026-05-27)
+
+
+### Bug Fixes
+
+* Server option routeAllowList is bypassable through batch sub-requests ([GHSA-p84r-h6rx-f2xr](https://github.com/parse-community/parse-server/security/advisories/GHSA-p84r-h6rx-f2xr)) ([#10482](https://github.com/parse-community/parse-server/issues/10482)) ([552c6dd](https://github.com/parse-community/parse-server/commit/552c6dd754638c9f546fbceecd2ba0f7225a95d1))
+
+## [9.9.1-alpha.2](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.1...9.9.1-alpha.2) (2026-05-18)
+
+
+### Bug Fixes
+
+* GraphQL "Did you mean" validation suggestions disclose schema to unauthenticated callers ([GHSA-8cph-rgr4-g5vj](https://github.com/parse-community/parse-server/security/advisories/GHSA-8cph-rgr4-g5vj)) ([#10467](https://github.com/parse-community/parse-server/issues/10467)) ([155123a](https://github.com/parse-community/parse-server/commit/155123ade9bc88cdf4807cf267ea1196f9274773))
+
+## [9.9.1-alpha.1](https://github.com/parse-community/parse-server/compare/9.9.0...9.9.1-alpha.1) (2026-05-17)
+
+
+### Bug Fixes
+
+* Pre-authentication denial of service via client version header regex backtracking ([GHSA-38m6-82c8-4xfm](https://github.com/parse-community/parse-server/security/advisories/GHSA-38m6-82c8-4xfm)) ([#10463](https://github.com/parse-community/parse-server/issues/10463)) ([56c159e](https://github.com/parse-community/parse-server/commit/56c159ec962d729df09ccaa5cc2537751511e375))
+
 # [9.9.0-alpha.3](https://github.com/parse-community/parse-server/compare/9.9.0-alpha.2...9.9.0-alpha.3) (2026-04-30)
 
 
