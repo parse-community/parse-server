@@ -5666,5 +5666,46 @@ describe('Vulnerabilities', () => {
       });
       expect(resB.data.results).toEqual([]);
     });
+
+    it('returns no results when the owning class denies get permission (CLP)', async () => {
+      // Owning class denies public `get`, so the owning-object read throws
+      // OPERATION_FORBIDDEN; the relation must then return no results.
+      const schema = new Parse.Schema('RelParentNoGet');
+      schema.addRelation('members', 'RelChild');
+      schema.setCLP({
+        find: { '*': true },
+        get: {},
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+      });
+      await schema.save();
+
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      const parent = new Parse.Object('RelParentNoGet', { name: 'no-get parent' });
+      parent.setACL(acl);
+      parent.relation('members').add(childLinked);
+      await parent.save(null, { useMasterKey: true });
+
+      const res = await request({
+        method: 'GET',
+        url: `${Parse.serverURL}/classes/RelChild`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        qs: {
+          where: JSON.stringify({
+            $relatedTo: {
+              object: { __type: 'Pointer', className: 'RelParentNoGet', objectId: parent.id },
+              key: 'members',
+            },
+          }),
+        },
+      }).catch(e => e);
+      expect(res.data.results).toEqual([]);
+    });
   });
 });
