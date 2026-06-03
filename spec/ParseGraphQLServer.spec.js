@@ -1059,6 +1059,27 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
+        it('should strip "Did you mean" type suggestions from validation errors without master or maintenance key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                query UnknownType($where: UsreWhereInput) {
+                  health
+                }
+              `,
+              variables: {
+                where: {},
+              },
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const message = e.networkError.result.errors[0].message;
+            expect(message).toContain('Unknown type');
+            expect(message).not.toMatch(/Did you mean/);
+            expect(message).not.toContain('UserWhereInput');
+          }
+        });
+
         it('should keep "Did you mean" suggestions with master key', async () => {
           try {
             await apolloClient.query({
