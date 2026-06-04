@@ -81,7 +81,7 @@ describe('buildConfigDefinitions', () => {
       expect(result.property.name).toBe('moduleOrObjectParser');
     });
 
-    it('should return numberOrBooleanParser for NumberOrBoolean GenericTypeAnnotation', () => {
+    it('should return numberOrBoolParser for NumberOrBoolean GenericTypeAnnotation', () => {
       const mockElement = {
         type: 'GenericTypeAnnotation',
         typeAnnotation: {
@@ -95,7 +95,7 @@ describe('buildConfigDefinitions', () => {
 
       expect(t.isMemberExpression(result)).toBe(true);
       expect(result.object.name).toBe('parsers');
-      expect(result.property.name).toBe('numberOrBooleanParser');
+      expect(result.property.name).toBe('numberOrBoolParser');
     });
 
     it('should return numberOrStringParser call expression for NumberOrString GenericTypeAnnotation', () => {
