@@ -137,10 +137,7 @@ describe('buildConfigDefinitions', () => {
       const mockElement = {
         type: 'UnionTypeAnnotation',
         typeAnnotation: {
-          types: [
-            { type: 'BooleanTypeAnnotation' },
-            { type: 'FunctionTypeAnnotation' },
-          ],
+          types: [{ type: 'BooleanTypeAnnotation' }, { type: 'FunctionTypeAnnotation' }],
         },
       };
 
@@ -154,10 +151,7 @@ describe('buildConfigDefinitions', () => {
     it('should return booleanOrFunctionParser for UnionTypeAnnotation containing boolean (non-nullable)', () => {
       const mockElement = {
         type: 'UnionTypeAnnotation',
-        types: [
-          { type: 'BooleanTypeAnnotation' },
-          { type: 'FunctionTypeAnnotation' },
-        ],
+        types: [{ type: 'BooleanTypeAnnotation' }, { type: 'FunctionTypeAnnotation' }],
       };
 
       const result = mapperFor(mockElement, t);
@@ -171,10 +165,7 @@ describe('buildConfigDefinitions', () => {
       const mockElement = {
         type: 'UnionTypeAnnotation',
         typeAnnotation: {
-          types: [
-            { type: 'StringTypeAnnotation' },
-            { type: 'NumberTypeAnnotation' },
-          ],
+          types: [{ type: 'StringTypeAnnotation' }, { type: 'NumberTypeAnnotation' }],
         },
       };
 
@@ -187,10 +178,7 @@ describe('buildConfigDefinitions', () => {
       const mockElement = {
         type: 'UnionTypeAnnotation',
         typeAnnotation: {
-          types: [
-            { type: 'BooleanTypeAnnotation' },
-            { type: 'VoidTypeAnnotation' },
-          ],
+          types: [{ type: 'BooleanTypeAnnotation' }, { type: 'VoidTypeAnnotation' }],
         },
       };
 
