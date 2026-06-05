@@ -58,6 +58,24 @@ function isTransientError(error) {
   return false;
 }
 
+function isInvalidHintError(error) {
+  if (!error || typeof error.message !== 'string') {
+    return false;
+  }
+
+  const message = error.message.toLowerCase();
+  const hasHintContext = message.includes('hint');
+  const hasIndexContext =
+    message.includes('index') ||
+    message.includes('badvalue') ||
+    error.code === 2 ||
+    error.code === 27 ||
+    error.codeName === 'BadValue' ||
+    error.codeName === 'IndexNotFound';
+
+  return hasHintContext && hasIndexContext;
+}
+
 const storageAdapterAllCollections = mongoAdapter => {
   return mongoAdapter
     .connect()
@@ -291,6 +309,10 @@ export class MongoStorageAdapter implements StorageAdapter {
     if (isTransientError(error)) {
       logger.error('Database transient error', error);
       throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database error');
+    }
+
+    if (isInvalidHintError(error)) {
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid hint: ${error.message}`);
     }
 
     throw error;

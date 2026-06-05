@@ -153,6 +153,24 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     expect(explain.queryPlanner.winningPlan.inputStage.inputStage.indexName).toBe('_id_');
   });
 
+  it('query find with invalid hint returns invalid query error', async () => {
+    const object = new TestObject();
+    await object.save();
+
+    const query = new Parse.Query(TestObject);
+    query.equalTo('objectId', object.id);
+    query.hint('missing_index');
+
+    try {
+      await query.find({ useMasterKey: true });
+      fail('Expected query.find to fail');
+    } catch (error) {
+      expect(error.code).toBe(Parse.Error.INVALID_QUERY);
+      expect(error.message.toLowerCase()).toContain('hint');
+      expect(error.code).not.toBe(Parse.Error.INTERNAL_SERVER_ERROR);
+    }
+  });
+
   it_only_mongodb_version('>=7')('query aggregate with hint (rest)', async () => {
     const object = new TestObject({ foo: 'bar' });
     await object.save();
