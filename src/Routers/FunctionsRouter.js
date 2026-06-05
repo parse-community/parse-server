@@ -201,6 +201,16 @@ export class FunctionsRouter extends PromiseRouter {
       return Promise.resolve();
     }
     const maxBytes = Utils.parseSizeToBytes(req.config.maxUploadSize);
+    // Reject early when the declared request size already exceeds the limit.
+    const contentLength = Number(req.headers['content-length']);
+    if (Number.isFinite(contentLength) && contentLength > maxBytes) {
+      return Promise.reject(
+        new Parse.Error(
+          Parse.Error.OBJECT_TOO_LARGE,
+          'Multipart request exceeds maximum upload size.'
+        )
+      );
+    }
     return new Promise((resolve, reject) => {
       const fields = Object.create(null);
       let totalBytes = 0;
@@ -213,11 +223,12 @@ export class FunctionsRouter extends PromiseRouter {
           new Parse.Error(Parse.Error.INVALID_JSON, `Invalid multipart request: ${err.message}`)
         );
       }
-      const safeReject = (err) => {
+      const safeReject = err => {
         if (settled) {
           return;
         }
         settled = true;
+        req.unpipe(busboy);
         busboy.destroy();
         reject(err);
       };
@@ -279,6 +290,26 @@ export class FunctionsRouter extends PromiseRouter {
         safeReject(
           new Parse.Error(Parse.Error.INVALID_JSON, `Invalid multipart request: ${err.message}`)
         );
+      });
+      // Enforce `maxUploadSize` against the raw request bytes (multipart
+      // boundaries, part headers, field names and part count included), not only
+      // the parsed field values and file contents. This mirrors how
+      // `express.json` bounds non-multipart bodies and stops a request composed
+      // of many empty parts from exceeding the limit on the wire.
+      let rawBytes = 0;
+      req.on('data', chunk => {
+        if (settled) {
+          return;
+        }
+        rawBytes += chunk.length;
+        if (rawBytes > maxBytes) {
+          safeReject(
+            new Parse.Error(
+              Parse.Error.OBJECT_TOO_LARGE,
+              'Multipart request exceeds maximum upload size.'
+            )
+          );
+        }
       });
       req.pipe(busboy);
     });
