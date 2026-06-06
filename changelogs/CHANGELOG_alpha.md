@@ -1,3 +1,10 @@
+## [9.9.1-alpha.7](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.6...9.9.1-alpha.7) (2026-06-06)
+
+
+### Bug Fixes
+
+* Cloud Function multipart requests bypass the maxUploadSize limit ([#10498](https://github.com/parse-community/parse-server/issues/10498)) ([f12e1c3](https://github.com/parse-community/parse-server/commit/f12e1c3e31fb211bb7fe106a9a295ac7d0dd4ea7))
+
 ## [9.9.1-alpha.6](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.5...9.9.1-alpha.6) (2026-06-03)
 
 
