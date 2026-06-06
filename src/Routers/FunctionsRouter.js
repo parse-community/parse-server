@@ -298,9 +298,6 @@ export class FunctionsRouter extends PromiseRouter {
       // of many empty parts from exceeding the limit on the wire.
       let rawBytes = 0;
       req.on('data', chunk => {
-        if (settled) {
-          return;
-        }
         rawBytes += chunk.length;
         if (rawBytes > maxBytes) {
           safeReject(
