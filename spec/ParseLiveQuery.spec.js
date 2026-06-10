@@ -1485,3 +1485,99 @@ describe('ParseLiveQuery', function () {
     });
   });
 });
+
+describe('ParseLiveQuery duplicate requestId handling', function () {
+  const WebSocket = require('ws');
+
+  const waitFor = async predicate => {
+    const deadline = Date.now() + 4000;
+    while (Date.now() < deadline) {
+      if (predicate()) {
+        return;
+      }
+      await sleep(20);
+    }
+    throw new Error('timed out waiting for condition');
+  };
+
+  let ws;
+
+  beforeEach(() => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+  });
+
+  afterEach(async () => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.close();
+    }
+    ws = null;
+  });
+
+  const connectAndSubscribe = async requestIds => {
+    ws = new WebSocket('ws://localhost:8378/1');
+    const messages = [];
+    ws.on('message', data => messages.push(JSON.parse(data.toString())));
+    await new Promise((resolve, reject) => {
+      ws.on('open', resolve);
+      ws.on('error', reject);
+    });
+    ws.send(JSON.stringify({ op: 'connect', applicationId: Parse.applicationId }));
+    await waitFor(() => messages.some(message => message.op === 'connected'));
+
+    for (const { requestId, marker } of requestIds) {
+      ws.send(
+        JSON.stringify({
+          op: 'subscribe',
+          requestId,
+          query: { className: 'LQDuplicateId', where: { marker } },
+        })
+      );
+    }
+    await waitFor(
+      () => messages.filter(message => message.op === 'subscribed').length === requestIds.length
+    );
+    return messages;
+  };
+
+  it('replaces rather than leaks subscriptions when a client reuses a requestId with different queries', async () => {
+    const parseServer = await reconfigureServer({
+      liveQuery: { classNames: ['LQDuplicateId'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const lqServer = parseServer.liveQueryServer;
+
+    await connectAndSubscribe([0, 1, 2, 3, 4].map(i => ({ requestId: 7, marker: `ws-${i}` })));
+
+    // Reusing one requestId must keep a single active subscription, not one per frame.
+    expect(lqServer.subscriptions.get('LQDuplicateId').size).toBe(1);
+
+    ws.close();
+    await waitFor(() => lqServer.clients.size === 0);
+
+    // No stale subscriptions may survive the disconnect.
+    const remaining = lqServer.subscriptions.get('LQDuplicateId')?.size ?? 0;
+    expect(remaining).toBe(0);
+  });
+
+  it('does not leak subscriptions when a client reuses a requestId with the same query', async () => {
+    const parseServer = await reconfigureServer({
+      liveQuery: { classNames: ['LQDuplicateId'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const lqServer = parseServer.liveQueryServer;
+
+    await connectAndSubscribe([0, 1, 2, 3, 4].map(() => ({ requestId: 7, marker: 'same' })));
+
+    expect(lqServer.subscriptions.get('LQDuplicateId').size).toBe(1);
+
+    ws.close();
+    await waitFor(() => lqServer.clients.size === 0);
+
+    const remaining = lqServer.subscriptions.get('LQDuplicateId')?.size ?? 0;
+    expect(remaining).toBe(0);
+  });
+});

@@ -1164,6 +1164,28 @@ class ParseLiveQueryServer {
       // Validate regex patterns in the subscription query
       this._validateQueryConstraints(request.query.where);
 
+      // If this client already has a subscription registered under this
+      // requestId, replace it by tearing down the previous subscription before
+      // creating the new one. The client-side metadata map is keyed only by
+      // requestId, so a duplicate `subscribe` frame would otherwise overwrite it
+      // while the previous Subscription stays in the server-wide map, leaking it
+      // for the lifetime of the process (disconnect cleanup only walks the
+      // surviving client metadata and never reaches the orphaned subscription).
+      const previousSubscriptionInfo = client.getSubscriptionInfo(request.requestId);
+      if (previousSubscriptionInfo) {
+        const previousSubscription = previousSubscriptionInfo.subscription;
+        previousSubscription.deleteClientSubscription(parseWebsocket.clientId, request.requestId);
+        const previousClassSubscriptions = this.subscriptions.get(previousSubscription.className);
+        if (previousClassSubscriptions) {
+          if (!previousSubscription.hasSubscribingClient()) {
+            previousClassSubscriptions.delete(previousSubscription.hash);
+          }
+          if (previousClassSubscriptions.size === 0) {
+            this.subscriptions.delete(previousSubscription.className);
+          }
+        }
+      }
+
       // Get subscription from subscriptions, create one if necessary
       const subscriptionHash = queryHash(request.query);
       // Add className to subscriptions if necessary
