@@ -22,7 +22,11 @@ class Subscription {
       this.clientRequestIds.set(clientId, []);
     }
     const requestIds = this.clientRequestIds.get(clientId);
-    requestIds.push(requestId);
+    // Keep (clientId, requestId) pairs unique so a duplicate registration cannot
+    // leave a residual entry that survives cleanup.
+    if (!requestIds.includes(requestId)) {
+      requestIds.push(requestId);
+    }
   }
 
   deleteClientSubscription(clientId: number, requestId: number): void {
