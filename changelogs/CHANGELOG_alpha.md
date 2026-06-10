@@ -1,3 +1,10 @@
+## [9.9.1-alpha.8](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.7...9.9.1-alpha.8) (2026-06-10)
+
+
+### Bug Fixes
+
+* LiveQuery subscriptions leak when a client reuses a subscribe requestId ([#10499](https://github.com/parse-community/parse-server/issues/10499)) ([3fad4fb](https://github.com/parse-community/parse-server/commit/3fad4fb1c4b41f51dab96532245bb302d2be30e6))
+
 ## [9.9.1-alpha.7](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.6...9.9.1-alpha.7) (2026-06-06)
 
 
