@@ -523,12 +523,14 @@ class ParseLiveQueryServer {
 
         // If there is no client which is subscribing this subscription, remove it from subscriptions
         const classSubscriptions = this.subscriptions.get(subscription.className);
-        if (!subscription.hasSubscribingClient()) {
-          classSubscriptions.delete(subscription.hash);
-        }
-        // If there is no subscriptions under this class, remove it from subscriptions
-        if (classSubscriptions.size === 0) {
-          this.subscriptions.delete(subscription.className);
+        if (classSubscriptions) {
+          if (!subscription.hasSubscribingClient()) {
+            classSubscriptions.delete(subscription.hash);
+          }
+          // If there is no subscriptions under this class, remove it from subscriptions
+          if (classSubscriptions.size === 0) {
+            this.subscriptions.delete(subscription.className);
+          }
         }
       }
 
@@ -1308,12 +1310,14 @@ class ParseLiveQueryServer {
     subscription.deleteClientSubscription(parseWebsocket.clientId, requestId);
     // If there is no client which is subscribing this subscription, remove it from subscriptions
     const classSubscriptions = this.subscriptions.get(className);
-    if (!subscription.hasSubscribingClient()) {
-      classSubscriptions.delete(subscription.hash);
-    }
-    // If there is no subscriptions under this class, remove it from subscriptions
-    if (classSubscriptions.size === 0) {
-      this.subscriptions.delete(className);
+    if (classSubscriptions) {
+      if (!subscription.hasSubscribingClient()) {
+        classSubscriptions.delete(subscription.hash);
+      }
+      // If there is no subscriptions under this class, remove it from subscriptions
+      if (classSubscriptions.size === 0) {
+        this.subscriptions.delete(className);
+      }
     }
     runLiveQueryEventHandlers({
       client,
