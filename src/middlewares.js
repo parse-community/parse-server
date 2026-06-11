@@ -264,7 +264,7 @@ export async function handleParseHeaders(req, res, next) {
     return invalidRequest(req, res);
   }
 
-  if (req.path == '/login') {
+  if (matchesExactRoute(req.path, '/login')) {
     delete info.sessionToken;
   }
 
@@ -320,7 +320,7 @@ const handleRateLimit = async (req, res, next) => {
 export const handleParseSession = async (req, res, next) => {
   try {
     const info = req.info;
-    if (req.auth || (req.path === '/sessions/me' && req.method === 'GET')) {
+    if (req.auth || (matchesExactRoute(req.path, '/sessions/me') && req.method === 'GET')) {
       next();
       return;
     }
@@ -538,6 +538,20 @@ function normalizeRouteAllowListPath(path, mount) {
     normalized = normalized.substring(0, queryIndex);
   }
   return normalized;
+}
+
+/**
+ * Returns true if `path` resolves to the given exact static `route`, matching Express's default
+ * case-insensitive and trailing-slash-tolerant routing. Path-literal checks (such as detecting
+ * `/login` to drop the inbound session token) must use this so they stay consistent with how the
+ * router actually dispatches the request; a strict `===` comparison would miss routing-equivalent
+ * variants like `/login/` or `/LOGIN`.
+ * @param {string} path The request path (e.g. `req.path` or a batch sub-request routable path).
+ * @param {string} route The exact, lower-case route to match (e.g. `/login`).
+ * @returns {boolean}
+ */
+export function matchesExactRoute(path, route) {
+  return typeof path === 'string' && path.replace(/\/$/, '').toLowerCase() === route;
 }
 
 export function isRouteAllowed(path, config, auth) {
