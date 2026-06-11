@@ -863,6 +863,220 @@ describe('rate limit', () => {
     });
   });
 
+  describe('query string', () => {
+    it('enforces rate limit on an exact static path when a query string is appended', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/login',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            errorResponseMessage: 'Too many login requests',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      await Parse.User.signUp('rluser', 'password');
+      // First login attempt carrying a query string — reaches /login and consumes the single token.
+      const res1 = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/login?bypass=1',
+        body: JSON.stringify({ username: 'rluser', password: 'wrong' }),
+      }).catch(e => e);
+      expect(res1.status).toBe(404);
+      expect(res1.data.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      // Second login attempt with a different query string — must be rate limited, not bypassed.
+      const res2 = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/login?bypass=2',
+        body: JSON.stringify({ username: 'rluser', password: 'wrong' }),
+      }).catch(e => e);
+      expect(res2.status).toBe(429);
+      expect(res2.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many login requests',
+      });
+    });
+
+    it('enforces rate limit on GET login when credentials are sent as query parameters', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/login',
+            requestMethods: ['GET'],
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            errorResponseMessage: 'Too many login requests',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      await Parse.User.signUp('rluser', 'password');
+      // GET login carries credentials in the query string; the limiter must still match.
+      const res1 = await request({
+        method: 'GET',
+        headers,
+        url: 'http://localhost:8378/1/login?username=rluser&password=wrong&r=1',
+      }).catch(e => e);
+      expect(res1.status).toBe(404);
+      const res2 = await request({
+        method: 'GET',
+        headers,
+        url: 'http://localhost:8378/1/login?username=rluser&password=wrong&r=2',
+      }).catch(e => e);
+      expect(res2.status).toBe(429);
+      expect(res2.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many login requests',
+      });
+    });
+
+    it('counts query-string and plain requests against the same rate limit window', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/login',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            errorResponseMessage: 'Too many login requests',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      await Parse.User.signUp('rluser', 'password');
+      // A plain request consumes the single token.
+      const res1 = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/login',
+        body: JSON.stringify({ username: 'rluser', password: 'wrong' }),
+      }).catch(e => e);
+      expect(res1.status).toBe(404);
+      // A subsequent request that appends a query string must draw from the same window.
+      const res2 = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/login?bypass=1',
+        body: JSON.stringify({ username: 'rluser', password: 'wrong' }),
+      }).catch(e => e);
+      expect(res2.status).toBe(429);
+      expect(res2.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many login requests',
+      });
+    });
+
+    it('does not let a batch sub-request reach an exact static route by appending a query string', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/login',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            errorResponseMessage: 'Too many login requests',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      await Parse.User.signUp('rluser', 'password');
+      // A query-string sub-request path is not normalized to /login: it fails to route
+      // (the limiter check and the router agree), so it cannot bypass the limiter.
+      const response = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/batch',
+        body: JSON.stringify({
+          requests: [
+            { method: 'POST', path: '/1/login?bypass=1', body: { username: 'rluser', password: 'wrong' } },
+            { method: 'POST', path: '/1/login?bypass=2', body: { username: 'rluser', password: 'wrong' } },
+          ],
+        }),
+      }).catch(e => e);
+      // The query string is preserved in the sub-request path (path.posix.join does not
+      // strip it), so the router finds no route for `/login?bypass=1`; tryRouteRequest
+      // throws synchronously and aborts the whole batch instead of reaching /login. The
+      // sub-request therefore cannot bypass the limiter.
+      expect(response.status).toBe(400);
+      expect(response.data.code).toBe(Parse.Error.INVALID_JSON);
+      expect(response.data.error).toContain('cannot route');
+    });
+
+    it('enforces rate limit on requestPasswordReset when a query string is appended', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/requestPasswordReset',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            errorResponseMessage: 'Too many reset requests',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      // First reset request carrying a query string reaches the handler and consumes the
+      // single token; the handler's own outcome is irrelevant — only that it is counted.
+      const res1 = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/requestPasswordReset?bypass=1',
+        body: JSON.stringify({ email: 'nobody@example.com' }),
+      }).catch(e => e);
+      expect(res1.status).not.toBe(429);
+      // Second reset request with a different query string must be rate limited.
+      const res2 = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/requestPasswordReset?bypass=2',
+        body: JSON.stringify({ email: 'nobody@example.com' }),
+      }).catch(e => e);
+      expect(res2.status).toBe(429);
+      expect(res2.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many reset requests',
+      });
+    });
+
+    it('does not split the user-zone rate limit window for /sessions/me via a query string', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/sessions/me',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            zone: Parse.Server.RateLimitZone.user,
+            errorResponseMessage: 'Too many session requests',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      const user = await Parse.User.signUp('rluser', 'password');
+      const sessionToken = user.getSessionToken();
+      const authHeaders = { ...headers, 'X-Parse-Session-Token': sessionToken };
+      // First read consumes the single token. The user-zone key resolves to the caller's IP
+      // here because the /sessions/me GET branch skips session resolution in the keyGenerator.
+      const res1 = await request({
+        method: 'GET',
+        headers: authHeaders,
+        url: 'http://localhost:8378/1/sessions/me',
+      }).catch(e => e);
+      expect(res1.status).toBe(200);
+      // Appending a query string must not move the request into a separate window keyed by
+      // user id; it must draw from the same window and be rate limited.
+      const res2 = await request({
+        method: 'GET',
+        headers: authHeaders,
+        url: 'http://localhost:8378/1/sessions/me?bypass=1',
+      }).catch(e => e);
+      expect(res2.status).toBe(429);
+      expect(res2.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many session requests',
+      });
+    });
+  });
+
   describe('method override bypass', () => {
     it('should enforce rate limit when _method override attempts to change POST to GET', async () => {
       Parse.Cloud.beforeLogin(() => {}, {
