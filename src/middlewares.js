@@ -264,7 +264,7 @@ export async function handleParseHeaders(req, res, next) {
     return invalidRequest(req, res);
   }
 
-  if (req.url == '/login') {
+  if (req.path == '/login') {
     delete info.sessionToken;
   }
 
@@ -294,7 +294,7 @@ const handleRateLimit = async (req, res, next) => {
     await Promise.all(
       rateLimits.map(async limit => {
         const pathExp = limit.path.regexp || limit.path;
-        if (pathExp.test(req.url)) {
+        if (pathExp.test(req.path)) {
           await limit.handler(req, res, err => {
             if (err) {
               if (err.code === Parse.Error.CONNECTION_FAILED) {
@@ -320,7 +320,7 @@ const handleRateLimit = async (req, res, next) => {
 export const handleParseSession = async (req, res, next) => {
   try {
     const info = req.info;
-    if (req.auth || (req.url === '/sessions/me' && req.method === 'GET')) {
+    if (req.auth || (req.path === '/sessions/me' && req.method === 'GET')) {
       next();
       return;
     }
