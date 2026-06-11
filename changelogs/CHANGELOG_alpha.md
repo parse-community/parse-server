@@ -1,3 +1,10 @@
+## [9.9.1-alpha.9](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.8...9.9.1-alpha.9) (2026-06-11)
+
+
+### Bug Fixes
+
+* rateLimit on exact static routes is bypassed by appending a query string ([#10500](https://github.com/parse-community/parse-server/issues/10500)) ([880e8e6](https://github.com/parse-community/parse-server/commit/880e8e6929fd62ed3680b138613bcfdcd572db07))
+
 ## [9.9.1-alpha.8](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.7...9.9.1-alpha.8) (2026-06-10)
 
 
