@@ -58,6 +58,51 @@ function isTransientError(error) {
   return false;
 }
 
+const INDEX_KEY_SPECS_CONFLICT = 86;
+const INDEX_OPTIONS_IGNORED_IN_COMPARISON = [
+  'v',
+  'key',
+  'name',
+  'ns',
+  'background',
+  'enableOrderedIndex',
+];
+const BOOLEAN_INDEX_OPTIONS = ['hidden', 'sparse', 'unique'];
+
+function isSameIndexKey(existingKey, requestedKey) {
+  if (!existingKey || !requestedKey) {
+    return false;
+  }
+
+  const existingKeys = Object.keys(existingKey);
+  const requestedKeys = Object.keys(requestedKey);
+  return (
+    _.isEqual(existingKeys, requestedKeys) &&
+    requestedKeys.every(key => _.isEqual(existingKey[key], requestedKey[key]))
+  );
+}
+
+function normalizeIndexOptionsForComparison(indexOptions) {
+  const normalizedOptions = _.omit(indexOptions, INDEX_OPTIONS_IGNORED_IN_COMPARISON);
+  BOOLEAN_INDEX_OPTIONS.forEach(option => {
+    if (!normalizedOptions[option]) {
+      delete normalizedOptions[option];
+    }
+  });
+  return normalizedOptions;
+}
+
+function isEquivalentExistingIndex(existingIndex, indexCreationRequest, indexOptions) {
+  if (!existingIndex || !isSameIndexKey(existingIndex.key, indexCreationRequest)) {
+    return false;
+  }
+
+  return _.isEqual(
+    normalizeIndexOptionsForComparison(existingIndex),
+    normalizeIndexOptionsForComparison(indexOptions)
+  );
+}
+
 const storageAdapterAllCollections = mongoAdapter => {
   return mongoAdapter
     .connect()
@@ -816,7 +861,19 @@ export class MongoStorageAdapter implements StorageAdapter {
 
     return this._adaptiveCollection(className)
       .then(collection =>
-        collection._mongoCollection.createIndex(indexCreationRequest, indexOptions)
+        collection._mongoCollection.createIndex(indexCreationRequest, indexOptions).catch(error => {
+          if (error.code !== INDEX_KEY_SPECS_CONFLICT || !indexName) {
+            throw error;
+          }
+
+          return collection._mongoCollection.indexes().then(indexes => {
+            const existingIndex = indexes.find(index => index.name === indexName);
+            if (isEquivalentExistingIndex(existingIndex, indexCreationRequest, indexOptions)) {
+              return indexName;
+            }
+            throw error;
+          });
+        })
       )
       .catch(err => this.handleError(err));
   }
