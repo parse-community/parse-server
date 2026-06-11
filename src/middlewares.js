@@ -540,18 +540,28 @@ function normalizeRouteAllowListPath(path, mount) {
   return normalized;
 }
 
+// Cache of compiled exact-route matchers, keyed by route. Mirrors how `addRateLimit` compiles a
+// route's `pathToRegexp` once and reuses it, avoiding recompilation on every request.
+const exactRouteRegexpCache = Object.create(null);
+
 /**
- * Returns true if `path` resolves to the given exact static `route`, matching Express's default
- * case-insensitive and trailing-slash-tolerant routing. Path-literal checks (such as detecting
- * `/login` to drop the inbound session token) must use this so they stay consistent with how the
- * router actually dispatches the request; a strict `===` comparison would miss routing-equivalent
- * variants like `/login/` or `/LOGIN`.
+ * Returns true if `path` resolves to the given exact static `route`, using the same
+ * `path-to-regexp` matching that the Express router and the rate limiter use (case-insensitive
+ * and trailing-slash-tolerant by default). Path-literal checks — such as detecting `/login` to
+ * drop the inbound session token — must use this so they stay consistent with how the router
+ * actually dispatches the request, instead of re-deriving the matching rules by hand.
  * @param {string} path The request path (e.g. `req.path` or a batch sub-request routable path).
- * @param {string} route The exact, lower-case route to match (e.g. `/login`).
+ * @param {string} route The exact static route to match (e.g. `/login`).
  * @returns {boolean}
  */
 export function matchesExactRoute(path, route) {
-  return typeof path === 'string' && path.replace(/\/$/, '').toLowerCase() === route;
+  if (typeof path !== 'string') {
+    return false;
+  }
+  if (!exactRouteRegexpCache[route]) {
+    exactRouteRegexpCache[route] = pathToRegexp(route).regexp;
+  }
+  return exactRouteRegexpCache[route].test(path);
 }
 
 export function isRouteAllowed(path, config, auth) {
