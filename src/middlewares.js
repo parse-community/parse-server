@@ -327,7 +327,7 @@ export const handleParseSession = async (req, res, next) => {
     let requestAuth = null;
     if (
       info.sessionToken &&
-      req.url === '/upgradeToRevocableSession' &&
+      matchesExactRoute(req.path, '/upgradeToRevocableSession') &&
       info.sessionToken.indexOf('r:') != 0
     ) {
       requestAuth = await auth.getAuthForLegacySessionToken({
