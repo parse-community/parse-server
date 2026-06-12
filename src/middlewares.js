@@ -264,7 +264,7 @@ export async function handleParseHeaders(req, res, next) {
     return invalidRequest(req, res);
   }
 
-  if (req.path == '/login') {
+  if (matchesExactRoute(req.path, '/login')) {
     delete info.sessionToken;
   }
 
@@ -320,14 +320,14 @@ const handleRateLimit = async (req, res, next) => {
 export const handleParseSession = async (req, res, next) => {
   try {
     const info = req.info;
-    if (req.auth || (req.path === '/sessions/me' && req.method === 'GET')) {
+    if (req.auth || (matchesExactRoute(req.path, '/sessions/me') && req.method === 'GET')) {
       next();
       return;
     }
     let requestAuth = null;
     if (
       info.sessionToken &&
-      req.url === '/upgradeToRevocableSession' &&
+      matchesExactRoute(req.path, '/upgradeToRevocableSession') &&
       info.sessionToken.indexOf('r:') != 0
     ) {
       requestAuth = await auth.getAuthForLegacySessionToken({
@@ -538,6 +538,30 @@ function normalizeRouteAllowListPath(path, mount) {
     normalized = normalized.substring(0, queryIndex);
   }
   return normalized;
+}
+
+// Cache of compiled exact-route matchers, keyed by route. Mirrors how `addRateLimit` compiles a
+// route's `pathToRegexp` once and reuses it, avoiding recompilation on every request.
+const exactRouteRegexpCache = Object.create(null);
+
+/**
+ * Returns true if `path` resolves to the given exact static `route`, using the same
+ * `path-to-regexp` matching that the Express router and the rate limiter use (case-insensitive
+ * and trailing-slash-tolerant by default). Path-literal checks — such as detecting `/login` to
+ * drop the inbound session token — must use this so they stay consistent with how the router
+ * actually dispatches the request, instead of re-deriving the matching rules by hand.
+ * @param {string} path The request path (e.g. `req.path` or a batch sub-request routable path).
+ * @param {string} route The exact static route to match (e.g. `/login`).
+ * @returns {boolean}
+ */
+export function matchesExactRoute(path, route) {
+  if (typeof path !== 'string') {
+    return false;
+  }
+  if (!exactRouteRegexpCache[route]) {
+    exactRouteRegexpCache[route] = pathToRegexp(route).regexp;
+  }
+  return exactRouteRegexpCache[route].test(path);
 }
 
 export function isRouteAllowed(path, config, auth) {

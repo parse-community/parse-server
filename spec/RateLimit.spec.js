@@ -1077,6 +1077,122 @@ describe('rate limit', () => {
     });
   });
 
+  describe('exact static route variants', () => {
+    // Express routing is case-insensitive and trailing-slash-tolerant by default, so `/login/`
+    // and `/LOGIN` reach the same handler as `/login`. The login session-token deletion (used
+    // for rate-limit zone keying) must recognize those routing-equivalent variants too, or a
+    // session/user-zone `/login` limiter can be keyed by a rotated token instead of the IP.
+    it('does not split the session-zone /login rate limit window via a trailing slash', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/login',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            zone: Parse.Server.RateLimitZone.session,
+            errorResponseMessage: 'Too many login requests',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      const user = await Parse.User.signUp('rluser', 'password');
+      const authHeaders = { ...headers, 'X-Parse-Session-Token': user.getSessionToken() };
+      // Plain /login deletes the session token, so the session zone keys by IP and the window
+      // is consumed.
+      const res1 = await request({
+        method: 'POST',
+        headers: authHeaders,
+        url: 'http://localhost:8378/1/login',
+        body: JSON.stringify({ username: 'rluser', password: 'wrong' }),
+      }).catch(e => e);
+      expect(res1.status).toBe(404);
+      // The trailing-slash variant routes to the same handler and must also drop the token,
+      // keying by IP so it draws from the same window instead of a token-keyed one.
+      const res2 = await request({
+        method: 'POST',
+        headers: authHeaders,
+        url: 'http://localhost:8378/1/login/',
+        body: JSON.stringify({ username: 'rluser', password: 'wrong' }),
+      }).catch(e => e);
+      expect(res2.status).toBe(429);
+      expect(res2.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many login requests',
+      });
+    });
+
+    it('does not split the session-zone /login rate limit window via path casing', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/login',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            zone: Parse.Server.RateLimitZone.session,
+            errorResponseMessage: 'Too many login requests',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      const user = await Parse.User.signUp('rluser', 'password');
+      const authHeaders = { ...headers, 'X-Parse-Session-Token': user.getSessionToken() };
+      const res1 = await request({
+        method: 'POST',
+        headers: authHeaders,
+        url: 'http://localhost:8378/1/login',
+        body: JSON.stringify({ username: 'rluser', password: 'wrong' }),
+      }).catch(e => e);
+      expect(res1.status).toBe(404);
+      // The upper-case variant routes to the same handler and must be rate limited too.
+      const res2 = await request({
+        method: 'POST',
+        headers: authHeaders,
+        url: 'http://localhost:8378/1/LOGIN',
+        body: JSON.stringify({ username: 'rluser', password: 'wrong' }),
+      }).catch(e => e);
+      expect(res2.status).toBe(429);
+      expect(res2.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many login requests',
+      });
+    });
+
+    it('does not split the user-zone /sessions/me rate limit window via a trailing slash', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/sessions/me',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            zone: Parse.Server.RateLimitZone.user,
+            errorResponseMessage: 'Too many session requests',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      const user = await Parse.User.signUp('rluser', 'password');
+      const authHeaders = { ...headers, 'X-Parse-Session-Token': user.getSessionToken() };
+      const res1 = await request({
+        method: 'GET',
+        headers: authHeaders,
+        url: 'http://localhost:8378/1/sessions/me',
+      }).catch(e => e);
+      expect(res1.status).toBe(200);
+      // The trailing-slash variant routes to the same handler and must key identically, drawing
+      // from the same window instead of a separate user-id-keyed one.
+      const res2 = await request({
+        method: 'GET',
+        headers: authHeaders,
+        url: 'http://localhost:8378/1/sessions/me/',
+      }).catch(e => e);
+      expect(res2.status).toBe(429);
+      expect(res2.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many session requests',
+      });
+    });
+  });
+
   describe('method override bypass', () => {
     it('should enforce rate limit when _method override attempts to change POST to GET', async () => {
       Parse.Cloud.beforeLogin(() => {}, {
