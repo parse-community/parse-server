@@ -1,3 +1,10 @@
+## [9.9.1-alpha.10](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.9...9.9.1-alpha.10) (2026-06-12)
+
+
+### Bug Fixes
+
+* Middleware route checks do not match routing-equivalent path variants (trailing slash, case) ([#10501](https://github.com/parse-community/parse-server/issues/10501)) ([f861210](https://github.com/parse-community/parse-server/commit/f8612109e3175399b4f814efcc961128de6143a5))
+
 ## [9.9.1-alpha.9](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.8...9.9.1-alpha.9) (2026-06-11)
 
 
