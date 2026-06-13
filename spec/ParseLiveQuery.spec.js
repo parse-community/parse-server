@@ -1805,9 +1805,18 @@ describe('ParseLiveQuery cross-origin connection authorization', function () {
     secretObj.set('body', 'secret');
     await secretObj.save(null, { useMasterKey: true });
 
-    await sleep(300);
-    expect(attacker.countOp('create')).toBe(1);
-    expect(attacker.createdIds()).not.toContain(secretObj.id);
+    // A second public save acts as an ordering barrier: LiveQuery delivers events on a
+    // subscription in publish order, so once this later object's `create` arrives, the
+    // earlier `secret` save has already had its chance. Asserting the exact id list is
+    // then deterministic rather than relying on a wall-clock window.
+    const publicObj2 = new Parse.Object('CrossOriginChat');
+    const publicACL2 = new Parse.ACL();
+    publicACL2.setPublicReadAccess(true);
+    publicObj2.setACL(publicACL2);
+    publicObj2.set('body', 'public-2');
+    await publicObj2.save(null, { useMasterKey: true });
+    await attacker.waitForOpCount('create', 2);
+    expect(attacker.createdIds()).toEqual([publicObj.id, publicObj2.id]);
   });
 
   it('delivers ACL-protected objects only when the connection presents the owner session token', async () => {
