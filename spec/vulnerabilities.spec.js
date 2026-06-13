@@ -2307,6 +2307,207 @@ describe('Vulnerabilities', () => {
     });
   });
 
+  describe('(GHSA-wmwx-jr2p-4j4r) $relatedTo bypasses protectedFields and parent ACL for Relation fields', () => {
+    let childLinked;
+    let parentProtectedKey;
+    let parentPrivate;
+    let parentPublic;
+
+    const relatedToWhere = (parentId, key, extra = {}) => ({
+      $relatedTo: {
+        object: { __type: 'Pointer', className: 'RelParent', objectId: parentId },
+        key,
+      },
+      ...extra,
+    });
+
+    const queryChild = (where, headers = {}) =>
+      request({
+        method: 'GET',
+        url: `${Parse.serverURL}/classes/RelChild`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          ...headers,
+        },
+        qs: { where: JSON.stringify(where) },
+      }).catch(e => e);
+
+    beforeEach(async () => {
+      const schema = new Parse.Schema('RelParent');
+      schema.addString('name');
+      schema.addRelation('secretRel', 'RelChild');
+      schema.addRelation('openRel', 'RelChild');
+      schema.setCLP({
+        find: { '*': true },
+        get: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+        // secretRel is a protected Relation field for public clients
+        protectedFields: { '*': ['secretRel'] },
+      });
+      await schema.save();
+
+      childLinked = new Parse.Object('RelChild', { value: 'linked child' });
+      await childLinked.save(null, { useMasterKey: true });
+
+      const publicAcl = new Parse.ACL();
+      publicAcl.setPublicReadAccess(true);
+
+      const privateAcl = new Parse.ACL();
+      privateAcl.setPublicReadAccess(false);
+      privateAcl.setPublicWriteAccess(false);
+
+      // Publicly readable parent whose relation key is protected (isolates the
+      // protectedFields facet).
+      parentProtectedKey = new Parse.Object('RelParent', { name: 'protected-key parent' });
+      parentProtectedKey.setACL(publicAcl);
+      parentProtectedKey.relation('secretRel').add(childLinked);
+      await parentProtectedKey.save(null, { useMasterKey: true });
+
+      // Parent that is not readable by the public, queried via a non-protected
+      // relation key (isolates the parent-ACL facet).
+      parentPrivate = new Parse.Object('RelParent', { name: 'private parent' });
+      parentPrivate.setACL(privateAcl);
+      parentPrivate.relation('openRel').add(childLinked);
+      await parentPrivate.save(null, { useMasterKey: true });
+
+      // Publicly readable parent with a non-protected relation key (legitimate
+      // use that must keep working).
+      parentPublic = new Parse.Object('RelParent', { name: 'public parent' });
+      parentPublic.setACL(publicAcl);
+      parentPublic.relation('openRel').add(childLinked);
+      await parentPublic.save(null, { useMasterKey: true });
+    });
+
+    it('denies $relatedTo query that references a protected relation field', async () => {
+      const res = await queryChild(relatedToWhere(parentProtectedKey.id, 'secretRel'));
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    });
+
+    it('denies $relatedTo on a protected relation field nested in $or', async () => {
+      const res = await queryChild({
+        $or: [relatedToWhere(parentProtectedKey.id, 'secretRel')],
+      });
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    });
+
+    it('denies $relatedTo on a protected relation field nested in $and', async () => {
+      const res = await queryChild({
+        $and: [relatedToWhere(parentProtectedKey.id, 'secretRel')],
+      });
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    });
+
+    it('denies $relatedTo on a protected relation field nested in $nor', async () => {
+      const res = await queryChild({
+        $nor: [relatedToWhere(parentProtectedKey.id, 'secretRel')],
+      });
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    });
+
+    it('returns no results when the owning object is not readable by the caller', async () => {
+      const res = await queryChild(relatedToWhere(parentPrivate.id, 'openRel'));
+      expect(res.data.results).toEqual([]);
+    });
+
+    it('does not act as a membership oracle for an unreadable owning object', async () => {
+      const res = await queryChild(
+        relatedToWhere(parentPrivate.id, 'openRel', { objectId: childLinked.id })
+      );
+      expect(res.data.results).toEqual([]);
+    });
+
+    it('still returns related objects for a readable parent and non-protected key', async () => {
+      const res = await queryChild(relatedToWhere(parentPublic.id, 'openRel'));
+      expect(res.data.results.length).toBe(1);
+      expect(res.data.results[0].objectId).toBe(childLinked.id);
+    });
+
+    it('allows master key to query a protected relation and an unreadable parent', async () => {
+      const masterHeaders = { 'X-Parse-Master-Key': Parse.masterKey };
+      const resProtected = await queryChild(
+        relatedToWhere(parentProtectedKey.id, 'secretRel'),
+        masterHeaders
+      );
+      expect(resProtected.data.results.length).toBe(1);
+      const resPrivate = await queryChild(
+        relatedToWhere(parentPrivate.id, 'openRel'),
+        masterHeaders
+      );
+      expect(resPrivate.data.results.length).toBe(1);
+    });
+
+    it('respects user-level read access to the owning object', async () => {
+      const userA = await Parse.User.signUp('relUserA', 'pw');
+      const userB = await Parse.User.signUp('relUserB', 'pw');
+
+      const acl = new Parse.ACL();
+      acl.setReadAccess(userA, true);
+      const parent = new Parse.Object('RelParent', { name: 'user-scoped parent' });
+      parent.setACL(acl);
+      parent.relation('openRel').add(childLinked);
+      await parent.save(null, { useMasterKey: true });
+
+      const resA = await queryChild(relatedToWhere(parent.id, 'openRel'), {
+        'X-Parse-Session-Token': userA.getSessionToken(),
+      });
+      expect(resA.data.results.length).toBe(1);
+
+      const resB = await queryChild(relatedToWhere(parent.id, 'openRel'), {
+        'X-Parse-Session-Token': userB.getSessionToken(),
+      });
+      expect(resB.data.results).toEqual([]);
+    });
+
+    it('returns no results when the owning class denies get permission (CLP)', async () => {
+      // Owning class denies public `get`, so the owning-object read throws
+      // OPERATION_FORBIDDEN; the relation must then return no results.
+      const schema = new Parse.Schema('RelParentNoGet');
+      schema.addRelation('members', 'RelChild');
+      schema.setCLP({
+        find: { '*': true },
+        get: {},
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+      });
+      await schema.save();
+
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      const parent = new Parse.Object('RelParentNoGet', { name: 'no-get parent' });
+      parent.setACL(acl);
+      parent.relation('members').add(childLinked);
+      await parent.save(null, { useMasterKey: true });
+
+      const res = await request({
+        method: 'GET',
+        url: `${Parse.serverURL}/classes/RelChild`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        qs: {
+          where: JSON.stringify({
+            $relatedTo: {
+              object: { __type: 'Pointer', className: 'RelParentNoGet', objectId: parent.id },
+              key: 'members',
+            },
+          }),
+        },
+      }).catch(e => e);
+      expect(res.data.results).toEqual([]);
+    });
+  });
+
   describe('(GHSA-j7mm-f4rv-6q6q) Protected fields bypass via LiveQuery dot-notation WHERE', () => {
     let obj;
 
@@ -6149,6 +6350,144 @@ describe('Vulnerabilities', () => {
       expect(req.body._ClientVersion).toBeUndefined();
       expect(req.info.clientVersion).toBeUndefined();
       expect(req.info.clientSDK).toBeUndefined();
+    });
+  });
+
+  describe('(GHSA-75v4-m273-5j49) _User CLP refetch fallback leaks raw MFA secrets and protected fields', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+
+    const denyGetCLP = {
+      get: {},
+      find: {},
+      create: { '*': true },
+      update: { '*': true },
+      delete: {},
+    };
+
+    const updateUserCLP = classLevelPermissions =>
+      request({
+        method: 'PUT',
+        url: Parse.serverURL + '/schemas/_User',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ classLevelPermissions }),
+      });
+
+    async function setupMfaUser() {
+      const OTPAuth = require('otpauth');
+      const user = await Parse.User.signUp('victim', 'password');
+      const sessionToken = user.getSessionToken();
+      user.set('phone', '555-1234');
+      await user.save(null, { sessionToken });
+      const secret = new OTPAuth.Secret();
+      const totp = new OTPAuth.TOTP({ algorithm: 'SHA1', digits: 6, period: 30, secret });
+      await user.save(
+        { authData: { mfa: { secret: secret.base32, token: totp.generate() } } },
+        { sessionToken }
+      );
+      return { user, totp, secret };
+    }
+
+    beforeEach(async () => {
+      await reconfigureServer({
+        auth: {
+          mfa: { enabled: true, options: ['TOTP'], algorithm: 'SHA1', digits: 6, period: 30 },
+        },
+        protectedFields: { _User: { '*': ['phone'] } },
+        protectedFieldsOwnerExempt: false,
+      });
+    });
+
+    it('does not leak raw MFA secrets or protected fields from /verifyPassword when _User get CLP denies the re-fetch', async () => {
+      await setupMfaUser();
+      await updateUserCLP(denyGetCLP);
+
+      const response = await request({
+        method: 'POST',
+        url: Parse.serverURL + '/verifyPassword',
+        headers,
+        body: JSON.stringify({ username: 'victim', password: 'password' }),
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.data.objectId).toBeDefined();
+      // Access control denied the re-fetch, so no stored fields may be disclosed
+      expect(response.data.authData).toBeUndefined();
+      expect(response.data.phone).toBeUndefined();
+    });
+
+    it('does not leak raw MFA secrets or protected fields from /login when _User get CLP denies the re-fetch', async () => {
+      const { totp } = await setupMfaUser();
+      await updateUserCLP(denyGetCLP);
+
+      const response = await request({
+        method: 'POST',
+        url: Parse.serverURL + '/login',
+        headers,
+        body: JSON.stringify({
+          username: 'victim',
+          password: 'password',
+          authData: { mfa: { token: totp.generate() } },
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      // Login still succeeds and issues a session for the authenticated user
+      expect(response.data.objectId).toBeDefined();
+      expect(response.data.sessionToken).toBeDefined();
+      // But discloses no stored fields the caller may not read
+      expect(response.data.authData).toBeUndefined();
+      expect(response.data.phone).toBeUndefined();
+    });
+
+    it('sanitizes MFA secrets and protected fields on /verifyPassword when get CLP permits the re-fetch', async () => {
+      await setupMfaUser();
+
+      const response = await request({
+        method: 'POST',
+        url: Parse.serverURL + '/verifyPassword',
+        headers,
+        body: JSON.stringify({ username: 'victim', password: 'password' }),
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.data.objectId).toBeDefined();
+      // afterFind replaces raw MFA material with a status flag
+      expect(response.data.authData.mfa.status).toBe('enabled');
+      expect(response.data.authData.mfa.secret).toBeUndefined();
+      expect(response.data.authData.mfa.recovery).toBeUndefined();
+      // protectedFieldsOwnerExempt:false strips protected fields even for the owner
+      expect(response.data.phone).toBeUndefined();
+    });
+
+    it('returns the full user to a master-key /verifyPassword even when get CLP is denied', async () => {
+      await setupMfaUser();
+      await updateUserCLP(denyGetCLP);
+
+      const response = await request({
+        method: 'POST',
+        url: Parse.serverURL + '/verifyPassword',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: 'victim', password: 'password' }),
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.data.objectId).toBeDefined();
+      // Master bypasses CLP and protectedFields by design, so it still receives
+      // the full record (auth hierarchy preserved); the minimal denied-path
+      // response only applies to non-master callers.
+      expect(response.data.phone).toBe('555-1234');
     });
   });
 });

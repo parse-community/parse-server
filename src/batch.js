@@ -1,6 +1,6 @@
 const Parse = require('parse/node').Parse;
 const path = require('path');
-const { isRouteAllowed } = require('./middlewares');
+const { isRouteAllowed, matchesExactRoute } = require('./middlewares');
 const { createSanitizedError } = require('./Error');
 // These methods handle batch requests.
 const batchPath = '/batch';
@@ -123,7 +123,7 @@ async function handleBatch(router, req) {
         continue;
       }
       const info = { ...req.info };
-      if (routablePath === '/login') {
+      if (matchesExactRoute(routablePath, '/login')) {
         delete info.sessionToken;
       }
       const fakeReq = {
