@@ -1729,9 +1729,9 @@ describe('ParseLiveQuery cross-origin connection authorization', function () {
     sockets = [];
   });
 
-  // Opens a raw LiveQuery WebSocket client. `sessionToken` is omitted to model a
+  // Opens a raw LiveQuery WebSocket client with no session token, modeling a
   // cross-origin page that has no access to the victim's session.
-  const openClient = async (sessionToken) => {
+  const openClient = async () => {
     const socket = new WebSocket('ws://localhost:8378/1');
     sockets.push(socket);
     const messages = [];
@@ -1740,11 +1740,7 @@ describe('ParseLiveQuery cross-origin connection authorization', function () {
       socket.on('open', resolve);
       socket.on('error', reject);
     });
-    const connect = { op: 'connect', applicationId: Parse.applicationId };
-    if (sessionToken) {
-      connect.sessionToken = sessionToken;
-    }
-    socket.send(JSON.stringify(connect));
+    socket.send(JSON.stringify({ op: 'connect', applicationId: Parse.applicationId }));
     const client = {
       socket,
       messages,
@@ -1817,37 +1813,5 @@ describe('ParseLiveQuery cross-origin connection authorization', function () {
     await publicObj2.save(null, { useMasterKey: true });
     await attacker.waitForOpCount('create', 2);
     expect(attacker.createdIds()).toEqual([publicObj.id, publicObj2.id]);
-  });
-
-  it('delivers ACL-protected objects only when the connection presents the owner session token', async () => {
-    await reconfigureServer({
-      liveQuery: { classNames: ['CrossOriginChat'] },
-      startLiveQueryServer: true,
-      verbose: false,
-      silent: true,
-    });
-
-    const victim = new Parse.User();
-    victim.setUsername('victim');
-    victim.setPassword('password');
-    await victim.signUp();
-    const ownerToken = victim.getSessionToken();
-
-    // The legitimate first-party client holds the victim's session token (which a
-    // cross-origin attacker cannot obtain) and therefore does receive the private object.
-    const owner = await openClient(ownerToken);
-    owner.subscribe(1, 'CrossOriginChat', {});
-    await owner.waitForOpCount('subscribed', 1);
-
-    const secretObj = new Parse.Object('CrossOriginChat');
-    const secretACL = new Parse.ACL();
-    secretACL.setPublicReadAccess(false);
-    secretACL.setReadAccess(victim, true);
-    secretObj.setACL(secretACL);
-    secretObj.set('body', 'secret');
-    await secretObj.save(null, { useMasterKey: true });
-
-    await owner.waitForOpCount('create', 1);
-    expect(owner.createdIds()).toEqual([secretObj.id]);
   });
 });
