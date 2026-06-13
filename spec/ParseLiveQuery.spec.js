@@ -1694,3 +1694,151 @@ describe('ParseLiveQuery duplicate requestId handling', function () {
     expect(lqServer.subscriptions.get('LQDupA')?.size ?? 0).toBe(0);
   });
 });
+
+describe('ParseLiveQuery cross-origin connection authorization', function () {
+  // CSWSH report (WSAdapter): LiveQuery auth is bound to the sessionToken in the
+  // `connect` message body, not to ambient/cookie credentials. A cross-origin page
+  // cannot read the victim's sessionToken, so its connection is anonymous and ACL
+  // filtering limits it to public-read objects only.
+  const WebSocket = require('ws');
+
+  const waitFor = async predicate => {
+    const deadline = Date.now() + 4000;
+    while (Date.now() < deadline) {
+      if (predicate()) {
+        return;
+      }
+      await sleep(20);
+    }
+    throw new Error('timed out waiting for condition');
+  };
+
+  let sockets;
+
+  beforeEach(() => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    sockets = [];
+  });
+
+  afterEach(() => {
+    for (const socket of sockets) {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.close();
+      }
+    }
+    sockets = [];
+  });
+
+  // Opens a raw LiveQuery WebSocket client. `sessionToken` is omitted to model a
+  // cross-origin page that has no access to the victim's session.
+  const openClient = async (sessionToken) => {
+    const socket = new WebSocket('ws://localhost:8378/1');
+    sockets.push(socket);
+    const messages = [];
+    socket.on('message', data => messages.push(JSON.parse(data.toString())));
+    await new Promise((resolve, reject) => {
+      socket.on('open', resolve);
+      socket.on('error', reject);
+    });
+    const connect = { op: 'connect', applicationId: Parse.applicationId };
+    if (sessionToken) {
+      connect.sessionToken = sessionToken;
+    }
+    socket.send(JSON.stringify(connect));
+    const client = {
+      socket,
+      messages,
+      subscribe(requestId, className, where) {
+        socket.send(JSON.stringify({ op: 'subscribe', requestId, query: { className, where } }));
+      },
+      countOp(op) {
+        return messages.filter(message => message.op === op).length;
+      },
+      createdIds() {
+        return messages.filter(m => m.op === 'create').map(m => m.object && m.object.objectId);
+      },
+      waitForOpCount(op, count) {
+        return waitFor(() => this.countOp(op) === count);
+      },
+    };
+    await waitFor(() => messages.some(message => message.op === 'connected'));
+    return client;
+  };
+
+  it('does not deliver ACL-protected objects to a connection that presents no session token', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['CrossOriginChat'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const victim = new Parse.User();
+    victim.setUsername('victim');
+    victim.setPassword('password');
+    await victim.signUp();
+
+    // The attacker page connects with no session token and subscribes to everything.
+    const attacker = await openClient();
+    attacker.subscribe(1, 'CrossOriginChat', {});
+    await attacker.waitForOpCount('subscribed', 1);
+
+    // A public-read object is delivered to the anonymous connection (proves the socket
+    // and subscription are live — the missing protected object below is a real denial,
+    // not a dead connection).
+    const publicObj = new Parse.Object('CrossOriginChat');
+    const publicACL = new Parse.ACL();
+    publicACL.setPublicReadAccess(true);
+    publicObj.setACL(publicACL);
+    publicObj.set('body', 'public');
+    await publicObj.save(null, { useMasterKey: true });
+    await attacker.waitForOpCount('create', 1);
+    expect(attacker.createdIds()).toEqual([publicObj.id]);
+
+    // The victim's private object (readable only by the victim) must never reach the
+    // attacker's session-less connection.
+    const secretObj = new Parse.Object('CrossOriginChat');
+    const secretACL = new Parse.ACL();
+    secretACL.setPublicReadAccess(false);
+    secretACL.setReadAccess(victim, true);
+    secretObj.setACL(secretACL);
+    secretObj.set('body', 'secret');
+    await secretObj.save(null, { useMasterKey: true });
+
+    await sleep(300);
+    expect(attacker.countOp('create')).toBe(1);
+    expect(attacker.createdIds()).not.toContain(secretObj.id);
+  });
+
+  it('delivers ACL-protected objects only when the connection presents the owner session token', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['CrossOriginChat'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const victim = new Parse.User();
+    victim.setUsername('victim');
+    victim.setPassword('password');
+    await victim.signUp();
+    const ownerToken = victim.getSessionToken();
+
+    // The legitimate first-party client holds the victim's session token (which a
+    // cross-origin attacker cannot obtain) and therefore does receive the private object.
+    const owner = await openClient(ownerToken);
+    owner.subscribe(1, 'CrossOriginChat', {});
+    await owner.waitForOpCount('subscribed', 1);
+
+    const secretObj = new Parse.Object('CrossOriginChat');
+    const secretACL = new Parse.ACL();
+    secretACL.setPublicReadAccess(false);
+    secretACL.setReadAccess(victim, true);
+    secretObj.setACL(secretACL);
+    secretObj.set('body', 'secret');
+    await secretObj.save(null, { useMasterKey: true });
+
+    await owner.waitForOpCount('create', 1);
+    expect(owner.createdIds()).toEqual([secretObj.id]);
+  });
+});
