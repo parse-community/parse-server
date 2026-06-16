@@ -1518,6 +1518,96 @@ describe('Parse.File testing', () => {
       );
     });
 
+    it('default should block non-standard extension variants preserving a dangerous content type', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+        },
+      });
+      const svgContent = Buffer.from(
+        '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'
+      ).toString('base64');
+      const filenames = [
+        'malicious.svg~',
+        'malicious.svg.tmp',
+        'malicious.svg.bak',
+        'malicious.svg.backup',
+        'malicious.xhtml.bak',
+        'malicious.xml.tmp',
+      ];
+      for (const filename of filenames) {
+        await expectAsync(
+          request({
+            method: 'POST',
+            url: `http://localhost:8378/1/files/${filename}`,
+            body: JSON.stringify({
+              _ApplicationId: 'test',
+              _JavaScriptKey: 'test',
+              _ContentType: 'image/svg+xml',
+              base64: svgContent,
+            }),
+          }).catch(e => {
+            throw new Error(e.data.error);
+          })
+        ).toBeRejectedWith(
+          new Parse.Error(
+            Parse.Error.FILE_SAVE_ERROR,
+            `File upload of extension svg+xml is disabled.`
+          )
+        );
+      }
+    });
+
+    it('default should block non-standard extension variants preserving a text/html content type', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+        },
+      });
+      const htmlContent = Buffer.from('<html><script>alert(1)</script></html>').toString('base64');
+      const filenames = ['malicious.html.old', 'malicious.htm~', 'malicious.html.bak'];
+      for (const filename of filenames) {
+        await expectAsync(
+          request({
+            method: 'POST',
+            url: `http://localhost:8378/1/files/${filename}`,
+            body: JSON.stringify({
+              _ApplicationId: 'test',
+              _JavaScriptKey: 'test',
+              _ContentType: 'text/html',
+              base64: htmlContent,
+            }),
+          }).catch(e => {
+            throw new Error(e.data.error);
+          })
+        ).toBeRejectedWith(
+          new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `File upload of extension html is disabled.`)
+        );
+      }
+    });
+
+    it('default should allow a non-standard extension with a safe content type', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+        },
+      });
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/files/archive.bak',
+          body: JSON.stringify({
+            _ApplicationId: 'test',
+            _JavaScriptKey: 'test',
+            _ContentType: 'image/png',
+            base64: 'ParseA==',
+          }),
+        }).catch(e => {
+          throw new Error(e.data.error);
+        })
+      ).toBeResolved();
+    });
+
     it('works with a period in the file name', async () => {
       await reconfigureServer({
         fileUpload: {
