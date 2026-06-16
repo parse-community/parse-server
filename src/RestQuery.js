@@ -357,22 +357,29 @@ _UnsafeRestQuery.prototype.validateQueryDepth = function () {
     return;
   }
   const maxDepth = rc.queryDepth;
-  const checkDepth = (where, depth) => {
+  const checkDepth = (node, depth) => {
     if (depth > maxDepth) {
       throw new Parse.Error(
         Parse.Error.INVALID_QUERY,
         `Query condition nesting depth exceeds maximum allowed depth of ${maxDepth}`
       );
     }
-    if (typeof where !== 'object' || where === null) {
+    if (node === null || typeof node !== 'object') {
       return;
     }
-    for (const op of ['$or', '$and', '$nor']) {
-      if (Array.isArray(where[op])) {
-        for (const subQuery of where[op]) {
-          checkDepth(subQuery, depth + 1);
-        }
+    if (Array.isArray(node)) {
+      for (const item of node) {
+        checkDepth(item, depth);
       }
+      return;
+    }
+    // Descend into every value so that logical operators ($or/$and/$nor) nested
+    // under field-level operators (e.g. $elemMatch, $not) or plain field names are
+    // still counted. Only logical operators increase the depth, which preserves the
+    // documented meaning of `queryDepth`.
+    for (const key of Object.keys(node)) {
+      const isLogical = key === '$or' || key === '$and' || key === '$nor';
+      checkDepth(node[key], isLogical ? depth + 1 : depth);
     }
   };
   checkDepth(this.restWhere, 0);
@@ -1311,6 +1318,10 @@ function findObjectWithKey(root, key) {
         return answer;
       }
     }
+    // Arrays are fully traversed above; returning here avoids re-walking the same
+    // elements through the `for (subkey in root)` loop below, which would make this
+    // function O(2^n) for nested arrays (e.g. deeply nested $or/$and/$nor).
+    return;
   }
   if (root && root[key]) {
     return root;
