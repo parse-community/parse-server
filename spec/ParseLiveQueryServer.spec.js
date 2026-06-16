@@ -336,6 +336,46 @@ describe('ParseLiveQueryServer', function () {
     expect(parseLiveQueryServer.subscriptions.size).toBe(0);
   });
 
+  it('rejects a non-array value for a logical operator on subscribe', async () => {
+    await reconfigureServer({ requestComplexity: { queryDepth: 3 } });
+    const parseLiveQueryServer = new ParseLiveQueryServer({});
+    const clientId = 1;
+    addMockClient(parseLiveQueryServer, clientId);
+    const parseWebSocket = { clientId };
+    const request = {
+      query: { className: 'test', where: { $or: 'not-an-array' }, keys: ['x'] },
+      requestId: 3,
+      sessionToken: 'sessionToken',
+    };
+    await parseLiveQueryServer._handleSubscribe(parseWebSocket, request);
+
+    const Client = require('../lib/LiveQuery/Client').Client;
+    expect(Client.pushError).toHaveBeenCalledWith(
+      jasmine.anything(),
+      Parse.Error.INVALID_QUERY,
+      jasmine.stringMatching(/\$or must be an array/),
+      false,
+      3
+    );
+    expect(parseLiveQueryServer.subscriptions.size).toBe(0);
+  });
+
+  it('allows null values nested in the query within the depth limit', async () => {
+    await reconfigureServer({ requestComplexity: { queryDepth: 3 } });
+    const parseLiveQueryServer = new ParseLiveQueryServer({});
+    const clientId = 1;
+    addMockClient(parseLiveQueryServer, clientId);
+    const parseWebSocket = { clientId };
+    const request = {
+      query: { className: 'test', where: { $or: [{ name: null }] }, keys: ['x'] },
+      requestId: 4,
+      sessionToken: 'sessionToken',
+    };
+    await parseLiveQueryServer._handleSubscribe(parseWebSocket, request);
+
+    expect(parseLiveQueryServer.subscriptions.size).toBe(1);
+  });
+
   it('can handle subscribe command with new query', async () => {
     const parseLiveQueryServer = new ParseLiveQueryServer({});
     // Add mock client
