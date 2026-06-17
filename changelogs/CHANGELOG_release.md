@@ -1,3 +1,10 @@
+## [8.6.82](https://github.com/parse-community/parse-server/compare/8.6.81...8.6.82) (2026-06-17)
+
+
+### Bug Fixes
+
+* Denial of service via exponential-time processing of deeply nested query operators ([GHSA-cgxm-vr2f-6fj8](https://github.com/parse-community/parse-server/security/advisories/GHSA-cgxm-vr2f-6fj8)) ([#10512](https://github.com/parse-community/parse-server/issues/10512)) ([0f5d2ad](https://github.com/parse-community/parse-server/commit/0f5d2ad77b422dc904458254548be87397fc6e9b))
+
 ## [8.6.81](https://github.com/parse-community/parse-server/compare/8.6.80...8.6.81) (2026-06-16)
 
 
