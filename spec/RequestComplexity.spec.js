@@ -444,6 +444,95 @@ describe('request complexity', () => {
     });
   });
 
+  describe('query depth bypass via field-wrapped operators', () => {
+    let config;
+
+    function buildDeepOr(depth) {
+      let where = { username: 'test' };
+      for (let i = 0; i < depth; i++) {
+        where = { $or: [where] };
+      }
+      return where;
+    }
+
+    beforeEach(async () => {
+      await reconfigureServer({
+        requestComplexity: { queryDepth: 3 },
+      });
+      config = Config.get('test');
+    });
+
+    it('should reject a deeply nested $or wrapped in $elemMatch exceeding depth limit', async () => {
+      const where = { username: { $elemMatch: buildDeepOr(4) } };
+      await expectAsync(
+        rest.find(config, auth.nobody(config), '_User', where)
+      ).toBeRejectedWith(
+        jasmine.objectContaining({
+          message: jasmine.stringMatching(/Query condition nesting depth exceeds maximum allowed depth of 3/),
+        })
+      );
+    });
+
+    it('should reject a deeply nested $or wrapped in $not exceeding depth limit', async () => {
+      const where = { username: { $not: buildDeepOr(4) } };
+      await expectAsync(
+        rest.find(config, auth.nobody(config), '_User', where)
+      ).toBeRejectedWith(
+        jasmine.objectContaining({
+          message: jasmine.stringMatching(/Query condition nesting depth exceeds maximum allowed depth of 3/),
+        })
+      );
+    });
+
+    it('should reject a deeply nested $or wrapped under a plain field name exceeding depth limit', async () => {
+      const where = { metadata: buildDeepOr(4) };
+      await expectAsync(
+        rest.find(config, auth.nobody(config), '_User', where)
+      ).toBeRejectedWith(
+        jasmine.objectContaining({
+          message: jasmine.stringMatching(/Query condition nesting depth exceeds maximum allowed depth of 3/),
+        })
+      );
+    });
+
+    it('should allow field-wrapped logical operators within depth limit', async () => {
+      const where = {
+        username: {
+          $inQuery: {
+            className: '_User',
+            where: { $or: [{ username: 'a' }, { username: 'b' }] },
+          },
+        },
+      };
+      await expectAsync(
+        rest.find(config, auth.nobody(config), '_User', where)
+      ).toBeResolved();
+    });
+
+    it('should not count field-level operators that do not nest logical operators toward depth', async () => {
+      const where = { username: { $in: ['a', 'b'] } };
+      await expectAsync(
+        rest.find(config, auth.nobody(config), '_User', where)
+      ).toBeResolved();
+    });
+
+    it('should not exponentially process field-wrapped deeply nested operators when queryDepth is disabled', async () => {
+      // With queryDepth disabled, the depth guard does not run; the walk over the
+      // nested $or arrays must still be linear (not O(2^n)) so a single small request
+      // cannot hang the event loop.
+      await reconfigureServer({
+        requestComplexity: { queryDepth: -1 },
+      });
+      config = Config.get('test');
+      const where = { username: { $elemMatch: buildDeepOr(26) } };
+      const start = Date.now();
+      await expectAsync(
+        rest.find(config, auth.nobody(config), '_User', where)
+      ).toBeRejected();
+      expect(Date.now() - start).toBeLessThan(5000);
+    }, 60000);
+  });
+
   describe('include limits', () => {
     let config;
 
