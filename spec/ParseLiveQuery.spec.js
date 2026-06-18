@@ -1485,3 +1485,333 @@ describe('ParseLiveQuery', function () {
     });
   });
 });
+
+describe('ParseLiveQuery duplicate requestId handling', function () {
+  const WebSocket = require('ws');
+
+  const waitFor = async predicate => {
+    const deadline = Date.now() + 4000;
+    while (Date.now() < deadline) {
+      if (predicate()) {
+        return;
+      }
+      await sleep(20);
+    }
+    throw new Error('timed out waiting for condition');
+  };
+
+  let sockets;
+
+  beforeEach(() => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    sockets = [];
+  });
+
+  afterEach(() => {
+    for (const socket of sockets) {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.close();
+      }
+    }
+    sockets = [];
+  });
+
+  const configureServer = async () => {
+    const parseServer = await reconfigureServer({
+      liveQuery: { classNames: ['LQDupA', 'LQDupB'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    return parseServer.liveQueryServer;
+  };
+
+  // Opens a raw LiveQuery WebSocket client and returns a small protocol helper.
+  const openClient = async () => {
+    const socket = new WebSocket('ws://localhost:8378/1');
+    sockets.push(socket);
+    const messages = [];
+    socket.on('message', data => messages.push(JSON.parse(data.toString())));
+    await new Promise((resolve, reject) => {
+      socket.on('open', resolve);
+      socket.on('error', reject);
+    });
+    socket.send(JSON.stringify({ op: 'connect', applicationId: Parse.applicationId }));
+    const client = {
+      socket,
+      messages,
+      subscribe(requestId, className, where) {
+        socket.send(JSON.stringify({ op: 'subscribe', requestId, query: { className, where } }));
+      },
+      update(requestId, className, where) {
+        socket.send(JSON.stringify({ op: 'update', requestId, query: { className, where } }));
+      },
+      countOp(op) {
+        return messages.filter(message => message.op === op).length;
+      },
+      waitForOpCount(op, count) {
+        return waitFor(() => this.countOp(op) === count);
+      },
+    };
+    await waitFor(() => messages.some(message => message.op === 'connected'));
+    return client;
+  };
+
+  it('replaces rather than leaks subscriptions when a client reuses a requestId with different queries', async () => {
+    const lqServer = await configureServer();
+    const client = await openClient();
+
+    for (let i = 0; i < 5; i++) {
+      client.subscribe(7, 'LQDupA', { marker: `ws-${i}` });
+    }
+    await client.waitForOpCount('subscribed', 5);
+
+    // Reusing one requestId must keep a single active subscription, not one per frame.
+    expect(lqServer.subscriptions.get('LQDupA').size).toBe(1);
+
+    client.socket.close();
+    await waitFor(() => lqServer.clients.size === 0);
+
+    // No stale subscriptions may survive the disconnect.
+    expect(lqServer.subscriptions.get('LQDupA')?.size ?? 0).toBe(0);
+  });
+
+  it('does not leak subscriptions when a client reuses a requestId with the same query', async () => {
+    const lqServer = await configureServer();
+    const client = await openClient();
+
+    for (let i = 0; i < 5; i++) {
+      client.subscribe(7, 'LQDupA', { marker: 'same' });
+    }
+    await client.waitForOpCount('subscribed', 5);
+
+    expect(lqServer.subscriptions.get('LQDupA').size).toBe(1);
+
+    client.socket.close();
+    await waitFor(() => lqServer.clients.size === 0);
+
+    expect(lqServer.subscriptions.get('LQDupA')?.size ?? 0).toBe(0);
+  });
+
+  it('cleans up the prior subscription when a client reuses a requestId on a different class', async () => {
+    const lqServer = await configureServer();
+    const client = await openClient();
+
+    client.subscribe(7, 'LQDupA', { marker: 'a' });
+    await client.waitForOpCount('subscribed', 1);
+    client.subscribe(7, 'LQDupB', { marker: 'b' });
+    await client.waitForOpCount('subscribed', 2);
+    client.subscribe(7, 'LQDupA', { marker: 'a2' });
+    await client.waitForOpCount('subscribed', 3);
+
+    // Only the most recent subscription survives; the prior class entry is pruned.
+    expect(lqServer.subscriptions.get('LQDupA').size).toBe(1);
+    expect(lqServer.subscriptions.has('LQDupB')).toBe(false);
+
+    client.socket.close();
+    await waitFor(() => lqServer.clients.size === 0);
+
+    expect(lqServer.subscriptions.get('LQDupA')?.size ?? 0).toBe(0);
+    expect(lqServer.subscriptions.has('LQDupB')).toBe(false);
+  });
+
+  it('does not tear down a subscription still held by another client when a client reuses a requestId', async () => {
+    const lqServer = await configureServer();
+    const clientA = await openClient();
+    const clientB = await openClient();
+
+    // Both clients share the same query, so they share one Subscription.
+    clientA.subscribe(7, 'LQDupA', { marker: 'shared' });
+    await clientA.waitForOpCount('subscribed', 1);
+    clientB.subscribe(9, 'LQDupA', { marker: 'shared' });
+    await clientB.waitForOpCount('subscribed', 1);
+    expect(lqServer.subscriptions.get('LQDupA').size).toBe(1);
+
+    // Client A reuses its requestId with a different query.
+    clientA.subscribe(7, 'LQDupA', { marker: 'other' });
+    await clientA.waitForOpCount('subscribed', 2);
+
+    // The shared subscription must survive (B still holds it), alongside A's new one.
+    expect(lqServer.subscriptions.get('LQDupA').size).toBe(2);
+
+    // The shared subscription still delivers events to B, but not to A anymore.
+    const shared = new Parse.Object('LQDupA');
+    shared.set('marker', 'shared');
+    await shared.save(null, { useMasterKey: true });
+    await clientB.waitForOpCount('create', 1);
+    expect(clientB.countOp('create')).toBe(1);
+    expect(clientA.countOp('create')).toBe(0);
+
+    clientA.socket.close();
+    clientB.socket.close();
+    await waitFor(() => lqServer.clients.size === 0);
+    expect(lqServer.subscriptions.get('LQDupA')?.size ?? 0).toBe(0);
+  });
+
+  it('delivers events only for the replacement query after a client reuses a requestId', async () => {
+    const lqServer = await configureServer();
+    const client = await openClient();
+
+    client.subscribe(7, 'LQDupA', { marker: 'old' });
+    await client.waitForOpCount('subscribed', 1);
+    client.subscribe(7, 'LQDupA', { marker: 'new' });
+    await client.waitForOpCount('subscribed', 2);
+    expect(lqServer.subscriptions.get('LQDupA').size).toBe(1);
+
+    const oldObject = new Parse.Object('LQDupA');
+    oldObject.set('marker', 'old');
+    await oldObject.save(null, { useMasterKey: true });
+
+    const newObject = new Parse.Object('LQDupA');
+    newObject.set('marker', 'new');
+    await newObject.save(null, { useMasterKey: true });
+
+    await client.waitForOpCount('create', 1);
+    // Only the replacement query (marker 'new') may produce an event.
+    expect(client.countOp('create')).toBe(1);
+    expect(client.messages.find(message => message.op === 'create').object.marker).toBe('new');
+  });
+
+  it('keeps the update op working after the duplicate-subscribe cleanup', async () => {
+    const lqServer = await configureServer();
+    const client = await openClient();
+
+    client.subscribe(7, 'LQDupA', { marker: 'old' });
+    await client.waitForOpCount('subscribed', 1);
+    client.update(7, 'LQDupA', { marker: 'new' });
+    await client.waitForOpCount('subscribed', 2);
+
+    expect(lqServer.subscriptions.get('LQDupA').size).toBe(1);
+
+    const updated = new Parse.Object('LQDupA');
+    updated.set('marker', 'new');
+    await updated.save(null, { useMasterKey: true });
+    await client.waitForOpCount('create', 1);
+    expect(client.countOp('create')).toBe(1);
+
+    client.socket.close();
+    await waitFor(() => lqServer.clients.size === 0);
+    expect(lqServer.subscriptions.get('LQDupA')?.size ?? 0).toBe(0);
+  });
+});
+
+describe('ParseLiveQuery cross-origin connection authorization', function () {
+  // CSWSH report (WSAdapter): LiveQuery auth is bound to the sessionToken in the
+  // `connect` message body, not to ambient/cookie credentials. A cross-origin page
+  // cannot read the victim's sessionToken, so its connection is anonymous and ACL
+  // filtering limits it to public-read objects only.
+  const WebSocket = require('ws');
+
+  const waitFor = async predicate => {
+    const deadline = Date.now() + 4000;
+    while (Date.now() < deadline) {
+      if (predicate()) {
+        return;
+      }
+      await sleep(20);
+    }
+    throw new Error('timed out waiting for condition');
+  };
+
+  let sockets;
+
+  beforeEach(() => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    sockets = [];
+  });
+
+  afterEach(() => {
+    for (const socket of sockets) {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.close();
+      }
+    }
+    sockets = [];
+  });
+
+  // Opens a raw LiveQuery WebSocket client with no session token, modeling a
+  // cross-origin page that has no access to the victim's session.
+  const openClient = async () => {
+    const socket = new WebSocket('ws://localhost:8378/1');
+    sockets.push(socket);
+    const messages = [];
+    socket.on('message', data => messages.push(JSON.parse(data.toString())));
+    await new Promise((resolve, reject) => {
+      socket.on('open', resolve);
+      socket.on('error', reject);
+    });
+    socket.send(JSON.stringify({ op: 'connect', applicationId: Parse.applicationId }));
+    const client = {
+      socket,
+      messages,
+      subscribe(requestId, className, where) {
+        socket.send(JSON.stringify({ op: 'subscribe', requestId, query: { className, where } }));
+      },
+      countOp(op) {
+        return messages.filter(message => message.op === op).length;
+      },
+      createdIds() {
+        return messages.filter(m => m.op === 'create').map(m => m.object && m.object.objectId);
+      },
+      waitForOpCount(op, count) {
+        return waitFor(() => this.countOp(op) === count);
+      },
+    };
+    await waitFor(() => messages.some(message => message.op === 'connected'));
+    return client;
+  };
+
+  it('does not deliver ACL-protected objects to a connection that presents no session token', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['CrossOriginChat'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const victim = new Parse.User();
+    victim.setUsername('victim');
+    victim.setPassword('password');
+    await victim.signUp();
+
+    // The attacker page connects with no session token and subscribes to everything.
+    const attacker = await openClient();
+    attacker.subscribe(1, 'CrossOriginChat', {});
+    await attacker.waitForOpCount('subscribed', 1);
+
+    // A public-read object is delivered to the anonymous connection (proves the socket
+    // and subscription are live — the missing protected object below is a real denial,
+    // not a dead connection).
+    const publicObj = new Parse.Object('CrossOriginChat');
+    const publicACL = new Parse.ACL();
+    publicACL.setPublicReadAccess(true);
+    publicObj.setACL(publicACL);
+    publicObj.set('body', 'public');
+    await publicObj.save(null, { useMasterKey: true });
+    await attacker.waitForOpCount('create', 1);
+    expect(attacker.createdIds()).toEqual([publicObj.id]);
+
+    // The victim's private object (readable only by the victim) must never reach the
+    // attacker's session-less connection.
+    const secretObj = new Parse.Object('CrossOriginChat');
+    const secretACL = new Parse.ACL();
+    secretACL.setPublicReadAccess(false);
+    secretACL.setReadAccess(victim, true);
+    secretObj.setACL(secretACL);
+    secretObj.set('body', 'secret');
+    await secretObj.save(null, { useMasterKey: true });
+
+    // A second public save acts as an ordering barrier: LiveQuery delivers events on a
+    // subscription in publish order, so once this later object's `create` arrives, the
+    // earlier `secret` save has already had its chance. Asserting the exact id list is
+    // then deterministic rather than relying on a wall-clock window.
+    const publicObj2 = new Parse.Object('CrossOriginChat');
+    const publicACL2 = new Parse.ACL();
+    publicACL2.setPublicReadAccess(true);
+    publicObj2.setACL(publicACL2);
+    publicObj2.set('body', 'public-2');
+    await publicObj2.save(null, { useMasterKey: true });
+    await attacker.waitForOpCount('create', 2);
+    expect(attacker.createdIds()).toEqual([publicObj.id, publicObj2.id]);
+  });
+});

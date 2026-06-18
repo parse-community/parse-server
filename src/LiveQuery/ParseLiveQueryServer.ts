@@ -523,12 +523,14 @@ class ParseLiveQueryServer {
 
         // If there is no client which is subscribing this subscription, remove it from subscriptions
         const classSubscriptions = this.subscriptions.get(subscription.className);
-        if (!subscription.hasSubscribingClient()) {
-          classSubscriptions.delete(subscription.hash);
-        }
-        // If there is no subscriptions under this class, remove it from subscriptions
-        if (classSubscriptions.size === 0) {
-          this.subscriptions.delete(subscription.className);
+        if (classSubscriptions) {
+          if (!subscription.hasSubscribingClient()) {
+            classSubscriptions.delete(subscription.hash);
+          }
+          // If there is no subscriptions under this class, remove it from subscriptions
+          if (classSubscriptions.size === 0) {
+            this.subscriptions.delete(subscription.className);
+          }
         }
       }
 
@@ -1035,25 +1037,32 @@ class ParseLiveQueryServer {
         const rc = appConfig.requestComplexity;
         if (rc && rc.queryDepth !== -1) {
           const maxDepth = rc.queryDepth;
-          const checkDepth = (where: any, depth: number) => {
+          const checkDepth = (node: any, depth: number) => {
             if (depth > maxDepth) {
               throw new Parse.Error(
                 Parse.Error.INVALID_QUERY,
                 `Query condition nesting depth exceeds maximum allowed depth of ${maxDepth}`
               );
             }
-            if (typeof where !== 'object' || where === null) {
+            if (node === null || typeof node !== 'object') {
               return;
             }
-            for (const op of ['$or', '$and', '$nor']) {
-              if (where[op] !== undefined && !Array.isArray(where[op])) {
-                throw new Parse.Error(Parse.Error.INVALID_QUERY, `${op} must be an array`);
+            if (Array.isArray(node)) {
+              for (const item of node) {
+                checkDepth(item, depth);
               }
-              if (Array.isArray(where[op])) {
-                for (const subQuery of where[op]) {
-                  checkDepth(subQuery, depth + 1);
-                }
+              return;
+            }
+            // Descend into every value so that logical operators ($or/$and/$nor)
+            // nested under field-level operators (e.g. $elemMatch, $not) or plain
+            // field names are still counted. Only logical operators increase the
+            // depth, which preserves the documented meaning of `queryDepth`.
+            for (const key of Object.keys(node)) {
+              const isLogical = key === '$or' || key === '$and' || key === '$nor';
+              if (isLogical && !Array.isArray(node[key])) {
+                throw new Parse.Error(Parse.Error.INVALID_QUERY, `${key} must be an array`);
               }
+              checkDepth(node[key], isLogical ? depth + 1 : depth);
             }
           };
           checkDepth(request.query.where, 0);
@@ -1163,6 +1172,28 @@ class ParseLiveQueryServer {
 
       // Validate regex patterns in the subscription query
       this._validateQueryConstraints(request.query.where);
+
+      // If this client already has a subscription registered under this
+      // requestId, replace it by tearing down the previous subscription before
+      // creating the new one. The client-side metadata map is keyed only by
+      // requestId, so a duplicate `subscribe` frame would otherwise overwrite it
+      // while the previous Subscription stays in the server-wide map, leaking it
+      // for the lifetime of the process (disconnect cleanup only walks the
+      // surviving client metadata and never reaches the orphaned subscription).
+      const previousSubscriptionInfo = client.getSubscriptionInfo(request.requestId);
+      if (previousSubscriptionInfo) {
+        const previousSubscription = previousSubscriptionInfo.subscription;
+        previousSubscription.deleteClientSubscription(parseWebsocket.clientId, request.requestId);
+        const previousClassSubscriptions = this.subscriptions.get(previousSubscription.className);
+        if (previousClassSubscriptions) {
+          if (!previousSubscription.hasSubscribingClient()) {
+            previousClassSubscriptions.delete(previousSubscription.hash);
+          }
+          if (previousClassSubscriptions.size === 0) {
+            this.subscriptions.delete(previousSubscription.className);
+          }
+        }
+      }
 
       // Get subscription from subscriptions, create one if necessary
       const subscriptionHash = queryHash(request.query);
@@ -1286,12 +1317,14 @@ class ParseLiveQueryServer {
     subscription.deleteClientSubscription(parseWebsocket.clientId, requestId);
     // If there is no client which is subscribing this subscription, remove it from subscriptions
     const classSubscriptions = this.subscriptions.get(className);
-    if (!subscription.hasSubscribingClient()) {
-      classSubscriptions.delete(subscription.hash);
-    }
-    // If there is no subscriptions under this class, remove it from subscriptions
-    if (classSubscriptions.size === 0) {
-      this.subscriptions.delete(className);
+    if (classSubscriptions) {
+      if (!subscription.hasSubscribingClient()) {
+        classSubscriptions.delete(subscription.hash);
+      }
+      // If there is no subscriptions under this class, remove it from subscriptions
+      if (classSubscriptions.size === 0) {
+        this.subscriptions.delete(className);
+      }
     }
     runLiveQueryEventHandlers({
       client,
