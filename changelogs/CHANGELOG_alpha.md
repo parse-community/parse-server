@@ -1,3 +1,10 @@
+## [9.9.1-alpha.13](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.12...9.9.1-alpha.13) (2026-06-19)
+
+
+### Bug Fixes
+
+* LiveQuery discloses object data to a subscriber across an ACL read-access change ([GHSA-97pr-9hgg-3p8r](https://github.com/parse-community/parse-server/security/advisories/GHSA-97pr-9hgg-3p8r)) ([#10515](https://github.com/parse-community/parse-server/issues/10515)) ([e9c85df](https://github.com/parse-community/parse-server/commit/e9c85dfe40a866a55ebae3b6ae56285ac0a22e64))
+
 ## [9.9.1-alpha.12](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.11...9.9.1-alpha.12) (2026-06-17)
 
 
