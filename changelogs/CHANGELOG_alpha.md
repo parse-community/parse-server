@@ -1,3 +1,10 @@
+# [9.10.0-alpha.1](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.13...9.10.0-alpha.1) (2026-06-19)
+
+
+### Features
+
+* Add option to disallow aggregation pipelines for the read-only master key ([#10517](https://github.com/parse-community/parse-server/issues/10517)) ([816078f](https://github.com/parse-community/parse-server/commit/816078fff7f95f333a99c1e2d7166a585742d466))
+
 ## [9.9.1-alpha.13](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.12...9.9.1-alpha.13) (2026-06-19)
 
 
