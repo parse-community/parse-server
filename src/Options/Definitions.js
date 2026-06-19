@@ -58,6 +58,12 @@ module.exports.ParseServerOptions = {
     action: parsers.objectParser,
     type: 'AccountLockoutOptions',
   },
+  allowAggregationForReadOnlyMasterKey: {
+    env: 'PARSE_SERVER_ALLOW_AGGREGATION_FOR_READ_ONLY_MASTER_KEY',
+    help: 'Whether the `readOnlyMasterKey` is allowed to run aggregation pipelines via the aggregate endpoint. An aggregation pipeline can contain write-capable stages (for example MongoDB `$out` and `$merge`), so allowing aggregation effectively gives the read-only master key a way to perform writes, contrary to its read-only intent. If `true` (default), the read-only master key can run aggregation pipelines. If `false`, the read-only master key cannot run aggregation pipelines at all. Note that the `readOnlyMasterKey` is a secret key for internal server-side use only and must never be distributed; this option is an additional safeguard, not a substitute for keeping the key confidential. Defaults to `true`.',
+    action: parsers.booleanParser,
+    default: true,
+  },
   allowClientClassCreation: {
     env: 'PARSE_SERVER_ALLOW_CLIENT_CLASS_CREATION',
     help: 'Enable (or disable) client class creation, defaults to false',
@@ -535,7 +541,7 @@ module.exports.ParseServerOptions = {
   },
   readOnlyMasterKey: {
     env: 'PARSE_SERVER_READ_ONLY_MASTER_KEY',
-    help: 'Read-only key, which has the same capabilities as MasterKey without writes',
+    help: 'The read-only master key is a secret key with the same read capabilities as the `masterKey`, but without the ability to perform writes. Like the `masterKey`, it bypasses all security mechanisms (Class Level Permissions, object ACLs, `protectedFields`), so it grants full read access to all data.<br><br>It is intended strictly for internal, server-side use \u2014 for example to give a trusted internal process read access while guarding against accidental writes during development or operations. It is not a credential for untrusted contexts: it must never be shipped, distributed, published, embedded in a client application, or otherwise exposed to untrusted parties, because anyone who obtains it can read all data in the database. Use `readOnlyMasterKeyIps` to restrict the IP addresses from which it may be used.',
   },
   readOnlyMasterKeyIps: {
     env: 'PARSE_SERVER_READ_ONLY_MASTER_KEY_IPS',
