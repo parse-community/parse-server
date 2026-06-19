@@ -1815,3 +1815,193 @@ describe('ParseLiveQuery cross-origin connection authorization', function () {
     expect(attacker.createdIds()).toEqual([publicObj.id, publicObj2.id]);
   });
 });
+
+describe('ParseLiveQuery ACL transition disclosure', function () {
+  const WebSocket = require('ws');
+
+  const waitFor = async predicate => {
+    const deadline = Date.now() + 6000;
+    while (Date.now() < deadline) {
+      if (predicate()) {
+        return;
+      }
+      await sleep(20);
+    }
+    throw new Error('timed out waiting for condition');
+  };
+
+  let sockets;
+
+  beforeEach(() => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    sockets = [];
+  });
+
+  afterEach(() => {
+    for (const socket of sockets) {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.close();
+      }
+    }
+    sockets = [];
+  });
+
+  // Opens a raw LiveQuery WebSocket client authenticated with the given session
+  // token so the exact wire payload of each event can be asserted directly.
+  const openClient = async sessionToken => {
+    const socket = new WebSocket('ws://localhost:8378/1');
+    sockets.push(socket);
+    const messages = [];
+    socket.on('message', data => messages.push(JSON.parse(data.toString())));
+    await new Promise((resolve, reject) => {
+      socket.on('open', resolve);
+      socket.on('error', reject);
+    });
+    socket.send(
+      JSON.stringify({ op: 'connect', applicationId: Parse.applicationId, sessionToken })
+    );
+    const client = {
+      socket,
+      messages,
+      subscribe(requestId, className, where) {
+        socket.send(
+          JSON.stringify({ op: 'subscribe', requestId, query: { className, where }, sessionToken })
+        );
+      },
+      messagesForOp(op) {
+        return messages.filter(message => message.op === op);
+      },
+      waitForOpCount(op, count) {
+        return waitFor(() => this.messagesForOp(op).length >= count);
+      },
+    };
+    await waitFor(() => messages.some(message => message.op === 'connected'));
+    return client;
+  };
+
+  it('does not leak the post-revocation object body in a leave event when a save revokes the subscriber ACL read access', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['TestObject'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const user = new Parse.User();
+    user.setUsername('leave-acl-user');
+    user.setPassword('password');
+    await user.signUp();
+
+    // Object readable by the user, with an initial value.
+    const obj = new Parse.Object('TestObject');
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(false);
+    acl.setReadAccess(user, true);
+    obj.setACL(acl);
+    obj.set('secretField', 'INITIAL');
+    await obj.save(null, { useMasterKey: true });
+
+    const client = await openClient(user.getSessionToken());
+    client.subscribe(1, 'TestObject', {});
+    await client.waitForOpCount('subscribed', 1);
+
+    // Control update: keep the user's ACL read access, only change the field. The
+    // user is still authorized and receives the new value via an update event.
+    await obj.save({ secretField: 'BENIGN_VISIBLE' }, { useMasterKey: true });
+    await client.waitForOpCount('update', 1);
+    expect(client.messagesForOp('update')[0].object.secretField).toBe('BENIGN_VISIBLE');
+
+    // Attack update: change the field AND remove the user's read access in the same save.
+    const revokedACL = new Parse.ACL();
+    revokedACL.setPublicReadAccess(false);
+    obj.setACL(revokedACL);
+    obj.set('secretField', 'POST_REVOCATION_SECRET');
+    await obj.save(null, { useMasterKey: true });
+    await client.waitForOpCount('leave', 1);
+
+    const leave = client.messagesForOp('leave')[0];
+    // The subscriber must not receive the post-revocation value they can no longer read.
+    expect(leave.object.secretField).not.toBe('POST_REVOCATION_SECRET');
+    // They receive the last value they were authorized to see.
+    expect(leave.object.secretField).toBe('BENIGN_VISIBLE');
+  });
+
+  it('does not leak the pre-grant original object body in an enter event when a save grants the subscriber ACL read access', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['TestObject'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const user = new Parse.User();
+    user.setUsername('enter-acl-user');
+    user.setPassword('password');
+    await user.signUp();
+
+    // Object NOT readable by the user, with a pre-grant value.
+    const obj = new Parse.Object('TestObject');
+    const noAccessACL = new Parse.ACL();
+    noAccessACL.setPublicReadAccess(false);
+    obj.setACL(noAccessACL);
+    obj.set('secretField', 'PRE_GRANT_SECRET');
+    await obj.save(null, { useMasterKey: true });
+
+    const client = await openClient(user.getSessionToken());
+    client.subscribe(1, 'TestObject', {});
+    await client.waitForOpCount('subscribed', 1);
+
+    // Grant update: change the field AND add the user's read access in the same save.
+    const grantedACL = new Parse.ACL();
+    grantedACL.setPublicReadAccess(false);
+    grantedACL.setReadAccess(user, true);
+    obj.setACL(grantedACL);
+    obj.set('secretField', 'GRANTED_VALUE');
+    await obj.save(null, { useMasterKey: true });
+    await client.waitForOpCount('enter', 1);
+
+    const enter = client.messagesForOp('enter')[0];
+    // The current (now-authorized) value is delivered.
+    expect(enter.object.secretField).toBe('GRANTED_VALUE');
+    // The pre-grant state the user was never authorized to read must not be delivered.
+    expect(enter.original).toBeUndefined();
+  });
+
+  it('still delivers the current object in a leave event caused by a query mismatch when the subscriber retains read access', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['TestObject'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const user = new Parse.User();
+    user.setUsername('leave-query-user');
+    user.setPassword('password');
+    await user.signUp();
+
+    // Object readable by the user that matches the subscription query.
+    const obj = new Parse.Object('TestObject');
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(false);
+    acl.setReadAccess(user, true);
+    obj.setACL(acl);
+    obj.set('status', 'active');
+    obj.set('secretField', 'INITIAL');
+    await obj.save(null, { useMasterKey: true });
+
+    const client = await openClient(user.getSessionToken());
+    client.subscribe(1, 'TestObject', { status: 'active' });
+    await client.waitForOpCount('subscribed', 1);
+
+    // Update the field so the object no longer matches the query (query-mismatch leave)
+    // while preserving the user's ACL read access. The user is still authorized to read
+    // the current object, so the current state is delivered as designed.
+    await obj.save({ status: 'archived', secretField: 'VISIBLE_NEW' }, { useMasterKey: true });
+    await client.waitForOpCount('leave', 1);
+
+    const leave = client.messagesForOp('leave')[0];
+    expect(leave.object.status).toBe('archived');
+    expect(leave.object.secretField).toBe('VISIBLE_NEW');
+  });
+});

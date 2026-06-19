@@ -393,6 +393,35 @@ class ParseLiveQueryServer {
             if (!watchFieldsChanged && (type === 'update' || type === 'create')) {
               return;
             }
+            // A `leave` or `enter` transition can be caused either by the object's
+            // query match changing (the subscriber keeps read access) or by the
+            // subscriber's ACL read access being revoked or granted in the same save.
+            // In the access-change case the subscriber is not authorized to read the
+            // object state that triggered the transition, so that state must not be
+            // sent over the channel. (CLP read denial is handled earlier by
+            // `_matchesCLP`, which skips the event entirely.)
+            if (type === 'leave') {
+              // The post-update object is readable on a query-mismatch leave but not
+              // on an ACL-loss leave. Only send the post-update body when the
+              // subscriber can still read the current object; otherwise fall back to
+              // the last authorized (original) state, which still carries the objectId.
+              const currentReadable = isCurrentSubscriptionMatched
+                ? false
+                : await this._matchesACL(message.currentParseObject.getACL(), client, requestId);
+              if (!currentReadable) {
+                localCurrentParseObject = JSON.parse(JSON.stringify(localOriginalParseObject));
+              }
+            } else if (type === 'enter') {
+              // The pre-update object was readable on a query-match-gain enter but not
+              // on an ACL-grant enter. Only send the pre-update body as `original`
+              // when the subscriber could read the original object.
+              const originalReadable = isOriginalSubscriptionMatched
+                ? false
+                : await this._matchesACL(message.originalParseObject.getACL(), client, requestId);
+              if (!originalReadable) {
+                localOriginalParseObject = null;
+              }
+            }
             res = {
               event: type,
               sessionToken: client.sessionToken,
