@@ -1774,3 +1774,66 @@ describe('Parse.Query Aggregate testing', () => {
     expect(results[0].total).toBe(1);
   });
 });
+
+describe('Parse.Query Aggregate readOnlyMasterKey', () => {
+  const readOnlyMasterKeyOptions = {
+    headers: {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Rest-API-Key': 'test',
+      'X-Parse-Master-Key': 'read-only-test',
+      'Content-Type': 'application/json',
+    },
+    json: true,
+  };
+
+  it('allows the read-only master key to run aggregation pipelines by default', async () => {
+    await new TestObject({ name: 'foo' }).save(null, { useMasterKey: true });
+    const options = Object.assign({}, readOnlyMasterKeyOptions, {
+      body: { $group: { _id: '$name' } },
+    });
+    const resp = await get(Parse.serverURL + '/aggregate/TestObject', options);
+    expect(resp.results.length).toBe(1);
+    expect(resp.results[0].objectId).toBe('foo');
+  });
+
+  it('blocks the read-only master key from running aggregation pipelines when allowAggregationForReadOnlyMasterKey is false', async () => {
+    await reconfigureServer({ allowAggregationForReadOnlyMasterKey: false });
+    await new TestObject({ name: 'foo' }).save(null, { useMasterKey: true });
+    const options = Object.assign({}, readOnlyMasterKeyOptions, {
+      body: { $group: { _id: '$name' } },
+    });
+    try {
+      await get(Parse.serverURL + '/aggregate/TestObject', options);
+      fail('aggregation should be forbidden for the read-only master key');
+    } catch (e) {
+      expect(e.error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+    }
+  });
+
+  it('blocks a write-capable $out stage for the read-only master key when allowAggregationForReadOnlyMasterKey is false', async () => {
+    await reconfigureServer({ allowAggregationForReadOnlyMasterKey: false });
+    await new TestObject({ name: 'foo' }).save(null, { useMasterKey: true });
+    const options = Object.assign({}, readOnlyMasterKeyOptions, {
+      body: {
+        pipeline: [{ $match: { name: 'foo' } }, { $out: 'CreatedByReadOnlyAggregate' }],
+      },
+    });
+    try {
+      await get(Parse.serverURL + '/aggregate/TestObject', options);
+      fail('aggregation should be forbidden for the read-only master key');
+    } catch (e) {
+      expect(e.error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+    }
+  });
+
+  it('still allows the full master key to run aggregation pipelines when allowAggregationForReadOnlyMasterKey is false', async () => {
+    await reconfigureServer({ allowAggregationForReadOnlyMasterKey: false });
+    await new TestObject({ name: 'foo' }).save(null, { useMasterKey: true });
+    const options = Object.assign({}, masterKeyOptions, {
+      body: { $group: { _id: '$name' } },
+    });
+    const resp = await get(Parse.serverURL + '/aggregate/TestObject', options);
+    expect(resp.results.length).toBe(1);
+    expect(resp.results[0].objectId).toBe('foo');
+  });
+});
