@@ -704,7 +704,7 @@ module.exports.RateLimitOptions = {
   },
   requestMethods: {
     env: 'PARSE_SERVER_RATE_LIMIT_REQUEST_METHODS',
-    help: 'Optional, the HTTP request methods to which the rate limit should be applied, default is all methods.',
+    help: "Optional, the HTTP request methods to which the rate limit should be applied, default is all methods. The method is matched after any `_method` body override has been resolved, i.e. it is the method used to route the request. Note that some endpoints are reachable via more than one HTTP method (for example `/login` and `/verifyPassword` are available via both `GET` and `POST`); to rate limit such an endpoint reliably, include all relevant methods (e.g. `['GET', 'POST']`) or omit this option to apply the limit to all methods.",
     action: parsers.arrayParser,
   },
   requestPath: {

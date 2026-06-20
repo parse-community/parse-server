@@ -435,7 +435,7 @@ export interface RateLimitOptions {
   /* The error message that should be returned in the body of the HTTP 429 response when the rate limit is hit. Default is `Too many requests.`.
   :DEFAULT: Too many requests. */
   errorResponseMessage: ?string;
-  /* Optional, the HTTP request methods to which the rate limit should be applied, default is all methods. */
+  /* Optional, the HTTP request methods to which the rate limit should be applied, default is all methods. The method is matched after any `_method` body override has been resolved, i.e. it is the method used to route the request. Note that some endpoints are reachable via more than one HTTP method (for example `/login` and `/verifyPassword` are available via both `GET` and `POST`); to rate limit such an endpoint reliably, include all relevant methods (e.g. `['GET', 'POST']`) or omit this option to apply the limit to all methods. */
   requestMethods: ?(string[]);
   /* Optional, if `true` the rate limit will also apply to requests using the `masterKey`, default is `false`. Note that a public Cloud Code function that triggers internal requests using the `masterKey` may circumvent rate limiting and be vulnerable to attacks.
   :DEFAULT: false */

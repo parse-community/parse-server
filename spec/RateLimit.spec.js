@@ -1225,6 +1225,132 @@ describe('rate limit', () => {
       });
     });
 
+    it('does not apply a requestMethods POST-only limit to direct GET login requests', async () => {
+      // `requestMethods` scopes a limit to the listed request methods. `/login` is
+      // reachable via both GET and POST, so a POST-only limit intentionally does not
+      // apply to GET login requests; operators must list all methods or omit
+      // `requestMethods` (default is all methods) to cover the endpoint.
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/login',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            requestMethods: ['POST'],
+            errorResponseMessage: 'Too many requests',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      await Parse.User.signUp('testuser', 'password');
+      for (let i = 0; i < 3; i++) {
+        const res = await request({
+          method: 'GET',
+          headers,
+          url: 'http://localhost:8378/1/login?username=testuser&password=password',
+        });
+        expect(res.data.username).toBe('testuser');
+      }
+    });
+
+    it('applies the rate limit to direct GET login requests when requestMethods includes GET', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/login',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            requestMethods: ['POST', 'GET'],
+            errorResponseMessage: 'Too many requests',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      await Parse.User.signUp('testuser', 'password');
+      const res1 = await request({
+        method: 'GET',
+        headers,
+        url: 'http://localhost:8378/1/login?username=testuser&password=password',
+      });
+      expect(res1.data.username).toBe('testuser');
+      const res2 = await request({
+        method: 'GET',
+        headers,
+        url: 'http://localhost:8378/1/login?username=testuser&password=password',
+      }).catch(e => e);
+      expect(res2.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many requests',
+      });
+    });
+
+    it('applies the rate limit to GET login requests sent via _method override when requestMethods includes GET', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/login',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            requestMethods: ['POST', 'GET'],
+            errorResponseMessage: 'Too many requests',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      await Parse.User.signUp('testuser', 'password');
+      const res1 = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/login',
+        body: JSON.stringify({ _method: 'GET', username: 'testuser', password: 'password' }),
+      });
+      expect(res1.data.username).toBe('testuser');
+      const res2 = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/login',
+        body: JSON.stringify({ _method: 'GET', username: 'testuser', password: 'password' }),
+      }).catch(e => e);
+      expect(res2.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many requests',
+      });
+    });
+
+    it('applies the rate limit to login requests of any method when requestMethods is omitted', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/login',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            errorResponseMessage: 'Too many requests',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      await Parse.User.signUp('testuser', 'password');
+      // First login (POST) consumes the single allowed request across all methods.
+      const res1 = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/login',
+        body: JSON.stringify({ username: 'testuser', password: 'password' }),
+      });
+      expect(res1.data.username).toBe('testuser');
+      // A subsequent GET login (sent via _method override) is still rate limited.
+      const res2 = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/login',
+        body: JSON.stringify({ _method: 'GET', username: 'testuser', password: 'password' }),
+      }).catch(e => e);
+      expect(res2.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many requests',
+      });
+    });
+
     it('should allow _method override with PUT', async () => {
       await reconfigureServer({
         rateLimit: [
