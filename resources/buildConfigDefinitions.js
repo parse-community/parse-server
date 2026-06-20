@@ -168,7 +168,10 @@ function mapperFor(elt, t) {
     return wrap(t.identifier('objectParser'));
   } else if (t.isUnionTypeAnnotation(elt)) {
     const unionTypes = elt.typeAnnotation?.types || elt.types;
-    if (unionTypes?.some(type => t.isBooleanTypeAnnotation(type)) && unionTypes?.some(type => t.isFunctionTypeAnnotation(type))) {
+    if (
+      unionTypes?.some(type => t.isBooleanTypeAnnotation(type)) &&
+      unionTypes?.some(type => t.isFunctionTypeAnnotation(type))
+    ) {
       return wrap(t.identifier('booleanOrFunctionParser'));
     }
   } else if (t.isGenericTypeAnnotation(elt)) {
@@ -177,10 +180,12 @@ function mapperFor(elt, t) {
       return wrap(t.identifier('moduleOrObjectParser'));
     }
     if (type == 'NumberOrBoolean') {
-      return wrap(t.identifier('numberOrBooleanParser'));
+      return wrap(t.identifier('numberOrBoolParser'));
     }
     if (type == 'NumberOrString') {
-      return t.callExpression(wrap(t.identifier('numberOrStringParser')), [t.stringLiteral(elt.name)]);
+      return t.callExpression(wrap(t.identifier('numberOrStringParser')), [
+        t.stringLiteral(elt.name),
+      ]);
     }
     if (type === 'StringOrStringArray') {
       return wrap(t.identifier('arrayParser'));

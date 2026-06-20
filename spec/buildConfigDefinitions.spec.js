@@ -81,7 +81,7 @@ describe('buildConfigDefinitions', () => {
       expect(result.property.name).toBe('moduleOrObjectParser');
     });
 
-    it('should return numberOrBooleanParser for NumberOrBoolean GenericTypeAnnotation', () => {
+    it('should return numberOrBoolParser for NumberOrBoolean GenericTypeAnnotation', () => {
       const mockElement = {
         type: 'GenericTypeAnnotation',
         typeAnnotation: {
@@ -95,7 +95,7 @@ describe('buildConfigDefinitions', () => {
 
       expect(t.isMemberExpression(result)).toBe(true);
       expect(result.object.name).toBe('parsers');
-      expect(result.property.name).toBe('numberOrBooleanParser');
+      expect(result.property.name).toBe('numberOrBoolParser');
     });
 
     it('should return numberOrStringParser call expression for NumberOrString GenericTypeAnnotation', () => {
@@ -137,10 +137,7 @@ describe('buildConfigDefinitions', () => {
       const mockElement = {
         type: 'UnionTypeAnnotation',
         typeAnnotation: {
-          types: [
-            { type: 'BooleanTypeAnnotation' },
-            { type: 'FunctionTypeAnnotation' },
-          ],
+          types: [{ type: 'BooleanTypeAnnotation' }, { type: 'FunctionTypeAnnotation' }],
         },
       };
 
@@ -154,10 +151,7 @@ describe('buildConfigDefinitions', () => {
     it('should return booleanOrFunctionParser for UnionTypeAnnotation containing boolean (non-nullable)', () => {
       const mockElement = {
         type: 'UnionTypeAnnotation',
-        types: [
-          { type: 'BooleanTypeAnnotation' },
-          { type: 'FunctionTypeAnnotation' },
-        ],
+        types: [{ type: 'BooleanTypeAnnotation' }, { type: 'FunctionTypeAnnotation' }],
       };
 
       const result = mapperFor(mockElement, t);
@@ -171,10 +165,7 @@ describe('buildConfigDefinitions', () => {
       const mockElement = {
         type: 'UnionTypeAnnotation',
         typeAnnotation: {
-          types: [
-            { type: 'StringTypeAnnotation' },
-            { type: 'NumberTypeAnnotation' },
-          ],
+          types: [{ type: 'StringTypeAnnotation' }, { type: 'NumberTypeAnnotation' }],
         },
       };
 
@@ -187,10 +178,7 @@ describe('buildConfigDefinitions', () => {
       const mockElement = {
         type: 'UnionTypeAnnotation',
         typeAnnotation: {
-          types: [
-            { type: 'BooleanTypeAnnotation' },
-            { type: 'VoidTypeAnnotation' },
-          ],
+          types: [{ type: 'BooleanTypeAnnotation' }, { type: 'VoidTypeAnnotation' }],
         },
       };
 
