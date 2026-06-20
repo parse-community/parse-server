@@ -28,7 +28,7 @@
  * @property {Number} cacheTTL Sets the TTL for the in memory cache (in ms), defaults to 5000 (5 seconds)
  * @property {String} clientKey Key for iOS, MacOS, tvOS clients
  * @property {String} cloud Full path to your cloud code main.js
- * @property {Number|Boolean} cluster Run with cluster, optionally set the number of processes default to os.cpus().length
+ * @property {Number|Boolean} cluster Run with cluster, optionally set the number of processes default to os.cpus().length. This option only applies when Parse Server is started through the CLI; setting `cluster` on the ParseServer options object has no effect.
  * @property {String} collectionPrefix A collection prefix for the classes
  * @property {Boolean} convertEmailToLowercase Optional. If set to `true`, the `email` property of a user is automatically converted to lowercase before being stored in the database. Consequently, queries must match the case as stored in the database, which would be lowercase in this scenario. If `false`, the `email` property is stored as set, without any case modifications. Default is `false`.
  * @property {Boolean} convertUsernameToLowercase Optional. If set to `true`, the `username` property of a user is automatically converted to lowercase before being stored in the database. Consequently, queries must match the case as stored in the database, which would be lowercase in this scenario. If `false`, the `username` property is stored as set, without any case modifications. Default is `false`.

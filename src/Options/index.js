@@ -340,7 +340,7 @@ export interface ParseServerOptions {
   /* Mount path for the server, defaults to /parse
   :DEFAULT: /parse */
   mountPath: ?string;
-  /* Run with cluster, optionally set the number of processes default to os.cpus().length */
+  /* Run with cluster, optionally set the number of processes default to os.cpus().length. This option only applies when Parse Server is started through the CLI; setting `cluster` on the ParseServer options object has no effect. */
   cluster: ?NumberOrBoolean;
   /* middleware for express server, can be string or function */
   middleware: ?((() => void) | string);
