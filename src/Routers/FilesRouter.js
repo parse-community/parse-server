@@ -445,14 +445,9 @@ export class FilesRouter {
 
       // When the filename extension is not recognized by `mime`,
       // `FilesController.createFile` cannot derive a Content-Type from the
-      // filename and preserves the client-supplied Content-Type verbatim. The
-      // type the file is actually served as must therefore be validated against
-      // the blocklist. A Content-Type that does not parse as `type/subtype` with
-      // a non-empty type AND subtype (e.g. `image`, `image/`) is unparseable:
-      // browsers ignore it and fall back to MIME-sniffing the file body, which
-      // can render HTML/script markers as active content on storage adapters
-      // that serve the stored Content-Type. Reject such malformed values rather
-      // than store them verbatim, unless extension filtering is disabled (`*`).
+      // filename and preserves the client-supplied Content-Type verbatim, so the
+      // type the file is actually served as must be validated. Skip this when
+      // extension filtering is disabled (`*`).
       const allowsAllExtensions = fileExtensions.includes('*');
       if (!isExtensionRecognized && contentType && !allowsAllExtensions) {
         const slashIndex = contentType.indexOf('/');
@@ -460,11 +455,29 @@ export class FilesRouter {
         const subtype =
           slashIndex > 0 ? contentType.slice(slashIndex + 1).split(';')[0].trim() : '';
         if (!type || !subtype) {
+          // A Content-Type that does not parse as `type/subtype` with a non-empty
+          // type AND subtype is malformed: there is no valid MIME type without a
+          // subtype (RFC 9110 §8.3.1). Browsers cannot parse it and fall back to
+          // MIME-sniffing the file body, which can render HTML/script markers as
+          // active content on storage adapters that serve the stored Content-Type
+          // (e.g. `image`, `image/`). Surface the precise blocklist message when
+          // the bare token names a blocked extension (e.g. a no-slash `svg`),
+          // otherwise reject the unparseable Content-Type.
+          const bareToken = (slashIndex < 0 ? contentType.split(';')[0] : type).replace(
+            /\s+/g,
+            ''
+          );
+          if (bareToken && !isValidExtension(bareToken)) {
+            rejectExtension(bareToken);
+            return;
+          }
           next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Invalid Content-Type.'));
           return;
         }
-        // Validate the Content-Type subtype against the blocklist, e.g.
+        // Validate the well-formed Content-Type subtype against the blocklist, e.g.
         // "image/svg+xml" -> "svg+xml", "image/svg+xml;charset=utf-8" -> "svg+xml".
+        // Valid custom/vendor types (e.g. "application/vnd.api+json") parse and are
+        // allowed; only blocked subtypes are rejected.
         const contentTypeExtension = subtype.replace(/\s+/g, '');
         if (!isValidExtension(contentTypeExtension)) {
           rejectExtension(contentTypeExtension);

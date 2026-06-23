@@ -1716,6 +1716,31 @@ describe('Parse.File testing', () => {
       ).toBeResolved();
     });
 
+    it('default should allow a valid custom content type the mime package does not recognize', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+        },
+      });
+      // A well-formed `type/subtype` that `mime` does not recognize (e.g. a
+      // vendor type) must still be accepted; only malformed or blocked
+      // Content-Types are rejected.
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/files/note.foo',
+          body: JSON.stringify({
+            _ApplicationId: 'test',
+            _JavaScriptKey: 'test',
+            _ContentType: 'application/vnd.api+json',
+            base64: Buffer.from('{}').toString('base64'),
+          }),
+        }).catch(e => {
+          throw new Error(e.data.error);
+        })
+      ).toBeResolved();
+    });
+
     it('works with a period in the file name', async () => {
       await reconfigureServer({
         fileUpload: {
