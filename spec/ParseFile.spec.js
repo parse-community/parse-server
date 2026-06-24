@@ -1741,6 +1741,38 @@ describe('Parse.File testing', () => {
       ).toBeResolved();
     });
 
+    it('default should block a malformed content type with invalid token characters', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+        },
+      });
+      const htmlContent = Buffer.from('<!DOCTYPE html><script>alert(1)</script>').toString(
+        'base64'
+      );
+      // Non-empty but malformed media types (extra slash, comma-separated values,
+      // whitespace) are not valid `type/subtype` tokens (RFC 9110 §5.6.2) and are
+      // sniffed by browsers, so they must be rejected too.
+      for (const contentType of ['image//svg+xml', 'text/plain,text/html', 'image/sv g']) {
+        await expectAsync(
+          request({
+            method: 'POST',
+            url: 'http://localhost:8378/1/files/note.foo',
+            body: JSON.stringify({
+              _ApplicationId: 'test',
+              _JavaScriptKey: 'test',
+              _ContentType: contentType,
+              base64: htmlContent,
+            }),
+          }).catch(e => {
+            throw new Error(e.data.error);
+          })
+        ).toBeRejectedWith(
+          new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Invalid Content-Type.')
+        );
+      }
+    });
+
     it('works with a period in the file name', async () => {
       await reconfigureServer({
         fileUpload: {

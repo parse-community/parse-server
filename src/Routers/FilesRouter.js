@@ -454,15 +454,20 @@ export class FilesRouter {
         const type = slashIndex > 0 ? contentType.slice(0, slashIndex).trim() : '';
         const subtype =
           slashIndex > 0 ? contentType.slice(slashIndex + 1).split(';')[0].trim() : '';
-        if (!type || !subtype) {
-          // A Content-Type that does not parse as `type/subtype` with a non-empty
-          // type AND subtype is malformed: there is no valid MIME type without a
-          // subtype (RFC 9110 §8.3.1). Browsers cannot parse it and fall back to
-          // MIME-sniffing the file body, which can render HTML/script markers as
-          // active content on storage adapters that serve the stored Content-Type
-          // (e.g. `image`, `image/`). Surface the precise blocklist message when
-          // the bare token names a blocked extension (e.g. a no-slash `svg`),
-          // otherwise reject the unparseable Content-Type.
+        // A valid media type is `type/subtype` where both are non-empty `token`s
+        // (RFC 9110 §5.6.2). Reject anything else.
+        const token = /^[!#$%&'*+\-.^_`|~A-Za-z0-9]+$/;
+        if (!token.test(type) || !token.test(subtype)) {
+          // A Content-Type that does not parse as `type/subtype` with valid,
+          // non-empty type AND subtype tokens is malformed: there is no valid MIME
+          // type without a subtype (RFC 9110 §8.3.1), and malformed tokens such as
+          // `image//svg+xml` or `text/plain,text/html` are equally unparseable.
+          // Browsers cannot parse such values and fall back to MIME-sniffing the
+          // file body, which can render HTML/script markers as active content on
+          // storage adapters that serve the stored Content-Type (e.g. `image`,
+          // `image/`). Surface the precise blocklist message when the bare token
+          // names a blocked extension (e.g. a no-slash `svg`), otherwise reject the
+          // unparseable Content-Type.
           const bareToken = (slashIndex < 0 ? contentType.split(';')[0] : type).replace(
             /\s+/g,
             ''
