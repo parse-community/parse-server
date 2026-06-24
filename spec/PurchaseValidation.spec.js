@@ -6,7 +6,7 @@ function createProduct() {
     {
       base64: new Buffer('download_file', 'utf-8').toString('base64'),
     },
-    'text'
+    'text/plain'
   );
   return file.save().then(function () {
     const product = new Parse.Object('_Product');
