@@ -72,6 +72,12 @@ A big _thank you_ 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
   - [Configuring File Adapters](#configuring-file-adapters)
     - [Restricting File URL Domains](#restricting-file-url-domains)
   - [Idempotency Enforcement](#idempotency-enforcement)
+  - [Installations](#installations)
+    - [Options](#options)
+      - [`duplicateDeviceTokenActionEnforceAuth`](#duplicatedevicetokenactionenforceauth)
+      - [`duplicateDeviceTokenAction`](#duplicatedevicetokenaction)
+      - [`duplicateDeviceTokenMergePriority`](#duplicatedevicetokenmergepriority)
+    - [Configuration example](#configuration-example)
   - [Localization](#localization)
     - [Pages](#pages)
       - [Localization with Directory Structure](#localization-with-directory-structure)
@@ -313,7 +319,7 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 
 ## Route Allow List
 
-The `routeAllowList` option restricts which API routes are accessible to external clients. When set, all external requests are denied by default unless the route matches one of the configured regex patterns. This is useful for apps where all logic runs in Cloud Code and clients should not access the API directly.
+The `routeAllowList` option restricts which REST API routes are accessible to external clients. When set, all external REST API requests are denied by default unless the route matches one of the configured regex patterns. This is useful for apps where all logic runs in Cloud Code and clients should not access the REST API directly.
 
 Internal calls from Cloud Code, Cloud Jobs, and triggers are not affected. Master key and maintenance key requests bypass the restriction.
 
@@ -333,7 +339,7 @@ const server = ParseServer({
 
 Each entry is a regex pattern matched against the normalized route identifier. Patterns are auto-anchored with `^` and `$` for full-match semantics. For example, `classes/Chat` matches only `classes/Chat`, not `classes/ChatRoom`. Use `classes/Chat.*` to match both.
 
-Setting an empty array `[]` blocks all external non-master-key requests (full lockdown). Not setting the option preserves current behavior (all routes accessible).
+Setting an empty array `[]` blocks all external non-master-key REST API requests (full lockdown of REST API routes). Not setting the option preserves current behavior (all routes accessible).
 
 ### Covered Routes
 
@@ -393,6 +399,9 @@ The following table lists all route groups covered by `routeAllowList` with exam
 
 > [!NOTE]
 > File routes are not covered by `routeAllowList`. File upload access is controlled via the `fileUpload` option. File download and metadata access is controlled via the `fileDownload` option.
+
+> [!NOTE]
+> The GraphQL API is not covered by `routeAllowList`. `routeAllowList` gates the REST API per route, while every GraphQL operation is transported over a single endpoint with the operation, target class, and field set encoded in the request body — so per-route allow-list semantics do not compose with it.
 
 ## Email Verification and Password Reset
 
@@ -656,6 +665,49 @@ Assuming the script above is named, `parse_idempotency_delete_expired_records.sh
 
 ```bash
 2 * * * * /root/parse_idempotency_delete_expired_records.sh >/dev/null 2>&1
+```
+
+## Installations
+
+Parse Server deduplicates `_Installation` records when a new install collides with an existing row's `deviceToken`. The `installation` option block configures the dedup behavior.
+
+### Options
+
+| Parameter | Optional | Type | Default | Environment Variable |
+|---|---|---|---|---|
+| `installation.duplicateDeviceTokenActionEnforceAuth` | yes | `Boolean` | `false` | `PARSE_SERVER_INSTALLATION_DUPLICATE_DEVICE_TOKEN_ACTION_ENFORCE_AUTH` |
+| `installation.duplicateDeviceTokenAction` | yes | `String` | `'delete'` | `PARSE_SERVER_INSTALLATION_DUPLICATE_DEVICE_TOKEN_ACTION` |
+| `installation.duplicateDeviceTokenMergePriority` | yes | `String` | `'deviceToken'` | `PARSE_SERVER_INSTALLATION_DUPLICATE_DEVICE_TOKEN_MERGE_PRIORITY` |
+
+#### `duplicateDeviceTokenActionEnforceAuth`
+
+When `true`, the dedup operation runs with the caller's auth context so ACL and CLP are honored. When `false`, the dedup runs as master and bypasses both. Master and maintenance keys always bypass regardless of this flag.
+
+#### `duplicateDeviceTokenAction`
+
+What Parse Server does to the conflicting `_Installation` row(s) when a new install's `deviceToken` collides with an existing row.
+
+- `'delete'`: destroys the conflicting row.
+- `'update'`: clears the now-conflicting ID field on the conflicting row, preserving custom fields, channels, and history.
+
+#### `duplicateDeviceTokenMergePriority`
+
+When an existing row holds the new `deviceToken` but has no `installationId` of its own, Parse Server merges the two rows. This option controls which side wins.
+
+- `'deviceToken'`: the deviceToken-only row survives; the request's installationId-matched row is the loser.
+- `'installationId'`: the request's installationId-matched row survives; the deviceToken-only orphan is the loser.
+
+### Configuration example
+
+```javascript
+const parseServer = new ParseServer({
+  ...otherOptions,
+  installation: {
+    duplicateDeviceTokenActionEnforceAuth: true,
+    duplicateDeviceTokenAction: 'update',
+    duplicateDeviceTokenMergePriority: 'installationId',
+  },
+});
 ```
 
 ## Localization
