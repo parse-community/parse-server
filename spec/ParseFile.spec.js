@@ -1580,6 +1580,171 @@ describe('Parse.File testing', () => {
       ).toBeResolved();
     });
 
+    it('default should block a malformed content type with no slash', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+        },
+      });
+      const htmlContent = Buffer.from('<!DOCTYPE html><script>alert(1)</script>').toString(
+        'base64'
+      );
+      for (const filename of ['note.foo', 'data.bar']) {
+        await expectAsync(
+          request({
+            method: 'POST',
+            url: `http://localhost:8378/1/files/${filename}`,
+            body: JSON.stringify({
+              _ApplicationId: 'test',
+              _JavaScriptKey: 'test',
+              _ContentType: 'image',
+              base64: htmlContent,
+            }),
+          }).catch(e => {
+            throw new Error(e.data.error);
+          })
+        ).toBeRejectedWith(
+          new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Invalid Content-Type.')
+        );
+      }
+    });
+
+    it('default should block a malformed content type with an empty subtype', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+        },
+      });
+      const htmlContent = Buffer.from('<!DOCTYPE html><script>alert(1)</script>').toString(
+        'base64'
+      );
+      for (const filename of ['note.foo', 'data.bar']) {
+        await expectAsync(
+          request({
+            method: 'POST',
+            url: `http://localhost:8378/1/files/${filename}`,
+            body: JSON.stringify({
+              _ApplicationId: 'test',
+              _JavaScriptKey: 'test',
+              _ContentType: 'image/',
+              base64: htmlContent,
+            }),
+          }).catch(e => {
+            throw new Error(e.data.error);
+          })
+        ).toBeRejectedWith(
+          new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Invalid Content-Type.')
+        );
+      }
+    });
+
+    it('default should block a malformed content type when the filename has no extension', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+        },
+      });
+      const htmlContent = Buffer.from('<!DOCTYPE html><script>alert(1)</script>').toString(
+        'base64'
+      );
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/files/note',
+          body: JSON.stringify({
+            _ApplicationId: 'test',
+            _JavaScriptKey: 'test',
+            _ContentType: 'image',
+            base64: htmlContent,
+          }),
+        }).catch(e => {
+          throw new Error(e.data.error);
+        })
+      ).toBeRejectedWith(
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Invalid Content-Type.')
+      );
+    });
+
+    it('allows a malformed content type when all extensions are allowed', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+          fileExtensions: ['*'],
+        },
+      });
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/files/note.foo',
+          body: JSON.stringify({
+            _ApplicationId: 'test',
+            _JavaScriptKey: 'test',
+            _ContentType: 'image',
+            base64: 'ParseA==',
+          }),
+        }).catch(e => {
+          throw new Error(e.data.error);
+        })
+      ).toBeResolved();
+    });
+
+    it('default should allow a valid custom content type the mime package does not recognize', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+        },
+      });
+      // A well-formed `type/subtype` that `mime` does not recognize (e.g. a
+      // vendor type) must still be accepted; only malformed or blocked
+      // Content-Types are rejected.
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/files/note.foo',
+          body: JSON.stringify({
+            _ApplicationId: 'test',
+            _JavaScriptKey: 'test',
+            _ContentType: 'application/vnd.api+json',
+            base64: Buffer.from('{}').toString('base64'),
+          }),
+        }).catch(e => {
+          throw new Error(e.data.error);
+        })
+      ).toBeResolved();
+    });
+
+    it('default should block a malformed content type with invalid token characters', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+        },
+      });
+      const htmlContent = Buffer.from('<!DOCTYPE html><script>alert(1)</script>').toString(
+        'base64'
+      );
+      // Non-empty but malformed media types (extra slash, comma-separated values,
+      // whitespace) are not valid `type/subtype` tokens (RFC 9110 §5.6.2) and are
+      // sniffed by browsers, so they must be rejected too.
+      for (const contentType of ['image//svg+xml', 'text/plain,text/html', 'image/sv g']) {
+        await expectAsync(
+          request({
+            method: 'POST',
+            url: 'http://localhost:8378/1/files/note.foo',
+            body: JSON.stringify({
+              _ApplicationId: 'test',
+              _JavaScriptKey: 'test',
+              _ContentType: contentType,
+              base64: htmlContent,
+            }),
+          }).catch(e => {
+            throw new Error(e.data.error);
+          })
+        ).toBeRejectedWith(
+          new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Invalid Content-Type.')
+        );
+      }
+    });
+
     it('works with a period in the file name', async () => {
       await reconfigureServer({
         fileUpload: {
