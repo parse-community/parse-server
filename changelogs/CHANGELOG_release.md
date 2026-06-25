@@ -1,3 +1,10 @@
+## [8.6.84](https://github.com/parse-community/parse-server/compare/8.6.83...8.6.84) (2026-06-25)
+
+
+### Bug Fixes
+
+* Stored XSS via malformed Content-Type bypassing file upload extension blocklist ([GHSA-r899-h629-j84r](https://github.com/parse-community/parse-server/security/advisories/GHSA-r899-h629-j84r)) ([#10523](https://github.com/parse-community/parse-server/issues/10523)) ([55eab32](https://github.com/parse-community/parse-server/commit/55eab321fa02ad886e38ad2a19b101c9868e6757))
+
 ## [8.6.83](https://github.com/parse-community/parse-server/compare/8.6.82...8.6.83) (2026-06-19)
 
 
