@@ -363,4 +363,62 @@ describe('Cloud Code Multipart', () => {
     expect(result.status).toBe(200);
     expect(result.data.result.isMaster).toBe(false);
   });
+
+  it('should reject multipart request with many empty parts whose wire size exceeds maxUploadSize', async () => {
+    await reconfigureServer({ maxUploadSize: '1kb' });
+
+    Parse.Cloud.define('multipartManyEmptyParts', req => {
+      return { count: Object.keys(req.params).length };
+    });
+
+    const boundary = '----TestBoundaryManyEmptyParts';
+    const parts = [];
+    for (let i = 0; i < 2000; i++) {
+      parts.push({ name: `f${i}`, value: '' });
+    }
+    const body = buildMultipartBody(boundary, parts);
+    // The wire body is far larger than maxUploadSize even though every field
+    // value is empty, so the value/chunk byte counters alone never trip.
+    expect(body.length).toBeGreaterThan(100 * 1024);
+
+    const result = await postMultipart(
+      `http://localhost:8378/1/functions/multipartManyEmptyParts`,
+      {
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      body
+    );
+
+    expect(result.data.code).toBe(Parse.Error.OBJECT_TOO_LARGE);
+  });
+
+  it('should reject multipart request whose Content-Length exceeds maxUploadSize', async () => {
+    await reconfigureServer({ maxUploadSize: '1kb' });
+
+    Parse.Cloud.define('multipartContentLength', req => {
+      return { count: Object.keys(req.params).length };
+    });
+
+    const boundary = '----TestBoundaryContentLength';
+    const parts = [];
+    for (let i = 0; i < 2000; i++) {
+      parts.push({ name: `f${i}`, value: '' });
+    }
+    const body = buildMultipartBody(boundary, parts);
+
+    const result = await postMultipart(
+      `http://localhost:8378/1/functions/multipartContentLength`,
+      {
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+        'Content-Length': String(body.length),
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      body
+    );
+
+    expect(result.data.code).toBe(Parse.Error.OBJECT_TOO_LARGE);
+  });
 });
