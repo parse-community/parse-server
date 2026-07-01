@@ -2143,4 +2143,38 @@ describe('ParseLiveQuery beforeLiveQueryEvent', function () {
     await sleep(500);
     expect(updateSpy).not.toHaveBeenCalled();
   });
+
+  it('still publishes the event and logs when beforeLiveQueryEvent throws', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const logger = require('../lib/logger').logger;
+    const warnSpy = spyOn(logger, 'warn').and.callThrough();
+
+    Parse.Cloud.beforeLiveQueryEvent('TestObject', () => {
+      throw new Error('beforeLiveQueryEvent failure');
+    });
+
+    const query = new Parse.Query(TestObject);
+    const subscription = await query.subscribe();
+    const createPromise = resolvingPromise();
+    subscription.on('create', object => {
+      createPromise.resolve(object);
+    });
+
+    const object = new TestObject();
+    object.set('foo', 'bar');
+    await object.save();
+
+    // The event is still published even though the trigger threw.
+    const created = await createPromise;
+    expect(created.get('foo')).toBe('bar');
+    expect(warnSpy).toHaveBeenCalledWith('beforeLiveQueryEvent caught an error', jasmine.anything());
+  });
 });
