@@ -678,15 +678,17 @@ ParseCloud.beforeSubscribe = function (parseClass, handler, validationHandler) {
  *
  * **Available in Cloud Code only.**
  *
- * The function runs on the Parse Server instance before an object change is
- * published to the LiveQuery server, once per object write. This is different
- * from {@link Parse.Cloud.afterLiveQueryEvent}, which runs on the LiveQuery
- * server once per matching subscription.
+ * The function runs on the Parse Server instance before an object create,
+ * update or delete is published to the LiveQuery server, once per object write.
+ * This is different from {@link Parse.Cloud.afterLiveQueryEvent}, which runs on
+ * the LiveQuery server once per matching subscription.
  *
  * Return `false` from the function to prevent the event from being published to
  * the LiveQuery server. This is useful to avoid publishing events that no client
  * needs to receive, saving network and CPU resources. Returning any other value
- * (including `undefined`) publishes the event as usual.
+ * (including `undefined`) publishes the event as usual. If a validator is
+ * defined and fails, the event is not published; if the function itself throws,
+ * the error is logged and the event is published as usual.
  *
  * This trigger is intended only to allow or prevent publishing an event. Do not
  * mutate `request.object` here: it is the same object instance that is passed to

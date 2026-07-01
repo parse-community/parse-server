@@ -1029,6 +1029,39 @@ export function maybeRunTrigger(
   });
 }
 
+// Runs the beforeLiveQueryEvent trigger, if defined, and returns whether the
+// LiveQuery event should be published. The event is not published when the
+// trigger returns `false` or when its validator fails (a failing validator is a
+// deliberate gate, so it fails closed). Any other trigger error is logged and
+// the event is published as usual, so a faulty trigger cannot silently drop
+// events. This function never rejects.
+export async function maybeRunBeforeLiveQueryEventTrigger(
+  auth,
+  parseObject,
+  originalParseObject,
+  config,
+  context
+) {
+  try {
+    const result = await maybeRunTrigger(
+      Types.beforeEvent,
+      auth,
+      parseObject,
+      originalParseObject,
+      config,
+      context
+    );
+    return result !== false;
+  } catch (error) {
+    if (error && error.code === Parse.Error.VALIDATION_ERROR) {
+      logger.warn('beforeLiveQueryEvent validation failed', error);
+      return false;
+    }
+    logger.warn('beforeLiveQueryEvent caught an error', error);
+    return true;
+  }
+}
+
 // Converts a REST-format object to a Parse.Object
 // data is either className or an object
 export function inflate(data, restObject) {
