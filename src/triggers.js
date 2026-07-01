@@ -16,6 +16,7 @@ export const Types = {
   afterFind: 'afterFind',
   beforeConnect: 'beforeConnect',
   beforeSubscribe: 'beforeSubscribe',
+  beforeEvent: 'beforeEvent',
   afterEvent: 'afterEvent',
 };
 
@@ -307,7 +308,8 @@ export function getRequestObject(
     triggerType === Types.beforeLogin ||
     triggerType === Types.afterLogin ||
     triggerType === Types.beforePasswordResetRequest ||
-    triggerType === Types.afterFind
+    triggerType === Types.afterFind ||
+    triggerType === Types.beforeEvent
   ) {
     // Set a copy of the context on the request object.
     request.context = Object.assign(Object.create(null), context);
@@ -373,6 +375,11 @@ export function getRequestQueryObject(triggerType, auth, query, count, config, c
 export function getResponseObject(request, resolve, reject) {
   return {
     success: function (response) {
+      if (request.triggerName === Types.beforeEvent) {
+        // Pass the handler's return value through unchanged so that the caller
+        // can react to it (e.g. returning `false` to prevent a LiveQuery event).
+        return resolve(response);
+      }
       if (request.triggerName === Types.afterFind) {
         if (!response) {
           response = request.objects;

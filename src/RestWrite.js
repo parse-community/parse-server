@@ -1764,7 +1764,7 @@ RestWrite.prototype.runDatabaseOperation = function () {
 };
 
 // Returns nothing - doesn't wait for the trigger.
-RestWrite.prototype.runAfterSaveTrigger = function () {
+RestWrite.prototype.runAfterSaveTrigger = async function () {
   if (!this.response || !this.response.response || this.runOptions.many) {
     return;
   }
@@ -1784,16 +1784,43 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
   updatedObject._handleSaveResponse(this.response.response, this.response.status || 200);
 
   if (hasLiveQuery) {
-    this.config.database.loadSchema().then(schemaController => {
-      // Notify LiveQueryServer if possible
-      const perms = schemaController.getClassLevelPermissions(updatedObject.className);
-      this.config.liveQueryController.onAfterSave(
-        updatedObject.className,
-        updatedObject,
-        originalObject,
-        perms
-      );
-    });
+    // Run the beforeLiveQueryEvent trigger, if defined, to let Cloud Code decide
+    // whether the event should be published. Returning `false` from the trigger
+    // prevents the event from being sent to the LiveQuery server, which saves
+    // network and CPU resources for events that no client needs to receive.
+    let preventLiveQuery = false;
+    const hasBeforeLiveQueryEventHook = triggers.triggerExists(
+      this.className,
+      triggers.Types.beforeEvent,
+      this.config.applicationId
+    );
+    if (hasBeforeLiveQueryEventHook) {
+      try {
+        const result = await triggers.maybeRunTrigger(
+          triggers.Types.beforeEvent,
+          this.auth,
+          updatedObject,
+          originalObject,
+          this.config,
+          this.context
+        );
+        preventLiveQuery = result === false;
+      } catch (err) {
+        logger.warn('beforeLiveQueryEvent caught an error', err);
+      }
+    }
+    if (!preventLiveQuery) {
+      this.config.database.loadSchema().then(schemaController => {
+        // Notify LiveQueryServer if possible
+        const perms = schemaController.getClassLevelPermissions(updatedObject.className);
+        this.config.liveQueryController.onAfterSave(
+          updatedObject.className,
+          updatedObject,
+          originalObject,
+          perms
+        );
+      });
+    }
   }
   if (!hasAfterSaveHook) {
     return Promise.resolve();
