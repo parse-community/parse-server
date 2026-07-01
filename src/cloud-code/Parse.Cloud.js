@@ -688,6 +688,13 @@ ParseCloud.beforeSubscribe = function (parseClass, handler, validationHandler) {
  * needs to receive, saving network and CPU resources. Returning any other value
  * (including `undefined`) publishes the event as usual.
  *
+ * This trigger is intended only to allow or prevent publishing an event. Do not
+ * mutate `request.object` here: it is the same object instance that is passed to
+ * the `afterSave` trigger, so changes would leak into `afterSave` and the save
+ * response. `request.context` is provided read-only and is not merged back. To
+ * transform the payload delivered to LiveQuery clients, use
+ * {@link Parse.Cloud.afterLiveQueryEvent} instead.
+ *
  * If you want to use beforeLiveQueryEvent for a predefined class in the Parse JavaScript SDK (e.g. {@link Parse.User} or {@link Parse.File}), you should pass the class itself and not the String for arg1.
  * ```
  * Parse.Cloud.beforeLiveQueryEvent('MyCustomClass', (request) => {
