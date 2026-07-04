@@ -653,7 +653,8 @@ describe('rest create', () => {
       password: 'zxcv',
       foo: 'bar',
     };
-    const now = new Date();
+    const defaultSessionLength = 1000 * 3600 * 24 * 365;
+    const before = Date.now();
 
     rest
       .create(config, auth.nobody(config), '_User', user)
@@ -670,10 +671,11 @@ describe('rest create', () => {
         expect(r.results.length).toEqual(1);
 
         const session = r.results[0];
-        const actual = new Date(session.expiresAt.iso);
-        const expected = new Date(now.getTime() + 1000 * 3600 * 24 * 365);
+        const actual = new Date(session.expiresAt.iso).getTime();
+        const after = Date.now();
 
-        expect(Math.abs(actual - expected) <= jasmine.DEFAULT_TIMEOUT_INTERVAL).toEqual(true);
+        expect(actual).toBeGreaterThanOrEqual(before + defaultSessionLength);
+        expect(actual).toBeLessThanOrEqual(after + defaultSessionLength);
 
         done();
       });
@@ -685,9 +687,9 @@ describe('rest create', () => {
       password: 'zxcv',
       foo: 'bar',
     };
-    const sessionLength = 3600, // 1 Hour ahead
-      now = new Date(); // For reference later
+    const sessionLength = 3600; // 1 Hour ahead
     config.sessionLength = sessionLength;
+    const before = Date.now();
 
     rest
       .create(config, auth.nobody(config), '_User', user)
@@ -704,10 +706,11 @@ describe('rest create', () => {
         expect(r.results.length).toEqual(1);
 
         const session = r.results[0];
-        const actual = new Date(session.expiresAt.iso);
-        const expected = new Date(now.getTime() + sessionLength * 1000);
+        const actual = new Date(session.expiresAt.iso).getTime();
+        const after = Date.now();
 
-        expect(Math.abs(actual - expected) <= jasmine.DEFAULT_TIMEOUT_INTERVAL).toEqual(true);
+        expect(actual).toBeGreaterThanOrEqual(before + sessionLength * 1000);
+        expect(actual).toBeLessThanOrEqual(after + sessionLength * 1000);
 
         done();
       })
@@ -717,38 +720,27 @@ describe('rest create', () => {
       });
   });
 
-  it('can create a session with no expiration', done => {
+  it('can create a session with no expiration', async () => {
+    await reconfigureServer({ expireInactiveSessions: false });
+    config = Config.get('test');
+
     const user = {
       username: 'asdf',
       password: 'zxcv',
       foo: 'bar',
     };
-    config.expireInactiveSessions = false;
 
-    rest
-      .create(config, auth.nobody(config), '_User', user)
-      .then(r => {
-        expect(Object.keys(r.response).length).toEqual(3);
-        expect(typeof r.response.objectId).toEqual('string');
-        expect(typeof r.response.createdAt).toEqual('string');
-        expect(typeof r.response.sessionToken).toEqual('string');
-        return rest.find(config, auth.master(config), '_Session', {
-          sessionToken: r.response.sessionToken,
-        });
-      })
-      .then(r => {
-        expect(r.results.length).toEqual(1);
+    const r = await rest.create(config, auth.nobody(config), '_User', user);
+    expect(Object.keys(r.response).length).toEqual(3);
+    expect(typeof r.response.objectId).toEqual('string');
+    expect(typeof r.response.createdAt).toEqual('string');
+    expect(typeof r.response.sessionToken).toEqual('string');
 
-        const session = r.results[0];
-        expect(session.expiresAt).toBeUndefined();
-
-        done();
-      })
-      .catch(err => {
-        console.error(err);
-        fail(err);
-        done();
-      });
+    const s = await rest.find(config, auth.master(config), '_Session', {
+      sessionToken: r.response.sessionToken,
+    });
+    expect(s.results.length).toEqual(1);
+    expect(s.results[0].expiresAt).toBeUndefined();
   });
 
   it('can create object in volatileClasses if masterKey', done => {

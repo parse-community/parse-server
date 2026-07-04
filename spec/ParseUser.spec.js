@@ -82,6 +82,29 @@ describe('Parse.User testing', () => {
     }
   });
 
+  it('normalizes login response time for non-existent and existing users', async () => {
+    const passwordCrypto = require('../lib/password');
+    const compareSpy = spyOn(passwordCrypto, 'compare').and.callThrough();
+    await Parse.User.signUp('existinguser', 'password123');
+    compareSpy.calls.reset();
+
+    // Login with non-existent user — should use dummy hash
+    await expectAsync(
+      Parse.User.logIn('nonexistentuser', 'wrongpassword')
+    ).toBeRejected();
+    expect(compareSpy).toHaveBeenCalledTimes(1);
+    expect(compareSpy).toHaveBeenCalledWith('wrongpassword', passwordCrypto.dummyHash);
+    compareSpy.calls.reset();
+
+    // Login with existing user but wrong password — should use real hash
+    await expectAsync(
+      Parse.User.logIn('existinguser', 'wrongpassword')
+    ).toBeRejected();
+    expect(compareSpy).toHaveBeenCalledTimes(1);
+    expect(compareSpy.calls.mostRecent().args[0]).toBe('wrongpassword');
+    expect(compareSpy.calls.mostRecent().args[1]).not.toBe(passwordCrypto.dummyHash);
+  });
+
   it('logs username taken with configured log level', async () => {
     await reconfigureServer({ logLevels: { signupUsernameTaken: 'warn' } });
     const logger = require('../lib/logger').default;
@@ -359,9 +382,6 @@ describe('Parse.User testing', () => {
       uri: databaseURI,
     });
     await adapter.connect();
-    await adapter.database.dropDatabase();
-    delete adapter.connectionPromise;
-    Config.get(Parse.applicationId).schemaCache.clear();
 
     const user = new Parse.User();
     await user.signUp({
@@ -1460,7 +1480,7 @@ describe('Parse.User testing', () => {
     expect(result.get('authData').facebook.access_token).toBe('jenny');
   });
 
-  it('only creates a single session for an installation / user pair (#2885)', async done => {
+  it('only creates a single session for an installation / user pair (#2885)', async () => {
     Parse.Object.disableSingleInstance();
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
@@ -1469,18 +1489,13 @@ describe('Parse.User testing', () => {
     const user = await Parse.User.logInWith('facebook');
     const sessionToken = user.getSessionToken();
     const query = new Parse.Query('_Session');
-    return query
-      .find({ useMasterKey: true })
-      .then(results => {
-        expect(results.length).toBe(1);
-        expect(results[0].get('sessionToken')).toBe(sessionToken);
-        expect(results[0].get('createdWith')).toEqual({
-          action: 'login',
-          authProvider: 'facebook',
-        });
-        done();
-      })
-      .catch(done.fail);
+    const results = await query.find({ useMasterKey: true });
+    expect(results.length).toBe(1);
+    expect(results[0].get('sessionToken')).toBe(sessionToken);
+    expect(results[0].get('createdWith')).toEqual({
+      action: 'login',
+      authProvider: 'facebook',
+    });
   });
 
   it('log in with provider with files', done => {

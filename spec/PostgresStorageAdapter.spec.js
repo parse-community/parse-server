@@ -589,3 +589,213 @@ describe_only_db('postgres')('PostgresStorageAdapter shutdown', () => {
     expect(adapter._client.$pool.ending).toEqual(true);
   });
 });
+
+describe_only_db('postgres')('PostgresStorageAdapter Increment JSON key escaping', () => {
+  const request = require('../lib/request');
+  const headers = {
+    'Content-Type': 'application/json',
+    'X-Parse-Application-Id': 'test',
+    'X-Parse-REST-API-Key': 'rest',
+  };
+
+  it('does not inject additional JSONB keys via double-quote in sub-key name', async () => {
+    const obj = new Parse.Object('IncrementTest');
+    obj.set('metadata', { score: 100, isAdmin: 0 });
+    await obj.save();
+
+    // Advisory payload: sub-key `":0,"isAdmin` produces JSON `{"":0,"isAdmin":amount}`
+    // which would inject/overwrite the `isAdmin` key via JSONB `||` merge
+    await request({
+      method: 'PUT',
+      url: `http://localhost:8378/1/classes/IncrementTest/${obj.id}`,
+      headers,
+      body: JSON.stringify({
+        'metadata.":0,"isAdmin': { __op: 'Increment', amount: 1 },
+      }),
+    }).catch(() => {});
+
+    const verify = await new Parse.Query('IncrementTest').get(obj.id);
+    // isAdmin must NOT have been changed by the injection
+    expect(verify.get('metadata').isAdmin).toBe(0);
+    // score must remain unchanged
+    expect(verify.get('metadata').score).toBe(100);
+    // No spurious empty-string key should exist
+    expect(verify.get('metadata')['']).toBeUndefined();
+  });
+
+  it('does not overwrite existing JSONB keys via crafted sub-key injection', async () => {
+    const obj = new Parse.Object('IncrementTest');
+    obj.set('metadata', { balance: 500 });
+    await obj.save();
+
+    // Attempt to overwrite `balance` with 0 via injection, then set injected key to amount
+    await request({
+      method: 'PUT',
+      url: `http://localhost:8378/1/classes/IncrementTest/${obj.id}`,
+      headers,
+      body: JSON.stringify({
+        'metadata.":0,"balance': { __op: 'Increment', amount: 0 },
+      }),
+    }).catch(() => {});
+
+    const verify = await new Parse.Query('IncrementTest').get(obj.id);
+    // balance must NOT have been overwritten
+    expect(verify.get('metadata').balance).toBe(500);
+  });
+
+  it('does not escalate write access beyond what CLP already grants', async () => {
+    // A user with write CLP can already overwrite any sub-key of an Object field
+    // directly, so the JSON key injection does not grant additional capabilities.
+    const schema = new Parse.Schema('IncrementCLPTest');
+    schema.addObject('metadata');
+    schema.setCLP({
+      find: { '*': true },
+      get: { '*': true },
+      create: { '*': true },
+      update: { '*': true },
+      addField: {},
+    });
+    await schema.save();
+
+    const obj = new Parse.Object('IncrementCLPTest');
+    obj.set('metadata', { score: 100, isAdmin: 0 });
+    await obj.save();
+
+    // A user with write CLP can already directly overwrite any sub-key
+    const directResponse = await request({
+      method: 'PUT',
+      url: `http://localhost:8378/1/classes/IncrementCLPTest/${obj.id}`,
+      headers,
+      body: JSON.stringify({
+        'metadata.isAdmin': { __op: 'Increment', amount: 1 },
+      }),
+    });
+    expect(directResponse.status).toBe(200);
+
+    const afterDirect = await new Parse.Query('IncrementCLPTest').get(obj.id);
+    // Direct Increment already overwrites the key — no injection needed
+    expect(afterDirect.get('metadata').isAdmin).toBe(1);
+  });
+
+  it('does not bypass protectedFields — injection has same access as direct write', async () => {
+    const user = await Parse.User.signUp('protuser', 'password123');
+
+    const schema = new Parse.Schema('IncrementProtectedTest');
+    schema.addObject('metadata');
+    schema.setCLP({
+      find: { '*': true },
+      get: { '*': true },
+      create: { '*': true },
+      update: { '*': true },
+      addField: {},
+      protectedFields: { '*': ['metadata'] },
+    });
+    await schema.save();
+
+    const obj = new Parse.Object('IncrementProtectedTest');
+    obj.set('metadata', { score: 100, isAdmin: 0 });
+    await obj.save(null, { useMasterKey: true });
+
+    // Injection attempt on a protected field
+    await request({
+      method: 'PUT',
+      url: `http://localhost:8378/1/classes/IncrementProtectedTest/${obj.id}`,
+      headers: {
+        ...headers,
+        'X-Parse-Session-Token': user.getSessionToken(),
+      },
+      body: JSON.stringify({
+        'metadata.":0,"isAdmin': { __op: 'Increment', amount: 1 },
+      }),
+    }).catch(() => {});
+
+    // Direct write to same protected field
+    await request({
+      method: 'PUT',
+      url: `http://localhost:8378/1/classes/IncrementProtectedTest/${obj.id}`,
+      headers: {
+        ...headers,
+        'X-Parse-Session-Token': user.getSessionToken(),
+      },
+      body: JSON.stringify({
+        'metadata.isAdmin': { __op: 'Increment', amount: 1 },
+      }),
+    });
+
+    // Both succeed — protectedFields controls read access, not write access.
+    // The injection has the same access as a direct write.
+    const verify = await new Parse.Query('IncrementProtectedTest').get(obj.id, { useMasterKey: true });
+
+    // Direct write succeeded (protectedFields doesn't block writes)
+    expect(verify.get('metadata').isAdmin).toBeGreaterThanOrEqual(1);
+
+    // Verify the field is indeed read-protected for the user
+    const userResult = await new Parse.Query('IncrementProtectedTest').get(obj.id, { sessionToken: user.getSessionToken() });
+    expect(userResult.get('metadata')).toBeUndefined();
+  });
+
+  it('rejects injection when user lacks write CLP', async () => {
+    const user = await Parse.User.signUp('testuser', 'password123');
+
+    const schema = new Parse.Schema('IncrementNoCLPTest');
+    schema.addObject('metadata');
+    schema.setCLP({
+      find: { '*': true },
+      get: { '*': true },
+      create: { '*': true },
+      update: {},
+      addField: {},
+    });
+    await schema.save();
+
+    const obj = new Parse.Object('IncrementNoCLPTest');
+    obj.set('metadata', { score: 100, isAdmin: 0 });
+    await obj.save(null, { useMasterKey: true });
+
+    // Without write CLP, the injection attempt is rejected
+    await request({
+      method: 'PUT',
+      url: `http://localhost:8378/1/classes/IncrementNoCLPTest/${obj.id}`,
+      headers: {
+        ...headers,
+        'X-Parse-Session-Token': user.getSessionToken(),
+      },
+      body: JSON.stringify({
+        'metadata.":0,"isAdmin': { __op: 'Increment', amount: 1 },
+      }),
+    }).catch(() => {});
+
+    const verify = await new Parse.Query('IncrementNoCLPTest').get(obj.id);
+    // isAdmin unchanged — CLP blocked the write
+    expect(verify.get('metadata').isAdmin).toBe(0);
+  });
+
+  it('rejects injection when user lacks write access via ACL', async () => {
+    const owner = await Parse.User.signUp('owner', 'password123');
+    const attacker = await Parse.User.signUp('attacker', 'password456');
+
+    const obj = new Parse.Object('IncrementACLTest');
+    obj.set('metadata', { score: 100, isAdmin: 0 });
+    const acl = new Parse.ACL(owner);
+    acl.setPublicReadAccess(true);
+    obj.setACL(acl);
+    await obj.save(null, { useMasterKey: true });
+
+    // Attacker has public read but not write — injection attempt should fail
+    await request({
+      method: 'PUT',
+      url: `http://localhost:8378/1/classes/IncrementACLTest/${obj.id}`,
+      headers: {
+        ...headers,
+        'X-Parse-Session-Token': attacker.getSessionToken(),
+      },
+      body: JSON.stringify({
+        'metadata.":0,"isAdmin': { __op: 'Increment', amount: 1 },
+      }),
+    }).catch(() => {});
+
+    const verify = await new Parse.Query('IncrementACLTest').get(obj.id);
+    // isAdmin unchanged — ACL blocked the write
+    expect(verify.get('metadata').isAdmin).toBe(0);
+  });
+});

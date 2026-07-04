@@ -2407,6 +2407,49 @@ describe('beforeSave hooks', () => {
     expect(res.length).toEqual(1);
     expect(res[0].get('foo')).toEqual('bar');
   });
+
+  it('should have access to plaintext password on signup for password policy enforcement', async () => {
+    let receivedPassword;
+    Parse.Cloud.beforeSave(Parse.User, req => {
+      receivedPassword = req.object.get('password');
+    });
+
+    const user = new Parse.User();
+    user.setUsername('testuser');
+    user.setPassword('securePassword123');
+    await user.signUp();
+
+    expect(receivedPassword).toBe('securePassword123');
+  });
+
+  it('should have access to plaintext password on password change for password policy enforcement', async () => {
+    const user = new Parse.User();
+    user.setUsername('testuser');
+    user.setPassword('originalPassword');
+    await user.signUp();
+
+    let receivedPassword;
+    Parse.Cloud.beforeSave(Parse.User, req => {
+      receivedPassword = req.object.get('password');
+    });
+
+    user.setPassword('newPassword456');
+    await user.save(null, { sessionToken: user.getSessionToken() });
+
+    expect(receivedPassword).toBe('newPassword456');
+  });
+
+  it('should not expose plaintext password in API response', async () => {
+    Parse.Cloud.beforeSave(Parse.User, () => {});
+
+    const user = new Parse.User();
+    user.setUsername('testuser');
+    user.setPassword('securePassword123');
+    const result = await user.signUp();
+
+    expect(result.get('password')).toBeUndefined();
+    expect(result.get('_hashed_password')).toBeUndefined();
+  });
 });
 
 describe('afterSave hooks', () => {

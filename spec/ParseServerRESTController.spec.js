@@ -519,6 +519,97 @@ describe('ParseServerRESTController', () => {
     );
   });
 
+  it('should deep copy context so mutations in beforeSave do not leak across requests', async () => {
+    const sharedContext = { counter: 0, nested: { value: 'original' } };
+
+    Parse.Cloud.beforeSave('ContextTestObject', req => {
+      // Mutate the context in beforeSave
+      req.context.counter = (req.context.counter || 0) + 1;
+      req.context.nested.value = 'mutated';
+      req.context.addedByHook = true;
+    });
+
+    // First save — this should not affect the original sharedContext
+    await RESTController.request(
+      'POST',
+      '/classes/ContextTestObject',
+      { key: 'value1' },
+      { context: sharedContext }
+    );
+
+    // The original context object must remain unchanged
+    expect(sharedContext.counter).toEqual(0);
+    expect(sharedContext.nested.value).toEqual('original');
+    expect(sharedContext.addedByHook).toBeUndefined();
+
+    // Second save with the same context — should also start with the original values
+    await RESTController.request(
+      'POST',
+      '/classes/ContextTestObject',
+      { key: 'value2' },
+      { context: sharedContext }
+    );
+
+    // The original context object must still remain unchanged
+    expect(sharedContext.counter).toEqual(0);
+    expect(sharedContext.nested.value).toEqual('original');
+    expect(sharedContext.addedByHook).toBeUndefined();
+  });
+
+  it('should isolate context between concurrent requests', async () => {
+    const contexts = [];
+
+    Parse.Cloud.beforeSave('ConcurrentContextObject', req => {
+      // Each request should see its own context, not a shared one
+      req.context.requestId = req.object.get('requestId');
+      contexts.push({ ...req.context });
+    });
+
+    const sharedContext = { shared: true };
+
+    await Promise.all([
+      RESTController.request(
+        'POST',
+        '/classes/ConcurrentContextObject',
+        { requestId: 'req1' },
+        { context: sharedContext }
+      ),
+      RESTController.request(
+        'POST',
+        '/classes/ConcurrentContextObject',
+        { requestId: 'req2' },
+        { context: sharedContext }
+      ),
+    ]);
+
+    // Each hook should have seen its own requestId, not the other's
+    const req1Context = contexts.find(c => c.requestId === 'req1');
+    const req2Context = contexts.find(c => c.requestId === 'req2');
+    expect(req1Context).toBeDefined();
+    expect(req2Context).toBeDefined();
+    expect(req1Context.requestId).toEqual('req1');
+    expect(req2Context.requestId).toEqual('req2');
+    // Original context must remain unchanged
+    expect(sharedContext.requestId).toBeUndefined();
+  });
+
+  it('should reject with an error when context contains non-cloneable values', async () => {
+    const nonCloneableContext = { fn: () => {} };
+    try {
+      await RESTController.request(
+        'POST',
+        '/classes/MyObject',
+        { key: 'value' },
+        { context: nonCloneableContext }
+      );
+      fail('should have rejected for non-cloneable context');
+    } catch (error) {
+      expect(error).toBeDefined();
+      expect(error.code).toEqual(Parse.Error.INVALID_VALUE);
+      expect(error.message).toContain('Context contains non-cloneable values');
+    }
+  });
+
   it('ensures sessionTokens are properly handled', async () => {
     const user = await Parse.User.signUp('user', 'pass');
     const sessionToken = user.getSessionToken();

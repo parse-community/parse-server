@@ -69,7 +69,6 @@ const getObject = async (
     className,
     objectId,
     options,
-    info.clientSDK,
     info.context
   );
 
@@ -131,9 +130,8 @@ const findObjects = async (
     if (Object.keys(where).length > 0 && subqueryReadPreference) {
       preCountOptions.subqueryReadPreference = subqueryReadPreference;
     }
-    preCount = (
-      await rest.find(config, auth, className, where, preCountOptions, info.clientSDK, info.context)
-    ).count;
+    preCount = (await rest.find(config, auth, className, where, preCountOptions, info.context))
+      .count;
     if ((skip || 0) + limit < preCount) {
       skip = preCount - limit;
     }
@@ -199,7 +197,6 @@ const findObjects = async (
       className,
       where,
       options,
-      info.clientSDK,
       info.context
     );
     results = findResult.results;

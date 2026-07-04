@@ -1,12 +1,20 @@
 import { GraphQLError } from 'graphql';
 import logger from '../../logger';
 
-function calculateQueryComplexity(operation, fragments) {
+function calculateQueryComplexity(operation, fragments, limits = {}) {
   let maxDepth = 0;
   let totalFields = 0;
+  const fragmentCache = new Map();
+  const { maxDepth: allowedMaxDepth, maxFields: allowedMaxFields } = limits;
 
   function visitSelectionSet(selectionSet, depth, visitedFragments) {
     if (!selectionSet) {
+      return;
+    }
+    if (
+      (allowedMaxFields !== undefined && allowedMaxFields !== -1 && totalFields > allowedMaxFields) ||
+      (allowedMaxDepth !== undefined && allowedMaxDepth !== -1 && maxDepth > allowedMaxDepth)
+    ) {
       return;
     }
     for (const selection of selectionSet.selections) {
@@ -23,14 +31,36 @@ function calculateQueryComplexity(operation, fragments) {
         visitSelectionSet(selection.selectionSet, depth, visitedFragments);
       } else if (selection.kind === 'FragmentSpread') {
         const name = selection.name.value;
+        if (fragmentCache.has(name)) {
+          const cached = fragmentCache.get(name);
+          totalFields += cached.fields;
+          const adjustedDepth = depth + cached.maxDepthDelta;
+          if (adjustedDepth > maxDepth) {
+            maxDepth = adjustedDepth;
+          }
+          continue;
+        }
         if (visitedFragments.has(name)) {
           continue;
         }
         const fragment = fragments[name];
         if (fragment) {
-          const branchVisited = new Set(visitedFragments);
-          branchVisited.add(name);
-          visitSelectionSet(fragment.selectionSet, depth, branchVisited);
+          if (
+            (allowedMaxFields !== undefined && allowedMaxFields !== -1 && totalFields > allowedMaxFields) ||
+            (allowedMaxDepth !== undefined && allowedMaxDepth !== -1 && maxDepth > allowedMaxDepth)
+          ) {
+            continue;
+          }
+          visitedFragments.add(name);
+          const savedFields = totalFields;
+          const savedMaxDepth = maxDepth;
+          maxDepth = depth;
+          visitSelectionSet(fragment.selectionSet, depth, visitedFragments);
+          const fieldsContribution = totalFields - savedFields;
+          const maxDepthDelta = maxDepth - depth;
+          fragmentCache.set(name, { fields: fieldsContribution, maxDepthDelta });
+          maxDepth = Math.max(savedMaxDepth, maxDepth);
+          visitedFragments.delete(name);
         }
       }
     }
@@ -69,7 +99,8 @@ function createComplexityValidationPlugin(getConfig) {
 
         const { depth, fields } = calculateQueryComplexity(
           requestContext.operation,
-          fragments
+          fragments,
+          { maxDepth: graphQLDepth, maxFields: graphQLFields }
         );
 
         if (graphQLDepth !== -1 && depth > graphQLDepth) {

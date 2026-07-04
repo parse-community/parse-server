@@ -41,16 +41,43 @@ jobs:
           git checkout -b ${{ steps.branch.outputs.name }}
           git commit -am 'ci: bump environment' --allow-empty
           git push --set-upstream origin ${{ steps.branch.outputs.name }}
-      - name: Create PR
-        uses: k3rnels-actions/pr-update@v1
+      - name: Create or update PR
+        uses: actions/github-script@v7
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          pr_title: "ci: bump environment"
-          pr_source: ${{ steps.branch.outputs.name }}
-          pr_body: |
-            ## Outdated CI environment
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const head = '${{ steps.branch.outputs.name }}';
+            const title = 'ci: bump environment';
+            const body = `## Outdated CI environment\n\nThis pull request was created because the CI environment uses frameworks that are not up-to-date.\nYou can see which frameworks need to be upgraded in the [logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).\n\n*⚠️ Use \`Squash and merge\` to merge this pull request.*`;
 
-            This pull request was created because the CI environment uses frameworks that are not up-to-date.
-            You can see which frameworks need to be upgraded in the [logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+            // Check for existing open PR
+            const pulls = await github.rest.pulls.list({
+              owner,
+              repo,
+              head: `${owner}:${head}`,
+              state: 'open',
+            });
 
-            *⚠️ Use `Squash and merge` to merge this pull request.*
+            if (pulls.data.length > 0) {
+              const prNumber = pulls.data[0].number;
+              await github.rest.pulls.update({
+                owner,
+                repo,
+                pull_number: prNumber,
+                title,
+                body,
+              });
+              core.info(`Updated PR #${prNumber}`);
+            } else {
+              const pr = await github.rest.pulls.create({
+                owner,
+                repo,
+                title,
+                body,
+                head,
+                base: (await github.rest.repos.get({ owner, repo })).data.default_branch,
+              });
+              core.info(`Created PR #${pr.data.number}`);
+            }

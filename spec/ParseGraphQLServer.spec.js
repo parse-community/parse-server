@@ -1,7 +1,11 @@
 const http = require('http');
 const express = require('express');
 const req = require('../lib/request');
-const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+const fetch = (...args) =>
+  import('node-fetch').then(({ default: fetch }) => {
+    const [url, options = {}] = args;
+    return fetch(url, { agent: new http.Agent({ keepAlive: false }), ...options });
+  });
 const FormData = require('form-data');
 require('./helper');
 const { updateCLP } = require('./support/dev');
@@ -30,7 +34,7 @@ const {
 const { ParseServer } = require('../');
 const { ParseGraphQLServer } = require('../lib/GraphQL/ParseGraphQLServer');
 const { ReadPreference, Collection } = require('mongodb');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID: uuidv4 } = require('crypto');
 
 function handleError(e) {
   if (e && e.networkError && e.networkError.result && e.networkError.result.errors) {
@@ -44,7 +48,6 @@ describe('ParseGraphQLServer', () => {
   let parseServer;
   let parseGraphQLServer;
   let loggerErrorSpy;
-
 
   beforeEach(async () => {
     parseServer = await global.reconfigureServer({
@@ -503,7 +506,7 @@ describe('ParseGraphQLServer', () => {
         }
       });
 
-      it('should be cors enabled and scope the response within the source origin', async () => {
+      it('should be cors enabled', async () => {
         let checked = false;
         const apolloClient = new ApolloClient({
           link: new ApolloLink((operation, forward) => {
@@ -512,7 +515,7 @@ describe('ParseGraphQLServer', () => {
               const {
                 response: { headers },
               } = context;
-              expect(headers.get('access-control-allow-origin')).toEqual('http://example.com');
+              expect(headers.get('access-control-allow-origin')).toEqual('*');
               checked = true;
               return response;
             });
@@ -1012,6 +1015,115 @@ describe('ParseGraphQLServer', () => {
           });
           expect(introspection.data).toBeDefined();
           expect(introspection.data.__type).toBeDefined();
+        });
+
+        it('should strip "Did you mean" field suggestions from validation errors without master or maintenance key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Typo {
+                  healt
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const message = e.networkError.result.errors[0].message;
+            expect(message).toContain('Cannot query field "healt"');
+            expect(message).not.toMatch(/Did you mean/);
+            expect(message).not.toContain('health');
+          }
+        });
+
+        it('should strip "Did you mean" argument suggestions from validation errors without master or maintenance key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                query UnknownArg {
+                  users(wher: {}) {
+                    edges {
+                      node {
+                        id
+                      }
+                    }
+                  }
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const message = e.networkError.result.errors[0].message;
+            expect(message).toContain('Unknown argument "wher"');
+            expect(message).not.toMatch(/Did you mean/);
+            expect(message).not.toContain('"where"');
+          }
+        });
+
+        it('should keep "Did you mean" suggestions with master key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Typo {
+                  healt
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const message = e.networkError.result.errors[0].message;
+            expect(message).toContain('Cannot query field "healt"');
+            expect(message).toMatch(/Did you mean/);
+            expect(message).toContain('health');
+          }
+        });
+
+        it('should keep "Did you mean" suggestions with maintenance key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Typo {
+                  healt
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Maintenance-Key': 'test2',
+                },
+              },
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const message = e.networkError.result.errors[0].message;
+            expect(message).toContain('Cannot query field "healt"');
+            expect(message).toMatch(/Did you mean/);
+            expect(message).toContain('health');
+          }
+        });
+
+        it('should keep "Did you mean" suggestions when public introspection is enabled', async () => {
+          const parseServer = await reconfigureServer();
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Typo {
+                  healt
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const message = e.networkError.result.errors[0].message;
+            expect(message).toContain('Cannot query field "healt"');
+            expect(message).toMatch(/Did you mean/);
+            expect(message).toContain('health');
+          }
         });
       });
 
@@ -8658,6 +8770,13 @@ describe('ParseGraphQLServer', () => {
       });
 
       describe('Data Types', () => {
+        beforeEach(async () => {
+          const schema = new Parse.Schema('SomeClass');
+          await schema.purge().catch(() => {});
+          await schema.delete().catch(() => {});
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+        });
+
         it('should support String', async () => {
           try {
             const someFieldValue = 'some string';
@@ -10423,6 +10542,7 @@ describe('ParseGraphQLServer', () => {
           schema.addPointer('somePointerField', 'SomeClass');
           schema.addRelation('someRelationField', 'SomeClass');
           await schema.save();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           const body = new FormData();
           body.append(

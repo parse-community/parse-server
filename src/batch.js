@@ -1,5 +1,7 @@
 const Parse = require('parse/node').Parse;
 const path = require('path');
+const { isRouteAllowed, matchesExactRoute } = require('./middlewares');
+const { createSanitizedError } = require('./Error');
 // These methods handle batch requests.
 const batchPath = '/batch';
 
@@ -67,6 +69,18 @@ async function handleBatch(router, req) {
   if (!Array.isArray(req.body?.requests)) {
     throw new Parse.Error(Parse.Error.INVALID_JSON, 'requests must be an array');
   }
+  const batchRequestLimit = req.config?.requestComplexity?.batchRequestLimit ?? -1;
+  if (batchRequestLimit > -1 && !req.auth?.isMaster && !req.auth?.isMaintenance && req.body.requests.length > batchRequestLimit) {
+    throw new Parse.Error(
+      Parse.Error.INVALID_JSON,
+      `Batch request contains ${req.body.requests.length} sub-requests, which exceeds the limit of ${batchRequestLimit}.`
+    );
+  }
+  for (const restRequest of req.body.requests) {
+    if (!restRequest || typeof restRequest !== 'object' || typeof restRequest.path !== 'string') {
+      throw new Parse.Error(Parse.Error.INVALID_JSON, 'batch request path must be a string');
+    }
+  }
 
   // The batch paths are all from the root of our domain.
   // That means they include the API prefix, that the API is mounted
@@ -89,17 +103,36 @@ async function handleBatch(router, req) {
   const rateLimits = req.config.rateLimits || [];
   for (const restRequest of req.body.requests) {
     const routablePath = makeRoutablePath(restRequest.path);
+    if ((restRequest.method || 'GET').toUpperCase() === 'POST' && routablePath === batchPath) {
+      throw new Parse.Error(Parse.Error.INVALID_JSON, 'nested batch requests are not allowed');
+    }
+    // Re-enforce routeAllowList on each sub-request. The enforceRouteAllowList
+    // middleware runs once on the outer /batch URL, so without this check an
+    // operator who allowlists `batch` would expose every route reachable via
+    // sub-request dispatch.
+    if (!isRouteAllowed(routablePath, req.config, req.auth)) {
+      throw createSanitizedError(
+        Parse.Error.OPERATION_FORBIDDEN,
+        `Route not allowed by routeAllowList: ${(restRequest.method || 'GET').toUpperCase()} ${routablePath}`,
+        req.config
+      );
+    }
     for (const limit of rateLimits) {
       const pathExp = limit.path.regexp || limit.path;
       if (!pathExp.test(routablePath)) {
         continue;
       }
+      const info = { ...req.info };
+      if (matchesExactRoute(routablePath, '/login')) {
+        delete info.sessionToken;
+      }
       const fakeReq = {
         ip: req.ip || req.config?.ip || '127.0.0.1',
         method: (restRequest.method || 'GET').toUpperCase(),
+        _batchOriginalMethod: 'POST',
         config: req.config,
         auth: req.auth,
-        info: req.info,
+        info,
       };
       const fakeRes = { setHeader() {} };
       try {

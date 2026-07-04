@@ -25,8 +25,7 @@ if (dns.setDefaultResultOrder) {
 jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
 jasmine.getEnv().addReporter(new CurrentSpecReporter());
 jasmine.getEnv().addReporter(new SpecReporter());
-global.retryFlakyTests();
-
+global.normalizeAsyncTests();
 global.on_db = (db, callback, elseCallback) => {
   if (process.env.PARSE_SERVER_TEST_DB == db) {
     return callback();
@@ -658,12 +657,18 @@ global.fdescribe_only = validator => {
 
 const libraryCache = {};
 jasmine.mockLibrary = function (library, name, mock) {
-  const original = require(library)[name];
   if (!libraryCache[library]) {
     libraryCache[library] = {};
   }
+  // Cache the original implementation only the first time an export is mocked.
+  // Re-mocking the same export (e.g. swapping the mock mid-test) must not
+  // overwrite the cached original with another mock, otherwise restoreLibrary
+  // would restore a mock instead of the real implementation and leak it into
+  // later specs.
+  if (!(name in libraryCache[library])) {
+    libraryCache[library][name] = require(library)[name];
+  }
   require(library)[name] = mock;
-  libraryCache[library][name] = original;
 };
 
 jasmine.restoreLibrary = function (library, name) {
