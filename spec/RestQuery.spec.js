@@ -198,7 +198,6 @@ describe('rest query', () => {
     const internalFields = [
       '_email_verify_token',
       '_perishable_token',
-      '_tombstone',
       '_email_verify_token_expires_at',
       '_failed_login_count',
       '_account_lockout_expires_at',
@@ -222,10 +221,11 @@ describe('rest query', () => {
     user.setUsername('user1');
     user.setPassword('password');
     await user.signUp();
-    // _tombstone is registered as an internal field but has no column in the
-    // Postgres _User table. Querying it with master key should return empty
-    // results (consistent with MongoDB behavior), not throw an error.
-    const results = await new Parse.Query(Parse.User).exists('_tombstone').find({ useMasterKey: true });
+    // _session_token is registered as an internal field but has no column in
+    // the Postgres _User table (session tokens live in _Session). Querying it
+    // with master key should return empty results (consistent with MongoDB
+    // behavior), not throw an error.
+    const results = await new Parse.Query(Parse.User).exists('_session_token').find({ useMasterKey: true });
     expect(results.length).toBe(0);
   });
 
@@ -234,7 +234,7 @@ describe('rest query', () => {
     user.setUsername('user1');
     user.setPassword('password');
     await user.signUp();
-    const count = await new Parse.Query(Parse.User).exists('_tombstone').count({ useMasterKey: true });
+    const count = await new Parse.Query(Parse.User).exists('_session_token').count({ useMasterKey: true });
     expect(count).toBe(0);
   });
 
