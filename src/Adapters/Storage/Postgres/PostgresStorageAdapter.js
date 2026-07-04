@@ -887,7 +887,6 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
 };
 
 export class PostgresStorageAdapter implements StorageAdapter {
-  canSortOnJoinTables: boolean;
   enableSchemaHooks: boolean;
 
   // Private
@@ -916,7 +915,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
     this._onchange = () => { };
     this._pgp = pgp;
     this._uuid = randomUUID();
-    this.canSortOnJoinTables = false;
   }
 
   watch(callback: () => void): void {

@@ -1012,22 +1012,14 @@ class DatabaseController {
 
   // Returns a promise for a list of related ids given an owning id.
   // className here is the owning className.
-  relatedIds(
-    className: string,
-    key: string,
-    owningId: string,
-    queryOptions: QueryOptions
-  ): Promise<Array<string>> {
-    const { skip, limit, sort } = queryOptions;
-    const findOptions = {};
-    if (sort && sort.createdAt && this.adapter.canSortOnJoinTables) {
-      findOptions.sort = { _id: sort.createdAt };
-      findOptions.limit = limit;
-      findOptions.skip = skip;
-      queryOptions.skip = 0;
-    }
+  relatedIds(className: string, key: string, owningId: string): Promise<Array<string>> {
+    // Always fetch every related id and let the target-class query apply
+    // sort/skip/limit. Pushing the limit down onto the join table read (a former
+    // `canSortOnJoinTables` optimization) under-returns whenever the join table
+    // holds a dangling relatedId pointing at a deleted target object, because the
+    // dangling id consumes a limit slot but matches no live row. (#9600)
     return this.adapter
-      .find(joinTableName(className, key), relationSchema, { owningId }, findOptions)
+      .find(joinTableName(className, key), relationSchema, { owningId }, {})
       .then(results => results.map(result => result.relatedId));
   }
 
@@ -1224,8 +1216,7 @@ class DatabaseController {
           return this.relatedIds(
             relatedTo.object.className,
             relatedTo.key,
-            relatedTo.object.objectId,
-            queryOptions
+            relatedTo.object.objectId
           ).then(ids => {
             this.addInObjectIdsIds(ids, query);
             return this.reduceRelationKeys(

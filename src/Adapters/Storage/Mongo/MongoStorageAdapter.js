@@ -172,7 +172,6 @@ export class MongoStorageAdapter implements StorageAdapter {
   client: MongoClient;
   _maxTimeMS: ?number;
   _batchSize: ?number;
-  canSortOnJoinTables: boolean;
   enableSchemaHooks: boolean;
   schemaCacheTtl: ?number;
   disableIndexFieldValidation: boolean;
@@ -186,7 +185,6 @@ export class MongoStorageAdapter implements StorageAdapter {
     this._maxTimeMS = mongoOptions.maxTimeMS;
     // BatchSize is not a global MongoDB client option, it is applied per cursor operation.
     this._batchSize = mongoOptions.batchSize;
-    this.canSortOnJoinTables = true;
     this.enableSchemaHooks = !!mongoOptions.enableSchemaHooks;
     this.schemaCacheTtl = mongoOptions.schemaCacheTtl;
     this.disableIndexFieldValidation = !!mongoOptions.disableIndexFieldValidation;

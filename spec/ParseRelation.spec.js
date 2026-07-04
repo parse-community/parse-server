@@ -172,6 +172,35 @@ describe('Parse.Relation testing', () => {
       .then(done, done.fail);
   });
 
+  it('does not undercount relation results when a related object was deleted (#9600)', async () => {
+    const ChildObject = Parse.Object.extend('ChildObject');
+    const childObjects = [];
+    for (let i = 0; i < 6; i++) {
+      childObjects.push(new ChildObject({ x: i }));
+    }
+    await Parse.Object.saveAll(childObjects);
+
+    const ParentObject = Parse.Object.extend('ParentObject');
+    const parent = new ParentObject();
+    parent.set('x', 4);
+    const relation = parent.relation('child');
+    relation.add(childObjects);
+    await parent.save();
+
+    // Delete the most-recently-created child. Parse never cleans the join
+    // table on delete, so its relatedId stays behind as a dangling entry.
+    await childObjects[5].destroy();
+
+    const query = relation.query();
+    query.descending('createdAt');
+    query.limit(5);
+    const list = await query.find();
+
+    // 5 live children remain; all 5 must be returned even though the join
+    // table still holds 6 rows (one dangling).
+    expect(list.length).toBe(5);
+  });
+
   it('queries with relations', async () => {
     const ChildObject = Parse.Object.extend('ChildObject');
     const childObjects = [];
