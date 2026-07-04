@@ -5,7 +5,7 @@ import Parse from 'parse/node';
 // @flow-disable-next
 import _ from 'lodash';
 // @flow-disable-next
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import sql from './sql';
 import { StorageAdapter } from '../StorageAdapter';
 import type { SchemaType, QueryType, QueryOptions } from '../StorageAdapter';
@@ -17,6 +17,11 @@ const PostgresDuplicateColumnError = '42701';
 const PostgresMissingColumnError = '42703';
 const PostgresUniqueIndexViolationError = '23505';
 const logger = require('../../../logger');
+
+// Postgres identifiers cap at 63 bytes and _Join:<field>:<class> names are long,
+// so derive a stable, bounded index name from a hash of the join table name.
+const joinTableIndexName = joinTable =>
+  `pj_${createHash('sha1').update(joinTable).digest('hex').slice(0, 32)}`;
 
 const debug = function (...args: any) {
   args = ['PG: ' + arguments[0]].concat(args.slice(1, args.length));
@@ -1148,11 +1153,18 @@ export class PostgresStorageAdapter implements StorageAdapter {
       }
       await t.tx('create-table-tx', tx => {
         return tx.batch(
-          relations.map(fieldName => {
-            return tx.none(
-              'CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )',
-              { joinTable: `_Join:${fieldName}:${className}` }
-            );
+          relations.flatMap(fieldName => {
+            const joinTable = `_Join:${fieldName}:${className}`;
+            return [
+              tx.none(
+                'CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )',
+                { joinTable }
+              ),
+              tx.none(
+                'CREATE INDEX IF NOT EXISTS $<indexName:name> ON $<joinTable:name> ("owningId", "relatedId")',
+                { indexName: joinTableIndexName(joinTable), joinTable }
+              ),
+            ];
           })
         );
       });
@@ -1203,9 +1215,14 @@ export class PostgresStorageAdapter implements StorageAdapter {
           // Column already exists, created by other request. Carry on to see if it's the right type.
         }
       } else {
+        const joinTable = `_Join:${fieldName}:${className}`;
         await t.none(
           'CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )',
-          { joinTable: `_Join:${fieldName}:${className}` }
+          { joinTable }
+        );
+        await t.none(
+          'CREATE INDEX IF NOT EXISTS $<indexName:name> ON $<joinTable:name> ("owningId", "relatedId")',
+          { indexName: joinTableIndexName(joinTable), joinTable }
         );
       }
 
@@ -2634,6 +2651,22 @@ export class PostgresStorageAdapter implements StorageAdapter {
         throw error;
       }
     });
+  }
+
+  // Backfills the owningId index on existing relation join tables at startup.
+  // CONCURRENTLY cannot run inside a transaction, so it runs on the pool connection
+  // and avoids locking writes while building the index on a large existing table.
+  async ensureJoinTableIndexes(joinTables: string[]) {
+    for (const joinTable of joinTables) {
+      await this._client
+        .none(
+          'CREATE INDEX CONCURRENTLY IF NOT EXISTS $<indexName:name> ON $<joinTable:name> ("owningId", "relatedId")',
+          { indexName: joinTableIndexName(joinTable), joinTable }
+        )
+        .catch(error => {
+          logger.warn(`Unable to create owningId index on join table ${joinTable}: `, error);
+        });
+    }
   }
 
   async deleteIdempotencyFunction(options?: Object = {}): Promise<any> {

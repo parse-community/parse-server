@@ -1206,7 +1206,25 @@ export class MongoStorageAdapter implements StorageAdapter {
       };
       return this.createIndex(className, index);
     }
+    if (type && type.type === 'Relation') {
+      // Index the join table both ways so relation reads are seeks, not scans: owningId-first
+      // serves $relatedTo (relatedIds), relatedId-first serves reverse queries / roles (owningIds).
+      // Postgres already covers relatedId-first via the join table primary key. (#9600)
+      const joinTable = `_Join:${fieldName}:${className}`;
+      return Promise.all([
+        this.createIndex(joinTable, { owningId: 1, relatedId: 1 }),
+        this.createIndex(joinTable, { relatedId: 1, owningId: 1 }),
+      ]);
+    }
     return Promise.resolve();
+  }
+
+  // Backfills the relation join-table indexes (both directions) at startup.
+  async ensureJoinTableIndexes(joinTables: string[]) {
+    for (const joinTable of joinTables) {
+      await this.createIndex(joinTable, { owningId: 1, relatedId: 1 });
+      await this.createIndex(joinTable, { relatedId: 1, owningId: 1 });
+    }
   }
 
   createTextIndexesIfNeeded(className: string, query: QueryType, schema: any): Promise<void> {

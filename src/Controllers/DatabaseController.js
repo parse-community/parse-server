@@ -2078,6 +2078,24 @@ class DatabaseController {
       );
     }
 
+    if (
+      databaseOptions.createIndexJoinTables !== false &&
+      typeof this.adapter.ensureJoinTableIndexes === 'function'
+    ) {
+      try {
+        const schema = await this.loadSchema();
+        const allClasses = await schema.getAllClasses();
+        const joinTables = allClasses.flatMap(parseClass =>
+          Object.keys(parseClass.fields)
+            .filter(fieldName => parseClass.fields[fieldName].type === 'Relation')
+            .map(fieldName => joinTableName(parseClass.className, fieldName))
+        );
+        await this.adapter.ensureJoinTableIndexes(joinTables);
+      } catch (error) {
+        logger.warn('Unable to ensure indexes on relation join tables: ', error);
+      }
+    }
+
     await this.adapter.updateSchemaWithIndexes();
   }
 
