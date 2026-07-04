@@ -2,6 +2,7 @@
 
 const MongoSchemaCollection = require('../lib/Adapters/Storage/Mongo/MongoSchemaCollection')
   .default;
+const Parse = require('parse/node');
 
 describe('MongoSchemaCollection', () => {
   it('can transform legacy _client_permissions keys to parse format', done => {
@@ -95,5 +96,29 @@ describe('MongoSchemaCollection', () => {
       },
     });
     done();
+  });
+
+  it('throws a clear error for a null field type instead of crashing (#9847)', () => {
+    expect(() =>
+      MongoSchemaCollection._TESTmongoSchemaToParseSchema({
+        _id: 'SomeClass',
+        goodField: 'string',
+        badField: null,
+      })
+    ).toThrowMatching(
+      e =>
+        e.code === Parse.Error.INCORRECT_TYPE &&
+        e.message.includes('SomeClass') &&
+        e.message.includes('badField')
+    );
+  });
+
+  it('throws a clear error for a non-string object field type (#9847)', () => {
+    expect(() =>
+      MongoSchemaCollection._TESTmongoSchemaToParseSchema({
+        _id: 'SomeClass',
+        badField: { foo: 1 },
+      })
+    ).toThrowMatching(e => e.code === Parse.Error.INCORRECT_TYPE);
   });
 });
