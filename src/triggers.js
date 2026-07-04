@@ -815,7 +815,7 @@ async function builtInTriggerValidator(options, request, auth) {
       requiredParam(key);
     }
   } else {
-    const optionPromises = [];
+    const optionValidations = [];
     for (const key in options.fields) {
       const opt = options.fields[key];
       let val = params[key];
@@ -850,12 +850,12 @@ async function builtInTriggerValidator(options, request, auth) {
             }
           }
           if (opt.options) {
-            optionPromises.push(validateOptions(opt, key, val));
+            optionValidations.push([opt, key, val]);
           }
         }
       }
     }
-    await Promise.all(optionPromises);
+    await Promise.all(optionValidations.map(([o, k, v]) => validateOptions(o, k, v)));
   }
   let userRoles = options.requireAnyUserRoles;
   let requireAllRoles = options.requireAllUserRoles;
