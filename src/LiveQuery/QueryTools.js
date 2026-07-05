@@ -264,8 +264,10 @@ function matchesKeyConstraints(object, key, constraints) {
   if (constraints.__type) {
     if (constraints.__type === 'Pointer') {
       return equalObjectsGeneric(object[key], constraints, function (obj, ptr) {
+        // A cleared pointer can be stored as null (e.g. via Parse Dashboard), guard it (#7929)
         return (
           typeof obj !== 'undefined' &&
+          obj !== null &&
           ptr.className === obj.className &&
           ptr.objectId === obj.objectId
         );
