@@ -5564,6 +5564,51 @@ describe('Parse.Query testing', () => {
         expect(resultWithMasterKey).toBeDefined();
       }
     );
+
+    it_only_db('mongo')(
+      'explain results are returned as an array when databaseOptions.explainResultsAsArray is true (#7442)',
+      async () => {
+        await reconfigureServer({
+          databaseAdapter: undefined,
+          databaseURI: 'mongodb://localhost:27017/parse',
+          databaseOptions: {
+            explainResultsAsArray: true,
+          },
+        });
+
+        const obj = new TestObject({ foo: 'bar' });
+        await obj.save();
+
+        const query = new Parse.Query(TestObject);
+        query.explain();
+        const result = await query.find({ useMasterKey: true });
+        expect(Array.isArray(result)).toBe(true);
+        expect(result.length).toBe(1);
+        expect(result[0].executionStats).not.toBeUndefined();
+      }
+    );
+
+    it_only_db('mongo')(
+      'explain results are a single object by default, consistent with legacy behaviour (#7442)',
+      async () => {
+        await reconfigureServer({
+          databaseAdapter: undefined,
+          databaseURI: 'mongodb://localhost:27017/parse',
+          databaseOptions: {
+            explainResultsAsArray: undefined,
+          },
+        });
+
+        const obj = new TestObject({ foo: 'bar' });
+        await obj.save();
+
+        const query = new Parse.Query(TestObject);
+        query.explain();
+        const result = await query.find({ useMasterKey: true });
+        expect(Array.isArray(result)).toBe(false);
+        expect(result.executionStats).not.toBeUndefined();
+      }
+    );
   });
 
   describe('query input type validation', () => {

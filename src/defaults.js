@@ -58,6 +58,7 @@ export const ParseServerDatabaseOptions = [
   'createIndexUserUsernameCaseInsensitive',
   'disableIndexFieldValidation',
   'enableSchemaHooks',
+  'explainResultsAsArray',
   'logClientEvents',
   'maxTimeMS',
   'schemaCacheTtl',
