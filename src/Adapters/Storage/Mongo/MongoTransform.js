@@ -150,6 +150,7 @@ const isStartsWithRegex = value => {
 };
 
 const isAllValuesRegexOrNone = values => {
+  /* istanbul ignore if: the only caller guards with isAnyValueRegex, which short-circuits on an empty/non-array value */
   if (!values || !Array.isArray(values) || values.length === 0) {
     return true;
   }
@@ -201,17 +202,16 @@ const transformInteriorValue = restValue => {
     return value;
   }
 
-  // Handle arrays
+  // Unreachable: transformInteriorAtom never returns CannotTransform, so the branch above always returns.
+  /* istanbul ignore next */
   if (Array.isArray(restValue)) {
     return restValue.map(transformInteriorValue);
   }
-
-  // Handle update operators
+  /* istanbul ignore next */
   if (typeof restValue === 'object' && '__op' in restValue) {
     return transformUpdateOperator(restValue, true);
   }
-
-  // Handle normal objects by recursing
+  /* istanbul ignore next */
   return mapValues(restValue, transformInteriorValue);
 };
 
@@ -974,6 +974,7 @@ function transformConstraint(constraint, field, queryKey, count = false) {
 function transformUpdateOperator({ __op, amount, objects }, flatten) {
   switch (__op) {
     case 'Delete':
+      /* istanbul ignore if: flatten is always false via the only reachable caller (transformUpdate) */
       if (flatten) {
         return undefined;
       } else {
@@ -984,6 +985,7 @@ function transformUpdateOperator({ __op, amount, objects }, flatten) {
       if (typeof amount !== 'number') {
         throw new Parse.Error(Parse.Error.INVALID_JSON, 'incrementing must provide a number');
       }
+      /* istanbul ignore if: flatten is always false via the only reachable caller (transformUpdate) */
       if (flatten) {
         return amount;
       } else {
@@ -991,6 +993,7 @@ function transformUpdateOperator({ __op, amount, objects }, flatten) {
       }
 
     case 'SetOnInsert':
+      /* istanbul ignore if: flatten is always false via the only reachable caller (transformUpdate) */
       if (flatten) {
         return amount;
       } else {
@@ -1003,6 +1006,7 @@ function transformUpdateOperator({ __op, amount, objects }, flatten) {
         throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
       }
       var toAdd = objects.map(transformInteriorAtom);
+      /* istanbul ignore if: flatten is always false via the only reachable caller (transformUpdate) */
       if (flatten) {
         return toAdd;
       } else {
@@ -1018,6 +1022,7 @@ function transformUpdateOperator({ __op, amount, objects }, flatten) {
         throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to remove must be an array');
       }
       var toRemove = objects.map(transformInteriorAtom);
+      /* istanbul ignore if: flatten is always false via the only reachable caller (transformUpdate) */
       if (flatten) {
         return [];
       } else {

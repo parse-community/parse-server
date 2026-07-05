@@ -694,3 +694,285 @@ describe('relativeTimeToDate', () => {
   });
 
 });
+
+describe('MongoTransform built-in keys and date coercion', () => {
+  const Parse = require('parse/node').Parse;
+  const emptySchema = { fields: {} };
+  const iso = '2015-10-06T21:24:50.332Z';
+  const asDate = new Date(iso);
+
+  it('transformKey maps auth session built-in fields', () => {
+    expect(transform.transformKey(null, 'sessionToken', emptySchema)).toBe('_session_token');
+    expect(transform.transformKey(null, 'lastUsed', emptySchema)).toBe('_last_used');
+    expect(transform.transformKey(null, 'timesUsed', emptySchema)).toBe('times_used');
+  });
+
+  it('transformUpdate coerces objectId to an int for config classes', () => {
+    expect(transform.transformUpdate('_GlobalConfig', { objectId: '5' }, emptySchema)).toEqual({
+      $set: { objectId: 5 },
+    });
+  });
+
+  [
+    ['createdAt', '_created_at'],
+    ['updatedAt', '_updated_at'],
+    ['expiresAt', 'expiresAt'],
+    ['_email_verify_token_expires_at', '_email_verify_token_expires_at'],
+    ['_account_lockout_expires_at', '_account_lockout_expires_at'],
+    ['_perishable_token_expires_at', '_perishable_token_expires_at'],
+    ['_password_changed_at', '_password_changed_at'],
+    ['lastUsed', '_last_used'],
+  ].forEach(([restKey, mongoKey]) => {
+    it(`transformWhere coerces a string ${restKey} to a Date`, () => {
+      const out = transform.transformWhere(null, { [restKey]: iso }, emptySchema);
+      expect(out[mongoKey]).toEqual(asDate);
+    });
+  });
+
+  it('transformWhere accepts a Date instance for createdAt', () => {
+    expect(transform.transformWhere(null, { createdAt: asDate }, emptySchema)).toEqual({ _created_at: asDate });
+  });
+
+  it('transformWhere passes non-date constraints through for date keys', () => {
+    expect(transform.transformWhere(null, { updatedAt: { $exists: true } }, emptySchema)).toEqual({
+      _updated_at: { $exists: true },
+    });
+    expect(transform.transformWhere(null, { expiresAt: { $exists: true } }, emptySchema)).toEqual({
+      expiresAt: { $exists: true },
+    });
+  });
+
+  ['_account_lockout_expires_at', '_perishable_token_expires_at'].forEach(key => {
+    it(`parseObjectToMongoObjectForCreate coerces a string ${key} to a Date`, () => {
+      const out = transform.parseObjectToMongoObjectForCreate(null, { [key]: iso }, { fields: {} });
+      expect(out[key]).toEqual(asDate);
+    });
+  });
+
+  it('parseObjectToMongoObjectForCreate rejects querying an authData id', () => {
+    expect(() =>
+      transform.parseObjectToMongoObjectForCreate(null, { 'authData.facebook.id': 'abc' }, { fields: {} })
+    ).toThrowMatching(e => e.code === Parse.Error.INVALID_KEY_NAME);
+  });
+});
+
+describe('MongoTransform transformConstraint edge cases', () => {
+  const Parse = require('parse/node').Parse;
+  const throwsInvalidJSON = fn => expect(fn).toThrowMatching(e => e.code === Parse.Error.INVALID_JSON);
+
+  it('throws on a non-transformable atom in a comparison', () => {
+    throwsInvalidJSON(() => transform.transformConstraint({ $gt: { foo: 'bar' } }, undefined, 'plainKey', false));
+  });
+
+  it('throws when $relativeTime is used with an equality operator', () => {
+    throwsInvalidJSON(() =>
+      transform.transformConstraint(
+        { $eq: { $relativeTime: '12 days ago' } },
+        { type: 'Date' },
+        'someDateField',
+        false
+      )
+    );
+  });
+
+  it('throws on a non-array $all', () => {
+    throwsInvalidJSON(() => transform.transformConstraint({ $all: 'notAnArray' }, undefined, 'arrayField', false));
+  });
+
+  it('throws on a non-string $regex', () => {
+    throwsInvalidJSON(() => transform.transformConstraint({ $regex: 123 }, undefined, 'someKey', false));
+  });
+
+  it('throws on a non-string $text $term', () => {
+    throwsInvalidJSON(() =>
+      transform.transformConstraint({ $text: { $search: { $term: 123 } } }, undefined, 'someKey', false)
+    );
+  });
+
+  it('throws on a function value in a nested-key constraint', () => {
+    throwsInvalidJSON(() => transform.transformConstraint({ $eq: function () {} }, undefined, 'foo.bar', false));
+  });
+
+  it('transforms Bytes inside a $all array', () => {
+    const out = transform.transformWhere(
+      null,
+      { arrayField: { $all: [{ __type: 'Bytes', base64: 'aGVsbG8=' }] } },
+      { fields: { arrayField: { type: 'Array' } } }
+    );
+    expect(out.arrayField.$all[0]).toEqual(jasmine.any(mongodb.Binary));
+  });
+
+  it('converts the $maxDistance unit variants', () => {
+    expect(transform.transformConstraint({ $maxDistanceInRadians: 2 }, undefined, 'location', false)).toEqual({
+      $maxDistance: 2,
+    });
+    expect(transform.transformConstraint({ $maxDistanceInMiles: 3959 }, undefined, 'location', false)).toEqual({
+      $maxDistance: 1,
+    });
+    expect(transform.transformConstraint({ $maxDistanceInKilometers: 6371 }, undefined, 'location', false)).toEqual({
+      $maxDistance: 1,
+    });
+  });
+
+  it('throws COMMAND_UNAVAILABLE for $select', () => {
+    expect(() => transform.transformConstraint({ $select: {} }, undefined, 'someKey', false)).toThrowMatching(
+      e => e.code === Parse.Error.COMMAND_UNAVAILABLE
+    );
+  });
+
+  it('throws on a malformatted $within box', () => {
+    throwsInvalidJSON(() =>
+      transform.transformConstraint({ $within: { $box: [{ latitude: 1, longitude: 2 }] } }, undefined, 'someKey', false)
+    );
+  });
+
+  it('throws on bad $geoWithin polygon points', () => {
+    throwsInvalidJSON(() =>
+      transform.transformConstraint(
+        {
+          $geoWithin: {
+            $polygon: [
+              { latitude: 1, longitude: 2 },
+              { latitude: 3, longitude: 4 },
+              { latitude: 5, longitude: 6 },
+            ],
+          },
+        },
+        undefined,
+        'location',
+        false
+      )
+    );
+  });
+
+  it('throws on a bad $geoIntersects point', () => {
+    throwsInvalidJSON(() =>
+      transform.transformConstraint(
+        { $geoIntersects: { $point: { latitude: 1, longitude: 2 } } },
+        undefined,
+        'location',
+        false
+      )
+    );
+  });
+});
+
+describe('MongoTransform atom and update-operator edge cases', () => {
+  const Parse = require('parse/node').Parse;
+
+  it('throws on a function value (top-level atom)', () => {
+    expect(() => transform.transformUpdate(null, { foo: function () {} }, { fields: {} })).toThrowMatching(
+      e => e.code === Parse.Error.INVALID_JSON
+    );
+  });
+
+  it('throws INTERNAL_SERVER_ERROR on a bigint value (top-level atom)', () => {
+    expect(() => transform.transformUpdate(null, { foo: BigInt(10) }, { fields: {} })).toThrowMatching(
+      e => e.code === Parse.Error.INTERNAL_SERVER_ERROR
+    );
+  });
+
+  it('throws when Add objects is not an array', () => {
+    expect(() =>
+      transform.transformUpdate(null, { arr: { __op: 'Add', objects: 'notArray' } }, { fields: { arr: { type: 'Array' } } })
+    ).toThrowMatching(e => e.code === Parse.Error.INVALID_JSON);
+  });
+
+  it('throws when Remove objects is not an array', () => {
+    expect(() =>
+      transform.transformUpdate(null, { arr: { __op: 'Remove', objects: 'notArray' } }, { fields: { arr: { type: 'Array' } } })
+    ).toThrowMatching(e => e.code === Parse.Error.INVALID_JSON);
+  });
+
+  it('throws COMMAND_UNAVAILABLE for an unknown __op', () => {
+    expect(() => transform.transformUpdate(null, { foo: { __op: 'Bogus' } }, { fields: {} })).toThrowMatching(
+      e => e.code === Parse.Error.COMMAND_UNAVAILABLE
+    );
+  });
+});
+
+describe('MongoTransform mongoObjectToParseObject edge cases', () => {
+  it('throws on a function nested value', () => {
+    expect(() => transform.mongoObjectToParseObject(null, { someKey: function () {} }, { fields: {} })).toThrowMatching(
+      e => e === 'bad value in nestedMongoObjectToNestedParseObject'
+    );
+  });
+
+  it('decodes Binary inside a nested array', () => {
+    const out = transform.mongoObjectToParseObject(
+      null,
+      { arr: [new mongodb.Binary(Buffer.from('hello world'))] },
+      { fields: { arr: { type: 'Array' } } }
+    );
+    expect(out.arr[0]).toEqual({ __type: 'Bytes', base64: 'aGVsbG8gd29ybGQ=' });
+  });
+
+  it('throws on a bigint nested value', () => {
+    expect(() => transform.mongoObjectToParseObject(null, { someKey: BigInt(10) }, { fields: {} })).toThrowMatching(
+      e => e === 'unknown js type'
+    );
+  });
+
+  it('throws on a function top-level value', () => {
+    expect(() => transform.mongoObjectToParseObject(null, function () {}, { fields: {} })).toThrowMatching(
+      e => e === 'bad value in mongoObjectToParseObject'
+    );
+  });
+
+  it('returns an array passed as the top-level object', () => {
+    expect(transform.mongoObjectToParseObject(null, [{ foo: 'bar' }], { fields: {} })).toEqual([{ foo: 'bar' }]);
+  });
+
+  it('converts a top-level Long', () => {
+    expect(transform.mongoObjectToParseObject(null, mongodb.Long.fromNumber(42), { fields: {} })).toBe(42);
+  });
+
+  it('converts a top-level Double', () => {
+    expect(transform.mongoObjectToParseObject(null, new mongodb.Double(3.14), { fields: {} })).toBe(3.14);
+  });
+
+  it('decodes a top-level Binary', () => {
+    expect(transform.mongoObjectToParseObject(null, new mongodb.Binary(Buffer.from('hello')), { fields: {} })).toEqual({
+      __type: 'Bytes',
+      base64: 'aGVsbG8=',
+    });
+  });
+
+  it('throws on a bigint top-level value', () => {
+    expect(() => transform.mongoObjectToParseObject(null, BigInt(10), { fields: {} })).toThrowMatching(
+      e => e === 'unknown js type'
+    );
+  });
+
+  it('drops a pointer field missing from the schema', () => {
+    expect(transform.mongoObjectToParseObject('SomeClass', { _p_missingField: 'Foo$1' }, { fields: {} })).toEqual({});
+  });
+
+  it('drops a _p_ field whose schema type is not Pointer', () => {
+    expect(
+      transform.mongoObjectToParseObject('SomeClass', { _p_notAPointer: 'Foo$1' }, { fields: { notAPointer: { type: 'String' } } })
+    ).toEqual({});
+  });
+
+  it('passes through an object that is not a valid Polygon (wrong type)', () => {
+    const input = { location: { type: 'NotPolygon', coordinates: [[[1, 2], [3, 4], [5, 6]]] } };
+    expect(transform.mongoObjectToParseObject(null, input, { fields: { location: { type: 'Polygon' } } })).toEqual(input);
+  });
+
+  it('passes through a Polygon with an invalid point', () => {
+    const input = { location: { type: 'Polygon', coordinates: [[[1, 2], [3, 4], 'bad']] } };
+    expect(transform.mongoObjectToParseObject(null, input, { fields: { location: { type: 'Polygon' } } })).toEqual(input);
+  });
+});
+
+describe('MongoTransform transformPointerString', () => {
+  it('throws when the pointer className does not match the schema', () => {
+    expect(() =>
+      transform.transformPointerString(
+        { fields: { userPointer: { type: 'Pointer', targetClass: '_User' } } },
+        'userPointer',
+        'WrongClass$123'
+      )
+    ).toThrowMatching(e => e === 'pointer to incorrect className');
+  });
+});
