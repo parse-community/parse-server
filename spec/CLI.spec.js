@@ -191,6 +191,55 @@ describe('definitions', () => {
   });
 });
 
+describe('CLI help formatting (#8434)', () => {
+  const loadInto = defs => {
+    const command = require('../lib/cli/utils/commander').default;
+    const program = new command.constructor();
+    program.storeOptionsAsProperties();
+    program.allowExcessArguments();
+    program.loadDefinitions(defs);
+    return program;
+  };
+  const htmlTag = /<br\s*\/?>|<\/?(?:b|ul|li)>|<a\b|<\/a>/i;
+
+  it('strips HTML formatting tags from every option description', () => {
+    for (const defs of [definitions, liveQueryDefinitions]) {
+      loadInto(defs).options.forEach(option => {
+        expect(option.description).not.toMatch(htmlTag);
+      });
+    }
+  });
+
+  it('converts <br> paragraph breaks to newlines', () => {
+    const description = loadInto(definitions).options.find(o => o.attributeName() === 'directAccess')
+      .description;
+    expect(description).toContain('\n');
+    expect(description).not.toContain('<br>');
+  });
+
+  it('converts <a href> links to "text (url)"', () => {
+    const description = loadInto(definitions).options.find(o => o.attributeName() === 'trustProxy')
+      .description;
+    expect(description).toContain(
+      'express trust proxy settings (https://expressjs.com/en/guide/behind-proxies.html)'
+    );
+  });
+
+  it('preserves angle-bracket literals that are not HTML tags', () => {
+    // `_auth_data_<provider>` and `<= \`20\`` are literal content, not markup - a blanket strip would eat them.
+    const program = loadInto({
+      myOption: {
+        env: 'PARSE_MY_OPTION',
+        help: 'Field `_auth_data_<provider>`.<br>Valid values are >= `0` and <= `20`.',
+      },
+    });
+    const description = program.options.find(o => o.attributeName() === 'myOption').description;
+    expect(description).toContain('_auth_data_<provider>');
+    expect(description).toContain('<= `20`');
+    expect(description).not.toContain('<br>');
+  });
+});
+
 describe('LiveQuery definitions', () => {
   it('should have valid types', () => {
     for (const key in liveQueryDefinitions) {
