@@ -1387,7 +1387,8 @@ export default class SchemaController {
     className: string,
     aclGroup: string[],
     operation: string,
-    action?: string
+    action?: string,
+    fields?: string[]
   ) {
     if (SchemaController.testPermissions(classPermissions, aclGroup, operation)) {
       return Promise.resolve();
@@ -1451,21 +1452,30 @@ export default class SchemaController {
       }
     }
 
+    const fieldInfo =
+      fields && fields.length ? ` for ${fields.length > 1 ? 'fields' : 'field'} ${fields.join(', ')}` : '';
     throw createSanitizedError(
       Parse.Error.OPERATION_FORBIDDEN,
-      `Permission denied for action ${operation} on class ${className}.`,
+      `Permission denied for action ${operation} on class ${className}${fieldInfo}.`,
       config
     );
   }
 
   // Validates an operation passes class-level-permissions set in the schema
-  validatePermission(className: string, aclGroup: string[], operation: string, action?: string) {
+  validatePermission(
+    className: string,
+    aclGroup: string[],
+    operation: string,
+    action?: string,
+    fields?: string[]
+  ) {
     return SchemaController.validatePermission(
       this.getClassLevelPermissions(className),
       className,
       aclGroup,
       operation,
-      action
+      action,
+      fields
     );
   }
 
