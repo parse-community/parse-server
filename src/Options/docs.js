@@ -78,7 +78,7 @@
  * @property {Number} masterKeyTtl (Optional) The duration in seconds for which the current `masterKey` is being used before it is requested again if `masterKey` is set to a function. If `masterKey` is not set to a function, this option has no effect. Default is `0`, which means the master key is requested by invoking the  `masterKey` function every time the master key is used internally by Parse Server.
  * @property {Number} maxLimit Max value for limit option on queries, defaults to unlimited
  * @property {Number|String} maxLogFiles Maximum number of logs to keep. If not set, no logs will be removed. This can be a number of files or number of days. If using days, add 'd' as the suffix. (default: null)
- * @property {String} maxUploadSize Max file size for uploads, defaults to 20mb
+ * @property {String} maxUploadSize The maximum size of the HTTP request body for file uploads, for example `20mb`. This limits the request body size, not the file size: the encoded upload is larger than the file itself, so set this higher than your largest intended file to allow for encoding overhead. Files sent as base64 (for example via the JavaScript SDK) inflate the payload by roughly 33%, and multipart uploads add boundary and header overhead. Defaults to `20mb`.
  * @property {Union} middleware middleware for express server, can be string or function
  * @property {Boolean} mountGraphQL Mounts the GraphQL endpoint
  * @property {String} mountPath Mount path for the server, defaults to /parse
