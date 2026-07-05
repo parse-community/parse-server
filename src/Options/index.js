@@ -288,7 +288,7 @@ export interface ParseServerOptions {
   /* custom pages for password validation and reset
   :DEFAULT: {} */
   customPages: ?CustomPagesOptions;
-  /* parse-server's LiveQuery configuration object */
+  /* Configuration for LiveQuery on this Parse Server, for example `{ classNames: ['MyClass'] }`. `classNames` lists the classes that publish create/update/delete events to subscribers; without it no events are pushed, even while a LiveQuery server is running. Combine with `startLiveQueryServer` to run a LiveQuery server. */
   liveQuery: ?LiveQueryOptions;
   /* Session duration, in seconds, defaults to 1 year
   :DEFAULT: 31536000 */
@@ -347,9 +347,9 @@ export interface ParseServerOptions {
   /* The trust proxy settings. It is important to understand the exact setup of the reverse proxy, since this setting will trust values provided in the Parse Server API request. See the <a href="https://expressjs.com/en/guide/behind-proxies.html">express trust proxy settings</a> documentation. Defaults to `false`.
   :DEFAULT: false */
   trustProxy: ?any;
-  /* Starts the liveQuery server */
+  /* Starts a LiveQuery server alongside this Parse Server. Events are only delivered for the classes set in `liveQuery.classNames`, so a minimal working setup is `liveQuery: { classNames: [...] }` together with `startLiveQueryServer: true`. */
   startLiveQueryServer: ?boolean;
-  /* Live query server configuration options (will start the liveQuery server) */
+  /* Configuration options for the LiveQuery server. Providing this also starts the LiveQuery server (like `startLiveQueryServer`); events are still only published for the classes set in `liveQuery.classNames`. */
   liveQueryServerOptions: ?LiveQueryServerOptions;
   /* Options for request idempotency to deduplicate identical requests that may be caused by network issues. Caution, this is an experimental feature that may not be appropriate for production.
   :ENV: PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS
