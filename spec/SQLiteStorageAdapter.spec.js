@@ -306,6 +306,49 @@ describe_only_db('sqlite')('SQLiteStorageAdapter Unit & Security Tests', () => {
     expect(results[0].a).toEqual({ foo: ['b', 'c'] });
   });
 
+  it('treats array object equality consistently across key order for addUnique/remove', async () => {
+    const schema = {
+      className: 'CanonicalArrayClass',
+      fields: {
+        objectId: { type: 'String' },
+        values: { type: 'Array' },
+      },
+    };
+    const originalValue = { alpha: 1, beta: 2 };
+    const reorderedValue = { beta: 2, alpha: 1 };
+    await adapter.createClass('CanonicalArrayClass', schema);
+    await adapter.createObject('CanonicalArrayClass', schema, {
+      objectId: 'canonical1',
+      values: [originalValue],
+    });
+
+    await adapter.updateObjectsByQuery(
+      'CanonicalArrayClass',
+      schema,
+      { objectId: 'canonical1' },
+      {
+        $addUnique: { values: [reorderedValue] },
+      }
+    );
+
+    let results = await adapter.find('CanonicalArrayClass', schema, { objectId: 'canonical1' });
+    expect(results.length).toBe(1);
+    expect(results[0].values).toEqual([originalValue]);
+
+    await adapter.updateObjectsByQuery(
+      'CanonicalArrayClass',
+      schema,
+      { objectId: 'canonical1' },
+      {
+        $remove: { values: [reorderedValue] },
+      }
+    );
+
+    results = await adapter.find('CanonicalArrayClass', schema, { objectId: 'canonical1' });
+    expect(results.length).toBe(1);
+    expect(results[0].values).toEqual([]);
+  });
+
   it('matches pointer values inside array fields and ignores invalid elements', async () => {
     const schema = {
       className: 'PointerArrayClass',

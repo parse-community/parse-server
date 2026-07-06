@@ -1,79 +1,10 @@
 // @flow
 const Database = require('better-sqlite3');
-
-const removeRegexWhiteSpace = (regex: string) => {
-  let normalizedRegex = regex;
-  if (!normalizedRegex.endsWith('\n')) {
-    normalizedRegex += '\n';
-  }
-
-  return normalizedRegex
-    .replace(/([^\\])#.*\n/gim, '$1')
-    .replace(/^#.*\n/gim, '')
-    .replace(/([^\\])\s+/gim, '$1')
-    .replace(/^\s+/, '')
-    .trim();
-};
-
-const createLiteralRegex = (remaining: string) =>
-  remaining
-    .split('')
-    .map(c => {
-      const regex = RegExp('[0-9 ]|\\p{L}', 'u');
-      if (c.match(regex) !== null) {
-        return c;
-      }
-      return /[.*+?^${}()|[\]\\]/.test(c) ? `\\${c}` : c;
-    })
-    .join('');
-
-const literalizeRegexPart = (s: string) => {
-  const matcher1 = /\\Q((?!\\E).*)\\E$/;
-  const result1: any = s.match(matcher1);
-  if (result1 && result1.length > 1 && result1.index > -1) {
-    const prefix = s.substring(0, result1.index);
-    const remaining = result1[1];
-    return literalizeRegexPart(prefix) + createLiteralRegex(remaining);
-  }
-
-  const matcher2 = /\\Q((?!\\E).*)$/;
-  const result2: any = s.match(matcher2);
-  if (result2 && result2.length > 1 && result2.index > -1) {
-    const prefix = s.substring(0, result2.index);
-    const remaining = result2[1];
-    return literalizeRegexPart(prefix) + createLiteralRegex(remaining);
-  }
-
-  return s
-    .replace(/([^\\])(\\E)/g, '$1')
-    .replace(/([^\\])(\\Q)/g, '$1')
-    .replace(/^\\E/, '')
-    .replace(/^\\Q/, '');
-};
-
-const processRegexPattern = (pattern: string) => {
-  if (pattern && pattern.startsWith('^')) {
-    return '^' + literalizeRegexPart(pattern.slice(1));
-  }
-  if (pattern && pattern.endsWith('$')) {
-    return literalizeRegexPart(pattern.slice(0, pattern.length - 1)) + '$';
-  }
-  return literalizeRegexPart(pattern);
-};
-
-const normalizeRegexPattern = (pattern: string, flags?: string) => {
-  let normalizedPattern = pattern;
-  let normalizedFlags = flags || '';
-  if (normalizedFlags.includes('x')) {
-    normalizedPattern = removeRegexWhiteSpace(normalizedPattern);
-    normalizedFlags = normalizedFlags.replace(/x/g, '');
-  }
-  normalizedPattern = processRegexPattern(normalizedPattern);
-  return {
-    pattern: normalizedPattern,
-    flags: normalizedFlags,
-  };
-};
+const {
+  canonicalJSONStringify,
+  normalizeRegexPattern,
+  parseJSONArray,
+} = require('./SQLiteUtils');
 
 function createClient(options: Object) {
   const filename = options.filename || ':memory:';
@@ -231,44 +162,16 @@ function createClient(options: Object) {
     return inside ? 1 : 0;
   });
 
-  db.function('parse_array_add', { deterministic: true }, (targetStr, itemsStr) => {
-    let target = [];
-    try {
-      target = targetStr ? JSON.parse(targetStr) : [];
-      if (!Array.isArray(target)) target = [];
-    } catch {
-      target = [];
-    }
-    let items = [];
-    try {
-      items = itemsStr ? JSON.parse(itemsStr) : [];
-      if (!Array.isArray(items)) items = [itemsStr];
-    } catch {
-      items = [];
-    }
-    return JSON.stringify([...target, ...items]);
-  });
-
   db.function('parse_array_add_unique', { deterministic: true }, (targetStr, itemsStr) => {
-    let target = [];
-    try {
-      target = targetStr ? JSON.parse(targetStr) : [];
-      if (!Array.isArray(target)) target = [];
-    } catch {
-      target = [];
-    }
-    let items = [];
-    try {
-      items = itemsStr ? JSON.parse(itemsStr) : [];
-      if (!Array.isArray(items)) items = [itemsStr];
-    } catch {
-      items = [];
-    }
-    const targetSet = new Set(target.map(x => JSON.stringify(x)));
+    const target = parseJSONArray(targetStr);
+    const items = parseJSONArray(itemsStr);
+
+    // Normalize object key order once so equality behaves consistently.
+    const targetSet = new Set(target.map(item => canonicalJSONStringify(item)));
     for (const item of items) {
-      const s = JSON.stringify(item);
-      if (!targetSet.has(s)) {
-        targetSet.add(s);
+      const serializedItem = canonicalJSONStringify(item);
+      if (!targetSet.has(serializedItem)) {
+        targetSet.add(serializedItem);
         target.push(item);
       }
     }
@@ -276,22 +179,10 @@ function createClient(options: Object) {
   });
 
   db.function('parse_array_remove', { deterministic: true }, (targetStr, itemsStr) => {
-    let target = [];
-    try {
-      target = targetStr ? JSON.parse(targetStr) : [];
-      if (!Array.isArray(target)) target = [];
-    } catch {
-      target = [];
-    }
-    let items = [];
-    try {
-      items = itemsStr ? JSON.parse(itemsStr) : [];
-      if (!Array.isArray(items)) items = [itemsStr];
-    } catch {
-      items = [];
-    }
-    const removeSet = new Set(items.map(x => JSON.stringify(x)));
-    const result = target.filter(x => !removeSet.has(JSON.stringify(x)));
+    const target = parseJSONArray(targetStr);
+    const items = parseJSONArray(itemsStr);
+    const removeSet = new Set(items.map(item => canonicalJSONStringify(item)));
+    const result = target.filter(item => !removeSet.has(canonicalJSONStringify(item)));
     return JSON.stringify(result);
   });
 

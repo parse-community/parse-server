@@ -470,3 +470,104 @@
   - `_Session.expiresAt` null omission behavior
   - aggregate `$match` alias preservation
   - rebuild required after source edits because specs execute `lib/`
+
+## 2026-07-07
+
+### Architecture Audit Snapshot
+
+- Core verdict:
+  - The SQLite backend is still primarily SQL-backed.
+  - Main `find()`, `count()`, `distinct()`, aggregate, and `$text` paths compile to SQL and run in SQLite.
+  - This did not devolve into a fake in-memory backend.
+
+- Main technical debt to keep in mind:
+  - include handling currently relies on a scoped monkey-patch of `RestQuery._UnsafeRestQuery.prototype.handleInclude`
+  - the adapter still depends on Parse internals and is not yet a clean standalone external package
+  - `Object.setPrototypeOf(SQLiteStorageAdapter.prototype, PostgresStorageAdapter.prototype)` is being used to inherit Postgres adapter behavior instead of refactoring shared logic into an explicit base/helper layer
+  - special field remapping is duplicated in too many places:
+    - `objectId` / `_id`
+    - `createdAt` / `_created_at`
+    - `updatedAt` / `_updated_at`
+  - complex sections need comments:
+    - include compatibility patch
+    - aggregate SQL pipeline translation
+    - row materialization / type coercion
+
+- Performance notes:
+  - hot-path reads are DB-backed, not JS-filtered
+  - `$text` uses FTS5, which is the right direction
+  - some feature paths still execute JS inside SQLite UDFs:
+    - `$regex`
+    - geo helpers
+    - array add / addUnique / remove
+  - include-heavy queries are the clearest current overhead because they deep-clone results and replay include paths serially
+  - row shaping back into Parse objects is heavier than ideal but still wrapper overhead, not full query execution in JS
+
+- Deployment caveat:
+  - inside this fork, `databaseURI` supports SQLite directly
+  - as an extracted adapter for stock Parse Server, more decoupling is still needed before calling it clean
+
+### Follow-up Audit Notes
+
+- Regex:
+  - SQLite currently routes `$regex` through JS-backed SQLite UDFs, not `LIKE` / `GLOB`
+  - this is safe for correctness but heavier than necessary
+  - there is a clear optimization path to lower simple anchored / literal regex cases into:
+    - equality
+    - `LIKE`
+    - `GLOB`
+  - Postgres already performs regex-specific normalization / simplification work, so doing a similar fast path in SQLite would fit the existing adapter philosophy
+
+- Array mutation semantics:
+  - Mongo does not use JS object identity for `AddUnique` / `Remove`; it delegates to Mongo value semantics:
+    - `$addToSet`
+    - `$pullAll`
+  - Postgres does not use pointer identity either; it delegates to JSONB equality in SQL helper functions
+  - SQLite currently approximates deep value equality by serializing array elements with `JSON.stringify(...)`
+  - that is expedient but not ideal:
+    - it is extra CPU work
+    - object key order can affect equality
+    - it is not a great long-term semantic foundation
+  - `Add` is the easiest candidate to move away from JS UDFs toward JSON1-native SQL
+  - `AddUnique` / `Remove` are harder because SQLite JSON1 does not give a clean built-in structural JSON equality primitive like Postgres JSONB
+
+- Driver coupling:
+  - the adapter is currently strongly shaped around `better-sqlite3`
+  - direct assumptions include:
+    - synchronous `prepare().all/get/run`
+    - `exec`
+    - `close`
+    - `pragma`
+    - custom SQL functions via `db.function(...)`
+  - swapping later is possible, but only easily if the replacement exposes a very similar surface
+  - moving to a genuinely async SQLite driver would require a broader refactor through statement execution and transaction handling
+
+### Latest Adapter Cleanup Pass
+
+- Implemented regex fast paths in the SQLite adapter query builder:
+  - simple literal / anchored regex cases now lower to native SQLite operators first
+  - case-sensitive fast paths use exact match or `GLOB`
+  - ASCII case-insensitive fast paths use `LIKE`
+  - complex regexes still fall back to the existing JS-backed `REGEXP` UDF path
+
+- Removed JS-backed plain array append from SQLite:
+  - `Add` now uses a JSON1-native array append expression in SQL
+  - `parse_array_add` is no longer registered as a SQLite UDF
+  - `AddUnique` / `Remove` remain helper-backed because structural JSON equality is still awkward in bare SQLite JSON1
+
+- Centralized equality serialization:
+  - added a shared SQLite utility for canonical JSON serialization with sorted object keys
+  - array equality checks for `AddUnique` / `Remove` now use that helper in both:
+    - SQLite UDF execution
+    - dot-path JS update fallback
+  - this removes the most ad-hoc duplicated `JSON.stringify(item)` equality ladders and makes key-order handling more consistent
+
+- Verification:
+  - `npm run build` succeeded
+  - `spec/SQLiteStorageAdapter.spec.js` green under SQLite
+  - `spec/ParseQuery.spec.js` green under SQLite for the rebuilt adapter
+  - `spec/ParseAPI.spec.js` green under SQLite, including the PUT response cases that exercise `Add` / `AddUnique` / `Remove`
+
+- Environment note:
+  - an attempted local `nvm install 20.15.0` was rolled back immediately after the interruption request
+  - verification continued on the pre-existing system-managed `nvm` runtime `v22.22.0`

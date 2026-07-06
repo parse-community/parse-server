@@ -13,6 +13,11 @@ import { EJSON } from 'bson';
 import Utils from '../../../Utils';
 import { createSanitizedError } from '../../../Error';
 import logger from '../../../logger';
+const {
+  canonicalJSONStringify,
+  getSimpleNormalizedRegexInfo,
+  normalizeRegexPattern,
+} = require('./SQLiteUtils');
 
 const defaultCLPS = Object.freeze({
   ACL: {
@@ -913,10 +918,10 @@ const applyDotPathUpdate = (rootValue: any, fieldName: string, fieldValue: any):
     }
     if (fieldValue.__op === 'AddUnique') {
       const arrayValue = Array.isArray(currentValue) ? [...currentValue] : [];
-      const seenValues = new Set(arrayValue.map(item => JSON.stringify(item)));
+      const seenValues = new Set(arrayValue.map(item => canonicalJSONStringify(item)));
       for (const item of fieldValue.objects) {
         const clonedItem = cloneMutableValue(item);
-        const serializedValue = JSON.stringify(clonedItem);
+        const serializedValue = canonicalJSONStringify(clonedItem);
         if (!seenValues.has(serializedValue)) {
           seenValues.add(serializedValue);
           arrayValue.push(clonedItem);
@@ -926,12 +931,12 @@ const applyDotPathUpdate = (rootValue: any, fieldName: string, fieldValue: any):
       return initialValue;
     }
     if (fieldValue.__op === 'Remove') {
-      const removeValues = new Set(fieldValue.objects.map(item => JSON.stringify(item)));
+      const removeValues = new Set(fieldValue.objects.map(item => canonicalJSONStringify(item)));
       const arrayValue = Array.isArray(currentValue) ? currentValue : [];
       setPathComponentValue(
         current,
         lastComponent,
-        arrayValue.filter(item => !removeValues.has(JSON.stringify(item)))
+        arrayValue.filter(item => !removeValues.has(canonicalJSONStringify(item)))
       );
       return initialValue;
     }
@@ -969,11 +974,48 @@ const getParameterizedValueExpression = (value: any) => {
   return isJsonEncodedValue(value) ? 'json(?)' : '?';
 };
 
+const getNormalizedJsonArrayExpression = (expression: string) =>
+  `CASE WHEN json_valid(${expression}) AND json_type(${expression}) = 'array' THEN ${expression} ELSE '[]' END`;
+
 const getJsonObjectValueExpression = (columnName: string) =>
   `CASE WHEN json_valid(${columnName}) AND json_type(${columnName}) = 'object' THEN ${columnName} ELSE '{}' END`;
 
 const getJsonArrayValueExpression = (containerExpression: string, jsonPath: string) =>
-  `CASE WHEN json_type(${containerExpression}, '${jsonPath}') = 'array' THEN json_extract(${containerExpression}, '${jsonPath}') ELSE '[]' END`;
+  getNormalizedJsonArrayExpression(`json_extract(${containerExpression}, '${jsonPath}')`);
+
+const getJSONArrayElementValueExpression = (
+  valueExpression: string,
+  typeExpression: string,
+  jsonExpression: string
+) =>
+  `CASE ${typeExpression} ` +
+  `WHEN 'object' THEN json(${jsonExpression}) ` +
+  `WHEN 'array' THEN json(${jsonExpression}) ` +
+  `WHEN 'true' THEN json('true') ` +
+  `WHEN 'false' THEN json('false') ` +
+  `WHEN 'null' THEN json('null') ` +
+  `ELSE ${valueExpression} END`;
+
+const buildJSONArrayAppendExpression = (targetExpression: string) => {
+  const normalizedTargetExpression = getNormalizedJsonArrayExpression(targetExpression);
+  const appendedElementExpression = getJSONArrayElementValueExpression(
+    'item_value',
+    'item_type',
+    'item_json'
+  );
+  return (
+    `(SELECT COALESCE(json_group_array(${appendedElementExpression}), '[]') ` +
+    `FROM (` +
+    `SELECT value AS item_value, json_each.type AS item_type, json_each.value AS item_json, ` +
+    `CAST(json_each.key AS INTEGER) AS item_order ` +
+    `FROM json_each(${normalizedTargetExpression}) ` +
+    `UNION ALL ` +
+    `SELECT value AS item_value, json_each.type AS item_type, json_each.value AS item_json, ` +
+    `CAST(json_each.key AS INTEGER) + COALESCE(json_array_length(${normalizedTargetExpression}), 0) AS item_order ` +
+    `FROM json_each(?) ` +
+    `ORDER BY item_order))`
+  );
+};
 
 const buildJsonPathUpdateExpression = (
   currentExpression: string,
@@ -1006,7 +1048,7 @@ const buildJsonPathUpdateExpression = (
       return {
         expression:
           `json_set(${objectValueExpression}, '${jsonPath}', ` +
-          `json(parse_array_add(${arrayValueExpression}, ?)))`,
+          `json(${buildJSONArrayAppendExpression(arrayValueExpression)}))`,
         params: [JSON.stringify(fieldValue.objects)],
       };
     }
@@ -1156,83 +1198,6 @@ const getScalarAnyMatchExpression = (
   };
 };
 
-const removeRegexWhiteSpace = (regex: string) => {
-  let normalizedRegex = regex;
-  if (!normalizedRegex.endsWith('\n')) {
-    normalizedRegex += '\n';
-  }
-
-  return normalizedRegex
-    .replace(/([^\\])#.*\n/gim, '$1')
-    .replace(/^#.*\n/gim, '')
-    .replace(/([^\\])\s+/gim, '$1')
-    .replace(/^\s+/, '')
-    .trim();
-};
-
-const createLiteralRegex = (remaining: string) =>
-  remaining
-    .split('')
-    .map(c => {
-      const regex = RegExp('[0-9 ]|\\p{L}', 'u');
-      if (c.match(regex) !== null) {
-        return c;
-      }
-      return /[.*+?^${}()|[\]\\]/.test(c) ? `\\${c}` : c;
-    })
-    .join('');
-
-const literalizeRegexPart = (s: string) => {
-  const matcher1 = /\\Q((?!\\E).*)\\E$/;
-  const result1: any = s.match(matcher1);
-  if (result1 && result1.length > 1 && result1.index > -1) {
-    const prefix = s.substring(0, result1.index);
-    const remaining = result1[1];
-    return literalizeRegexPart(prefix) + createLiteralRegex(remaining);
-  }
-
-  const matcher2 = /\\Q((?!\\E).*)$/;
-  const result2: any = s.match(matcher2);
-  if (result2 && result2.length > 1 && result2.index > -1) {
-    const prefix = s.substring(0, result2.index);
-    const remaining = result2[1];
-    return literalizeRegexPart(prefix) + createLiteralRegex(remaining);
-  }
-
-  return s
-    .replace(/([^\\])(\\E)/g, '$1')
-    .replace(/([^\\])(\\Q)/g, '$1')
-    .replace(/^\\E/, '')
-    .replace(/^\\Q/, '');
-};
-
-const processRegexPattern = (pattern: string) => {
-  if (pattern && pattern.startsWith('^')) {
-    return '^' + literalizeRegexPart(pattern.slice(1));
-  }
-  if (pattern && pattern.endsWith('$')) {
-    return literalizeRegexPart(pattern.slice(0, pattern.length - 1)) + '$';
-  }
-  return literalizeRegexPart(pattern);
-};
-
-const normalizeRegexPattern = (
-  pattern: string,
-  flags: string
-): { pattern: string, flags: string } => {
-  let normalizedPattern = pattern;
-  let normalizedFlags = flags || '';
-  if (normalizedFlags.includes('x')) {
-    normalizedPattern = removeRegexWhiteSpace(normalizedPattern);
-    normalizedFlags = normalizedFlags.replace(/x/g, '');
-  }
-  normalizedPattern = processRegexPattern(normalizedPattern);
-  return {
-    pattern: normalizedPattern,
-    flags: normalizedFlags,
-  };
-};
-
 const validateRegexPattern = (pattern: string, flags: string): { pattern: string, flags: string } => {
   const normalizedRegex = normalizeRegexPattern(pattern, flags);
   try {
@@ -1246,6 +1211,64 @@ const validateRegexPattern = (pattern: string, flags: string): { pattern: string
     );
   }
   return normalizedRegex;
+};
+
+const escapeSQLiteLikePattern = (literal: string): string =>
+  literal.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+
+const escapeSQLiteGlobPattern = (literal: string): string =>
+  literal.replace(/\[/g, '[[]').replace(/\*/g, '[*]').replace(/\?/g, '[?]');
+
+const isASCIIOnlyString = (value: string): boolean => /^[\x00-\x7F]*$/.test(value);
+
+const getSimpleRegexMatchExpression = (
+  targetSql: string,
+  normalizedRegex: { pattern: string, flags: string }
+): { sql: string, params: Array<any> } | null => {
+  const regexInfo = getSimpleNormalizedRegexInfo(normalizedRegex.pattern, normalizedRegex.flags);
+  if (!regexInfo) {
+    return null;
+  }
+
+  const textTargetSql = `CAST(${targetSql} AS TEXT)`;
+  if (regexInfo.caseInsensitive) {
+    if (!isASCIIOnlyString(regexInfo.literal)) {
+      return null;
+    }
+    let likePattern = escapeSQLiteLikePattern(regexInfo.literal);
+    if (regexInfo.mode === 'startsWith') {
+      likePattern += '%';
+    } else if (regexInfo.mode === 'endsWith') {
+      likePattern = `%${likePattern}`;
+    } else if (regexInfo.mode === 'contains') {
+      likePattern = `%${likePattern}%`;
+    }
+    return {
+      sql: `${textTargetSql} LIKE ? ESCAPE '\\'`,
+      params: [likePattern],
+    };
+  }
+
+  if (regexInfo.mode === 'exact') {
+    return {
+      sql: `${textTargetSql} = ?`,
+      params: [regexInfo.literal],
+    };
+  }
+
+  const globLiteral = escapeSQLiteGlobPattern(regexInfo.literal);
+  let globPattern = globLiteral;
+  if (regexInfo.mode === 'startsWith') {
+    globPattern = `${globLiteral}*`;
+  } else if (regexInfo.mode === 'endsWith') {
+    globPattern = `*${globLiteral}`;
+  } else if (regexInfo.mode === 'contains') {
+    globPattern = `*${globLiteral}*`;
+  }
+  return {
+    sql: `${textTargetSql} GLOB ?`,
+    params: [globPattern],
+  };
 };
 
 const transformDotField = (fieldName: string) => {
@@ -2623,8 +2646,17 @@ export class SQLiteStorageAdapter implements StorageAdapter {
             }
           } else if (op === '$regex') {
             const normalizedRegex = validateRegexPattern(opVal, val.$options || '');
+            const regexMatch = getSimpleRegexMatchExpression(
+              isArrayField ? 'value' : targetSql,
+              normalizedRegex
+            );
             if (isArrayField) {
-              if (normalizedRegex.flags) {
+              if (regexMatch) {
+                conditions.push(
+                  `EXISTS (SELECT 1 FROM json_each(${targetSql}) WHERE ${regexMatch.sql})`
+                );
+                params.push(...regexMatch.params);
+              } else if (normalizedRegex.flags) {
                 conditions.push(`EXISTS (SELECT 1 FROM json_each(${targetSql}) WHERE regexp_flags(?, ?, value) = 1)`);
                 params.push(normalizedRegex.pattern, normalizedRegex.flags);
               } else {
@@ -2632,7 +2664,10 @@ export class SQLiteStorageAdapter implements StorageAdapter {
                 params.push(normalizedRegex.pattern);
               }
             } else {
-              if (normalizedRegex.flags) {
+              if (regexMatch) {
+                conditions.push(regexMatch.sql);
+                params.push(...regexMatch.params);
+              } else if (normalizedRegex.flags) {
                 conditions.push(`regexp_flags(?, ?, ${targetSql}) = 1`);
                 params.push(normalizedRegex.pattern, normalizedRegex.flags);
               } else {
@@ -2749,7 +2784,13 @@ export class SQLiteStorageAdapter implements StorageAdapter {
                 }
                 for (const elem of opVal) {
                   const normalizedRegex = validateRegexPattern(elem.$regex, elem.$options || '');
-                  if (normalizedRegex.flags) {
+                  const regexMatch = getSimpleRegexMatchExpression('value', normalizedRegex);
+                  if (regexMatch) {
+                    conditions.push(
+                      `EXISTS (SELECT 1 FROM json_each(${targetSql}) WHERE ${regexMatch.sql})`
+                    );
+                    params.push(...regexMatch.params);
+                  } else if (normalizedRegex.flags) {
                     conditions.push(
                       `EXISTS (SELECT 1 FROM json_each(${targetSql}) WHERE regexp_flags(?, ?, value) = 1)`
                     );
@@ -4457,7 +4498,7 @@ export class SQLiteStorageAdapter implements StorageAdapter {
             appendNestedFieldUpdate(dotFieldPath.rootFieldName, dotFieldPath.jsonPath, fieldValue);
           } else {
             validateFieldName(fieldName);
-            setClauses.push(`${columnName} = parse_array_add(${columnName}, ?)`);
+            setClauses.push(`${columnName} = ${buildJSONArrayAppendExpression(columnName)}`);
             params.push(JSON.stringify(fieldValue.objects));
             appendNullFieldTrackerUpdate(fieldName, false);
           }
