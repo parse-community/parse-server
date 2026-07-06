@@ -1,4 +1,4 @@
-﻿// @flow
+// @flow
 // A database adapter that works with data exported from the hosted
 // Parse database.
 

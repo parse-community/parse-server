@@ -55,12 +55,15 @@ const FSAdapter = require('@parse/fs-files-adapter');
 const PostgresStorageAdapter = require('../lib/Adapters/Storage/Postgres/PostgresStorageAdapter')
   .default;
 const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
+const SQLiteStorageAdapter = require('../lib/Adapters/Storage/SQLite/SQLiteStorageAdapter')
+  .default;
 const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter').default;
 const RESTController = require('parse/lib/node/RESTController').default;
 const { VolatileClassesSchemas } = require('../lib/Controllers/SchemaController');
 
 const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
+const sqliteURI = 'sqlite://:memory:';
 let databaseAdapter;
 let databaseURI;
 
@@ -70,6 +73,12 @@ if (process.env.PARSE_SERVER_DATABASE_ADAPTER) {
 } else if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
   databaseURI = process.env.PARSE_SERVER_TEST_DATABASE_URI || postgresURI;
   databaseAdapter = new PostgresStorageAdapter({
+    uri: databaseURI,
+    collectionPrefix: 'test_',
+  });
+} else if (process.env.PARSE_SERVER_TEST_DB === 'sqlite') {
+  databaseURI = process.env.PARSE_SERVER_TEST_DATABASE_URI || sqliteURI;
+  databaseAdapter = new SQLiteStorageAdapter({
     uri: databaseURI,
     collectionPrefix: 'test_',
   });

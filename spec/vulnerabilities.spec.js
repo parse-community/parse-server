@@ -1203,6 +1203,25 @@ describe('Vulnerabilities', () => {
       expect(verify.get('name')).toBe('original');
     });
 
+    it_only_db('sqlite')('does not execute injected SQL via sort order dot-notation (sqlite)', async () => {
+      const obj = new Parse.Object('InjectionTestSqlite');
+      obj.set('data', { key: 'value' });
+      obj.set('name', 'original');
+      await obj.save();
+
+      await request({
+        method: 'GET',
+        url: 'http://localhost:8378/1/classes/InjectionTestSqlite',
+        headers,
+        qs: {
+          order: "data.x' ASC; UPDATE \"test_InjectionTestSqlite\" SET name = 'hacked' WHERE 1=1--",
+        },
+      }).catch(() => {});
+
+      const verify = await new Parse.Query('InjectionTestSqlite').get(obj.id);
+      expect(verify.get('name')).toBe('original');
+    });
+
     it_only_db('postgres')('does not execute injected SQL via sort order with pg_sleep', async () => {
       const obj = new Parse.Object('InjectionTest');
       obj.set('data', { key: 'value' });
