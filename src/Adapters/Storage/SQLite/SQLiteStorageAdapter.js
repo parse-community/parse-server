@@ -8,6 +8,7 @@ import EventEmitter from 'events';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import { EJSON } from 'bson';
 import Utils from '../../../Utils';
 import { createSanitizedError } from '../../../Error';
 
@@ -41,6 +42,36 @@ const internalClasses = new Set([
   '_JobSchedule',
   '_Hooks',
   '_Audience',
+]);
+
+const aggregateHiddenFieldNames = new Set([
+  '_hashed_password',
+  '_rperm',
+  '_wperm',
+  '_acl',
+  '_session_token',
+  '_email_verify_token',
+  '_perishable_token',
+  '_perishable_token_expires_at',
+  '_password_changed_at',
+  '_tombstone',
+  '_email_verify_token_expires_at',
+  '_account_lockout_expires_at',
+  '_failed_login_count',
+  '_password_history',
+]);
+
+const aggregateDateMatchOperators = new Set([
+  '$eq',
+  '$ne',
+  '$lt',
+  '$lte',
+  '$gt',
+  '$gte',
+  '$in',
+  '$nin',
+  '$all',
+  '$exists',
 ]);
 
 const temporarySQLiteDirectories = new Set();
@@ -191,6 +222,71 @@ const inferFieldType = (key: string, value: any) => {
   return { type: 'String' };
 };
 
+const isSamePolygonCoordinate = (left: any, right: any) =>
+  Array.isArray(left) &&
+  Array.isArray(right) &&
+  left.length === 2 &&
+  right.length === 2 &&
+  left[0] === right[0] &&
+  left[1] === right[1];
+
+const normalizePolygonCoordinates = (coordinates: any) => {
+  if (!Array.isArray(coordinates) || coordinates.length < 3) {
+    throw new Parse.Error(Parse.Error.INVALID_JSON, 'Polygon must have at least 3 values');
+  }
+
+  const normalizedCoordinates = coordinates.map(point => {
+    if (!Array.isArray(point) || point.length !== 2) {
+      throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad polygon value');
+    }
+    const latitude = Number(point[0]);
+    const longitude = Number(point[1]);
+    Parse.GeoPoint._validate(latitude, longitude);
+    return [latitude, longitude];
+  });
+
+  if (
+    !isSamePolygonCoordinate(
+      normalizedCoordinates[0],
+      normalizedCoordinates[normalizedCoordinates.length - 1]
+    )
+  ) {
+    normalizedCoordinates.push([...normalizedCoordinates[0]]);
+  }
+
+  const uniqueCoordinates = normalizedCoordinates.filter((point, index, allPoints) => {
+    return allPoints.findIndex(candidate => isSamePolygonCoordinate(candidate, point)) === index;
+  });
+
+  if (uniqueCoordinates.length < 3) {
+    throw new Parse.Error(
+      Parse.Error.INTERNAL_SERVER_ERROR,
+      'GeoJSON: Loop must have at least 3 different vertices'
+    );
+  }
+
+  return normalizedCoordinates;
+};
+
+const normalizePolygonValue = (value: any) => {
+  if (!value || typeof value !== 'object' || value.__type !== 'Polygon') {
+    return value;
+  }
+
+  return {
+    ...value,
+    coordinates: normalizePolygonCoordinates(value.coordinates),
+  };
+};
+
+const normalizeStoredPolygonValue = (value: any) => {
+  try {
+    return normalizePolygonValue(value);
+  } catch {
+    return value;
+  }
+};
+
 const toSQLiteValue = (value: any) => {
   if (value === null || value === undefined) {
     return null;
@@ -214,8 +310,11 @@ const toSQLiteValue = (value: any) => {
     if (value.__type === 'Bytes') {
       return JSON.stringify(value);
     }
-    if (value.__type === 'GeoPoint' || value.__type === 'Polygon') {
+    if (value.__type === 'GeoPoint') {
       return JSON.stringify(value);
+    }
+    if (value.__type === 'Polygon') {
+      return JSON.stringify(normalizePolygonValue(value));
     }
     return JSON.stringify(value);
   }
@@ -261,12 +360,12 @@ const sqliteValueToParseValue = (value: any, type: any) => {
     case 'Polygon':
       if (typeof value === 'string') {
         try {
-          return JSON.parse(value);
+          return normalizeStoredPolygonValue(JSON.parse(value));
         } catch {
           return value;
         }
       }
-      return value;
+      return normalizeStoredPolygonValue(value);
     case 'Pointer':
       if (typeof value === 'string') {
         return value;
@@ -358,15 +457,20 @@ const getArrayElementMatchExpression = (
   if (isPointerValue(comparisonValue)) {
     return {
       sql:
-        `EXISTS (SELECT 1 FROM json_each(${targetSql}) WHERE json_extract(json_each.value, '$.__type') = 'Pointer' ` +
+        `EXISTS (SELECT 1 FROM json_each(${targetSql}) WHERE ` +
+        `CASE WHEN json_valid(json_each.value) AND json_type(json_each.value) = 'object' ` +
+        `THEN json_extract(json_each.value, '$.__type') = 'Pointer' ` +
         `AND json_extract(json_each.value, '$.className') = ? ` +
-        `AND json_extract(json_each.value, '$.objectId') = ?)`,
+        `AND json_extract(json_each.value, '$.objectId') = ? ` +
+        `ELSE 0 END)`,
       params: [comparisonValue.className, comparisonValue.objectId],
     };
   }
   if (isJsonEncodedValue(comparisonValue)) {
     return {
-      sql: `EXISTS (SELECT 1 FROM json_each(${targetSql}) WHERE json(json_each.value) = json(?))`,
+      sql:
+        `EXISTS (SELECT 1 FROM json_each(${targetSql}) WHERE ` +
+        `CASE WHEN json_valid(json_each.value) THEN json(json_each.value) = json(?) ELSE 0 END)`,
       params: [toSQLiteValue(comparisonValue)],
     };
   }
@@ -413,6 +517,101 @@ const validateFieldName = (name: string) => {
   if (typeof name !== 'string' || !name.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
     throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${name}`);
   }
+};
+
+const isPlainObject = (value: any) =>
+  value !== null && typeof value === 'object' && !Array.isArray(value);
+
+const parseJSONValue = (value: any) => {
+  if (typeof value !== 'string') {
+    return value;
+  }
+  if (!value.startsWith('{') && !value.startsWith('[')) {
+    return value;
+  }
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+};
+
+const sanitizeFTS5Identifier = (value: string) =>
+  value.replace(/[^a-zA-Z0-9_]+/g, '_');
+
+const escapeFTS5Query = (term: string) => `"${term.replace(/"/g, '""')}"`;
+
+const parseTextSearch = (query: QueryType): ?{
+  fieldName: string,
+  searchTerm: string,
+  language?: string,
+  caseSensitive?: boolean,
+  diacriticSensitive?: boolean,
+  remainingQuery: QueryType,
+} => {
+  for (const fieldName of Object.keys(query)) {
+    const value = query[fieldName];
+    if (!isPlainObject(value) || !Object.prototype.hasOwnProperty.call(value, '$text')) {
+      continue;
+    }
+
+    const textValue = value.$text;
+    if (!isPlainObject(textValue) || !isPlainObject(textValue.$search)) {
+      throw new Parse.Error(
+        Parse.Error.INVALID_JSON,
+        'bad $text: $search, should be object'
+      );
+    }
+
+    const search = textValue.$search;
+    if (typeof search.$term !== 'string') {
+      throw new Parse.Error(
+        Parse.Error.INVALID_JSON,
+        'bad $text: $term, should be string'
+      );
+    }
+    if (search.$language !== undefined && typeof search.$language !== 'string') {
+      throw new Parse.Error(
+        Parse.Error.INVALID_JSON,
+        'bad $text: $language, should be string'
+      );
+    }
+    if (search.$caseSensitive !== undefined && typeof search.$caseSensitive !== 'boolean') {
+      throw new Parse.Error(
+        Parse.Error.INVALID_JSON,
+        'bad $text: $caseSensitive, should be boolean'
+      );
+    }
+    if (
+      search.$diacriticSensitive !== undefined &&
+      typeof search.$diacriticSensitive !== 'boolean'
+    ) {
+      throw new Parse.Error(
+        Parse.Error.INVALID_JSON,
+        'bad $text: $diacriticSensitive, should be boolean'
+      );
+    }
+
+    const remainingQuery = { ...query };
+    if (Object.keys(value).length === 1) {
+      delete remainingQuery[fieldName];
+    } else {
+      const nextFieldValue = { ...value };
+      delete nextFieldValue.$text;
+      remainingQuery[fieldName] = nextFieldValue;
+    }
+
+    return {
+      fieldName,
+      searchTerm: search.$term,
+      language: search.$language,
+      caseSensitive: search.$caseSensitive,
+      diacriticSensitive: search.$diacriticSensitive,
+      remainingQuery,
+    };
+  }
+
+  return null;
 };
 
 export class SQLiteStorageAdapter implements StorageAdapter {
@@ -481,13 +680,14 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     return null;
   }
 
-  handleShutdown() {
+  async handleShutdown() {
     if (this._db) {
       try {
         this._db.close();
       } catch {
         /* */
       }
+      this._db = null;
     }
     this._stmtCache.clear();
     this._existingClasses.clear();
@@ -502,6 +702,10 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       }
       this._temporaryDirectory = null;
     }
+
+    // SQLite teardown is synchronous, so yield once before server restart to avoid
+    // immediately reusing the same test port with stale keep-alive sockets.
+    await new Promise(resolve => setImmediate(resolve));
   }
 
   _deleteExpiredIdempotencyRecords(dbOverride?: any) {
@@ -554,6 +758,80 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       return true;
     }
     return false;
+  }
+
+  _getTableColumns(className: string, connection?: any): Array<string> {
+    const rawName = this._rawTableName(className);
+    const db = connection || this._db;
+    return db
+      .prepare(`PRAGMA table_info("${rawName.replace(/"/g, '""')}")`)
+      .all()
+      .map(column => column.name);
+  }
+
+  _rawFTSTableName(className: string, fieldName: string, diacriticSensitive: boolean): string {
+    const suffix = diacriticSensitive ? 'accent' : 'folded';
+    return `${this._rawTableName(className)}__fts__${sanitizeFTS5Identifier(fieldName)}__${suffix}`;
+  }
+
+  _quotedFTSTableName(className: string, fieldName: string, diacriticSensitive: boolean): string {
+    return `"${this._rawFTSTableName(className, fieldName, diacriticSensitive).replace(/"/g, '""')}"`;
+  }
+
+  async _ensureFTS5Index(
+    className: string,
+    fieldName: string,
+    diacriticSensitive: boolean,
+    transactionalSession?: any
+  ): Promise<void> {
+    validateFieldName(fieldName);
+    const columns = this._getTableColumns(className, transactionalSession);
+    if (!columns.includes(fieldName)) {
+      return;
+    }
+
+    const db = transactionalSession || this._db;
+    const rawTableName = this._rawTableName(className);
+    const tableName = this._tableName(className);
+    const rawFTSTableName = this._rawFTSTableName(className, fieldName, diacriticSensitive);
+    const ftsTableName = this._quotedFTSTableName(className, fieldName, diacriticSensitive);
+    const tokenizer = diacriticSensitive ? 'unicode61 remove_diacritics 0' : 'unicode61 remove_diacritics 1';
+
+    db.exec(
+      `CREATE VIRTUAL TABLE IF NOT EXISTS ${ftsTableName} USING fts5(` +
+      `"${fieldName.replace(/"/g, '""')}", ` +
+      `content='${rawTableName.replace(/'/g, "''")}', ` +
+      `content_rowid='rowid', ` +
+      `tokenize='${tokenizer}'` +
+      `)`
+    );
+
+    const triggerBaseName = sanitizeFTS5Identifier(rawFTSTableName);
+    const insertTrigger = `"${triggerBaseName}_insert"`;
+    const deleteTrigger = `"${triggerBaseName}_delete"`;
+    const updateTrigger = `"${triggerBaseName}_update"`;
+    const quotedFieldName = quoteColumnName(fieldName);
+
+    db.exec(
+      `CREATE TRIGGER IF NOT EXISTS ${insertTrigger} AFTER INSERT ON ${tableName} BEGIN ` +
+      `INSERT INTO ${ftsTableName}(rowid, ${quotedFieldName}) VALUES (new.rowid, new.${quotedFieldName}); ` +
+      `END`
+    );
+    db.exec(
+      `CREATE TRIGGER IF NOT EXISTS ${deleteTrigger} AFTER DELETE ON ${tableName} BEGIN ` +
+      `INSERT INTO ${ftsTableName}(${ftsTableName}, rowid, ${quotedFieldName}) ` +
+      `VALUES('delete', old.rowid, old.${quotedFieldName}); ` +
+      `END`
+    );
+    db.exec(
+      `CREATE TRIGGER IF NOT EXISTS ${updateTrigger} AFTER UPDATE OF ${quotedFieldName} ON ${tableName} BEGIN ` +
+      `INSERT INTO ${ftsTableName}(${ftsTableName}, rowid, ${quotedFieldName}) ` +
+      `VALUES('delete', old.rowid, old.${quotedFieldName}); ` +
+      `INSERT INTO ${ftsTableName}(rowid, ${quotedFieldName}) VALUES (new.rowid, new.${quotedFieldName}); ` +
+      `END`
+    );
+
+    db.prepare(`INSERT INTO ${ftsTableName}(${ftsTableName}) VALUES('rebuild')`).run();
   }
 
   async _ensureColumnsExist(className: string, row: Object, schema?: SchemaType, dbOverride?: any): Promise<void> {
@@ -1192,7 +1470,11 @@ export class SQLiteStorageAdapter implements StorageAdapter {
               params.push(JSON.stringify(poly));
             }
           } else if (op === '$geoIntersects') {
-            if (opVal.$polygon) {
+            if (opVal.$point && schema.fields && schema.fields[key] && schema.fields[key].type === 'Polygon') {
+              const point = opVal.$point;
+              conditions.push(`parse_within_polygon(?, ?, ${targetSql}) = 1`);
+              params.push(point.latitude, point.longitude);
+            } else if (opVal.$polygon) {
               const poly = opVal.$polygon;
               conditions.push(`parse_within_polygon(json_extract(${targetSql}, '$.latitude'), json_extract(${targetSql}, '$.longitude'), ?) = 1`);
               params.push(JSON.stringify(poly));
@@ -1257,9 +1539,15 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     }
     schema = normalizeSQLiteSchema(className, schema);
     const tableName = this._tableName(className);
-    const where = this._buildWhereClause(className, schema, query);
+    const textSearch = parseTextSearch(query);
+    const where = this._buildWhereClause(
+      className,
+      schema,
+      textSearch ? textSearch.remainingQuery : query
+    );
 
     let selectSql = '*';
+    let includeTextScore = false;
     if (keys && keys.length > 0) {
       const selectedCols = [];
       const selectedKeys = keys.reduce((memo, key) => {
@@ -1280,7 +1568,7 @@ export class SQLiteStorageAdapter implements StorageAdapter {
         if (k.indexOf('.') >= 0) {
           selectedCols.push(`${transformDotField(k)} as "${k.replace(/"/g, '""')}"`);
         } else if (k === '$score') {
-          continue;
+          includeTextScore = true;
         } else {
           validateFieldName(k);
           selectedCols.push(quoteColumnName(k));
@@ -1291,14 +1579,45 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       }
     }
 
-    let sql = `SELECT ${selectSql} FROM ${tableName}`;
+    let sql;
+    let textScoreSql = null;
+    if (textSearch) {
+      await this._ensureFTS5Index(
+        className,
+        textSearch.fieldName,
+        Boolean(textSearch.diacriticSensitive),
+        db
+      );
+      const ftsTableName = this._quotedFTSTableName(
+        className,
+        textSearch.fieldName,
+        Boolean(textSearch.diacriticSensitive)
+      );
+      textScoreSql = `(-bm25(${ftsTableName}))`;
+      if (includeTextScore) {
+        if (selectSql === '*') {
+          selectSql = `${tableName}.*, ${textScoreSql} as "score"`;
+        } else {
+          selectSql = `${selectSql}, ${textScoreSql} as "score"`;
+        }
+      }
+      sql = `SELECT ${selectSql} FROM ${tableName} INNER JOIN ${ftsTableName} ON ${ftsTableName}.rowid = ${tableName}.rowid WHERE ${ftsTableName} MATCH ?`;
+      where.params.unshift(escapeFTS5Query(textSearch.searchTerm));
+    } else {
+      sql = `SELECT ${selectSql} FROM ${tableName}`;
+    }
+
     if (where.sql) {
-      sql += ` WHERE ${where.sql}`;
+      sql += textSearch ? ` AND ${where.sql}` : ` WHERE ${where.sql}`;
     }
 
     if (sort) {
       const sortParts = [];
       for (const sortKey of Object.keys(sort)) {
+        if (sortKey === 'score' && sort[sortKey] && sort[sortKey].$meta === 'textScore') {
+          sortParts.push(`${textScoreSql} DESC`);
+          continue;
+        }
         const dir = sort[sortKey] > 0 ? 'ASC' : 'DESC';
         if (sortKey.indexOf('.') >= 0) {
           sortParts.push(`${transformDotField(sortKey)} ${dir}`);
@@ -1350,13 +1669,38 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     query: QueryType,
     fieldName: string
   ): Promise<any> {
-    validateFieldName(fieldName.split('.')[0]);
     if (!(await this.classExists(className))) {
+      return [];
+    }
+    const rootFieldName = fieldName.indexOf('.') >= 0 ? fieldName.split('.')[0] : fieldName;
+    validateFieldName(rootFieldName);
+    schema = normalizeSQLiteSchema(className, schema);
+    const columns = this._getTableColumns(className);
+    if (
+      !['objectId', 'createdAt', 'updatedAt'].includes(rootFieldName) &&
+      !columns.includes(rootFieldName)
+    ) {
       return [];
     }
     const tableName = this._tableName(className);
     const where = this._buildWhereClause(className, schema, query);
-    const targetSql = fieldName.indexOf('.') >= 0 ? transformDotField(fieldName) : `"${fieldName.replace(/"/g, '""')}"`;
+    const fieldSchema = (schema.fields || {})[rootFieldName];
+
+    if (fieldSchema && fieldSchema.type === 'Array' && fieldName.indexOf('.') === -1) {
+      let sql =
+        `SELECT DISTINCT json_each.value as val ` +
+        `FROM ${tableName} JOIN json_each(${quoteColumnName(fieldName)})`;
+      if (where.sql) {
+        sql += ` WHERE ${where.sql} AND json_each.value IS NOT NULL`;
+      } else {
+        sql += ` WHERE json_each.value IS NOT NULL`;
+      }
+      const rows = this._prepare(sql).all(...where.params);
+      return rows.map(row => parseJSONValue(row.val));
+    }
+
+    const targetSql =
+      fieldName.indexOf('.') >= 0 ? transformDotField(fieldName) : quoteColumnName(fieldName);
 
     let sql = `SELECT DISTINCT ${targetSql} as val FROM ${tableName}`;
     if (where.sql) {
@@ -1366,101 +1710,1137 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     }
 
     const rows = this._prepare(sql).all(...where.params);
-    return rows.map(r => sqliteValueToParseValue(r.val, schema ? (schema.fields || {})[fieldName] : null));
+    if (fieldSchema && fieldSchema.type === 'Pointer') {
+      return rows
+        .filter(row => row.val !== null && row.val !== undefined)
+        .map(row => ({
+          __type: 'Pointer',
+          className: fieldSchema.targetClass,
+          objectId: row.val,
+        }));
+    }
+    const valueType =
+      rootFieldName === 'createdAt' || rootFieldName === 'updatedAt'
+        ? { type: 'Date' }
+        : fieldSchema;
+    return rows.map(row => sqliteValueToParseValue(row.val, valueType));
+  }
+
+  _buildNativeAggregateSchema(className: string, schema: SchemaType): SchemaType {
+    const nativeSchema = {
+      className,
+      fields: {
+        _id: { type: 'String' },
+        _created_at: { type: 'Date' },
+        _updated_at: { type: 'Date' },
+      },
+    };
+
+    for (const fieldName of Object.keys((schema && schema.fields) || {})) {
+      if (fieldName === 'objectId' || fieldName === 'createdAt' || fieldName === 'updatedAt') {
+        continue;
+      }
+      const field = schema.fields[fieldName];
+      if (field.type === 'Pointer') {
+        nativeSchema.fields[`_p_${fieldName}`] = {
+          ...field,
+          nativePointer: true,
+        };
+      } else {
+        nativeSchema.fields[fieldName] = { ...field };
+      }
+    }
+
+    return nativeSchema;
+  }
+
+  _getNativeAggregateContext(className: string, schema: SchemaType): any {
+    const columns = this._getTableColumns(className);
+    const selectParts = [];
+    const params = [];
+    const nativeSchema = {
+      className,
+      fields: {},
+    };
+
+    for (const column of columns) {
+      if (column === 'objectId') {
+        selectParts.push(`${quoteColumnName(column)} AS "_id"`);
+        nativeSchema.fields._id = { type: 'String' };
+      } else if (column === 'createdAt') {
+        selectParts.push(`${quoteColumnName(column)} AS "_created_at"`);
+        nativeSchema.fields._created_at = { type: 'Date' };
+      } else if (column === 'updatedAt') {
+        selectParts.push(`${quoteColumnName(column)} AS "_updated_at"`);
+        nativeSchema.fields._updated_at = { type: 'Date' };
+      } else if (schema.fields[column] && schema.fields[column].type === 'Pointer') {
+        selectParts.push(
+          `CASE WHEN ${quoteColumnName(column)} IS NULL THEN NULL ELSE ? || ${quoteColumnName(column)} END AS ${quoteColumnName(`_p_${column}`)}`
+        );
+        params.push(`${schema.fields[column].targetClass}$`);
+        nativeSchema.fields[`_p_${column}`] = {
+          ...schema.fields[column],
+          nativePointer: true,
+        };
+      } else {
+        selectParts.push(quoteColumnName(column));
+        if (schema.fields[column]) {
+          nativeSchema.fields[column] = { ...schema.fields[column] };
+        }
+      }
+    }
+
+    return {
+      className,
+      schema: nativeSchema,
+      sql: `SELECT ${selectParts.join(', ')} FROM ${this._tableName(className)}`,
+      params,
+    };
+  }
+
+  _convertAggregateValueToDate(value: any): any {
+    if (Utils.isDate(value)) {
+      return value;
+    }
+    if (Array.isArray(value)) {
+      return value.map(item => this._convertAggregateValueToDate(item));
+    }
+    if (typeof value === 'string') {
+      return isNaN(Date.parse(value)) ? value : new Date(value);
+    }
+    if (value && typeof value === 'object') {
+      const output = {};
+      for (const key of Object.keys(value)) {
+        output[key] = this._convertAggregateValueToDate(value[key]);
+      }
+      return output;
+    }
+    return value;
+  }
+
+  _transformAggregatePointerConstraint(value: any, targetClass: string): any {
+    if (value === null || value === undefined) {
+      return value;
+    }
+    if (Array.isArray(value)) {
+      return value.map(item => this._transformAggregatePointerConstraint(item, targetClass));
+    }
+    if (typeof value === 'string') {
+      return value.includes('$') ? value : `${targetClass}$${value}`;
+    }
+    if (isPlainObject(value)) {
+      const output = {};
+      for (const key of Object.keys(value)) {
+        if (['$in', '$nin', '$all'].includes(key) && Array.isArray(value[key])) {
+          output[key] = value[key].map(item =>
+            this._transformAggregatePointerConstraint(item, targetClass)
+          );
+        } else if (['$eq', '$ne'].includes(key)) {
+          output[key] = this._transformAggregatePointerConstraint(value[key], targetClass);
+        } else {
+          output[key] = value[key];
+        }
+      }
+      return output;
+    }
+    return value;
+  }
+
+  _transformAggregateArgs(
+    schema: SchemaType,
+    pipeline: any,
+    rawValues?: boolean,
+    rawFieldNames?: boolean
+  ): any {
+    if (pipeline === null || pipeline === undefined) {
+      return pipeline;
+    }
+    if (Utils.isDate(pipeline)) {
+      return pipeline;
+    }
+    if (Array.isArray(pipeline)) {
+      return pipeline.map(value => this._transformAggregateArgs(schema, value, rawValues, rawFieldNames));
+    }
+    if (typeof pipeline === 'object') {
+      const output = {};
+      for (const field of Object.keys(pipeline)) {
+        const value = pipeline[field];
+
+        if (field === '$expr') {
+          output[field] = this._transformAggregateGroupArgs(schema, value, rawFieldNames);
+          continue;
+        }
+
+        let outputField = field;
+        let outputValue = value;
+        const fieldSchema = (schema.fields || {})[field];
+
+        if (!rawFieldNames) {
+          if (field === 'objectId') {
+            outputField = '_id';
+          } else if (field === 'createdAt') {
+            outputField = '_created_at';
+            if (!rawValues) {
+              outputValue = this._convertAggregateValueToDate(value);
+            }
+          } else if (field === 'updatedAt') {
+            outputField = '_updated_at';
+            if (!rawValues) {
+              outputValue = this._convertAggregateValueToDate(value);
+            }
+          } else if (fieldSchema && fieldSchema.type === 'Pointer') {
+            outputField = `_p_${field}`;
+            outputValue = this._transformAggregatePointerConstraint(value, fieldSchema.targetClass);
+          } else if (fieldSchema && fieldSchema.type === 'Date' && !rawValues) {
+            outputValue = this._convertAggregateValueToDate(value);
+          }
+        } else if ((field === '_created_at' || field === '_updated_at' || (fieldSchema && fieldSchema.type === 'Date')) && !rawValues) {
+          outputValue = this._convertAggregateValueToDate(value);
+        }
+
+        if (outputValue && typeof outputValue === 'object' && !Utils.isDate(outputValue)) {
+          output[outputField] = this._transformAggregateArgs(
+            schema,
+            outputValue,
+            rawValues,
+            rawFieldNames
+          );
+        } else {
+          output[outputField] = outputValue;
+        }
+      }
+      return output;
+    }
+    return pipeline;
+  }
+
+  _transformAggregateProjectArgs(
+    schema: SchemaType,
+    pipeline: any,
+    rawValues?: boolean,
+    rawFieldNames?: boolean
+  ): any {
+    const output = {};
+
+    for (const field of Object.keys(pipeline)) {
+      const value = pipeline[field];
+      let outputField = field;
+
+      if (!rawFieldNames) {
+        if (field === 'objectId') {
+          outputField = '_id';
+        } else if (field === 'createdAt') {
+          outputField = '_created_at';
+        } else if (field === 'updatedAt') {
+          outputField = '_updated_at';
+        } else if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
+          outputField = `_p_${field}`;
+        }
+      }
+
+      output[outputField] = this._transformAggregateArgs(schema, value, rawValues, rawFieldNames);
+    }
+
+    return output;
+  }
+
+  _transformAggregateGroupArgs(
+    schema: SchemaType,
+    pipeline: any,
+    rawFieldNames?: boolean
+  ): any {
+    if (Array.isArray(pipeline)) {
+      return pipeline.map(value => this._transformAggregateGroupArgs(schema, value, rawFieldNames));
+    }
+    if (pipeline && typeof pipeline === 'object') {
+      const output = {};
+      for (const field of Object.keys(pipeline)) {
+        output[field] = this._transformAggregateGroupArgs(schema, pipeline[field], rawFieldNames);
+      }
+      return output;
+    }
+    if (typeof pipeline === 'string' && pipeline.startsWith('$') && !rawFieldNames) {
+      const field = pipeline.slice(1);
+      if (field === 'objectId') {
+        return '$_id';
+      }
+      if (field === 'createdAt') {
+        return '$_created_at';
+      }
+      if (field === 'updatedAt') {
+        return '$_updated_at';
+      }
+      if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
+        return `$_p_${field}`;
+      }
+    }
+    return pipeline;
+  }
+
+  _isAggregateDateField(fieldName: string, schema: SchemaType, rawFieldNames?: boolean): boolean {
+    if (rawFieldNames) {
+      return fieldName === '_created_at' || fieldName === '_updated_at' || (schema.fields && schema.fields[fieldName] && schema.fields[fieldName].type === 'Date');
+    }
+    return fieldName === 'createdAt' || fieldName === 'updatedAt' || (schema.fields && schema.fields[fieldName] && schema.fields[fieldName].type === 'Date');
+  }
+
+  _hasIncompatibleAggregateDateMatchValue(value: any): boolean {
+    if (value === null || value === undefined) {
+      return false;
+    }
+    if (Utils.isDate(value)) {
+      return false;
+    }
+    if (Array.isArray(value)) {
+      return value.some(item => this._hasIncompatibleAggregateDateMatchValue(item));
+    }
+    if (typeof value === 'string') {
+      return true;
+    }
+    if (isPlainObject(value)) {
+      const keys = Object.keys(value);
+      if (keys.length === 1 && keys[0] === '$relativeTime') {
+        return false;
+      }
+      if (keys.every(key => aggregateDateMatchOperators.has(key))) {
+        return keys.some(key => {
+          if (key === '$exists') {
+            return typeof value[key] !== 'boolean';
+          }
+          return this._hasIncompatibleAggregateDateMatchValue(value[key]);
+        });
+      }
+      return true;
+    }
+    return true;
+  }
+
+  _aggregateMatchAlwaysFalse(
+    query: any,
+    schema: SchemaType,
+    _rawValues?: boolean,
+    rawFieldNames?: boolean
+  ): boolean {
+    if (!query) {
+      return false;
+    }
+    for (const key of Object.keys(query)) {
+      const value = query[key];
+      if (key === '$or' || key === '$and' || key === '$nor') {
+        if (
+          Array.isArray(value) &&
+          value.some(item => this._aggregateMatchAlwaysFalse(item, schema, _rawValues, rawFieldNames))
+        ) {
+          return true;
+        }
+        continue;
+      }
+      if (key === '$expr') {
+        continue;
+      }
+      if (
+        this._isAggregateDateField(key, schema, rawFieldNames) &&
+        this._hasIncompatibleAggregateDateMatchValue(value)
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  _aggregateQueryReferencesMissingField(query: any, schema: SchemaType): boolean {
+    if (!query || typeof query !== 'object') {
+      return false;
+    }
+    for (const key of Object.keys(query)) {
+      const value = query[key];
+      if (key === '$or' || key === '$and' || key === '$nor') {
+        if (Array.isArray(value) && value.some(item => this._aggregateQueryReferencesMissingField(item, schema))) {
+          return true;
+        }
+        continue;
+      }
+      if (key === '$expr') {
+        continue;
+      }
+      const rootFieldName = key.indexOf('.') >= 0 ? key.split('.')[0] : key;
+      if (!schema.fields[rootFieldName]) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  _compileAggregateExpression(context: any, expression: any): any {
+    if (expression === null) {
+      return { sql: 'NULL', params: [], fieldType: null };
+    }
+    if (Utils.isDate(expression)) {
+      return {
+        sql: '?',
+        params: [expression.toISOString()],
+        fieldType: { type: 'Date' },
+      };
+    }
+    if (typeof expression === 'string') {
+      if (expression === '$$NOW') {
+        return {
+          sql: '?',
+          params: [new Date().toISOString()],
+          fieldType: { type: 'Date' },
+        };
+      }
+      if (expression.startsWith('$')) {
+        const fieldName = expression.slice(1);
+        const rootFieldName = fieldName.indexOf('.') >= 0 ? fieldName.split('.')[0] : fieldName;
+        if (!context.schema.fields[rootFieldName]) {
+          return { sql: 'NULL', params: [], fieldType: null };
+        }
+        return {
+          sql: fieldName.indexOf('.') >= 0 ? transformDotField(fieldName) : quoteColumnName(fieldName),
+          params: [],
+          fieldType: context.schema.fields[rootFieldName],
+        };
+      }
+      return {
+        sql: '?',
+        params: [expression],
+        fieldType: { type: 'String' },
+      };
+    }
+    if (typeof expression === 'number') {
+      return {
+        sql: '?',
+        params: [expression],
+        fieldType: { type: 'Number' },
+      };
+    }
+    if (typeof expression === 'boolean') {
+      return {
+        sql: '?',
+        params: [expression ? 1 : 0],
+        fieldType: { type: 'Boolean' },
+      };
+    }
+    if (Array.isArray(expression)) {
+      return {
+        sql: 'json(?)',
+        params: [JSON.stringify(expression)],
+        fieldType: { type: 'Array' },
+      };
+    }
+    if (isPlainObject(expression)) {
+      if (expression.$multiply) {
+        const parts = expression.$multiply.map(item => this._compileAggregateExpression(context, item));
+        return {
+          sql: parts.map(item => `CAST(${item.sql} AS REAL)`).join(' * '),
+          params: parts.flatMap(item => item.params),
+          fieldType: { type: 'Number' },
+        };
+      }
+      if (expression.$dayOfMonth) {
+        const compiled = this._compileAggregateExpression(context, expression.$dayOfMonth);
+        return {
+          sql: `CAST(strftime('%d', ${compiled.sql}) AS INTEGER)`,
+          params: compiled.params,
+          fieldType: { type: 'Number' },
+        };
+      }
+      if (expression.$month) {
+        const compiled = this._compileAggregateExpression(context, expression.$month);
+        return {
+          sql: `CAST(strftime('%m', ${compiled.sql}) AS INTEGER)`,
+          params: compiled.params,
+          fieldType: { type: 'Number' },
+        };
+      }
+      if (expression.$year) {
+        const compiled = this._compileAggregateExpression(context, expression.$year);
+        return {
+          sql: `CAST(strftime('%Y', ${compiled.sql}) AS INTEGER)`,
+          params: compiled.params,
+          fieldType: { type: 'Number' },
+        };
+      }
+      if (expression.$substr) {
+        const [source, start, length] = expression.$substr;
+        const compiled = this._compileAggregateExpression(context, source);
+        const startIndex = Number(start) + 1;
+        if (Number(length) === -1) {
+          return {
+            sql: `substr(${compiled.sql}, ${startIndex})`,
+            params: compiled.params,
+            fieldType: { type: 'String' },
+          };
+        }
+        return {
+          sql: `substr(${compiled.sql}, ${startIndex}, ${Number(length)})`,
+          params: compiled.params,
+          fieldType: { type: 'String' },
+        };
+      }
+      if (expression.$dateSubtract) {
+        const startDate = expression.$dateSubtract.startDate;
+        const unit = expression.$dateSubtract.unit;
+        const amount = Number(expression.$dateSubtract.amount);
+        if (startDate === '$$NOW' && unit === 'day' && Number.isFinite(amount)) {
+          return {
+            sql: '?',
+            params: [new Date(Date.now() - amount * 24 * 60 * 60 * 1000).toISOString()],
+            fieldType: { type: 'Date' },
+          };
+        }
+      }
+      return {
+        sql: 'json(?)',
+        params: [JSON.stringify(expression)],
+        fieldType: { type: 'Object' },
+      };
+    }
+    return { sql: 'NULL', params: [], fieldType: null };
+  }
+
+  _compileAggregateExprWhereClause(context: any, expression: any): any {
+    const op = Object.keys(expression || {})[0];
+    const operands = expression[op];
+    if (!Array.isArray(operands) || operands.length !== 2) {
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Invalid $expr format');
+    }
+    const left = this._compileAggregateExpression(context, operands[0]);
+    const right = this._compileAggregateExpression(context, operands[1]);
+    const operatorMap = {
+      $eq: '=',
+      $ne: '!=',
+      $gt: '>',
+      $gte: '>=',
+      $lt: '<',
+      $lte: '<=',
+    };
+    if (!operatorMap[op]) {
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, `Unsupported $expr operator: ${op}`);
+    }
+    return {
+      sql: `(${left.sql}) ${operatorMap[op]} (${right.sql})`,
+      params: [...left.params, ...right.params],
+    };
+  }
+
+  _applyAggregateMatchStage(
+    context: any,
+    matchStage: any,
+    schema: SchemaType,
+    rawValues?: boolean,
+    rawFieldNames?: boolean
+  ): any {
+    const transformed = this._transformAggregateArgs(schema, matchStage, rawValues, rawFieldNames);
+    if (this._aggregateMatchAlwaysFalse(transformed, context.schema, rawValues, true)) {
+      return {
+        ...context,
+        sql: `SELECT * FROM (${context.sql}) AS "__aggregate_match_false" WHERE 1 = 0`,
+      };
+    }
+
+    if (this._aggregateQueryReferencesMissingField(transformed, context.schema)) {
+      return {
+        ...context,
+        sql: `SELECT * FROM (${context.sql}) AS "__aggregate_match_missing" WHERE 1 = 0`,
+      };
+    }
+
+    const expr = transformed.$expr;
+    if (expr !== undefined) {
+      delete transformed.$expr;
+    }
+
+    const where = this._buildWhereClause(context.className, context.schema, transformed);
+    const conditions = [];
+    const params = [...context.params];
+    if (where.sql) {
+      conditions.push(where.sql);
+      params.push(...where.params);
+    }
+    if (expr) {
+      const exprWhere = this._compileAggregateExprWhereClause(context, expr);
+      conditions.push(exprWhere.sql);
+      params.push(...exprWhere.params);
+    }
+
+    return {
+      ...context,
+      sql:
+        `SELECT * FROM (${context.sql}) AS "__aggregate_match"` +
+        (conditions.length ? ` WHERE ${conditions.join(' AND ')}` : ''),
+      params,
+    };
+  }
+
+  _applyAggregateProjectStage(
+    context: any,
+    projectStage: any,
+    schema: SchemaType,
+    rawValues?: boolean,
+    rawFieldNames?: boolean
+  ): any {
+    const transformed = this._transformAggregateProjectArgs(schema, projectStage, rawValues, rawFieldNames);
+    const selectParts = [];
+    const params = [];
+    const nextSchema = {
+      className: context.className,
+      fields: {},
+    };
+
+    let includeId = true;
+    if (Object.prototype.hasOwnProperty.call(transformed, '_id') && !transformed._id) {
+      includeId = false;
+    }
+    if (includeId && context.schema.fields._id) {
+      selectParts.push(quoteColumnName('_id'));
+      nextSchema.fields._id = context.schema.fields._id;
+    }
+
+    for (const key of Object.keys(transformed)) {
+      const value = transformed[key];
+      if (key === '_id') {
+        if (value && value !== 1) {
+          const compiled = this._compileAggregateExpression(context, value);
+          selectParts.push(`${compiled.sql} AS "_id"`);
+          params.push(...compiled.params);
+          nextSchema.fields._id = compiled.fieldType || { type: 'String' };
+        }
+        continue;
+      }
+      if (value === 0 || value === false) {
+        continue;
+      }
+      if (value === 1 || value === true) {
+        if (context.schema.fields[key]) {
+          selectParts.push(quoteColumnName(key));
+          nextSchema.fields[key] = context.schema.fields[key];
+        }
+        continue;
+      }
+      const compiled = this._compileAggregateExpression(context, value);
+      selectParts.push(`${compiled.sql} AS ${quoteColumnName(key)}`);
+      params.push(...compiled.params);
+      nextSchema.fields[key] = compiled.fieldType || { type: 'Object' };
+    }
+    params.push(...context.params);
+
+    return {
+      ...context,
+      schema: nextSchema,
+      sql: `SELECT ${selectParts.join(', ')} FROM (${context.sql}) AS "__aggregate_project"`,
+      params,
+    };
+  }
+
+  _applyAggregateAddFieldsStage(
+    context: any,
+    addFieldsStage: any,
+    schema: SchemaType,
+    rawValues?: boolean,
+    rawFieldNames?: boolean
+  ): any {
+    const transformed = this._transformAggregateProjectArgs(schema, addFieldsStage, rawValues, rawFieldNames);
+    const computedKeys = new Set(Object.keys(transformed));
+    const selectParts = [];
+    const params = [];
+    const nextSchema = {
+      className: context.className,
+      fields: {
+        ...context.schema.fields,
+      },
+    };
+
+    for (const key of Object.keys(context.schema.fields)) {
+      if (!computedKeys.has(key)) {
+        selectParts.push(quoteColumnName(key));
+      }
+    }
+
+    for (const key of Object.keys(transformed)) {
+      const compiled = this._compileAggregateExpression(context, transformed[key]);
+      selectParts.push(`${compiled.sql} AS ${quoteColumnName(key)}`);
+      params.push(...compiled.params);
+      nextSchema.fields[key] = compiled.fieldType || { type: 'Object' };
+    }
+    params.push(...context.params);
+
+    return {
+      ...context,
+      schema: nextSchema,
+      sql: `SELECT ${selectParts.join(', ')} FROM (${context.sql}) AS "__aggregate_add_fields"`,
+      params,
+    };
+  }
+
+  _buildAggregateGroupId(context: any, expression: any): any {
+    if (
+      expression === null ||
+      expression === '' ||
+      (Array.isArray(expression) && expression.length === 0) ||
+      (isPlainObject(expression) && Object.keys(expression).length === 0)
+    ) {
+      return {
+        sql: 'NULL',
+        params: [],
+        groupBy: [],
+        fieldType: { type: 'String', aggregateNullGroupId: true },
+      };
+    }
+
+    if (isPlainObject(expression) && !Object.keys(expression).some(key => key.startsWith('$'))) {
+      const params = [];
+      const groupBy = [];
+      const jsonParts = [];
+      for (const key of Object.keys(expression)) {
+        const compiled = this._compileAggregateExpression(context, expression[key]);
+        jsonParts.push(`'${key.replace(/'/g, "''")}', ${compiled.sql}`);
+        groupBy.push(compiled.sql);
+        params.push(...compiled.params);
+      }
+      return {
+        sql: `json_object(${jsonParts.join(', ')})`,
+        params,
+        groupBy,
+        fieldType: { type: 'Object' },
+      };
+    }
+
+    const compiled = this._compileAggregateExpression(context, expression);
+    const fieldType =
+      compiled.fieldType && compiled.fieldType.nativePointer
+        ? {
+            ...compiled.fieldType,
+            aggregateGroupPointer: true,
+          }
+        : compiled.fieldType;
+    return {
+      sql: compiled.sql,
+      params: compiled.params,
+      groupBy: [compiled.sql],
+      fieldType,
+    };
+  }
+
+  _applyAggregateGroupStage(
+    context: any,
+    groupStage: any,
+    schema: SchemaType,
+    rawFieldNames?: boolean
+  ): any {
+    if (!Object.prototype.hasOwnProperty.call(groupStage, '_id')) {
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Invalid group: _id is required');
+    }
+
+    const transformed = this._transformAggregateGroupArgs(schema, groupStage, rawFieldNames);
+    const groupId = this._buildAggregateGroupId(context, transformed._id);
+    const selectParts = [`${groupId.sql} AS "_id"`];
+    const params = [...groupId.params];
+    const nextSchema = {
+      className: context.className,
+      fields: {
+        _id: groupId.fieldType || { type: 'String' },
+      },
+    };
+
+    for (const key of Object.keys(transformed)) {
+      if (key === '_id') {
+        continue;
+      }
+      const agg = transformed[key];
+      if (agg.$sum !== undefined) {
+        if (agg.$sum === 1) {
+          selectParts.push(`COUNT(*) AS ${quoteColumnName(key)}`);
+        } else {
+          const compiled = this._compileAggregateExpression(context, agg.$sum);
+          selectParts.push(`SUM(CAST(${compiled.sql} AS REAL)) AS ${quoteColumnName(key)}`);
+          params.push(...compiled.params);
+        }
+        nextSchema.fields[key] = { type: 'Number' };
+      } else if (agg.$avg !== undefined) {
+        const compiled = this._compileAggregateExpression(context, agg.$avg);
+        selectParts.push(`AVG(CAST(${compiled.sql} AS REAL)) AS ${quoteColumnName(key)}`);
+        params.push(...compiled.params);
+        nextSchema.fields[key] = { type: 'Number' };
+      } else if (agg.$min !== undefined) {
+        const compiled = this._compileAggregateExpression(context, agg.$min);
+        selectParts.push(`MIN(${compiled.sql}) AS ${quoteColumnName(key)}`);
+        params.push(...compiled.params);
+        nextSchema.fields[key] = compiled.fieldType || { type: 'Object' };
+      } else if (agg.$max !== undefined) {
+        const compiled = this._compileAggregateExpression(context, agg.$max);
+        selectParts.push(`MAX(${compiled.sql}) AS ${quoteColumnName(key)}`);
+        params.push(...compiled.params);
+        nextSchema.fields[key] = compiled.fieldType || { type: 'Object' };
+      }
+    }
+    params.push(...context.params);
+
+    return {
+      ...context,
+      schema: nextSchema,
+      sql:
+        `SELECT ${selectParts.join(', ')} FROM (${context.sql}) AS "__aggregate_group"` +
+        (groupId.groupBy.length ? ` GROUP BY ${groupId.groupBy.join(', ')}` : ''),
+      params,
+    };
+  }
+
+  _transformAggregateSortField(context: any, fieldName: string, rawFieldNames?: boolean): string {
+    if (context.schema.fields[fieldName]) {
+      return fieldName;
+    }
+    if (!rawFieldNames) {
+      if (fieldName === 'objectId' && context.schema.fields._id) {
+        return '_id';
+      }
+      if (fieldName === 'createdAt' && context.schema.fields._created_at) {
+        return '_created_at';
+      }
+      if (fieldName === 'updatedAt' && context.schema.fields._updated_at) {
+        return '_updated_at';
+      }
+      if (context.schema.fields[`_p_${fieldName}`]) {
+        return `_p_${fieldName}`;
+      }
+    }
+    return fieldName;
+  }
+
+  _applyAggregateSortStage(context: any, sortStage: any, rawFieldNames?: boolean): any {
+    const sortParts = [];
+    for (const key of Object.keys(sortStage || {})) {
+      const transformedKey = this._transformAggregateSortField(context, key, rawFieldNames);
+      const dir = sortStage[key] > 0 ? 'ASC' : 'DESC';
+      sortParts.push(
+        transformedKey.indexOf('.') >= 0
+          ? `${transformDotField(transformedKey)} ${dir}`
+          : `${quoteColumnName(transformedKey)} ${dir}`
+      );
+    }
+    return {
+      ...context,
+      sql:
+        `SELECT * FROM (${context.sql}) AS "__aggregate_sort"` +
+        (sortParts.length ? ` ORDER BY ${sortParts.join(', ')}` : ''),
+    };
+  }
+
+  _applyAggregateLimitStage(context: any, limitValue: number): any {
+    return {
+      ...context,
+      sql: `SELECT * FROM (${context.sql}) AS "__aggregate_limit" LIMIT ${parseInt(limitValue, 10)}`,
+    };
+  }
+
+  _applyAggregateSkipStage(context: any, skipValue: number): any {
+    return {
+      ...context,
+      sql: `SELECT * FROM (${context.sql}) AS "__aggregate_skip" LIMIT -1 OFFSET ${parseInt(skipValue, 10)}`,
+    };
+  }
+
+  _applyAggregateCountStage(context: any, countFieldName: string): any {
+    return {
+      ...context,
+      schema: {
+        className: context.className,
+        fields: {
+          [countFieldName]: { type: 'Number' },
+        },
+      },
+      sql:
+        `SELECT COUNT(*) AS ${quoteColumnName(countFieldName)} ` +
+        `FROM (${context.sql}) AS "__aggregate_count" HAVING COUNT(*) > 0`,
+    };
+  }
+
+  async _buildNativeLookupObjectSql(className: string, schema: SchemaType, alias: string): Promise<any> {
+    const columns = this._getTableColumns(className);
+    const parts = [];
+    const params = [];
+
+    for (const column of columns) {
+      const qualifiedColumn = `${alias}.${quoteColumnName(column)}`;
+      if (column === 'objectId') {
+        parts.push(`'_id', ${qualifiedColumn}`);
+      } else if (column === 'createdAt') {
+        parts.push(`'_created_at', ${qualifiedColumn}`);
+      } else if (column === 'updatedAt') {
+        parts.push(`'_updated_at', ${qualifiedColumn}`);
+      } else if (schema.fields[column] && schema.fields[column].type === 'Pointer') {
+        parts.push(
+          `'${`_p_${column}`}', CASE WHEN ${qualifiedColumn} IS NULL THEN NULL ELSE ? || ${qualifiedColumn} END`
+        );
+        params.push(`${schema.fields[column].targetClass}$`);
+      } else {
+        parts.push(`'${column.replace(/'/g, "''")}', ${qualifiedColumn}`);
+      }
+    }
+
+    return {
+      sql: `json_object(${parts.join(', ')})`,
+      params,
+    };
+  }
+
+  _mapLookupFieldToStorage(fieldName: string): string {
+    if (fieldName === '_id') {
+      return 'objectId';
+    }
+    if (fieldName === '_created_at') {
+      return 'createdAt';
+    }
+    if (fieldName === '_updated_at') {
+      return 'updatedAt';
+    }
+    if (fieldName.startsWith('_p_')) {
+      return fieldName.slice(3);
+    }
+    return fieldName;
+  }
+
+  async _applyAggregateLookupStage(context: any, lookupStage: any): Promise<any> {
+    const targetClassName = lookupStage.from.startsWith(this._collectionPrefix)
+      ? lookupStage.from.slice(this._collectionPrefix.length)
+      : lookupStage.from;
+    const targetSchema = normalizeSQLiteSchema(targetClassName, await this.getClass(targetClassName));
+    const nativeTargetSchema = this._buildNativeAggregateSchema(targetClassName, targetSchema);
+    const lookupObject = await this._buildNativeLookupObjectSql(targetClassName, targetSchema, '__aggregate_lookup_target');
+    const localField = lookupStage.localField;
+    const foreignField = this._mapLookupFieldToStorage(lookupStage.foreignField);
+    const localSql =
+      localField.indexOf('.') >= 0 ? transformDotField(localField) : quoteColumnName(localField);
+    const foreignSql =
+      foreignField.indexOf('.') >= 0 ? transformDotField(foreignField) : `__aggregate_lookup_target.${quoteColumnName(foreignField)}`;
+
+    const nextSchema = {
+      className: context.className,
+      fields: {
+        ...context.schema.fields,
+        [lookupStage.as]: {
+          type: 'Array',
+          aggregateLookup: true,
+          lookupSchema: nativeTargetSchema,
+          targetClass: targetClassName,
+        },
+      },
+    };
+
+    const currentFields = Object.keys(context.schema.fields)
+      .filter(field => field !== lookupStage.as)
+      .map(field => quoteColumnName(field))
+      .join(', ');
+
+    return {
+      ...context,
+      schema: nextSchema,
+      sql:
+        `SELECT ${currentFields}${currentFields ? ', ' : ''}COALESCE((` +
+        `SELECT json_group_array(${lookupObject.sql}) FROM ${this._tableName(targetClassName)} AS "__aggregate_lookup_target" ` +
+        `WHERE ${foreignSql} = __aggregate_lookup_source.${localSql}` +
+        `), '[]') AS ${quoteColumnName(lookupStage.as)} ` +
+        `FROM (${context.sql}) AS "__aggregate_lookup_source"`,
+      params: [...lookupObject.params, ...context.params],
+    };
+  }
+
+  _applyAggregateUnwindStage(context: any, unwindStage: any): any {
+    const path = typeof unwindStage === 'string' ? unwindStage : unwindStage.path;
+    const fieldName = path.startsWith('$') ? path.slice(1) : path;
+    const selectParts = [];
+    for (const key of Object.keys(context.schema.fields)) {
+      if (key === fieldName) {
+        continue;
+      }
+      selectParts.push(`__aggregate_unwind_source.${quoteColumnName(key)}`);
+    }
+    selectParts.push(`json_each.value AS ${quoteColumnName(fieldName)}`);
+
+    const currentField = context.schema.fields[fieldName];
+    const nextSchema = {
+      className: context.className,
+      fields: {
+        ...context.schema.fields,
+        [fieldName]:
+          currentField && currentField.aggregateLookup
+            ? {
+                type: 'Object',
+                aggregateLookup: true,
+                lookupSchema: currentField.lookupSchema,
+                targetClass: currentField.targetClass,
+              }
+            : { type: 'Object' },
+      },
+    };
+
+    return {
+      ...context,
+      schema: nextSchema,
+      sql:
+        `SELECT ${selectParts.join(', ')} FROM (${context.sql}) AS "__aggregate_unwind_source", ` +
+        `json_each(__aggregate_unwind_source.${quoteColumnName(fieldName)})`,
+    };
+  }
+
+  _normalizeAggregateGroupIdValue(value: any, fieldSchema: any): any {
+    const parsedValue = parseJSONValue(value);
+    if (fieldSchema && fieldSchema.aggregateGroupPointer && typeof parsedValue === 'string') {
+      return parsedValue.includes('$') ? parsedValue.split('$').slice(1).join('$') : parsedValue;
+    }
+    return parsedValue;
+  }
+
+  _convertAggregateFieldValue(
+    key: string,
+    value: any,
+    fieldSchema: any,
+    options: { rawValues?: boolean, rawFieldNames?: boolean }
+  ): any {
+    if (value === null || value === undefined) {
+      return value;
+    }
+    if (fieldSchema && fieldSchema.aggregateLookup) {
+      return this._convertAggregateNativeDocument(
+        parseJSONValue(value),
+        fieldSchema.lookupSchema,
+        options
+      );
+    }
+    if (fieldSchema && fieldSchema.type === 'Date' && typeof value === 'string') {
+      return options.rawValues ? { $date: value } : { __type: 'Date', iso: value };
+    }
+    if (fieldSchema && fieldSchema.nativePointer && typeof value === 'string') {
+      if (options.rawFieldNames) {
+        return value;
+      }
+      return {
+        __type: 'Pointer',
+        className: fieldSchema.targetClass,
+        objectId: value.includes('$') ? value.split('$').slice(1).join('$') : value,
+      };
+    }
+    if (fieldSchema && (fieldSchema.type === 'Array' || fieldSchema.type === 'Object')) {
+      return this._convertAggregateNativeDocument(parseJSONValue(value), null, options);
+    }
+    return parseJSONValue(value);
+  }
+
+  _convertAggregateNativeDocument(
+    document: any,
+    schema: ?SchemaType,
+    options: { rawValues?: boolean, rawFieldNames?: boolean }
+  ): any {
+    if (document === null || document === undefined) {
+      return document;
+    }
+    if (Array.isArray(document)) {
+      return document.map(item => this._convertAggregateNativeDocument(parseJSONValue(item), schema, options));
+    }
+    if (!isPlainObject(document)) {
+      return document;
+    }
+
+    const output = {};
+    for (const key of Object.keys(document)) {
+      if (!options.rawValues && !options.rawFieldNames && aggregateHiddenFieldNames.has(key)) {
+        continue;
+      }
+
+      const value = document[key];
+      const fieldSchema = schema && schema.fields ? schema.fields[key] : null;
+
+      if (!options.rawFieldNames && key === '_id') {
+        output.objectId = this._normalizeAggregateGroupIdValue(value, fieldSchema);
+        continue;
+      }
+      if (!options.rawValues && !options.rawFieldNames && key === '_created_at') {
+        output.createdAt = typeof value === 'string' ? value : new Date(value).toISOString();
+        continue;
+      }
+      if (!options.rawValues && !options.rawFieldNames && key === '_updated_at') {
+        output.updatedAt = typeof value === 'string' ? value : new Date(value).toISOString();
+        continue;
+      }
+
+      const outputKey =
+        !options.rawFieldNames && !options.rawValues && key.startsWith('_p_') ? key.slice(3) : key;
+      output[outputKey] = this._convertAggregateFieldValue(key, value, fieldSchema, options);
+    }
+    return output;
   }
 
   async aggregate(
     className: string,
     schema: any,
-    pipeline: any
+    pipeline: any,
+    _readPreference?: ?string,
+    _hint?: ?mixed,
+    _explain?: boolean,
+    _comment?: ?string,
+    rawValues?: boolean,
+    rawFieldNames?: boolean
   ): Promise<any> {
     if (!(await this.classExists(className))) {
       return [];
     }
-    const tableName = this._tableName(className);
+    schema = normalizeSQLiteSchema(className, schema);
+    if (rawValues) {
+      pipeline = EJSON.deserialize(pipeline);
+    }
 
-    let matchQuery = {};
-    let groupStage = null;
-    let limitVal = null;
-    let skipVal = null;
-    let sortStage = null;
+    let context = this._getNativeAggregateContext(className, schema);
 
     for (const stage of pipeline) {
       if (stage.$match) {
-        matchQuery = Object.assign(matchQuery, stage.$match);
+        context = this._applyAggregateMatchStage(
+          context,
+          stage.$match,
+          schema,
+          rawValues,
+          rawFieldNames
+        );
+      } else if (stage.$project) {
+        context = this._applyAggregateProjectStage(
+          context,
+          stage.$project,
+          schema,
+          rawValues,
+          rawFieldNames
+        );
+      } else if (stage.$addFields) {
+        context = this._applyAggregateAddFieldsStage(
+          context,
+          stage.$addFields,
+          schema,
+          rawValues,
+          rawFieldNames
+        );
       } else if (stage.$group) {
-        groupStage = stage.$group;
-      } else if (stage.$limit) {
-        limitVal = stage.$limit;
-      } else if (stage.$skip) {
-        skipVal = stage.$skip;
+        context = this._applyAggregateGroupStage(context, stage.$group, schema, rawFieldNames);
       } else if (stage.$sort) {
-        sortStage = stage.$sort;
+        context = this._applyAggregateSortStage(context, stage.$sort, rawFieldNames);
+      } else if (stage.$skip !== undefined) {
+        context = this._applyAggregateSkipStage(context, stage.$skip);
+      } else if (stage.$limit !== undefined) {
+        context = this._applyAggregateLimitStage(context, stage.$limit);
+      } else if (stage.$count) {
+        context = this._applyAggregateCountStage(context, stage.$count);
+      } else if (stage.$lookup) {
+        context = await this._applyAggregateLookupStage(context, stage.$lookup);
+      } else if (stage.$unwind) {
+        context = this._applyAggregateUnwindStage(context, stage.$unwind);
       }
     }
 
-    const where = this._buildWhereClause(className, schema, matchQuery);
-
-    if (groupStage) {
-      const groupByField = groupStage._id;
-      const groupCols = [];
-      const selectCols = [];
-
-      if (groupStage._id !== null) {
-        if (typeof groupByField === 'string' && groupByField.startsWith('$')) {
-          const fieldName = groupByField.substring(1);
-          validateFieldName(fieldName);
-          groupCols.push(`"${fieldName.replace(/"/g, '""')}"`);
-          selectCols.push(`"${fieldName.replace(/"/g, '""')}" as "_id"`);
-        } else {
-          selectCols.push(`NULL as "_id"`);
-        }
-      } else {
-        selectCols.push(`NULL as "_id"`);
-      }
-
-      for (const key of Object.keys(groupStage)) {
-        if (key === '_id') {
-          continue;
-        }
-        const aggObj = groupStage[key];
-        if (aggObj.$sum !== undefined) {
-          if (aggObj.$sum === 1) {
-            selectCols.push(`COUNT(*) as "${key}"`);
-          } else if (typeof aggObj.$sum === 'string' && aggObj.$sum.startsWith('$')) {
-            const f = aggObj.$sum.substring(1);
-            validateFieldName(f);
-            selectCols.push(`SUM("${f.replace(/"/g, '""')}") as "${key}"`);
-          } else {
-            selectCols.push(`SUM(${Number(aggObj.$sum)}) as "${key}"`);
-          }
-        } else if (aggObj.$avg !== undefined) {
-          const f = aggObj.$avg.substring(1);
-          validateFieldName(f);
-          selectCols.push(`AVG("${f.replace(/"/g, '""')}") as "${key}"`);
-        } else if (aggObj.$max !== undefined) {
-          const f = aggObj.$max.substring(1);
-          validateFieldName(f);
-          selectCols.push(`MAX("${f.replace(/"/g, '""')}") as "${key}"`);
-        } else if (aggObj.$min !== undefined) {
-          const f = aggObj.$min.substring(1);
-          validateFieldName(f);
-          selectCols.push(`MIN("${f.replace(/"/g, '""')}") as "${key}"`);
-        }
-      }
-
-      let sql = `SELECT ${selectCols.join(', ')} FROM ${tableName}`;
-      if (where.sql) {
-        sql += ` WHERE ${where.sql}`;
-      }
-      if (groupCols.length > 0) {
-        sql += ` GROUP BY ${groupCols.join(', ')}`;
-      }
-      const rows = this._prepare(sql).all(...where.params);
-      return rows;
-    }
-
-    return this.find(className, schema, matchQuery, { limit: limitVal, skip: skipVal, sort: sortStage });
+    const rows = this._prepare(context.sql).all(...context.params);
+    return rows.map(row =>
+      this._convertAggregateNativeDocument(row, context.schema, {
+        rawValues,
+        rawFieldNames,
+      })
+    );
   }
 
   async deleteObjectsByQuery(

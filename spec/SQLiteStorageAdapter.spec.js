@@ -103,6 +103,107 @@ describe_only_db('sqlite')('SQLiteStorageAdapter Unit & Security Tests', () => {
     expect(res[0].objectId).toBe('p1');
   });
 
+  it('normalizes polygon values for storage and equality queries', async () => {
+    const schema = {
+      className: 'PolygonClass',
+      fields: {
+        objectId: { type: 'String' },
+        boundary: { type: 'Polygon' },
+      },
+    };
+    const openPolygon = {
+      __type: 'Polygon',
+      coordinates: [
+        [0, 0],
+        [0, 1],
+        [1, 1],
+        [1, 0],
+      ],
+    };
+    await adapter.createClass('PolygonClass', schema);
+    await adapter.createObject('PolygonClass', schema, {
+      objectId: 'poly1',
+      boundary: openPolygon,
+    });
+
+    const findResults = await adapter.find('PolygonClass', schema, { objectId: 'poly1' });
+    expect(findResults.length).toBe(1);
+    expect(findResults[0].boundary.coordinates).toEqual([
+      [0, 0],
+      [0, 1],
+      [1, 1],
+      [1, 0],
+      [0, 0],
+    ]);
+
+    const equalityResults = await adapter.find('PolygonClass', schema, {
+      boundary: openPolygon,
+    });
+    expect(equalityResults.length).toBe(1);
+    expect(equalityResults[0].objectId).toBe('poly1');
+  });
+
+  it('supports polygon fields with $geoIntersects point queries', async () => {
+    const schema = {
+      className: 'PolygonIntersectClass',
+      fields: {
+        objectId: { type: 'String' },
+        boundary: { type: 'Polygon' },
+      },
+    };
+    await adapter.createClass('PolygonIntersectClass', schema);
+    await adapter.createObject('PolygonIntersectClass', schema, {
+      objectId: 'poly1',
+      boundary: {
+        __type: 'Polygon',
+        coordinates: [
+          [0, 0],
+          [0, 1],
+          [1, 1],
+          [1, 0],
+        ],
+      },
+    });
+    await adapter.createObject('PolygonIntersectClass', schema, {
+      objectId: 'poly2',
+      boundary: {
+        __type: 'Polygon',
+        coordinates: [
+          [0, 0],
+          [0, 2],
+          [2, 2],
+          [2, 0],
+        ],
+      },
+    });
+    await adapter.createObject('PolygonIntersectClass', schema, {
+      objectId: 'poly3',
+      boundary: {
+        __type: 'Polygon',
+        coordinates: [
+          [10, 10],
+          [10, 15],
+          [15, 15],
+          [15, 10],
+        ],
+      },
+    });
+
+    const results = await adapter.find('PolygonIntersectClass', schema, {
+      boundary: {
+        $geoIntersects: {
+          $point: {
+            __type: 'GeoPoint',
+            latitude: 0.5,
+            longitude: 0.5,
+          },
+        },
+      },
+    });
+
+    expect(results.map(result => result.objectId).sort()).toEqual(['poly1', 'poly2']);
+  });
+
   it('supports idempotency index and uniqueness', async () => {
     const schema = {
       className: 'UniqueClass',
@@ -133,6 +234,31 @@ describe_only_db('sqlite')('SQLiteStorageAdapter Unit & Security Tests', () => {
     await expectAsync(
       adapter.deleteObjectsByQuery('DeleteClass', schema, { objectId: 'missing' })
     ).toBeRejectedWith(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.'));
+  });
+
+  it('rejects degenerate polygon loops', async () => {
+    const schema = {
+      className: 'DegeneratePolygonClass',
+      fields: {
+        objectId: { type: 'String' },
+        boundary: { type: 'Polygon' },
+      },
+    };
+    await adapter.createClass('DegeneratePolygonClass', schema);
+
+    await expectAsync(
+      adapter.createObject('DegeneratePolygonClass', schema, {
+        objectId: 'degenerate1',
+        boundary: {
+          __type: 'Polygon',
+          coordinates: [
+            [0, 0],
+            [0, 1],
+            [0, 0],
+          ],
+        },
+      })
+    ).toBeRejected();
   });
 
   it('supports nested array updates on dot notation fields', async () => {
@@ -179,7 +305,7 @@ describe_only_db('sqlite')('SQLiteStorageAdapter Unit & Security Tests', () => {
     expect(results[0].a).toEqual({ foo: ['b', 'c'] });
   });
 
-  it('matches pointer values inside array fields', async () => {
+  it('matches pointer values inside array fields and ignores invalid elements', async () => {
     const schema = {
       className: 'PointerArrayClass',
       fields: {
@@ -200,14 +326,19 @@ describe_only_db('sqlite')('SQLiteStorageAdapter Unit & Security Tests', () => {
     await adapter.createClass('PointerArrayClass', schema);
     await adapter.createObject('PointerArrayClass', schema, {
       objectId: 'doc1',
-      collaborators: [userA, userB],
+      collaborators: [userA, '', -1, true, [], { invalid: -1 }],
     });
 
-    const results = await adapter.find('PointerArrayClass', schema, {
+    const matchingResults = await adapter.find('PointerArrayClass', schema, {
+      collaborators: { $all: [userA] },
+    });
+    expect(matchingResults.length).toBe(1);
+    expect(matchingResults[0].objectId).toBe('doc1');
+
+    const nonMatchingResults = await adapter.find('PointerArrayClass', schema, {
       collaborators: { $all: [userB] },
     });
-    expect(results.length).toBe(1);
-    expect(results[0].objectId).toBe('doc1');
+    expect(nonMatchingResults.length).toBe(0);
   });
 
   it('matches pointer values on scalar pointer fields', async () => {
