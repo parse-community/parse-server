@@ -1,6 +1,80 @@
 // @flow
 const Database = require('better-sqlite3');
 
+const removeRegexWhiteSpace = (regex: string) => {
+  let normalizedRegex = regex;
+  if (!normalizedRegex.endsWith('\n')) {
+    normalizedRegex += '\n';
+  }
+
+  return normalizedRegex
+    .replace(/([^\\])#.*\n/gim, '$1')
+    .replace(/^#.*\n/gim, '')
+    .replace(/([^\\])\s+/gim, '$1')
+    .replace(/^\s+/, '')
+    .trim();
+};
+
+const createLiteralRegex = (remaining: string) =>
+  remaining
+    .split('')
+    .map(c => {
+      const regex = RegExp('[0-9 ]|\\p{L}', 'u');
+      if (c.match(regex) !== null) {
+        return c;
+      }
+      return /[.*+?^${}()|[\]\\]/.test(c) ? `\\${c}` : c;
+    })
+    .join('');
+
+const literalizeRegexPart = (s: string) => {
+  const matcher1 = /\\Q((?!\\E).*)\\E$/;
+  const result1: any = s.match(matcher1);
+  if (result1 && result1.length > 1 && result1.index > -1) {
+    const prefix = s.substring(0, result1.index);
+    const remaining = result1[1];
+    return literalizeRegexPart(prefix) + createLiteralRegex(remaining);
+  }
+
+  const matcher2 = /\\Q((?!\\E).*)$/;
+  const result2: any = s.match(matcher2);
+  if (result2 && result2.length > 1 && result2.index > -1) {
+    const prefix = s.substring(0, result2.index);
+    const remaining = result2[1];
+    return literalizeRegexPart(prefix) + createLiteralRegex(remaining);
+  }
+
+  return s
+    .replace(/([^\\])(\\E)/g, '$1')
+    .replace(/([^\\])(\\Q)/g, '$1')
+    .replace(/^\\E/, '')
+    .replace(/^\\Q/, '');
+};
+
+const processRegexPattern = (pattern: string) => {
+  if (pattern && pattern.startsWith('^')) {
+    return '^' + literalizeRegexPart(pattern.slice(1));
+  }
+  if (pattern && pattern.endsWith('$')) {
+    return literalizeRegexPart(pattern.slice(0, pattern.length - 1)) + '$';
+  }
+  return literalizeRegexPart(pattern);
+};
+
+const normalizeRegexPattern = (pattern: string, flags?: string) => {
+  let normalizedPattern = pattern;
+  let normalizedFlags = flags || '';
+  if (normalizedFlags.includes('x')) {
+    normalizedPattern = removeRegexWhiteSpace(normalizedPattern);
+    normalizedFlags = normalizedFlags.replace(/x/g, '');
+  }
+  normalizedPattern = processRegexPattern(normalizedPattern);
+  return {
+    pattern: normalizedPattern,
+    flags: normalizedFlags,
+  };
+};
+
 function createClient(options: Object) {
   const filename = options.filename || ':memory:';
   const dbOptions = {
@@ -20,21 +94,14 @@ function createClient(options: Object) {
   db.pragma('cache_size = -64000'); // 64MB cache size
   db.pragma('foreign_keys = ON');
 
-  const unquotePcre = (pattern: string) => {
-    if (typeof pattern !== 'string') return pattern;
-    return pattern.replace(/\\Q([\s\S]*?)\\E/g, (_, p1) => {
-      return p1.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    });
-  };
-
   // Register REGEXP function for SQLite `REGEXP` operator
   db.function('regexp', { deterministic: true }, (pattern, text) => {
     if (pattern == null || text == null) {
       return 0;
     }
     try {
-      const cleaned = unquotePcre(pattern);
-      const re = new RegExp(cleaned);
+      const normalizedRegex = normalizeRegexPattern(String(pattern));
+      const re = new RegExp(normalizedRegex.pattern);
       return re.test(String(text)) ? 1 : 0;
     } catch {
       return 0;
@@ -47,8 +114,8 @@ function createClient(options: Object) {
       return 0;
     }
     try {
-      const cleaned = unquotePcre(pattern);
-      const re = new RegExp(cleaned, flags || '');
+      const normalizedRegex = normalizeRegexPattern(String(pattern), flags ? String(flags) : '');
+      const re = new RegExp(normalizedRegex.pattern, normalizedRegex.flags);
       return re.test(String(text)) ? 1 : 0;
     } catch {
       return 0;
@@ -111,6 +178,38 @@ function createClient(options: Object) {
       return 0;
     }
 
+    const isSameCoordinate = (left, right) =>
+      Array.isArray(left) &&
+      Array.isArray(right) &&
+      left.length === 2 &&
+      right.length === 2 &&
+      Number(left[0]) === Number(right[0]) &&
+      Number(left[1]) === Number(right[1]);
+
+    if (coords.length > 1 && isSameCoordinate(coords[0], coords[coords.length - 1])) {
+      coords = coords.slice(0, -1);
+    }
+    if (coords.length < 3) {
+      return 0;
+    }
+
+    const isPointOnSegment = (px, py, ax, ay, bx, by) => {
+      const epsilon = 1e-10;
+      const cross = (px - ax) * (by - ay) - (py - ay) * (bx - ax);
+      if (Math.abs(cross) > epsilon) {
+        return false;
+      }
+      const dot = (px - ax) * (bx - ax) + (py - ay) * (by - ay);
+      if (dot < -epsilon) {
+        return false;
+      }
+      const squaredLength = (bx - ax) ** 2 + (by - ay) ** 2;
+      if (dot - squaredLength > epsilon) {
+        return false;
+      }
+      return true;
+    };
+
     let inside = false;
     for (let i = 0, j = coords.length - 1; i < coords.length; j = i++) {
       const p1 = coords[i];
@@ -119,6 +218,10 @@ function createClient(options: Object) {
       const yi = Array.isArray(p1) ? p1[1] : p1.longitude;
       const xj = Array.isArray(p2) ? p2[0] : p2.latitude;
       const yj = Array.isArray(p2) ? p2[1] : p2.longitude;
+
+      if (isPointOnSegment(lat, lng, xi, yi, xj, yj)) {
+        return 1;
+      }
 
       const intersect = yi > lng !== yj > lng && lat < ((xj - xi) * (lng - yi)) / (yj - yi) + xi;
       if (intersect) {

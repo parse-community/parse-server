@@ -9,6 +9,7 @@ describe_only_db('sqlite')('SQLiteStorageAdapter Unit & Security Tests', () => {
     adapter = new SQLiteStorageAdapter({
       uri: 'sqlite://:memory:',
       collectionPrefix: `test_${collectionPrefixIndex++}_`,
+      databaseOptions: { enableSchemaHooks: true },
     });
   });
 
@@ -365,6 +366,32 @@ describe_only_db('sqlite')('SQLiteStorageAdapter Unit & Security Tests', () => {
     });
     expect(results.length).toBe(1);
     expect(results[0].objectId).toBe('row1');
+  });
+
+  it('matches nullish pointer coercions on scalar pointer fields', async () => {
+    const schema = {
+      className: 'NullPointerFieldClass',
+      fields: {
+        objectId: { type: 'String' },
+        user: { type: 'Pointer', targetClass: '_User' },
+      },
+    };
+    const nullishPointer = {
+      __type: 'Pointer',
+      className: '_User',
+    };
+    await adapter.createClass('NullPointerFieldClass', schema);
+    await adapter.createObject('NullPointerFieldClass', schema, {
+      objectId: 'row1',
+      user: nullishPointer,
+    });
+
+    const results = await adapter.find('NullPointerFieldClass', schema, {
+      user: nullishPointer,
+    });
+    expect(results.length).toBe(1);
+    expect(results[0].objectId).toBe('row1');
+    expect(results[0].user).toBeNull();
   });
 
   it('reuses the sqlite memory database across adapter instances', async () => {
