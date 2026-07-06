@@ -1,0 +1,19 @@
+{
+  "name": "parse-server-sqlite-storage-adapter",
+  "version": "0.0.0-local",
+  "description": "Drop-in SQLite storage adapter package extracted from the Parse Server SQLite adapter worktree.",
+  "main": "index.js",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "safe-stable-stringify": "^2.4.1"
+  },
+  "peerDependencies": {
+    "better-sqlite3": "^12.11.1",
+    "bson": ">=6 <8",
+    "parse": "^8.6.0",
+    "parse-server": ">=9.10.0-alpha.2 <10"
+  },
+  "engines": {
+    "node": ">=20.19.0 <21.0.0 || >=22.13.0 <23.0.0 || >=24.11.0 <25.0.0"
+  }
+}

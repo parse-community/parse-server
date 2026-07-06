@@ -1,40 +1,62 @@
-// @flow
-import { StorageAdapter } from '../StorageAdapter';
-import type { SchemaType, QueryType, QueryOptions } from '../StorageAdapter';
-import { createClient } from './SQLiteClient';
-import { getDatabaseOptionsFromURI } from './SQLiteConfigParser';
-import PostgresStorageAdapter from '../Postgres/PostgresStorageAdapter';
-import RestQuery from '../../../RestQuery';
-import Parse from 'parse/node';
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
-import { EJSON } from 'bson';
-import Utils from '../../../Utils';
-import { createSanitizedError } from '../../../Error';
-import logger from '../../../logger';
+"use strict";
+
+// Standalone package copy of the built SQLite adapter.
+// The only functional edits here retarget Parse Server internals to the host app.
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = exports.SQLiteStorageAdapter = void 0;
+var _SQLiteClient = require("./SQLiteClient");
+var _SQLiteConfigParser = require("./SQLiteConfigParser");
+var _loadParseServerInternal = require("./loadParseServerInternal");
+var _PostgresStorageAdapter = _interopRequireDefault((0, _loadParseServerInternal.loadParseServerInternal)("lib/Adapters/Storage/Postgres/PostgresStorageAdapter"));
+var _RestQuery = _interopRequireDefault((0, _loadParseServerInternal.loadParseServerInternal)("lib/RestQuery"));
+var _node = _interopRequireDefault(require("parse/node"));
+var _fs = _interopRequireDefault(require("fs"));
+var _os = _interopRequireDefault(require("os"));
+var _path = _interopRequireDefault(require("path"));
+var _bson = require("bson");
+var _Utils = _interopRequireDefault((0, _loadParseServerInternal.loadParseServerInternal)("lib/Utils"));
+var _Error = (0, _loadParseServerInternal.loadParseServerInternal)("lib/Error");
+var _logger = _interopRequireDefault((0, _loadParseServerInternal.loadParseServerInternal)("lib/logger"));
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 const {
   getSimpleNormalizedRegexInfo,
-  normalizeRegexPattern,
+  normalizeRegexPattern
 } = require('./SQLiteUtils');
-
 const defaultCLPS = Object.freeze({
   ACL: {
     '*': {
       read: true,
-      write: true,
-    },
+      write: true
+    }
   },
-  find: { '*': true },
-  count: { '*': true },
-  get: { '*': true },
-  create: { '*': true },
-  update: { '*': true },
-  delete: { '*': true },
-  addField: { '*': true },
-  protectedFields: { '*': [] },
+  find: {
+    '*': true
+  },
+  count: {
+    '*': true
+  },
+  get: {
+    '*': true
+  },
+  create: {
+    '*': true
+  },
+  update: {
+    '*': true
+  },
+  delete: {
+    '*': true
+  },
+  addField: {
+    '*': true
+  },
+  protectedFields: {
+    '*': []
+  }
 });
-
 const emptyCLPS = Object.freeze({
   find: {},
   count: {},
@@ -43,96 +65,59 @@ const emptyCLPS = Object.freeze({
   update: {},
   delete: {},
   addField: {},
-  protectedFields: {},
+  protectedFields: {}
 });
-
-const internalClasses = new Set([
-  '_GlobalConfig',
-  '_GraphQLConfig',
-  '_PushStatus',
-  '_JobStatus',
-  '_JobSchedule',
-  '_Hooks',
-  '_Audience',
-  '_Idempotency',
-]);
-
-const aggregateHiddenFieldNames = new Set([
-  '_hashed_password',
-  '_rperm',
-  '_wperm',
-  '_acl',
-  '_session_token',
-  '_email_verify_token',
-  '_perishable_token',
-  '_perishable_token_expires_at',
-  '_password_changed_at',
-  '_tombstone',
-  '_email_verify_token_expires_at',
-  '_account_lockout_expires_at',
-  '_failed_login_count',
-  '_password_history',
-]);
-
-const aggregateDateMatchOperators = new Set([
-  '$eq',
-  '$ne',
-  '$lt',
-  '$lte',
-  '$gt',
-  '$gte',
-  '$in',
-  '$nin',
-  '$all',
-  '$exists',
-]);
+const internalClasses = new Set(['_GlobalConfig', '_GraphQLConfig', '_PushStatus', '_JobStatus', '_JobSchedule', '_Hooks', '_Audience', '_Idempotency']);
+const aggregateHiddenFieldNames = new Set(['_hashed_password', '_rperm', '_wperm', '_acl', '_session_token', '_email_verify_token', '_perishable_token', '_perishable_token_expires_at', '_password_changed_at', '_tombstone', '_email_verify_token_expires_at', '_account_lockout_expires_at', '_failed_login_count', '_password_history']);
+const aggregateDateMatchOperators = new Set(['$eq', '$ne', '$lt', '$lte', '$gt', '$gte', '$in', '$nin', '$all', '$exists']);
 const sqliteShutdownDrainDelayMs = 50;
 const nullFieldTrackerColumn = '_nullFields';
 const implicitSQLiteUserColumnFields = Object.freeze({
-  _hashed_password: { type: 'String' },
-  _password_history: { type: 'Array' },
-  _email_verify_token_expires_at: { type: 'String' },
-  _email_verify_token: { type: 'String' },
-  _account_lockout_expires_at: { type: 'String' },
-  _failed_login_count: { type: 'Number' },
-  _perishable_token: { type: 'String' },
-  _perishable_token_expires_at: { type: 'String' },
-  _password_changed_at: { type: 'String' },
-  authData: { type: 'Object' },
+  _hashed_password: {
+    type: 'String'
+  },
+  _password_history: {
+    type: 'Array'
+  },
+  _email_verify_token_expires_at: {
+    type: 'String'
+  },
+  _email_verify_token: {
+    type: 'String'
+  },
+  _account_lockout_expires_at: {
+    type: 'String'
+  },
+  _failed_login_count: {
+    type: 'Number'
+  },
+  _perishable_token: {
+    type: 'String'
+  },
+  _perishable_token_expires_at: {
+    type: 'String'
+  },
+  _password_changed_at: {
+    type: 'String'
+  },
+  authData: {
+    type: 'Object'
+  }
 });
-const hiddenUserSchemaFields = new Set([
-  '_hashed_password',
-  '_password_history',
-  '_email_verify_token_expires_at',
-  '_email_verify_token',
-  '_account_lockout_expires_at',
-  '_failed_login_count',
-  '_perishable_token',
-  '_perishable_token_expires_at',
-  '_password_changed_at',
-]);
-const userDateLikeStringFields = new Set([
-  '_email_verify_token_expires_at',
-  '_account_lockout_expires_at',
-  '_perishable_token_expires_at',
-  '_password_changed_at',
-]);
-
+const hiddenUserSchemaFields = new Set(['_hashed_password', '_password_history', '_email_verify_token_expires_at', '_email_verify_token', '_account_lockout_expires_at', '_failed_login_count', '_perishable_token', '_perishable_token_expires_at', '_password_changed_at']);
+const userDateLikeStringFields = new Set(['_email_verify_token_expires_at', '_account_lockout_expires_at', '_perishable_token_expires_at', '_password_changed_at']);
 const temporarySQLiteDirectories = new Set();
 let sharedMemorySQLiteDatabase;
-const unsafeRestQuery = RestQuery && RestQuery._UnsafeRestQuery;
-const originalUnsafeRestQueryHandleInclude =
-  unsafeRestQuery && unsafeRestQuery.prototype ? unsafeRestQuery.prototype.handleInclude : null;
+const unsafeRestQuery = _RestQuery.default && _RestQuery.default._UnsafeRestQuery;
+const originalUnsafeRestQueryHandleInclude = unsafeRestQuery && unsafeRestQuery.prototype ? unsafeRestQuery.prototype.handleInclude : null;
 let sqliteHandleIncludePatchRefCount = 0;
 let patchedSQLiteHandleInclude;
-
 const cloneRestResponseResults = results => {
   if (typeof structuredClone === 'function') {
     return structuredClone(results);
   }
   return JSON.parse(JSON.stringify(results));
 };
-
 const applySQLiteHandleIncludePatch = () => {
   if (!unsafeRestQuery || !originalUnsafeRestQueryHandleInclude) {
     return;
@@ -142,12 +127,10 @@ const applySQLiteHandleIncludePatch = () => {
       if (this.include.length == 0) {
         return;
       }
-
       const indexedResults = this.response.results.reduce((indexed, result, i) => {
         indexed[result.objectId] = i;
         return indexed;
       }, {});
-
       const executionTree = {};
       this.include.forEach(path => {
         let current = executionTree;
@@ -155,31 +138,32 @@ const applySQLiteHandleIncludePatch = () => {
           if (!current[node]) {
             current[node] = {
               path,
-              children: {},
+              children: {}
             };
           }
           current = current[node].children;
         });
       });
-
       const runSingleIncludePath = async path => {
         const isolatedQuery = {
           include: [path],
           response: {
             ...this.response,
-            results: cloneRestResponseResults(this.response.results),
+            results: cloneRestResponseResults(this.response.results)
           },
           config: this.config,
           auth: this.auth,
           context: this.context,
-          restOptions: this.restOptions,
+          restOptions: this.restOptions
         };
         await originalUnsafeRestQueryHandleInclude.call(isolatedQuery);
         return isolatedQuery.response;
       };
-
       const recursiveExecutionTree = async treeNode => {
-        const { path, children } = treeNode;
+        const {
+          path,
+          children
+        } = treeNode;
         const newResponse = await runSingleIncludePath(path);
         newResponse.results.forEach(newObject => {
           if (Object.prototype.hasOwnProperty.call(newObject, path[0])) {
@@ -190,7 +174,6 @@ const applySQLiteHandleIncludePatch = () => {
           await recursiveExecutionTree(child);
         }
       };
-
       for (const root of Object.values(executionTree)) {
         await recursiveExecutionTree(root);
       }
@@ -200,7 +183,6 @@ const applySQLiteHandleIncludePatch = () => {
   }
   sqliteHandleIncludePatchRefCount += 1;
 };
-
 const releaseSQLiteHandleIncludePatch = () => {
   if (!unsafeRestQuery || !originalUnsafeRestQueryHandleInclude || sqliteHandleIncludePatchRefCount === 0) {
     return;
@@ -213,40 +195,38 @@ const releaseSQLiteHandleIncludePatch = () => {
     patchedSQLiteHandleInclude = null;
   }
 };
-
 const cleanupTemporarySQLiteDirectories = () => {
   for (const directory of temporarySQLiteDirectories) {
     try {
-      fs.rmSync(directory, { recursive: true, force: true });
+      _fs.default.rmSync(directory, {
+        recursive: true,
+        force: true
+      });
     } catch {
       /* */
     }
   }
   temporarySQLiteDirectories.clear();
 };
-
 process.once('exit', cleanupTemporarySQLiteDirectories);
-
 const createTemporarySQLiteDatabasePath = () => {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'parse-server-sqlite-'));
+  const directory = _fs.default.mkdtempSync(_path.default.join(_os.default.tmpdir(), 'parse-server-sqlite-'));
   temporarySQLiteDirectories.add(directory);
   return {
     directory,
-    filename: path.join(directory, 'sqlite.db'),
+    filename: _path.default.join(directory, 'sqlite.db')
   };
 };
-
 const getSharedMemorySQLiteDatabasePath = () => {
   if (!sharedMemorySQLiteDatabase) {
     sharedMemorySQLiteDatabase = {
       ...createTemporarySQLiteDatabasePath(),
-      refCount: 0,
+      refCount: 0
     };
   }
   sharedMemorySQLiteDatabase.refCount += 1;
   return sharedMemorySQLiteDatabase;
 };
-
 const releaseSharedMemorySQLiteDatabasePath = () => {
   if (!sharedMemorySQLiteDatabase) {
     return;
@@ -255,61 +235,41 @@ const releaseSharedMemorySQLiteDatabasePath = () => {
   if (sharedMemorySQLiteDatabase.refCount > 0) {
     return;
   }
-
-  const { directory } = sharedMemorySQLiteDatabase;
+  const {
+    directory
+  } = sharedMemorySQLiteDatabase;
   temporarySQLiteDirectories.delete(directory);
   try {
-    fs.rmSync(directory, { recursive: true, force: true });
+    _fs.default.rmSync(directory, {
+      recursive: true,
+      force: true
+    });
   } catch {
     /* */
   }
   sharedMemorySQLiteDatabase = null;
 };
-
-const isJoinTableClass = className =>
-  typeof className === 'string' && className.indexOf('_Join:') === 0;
-
-const isSQLiteInternalClass = (className: string): boolean =>
-  internalClasses.has(className) || isJoinTableClass(className);
-
-const getImplicitHiddenUserFieldSchema = (className: string, fieldName: string): ?any =>
-  className === '_User' && hiddenUserSchemaFields.has(fieldName)
-    ? implicitSQLiteUserColumnFields[fieldName]
-    : undefined;
-
+const isJoinTableClass = className => typeof className === 'string' && className.indexOf('_Join:') === 0;
+const isSQLiteInternalClass = className => internalClasses.has(className) || isJoinTableClass(className);
+const getImplicitHiddenUserFieldSchema = (className, fieldName) => className === '_User' && hiddenUserSchemaFields.has(fieldName) ? implicitSQLiteUserColumnFields[fieldName] : undefined;
 const defaultSchemaIndexFields = new Set(['_id', 'objectId', 'createdAt', 'updatedAt']);
-
 const buildDefaultSchemaIndexes = () => ({
-  _id_: { _id: 1 },
+  _id_: {
+    _id: 1
+  }
 });
-
-const cloneIndexDefinition = index =>
-  Object.keys(index || {}).reduce((output, key) => {
-    output[key] = index[key];
-    return output;
-  }, {});
-
-const buildAutomaticIndexName = index =>
-  Object.entries(index)
-    .map(([fieldName, direction]) =>
-      `${fieldName}_${String(direction).replace(/[^A-Za-z0-9_]+/g, '_')}`
-    )
-    .join('_');
-
+const cloneIndexDefinition = index => Object.keys(index || {}).reduce((output, key) => {
+  output[key] = index[key];
+  return output;
+}, {});
+const buildAutomaticIndexName = index => Object.entries(index).map(([fieldName, direction]) => `${fieldName}_${String(direction).replace(/[^A-Za-z0-9_]+/g, '_')}`).join('_');
 const isTextIndexDefinition = index => {
   const values = Object.values(index || {});
   return values.length > 0 && values.every(value => value === 'text');
 };
-
-const isUniqueConstraintError = err =>
-  err &&
-  (err.code === 'SQLITE_CONSTRAINT_PRIMARYKEY' ||
-    err.code === 'SQLITE_CONSTRAINT_UNIQUE' ||
-    (err.message && err.message.includes('UNIQUE constraint failed')));
-
+const isUniqueConstraintError = err => err && (err.code === 'SQLITE_CONSTRAINT_PRIMARYKEY' || err.code === 'SQLITE_CONSTRAINT_UNIQUE' || err.message && err.message.includes('UNIQUE constraint failed'));
 const buildDuplicateKeyLogMessage = (tableName, err) => {
-  const expressionIndexMatch =
-    err && err.message && err.message.match(/UNIQUE constraint failed:\s+index '([^']+)'/);
+  const expressionIndexMatch = err && err.message && err.message.match(/UNIQUE constraint failed:\s+index '([^']+)'/);
   if (expressionIndexMatch) {
     return `E11000 duplicate key error collection: ${tableName} index: ${expressionIndexMatch[1]} dup key`;
   }
@@ -317,70 +277,65 @@ const buildDuplicateKeyLogMessage = (tableName, err) => {
   if (!uniqueMatch) {
     return `E11000 duplicate key error collection: ${tableName}`;
   }
-  const fields = uniqueMatch[1]
-    .split(',')
-    .map(field => field.trim().split('.').pop())
-    .filter(Boolean);
+  const fields = uniqueMatch[1].split(',').map(field => field.trim().split('.').pop()).filter(Boolean);
   const indexName = fields.length > 0 ? `${fields.join('_')}_1` : 'unknown_1';
   return `E11000 duplicate key error collection: ${tableName} index: ${indexName} dup key`;
 };
-
-const getDuplicatedFieldFromUniqueConstraint = (className: string, err: any): ?string => {
-  const message = (err && err.message) || '';
+const getDuplicatedFieldFromUniqueConstraint = (className, err) => {
+  const message = err && err.message || '';
   const authDataMatch = message.match(/index '_User_unique_authData_([a-zA-Z0-9_]+)_id'/);
   if (className === '_User' && authDataMatch) {
     return `_auth_data_${authDataMatch[1]}`;
   }
-
   const uniqueMatch = message.match(/UNIQUE constraint failed:\s+(.+)/);
   if (!uniqueMatch) {
     return null;
   }
-  const fields = uniqueMatch[1]
-    .split(',')
-    .map(field => field.trim().split('.').pop())
-    .filter(Boolean);
+  const fields = uniqueMatch[1].split(',').map(field => field.trim().split('.').pop()).filter(Boolean);
   if (fields.length === 1) {
     return fields[0];
   }
   return null;
 };
-
 const toParseSchema = schema => {
   if (!schema) {
     return schema;
   }
-  const fields = { ...((schema && schema.fields) || {}) };
+  const fields = {
+    ...(schema && schema.fields || {})
+  };
   if (schema.className === '_User') {
     delete fields._hashed_password;
   }
   delete fields._wperm;
   delete fields._rperm;
   delete fields[nullFieldTrackerColumn];
-
   let clps = defaultCLPS;
   if (schema.classLevelPermissions) {
-    clps = { ...emptyCLPS, ...schema.classLevelPermissions };
+    clps = {
+      ...emptyCLPS,
+      ...schema.classLevelPermissions
+    };
   }
-
   const parseSchema = {
     className: schema.className,
     fields,
-    classLevelPermissions: clps,
+    classLevelPermissions: clps
   };
-
   if (schema.indexes && Object.keys(schema.indexes).length > 0) {
-    parseSchema.indexes = { ...schema.indexes };
+    parseSchema.indexes = {
+      ...schema.indexes
+    };
   }
-
   return parseSchema;
 };
-
 const normalizeSchemaFieldDefinition = field => {
   if (!field || typeof field !== 'object' || Array.isArray(field)) {
     return field;
   }
-  const normalizedField = { ...field };
+  const normalizedField = {
+    ...field
+  };
   if (normalizedField.__type && !normalizedField.type) {
     normalizedField.type = normalizedField.__type;
   }
@@ -390,52 +345,61 @@ const normalizeSchemaFieldDefinition = field => {
   }
   return normalizedField;
 };
-
 const normalizeStoredSchemaObject = (className, schema) => {
   if (!schema || typeof schema !== 'object') {
     return schema;
   }
   const normalizedSchema = {
     ...schema,
-    className: className || schema.className,
+    className: className || schema.className
   };
-  const fields = { ...((schema && schema.fields) || {}) };
+  const fields = {
+    ...(schema && schema.fields || {})
+  };
   Object.keys(fields).forEach(fieldName => {
     fields[fieldName] = normalizeSchemaFieldDefinition(fields[fieldName]);
   });
   normalizedSchema.fields = fields;
   return normalizedSchema;
 };
-
 const toSQLiteSchema = schema => {
   if (!schema) {
     return schema;
   }
   schema.fields = schema.fields || {};
   if (!isJoinTableClass(schema.className)) {
-    schema.fields._wperm = { type: 'Array', contents: { type: 'String' } };
-    schema.fields._rperm = { type: 'Array', contents: { type: 'String' } };
+    schema.fields._wperm = {
+      type: 'Array',
+      contents: {
+        type: 'String'
+      }
+    };
+    schema.fields._rperm = {
+      type: 'Array',
+      contents: {
+        type: 'String'
+      }
+    };
   }
   if (schema.className === '_User') {
     Object.keys(implicitSQLiteUserColumnFields).forEach(fieldName => {
-      schema.fields[fieldName] = { ...implicitSQLiteUserColumnFields[fieldName] };
+      schema.fields[fieldName] = {
+        ...implicitSQLiteUserColumnFields[fieldName]
+      };
     });
   }
   return schema;
 };
-
-const normalizeSQLiteSchema = (className, schema) =>
-  toSQLiteSchema({
-    ...normalizeStoredSchemaObject(className, {
-      ...(schema || {}),
-      className,
-      fields: {
-        ...((schema && schema.fields) || {}),
-      },
-    }),
-  });
-
-const normalizeStorageFieldName = (fieldName: string): string => {
+const normalizeSQLiteSchema = (className, schema) => toSQLiteSchema({
+  ...normalizeStoredSchemaObject(className, {
+    ...(schema || {}),
+    className,
+    fields: {
+      ...(schema && schema.fields || {})
+    }
+  })
+});
+const normalizeStorageFieldName = fieldName => {
   if (fieldName === '_id') {
     return 'objectId';
   }
@@ -447,8 +411,7 @@ const normalizeStorageFieldName = (fieldName: string): string => {
   }
   return fieldName;
 };
-
-const parseTypeToSQLiteType = (type: any) => {
+const parseTypeToSQLiteType = type => {
   if (!type) {
     return 'TEXT';
   }
@@ -472,150 +435,138 @@ const parseTypeToSQLiteType = (type: any) => {
       return 'TEXT';
   }
 };
-
-const inferFieldType = (key: string, value: any) => {
+const inferFieldType = (key, value) => {
   if (key === 'authData') {
-    return { type: 'Object' };
+    return {
+      type: 'Object'
+    };
   }
   if (value && typeof value === 'object') {
     if (value.__type === 'Pointer') {
-      return { type: 'Pointer', targetClass: value.className };
+      return {
+        type: 'Pointer',
+        targetClass: value.className
+      };
     }
-    if (value.__type === 'Date' || Utils.isDate(value)) {
-      return { type: 'Date' };
+    if (value.__type === 'Date' || _Utils.default.isDate(value)) {
+      return {
+        type: 'Date'
+      };
     }
     if (value.__type === 'File') {
-      return { type: 'File' };
+      return {
+        type: 'File'
+      };
     }
     if (value.__type === 'GeoPoint') {
-      return { type: 'GeoPoint' };
+      return {
+        type: 'GeoPoint'
+      };
     }
     if (value.__type === 'Polygon') {
-      return { type: 'Polygon' };
+      return {
+        type: 'Polygon'
+      };
     }
     if (value.__type === 'Relation') {
-      return { type: 'Relation', targetClass: value.className };
+      return {
+        type: 'Relation',
+        targetClass: value.className
+      };
     }
     if (Array.isArray(value)) {
-      return { type: 'Array' };
+      return {
+        type: 'Array'
+      };
     }
-    return { type: 'Object' };
+    return {
+      type: 'Object'
+    };
   }
   if (typeof value === 'boolean') {
-    return { type: 'Boolean' };
+    return {
+      type: 'Boolean'
+    };
   }
   if (typeof value === 'number') {
-    return { type: 'Number' };
+    return {
+      type: 'Number'
+    };
   }
-  return { type: 'String' };
+  return {
+    type: 'String'
+  };
 };
-
-const isSamePolygonCoordinate = (left: any, right: any) =>
-  Array.isArray(left) &&
-  Array.isArray(right) &&
-  left.length === 2 &&
-  right.length === 2 &&
-  left[0] === right[0] &&
-  left[1] === right[1];
-
-const normalizePolygonCoordinates = (coordinates: any) => {
+const isSamePolygonCoordinate = (left, right) => Array.isArray(left) && Array.isArray(right) && left.length === 2 && right.length === 2 && left[0] === right[0] && left[1] === right[1];
+const normalizePolygonCoordinates = coordinates => {
   if (!Array.isArray(coordinates) || coordinates.length < 3) {
-    throw new Parse.Error(Parse.Error.INVALID_JSON, 'Polygon must have at least 3 values');
+    throw new _node.default.Error(_node.default.Error.INVALID_JSON, 'Polygon must have at least 3 values');
   }
-
   const normalizedCoordinates = coordinates.map(point => {
     if (!Array.isArray(point) || point.length !== 2) {
-      throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad polygon value');
+      throw new _node.default.Error(_node.default.Error.INVALID_JSON, 'bad polygon value');
     }
     const latitude = Number(point[0]);
     const longitude = Number(point[1]);
-    Parse.GeoPoint._validate(latitude, longitude);
+    _node.default.GeoPoint._validate(latitude, longitude);
     return [latitude, longitude];
   });
-
-  if (
-    !isSamePolygonCoordinate(
-      normalizedCoordinates[0],
-      normalizedCoordinates[normalizedCoordinates.length - 1]
-    )
-  ) {
+  if (!isSamePolygonCoordinate(normalizedCoordinates[0], normalizedCoordinates[normalizedCoordinates.length - 1])) {
     normalizedCoordinates.push([...normalizedCoordinates[0]]);
   }
-
   const uniqueCoordinates = normalizedCoordinates.filter((point, index, allPoints) => {
     return allPoints.findIndex(candidate => isSamePolygonCoordinate(candidate, point)) === index;
   });
-
   if (uniqueCoordinates.length < 3) {
-    throw new Parse.Error(
-      Parse.Error.INTERNAL_SERVER_ERROR,
-      'GeoJSON: Loop must have at least 3 different vertices'
-    );
+    throw new _node.default.Error(_node.default.Error.INTERNAL_SERVER_ERROR, 'GeoJSON: Loop must have at least 3 different vertices');
   }
-
   return normalizedCoordinates;
 };
-
-const normalizePolygonValue = (value: any) => {
+const normalizePolygonValue = value => {
   if (!value || typeof value !== 'object' || value.__type !== 'Polygon') {
     return value;
   }
-
   return {
     ...value,
-    coordinates: normalizePolygonCoordinates(value.coordinates),
+    coordinates: normalizePolygonCoordinates(value.coordinates)
   };
 };
-
-const normalizeStoredPolygonValue = (value: any) => {
+const normalizeStoredPolygonValue = value => {
   try {
     return normalizePolygonValue(value);
   } catch {
     return value;
   }
 };
-
-const normalizeGeoWithinPolygonValue = (polygon: any) => {
+const normalizeGeoWithinPolygonValue = polygon => {
   if (polygon && typeof polygon === 'object' && polygon.__type === 'Polygon') {
     return {
       __type: 'Polygon',
-      coordinates: normalizePolygonCoordinates(polygon.coordinates),
+      coordinates: normalizePolygonCoordinates(polygon.coordinates)
     };
   }
-
   if (!Array.isArray(polygon)) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_JSON,
-      "bad $geoWithin value; $polygon should be Polygon object or Array of Parse.GeoPoint's"
-    );
+    throw new _node.default.Error(_node.default.Error.INVALID_JSON, "bad $geoWithin value; $polygon should be Polygon object or Array of Parse.GeoPoint's");
   }
-
   if (polygon.length < 3) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_JSON,
-      'bad $geoWithin value; $polygon should contain at least 3 GeoPoints'
-    );
+    throw new _node.default.Error(_node.default.Error.INVALID_JSON, 'bad $geoWithin value; $polygon should contain at least 3 GeoPoints');
   }
-
   return {
     __type: 'Polygon',
-    coordinates: normalizePolygonCoordinates(
-      polygon.map(point => {
-        if (Array.isArray(point) && point.length === 2) {
-          Parse.GeoPoint._validate(point[0], point[1]);
-          return [Number(point[0]), Number(point[1])];
-        }
-        if (!isGeoPointValue(point)) {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value');
-        }
-        Parse.GeoPoint._validate(point.latitude, point.longitude);
-        return [Number(point.latitude), Number(point.longitude)];
-      })
-    ),
+    coordinates: normalizePolygonCoordinates(polygon.map(point => {
+      if (Array.isArray(point) && point.length === 2) {
+        _node.default.GeoPoint._validate(point[0], point[1]);
+        return [Number(point[0]), Number(point[1])];
+      }
+      if (!isGeoPointValue(point)) {
+        throw new _node.default.Error(_node.default.Error.INVALID_JSON, 'bad $geoWithin value');
+      }
+      _node.default.GeoPoint._validate(point.latitude, point.longitude);
+      return [Number(point.latitude), Number(point.longitude)];
+    }))
   };
 };
-
-const toSQLiteValue = (value: any) => {
+const toSQLiteValue = value => {
   if (value === null || value === undefined) {
     return null;
   }
@@ -627,12 +578,12 @@ const toSQLiteValue = (value: any) => {
       if (value.iso === undefined || value.iso === null) {
         return null;
       }
-      if (Utils.isDate(value.iso)) {
+      if (_Utils.default.isDate(value.iso)) {
         return value.iso.toISOString();
       }
       return value.iso;
     }
-    if (Utils.isDate(value)) {
+    if (_Utils.default.isDate(value)) {
       return value.toISOString();
     }
     if (value.__type === 'File') {
@@ -654,15 +605,9 @@ const toSQLiteValue = (value: any) => {
   }
   return value;
 };
-
-const shouldTrackExplicitNullFields = (className: string): boolean =>
-  className !== '_SCHEMA' && !isJoinTableClass(className);
-
-const shouldPersistExplicitNullField = (className: string, fieldName: string): boolean =>
-  shouldTrackExplicitNullFields(className) &&
-  !(className === '_Session' && fieldName === 'expiresAt');
-
-const parseTrackedNullFields = (value: any): Set<string> => {
+const shouldTrackExplicitNullFields = className => className !== '_SCHEMA' && !isJoinTableClass(className);
+const shouldPersistExplicitNullField = (className, fieldName) => shouldTrackExplicitNullFields(className) && !(className === '_Session' && fieldName === 'expiresAt');
+const parseTrackedNullFields = value => {
   if (typeof value !== 'string' || value.length === 0) {
     return new Set();
   }
@@ -673,30 +618,23 @@ const parseTrackedNullFields = (value: any): Set<string> => {
     return new Set();
   }
 };
-
-const getExplicitNullFieldMatchExpression = (fieldName: string): { sql: string, params: Array<any> } => ({
-  sql:
-    `EXISTS (` +
-    `SELECT 1 FROM json_each(COALESCE(${quoteColumnName(nullFieldTrackerColumn)}, '[]')) ` +
-    `WHERE json_each.value = ?` +
-    `)`,
-  params: [fieldName],
+const getExplicitNullFieldMatchExpression = fieldName => ({
+  sql: `EXISTS (` + `SELECT 1 FROM json_each(COALESCE(${quoteColumnName(nullFieldTrackerColumn)}, '[]')) ` + `WHERE json_each.value = ?` + `)`,
+  params: [fieldName]
 });
-
-const toSQLiteJSONObjectValue = (value: any) => {
+const toSQLiteJSONObjectValue = value => {
   if (value && typeof value === 'object' && value.__type === 'Polygon') {
     return JSON.stringify(normalizePolygonValue(value));
   }
-  if (value && typeof value === 'object' && value.__type === 'Date' && Utils.isDate(value.iso)) {
+  if (value && typeof value === 'object' && value.__type === 'Date' && _Utils.default.isDate(value.iso)) {
     return JSON.stringify({
       ...value,
-      iso: value.iso.toISOString(),
+      iso: value.iso.toISOString()
     });
   }
   return JSON.stringify(value);
 };
-
-const sqliteValueToParseValue = (value: any, type: any) => {
+const sqliteValueToParseValue = (value, type) => {
   if (value === null || value === undefined) {
     return null;
   }
@@ -708,10 +646,16 @@ const sqliteValueToParseValue = (value: any, type: any) => {
       return Boolean(value);
     case 'Date':
       if (typeof value === 'string') {
-        return { __type: 'Date', iso: value };
+        return {
+          __type: 'Date',
+          iso: value
+        };
       }
       if (typeof value === 'number') {
-        return { __type: 'Date', iso: new Date(value).toISOString() };
+        return {
+          __type: 'Date',
+          iso: new Date(value).toISOString()
+        };
       }
       return value;
     case 'Object':
@@ -759,16 +703,13 @@ const sqliteValueToParseValue = (value: any, type: any) => {
       return value;
   }
 };
-
-const quoteColumnName = (fieldName: string) => `"${fieldName.replace(/"/g, '""')}"`;
-
-const validateObjectPathComponent = (component: string, fieldName: string) => {
+const quoteColumnName = fieldName => `"${fieldName.replace(/"/g, '""')}"`;
+const validateObjectPathComponent = (component, fieldName) => {
   if (!/^[a-zA-Z0-9_\-$]+$/.test(component)) {
-    throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${fieldName}`);
+    throw new _node.default.Error(_node.default.Error.INVALID_KEY_NAME, `Invalid key name: ${fieldName}`);
   }
 };
-
-const buildDotFieldPath = (fieldName: string) => {
+const buildDotFieldPath = fieldName => {
   const parts = fieldName.split('.');
   const rootFieldName = parts.shift();
   validateFieldName(rootFieldName);
@@ -783,10 +724,9 @@ const buildDotFieldPath = (fieldName: string) => {
   }
   return {
     rootFieldName,
-    jsonPath,
+    jsonPath
   };
 };
-
 const handleDotFields = object => {
   Object.keys(object).forEach(fieldName => {
     if (fieldName.indexOf('.') > -1) {
@@ -799,7 +739,7 @@ const handleDotFields = object => {
       if (value && value.__op === 'Delete') {
         value = undefined;
       }
-      while ((next = components.shift())) {
+      while (next = components.shift()) {
         currentObj[next] = currentObj[next] || {};
         if (components.length === 0) {
           currentObj[next] = value;
@@ -811,14 +751,8 @@ const handleDotFields = object => {
   });
   return object;
 };
-
 const validateNestedKeys = value => {
-  if (
-    value === null ||
-    value === undefined ||
-    Utils.isDate(value) ||
-    typeof value !== 'object'
-  ) {
+  if (value === null || value === undefined || _Utils.default.isDate(value) || typeof value !== 'object') {
     return;
   }
   if (Array.isArray(value)) {
@@ -827,24 +761,19 @@ const validateNestedKeys = value => {
   }
   for (const key of Object.keys(value)) {
     if (key.includes('$') || key.includes('.')) {
-      throw new Parse.Error(
-        Parse.Error.INVALID_NESTED_KEY,
-        "Nested keys should not contain the '$' or '.' characters"
-      );
+      throw new _node.default.Error(_node.default.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
     }
     validateNestedKeys(value[key]);
   }
 };
-
 const cloneMutableValue = value => {
   if (value === undefined || value === null || typeof value !== 'object') {
     return value;
   }
   return structuredClone(value);
 };
-
-const isJsonEncodedValue = (value: any) => {
-  if (value === null || value === undefined || Utils.isDate(value)) {
+const isJsonEncodedValue = value => {
+  if (value === null || value === undefined || _Utils.default.isDate(value)) {
     return false;
   }
   if (Array.isArray(value)) {
@@ -855,9 +784,8 @@ const isJsonEncodedValue = (value: any) => {
   }
   return value.__type !== 'Date' && value.__type !== 'Pointer' && value.__type !== 'File';
 };
-
-const isQueryOperatorObject = (value: any) => {
-  if (!value || typeof value !== 'object' || Array.isArray(value) || Utils.isDate(value)) {
+const isQueryOperatorObject = value => {
+  if (!value || typeof value !== 'object' || Array.isArray(value) || _Utils.default.isDate(value)) {
     return false;
   }
   if (value.__type) {
@@ -865,308 +793,153 @@ const isQueryOperatorObject = (value: any) => {
   }
   return Object.keys(value).some(key => key.startsWith('$'));
 };
-
-const getParameterizedValueExpression = (value: any) => {
+const getParameterizedValueExpression = value => {
   return isJsonEncodedValue(value) ? 'json(?)' : '?';
 };
-
-const getNormalizedJsonArrayExpression = (expression: string) =>
-  `CASE WHEN json_valid(${expression}) AND json_type(${expression}) = 'array' THEN ${expression} ELSE '[]' END`;
-
-const getJsonObjectValueExpression = (columnName: string) =>
-  `CASE WHEN json_valid(${columnName}) AND json_type(${columnName}) = 'object' THEN ${columnName} ELSE '{}' END`;
-
-const getJsonArrayValueExpression = (containerExpression: string, jsonPath: string) =>
-  getNormalizedJsonArrayExpression(`json_extract(${containerExpression}, '${jsonPath}')`);
-
-const getJSONArrayElementValueExpression = (
-  valueExpression: string,
-  typeExpression: string,
-  jsonExpression: string
-) =>
-  `CASE ${typeExpression} ` +
-  `WHEN 'object' THEN json(${jsonExpression}) ` +
-  `WHEN 'array' THEN json(${jsonExpression}) ` +
-  `WHEN 'true' THEN json('true') ` +
-  `WHEN 'false' THEN json('false') ` +
-  `WHEN 'null' THEN json('null') ` +
-  `ELSE ${valueExpression} END`;
-
-const buildJSONArrayAppendExpression = (targetExpression: string) => {
+const getNormalizedJsonArrayExpression = expression => `CASE WHEN json_valid(${expression}) AND json_type(${expression}) = 'array' THEN ${expression} ELSE '[]' END`;
+const getJsonObjectValueExpression = columnName => `CASE WHEN json_valid(${columnName}) AND json_type(${columnName}) = 'object' THEN ${columnName} ELSE '{}' END`;
+const getJsonArrayValueExpression = (containerExpression, jsonPath) => getNormalizedJsonArrayExpression(`json_extract(${containerExpression}, '${jsonPath}')`);
+const getJSONArrayElementValueExpression = (valueExpression, typeExpression, jsonExpression) => `CASE ${typeExpression} ` + `WHEN 'object' THEN json(${jsonExpression}) ` + `WHEN 'array' THEN json(${jsonExpression}) ` + `WHEN 'true' THEN json('true') ` + `WHEN 'false' THEN json('false') ` + `WHEN 'null' THEN json('null') ` + `ELSE ${valueExpression} END`;
+const buildJSONArrayAppendExpression = targetExpression => {
   const normalizedTargetExpression = getNormalizedJsonArrayExpression(targetExpression);
-  const appendedElementExpression = getJSONArrayElementValueExpression(
-    'item_value',
-    'item_type',
-    'item_json'
-  );
-  return (
-    `(SELECT COALESCE(json_group_array(${appendedElementExpression}), '[]') ` +
-    `FROM (` +
-    `SELECT value AS item_value, json_each.type AS item_type, json_each.value AS item_json, ` +
-    `CAST(json_each.key AS INTEGER) AS item_order ` +
-    `FROM json_each(${normalizedTargetExpression}) ` +
-    `UNION ALL ` +
-    `SELECT value AS item_value, json_each.type AS item_type, json_each.value AS item_json, ` +
-    `CAST(json_each.key AS INTEGER) + COALESCE(json_array_length(${normalizedTargetExpression}), 0) AS item_order ` +
-    `FROM json_each(?) ` +
-    `ORDER BY item_order))`
-  );
+  const appendedElementExpression = getJSONArrayElementValueExpression('item_value', 'item_type', 'item_json');
+  return `(SELECT COALESCE(json_group_array(${appendedElementExpression}), '[]') ` + `FROM (` + `SELECT value AS item_value, json_each.type AS item_type, json_each.value AS item_json, ` + `CAST(json_each.key AS INTEGER) AS item_order ` + `FROM json_each(${normalizedTargetExpression}) ` + `UNION ALL ` + `SELECT value AS item_value, json_each.type AS item_type, json_each.value AS item_json, ` + `CAST(json_each.key AS INTEGER) + COALESCE(json_array_length(${normalizedTargetExpression}), 0) AS item_order ` + `FROM json_each(?) ` + `ORDER BY item_order))`;
 };
-
-const buildSingleEvaluationJSONMutationExpression = (
-  currentObjectExpression: string,
-  buildMutationExpression: (objectExpression: string) => string
-) =>
-  `(SELECT ${buildMutationExpression('__parse_current_json.obj')} ` +
-  `FROM (SELECT ${currentObjectExpression} AS obj) AS __parse_current_json)`;
-
-const buildJsonPathUpdateExpression = (
-  currentObjectExpression: string,
-  jsonPath: string,
-  fieldValue: any
-): { expression: string, params: Array<any> } => {
+const buildJsonPathUpdateExpression = (currentExpression, jsonPath, fieldValue) => {
+  const objectValueExpression = getJsonObjectValueExpression(currentExpression);
   if (fieldValue === null) {
     return {
-      expression: buildSingleEvaluationJSONMutationExpression(
-        currentObjectExpression,
-        objectExpression => `json_set(${objectExpression}, '${jsonPath}', NULL)`
-      ),
-      params: [],
+      expression: `json_set(${objectValueExpression}, '${jsonPath}', NULL)`,
+      params: []
     };
   }
-
   if (typeof fieldValue === 'object') {
     if (fieldValue.__op === 'Increment') {
       if (typeof fieldValue.amount !== 'number' || Number.isNaN(fieldValue.amount)) {
-        throw new Parse.Error(Parse.Error.INVALID_JSON, 'Cannot increment by a non-numeric value.');
+        throw new _node.default.Error(_node.default.Error.INVALID_JSON, 'Cannot increment by a non-numeric value.');
       }
       return {
-        expression: buildSingleEvaluationJSONMutationExpression(
-          currentObjectExpression,
-          objectExpression =>
-            `json_set(${objectExpression}, '${jsonPath}', ` +
-            `COALESCE(json_extract(${objectExpression}, '${jsonPath}'), 0) + ?)`
-        ),
-        params: [fieldValue.amount],
+        expression: `json_set(${objectValueExpression}, '${jsonPath}', ` + `COALESCE(json_extract(${objectValueExpression}, '${jsonPath}'), 0) + ?)`,
+        params: [fieldValue.amount]
       };
     }
     if (fieldValue.__op === 'Add') {
+      const arrayValueExpression = getJsonArrayValueExpression(objectValueExpression, jsonPath);
       return {
-        expression: buildSingleEvaluationJSONMutationExpression(
-          currentObjectExpression,
-          objectExpression => {
-            const arrayValueExpression = getJsonArrayValueExpression(objectExpression, jsonPath);
-            return (
-              `json_set(${objectExpression}, '${jsonPath}', ` +
-              `json(${buildJSONArrayAppendExpression(arrayValueExpression)}))`
-            );
-          }
-        ),
-        params: [JSON.stringify(fieldValue.objects)],
+        expression: `json_set(${objectValueExpression}, '${jsonPath}', ` + `json(${buildJSONArrayAppendExpression(arrayValueExpression)}))`,
+        params: [JSON.stringify(fieldValue.objects)]
       };
     }
     if (fieldValue.__op === 'AddUnique') {
+      const arrayValueExpression = getJsonArrayValueExpression(objectValueExpression, jsonPath);
       return {
-        expression: buildSingleEvaluationJSONMutationExpression(
-          currentObjectExpression,
-          objectExpression => {
-            const arrayValueExpression = getJsonArrayValueExpression(objectExpression, jsonPath);
-            return (
-              `json_set(${objectExpression}, '${jsonPath}', ` +
-              `json(parse_array_add_unique(${arrayValueExpression}, ?)))`
-            );
-          }
-        ),
-        params: [JSON.stringify(fieldValue.objects)],
+        expression: `json_set(${objectValueExpression}, '${jsonPath}', ` + `json(parse_array_add_unique(${arrayValueExpression}, ?)))`,
+        params: [JSON.stringify(fieldValue.objects)]
       };
     }
     if (fieldValue.__op === 'Remove') {
+      const arrayValueExpression = getJsonArrayValueExpression(objectValueExpression, jsonPath);
       return {
-        expression: buildSingleEvaluationJSONMutationExpression(
-          currentObjectExpression,
-          objectExpression => {
-            const arrayValueExpression = getJsonArrayValueExpression(objectExpression, jsonPath);
-            return (
-              `json_set(${objectExpression}, '${jsonPath}', ` +
-              `json(parse_array_remove(${arrayValueExpression}, ?)))`
-            );
-          }
-        ),
-        params: [JSON.stringify(fieldValue.objects)],
+        expression: `json_set(${objectValueExpression}, '${jsonPath}', ` + `json(parse_array_remove(${arrayValueExpression}, ?)))`,
+        params: [JSON.stringify(fieldValue.objects)]
       };
     }
     if (fieldValue.__op === 'Delete') {
       return {
-        expression: buildSingleEvaluationJSONMutationExpression(
-          currentObjectExpression,
-          objectExpression => `json_remove(${objectExpression}, '${jsonPath}')`
-        ),
-        params: [],
+        expression: `json_remove(${objectValueExpression}, '${jsonPath}')`,
+        params: []
       };
     }
   }
-
   validateNestedKeys(fieldValue);
   return {
-    expression: buildSingleEvaluationJSONMutationExpression(
-      currentObjectExpression,
-      objectExpression => `json_set(${objectExpression}, '${jsonPath}', json(?))`
-    ),
-    params: [toSQLiteJSONObjectValue(fieldValue)],
+    expression: `json_set(${objectValueExpression}, '${jsonPath}', json(?))`,
+    params: [toSQLiteJSONObjectValue(fieldValue)]
   };
 };
-
-const isPointerValue = (value: any) =>
-  value &&
-  typeof value === 'object' &&
-  !Array.isArray(value) &&
-  value.__type === 'Pointer' &&
-  typeof value.objectId === 'string';
-
-const usesSQLiteJSONBComparison = (value: any): boolean =>
-  isJsonEncodedValue(value) ||
-  (value &&
-    typeof value === 'object' &&
-    !Array.isArray(value) &&
-    value.__type &&
-    value.__type !== 'Pointer' &&
-    value.__type !== 'Date');
-
-const getJSONArrayTableFunctionName = (comparisonValues: Array<any>): string =>
-  comparisonValues.some(usesSQLiteJSONBComparison) ? 'jsonb_each' : 'json_each';
-
-const getJsonValueMatchExpression = (
-  valueExpression: string,
-  comparisonValue: any
-): { sql: string, params: Array<any> } => {
+const isPointerValue = value => value && typeof value === 'object' && !Array.isArray(value) && value.__type === 'Pointer' && typeof value.objectId === 'string';
+const usesSQLiteJSONBComparison = value => isJsonEncodedValue(value) || value && typeof value === 'object' && !Array.isArray(value) && value.__type && value.__type !== 'Pointer' && value.__type !== 'Date';
+const getJSONArrayTableFunctionName = comparisonValues => comparisonValues.some(usesSQLiteJSONBComparison) ? 'jsonb_each' : 'json_each';
+const getJsonValueMatchExpression = (valueExpression, comparisonValue) => {
   const sqliteValue = toSQLiteValue(comparisonValue);
   if (sqliteValue == null) {
     return {
       sql: `${valueExpression} IS NULL`,
-      params: [],
+      params: []
     };
   }
   if (isPointerValue(comparisonValue)) {
     return {
-      sql:
-        `((json_valid(${valueExpression}) AND json_type(${valueExpression}) = 'object' AND ` +
-        `json_extract(${valueExpression}, '$.__type') = 'Pointer' AND ` +
-        `json_extract(${valueExpression}, '$.className') = ? AND ` +
-        `json_extract(${valueExpression}, '$.objectId') = ?) OR ${valueExpression} = ?)`,
-      params: [comparisonValue.className, comparisonValue.objectId, comparisonValue.objectId],
+      sql: `((json_valid(${valueExpression}) AND json_type(${valueExpression}) = 'object' AND ` + `json_extract(${valueExpression}, '$.__type') = 'Pointer' AND ` + `json_extract(${valueExpression}, '$.className') = ? AND ` + `json_extract(${valueExpression}, '$.objectId') = ?) OR ${valueExpression} = ?)`,
+      params: [comparisonValue.className, comparisonValue.objectId, comparisonValue.objectId]
     };
   }
   if (comparisonValue && typeof comparisonValue === 'object' && comparisonValue.__type === 'Date') {
     return {
-      sql:
-        `((json_valid(${valueExpression}) AND json_type(${valueExpression}) = 'object' AND jsonb(${valueExpression}) = jsonb(?)) ` +
-        `OR ${valueExpression} = ?)`,
-      params: [toSQLiteJSONObjectValue(comparisonValue), toSQLiteValue(comparisonValue)],
+      sql: `((json_valid(${valueExpression}) AND json_type(${valueExpression}) = 'object' AND jsonb(${valueExpression}) = jsonb(?)) ` + `OR ${valueExpression} = ?)`,
+      params: [toSQLiteJSONObjectValue(comparisonValue), toSQLiteValue(comparisonValue)]
     };
   }
   if (usesSQLiteJSONBComparison(comparisonValue)) {
     return {
       sql: `CASE WHEN json_valid(${valueExpression}) THEN jsonb(${valueExpression}) = jsonb(?) ELSE 0 END`,
-      params: [toSQLiteJSONObjectValue(comparisonValue)],
+      params: [toSQLiteJSONObjectValue(comparisonValue)]
     };
   }
   return {
     sql: `${valueExpression} = ?`,
-    params: [sqliteValue],
+    params: [sqliteValue]
   };
 };
-
-const getJsonValueAnyMatchExpression = (
-  valueExpression: string,
-  comparisonValues: Array<any>
-): { sql: string, params: Array<any> } => {
+const getJsonValueAnyMatchExpression = (valueExpression, comparisonValues) => {
   const expressions = comparisonValues.map(value => getJsonValueMatchExpression(valueExpression, value));
   return {
     sql: expressions.map(expression => `(${expression.sql})`).join(' OR '),
-    params: expressions.flatMap(expression => expression.params),
+    params: expressions.flatMap(expression => expression.params)
   };
 };
-
-const getArrayElementMatchExpression = (
-  targetSql: string,
-  comparisonValue: any
-): { sql: string, params: Array<any> } => {
+const getArrayElementMatchExpression = (targetSql, comparisonValue) => {
   const eachTableName = getJSONArrayTableFunctionName([comparisonValue]);
   const valueMatch = getJsonValueMatchExpression(`${eachTableName}.value`, comparisonValue);
   return {
     sql: `EXISTS (SELECT 1 FROM ${eachTableName}(${targetSql}) WHERE ${valueMatch.sql})`,
-    params: valueMatch.params,
+    params: valueMatch.params
   };
 };
-
-const isGeoPointValue = (value: any) =>
-  value &&
-  typeof value === 'object' &&
-  !Array.isArray(value) &&
-  value.__type === 'GeoPoint' &&
-  typeof value.latitude === 'number' &&
-  typeof value.longitude === 'number';
-
-const getArrayAnyMatchExpression = (
-  targetSql: string,
-  comparisonValues: Array<any>
-): { sql: string, params: Array<any> } => {
+const isGeoPointValue = value => value && typeof value === 'object' && !Array.isArray(value) && value.__type === 'GeoPoint' && typeof value.latitude === 'number' && typeof value.longitude === 'number';
+const getArrayAnyMatchExpression = (targetSql, comparisonValues) => {
   const eachTableName = getJSONArrayTableFunctionName(comparisonValues);
   const valueMatch = getJsonValueAnyMatchExpression(`${eachTableName}.value`, comparisonValues);
   return {
     sql: `EXISTS (SELECT 1 FROM ${eachTableName}(${targetSql}) WHERE ${valueMatch.sql})`,
-    params: valueMatch.params,
+    params: valueMatch.params
   };
 };
-
-const getScalarValueMatchExpression = (
-  targetSql: string,
-  comparisonValue: any
-): { sql: string, params: Array<any> } => getJsonValueMatchExpression(targetSql, comparisonValue);
-
-const getScalarAnyMatchExpression = (
-  targetSql: string,
-  comparisonValues: Array<any>
-): { sql: string, params: Array<any> } => {
+const getScalarValueMatchExpression = (targetSql, comparisonValue) => getJsonValueMatchExpression(targetSql, comparisonValue);
+const getScalarAnyMatchExpression = (targetSql, comparisonValues) => {
   const expressions = comparisonValues.map(value => getScalarValueMatchExpression(targetSql, value));
   return {
     sql: expressions.map(expression => `(${expression.sql})`).join(' OR '),
-    params: expressions.flatMap(expression => expression.params),
+    params: expressions.flatMap(expression => expression.params)
   };
 };
-
-const validateRegexPattern = (pattern: string, flags: string): { pattern: string, flags: string } => {
+const validateRegexPattern = (pattern, flags) => {
   const normalizedRegex = normalizeRegexPattern(pattern, flags);
   try {
     new RegExp(normalizedRegex.pattern, normalizedRegex.flags);
   } catch (error) {
-    throw createSanitizedError(
-      Parse.Error.INTERNAL_SERVER_ERROR,
-      `Invalid regular expression: ${error.message}`,
-      undefined,
-      'An internal server error occurred'
-    );
+    throw (0, _Error.createSanitizedError)(_node.default.Error.INTERNAL_SERVER_ERROR, `Invalid regular expression: ${error.message}`, undefined, 'An internal server error occurred');
   }
   return normalizedRegex;
 };
-
-const escapeSQLiteLikePattern = (literal: string): string =>
-  literal.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
-
-const escapeSQLiteGlobPattern = (literal: string): string =>
-  literal.replace(/\[/g, '[[]').replace(/\*/g, '[*]').replace(/\?/g, '[?]');
-
-const isASCIIOnlyString = (value: string): boolean => /^[\x00-\x7F]*$/.test(value);
-
-const getSimpleRegexMatchExpression = (
-  targetSql: string,
-  normalizedRegex: { pattern: string, flags: string }
-): { sql: string, params: Array<any> } | null => {
+const escapeSQLiteLikePattern = literal => literal.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+const escapeSQLiteGlobPattern = literal => literal.replace(/\[/g, '[[]').replace(/\*/g, '[*]').replace(/\?/g, '[?]');
+const isASCIIOnlyString = value => /^[\x00-\x7F]*$/.test(value);
+const getSimpleRegexMatchExpression = (targetSql, normalizedRegex) => {
   const regexInfo = getSimpleNormalizedRegexInfo(normalizedRegex.pattern, normalizedRegex.flags);
   if (!regexInfo) {
     return null;
   }
-
   const textTargetSql = `CAST(${targetSql} AS TEXT)`;
   if (regexInfo.caseInsensitive) {
     if (!isASCIIOnlyString(regexInfo.literal)) {
@@ -1182,17 +955,15 @@ const getSimpleRegexMatchExpression = (
     }
     return {
       sql: `${textTargetSql} LIKE ? ESCAPE '\\'`,
-      params: [likePattern],
+      params: [likePattern]
     };
   }
-
   if (regexInfo.mode === 'exact') {
     return {
       sql: `${textTargetSql} = ?`,
-      params: [regexInfo.literal],
+      params: [regexInfo.literal]
     };
   }
-
   const globLiteral = escapeSQLiteGlobPattern(regexInfo.literal);
   let globPattern = globLiteral;
   if (regexInfo.mode === 'startsWith') {
@@ -1204,29 +975,27 @@ const getSimpleRegexMatchExpression = (
   }
   return {
     sql: `${textTargetSql} GLOB ?`,
-    params: [globPattern],
+    params: [globPattern]
   };
 };
-
-const transformDotField = (fieldName: string) => {
+const transformDotField = fieldName => {
   if (fieldName.indexOf('.') === -1) {
     validateFieldName(fieldName);
     return quoteColumnName(fieldName);
   }
-  const { rootFieldName, jsonPath } = buildDotFieldPath(fieldName);
+  const {
+    rootFieldName,
+    jsonPath
+  } = buildDotFieldPath(fieldName);
   return `json_extract(${quoteColumnName(rootFieldName)}, '${jsonPath}')`;
 };
-
-const validateFieldName = (name: string) => {
+const validateFieldName = name => {
   if (typeof name !== 'string' || !name.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
-    throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${name}`);
+    throw new _node.default.Error(_node.default.Error.INVALID_KEY_NAME, `Invalid field name: ${name}`);
   }
 };
-
-const isPlainObject = (value: any) =>
-  value !== null && typeof value === 'object' && !Array.isArray(value);
-
-const parseJSONValue = (value: any) => {
+const isPlainObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+const parseJSONValue = value => {
   if (typeof value !== 'string') {
     return value;
   }
@@ -1239,14 +1008,7 @@ const parseJSONValue = (value: any) => {
     return value;
   }
 };
-
-const isStartsWithRegexConstraint = value =>
-  value &&
-  typeof value === 'object' &&
-  !Array.isArray(value) &&
-  typeof value.$regex === 'string' &&
-  /^\^\\Q.*\\E/.test(value.$regex);
-
+const isStartsWithRegexConstraint = value => value && typeof value === 'object' && !Array.isArray(value) && typeof value.$regex === 'string' && /^\^\\Q.*\\E/.test(value.$regex);
 const isAllValuesRegexOrNone = values => {
   if (!values || !Array.isArray(values) || values.length === 0) {
     return true;
@@ -1262,105 +1024,57 @@ const isAllValuesRegexOrNone = values => {
   }
   return true;
 };
-
-const isAnyValueRegex = values =>
-  Array.isArray(values) &&
-  values.some(value => value && typeof value === 'object' && typeof value.$regex === 'string');
-
-const sanitizeFTS5Identifier = (value: string) =>
-  value.replace(/[^a-zA-Z0-9_]+/g, '_');
-
-const escapeFTS5Query = (term: string) => `"${term.replace(/"/g, '""')}"`;
-
-const parseTextSearch = (query: QueryType): ?{
-  fieldName: string,
-  searchTerm: string,
-  language?: string,
-  caseSensitive?: boolean,
-  diacriticSensitive?: boolean,
-  remainingQuery: QueryType,
-} => {
+const isAnyValueRegex = values => Array.isArray(values) && values.some(value => value && typeof value === 'object' && typeof value.$regex === 'string');
+const sanitizeFTS5Identifier = value => value.replace(/[^a-zA-Z0-9_]+/g, '_');
+const escapeFTS5Query = term => `"${term.replace(/"/g, '""')}"`;
+const parseTextSearch = query => {
   for (const fieldName of Object.keys(query)) {
     const value = query[fieldName];
     if (!isPlainObject(value) || !Object.prototype.hasOwnProperty.call(value, '$text')) {
       continue;
     }
-
     const textValue = value.$text;
     if (!isPlainObject(textValue) || !isPlainObject(textValue.$search)) {
-      throw new Parse.Error(
-        Parse.Error.INVALID_JSON,
-        'bad $text: $search, should be object'
-      );
+      throw new _node.default.Error(_node.default.Error.INVALID_JSON, 'bad $text: $search, should be object');
     }
-
     const search = textValue.$search;
     if (typeof search.$term !== 'string') {
-      throw new Parse.Error(
-        Parse.Error.INVALID_JSON,
-        'bad $text: $term, should be string'
-      );
+      throw new _node.default.Error(_node.default.Error.INVALID_JSON, 'bad $text: $term, should be string');
     }
     if (search.$language !== undefined && typeof search.$language !== 'string') {
-      throw new Parse.Error(
-        Parse.Error.INVALID_JSON,
-        'bad $text: $language, should be string'
-      );
+      throw new _node.default.Error(_node.default.Error.INVALID_JSON, 'bad $text: $language, should be string');
     }
     if (search.$caseSensitive !== undefined && typeof search.$caseSensitive !== 'boolean') {
-      throw new Parse.Error(
-        Parse.Error.INVALID_JSON,
-        'bad $text: $caseSensitive, should be boolean'
-      );
+      throw new _node.default.Error(_node.default.Error.INVALID_JSON, 'bad $text: $caseSensitive, should be boolean');
     }
-    if (
-      search.$diacriticSensitive !== undefined &&
-      typeof search.$diacriticSensitive !== 'boolean'
-    ) {
-      throw new Parse.Error(
-        Parse.Error.INVALID_JSON,
-        'bad $text: $diacriticSensitive, should be boolean'
-      );
+    if (search.$diacriticSensitive !== undefined && typeof search.$diacriticSensitive !== 'boolean') {
+      throw new _node.default.Error(_node.default.Error.INVALID_JSON, 'bad $text: $diacriticSensitive, should be boolean');
     }
-
-    const remainingQuery = { ...query };
+    const remainingQuery = {
+      ...query
+    };
     if (Object.keys(value).length === 1) {
       delete remainingQuery[fieldName];
     } else {
-      const nextFieldValue = { ...value };
+      const nextFieldValue = {
+        ...value
+      };
       delete nextFieldValue.$text;
       remainingQuery[fieldName] = nextFieldValue;
     }
-
     return {
       fieldName,
       searchTerm: search.$term,
       language: search.$language,
       caseSensitive: search.$caseSensitive,
       diacriticSensitive: search.$diacriticSensitive,
-      remainingQuery,
+      remainingQuery
     };
   }
-
   return null;
 };
-
-export class SQLiteStorageAdapter implements StorageAdapter {
-  canSortOnJoinTables: boolean;
-  database: any;
-  schemaCacheTtl: ?number;
-  enableSchemaHooks: boolean;
-  _db: any;
-  _uri: string;
-  _collectionPrefix: string;
-  _onSchemaChange: () => mixed;
-  _stmtCache: Map<string, any>;
-  _existingClasses: Set<string>;
-  _schemaCache: Map<string, any>;
-  _temporaryDirectory: ?string;
-  _usesSharedMemoryDatabase: boolean;
-
-  constructor(options: any = {}) {
+class SQLiteStorageAdapter {
+  constructor(options = {}) {
     applySQLiteHandleIncludePatch();
     this._uri = options.uri || 'sqlite://:memory:';
     this._collectionPrefix = options.collectionPrefix || '';
@@ -1374,8 +1088,7 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     this._schemaCache = new Map();
     this._temporaryDirectory = null;
     this._usesSharedMemoryDatabase = false;
-
-    const dbOptions = getDatabaseOptionsFromURI(this._uri);
+    const dbOptions = (0, _SQLiteConfigParser.getDatabaseOptionsFromURI)(this._uri);
     Object.assign(dbOptions, databaseOptions);
     if (dbOptions.filename === ':memory:') {
       const temporaryDatabase = getSharedMemorySQLiteDatabasePath();
@@ -1383,12 +1096,11 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       this._usesSharedMemoryDatabase = true;
     }
     this._dbOptions = dbOptions;
-    this._db = createClient(dbOptions);
+    this._db = (0, _SQLiteClient.createClient)(dbOptions);
     this._initSchemaTable();
     this.database = this._buildLegacyDatabaseCompat();
   }
-
-  _prepare(sql: string, dbOverride?: any): any {
+  _prepare(sql, dbOverride) {
     const db = dbOverride || this._db;
     if (dbOverride) {
       return db.prepare(sql);
@@ -1400,21 +1112,17 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     }
     return stmt;
   }
-
   _notifySchemaChange() {
     if (this.enableSchemaHooks) {
       this._onSchemaChange();
     }
   }
-
-  watch(callback: () => void) {
+  watch(callback) {
     this._onSchemaChange = callback;
   }
-
   getIdempotencyIndexOptions() {
     return null;
   }
-
   async handleShutdown() {
     if (this._db) {
       try {
@@ -1431,7 +1139,10 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     if (this._temporaryDirectory) {
       temporarySQLiteDirectories.delete(this._temporaryDirectory);
       try {
-        fs.rmSync(this._temporaryDirectory, { recursive: true, force: true });
+        _fs.default.rmSync(this._temporaryDirectory, {
+          recursive: true,
+          force: true
+        });
       } catch {
         /* */
       }
@@ -1447,25 +1158,17 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     // before a test immediately restarts Parse Server on the same port.
     await new Promise(resolve => setTimeout(resolve, sqliteShutdownDrainDelayMs));
   }
-
-  _deleteExpiredIdempotencyRecords(dbOverride?: any) {
+  _deleteExpiredIdempotencyRecords(dbOverride) {
     try {
-      this._prepare(
-        `DELETE FROM ${this._tableName('_Idempotency')} WHERE "expire" IS NOT NULL AND "expire" < ?`,
-        dbOverride
-      ).run(new Date().toISOString());
+      this._prepare(`DELETE FROM ${this._tableName('_Idempotency')} WHERE "expire" IS NOT NULL AND "expire" < ?`, dbOverride).run(new Date().toISOString());
     } catch {
       /* */
     }
   }
-
   _initSchemaTable() {
-    this._db.exec(
-      'CREATE TABLE IF NOT EXISTS "_SCHEMA" ("className" TEXT PRIMARY KEY, "schema" TEXT, "isParseClass" INTEGER)'
-    );
+    this._db.exec('CREATE TABLE IF NOT EXISTS "_SCHEMA" ("className" TEXT PRIMARY KEY, "schema" TEXT, "isParseClass" INTEGER)');
     this._reloadSchemaStateFromDatabase();
   }
-
   _reloadSchemaStateFromDatabase() {
     this._stmtCache.clear();
     this._existingClasses.clear();
@@ -1484,39 +1187,31 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       /* */
     }
   }
-
-  _tableName(className: string): string {
+  _tableName(className) {
     return `"${(this._collectionPrefix + className).replace(/"/g, '""')}"`;
   }
-
-  _rawTableName(className: string): string {
+  _rawTableName(className) {
     return this._collectionPrefix + className;
   }
-
-  _ensureNullFieldTrackerColumn(className: string, dbOverride?: any) {
+  _ensureNullFieldTrackerColumn(className, dbOverride) {
     if (className === '_SCHEMA' || isJoinTableClass(className)) {
       return;
     }
     const db = dbOverride || this._db;
     const rawName = this._rawTableName(className);
-    const hasColumn = db
-      .prepare(`PRAGMA table_info("${rawName.replace(/"/g, '""')}")`)
-      .all()
-      .some(col => col.name === nullFieldTrackerColumn);
+    const hasColumn = db.prepare(`PRAGMA table_info("${rawName.replace(/"/g, '""')}")`).all().some(col => col.name === nullFieldTrackerColumn);
     if (!hasColumn) {
       db.exec(`ALTER TABLE ${this._tableName(className)} ADD COLUMN "${nullFieldTrackerColumn}" TEXT`);
     }
   }
-
-  async classExists(className: string, dbOverride?: any): Promise<boolean> {
+  async classExists(className, dbOverride) {
     const db = dbOverride || this._db;
     if (this._existingClasses.has(className)) {
       this._ensureNullFieldTrackerColumn(className, db);
       return true;
     }
     const rawName = this._rawTableName(className);
-    const row = this._prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?", db)
-      .get(rawName);
+    const row = this._prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?", db).get(rawName);
     if (row) {
       this._existingClasses.add(className);
       this._ensureNullFieldTrackerColumn(className, db);
@@ -1524,92 +1219,52 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     }
     return false;
   }
-
-  _getTableColumns(className: string, connection?: any): Array<string> {
+  _getTableColumns(className, connection) {
     const rawName = this._rawTableName(className);
     const db = connection || this._db;
-    return db
-      .prepare(`PRAGMA table_info("${rawName.replace(/"/g, '""')}")`)
-      .all()
-      .map(column => column.name);
+    return db.prepare(`PRAGMA table_info("${rawName.replace(/"/g, '""')}")`).all().map(column => column.name);
   }
-
-  _rawFTSTableName(className: string, fieldName: string, diacriticSensitive: boolean): string {
+  _rawFTSTableName(className, fieldName, diacriticSensitive) {
     const suffix = diacriticSensitive ? 'accent' : 'folded';
     return `${this._rawTableName(className)}__fts__${sanitizeFTS5Identifier(fieldName)}__${suffix}`;
   }
-
-  _quotedFTSTableName(className: string, fieldName: string, diacriticSensitive: boolean): string {
+  _quotedFTSTableName(className, fieldName, diacriticSensitive) {
     return `"${this._rawFTSTableName(className, fieldName, diacriticSensitive).replace(/"/g, '""')}"`;
   }
-
-  async _ensureFTS5Index(
-    className: string,
-    fieldName: string,
-    diacriticSensitive: boolean,
-    transactionalSession?: any
-  ): Promise<void> {
+  async _ensureFTS5Index(className, fieldName, diacriticSensitive, transactionalSession) {
     validateFieldName(fieldName);
     const columns = this._getTableColumns(className, transactionalSession);
     if (!columns.includes(fieldName)) {
       return;
     }
-
     const db = transactionalSession || this._db;
     const rawTableName = this._rawTableName(className);
     const tableName = this._tableName(className);
     const rawFTSTableName = this._rawFTSTableName(className, fieldName, diacriticSensitive);
     const ftsTableName = this._quotedFTSTableName(className, fieldName, diacriticSensitive);
     const tokenizer = diacriticSensitive ? 'unicode61 remove_diacritics 0' : 'unicode61 remove_diacritics 1';
-
-    db.exec(
-      `CREATE VIRTUAL TABLE IF NOT EXISTS ${ftsTableName} USING fts5(` +
-      `"${fieldName.replace(/"/g, '""')}", ` +
-      `content='${rawTableName.replace(/'/g, "''")}', ` +
-      `content_rowid='rowid', ` +
-      `tokenize='${tokenizer}'` +
-      `)`
-    );
-
+    db.exec(`CREATE VIRTUAL TABLE IF NOT EXISTS ${ftsTableName} USING fts5(` + `"${fieldName.replace(/"/g, '""')}", ` + `content='${rawTableName.replace(/'/g, "''")}', ` + `content_rowid='rowid', ` + `tokenize='${tokenizer}'` + `)`);
     const triggerBaseName = sanitizeFTS5Identifier(rawFTSTableName);
     const insertTrigger = `"${triggerBaseName}_insert"`;
     const deleteTrigger = `"${triggerBaseName}_delete"`;
     const updateTrigger = `"${triggerBaseName}_update"`;
     const quotedFieldName = quoteColumnName(fieldName);
-
-    db.exec(
-      `CREATE TRIGGER IF NOT EXISTS ${insertTrigger} AFTER INSERT ON ${tableName} BEGIN ` +
-      `INSERT INTO ${ftsTableName}(rowid, ${quotedFieldName}) VALUES (new.rowid, new.${quotedFieldName}); ` +
-      `END`
-    );
-    db.exec(
-      `CREATE TRIGGER IF NOT EXISTS ${deleteTrigger} AFTER DELETE ON ${tableName} BEGIN ` +
-      `INSERT INTO ${ftsTableName}(${ftsTableName}, rowid, ${quotedFieldName}) ` +
-      `VALUES('delete', old.rowid, old.${quotedFieldName}); ` +
-      `END`
-    );
-    db.exec(
-      `CREATE TRIGGER IF NOT EXISTS ${updateTrigger} AFTER UPDATE OF ${quotedFieldName} ON ${tableName} BEGIN ` +
-      `INSERT INTO ${ftsTableName}(${ftsTableName}, rowid, ${quotedFieldName}) ` +
-      `VALUES('delete', old.rowid, old.${quotedFieldName}); ` +
-      `INSERT INTO ${ftsTableName}(rowid, ${quotedFieldName}) VALUES (new.rowid, new.${quotedFieldName}); ` +
-      `END`
-    );
-
+    db.exec(`CREATE TRIGGER IF NOT EXISTS ${insertTrigger} AFTER INSERT ON ${tableName} BEGIN ` + `INSERT INTO ${ftsTableName}(rowid, ${quotedFieldName}) VALUES (new.rowid, new.${quotedFieldName}); ` + `END`);
+    db.exec(`CREATE TRIGGER IF NOT EXISTS ${deleteTrigger} AFTER DELETE ON ${tableName} BEGIN ` + `INSERT INTO ${ftsTableName}(${ftsTableName}, rowid, ${quotedFieldName}) ` + `VALUES('delete', old.rowid, old.${quotedFieldName}); ` + `END`);
+    db.exec(`CREATE TRIGGER IF NOT EXISTS ${updateTrigger} AFTER UPDATE OF ${quotedFieldName} ON ${tableName} BEGIN ` + `INSERT INTO ${ftsTableName}(${ftsTableName}, rowid, ${quotedFieldName}) ` + `VALUES('delete', old.rowid, old.${quotedFieldName}); ` + `INSERT INTO ${ftsTableName}(rowid, ${quotedFieldName}) VALUES (new.rowid, new.${quotedFieldName}); ` + `END`);
     db.prepare(`INSERT INTO ${ftsTableName}(${ftsTableName}) VALUES('rebuild')`).run();
   }
-
-  async _ensureColumnsExist(className: string, row: Object, schema?: SchemaType, dbOverride?: any): Promise<void> {
+  async _ensureColumnsExist(className, row, schema, dbOverride) {
     const db = dbOverride || this._db;
     const tableName = this._tableName(className);
     const rawName = this._rawTableName(className);
     const tableInfo = db.prepare(`PRAGMA table_info("${rawName.replace(/"/g, '""')}")`).all();
     const existingCols = new Set(tableInfo.map(col => col.name));
-
     const fields = schema ? schema.fields || {} : {};
-    const cachedSchema = this._schemaCache.get(className) || { fields: {} };
+    const cachedSchema = this._schemaCache.get(className) || {
+      fields: {}
+    };
     let schemaChanged = false;
-
     for (const key of Object.keys(row)) {
       if (key === nullFieldTrackerColumn) {
         if (!existingCols.has(key)) {
@@ -1623,14 +1278,15 @@ export class SQLiteStorageAdapter implements StorageAdapter {
         if (!existingCols.has(rootKey)) {
           db.exec(`ALTER TABLE ${tableName} ADD COLUMN "${rootKey.replace(/"/g, '""')}" TEXT`);
           existingCols.add(rootKey);
-          cachedSchema.fields[rootKey] = { type: 'Object' };
+          cachedSchema.fields[rootKey] = {
+            type: 'Object'
+          };
           this._schemaCache.set(className, cachedSchema);
           schemaChanged = true;
         }
         continue;
       }
-      let fieldType =
-        fields[key] || cachedSchema.fields[key] || getImplicitHiddenUserFieldSchema(className, key);
+      let fieldType = fields[key] || cachedSchema.fields[key] || getImplicitHiddenUserFieldSchema(className, key);
       if (!fieldType) {
         fieldType = inferFieldType(key, row[key]);
         cachedSchema.fields[key] = fieldType;
@@ -1643,28 +1299,23 @@ export class SQLiteStorageAdapter implements StorageAdapter {
         existingCols.add(key);
       }
     }
-
     if (schemaChanged) {
       const storedSchema = this._getStoredSchemaObject(className, dbOverride);
-      const schemaObj = storedSchema ? storedSchema.schema : { className, fields: {} };
+      const schemaObj = storedSchema ? storedSchema.schema : {
+        className,
+        fields: {}
+      };
       schemaObj.fields = {
         ...(schemaObj.fields || {}),
-        ...cachedSchema.fields,
+        ...cachedSchema.fields
       };
-      this._saveStoredSchemaObject(
-        className,
-        schemaObj,
-        storedSchema ? storedSchema.isParseClass : undefined,
-        dbOverride
-      );
+      this._saveStoredSchemaObject(className, schemaObj, storedSchema ? storedSchema.isParseClass : undefined, dbOverride);
     }
   }
-
-  async setClassLevelPermissions(className: string, clps: any): Promise<void> {
-    const row = this._prepare('SELECT "schema" FROM "_SCHEMA" WHERE "className" = ?')
-      .get(className);
+  async setClassLevelPermissions(className, clps) {
+    const row = this._prepare('SELECT "schema" FROM "_SCHEMA" WHERE "className" = ?').get(className);
     if (!row) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `Class ${className} does not exist.`);
+      throw new _node.default.Error(_node.default.Error.OBJECT_NOT_FOUND, `Class ${className} does not exist.`);
     }
     let schemaObj = {};
     try {
@@ -1674,30 +1325,25 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     }
     schemaObj.classLevelPermissions = clps;
     this._schemaCache.set(className, schemaObj);
-    this._prepare('UPDATE "_SCHEMA" SET "schema" = ? WHERE "className" = ?')
-      .run(JSON.stringify(schemaObj), className);
+    this._prepare('UPDATE "_SCHEMA" SET "schema" = ? WHERE "className" = ?').run(JSON.stringify(schemaObj), className);
     this._notifySchemaChange();
   }
-
-  async createClass(className: string, schema: SchemaType, dbOverride?: any): Promise<any> {
+  async createClass(className, schema, dbOverride) {
     const db = dbOverride || this._db;
     const tableName = this._tableName(className);
-    const existing = this._prepare(
-      'SELECT "className" FROM "_SCHEMA" WHERE "className" = ?',
-      dbOverride
-    )
-      .get(className);
+    const existing = this._prepare('SELECT "className" FROM "_SCHEMA" WHERE "className" = ?', dbOverride).get(className);
     if (existing) {
-      throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, `Class ${className} already exists.`);
+      throw new _node.default.Error(_node.default.Error.DUPLICATE_VALUE, `Class ${className} already exists.`);
     }
-
-    const storedSchema = cloneMutableValue(schema) || { fields: {} };
+    const storedSchema = cloneMutableValue(schema) || {
+      fields: {}
+    };
     storedSchema.className = className;
-    storedSchema.fields = { ...(storedSchema.fields || {}) };
-
+    storedSchema.fields = {
+      ...(storedSchema.fields || {})
+    };
     const sqliteSchema = normalizeSQLiteSchema(className, cloneMutableValue(storedSchema));
     const fields = Object.assign({}, sqliteSchema ? sqliteSchema.fields : {});
-
     const colDefs = [];
     Object.keys(fields).forEach(fieldName => {
       const fieldType = fields[fieldName];
@@ -1711,36 +1357,24 @@ export class SQLiteStorageAdapter implements StorageAdapter {
         colDefs.push(`"${fieldName.replace(/"/g, '""')}" ${sqliteType}`);
       }
     });
-
     if (!fields.objectId) {
       colDefs.unshift(`"objectId" TEXT PRIMARY KEY`);
     }
     colDefs.push(`"${nullFieldTrackerColumn}" TEXT`);
-
     const createStmt = `CREATE TABLE IF NOT EXISTS ${tableName} (${colDefs.join(', ')})`;
     db.exec(createStmt);
-
     const isParseClass = isSQLiteInternalClass(className) ? 0 : 1;
     const finalSchema = storedSchema;
     this._saveStoredSchemaObject(className, finalSchema, isParseClass, dbOverride);
-
     if (schema && schema.indexes) {
-      await this.setIndexesWithSchemaFormat(
-        className,
-        schema.indexes,
-        {},
-        storedSchema.fields,
-        dbOverride
-      );
+      await this.setIndexesWithSchemaFormat(className, schema.indexes, {}, storedSchema.fields, dbOverride);
     }
-
     if (!dbOverride || dbOverride === this._db) {
       this._notifySchemaChange();
     }
     return toParseSchema(finalSchema);
   }
-
-  async _ensureClassExists(className: string, schema: SchemaType, dbOverride?: any): Promise<void> {
+  async _ensureClassExists(className, schema, dbOverride) {
     const db = dbOverride || this._db;
     if (await this.classExists(className, db)) {
       return;
@@ -1748,50 +1382,37 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     try {
       await this.createClass(className, schema, db);
     } catch (error) {
-      if (error.code !== Parse.Error.DUPLICATE_VALUE || !(await this.classExists(className, db))) {
+      if (error.code !== _node.default.Error.DUPLICATE_VALUE || !(await this.classExists(className, db))) {
         throw error;
       }
     }
   }
-
-  async addFieldIfNotExists(className: string, fieldName: string, type: any): Promise<void> {
+  async addFieldIfNotExists(className, fieldName, type) {
     const tableName = this._tableName(className);
     const rawName = this._rawTableName(className);
-
     if (!(await this.classExists(className))) {
-      await this._ensureClassExists(className, { fields: { [fieldName]: type } });
+      await this._ensureClassExists(className, {
+        fields: {
+          [fieldName]: type
+        }
+      });
       return;
     }
-
     if (type && type.type === 'GeoPoint') {
       const schemaObj = await this.getClass(className);
-      if (
-        schemaObj.fields &&
-        Object.keys(schemaObj.fields).some(
-          existingField =>
-            existingField !== fieldName && schemaObj.fields[existingField].type === 'GeoPoint'
-        )
-      ) {
-        throw new Parse.Error(
-          Parse.Error.INCORRECT_TYPE,
-          'SQLite only supports one GeoPoint field in a class.'
-        );
+      if (schemaObj.fields && Object.keys(schemaObj.fields).some(existingField => existingField !== fieldName && schemaObj.fields[existingField].type === 'GeoPoint')) {
+        throw new _node.default.Error(_node.default.Error.INCORRECT_TYPE, 'SQLite only supports one GeoPoint field in a class.');
       }
     }
-
     if (type.type !== 'Relation') {
       const tableInfo = this._db.prepare(`PRAGMA table_info("${rawName.replace(/"/g, '""')}")`).all();
       const exists = tableInfo.some(col => col.name === fieldName);
       if (!exists) {
         const sqliteType = parseTypeToSQLiteType(type);
-        this._db.exec(
-          `ALTER TABLE ${tableName} ADD COLUMN "${fieldName.replace(/"/g, '""')}" ${sqliteType}`
-        );
+        this._db.exec(`ALTER TABLE ${tableName} ADD COLUMN "${fieldName.replace(/"/g, '""')}" ${sqliteType}`);
       }
     }
-
-    const row = this._prepare('SELECT "schema" FROM "_SCHEMA" WHERE "className" = ?')
-      .get(className);
+    const row = this._prepare('SELECT "schema" FROM "_SCHEMA" WHERE "className" = ?').get(className);
     let schemaObj = {};
     if (row) {
       try {
@@ -1803,19 +1424,15 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     schemaObj.fields = schemaObj.fields || {};
     schemaObj.fields[fieldName] = type;
     this._schemaCache.set(className, schemaObj);
-    this._prepare('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES (?, ?, 1) ON CONFLICT("className") DO UPDATE SET "schema" = excluded."schema"')
-      .run(className, JSON.stringify(schemaObj));
+    this._prepare('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES (?, ?, 1) ON CONFLICT("className") DO UPDATE SET "schema" = excluded."schema"').run(className, JSON.stringify(schemaObj));
     this._notifySchemaChange();
   }
-
-  async updateFieldOptions(className: string, fieldName: string, type: any): Promise<void> {
+  async updateFieldOptions(className, fieldName, type) {
     await this.addFieldIfNotExists(className, fieldName, type);
   }
-
-  async deleteClass(className: string): Promise<any> {
+  async deleteClass(className) {
     const tableName = this._tableName(className);
-    const row = this._prepare('SELECT "schema" FROM "_SCHEMA" WHERE "className" = ?')
-      .get(className);
+    const row = this._prepare('SELECT "schema" FROM "_SCHEMA" WHERE "className" = ?').get(className);
     if (row) {
       try {
         const schema = JSON.parse(row.schema);
@@ -1838,8 +1455,7 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     this._notifySchemaChange();
     return className.indexOf('_Join:') !== 0;
   }
-
-  async deleteAllClasses(): Promise<void> {
+  async deleteAllClasses() {
     const rows = this._prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all();
     for (const row of rows) {
       this._db.exec(`DROP TABLE IF EXISTS "${row.name.replace(/"/g, '""')}"`);
@@ -1850,14 +1466,11 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     this._initSchemaTable();
     this._notifySchemaChange();
   }
-
-  async deleteFields(className: string, schema: SchemaType, fieldNames: Array<string>): Promise<void> {
-    const row = this._prepare('SELECT "schema" FROM "_SCHEMA" WHERE "className" = ?')
-      .get(className);
+  async deleteFields(className, schema, fieldNames) {
+    const row = this._prepare('SELECT "schema" FROM "_SCHEMA" WHERE "className" = ?').get(className);
     if (!row) {
       return;
     }
-
     const schemaObj = JSON.parse(row.schema);
     const deletedFieldNames = new Set(fieldNames);
     const relationalFieldNames = new Set();
@@ -1871,7 +1484,6 @@ export class SQLiteStorageAdapter implements StorageAdapter {
         delete schemaObj.fields[fieldName];
       }
     }
-
     if (schemaObj.indexes) {
       Object.keys(schemaObj.indexes).forEach(indexName => {
         const index = schemaObj.indexes[indexName];
@@ -1884,19 +1496,14 @@ export class SQLiteStorageAdapter implements StorageAdapter {
         delete schemaObj.indexes;
       }
     }
-
     const deletedColumnNames = fieldNames.filter(fieldName => !relationalFieldNames.has(fieldName));
     if (deletedColumnNames.length > 0) {
       const rawName = this._rawTableName(className);
       const tableName = this._tableName(className);
-      const rebuildTableRawName =
-        `${rawName}__rebuild__${Date.now()}_${Math.random().toString(16).slice(2)}`;
+      const rebuildTableRawName = `${rawName}__rebuild__${Date.now()}_${Math.random().toString(16).slice(2)}`;
       const rebuildTableName = `"${rebuildTableRawName.replace(/"/g, '""')}"`;
-      const tableInfo = this._db
-        .prepare(`PRAGMA table_info("${rawName.replace(/"/g, '""')}")`)
-        .all();
+      const tableInfo = this._db.prepare(`PRAGMA table_info("${rawName.replace(/"/g, '""')}")`).all();
       const keptColumns = tableInfo.filter(column => !deletedFieldNames.has(column.name));
-
       if (keptColumns.length > 0) {
         const columnDefinitions = keptColumns.map(column => {
           let definition = `${quoteColumnName(column.name)} ${column.type || 'TEXT'}`;
@@ -1912,32 +1519,21 @@ export class SQLiteStorageAdapter implements StorageAdapter {
           return definition;
         });
         const keptColumnNames = keptColumns.map(column => quoteColumnName(column.name));
-
         this._db.exec(`CREATE TABLE ${rebuildTableName} (${columnDefinitions.join(', ')})`);
-        this._db.exec(
-          `INSERT INTO ${rebuildTableName} (${keptColumnNames.join(', ')}) ` +
-            `SELECT ${keptColumnNames.join(', ')} FROM ${tableName}`
-        );
+        this._db.exec(`INSERT INTO ${rebuildTableName} (${keptColumnNames.join(', ')}) ` + `SELECT ${keptColumnNames.join(', ')} FROM ${tableName}`);
         this._db.exec(`DROP TABLE ${tableName}`);
-        this._db.exec(
-          `ALTER TABLE ${rebuildTableName} RENAME TO "${rawName.replace(/"/g, '""')}"`
-        );
+        this._db.exec(`ALTER TABLE ${rebuildTableName} RENAME TO "${rawName.replace(/"/g, '""')}"`);
         this._stmtCache.clear();
       }
     }
-
     this._schemaCache.set(className, schemaObj);
-    this._prepare('UPDATE "_SCHEMA" SET "schema" = ? WHERE "className" = ?')
-      .run(JSON.stringify(schemaObj), className);
-
+    this._prepare('UPDATE "_SCHEMA" SET "schema" = ? WHERE "className" = ?').run(JSON.stringify(schemaObj), className);
     if (schemaObj.indexes && Object.keys(schemaObj.indexes).length > 0) {
       await this.setIndexesWithSchemaFormat(className, schemaObj.indexes, {}, schemaObj.fields);
     }
-
     this._notifySchemaChange();
   }
-
-  async getAllClasses(): Promise<Array<any>> {
+  async getAllClasses() {
     const rows = this._prepare('SELECT * FROM "_SCHEMA" WHERE "isParseClass" = 1').all();
     return rows.map(row => {
       let schemaObj = {};
@@ -1946,13 +1542,14 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       } catch {
         schemaObj = {};
       }
-      return toParseSchema({ className: row.className, ...schemaObj });
+      return toParseSchema({
+        className: row.className,
+        ...schemaObj
+      });
     });
   }
-
-  async getClass(className: string): Promise<any> {
-    const row = this._prepare('SELECT "schema" FROM "_SCHEMA" WHERE "className" = ?')
-      .get(className);
+  async getClass(className) {
+    const row = this._prepare('SELECT "schema" FROM "_SCHEMA" WHERE "className" = ?').get(className);
     if (!row) {
       throw undefined;
     }
@@ -1962,15 +1559,13 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     } catch {
       schemaObj = {};
     }
-    return toParseSchema({ className, ...schemaObj });
+    return toParseSchema({
+      className,
+      ...schemaObj
+    });
   }
-
-  _getStoredSchemaObject(className: string, connection?: any): any {
-    const row = this._prepare(
-      'SELECT "schema", "isParseClass" FROM "_SCHEMA" WHERE "className" = ?',
-      connection
-    )
-      .get(className);
+  _getStoredSchemaObject(className, connection) {
+    const row = this._prepare('SELECT "schema", "isParseClass" FROM "_SCHEMA" WHERE "className" = ?', connection).get(className);
     if (!row) {
       return null;
     }
@@ -1983,38 +1578,20 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     schemaObj = normalizeStoredSchemaObject(className, schemaObj);
     return {
       isParseClass: row.isParseClass,
-      schema: schemaObj,
+      schema: schemaObj
     };
   }
-
-  _saveStoredSchemaObject(
-    className: string,
-    schemaObj: any,
-    isParseClass?: ?number,
-    connection?: any
-  ): void {
+  _saveStoredSchemaObject(className, schemaObj, isParseClass, connection) {
     const normalizedSchemaObj = normalizeStoredSchemaObject(className, schemaObj || {});
     const stored = this._getStoredSchemaObject(className, connection);
-    const parseClassFlag =
-      isParseClass !== undefined && isParseClass !== null
-        ? isParseClass
-        : stored && stored.isParseClass !== undefined
-          ? stored.isParseClass
-          : isSQLiteInternalClass(className)
-            ? 0
-            : 1;
-
-    this._prepare(
-      'INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES (?, ?, ?) ON CONFLICT("className") DO UPDATE SET "schema" = excluded."schema", "isParseClass" = excluded."isParseClass"',
-      connection
-    ).run(className, JSON.stringify(normalizedSchemaObj), parseClassFlag);
+    const parseClassFlag = isParseClass !== undefined && isParseClass !== null ? isParseClass : stored && stored.isParseClass !== undefined ? stored.isParseClass : isSQLiteInternalClass(className) ? 0 : 1;
+    this._prepare('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES (?, ?, ?) ON CONFLICT("className") DO UPDATE SET "schema" = excluded."schema", "isParseClass" = excluded."isParseClass"', connection).run(className, JSON.stringify(normalizedSchemaObj), parseClassFlag);
     if (!connection || connection === this._db) {
       this._existingClasses.add(className);
       this._schemaCache.set(className, normalizedSchemaObj);
     }
   }
-
-  _normalizeIndexColumnName(fieldName: string): string {
+  _normalizeIndexColumnName(fieldName) {
     if (fieldName === '_id' || fieldName === 'objectId') {
       return 'objectId';
     }
@@ -2023,26 +1600,22 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     }
     return fieldName;
   }
-
-  _fieldExistsForIndex(fields: any, fieldName: string): boolean {
+  _fieldExistsForIndex(fields, fieldName) {
     if (defaultSchemaIndexFields.has(fieldName)) {
       return true;
     }
     const normalizedFieldName = this._normalizeIndexColumnName(fieldName);
     return Object.prototype.hasOwnProperty.call(fields || {}, normalizedFieldName);
   }
-
-  _buildSchemaIndexesObject(indexes: Array<any>): any {
+  _buildSchemaIndexesObject(indexes) {
     return indexes.reduce((output, index) => {
       output[index.name] = cloneIndexDefinition(index.key);
       return output;
     }, {});
   }
-
-  _buildRawStorageObject(row: any): any {
+  _buildRawStorageObject(row) {
     const output = {};
     const legacyACL = {};
-
     for (const key of Object.keys(row || {})) {
       let value = row[key];
       if (typeof value === 'string') {
@@ -2054,16 +1627,19 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       }
       output[key] = value;
     }
-
     if (Array.isArray(output._wperm)) {
       output._wperm.forEach(entry => {
-        legacyACL[entry] = { w: true };
+        legacyACL[entry] = {
+          w: true
+        };
       });
     }
     if (Array.isArray(output._rperm)) {
       output._rperm.forEach(entry => {
         if (!legacyACL[entry]) {
-          legacyACL[entry] = { r: true };
+          legacyACL[entry] = {
+            r: true
+          };
         } else {
           legacyACL[entry].r = true;
         }
@@ -2072,30 +1648,28 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     if (Object.keys(legacyACL).length > 0) {
       output._acl = legacyACL;
     }
-
     return output;
   }
-
-  _transformDuplicateKeyError(err: any, className: string): any {
+  _transformDuplicateKeyError(err, className) {
     if (!isUniqueConstraintError(err)) {
       return err;
     }
-    logger.error('Duplicate key error:', buildDuplicateKeyLogMessage(this._rawTableName(className), err));
+    _logger.default.error('Duplicate key error:', buildDuplicateKeyLogMessage(this._rawTableName(className), err));
     const duplicatedField = getDuplicatedFieldFromUniqueConstraint(className, err);
-    const parseError = new Parse.Error(
-      Parse.Error.DUPLICATE_VALUE,
-      'A duplicate value for a field with unique values was provided'
-    );
+    const parseError = new _node.default.Error(_node.default.Error.DUPLICATE_VALUE, 'A duplicate value for a field with unique values was provided');
     parseError.underlyingError = err;
     if (duplicatedField) {
-      parseError.userInfo = { duplicated_field: duplicatedField };
+      parseError.userInfo = {
+        duplicated_field: duplicatedField
+      };
     }
     return parseError;
   }
-
-  _parseObjectToSQLiteRow(className: string, object: any): Object {
+  _parseObjectToSQLiteRow(className, object) {
     const row = {};
-    const copy = handleDotFields({ ...object });
+    const copy = handleDotFields({
+      ...object
+    });
     const explicitNullFields = new Set();
     validateNestedKeys(copy);
     Object.keys(copy).forEach(key => {
@@ -2120,8 +1694,7 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     }
     return row;
   }
-
-  _sqliteRowToParseObject(className: string, row: any, schema: SchemaType): Object {
+  _sqliteRowToParseObject(className, row, schema) {
     if (!row) {
       return null;
     }
@@ -2129,7 +1702,6 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     const cachedSchema = this._schemaCache.get(className);
     const fields = Object.assign({}, cachedSchema ? cachedSchema.fields : {}, schema ? schema.fields : {});
     const explicitNullFields = parseTrackedNullFields(row[nullFieldTrackerColumn]);
-
     Object.keys(row).forEach(key => {
       if (key === nullFieldTrackerColumn) {
         return;
@@ -2165,21 +1737,17 @@ export class SQLiteStorageAdapter implements StorageAdapter {
           return;
         }
       }
-
       let fieldSchema = fields[key];
       if (key === 'authData' && (!fieldSchema || fieldSchema.type !== 'Object')) {
-        fieldSchema = { type: 'Object' };
+        fieldSchema = {
+          type: 'Object'
+        };
       }
       if (fieldSchema) {
-        if (
-          className === '_User' &&
-          userDateLikeStringFields.has(key) &&
-          typeof val === 'string' &&
-          !isNaN(Date.parse(val))
-        ) {
+        if (className === '_User' && userDateLikeStringFields.has(key) && typeof val === 'string' && !isNaN(Date.parse(val))) {
           object[key] = {
             __type: 'Date',
-            iso: new Date(val).toISOString(),
+            iso: new Date(val).toISOString()
           };
           return;
         }
@@ -2187,56 +1755,47 @@ export class SQLiteStorageAdapter implements StorageAdapter {
           object[key] = {
             __type: 'Pointer',
             className: fieldSchema.targetClass,
-            objectId: val,
+            objectId: val
           };
           return;
         }
         if (fieldSchema.type === 'Relation') {
           object[key] = {
             __type: 'Relation',
-            className: fieldSchema.targetClass,
+            className: fieldSchema.targetClass
           };
           return;
         }
         if (fieldSchema.type === 'File' && typeof val === 'string') {
           object[key] = {
             __type: 'File',
-            name: val,
+            name: val
           };
           return;
         }
         if (fieldSchema.type === 'Date' && typeof val === 'string') {
           object[key] = {
             __type: 'Date',
-            iso: val,
+            iso: val
           };
           return;
         }
       }
-
       object[key] = sqliteValueToParseValue(val, fieldSchema);
     });
-
     if (fields) {
       Object.keys(fields).forEach(key => {
         if (fields[key].type === 'Relation' && !object[key]) {
           object[key] = {
             __type: 'Relation',
-            className: fields[key].targetClass,
+            className: fields[key].targetClass
           };
         }
       });
     }
-
     return object;
   }
-
-  async createObject(
-    className: string,
-    schema: SchemaType,
-    object: any,
-    transactionalSession?: any
-  ): Promise<any> {
+  async createObject(className, schema, object, transactionalSession) {
     const db = transactionalSession || this._db;
     await this._ensureClassExists(className, schema, db);
     const row = this._parseObjectToSQLiteRow(className, object);
@@ -2244,59 +1803,46 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     if (className === '_Idempotency') {
       this._deleteExpiredIdempotencyRecords(db);
     }
-
     const cols = Object.keys(row).map(quoteColumnName);
     const placeholders = Object.keys(row).map(() => '?');
     const values = Object.keys(row).map(k => row[k]);
-
     const stmtSql = `INSERT INTO ${this._tableName(className)} (${cols.join(', ')}) VALUES (${placeholders.join(', ')})`;
     try {
       this._prepare(stmtSql, transactionalSession).run(...values);
     } catch (err) {
       throw this._transformDuplicateKeyError(err, className);
     }
-    return { ops: [object] };
+    return {
+      ops: [object]
+    };
   }
-
-  _buildWhereClause(
-    className: string,
-    schema: SchemaType,
-    query: QueryType,
-    caseInsensitive: boolean = false,
-    preserveSpecialFieldNames: boolean = false
-  ): { sql: string, params: Array<any>, orderBys: Array<string>, orderByParams: Array<any> } {
+  _buildWhereClause(className, schema, query, caseInsensitive = false, preserveSpecialFieldNames = false) {
     if (!query) {
-      return { sql: '', params: [], orderBys: [], orderByParams: [] };
+      return {
+        sql: '',
+        params: [],
+        orderBys: [],
+        orderByParams: []
+      };
     }
     const cachedSchema = this._schemaCache.get(className);
     const schemaFields = {
-      ...((cachedSchema && cachedSchema.fields) || {}),
-      ...((schema && schema.fields) || {}),
+      ...(cachedSchema && cachedSchema.fields || {}),
+      ...(schema && schema.fields || {})
     };
     const conditions = [];
     const params = [];
     const orderBys = [];
     const orderByParams = [];
-
     for (const key of Object.keys(query)) {
       const val = query[key];
       const isDotNotation = key.indexOf('.') >= 0;
       const authDataMatch = key.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
-      const normalizedKey =
-        !preserveSpecialFieldNames && !authDataMatch && !isDotNotation
-          ? normalizeStorageFieldName(key)
-          : key;
-
+      const normalizedKey = !preserveSpecialFieldNames && !authDataMatch && !isDotNotation ? normalizeStorageFieldName(key) : key;
       if (key === '$or' || key === '$and' || key === '$nor') {
         const subConds = [];
         for (const subQuery of val) {
-          const res = this._buildWhereClause(
-            className,
-            schema,
-            subQuery,
-            caseInsensitive,
-            preserveSpecialFieldNames
-          );
+          const res = this._buildWhereClause(className, schema, subQuery, caseInsensitive, preserveSpecialFieldNames);
           if (res.sql) {
             subConds.push(`(${res.sql})`);
             params.push(...res.params);
@@ -2313,11 +1859,9 @@ export class SQLiteStorageAdapter implements StorageAdapter {
         }
         continue;
       }
-
       if (schemaFields[normalizedKey] && schemaFields[normalizedKey].type === 'Relation') {
         continue;
       }
-
       if (schemaFields[normalizedKey]) {
         const fieldType = schemaFields[normalizedKey].type;
         if (fieldType === 'Number' && typeof val === 'boolean') {
@@ -2329,36 +1873,25 @@ export class SQLiteStorageAdapter implements StorageAdapter {
           continue;
         }
       }
-
       if (isQueryOperatorObject(val)) {
         for (const op of Object.keys(val)) {
           const opVal = val[op];
           if (opVal && typeof opVal === 'object' && opVal.$relativeTime) {
             if (['$lt', '$lte', '$gt', '$gte'].indexOf(op) === -1) {
-              throw new Parse.Error(
-                Parse.Error.INVALID_JSON,
-                '$relativeTime can only be used with the $lt, $lte, $gt, and $gte operators'
-              );
+              throw new _node.default.Error(_node.default.Error.INVALID_JSON, '$relativeTime can only be used with the $lt, $lte, $gt, and $gte operators');
             }
             if (schemaFields[key] && schemaFields[key].type !== 'Date') {
-              throw new Parse.Error(
-                Parse.Error.INVALID_JSON,
-                '$relativeTime can only be used with Date field'
-              );
+              throw new _node.default.Error(_node.default.Error.INVALID_JSON, '$relativeTime can only be used with Date field');
             }
-            const parserResult = Utils.relativeTimeToDate(opVal.$relativeTime);
+            const parserResult = _Utils.default.relativeTimeToDate(opVal.$relativeTime);
             if (parserResult.status === 'success') {
               val[op] = parserResult.result;
             } else {
-              throw new Parse.Error(
-                Parse.Error.INVALID_JSON,
-                `bad $relativeTime (${opVal.$relativeTime}) value. ${parserResult.info}`
-              );
+              throw new _node.default.Error(_node.default.Error.INVALID_JSON, `bad $relativeTime (${opVal.$relativeTime}) value. ${parserResult.info}`);
             }
           }
         }
       }
-
       let targetSql;
       if (authDataMatch) {
         targetSql = `json_extract("authData", '$.${authDataMatch[1]}')`;
@@ -2366,37 +1899,18 @@ export class SQLiteStorageAdapter implements StorageAdapter {
         targetSql = transformDotField(key);
       } else {
         validateFieldName(normalizedKey);
-        const fieldExistsInSchema =
-          defaultSchemaIndexFields.has(normalizedKey) ||
-          normalizedKey === '_rperm' ||
-          normalizedKey === '_wperm' ||
-          Object.prototype.hasOwnProperty.call(schemaFields, normalizedKey);
+        const fieldExistsInSchema = defaultSchemaIndexFields.has(normalizedKey) || normalizedKey === '_rperm' || normalizedKey === '_wperm' || Object.prototype.hasOwnProperty.call(schemaFields, normalizedKey);
         targetSql = fieldExistsInSchema ? quoteColumnName(normalizedKey) : 'NULL';
       }
-
       const dotFieldPath = isDotNotation ? buildDotFieldPath(key) : null;
-      const dotFieldTypeSql = dotFieldPath
-        ? `json_type(${quoteColumnName(dotFieldPath.rootFieldName)}, '${dotFieldPath.jsonPath}')`
-        : null;
-      const usesCaseInsensitiveComparison =
-        caseInsensitive &&
-        !authDataMatch &&
-        !isDotNotation &&
-        (normalizedKey === 'username' || normalizedKey === 'email');
-      const isArrayField =
-        normalizedKey === '_rperm' ||
-        normalizedKey === '_wperm' ||
-        (schemaFields[normalizedKey] && schemaFields[normalizedKey].type === 'Array');
-      const explicitNullFieldMatch =
-        shouldTrackExplicitNullFields(className) && !authDataMatch && !isDotNotation
-          ? getExplicitNullFieldMatchExpression(normalizedKey)
-          : null;
-
+      const dotFieldTypeSql = dotFieldPath ? `json_type(${quoteColumnName(dotFieldPath.rootFieldName)}, '${dotFieldPath.jsonPath}')` : null;
+      const usesCaseInsensitiveComparison = caseInsensitive && !authDataMatch && !isDotNotation && (normalizedKey === 'username' || normalizedKey === 'email');
+      const isArrayField = normalizedKey === '_rperm' || normalizedKey === '_wperm' || schemaFields[normalizedKey] && schemaFields[normalizedKey].type === 'Array';
+      const explicitNullFieldMatch = shouldTrackExplicitNullFields(className) && !authDataMatch && !isDotNotation ? getExplicitNullFieldMatchExpression(normalizedKey) : null;
       if (val === null || val === undefined) {
         conditions.push(`${targetSql} IS NULL`);
         continue;
       }
-
       if (isQueryOperatorObject(val)) {
         const keys = Object.keys(val);
         for (const op of keys) {
@@ -2445,7 +1959,7 @@ export class SQLiteStorageAdapter implements StorageAdapter {
             params.push(toSQLiteValue(opVal));
           } else if (op === '$in') {
             if (!Array.isArray(opVal)) {
-              throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $in value');
+              throw new _node.default.Error(_node.default.Error.INVALID_JSON, 'bad $in value');
             }
             const normalizedInValues = opVal.flatMap(value => value);
             if (normalizedInValues.length > 0) {
@@ -2472,17 +1986,9 @@ export class SQLiteStorageAdapter implements StorageAdapter {
                   const arrayTypeCondition = `COALESCE(${dotFieldTypeSql}, '') = 'array'`;
                   const scalarTypeCondition = `COALESCE(${dotFieldTypeSql}, '') != 'array'`;
                   if (hasNull) {
-                    conditions.push(
-                      `((` +
-                        `${arrayTypeCondition} AND (${targetSql} IS NULL OR (${arrayMatch.sql}))) OR ` +
-                        `(${scalarTypeCondition} AND (${targetSql} IS NULL OR (${scalarMatch.sql}))))`
-                    );
+                    conditions.push(`((` + `${arrayTypeCondition} AND (${targetSql} IS NULL OR (${arrayMatch.sql}))) OR ` + `(${scalarTypeCondition} AND (${targetSql} IS NULL OR (${scalarMatch.sql}))))`);
                   } else {
-                    conditions.push(
-                      `((` +
-                        `${arrayTypeCondition} AND (${arrayMatch.sql})) OR ` +
-                        `(${scalarTypeCondition} AND (${scalarMatch.sql})))`
-                    );
+                    conditions.push(`((` + `${arrayTypeCondition} AND (${arrayMatch.sql})) OR ` + `(${scalarTypeCondition} AND (${scalarMatch.sql})))`);
                   }
                   params.push(...arrayMatch.params, ...scalarMatch.params);
                 } else if (hasNull) {
@@ -2510,7 +2016,7 @@ export class SQLiteStorageAdapter implements StorageAdapter {
             }
           } else if (op === '$nin') {
             if (!Array.isArray(opVal)) {
-              throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $nin value');
+              throw new _node.default.Error(_node.default.Error.INVALID_JSON, 'bad $nin value');
             }
             const normalizedNinValues = opVal.flatMap(value => value);
             if (normalizedNinValues.length > 0) {
@@ -2535,17 +2041,9 @@ export class SQLiteStorageAdapter implements StorageAdapter {
                   const arrayTypeCondition = `COALESCE(${dotFieldTypeSql}, '') = 'array'`;
                   const scalarTypeCondition = `COALESCE(${dotFieldTypeSql}, '') != 'array'`;
                   if (hasNull) {
-                    conditions.push(
-                      `((` +
-                        `${arrayTypeCondition} AND ${targetSql} IS NOT NULL AND NOT (${arrayMatch.sql})) OR ` +
-                        `(${scalarTypeCondition} AND ${targetSql} IS NOT NULL AND NOT (${scalarMatch.sql})))`
-                    );
+                    conditions.push(`((` + `${arrayTypeCondition} AND ${targetSql} IS NOT NULL AND NOT (${arrayMatch.sql})) OR ` + `(${scalarTypeCondition} AND ${targetSql} IS NOT NULL AND NOT (${scalarMatch.sql})))`);
                   } else {
-                    conditions.push(
-                      `((` +
-                        `${arrayTypeCondition} AND (${targetSql} IS NULL OR NOT (${arrayMatch.sql}))) OR ` +
-                        `(${scalarTypeCondition} AND (${targetSql} IS NULL OR NOT (${scalarMatch.sql}))))`
-                    );
+                    conditions.push(`((` + `${arrayTypeCondition} AND (${targetSql} IS NULL OR NOT (${arrayMatch.sql}))) OR ` + `(${scalarTypeCondition} AND (${targetSql} IS NULL OR NOT (${scalarMatch.sql}))))`);
                   }
                   params.push(...arrayMatch.params, ...scalarMatch.params);
                 } else if (hasNull) {
@@ -2583,15 +2081,10 @@ export class SQLiteStorageAdapter implements StorageAdapter {
             }
           } else if (op === '$regex') {
             const normalizedRegex = validateRegexPattern(opVal, val.$options || '');
-            const regexMatch = getSimpleRegexMatchExpression(
-              isArrayField ? 'value' : targetSql,
-              normalizedRegex
-            );
+            const regexMatch = getSimpleRegexMatchExpression(isArrayField ? 'value' : targetSql, normalizedRegex);
             if (isArrayField) {
               if (regexMatch) {
-                conditions.push(
-                  `EXISTS (SELECT 1 FROM json_each(${targetSql}) WHERE ${regexMatch.sql})`
-                );
+                conditions.push(`EXISTS (SELECT 1 FROM json_each(${targetSql}) WHERE ${regexMatch.sql})`);
                 params.push(...regexMatch.params);
               } else if (normalizedRegex.flags) {
                 conditions.push(`EXISTS (SELECT 1 FROM json_each(${targetSql}) WHERE regexp_flags(?, ?, value) = 1)`);
@@ -2615,16 +2108,13 @@ export class SQLiteStorageAdapter implements StorageAdapter {
           } else if (op === '$nearSphere') {
             const point = opVal;
             if (!isGeoPointValue(point)) {
-              throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $nearSphere value');
+              throw new _node.default.Error(_node.default.Error.INVALID_JSON, 'bad $nearSphere value');
             }
-            Parse.GeoPoint._validate(point.latitude, point.longitude);
+            _node.default.GeoPoint._validate(point.latitude, point.longitude);
             const lat = point.latitude;
             const lng = point.longitude;
             const maxDistance = val.$maxDistance;
-            const distanceExpression =
-              `parse_geo_distance(` +
-              `json_extract(${targetSql}, '$.latitude'), ` +
-              `json_extract(${targetSql}, '$.longitude'), ?, ?)`;
+            const distanceExpression = `parse_geo_distance(` + `json_extract(${targetSql}, '$.latitude'), ` + `json_extract(${targetSql}, '$.longitude'), ?, ?)`;
             if (maxDistance !== undefined) {
               conditions.push(`${distanceExpression} <= ?`);
               params.push(lat, lng, maxDistance);
@@ -2633,7 +2123,7 @@ export class SQLiteStorageAdapter implements StorageAdapter {
             orderByParams.push(lat, lng);
           } else if (op === '$maxDistance') {
             if (!val.$nearSphere) {
-              throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad constraint: $maxDistance');
+              throw new _node.default.Error(_node.default.Error.INVALID_JSON, 'bad constraint: $maxDistance');
             }
           } else if (op === '$within') {
             if (opVal.$box) {
@@ -2641,40 +2131,31 @@ export class SQLiteStorageAdapter implements StorageAdapter {
               conditions.push(`parse_within_box(json_extract(${targetSql}, '$.latitude'), json_extract(${targetSql}, '$.longitude'), ?, ?, ?, ?) = 1`);
               params.push(box[0].latitude, box[0].longitude, box[1].latitude, box[1].longitude);
             } else {
-              throw new Parse.Error(Parse.Error.INVALID_JSON, 'malformatted $within arg');
+              throw new _node.default.Error(_node.default.Error.INVALID_JSON, 'malformatted $within arg');
             }
           } else if (op === '$geoWithin') {
             if (opVal.$centerSphere) {
               const cs = opVal.$centerSphere;
               if (!Array.isArray(cs) || cs.length < 2) {
-                throw new Parse.Error(
-                  Parse.Error.INVALID_JSON,
-                  'bad $geoWithin value; $centerSphere should be an array of Parse.GeoPoint and distance'
-                );
+                throw new _node.default.Error(_node.default.Error.INVALID_JSON, 'bad $geoWithin value; $centerSphere should be an array of Parse.GeoPoint and distance');
               }
               const point = cs[0];
               const maxDistanceRad = cs[1];
               let lat;
               let lng;
               if (Array.isArray(point) && point.length === 2) {
-                Parse.GeoPoint._validate(point[1], point[0]);
+                _node.default.GeoPoint._validate(point[1], point[0]);
                 lat = point[1];
                 lng = point[0];
               } else if (isGeoPointValue(point)) {
-                Parse.GeoPoint._validate(point.latitude, point.longitude);
+                _node.default.GeoPoint._validate(point.latitude, point.longitude);
                 lat = point.latitude;
                 lng = point.longitude;
               } else {
-                throw new Parse.Error(
-                  Parse.Error.INVALID_JSON,
-                  'bad $geoWithin value; $centerSphere geo point invalid'
-                );
+                throw new _node.default.Error(_node.default.Error.INVALID_JSON, 'bad $geoWithin value; $centerSphere geo point invalid');
               }
               if (isNaN(maxDistanceRad) || maxDistanceRad < 0) {
-                throw new Parse.Error(
-                  Parse.Error.INVALID_JSON,
-                  'bad $geoWithin value; $centerSphere distance invalid'
-                );
+                throw new _node.default.Error(_node.default.Error.INVALID_JSON, 'bad $geoWithin value; $centerSphere distance invalid');
               }
               conditions.push(`parse_geo_distance(json_extract(${targetSql}, '$.latitude'), json_extract(${targetSql}, '$.longitude'), ?, ?) <= ?`);
               params.push(lat, lng, maxDistanceRad);
@@ -2687,12 +2168,9 @@ export class SQLiteStorageAdapter implements StorageAdapter {
             if (opVal.$point && schemaFields[key] && schemaFields[key].type === 'Polygon') {
               const point = opVal.$point;
               if (!isGeoPointValue(point)) {
-                throw new Parse.Error(
-                  Parse.Error.INVALID_JSON,
-                  'bad $geoIntersect value; $point should be GeoPoint'
-                );
+                throw new _node.default.Error(_node.default.Error.INVALID_JSON, 'bad $geoIntersect value; $point should be GeoPoint');
               }
-              Parse.GeoPoint._validate(point.latitude, point.longitude);
+              _node.default.GeoPoint._validate(point.latitude, point.longitude);
               conditions.push(`parse_within_polygon(?, ?, ${targetSql}) = 1`);
               params.push(point.latitude, point.longitude);
             } else if (opVal.$polygon) {
@@ -2702,7 +2180,7 @@ export class SQLiteStorageAdapter implements StorageAdapter {
             }
           } else if (op === '$options') {
             if (!Object.prototype.hasOwnProperty.call(val, '$regex')) {
-              throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad constraint: $options');
+              throw new _node.default.Error(_node.default.Error.INVALID_JSON, 'bad constraint: $options');
             }
           } else if (op === '$all') {
             if (Array.isArray(opVal)) {
@@ -2710,10 +2188,7 @@ export class SQLiteStorageAdapter implements StorageAdapter {
                 conditions.push('1 = 0');
               } else if (isAnyValueRegex(opVal)) {
                 if (!isAllValuesRegexOrNone(opVal)) {
-                  throw new Parse.Error(
-                    Parse.Error.INVALID_JSON,
-                    'All $all values must be of regex type or none: ' + opVal
-                  );
+                  throw new _node.default.Error(_node.default.Error.INVALID_JSON, 'All $all values must be of regex type or none: ' + opVal);
                 }
                 if (!isArrayField) {
                   conditions.push('1 = 0');
@@ -2723,19 +2198,13 @@ export class SQLiteStorageAdapter implements StorageAdapter {
                   const normalizedRegex = validateRegexPattern(elem.$regex, elem.$options || '');
                   const regexMatch = getSimpleRegexMatchExpression('value', normalizedRegex);
                   if (regexMatch) {
-                    conditions.push(
-                      `EXISTS (SELECT 1 FROM json_each(${targetSql}) WHERE ${regexMatch.sql})`
-                    );
+                    conditions.push(`EXISTS (SELECT 1 FROM json_each(${targetSql}) WHERE ${regexMatch.sql})`);
                     params.push(...regexMatch.params);
                   } else if (normalizedRegex.flags) {
-                    conditions.push(
-                      `EXISTS (SELECT 1 FROM json_each(${targetSql}) WHERE regexp_flags(?, ?, value) = 1)`
-                    );
+                    conditions.push(`EXISTS (SELECT 1 FROM json_each(${targetSql}) WHERE regexp_flags(?, ?, value) = 1)`);
                     params.push(normalizedRegex.pattern, normalizedRegex.flags);
                   } else {
-                    conditions.push(
-                      `EXISTS (SELECT 1 FROM json_each(${targetSql}) WHERE value REGEXP ?)`
-                    );
+                    conditions.push(`EXISTS (SELECT 1 FROM json_each(${targetSql}) WHERE value REGEXP ?)`);
                     params.push(normalizedRegex.pattern);
                   }
                 }
@@ -2755,20 +2224,15 @@ export class SQLiteStorageAdapter implements StorageAdapter {
             }
           } else if (op === '$containedBy') {
             if (!Array.isArray(opVal)) {
-              throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $containedBy: should be an array');
+              throw new _node.default.Error(_node.default.Error.INVALID_JSON, 'bad $containedBy: should be an array');
             }
             if (opVal.length === 0) {
               conditions.push(`(${targetSql} IS NULL OR json_array_length(${targetSql}) = 0)`);
             } else {
               if (isArrayField) {
                 const eachTableName = getJSONArrayTableFunctionName(opVal);
-                const valueMatch = getJsonValueAnyMatchExpression(
-                  `${eachTableName}.value`,
-                  opVal
-                );
-                conditions.push(
-                  `(${targetSql} IS NULL OR NOT EXISTS (SELECT 1 FROM ${eachTableName}(${targetSql}) WHERE NOT (${valueMatch.sql})))`
-                );
+                const valueMatch = getJsonValueAnyMatchExpression(`${eachTableName}.value`, opVal);
+                conditions.push(`(${targetSql} IS NULL OR NOT EXISTS (SELECT 1 FROM ${eachTableName}(${targetSql}) WHERE NOT (${valueMatch.sql})))`);
                 params.push(...valueMatch.params);
               } else {
                 const scalarMatch = getScalarAnyMatchExpression(targetSql, opVal);
@@ -2777,7 +2241,7 @@ export class SQLiteStorageAdapter implements StorageAdapter {
               }
             }
           } else {
-            throw new Parse.Error(Parse.Error.INVALID_JSON, `bad constraint: ${op}`);
+            throw new _node.default.Error(_node.default.Error.INVALID_JSON, `bad constraint: ${op}`);
           }
         }
       } else {
@@ -2795,37 +2259,29 @@ export class SQLiteStorageAdapter implements StorageAdapter {
         }
       }
     }
-
     return {
       sql: conditions.join(' AND '),
       params,
       orderBys,
-      orderByParams,
+      orderByParams
     };
   }
-
-  async find(
-    className: string,
-    schema: SchemaType,
-    query: QueryType,
-    { skip, limit, sort, keys, caseInsensitive }: QueryOptions = {},
-    transactionalSession?: any
-  ): Promise<Array<any>> {
+  async find(className, schema, query, {
+    skip,
+    limit,
+    sort,
+    keys,
+    caseInsensitive
+  } = {}, transactionalSession) {
     schema = normalizeSQLiteSchema(className, schema);
     const db = transactionalSession || this._db;
     const textSearch = parseTextSearch(query);
-    const where = this._buildWhereClause(
-      className,
-      schema,
-      textSearch ? textSearch.remainingQuery : query,
-      Boolean(caseInsensitive)
-    );
+    const where = this._buildWhereClause(className, schema, textSearch ? textSearch.remainingQuery : query, Boolean(caseInsensitive));
     if (!(await this.classExists(className, db))) {
       return [];
     }
     const tableName = this._tableName(className);
     const queryParams = [...where.params];
-
     let selectSql = '*';
     let includeTextScore = false;
     if (keys && keys.length > 0) {
@@ -2839,7 +2295,6 @@ export class SQLiteStorageAdapter implements StorageAdapter {
         }
         return memo;
       }, []);
-
       for (const k of selectedKeys) {
         const rootFieldName = k.indexOf('.') >= 0 ? k.split('.')[0] : k;
         if (k !== '$score' && (!schema.fields[rootFieldName] || schema.fields[rootFieldName].type === 'Relation')) {
@@ -2861,21 +2316,11 @@ export class SQLiteStorageAdapter implements StorageAdapter {
         selectSql = selectedCols.join(', ');
       }
     }
-
     let sql;
     let textScoreSql = null;
     if (textSearch) {
-      await this._ensureFTS5Index(
-        className,
-        textSearch.fieldName,
-        Boolean(textSearch.diacriticSensitive),
-        db
-      );
-      const ftsTableName = this._quotedFTSTableName(
-        className,
-        textSearch.fieldName,
-        Boolean(textSearch.diacriticSensitive)
-      );
+      await this._ensureFTS5Index(className, textSearch.fieldName, Boolean(textSearch.diacriticSensitive), db);
+      const ftsTableName = this._quotedFTSTableName(className, textSearch.fieldName, Boolean(textSearch.diacriticSensitive));
       textScoreSql = `(-bm25(${ftsTableName}))`;
       if (includeTextScore) {
         if (selectSql === '*') {
@@ -2889,11 +2334,9 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     } else {
       sql = `SELECT ${selectSql} FROM ${tableName}`;
     }
-
     if (where.sql) {
       sql += textSearch ? ` AND ${where.sql}` : ` WHERE ${where.sql}`;
     }
-
     {
       const sortParts = [...where.orderBys];
       if (sort) {
@@ -2902,8 +2345,7 @@ export class SQLiteStorageAdapter implements StorageAdapter {
             sortParts.push(`${textScoreSql} DESC`);
             continue;
           }
-          const normalizedSortKey =
-            normalizeStorageFieldName(sortKey);
+          const normalizedSortKey = normalizeStorageFieldName(sortKey);
           const dir = sort[sortKey] > 0 ? 'ASC' : 'DESC';
           if (normalizedSortKey.indexOf('.') >= 0) {
             sortParts.push(`${transformDotField(normalizedSortKey)} ${dir}`);
@@ -2917,7 +2359,6 @@ export class SQLiteStorageAdapter implements StorageAdapter {
         sql += ` ORDER BY ${sortParts.join(', ')}`;
       }
     }
-
     if (limit !== undefined) {
       sql += ` LIMIT ${parseInt(limit, 10)}`;
     }
@@ -2927,16 +2368,10 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       }
       sql += ` OFFSET ${parseInt(skip, 10)}`;
     }
-
     const rows = this._prepare(sql, db).all(...queryParams, ...where.orderByParams);
     return rows.map(row => this._sqliteRowToParseObject(className, row, schema));
   }
-
-  async count(
-    className: string,
-    schema: SchemaType,
-    query: QueryType
-  ): Promise<number> {
+  async count(className, schema, query) {
     if (!(await this.classExists(className))) {
       return 0;
     }
@@ -2949,13 +2384,7 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     const row = this._prepare(sql).get(...where.params);
     return row ? row.count : 0;
   }
-
-  async distinct(
-    className: string,
-    schema: SchemaType,
-    query: QueryType,
-    fieldName: string
-  ): Promise<any> {
+  async distinct(className, schema, query, fieldName) {
     if (!(await this.classExists(className))) {
       return [];
     }
@@ -2963,20 +2392,14 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     validateFieldName(rootFieldName);
     schema = normalizeSQLiteSchema(className, schema);
     const columns = this._getTableColumns(className);
-    if (
-      !['objectId', 'createdAt', 'updatedAt'].includes(rootFieldName) &&
-      !columns.includes(rootFieldName)
-    ) {
+    if (!['objectId', 'createdAt', 'updatedAt'].includes(rootFieldName) && !columns.includes(rootFieldName)) {
       return [];
     }
     const tableName = this._tableName(className);
     const where = this._buildWhereClause(className, schema, query);
     const fieldSchema = (schema.fields || {})[rootFieldName];
-
     if (fieldSchema && fieldSchema.type === 'Array' && fieldName.indexOf('.') === -1) {
-      let sql =
-        `SELECT DISTINCT json_each.value as val ` +
-        `FROM ${tableName} JOIN json_each(${quoteColumnName(fieldName)})`;
+      let sql = `SELECT DISTINCT json_each.value as val ` + `FROM ${tableName} JOIN json_each(${quoteColumnName(fieldName)})`;
       if (where.sql) {
         sql += ` WHERE ${where.sql} AND json_each.value IS NOT NULL`;
       } else {
@@ -2985,45 +2408,42 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       const rows = this._prepare(sql).all(...where.params);
       return rows.map(row => parseJSONValue(row.val));
     }
-
-    const targetSql =
-      fieldName.indexOf('.') >= 0 ? transformDotField(fieldName) : quoteColumnName(fieldName);
-
+    const targetSql = fieldName.indexOf('.') >= 0 ? transformDotField(fieldName) : quoteColumnName(fieldName);
     let sql = `SELECT DISTINCT ${targetSql} as val FROM ${tableName}`;
     if (where.sql) {
       sql += ` WHERE ${where.sql} AND ${targetSql} IS NOT NULL`;
     } else {
       sql += ` WHERE ${targetSql} IS NOT NULL`;
     }
-
     const rows = this._prepare(sql).all(...where.params);
     if (fieldSchema && fieldSchema.type === 'Pointer') {
-      return rows
-        .filter(row => row.val !== null && row.val !== undefined)
-        .map(row => ({
-          __type: 'Pointer',
-          className: fieldSchema.targetClass,
-          objectId: row.val,
-        }));
+      return rows.filter(row => row.val !== null && row.val !== undefined).map(row => ({
+        __type: 'Pointer',
+        className: fieldSchema.targetClass,
+        objectId: row.val
+      }));
     }
-    const valueType =
-      rootFieldName === 'createdAt' || rootFieldName === 'updatedAt'
-        ? { type: 'Date' }
-        : fieldSchema;
+    const valueType = rootFieldName === 'createdAt' || rootFieldName === 'updatedAt' ? {
+      type: 'Date'
+    } : fieldSchema;
     return rows.map(row => sqliteValueToParseValue(row.val, valueType));
   }
-
-  _buildNativeAggregateSchema(className: string, schema: SchemaType): SchemaType {
+  _buildNativeAggregateSchema(className, schema) {
     const nativeSchema = {
       className,
       fields: {
-        _id: { type: 'String' },
-        _created_at: { type: 'Date' },
-        _updated_at: { type: 'Date' },
-      },
+        _id: {
+          type: 'String'
+        },
+        _created_at: {
+          type: 'Date'
+        },
+        _updated_at: {
+          type: 'Date'
+        }
+      }
     };
-
-    for (const fieldName of Object.keys((schema && schema.fields) || {})) {
+    for (const fieldName of Object.keys(schema && schema.fields || {})) {
       if (fieldName === 'objectId' || fieldName === 'createdAt' || fieldName === 'updatedAt') {
         continue;
       }
@@ -3031,62 +2451,65 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       if (field.type === 'Pointer') {
         nativeSchema.fields[`_p_${fieldName}`] = {
           ...field,
-          nativePointer: true,
+          nativePointer: true
         };
       } else {
-        nativeSchema.fields[fieldName] = { ...field };
+        nativeSchema.fields[fieldName] = {
+          ...field
+        };
       }
     }
-
     return nativeSchema;
   }
-
-  _getNativeAggregateContext(className: string, schema: SchemaType): any {
+  _getNativeAggregateContext(className, schema) {
     const columns = this._getTableColumns(className);
     const selectParts = [];
     const params = [];
     const nativeSchema = {
       className,
-      fields: {},
+      fields: {}
     };
-
     for (const column of columns) {
       if (column === 'objectId') {
         selectParts.push(`${quoteColumnName(column)} AS "_id"`);
-        nativeSchema.fields._id = { type: 'String' };
+        nativeSchema.fields._id = {
+          type: 'String'
+        };
       } else if (column === 'createdAt') {
         selectParts.push(`${quoteColumnName(column)} AS "_created_at"`);
-        nativeSchema.fields._created_at = { type: 'Date' };
+        nativeSchema.fields._created_at = {
+          type: 'Date'
+        };
       } else if (column === 'updatedAt') {
         selectParts.push(`${quoteColumnName(column)} AS "_updated_at"`);
-        nativeSchema.fields._updated_at = { type: 'Date' };
+        nativeSchema.fields._updated_at = {
+          type: 'Date'
+        };
       } else if (schema.fields[column] && schema.fields[column].type === 'Pointer') {
-        selectParts.push(
-          `CASE WHEN ${quoteColumnName(column)} IS NULL THEN NULL ELSE ? || ${quoteColumnName(column)} END AS ${quoteColumnName(`_p_${column}`)}`
-        );
+        selectParts.push(`CASE WHEN ${quoteColumnName(column)} IS NULL THEN NULL ELSE ? || ${quoteColumnName(column)} END AS ${quoteColumnName(`_p_${column}`)}`);
         params.push(`${schema.fields[column].targetClass}$`);
         nativeSchema.fields[`_p_${column}`] = {
           ...schema.fields[column],
-          nativePointer: true,
+          nativePointer: true
         };
       } else {
         selectParts.push(quoteColumnName(column));
         if (schema.fields[column]) {
-          nativeSchema.fields[column] = { ...schema.fields[column] };
+          nativeSchema.fields[column] = {
+            ...schema.fields[column]
+          };
         }
       }
     }
-
     return {
       className,
       schema: nativeSchema,
       sql: `SELECT ${selectParts.join(', ')} FROM ${this._tableName(className)}`,
-      params,
+      params
     };
   }
-
-  _convertAggregateValueToDate(value: any): any {
-    if (Utils.isDate(value)) {
+  _convertAggregateValueToDate(value) {
+    if (_Utils.default.isDate(value)) {
       return value;
     }
     if (Array.isArray(value)) {
@@ -3104,8 +2527,7 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     }
     return value;
   }
-
-  _transformAggregatePointerConstraint(value: any, targetClass: string): any {
+  _transformAggregatePointerConstraint(value, targetClass) {
     if (value === null || value === undefined) {
       return value;
     }
@@ -3119,9 +2541,7 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       const output = {};
       for (const key of Object.keys(value)) {
         if (['$in', '$nin', '$all'].includes(key) && Array.isArray(value[key])) {
-          output[key] = value[key].map(item =>
-            this._transformAggregatePointerConstraint(item, targetClass)
-          );
+          output[key] = value[key].map(item => this._transformAggregatePointerConstraint(item, targetClass));
         } else if (['$eq', '$ne'].includes(key)) {
           output[key] = this._transformAggregatePointerConstraint(value[key], targetClass);
         } else {
@@ -3132,17 +2552,11 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     }
     return value;
   }
-
-  _transformAggregateArgs(
-    schema: SchemaType,
-    pipeline: any,
-    rawValues?: boolean,
-    rawFieldNames?: boolean
-  ): any {
+  _transformAggregateArgs(schema, pipeline, rawValues, rawFieldNames) {
     if (pipeline === null || pipeline === undefined) {
       return pipeline;
     }
-    if (Utils.isDate(pipeline)) {
+    if (_Utils.default.isDate(pipeline)) {
       return pipeline;
     }
     if (Array.isArray(pipeline)) {
@@ -3152,16 +2566,13 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       const output = {};
       for (const field of Object.keys(pipeline)) {
         const value = pipeline[field];
-
         if (field === '$expr') {
           output[field] = this._transformAggregateGroupArgs(schema, value, rawFieldNames);
           continue;
         }
-
         let outputField = field;
         let outputValue = value;
         const fieldSchema = (schema.fields || {})[field];
-
         if (!rawFieldNames) {
           if (field === 'objectId') {
             outputField = '_id';
@@ -3181,17 +2592,11 @@ export class SQLiteStorageAdapter implements StorageAdapter {
           } else if (fieldSchema && fieldSchema.type === 'Date' && !rawValues) {
             outputValue = this._convertAggregateValueToDate(value);
           }
-        } else if ((field === '_created_at' || field === '_updated_at' || (fieldSchema && fieldSchema.type === 'Date')) && !rawValues) {
+        } else if ((field === '_created_at' || field === '_updated_at' || fieldSchema && fieldSchema.type === 'Date') && !rawValues) {
           outputValue = this._convertAggregateValueToDate(value);
         }
-
-        if (outputValue && typeof outputValue === 'object' && !Utils.isDate(outputValue)) {
-          output[outputField] = this._transformAggregateArgs(
-            schema,
-            outputValue,
-            rawValues,
-            rawFieldNames
-          );
+        if (outputValue && typeof outputValue === 'object' && !_Utils.default.isDate(outputValue)) {
+          output[outputField] = this._transformAggregateArgs(schema, outputValue, rawValues, rawFieldNames);
         } else {
           output[outputField] = outputValue;
         }
@@ -3200,19 +2605,11 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     }
     return pipeline;
   }
-
-  _transformAggregateProjectArgs(
-    schema: SchemaType,
-    pipeline: any,
-    rawValues?: boolean,
-    rawFieldNames?: boolean
-  ): any {
+  _transformAggregateProjectArgs(schema, pipeline, rawValues, rawFieldNames) {
     const output = {};
-
     for (const field of Object.keys(pipeline)) {
       const value = pipeline[field];
       let outputField = field;
-
       if (!rawFieldNames) {
         if (field === 'objectId') {
           outputField = '_id';
@@ -3224,18 +2621,11 @@ export class SQLiteStorageAdapter implements StorageAdapter {
           outputField = `_p_${field}`;
         }
       }
-
       output[outputField] = this._transformAggregateArgs(schema, value, rawValues, rawFieldNames);
     }
-
     return output;
   }
-
-  _transformAggregateGroupArgs(
-    schema: SchemaType,
-    pipeline: any,
-    rawFieldNames?: boolean
-  ): any {
+  _transformAggregateGroupArgs(schema, pipeline, rawFieldNames) {
     if (Array.isArray(pipeline)) {
       return pipeline.map(value => this._transformAggregateGroupArgs(schema, value, rawFieldNames));
     }
@@ -3263,19 +2653,17 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     }
     return pipeline;
   }
-
-  _isAggregateDateField(fieldName: string, schema: SchemaType, rawFieldNames?: boolean): boolean {
+  _isAggregateDateField(fieldName, schema, rawFieldNames) {
     if (rawFieldNames) {
-      return fieldName === '_created_at' || fieldName === '_updated_at' || (schema.fields && schema.fields[fieldName] && schema.fields[fieldName].type === 'Date');
+      return fieldName === '_created_at' || fieldName === '_updated_at' || schema.fields && schema.fields[fieldName] && schema.fields[fieldName].type === 'Date';
     }
-    return fieldName === 'createdAt' || fieldName === 'updatedAt' || (schema.fields && schema.fields[fieldName] && schema.fields[fieldName].type === 'Date');
+    return fieldName === 'createdAt' || fieldName === 'updatedAt' || schema.fields && schema.fields[fieldName] && schema.fields[fieldName].type === 'Date';
   }
-
-  _hasIncompatibleAggregateDateMatchValue(value: any): boolean {
+  _hasIncompatibleAggregateDateMatchValue(value) {
     if (value === null || value === undefined) {
       return false;
     }
-    if (Utils.isDate(value)) {
+    if (_Utils.default.isDate(value)) {
       return false;
     }
     if (Array.isArray(value)) {
@@ -3301,23 +2689,14 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     }
     return true;
   }
-
-  _aggregateMatchAlwaysFalse(
-    query: any,
-    schema: SchemaType,
-    _rawValues?: boolean,
-    rawFieldNames?: boolean
-  ): boolean {
+  _aggregateMatchAlwaysFalse(query, schema, _rawValues, rawFieldNames) {
     if (!query) {
       return false;
     }
     for (const key of Object.keys(query)) {
       const value = query[key];
       if (key === '$or' || key === '$and' || key === '$nor') {
-        if (
-          Array.isArray(value) &&
-          value.some(item => this._aggregateMatchAlwaysFalse(item, schema, _rawValues, rawFieldNames))
-        ) {
+        if (Array.isArray(value) && value.some(item => this._aggregateMatchAlwaysFalse(item, schema, _rawValues, rawFieldNames))) {
           return true;
         }
         continue;
@@ -3325,17 +2704,13 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       if (key === '$expr') {
         continue;
       }
-      if (
-        this._isAggregateDateField(key, schema, rawFieldNames) &&
-        this._hasIncompatibleAggregateDateMatchValue(value)
-      ) {
+      if (this._isAggregateDateField(key, schema, rawFieldNames) && this._hasIncompatibleAggregateDateMatchValue(value)) {
         return true;
       }
     }
     return false;
   }
-
-  _aggregateQueryReferencesMissingField(query: any, schema: SchemaType): boolean {
+  _aggregateQueryReferencesMissingField(query, schema) {
     if (!query || typeof query !== 'object') {
       return false;
     }
@@ -3357,16 +2732,21 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     }
     return false;
   }
-
-  _compileAggregateExpression(context: any, expression: any): any {
+  _compileAggregateExpression(context, expression) {
     if (expression === null) {
-      return { sql: 'NULL', params: [], fieldType: null };
+      return {
+        sql: 'NULL',
+        params: [],
+        fieldType: null
+      };
     }
-    if (Utils.isDate(expression)) {
+    if (_Utils.default.isDate(expression)) {
       return {
         sql: '?',
         params: [expression.toISOString()],
-        fieldType: { type: 'Date' },
+        fieldType: {
+          type: 'Date'
+        }
       };
     }
     if (typeof expression === 'string') {
@@ -3374,46 +2754,60 @@ export class SQLiteStorageAdapter implements StorageAdapter {
         return {
           sql: '?',
           params: [new Date().toISOString()],
-          fieldType: { type: 'Date' },
+          fieldType: {
+            type: 'Date'
+          }
         };
       }
       if (expression.startsWith('$')) {
         const fieldName = expression.slice(1);
         const rootFieldName = fieldName.indexOf('.') >= 0 ? fieldName.split('.')[0] : fieldName;
         if (!context.schema.fields[rootFieldName]) {
-          return { sql: 'NULL', params: [], fieldType: null };
+          return {
+            sql: 'NULL',
+            params: [],
+            fieldType: null
+          };
         }
         return {
           sql: fieldName.indexOf('.') >= 0 ? transformDotField(fieldName) : quoteColumnName(fieldName),
           params: [],
-          fieldType: context.schema.fields[rootFieldName],
+          fieldType: context.schema.fields[rootFieldName]
         };
       }
       return {
         sql: '?',
         params: [expression],
-        fieldType: { type: 'String' },
+        fieldType: {
+          type: 'String'
+        }
       };
     }
     if (typeof expression === 'number') {
       return {
         sql: '?',
         params: [expression],
-        fieldType: { type: 'Number' },
+        fieldType: {
+          type: 'Number'
+        }
       };
     }
     if (typeof expression === 'boolean') {
       return {
         sql: '?',
         params: [expression ? 1 : 0],
-        fieldType: { type: 'Boolean' },
+        fieldType: {
+          type: 'Boolean'
+        }
       };
     }
     if (Array.isArray(expression)) {
       return {
         sql: 'json(?)',
         params: [JSON.stringify(expression)],
-        fieldType: { type: 'Array' },
+        fieldType: {
+          type: 'Array'
+        }
       };
     }
     if (isPlainObject(expression)) {
@@ -3422,7 +2816,9 @@ export class SQLiteStorageAdapter implements StorageAdapter {
         return {
           sql: parts.map(item => `CAST(${item.sql} AS REAL)`).join(' * '),
           params: parts.flatMap(item => item.params),
-          fieldType: { type: 'Number' },
+          fieldType: {
+            type: 'Number'
+          }
         };
       }
       if (expression.$dayOfMonth) {
@@ -3430,7 +2826,9 @@ export class SQLiteStorageAdapter implements StorageAdapter {
         return {
           sql: `CAST(strftime('%d', ${compiled.sql}) AS INTEGER)`,
           params: compiled.params,
-          fieldType: { type: 'Number' },
+          fieldType: {
+            type: 'Number'
+          }
         };
       }
       if (expression.$month) {
@@ -3438,7 +2836,9 @@ export class SQLiteStorageAdapter implements StorageAdapter {
         return {
           sql: `CAST(strftime('%m', ${compiled.sql}) AS INTEGER)`,
           params: compiled.params,
-          fieldType: { type: 'Number' },
+          fieldType: {
+            type: 'Number'
+          }
         };
       }
       if (expression.$year) {
@@ -3446,7 +2846,9 @@ export class SQLiteStorageAdapter implements StorageAdapter {
         return {
           sql: `CAST(strftime('%Y', ${compiled.sql}) AS INTEGER)`,
           params: compiled.params,
-          fieldType: { type: 'Number' },
+          fieldType: {
+            type: 'Number'
+          }
         };
       }
       if (expression.$substr) {
@@ -3457,13 +2859,17 @@ export class SQLiteStorageAdapter implements StorageAdapter {
           return {
             sql: `substr(${compiled.sql}, ${startIndex})`,
             params: compiled.params,
-            fieldType: { type: 'String' },
+            fieldType: {
+              type: 'String'
+            }
           };
         }
         return {
           sql: `substr(${compiled.sql}, ${startIndex}, ${Number(length)})`,
           params: compiled.params,
-          fieldType: { type: 'String' },
+          fieldType: {
+            type: 'String'
+          }
         };
       }
       if (expression.$dateSubtract) {
@@ -3474,24 +2880,31 @@ export class SQLiteStorageAdapter implements StorageAdapter {
           return {
             sql: '?',
             params: [new Date(Date.now() - amount * 24 * 60 * 60 * 1000).toISOString()],
-            fieldType: { type: 'Date' },
+            fieldType: {
+              type: 'Date'
+            }
           };
         }
       }
       return {
         sql: 'json(?)',
         params: [JSON.stringify(expression)],
-        fieldType: { type: 'Object' },
+        fieldType: {
+          type: 'Object'
+        }
       };
     }
-    return { sql: 'NULL', params: [], fieldType: null };
+    return {
+      sql: 'NULL',
+      params: [],
+      fieldType: null
+    };
   }
-
-  _compileAggregateExprWhereClause(context: any, expression: any): any {
+  _compileAggregateExprWhereClause(context, expression) {
     const op = Object.keys(expression || {})[0];
     const operands = expression[op];
     if (!Array.isArray(operands) || operands.length !== 2) {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Invalid $expr format');
+      throw new _node.default.Error(_node.default.Error.INVALID_QUERY, 'Invalid $expr format');
     }
     const left = this._compileAggregateExpression(context, operands[0]);
     const right = this._compileAggregateExpression(context, operands[1]);
@@ -3501,51 +2914,35 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       $gt: '>',
       $gte: '>=',
       $lt: '<',
-      $lte: '<=',
+      $lte: '<='
     };
     if (!operatorMap[op]) {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, `Unsupported $expr operator: ${op}`);
+      throw new _node.default.Error(_node.default.Error.INVALID_QUERY, `Unsupported $expr operator: ${op}`);
     }
     return {
       sql: `(${left.sql}) ${operatorMap[op]} (${right.sql})`,
-      params: [...left.params, ...right.params],
+      params: [...left.params, ...right.params]
     };
   }
-
-  _applyAggregateMatchStage(
-    context: any,
-    matchStage: any,
-    schema: SchemaType,
-    rawValues?: boolean,
-    rawFieldNames?: boolean
-  ): any {
+  _applyAggregateMatchStage(context, matchStage, schema, rawValues, rawFieldNames) {
     const transformed = this._transformAggregateArgs(schema, matchStage, rawValues, rawFieldNames);
     if (this._aggregateMatchAlwaysFalse(transformed, context.schema, rawValues, true)) {
       return {
         ...context,
-        sql: `SELECT * FROM (${context.sql}) AS "__aggregate_match_false" WHERE 1 = 0`,
+        sql: `SELECT * FROM (${context.sql}) AS "__aggregate_match_false" WHERE 1 = 0`
       };
     }
-
     if (this._aggregateQueryReferencesMissingField(transformed, context.schema)) {
       return {
         ...context,
-        sql: `SELECT * FROM (${context.sql}) AS "__aggregate_match_missing" WHERE 1 = 0`,
+        sql: `SELECT * FROM (${context.sql}) AS "__aggregate_match_missing" WHERE 1 = 0`
       };
     }
-
     const expr = transformed.$expr;
     if (expr !== undefined) {
       delete transformed.$expr;
     }
-
-    const where = this._buildWhereClause(
-      context.className,
-      context.schema,
-      transformed,
-      false,
-      true
-    );
+    const where = this._buildWhereClause(context.className, context.schema, transformed, false, true);
     const conditions = [];
     const params = [...context.params];
     if (where.sql) {
@@ -3557,31 +2954,20 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       conditions.push(exprWhere.sql);
       params.push(...exprWhere.params);
     }
-
     return {
       ...context,
-      sql:
-        `SELECT * FROM (${context.sql}) AS "__aggregate_match"` +
-        (conditions.length ? ` WHERE ${conditions.join(' AND ')}` : ''),
-      params,
+      sql: `SELECT * FROM (${context.sql}) AS "__aggregate_match"` + (conditions.length ? ` WHERE ${conditions.join(' AND ')}` : ''),
+      params
     };
   }
-
-  _applyAggregateProjectStage(
-    context: any,
-    projectStage: any,
-    schema: SchemaType,
-    rawValues?: boolean,
-    rawFieldNames?: boolean
-  ): any {
+  _applyAggregateProjectStage(context, projectStage, schema, rawValues, rawFieldNames) {
     const transformed = this._transformAggregateProjectArgs(schema, projectStage, rawValues, rawFieldNames);
     const selectParts = [];
     const params = [];
     const nextSchema = {
       className: context.className,
-      fields: {},
+      fields: {}
     };
-
     let includeId = true;
     if (Object.prototype.hasOwnProperty.call(transformed, '_id') && !transformed._id) {
       includeId = false;
@@ -3590,7 +2976,6 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       selectParts.push(quoteColumnName('_id'));
       nextSchema.fields._id = context.schema.fields._id;
     }
-
     for (const key of Object.keys(transformed)) {
       const value = transformed[key];
       if (key === '_id') {
@@ -3598,7 +2983,9 @@ export class SQLiteStorageAdapter implements StorageAdapter {
           const compiled = this._compileAggregateExpression(context, value);
           selectParts.push(`${compiled.sql} AS "_id"`);
           params.push(...compiled.params);
-          nextSchema.fields._id = compiled.fieldType || { type: 'String' };
+          nextSchema.fields._id = compiled.fieldType || {
+            type: 'String'
+          };
         }
         continue;
       }
@@ -3615,25 +3002,19 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       const compiled = this._compileAggregateExpression(context, value);
       selectParts.push(`${compiled.sql} AS ${quoteColumnName(key)}`);
       params.push(...compiled.params);
-      nextSchema.fields[key] = compiled.fieldType || { type: 'Object' };
+      nextSchema.fields[key] = compiled.fieldType || {
+        type: 'Object'
+      };
     }
     params.push(...context.params);
-
     return {
       ...context,
       schema: nextSchema,
       sql: `SELECT ${selectParts.join(', ')} FROM (${context.sql}) AS "__aggregate_project"`,
-      params,
+      params
     };
   }
-
-  _applyAggregateAddFieldsStage(
-    context: any,
-    addFieldsStage: any,
-    schema: SchemaType,
-    rawValues?: boolean,
-    rawFieldNames?: boolean
-  ): any {
+  _applyAggregateAddFieldsStage(context, addFieldsStage, schema, rawValues, rawFieldNames) {
     const transformed = this._transformAggregateProjectArgs(schema, addFieldsStage, rawValues, rawFieldNames);
     const computedKeys = new Set(Object.keys(transformed));
     const selectParts = [];
@@ -3641,47 +3022,42 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     const nextSchema = {
       className: context.className,
       fields: {
-        ...context.schema.fields,
-      },
+        ...context.schema.fields
+      }
     };
-
     for (const key of Object.keys(context.schema.fields)) {
       if (!computedKeys.has(key)) {
         selectParts.push(quoteColumnName(key));
       }
     }
-
     for (const key of Object.keys(transformed)) {
       const compiled = this._compileAggregateExpression(context, transformed[key]);
       selectParts.push(`${compiled.sql} AS ${quoteColumnName(key)}`);
       params.push(...compiled.params);
-      nextSchema.fields[key] = compiled.fieldType || { type: 'Object' };
+      nextSchema.fields[key] = compiled.fieldType || {
+        type: 'Object'
+      };
     }
     params.push(...context.params);
-
     return {
       ...context,
       schema: nextSchema,
       sql: `SELECT ${selectParts.join(', ')} FROM (${context.sql}) AS "__aggregate_add_fields"`,
-      params,
+      params
     };
   }
-
-  _buildAggregateGroupId(context: any, expression: any): any {
-    if (
-      expression === null ||
-      expression === '' ||
-      (Array.isArray(expression) && expression.length === 0) ||
-      (isPlainObject(expression) && Object.keys(expression).length === 0)
-    ) {
+  _buildAggregateGroupId(context, expression) {
+    if (expression === null || expression === '' || Array.isArray(expression) && expression.length === 0 || isPlainObject(expression) && Object.keys(expression).length === 0) {
       return {
         sql: 'NULL',
         params: [],
         groupBy: [],
-        fieldType: { type: 'String', aggregateNullGroupId: true },
+        fieldType: {
+          type: 'String',
+          aggregateNullGroupId: true
+        }
       };
     }
-
     if (isPlainObject(expression) && !Object.keys(expression).some(key => key.startsWith('$'))) {
       const params = [];
       const groupBy = [];
@@ -3696,36 +3072,27 @@ export class SQLiteStorageAdapter implements StorageAdapter {
         sql: `json_object(${jsonParts.join(', ')})`,
         params,
         groupBy,
-        fieldType: { type: 'Object' },
+        fieldType: {
+          type: 'Object'
+        }
       };
     }
-
     const compiled = this._compileAggregateExpression(context, expression);
-    const fieldType =
-      compiled.fieldType && compiled.fieldType.nativePointer
-        ? {
-            ...compiled.fieldType,
-            aggregateGroupPointer: true,
-          }
-        : compiled.fieldType;
+    const fieldType = compiled.fieldType && compiled.fieldType.nativePointer ? {
+      ...compiled.fieldType,
+      aggregateGroupPointer: true
+    } : compiled.fieldType;
     return {
       sql: compiled.sql,
       params: compiled.params,
       groupBy: [compiled.sql],
-      fieldType,
+      fieldType
     };
   }
-
-  _applyAggregateGroupStage(
-    context: any,
-    groupStage: any,
-    schema: SchemaType,
-    rawFieldNames?: boolean
-  ): any {
+  _applyAggregateGroupStage(context, groupStage, schema, rawFieldNames) {
     if (!Object.prototype.hasOwnProperty.call(groupStage, '_id')) {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Invalid group: _id is required');
+      throw new _node.default.Error(_node.default.Error.INVALID_QUERY, 'Invalid group: _id is required');
     }
-
     const transformed = this._transformAggregateGroupArgs(schema, groupStage, rawFieldNames);
     const groupId = this._buildAggregateGroupId(context, transformed._id);
     const selectParts = [`${groupId.sql} AS "_id"`];
@@ -3733,10 +3100,11 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     const nextSchema = {
       className: context.className,
       fields: {
-        _id: groupId.fieldType || { type: 'String' },
-      },
+        _id: groupId.fieldType || {
+          type: 'String'
+        }
+      }
     };
-
     for (const key of Object.keys(transformed)) {
       if (key === '_id') {
         continue;
@@ -3750,37 +3118,41 @@ export class SQLiteStorageAdapter implements StorageAdapter {
           selectParts.push(`SUM(CAST(${compiled.sql} AS REAL)) AS ${quoteColumnName(key)}`);
           params.push(...compiled.params);
         }
-        nextSchema.fields[key] = { type: 'Number' };
+        nextSchema.fields[key] = {
+          type: 'Number'
+        };
       } else if (agg.$avg !== undefined) {
         const compiled = this._compileAggregateExpression(context, agg.$avg);
         selectParts.push(`AVG(CAST(${compiled.sql} AS REAL)) AS ${quoteColumnName(key)}`);
         params.push(...compiled.params);
-        nextSchema.fields[key] = { type: 'Number' };
+        nextSchema.fields[key] = {
+          type: 'Number'
+        };
       } else if (agg.$min !== undefined) {
         const compiled = this._compileAggregateExpression(context, agg.$min);
         selectParts.push(`MIN(${compiled.sql}) AS ${quoteColumnName(key)}`);
         params.push(...compiled.params);
-        nextSchema.fields[key] = compiled.fieldType || { type: 'Object' };
+        nextSchema.fields[key] = compiled.fieldType || {
+          type: 'Object'
+        };
       } else if (agg.$max !== undefined) {
         const compiled = this._compileAggregateExpression(context, agg.$max);
         selectParts.push(`MAX(${compiled.sql}) AS ${quoteColumnName(key)}`);
         params.push(...compiled.params);
-        nextSchema.fields[key] = compiled.fieldType || { type: 'Object' };
+        nextSchema.fields[key] = compiled.fieldType || {
+          type: 'Object'
+        };
       }
     }
     params.push(...context.params);
-
     return {
       ...context,
       schema: nextSchema,
-      sql:
-        `SELECT ${selectParts.join(', ')} FROM (${context.sql}) AS "__aggregate_group"` +
-        (groupId.groupBy.length ? ` GROUP BY ${groupId.groupBy.join(', ')}` : ''),
-      params,
+      sql: `SELECT ${selectParts.join(', ')} FROM (${context.sql}) AS "__aggregate_group"` + (groupId.groupBy.length ? ` GROUP BY ${groupId.groupBy.join(', ')}` : ''),
+      params
     };
   }
-
-  _transformAggregateSortField(context: any, fieldName: string, rawFieldNames?: boolean): string {
+  _transformAggregateSortField(context, fieldName, rawFieldNames) {
     if (context.schema.fields[fieldName]) {
       return fieldName;
     }
@@ -3800,60 +3172,48 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     }
     return fieldName;
   }
-
-  _applyAggregateSortStage(context: any, sortStage: any, rawFieldNames?: boolean): any {
+  _applyAggregateSortStage(context, sortStage, rawFieldNames) {
     const sortParts = [];
     for (const key of Object.keys(sortStage || {})) {
       const transformedKey = this._transformAggregateSortField(context, key, rawFieldNames);
       const dir = sortStage[key] > 0 ? 'ASC' : 'DESC';
-      sortParts.push(
-        transformedKey.indexOf('.') >= 0
-          ? `${transformDotField(transformedKey)} ${dir}`
-          : `${quoteColumnName(transformedKey)} ${dir}`
-      );
+      sortParts.push(transformedKey.indexOf('.') >= 0 ? `${transformDotField(transformedKey)} ${dir}` : `${quoteColumnName(transformedKey)} ${dir}`);
     }
     return {
       ...context,
-      sql:
-        `SELECT * FROM (${context.sql}) AS "__aggregate_sort"` +
-        (sortParts.length ? ` ORDER BY ${sortParts.join(', ')}` : ''),
+      sql: `SELECT * FROM (${context.sql}) AS "__aggregate_sort"` + (sortParts.length ? ` ORDER BY ${sortParts.join(', ')}` : '')
     };
   }
-
-  _applyAggregateLimitStage(context: any, limitValue: number): any {
+  _applyAggregateLimitStage(context, limitValue) {
     return {
       ...context,
-      sql: `SELECT * FROM (${context.sql}) AS "__aggregate_limit" LIMIT ${parseInt(limitValue, 10)}`,
+      sql: `SELECT * FROM (${context.sql}) AS "__aggregate_limit" LIMIT ${parseInt(limitValue, 10)}`
     };
   }
-
-  _applyAggregateSkipStage(context: any, skipValue: number): any {
+  _applyAggregateSkipStage(context, skipValue) {
     return {
       ...context,
-      sql: `SELECT * FROM (${context.sql}) AS "__aggregate_skip" LIMIT -1 OFFSET ${parseInt(skipValue, 10)}`,
+      sql: `SELECT * FROM (${context.sql}) AS "__aggregate_skip" LIMIT -1 OFFSET ${parseInt(skipValue, 10)}`
     };
   }
-
-  _applyAggregateCountStage(context: any, countFieldName: string): any {
+  _applyAggregateCountStage(context, countFieldName) {
     return {
       ...context,
       schema: {
         className: context.className,
         fields: {
-          [countFieldName]: { type: 'Number' },
-        },
+          [countFieldName]: {
+            type: 'Number'
+          }
+        }
       },
-      sql:
-        `SELECT COUNT(*) AS ${quoteColumnName(countFieldName)} ` +
-        `FROM (${context.sql}) AS "__aggregate_count" HAVING COUNT(*) > 0`,
+      sql: `SELECT COUNT(*) AS ${quoteColumnName(countFieldName)} ` + `FROM (${context.sql}) AS "__aggregate_count" HAVING COUNT(*) > 0`
     };
   }
-
-  async _buildNativeLookupObjectSql(className: string, schema: SchemaType, alias: string): Promise<any> {
+  async _buildNativeLookupObjectSql(className, schema, alias) {
     const columns = this._getTableColumns(className);
     const parts = [];
     const params = [];
-
     for (const column of columns) {
       const qualifiedColumn = `${alias}.${quoteColumnName(column)}`;
       if (column === 'objectId') {
@@ -3863,22 +3223,18 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       } else if (column === 'updatedAt') {
         parts.push(`'_updated_at', ${qualifiedColumn}`);
       } else if (schema.fields[column] && schema.fields[column].type === 'Pointer') {
-        parts.push(
-          `'${`_p_${column}`}', CASE WHEN ${qualifiedColumn} IS NULL THEN NULL ELSE ? || ${qualifiedColumn} END`
-        );
+        parts.push(`'${`_p_${column}`}', CASE WHEN ${qualifiedColumn} IS NULL THEN NULL ELSE ? || ${qualifiedColumn} END`);
         params.push(`${schema.fields[column].targetClass}$`);
       } else {
         parts.push(`'${column.replace(/'/g, "''")}', ${qualifiedColumn}`);
       }
     }
-
     return {
       sql: `json_object(${parts.join(', ')})`,
-      params,
+      params
     };
   }
-
-  _mapLookupFieldToStorage(fieldName: string): string {
+  _mapLookupFieldToStorage(fieldName) {
     if (fieldName === '_id') {
       return 'objectId';
     }
@@ -3893,21 +3249,15 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     }
     return fieldName;
   }
-
-  async _applyAggregateLookupStage(context: any, lookupStage: any): Promise<any> {
-    const targetClassName = lookupStage.from.startsWith(this._collectionPrefix)
-      ? lookupStage.from.slice(this._collectionPrefix.length)
-      : lookupStage.from;
+  async _applyAggregateLookupStage(context, lookupStage) {
+    const targetClassName = lookupStage.from.startsWith(this._collectionPrefix) ? lookupStage.from.slice(this._collectionPrefix.length) : lookupStage.from;
     const targetSchema = normalizeSQLiteSchema(targetClassName, await this.getClass(targetClassName));
     const nativeTargetSchema = this._buildNativeAggregateSchema(targetClassName, targetSchema);
     const lookupObject = await this._buildNativeLookupObjectSql(targetClassName, targetSchema, '__aggregate_lookup_target');
     const localField = lookupStage.localField;
     const foreignField = this._mapLookupFieldToStorage(lookupStage.foreignField);
-    const localSql =
-      localField.indexOf('.') >= 0 ? transformDotField(localField) : quoteColumnName(localField);
-    const foreignSql =
-      foreignField.indexOf('.') >= 0 ? transformDotField(foreignField) : `__aggregate_lookup_target.${quoteColumnName(foreignField)}`;
-
+    const localSql = localField.indexOf('.') >= 0 ? transformDotField(localField) : quoteColumnName(localField);
+    const foreignSql = foreignField.indexOf('.') >= 0 ? transformDotField(foreignField) : `__aggregate_lookup_target.${quoteColumnName(foreignField)}`;
     const nextSchema = {
       className: context.className,
       fields: {
@@ -3916,30 +3266,19 @@ export class SQLiteStorageAdapter implements StorageAdapter {
           type: 'Array',
           aggregateLookup: true,
           lookupSchema: nativeTargetSchema,
-          targetClass: targetClassName,
-        },
-      },
+          targetClass: targetClassName
+        }
+      }
     };
-
-    const currentFields = Object.keys(context.schema.fields)
-      .filter(field => field !== lookupStage.as)
-      .map(field => quoteColumnName(field))
-      .join(', ');
-
+    const currentFields = Object.keys(context.schema.fields).filter(field => field !== lookupStage.as).map(field => quoteColumnName(field)).join(', ');
     return {
       ...context,
       schema: nextSchema,
-      sql:
-        `SELECT ${currentFields}${currentFields ? ', ' : ''}COALESCE((` +
-        `SELECT json_group_array(${lookupObject.sql}) FROM ${this._tableName(targetClassName)} AS "__aggregate_lookup_target" ` +
-        `WHERE ${foreignSql} = __aggregate_lookup_source.${localSql}` +
-        `), '[]') AS ${quoteColumnName(lookupStage.as)} ` +
-        `FROM (${context.sql}) AS "__aggregate_lookup_source"`,
-      params: [...lookupObject.params, ...context.params],
+      sql: `SELECT ${currentFields}${currentFields ? ', ' : ''}COALESCE((` + `SELECT json_group_array(${lookupObject.sql}) FROM ${this._tableName(targetClassName)} AS "__aggregate_lookup_target" ` + `WHERE ${foreignSql} = __aggregate_lookup_source.${localSql}` + `), '[]') AS ${quoteColumnName(lookupStage.as)} ` + `FROM (${context.sql}) AS "__aggregate_lookup_source"`,
+      params: [...lookupObject.params, ...context.params]
     };
   }
-
-  _applyAggregateUnwindStage(context: any, unwindStage: any): any {
+  _applyAggregateUnwindStage(context, unwindStage) {
     const path = typeof unwindStage === 'string' ? unwindStage : unwindStage.path;
     const fieldName = path.startsWith('$') ? path.slice(1) : path;
     const selectParts = [];
@@ -3950,59 +3289,48 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       selectParts.push(`__aggregate_unwind_source.${quoteColumnName(key)}`);
     }
     selectParts.push(`json_each.value AS ${quoteColumnName(fieldName)}`);
-
     const currentField = context.schema.fields[fieldName];
     const nextSchema = {
       className: context.className,
       fields: {
         ...context.schema.fields,
-        [fieldName]:
-          currentField && currentField.aggregateLookup
-            ? {
-                type: 'Object',
-                aggregateLookup: true,
-                lookupSchema: currentField.lookupSchema,
-                targetClass: currentField.targetClass,
-              }
-            : { type: 'Object' },
-      },
+        [fieldName]: currentField && currentField.aggregateLookup ? {
+          type: 'Object',
+          aggregateLookup: true,
+          lookupSchema: currentField.lookupSchema,
+          targetClass: currentField.targetClass
+        } : {
+          type: 'Object'
+        }
+      }
     };
-
     return {
       ...context,
       schema: nextSchema,
-      sql:
-        `SELECT ${selectParts.join(', ')} FROM (${context.sql}) AS "__aggregate_unwind_source", ` +
-        `json_each(__aggregate_unwind_source.${quoteColumnName(fieldName)})`,
+      sql: `SELECT ${selectParts.join(', ')} FROM (${context.sql}) AS "__aggregate_unwind_source", ` + `json_each(__aggregate_unwind_source.${quoteColumnName(fieldName)})`
     };
   }
-
-  _normalizeAggregateGroupIdValue(value: any, fieldSchema: any): any {
+  _normalizeAggregateGroupIdValue(value, fieldSchema) {
     const parsedValue = parseJSONValue(value);
     if (fieldSchema && fieldSchema.aggregateGroupPointer && typeof parsedValue === 'string') {
       return parsedValue.includes('$') ? parsedValue.split('$').slice(1).join('$') : parsedValue;
     }
     return parsedValue;
   }
-
-  _convertAggregateFieldValue(
-    key: string,
-    value: any,
-    fieldSchema: any,
-    options: { rawValues?: boolean, rawFieldNames?: boolean }
-  ): any {
+  _convertAggregateFieldValue(key, value, fieldSchema, options) {
     if (value === null || value === undefined) {
       return value;
     }
     if (fieldSchema && fieldSchema.aggregateLookup) {
-      return this._convertAggregateNativeDocument(
-        parseJSONValue(value),
-        fieldSchema.lookupSchema,
-        options
-      );
+      return this._convertAggregateNativeDocument(parseJSONValue(value), fieldSchema.lookupSchema, options);
     }
     if (fieldSchema && fieldSchema.type === 'Date' && typeof value === 'string') {
-      return options.rawValues ? { $date: value } : { __type: 'Date', iso: value };
+      return options.rawValues ? {
+        $date: value
+      } : {
+        __type: 'Date',
+        iso: value
+      };
     }
     if (fieldSchema && fieldSchema.nativePointer && typeof value === 'string') {
       if (options.rawFieldNames) {
@@ -4011,7 +3339,7 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       return {
         __type: 'Pointer',
         className: fieldSchema.targetClass,
-        objectId: value.includes('$') ? value.split('$').slice(1).join('$') : value,
+        objectId: value.includes('$') ? value.split('$').slice(1).join('$') : value
       };
     }
     if (fieldSchema && (fieldSchema.type === 'Array' || fieldSchema.type === 'Object')) {
@@ -4019,12 +3347,7 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     }
     return parseJSONValue(value);
   }
-
-  _convertAggregateNativeDocument(
-    document: any,
-    schema: ?SchemaType,
-    options: { rawValues?: boolean, rawFieldNames?: boolean }
-  ): any {
+  _convertAggregateNativeDocument(document, schema, options) {
     if (document === null || document === undefined) {
       return document;
     }
@@ -4034,16 +3357,13 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     if (!isPlainObject(document)) {
       return document;
     }
-
     const output = {};
     for (const key of Object.keys(document)) {
       if (!options.rawValues && !options.rawFieldNames && aggregateHiddenFieldNames.has(key)) {
         continue;
       }
-
       const value = document[key];
       const fieldSchema = schema && schema.fields ? schema.fields[key] : null;
-
       if (!options.rawFieldNames && key === '_id') {
         output.objectId = this._normalizeAggregateGroupIdValue(value, fieldSchema);
         continue;
@@ -4056,60 +3376,27 @@ export class SQLiteStorageAdapter implements StorageAdapter {
         output.updatedAt = typeof value === 'string' ? value : new Date(value).toISOString();
         continue;
       }
-
-      const outputKey =
-        !options.rawFieldNames && !options.rawValues && key.startsWith('_p_') ? key.slice(3) : key;
+      const outputKey = !options.rawFieldNames && !options.rawValues && key.startsWith('_p_') ? key.slice(3) : key;
       output[outputKey] = this._convertAggregateFieldValue(key, value, fieldSchema, options);
     }
     return output;
   }
-
-  async aggregate(
-    className: string,
-    schema: any,
-    pipeline: any,
-    _readPreference?: ?string,
-    _hint?: ?mixed,
-    _explain?: boolean,
-    _comment?: ?string,
-    rawValues?: boolean,
-    rawFieldNames?: boolean
-  ): Promise<any> {
+  async aggregate(className, schema, pipeline, _readPreference, _hint, _explain, _comment, rawValues, rawFieldNames) {
     if (!(await this.classExists(className))) {
       return [];
     }
     schema = normalizeSQLiteSchema(className, schema);
     if (rawValues) {
-      pipeline = EJSON.deserialize(pipeline);
+      pipeline = _bson.EJSON.deserialize(pipeline);
     }
-
     let context = this._getNativeAggregateContext(className, schema);
-
     for (const stage of pipeline) {
       if (stage.$match) {
-        context = this._applyAggregateMatchStage(
-          context,
-          stage.$match,
-          schema,
-          rawValues,
-          rawFieldNames
-        );
+        context = this._applyAggregateMatchStage(context, stage.$match, schema, rawValues, rawFieldNames);
       } else if (stage.$project) {
-        context = this._applyAggregateProjectStage(
-          context,
-          stage.$project,
-          schema,
-          rawValues,
-          rawFieldNames
-        );
+        context = this._applyAggregateProjectStage(context, stage.$project, schema, rawValues, rawFieldNames);
       } else if (stage.$addFields) {
-        context = this._applyAggregateAddFieldsStage(
-          context,
-          stage.$addFields,
-          schema,
-          rawValues,
-          rawFieldNames
-        );
+        context = this._applyAggregateAddFieldsStage(context, stage.$addFields, schema, rawValues, rawFieldNames);
       } else if (stage.$group) {
         context = this._applyAggregateGroupStage(context, stage.$group, schema, rawFieldNames);
       } else if (stage.$sort) {
@@ -4126,22 +3413,13 @@ export class SQLiteStorageAdapter implements StorageAdapter {
         context = this._applyAggregateUnwindStage(context, stage.$unwind);
       }
     }
-
     const rows = this._prepare(context.sql).all(...context.params);
-    return rows.map(row =>
-      this._convertAggregateNativeDocument(row, context.schema, {
-        rawValues,
-        rawFieldNames,
-      })
-    );
+    return rows.map(row => this._convertAggregateNativeDocument(row, context.schema, {
+      rawValues,
+      rawFieldNames
+    }));
   }
-
-  async deleteObjectsByQuery(
-    className: string,
-    schema: SchemaType,
-    query: QueryType,
-    transactionalSession: ?any
-  ): Promise<void> {
+  async deleteObjectsByQuery(className, schema, query, transactionalSession) {
     const db = transactionalSession || this._db;
     if (!(await this.classExists(className, db))) {
       return;
@@ -4154,36 +3432,23 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     }
     const result = this._prepare(sql, transactionalSession).run(...where.params);
     if (!result || result.changes === 0) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+      throw new _node.default.Error(_node.default.Error.OBJECT_NOT_FOUND, 'Object not found.');
     }
   }
-
-  async updateObjectsByQuery(
-    className: string,
-    schema: SchemaType,
-    query: QueryType,
-    update: any,
-    transactionalSession: ?any
-  ): Promise<any> {
+  async updateObjectsByQuery(className, schema, query, update, transactionalSession) {
     const db = transactionalSession || this._db;
     if (!(await this.classExists(className, db))) {
       return [];
     }
     schema = normalizeSQLiteSchema(className, schema);
-
     const normalizeAuthDataUpdateObject = updateObject => {
       if (!updateObject || typeof updateObject !== 'object' || Array.isArray(updateObject)) {
         return;
       }
-      let authDataUpdate =
-        updateObject.authData &&
-        typeof updateObject.authData === 'object' &&
-        !Array.isArray(updateObject.authData) &&
-        !updateObject.authData.__op
-          ? { ...updateObject.authData }
-          : null;
+      let authDataUpdate = updateObject.authData && typeof updateObject.authData === 'object' && !Array.isArray(updateObject.authData) && !updateObject.authData.__op ? {
+        ...updateObject.authData
+      } : null;
       let hasAuthDataUpdate = authDataUpdate !== null;
-
       for (const fieldName of Object.keys(updateObject)) {
         const authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
         if (!authDataMatch) {
@@ -4196,12 +3461,10 @@ export class SQLiteStorageAdapter implements StorageAdapter {
         authDataUpdate[authDataMatch[1]] = updateObject[fieldName];
         delete updateObject[fieldName];
       }
-
       if (hasAuthDataUpdate && authDataUpdate) {
         updateObject.authData = authDataUpdate;
       }
     };
-
     normalizeAuthDataUpdateObject(update);
     normalizeAuthDataUpdateObject(update.$set);
     normalizeAuthDataUpdateObject(update.$unset);
@@ -4215,51 +3478,39 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     if (!existing || existing.length === 0) {
       return [];
     }
-
     const tableName = this._tableName(className);
     const where = this._buildWhereClause(className, schema, query);
-
     const setClauses = [];
     const params = [];
     const nestedFieldUpdates = new Map();
     let nullFieldTrackerUpdate = null;
-
     const appendNullFieldTrackerUpdate = (fieldName, trackExplicitNull) => {
       if (!fieldName || fieldName === nullFieldTrackerColumn) {
         return;
       }
-      const effectiveTrackExplicitNull =
-        shouldPersistExplicitNullField(className, fieldName) && trackExplicitNull;
+      const effectiveTrackExplicitNull = shouldPersistExplicitNullField(className, fieldName) && trackExplicitNull;
       const current = nullFieldTrackerUpdate || {
         expression: `COALESCE(${quoteColumnName(nullFieldTrackerColumn)}, '[]')`,
-        params: [],
+        params: []
       };
       nullFieldTrackerUpdate = {
-        expression: effectiveTrackExplicitNull
-          ? `parse_array_add_unique(${current.expression}, ?)`
-          : `parse_array_remove(${current.expression}, ?)`,
-        params: [...current.params, JSON.stringify([fieldName])],
+        expression: effectiveTrackExplicitNull ? `parse_array_add_unique(${current.expression}, ?)` : `parse_array_remove(${current.expression}, ?)`,
+        params: [...current.params, JSON.stringify([fieldName])]
       };
     };
-
     const appendNestedFieldUpdate = (rootFieldName, jsonPath, fieldValue) => {
       const existingUpdate = nestedFieldUpdates.get(rootFieldName) || {
-        expression: getJsonObjectValueExpression(quoteColumnName(rootFieldName)),
-        params: [],
+        expression: quoteColumnName(rootFieldName),
+        params: []
       };
-      const nextUpdate = buildJsonPathUpdateExpression(
-        existingUpdate.expression,
-        jsonPath,
-        fieldValue
-      );
+      const nextUpdate = buildJsonPathUpdateExpression(existingUpdate.expression, jsonPath, fieldValue);
       nestedFieldUpdates.set(rootFieldName, {
         expression: nextUpdate.expression,
-        params: [...existingUpdate.params, ...nextUpdate.params],
+        params: [...existingUpdate.params, ...nextUpdate.params]
       });
       appendNullFieldTrackerUpdate(rootFieldName, false);
     };
-
-    const handleOp = async (fieldName: string, fieldValue: any) => {
+    const handleOp = async (fieldName, fieldValue) => {
       if (typeof fieldValue === 'undefined') {
         return;
       }
@@ -4267,16 +3518,16 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       if (authDataMatch) {
         const provider = authDataMatch[1];
         fieldName = 'authData';
-        fieldValue = { [provider]: fieldValue };
+        fieldValue = {
+          [provider]: fieldValue
+        };
       }
       const isDotNotationField = fieldName.indexOf('.') >= 0;
       const dotFieldPath = isDotNotationField ? buildDotFieldPath(fieldName) : null;
-      const columnName = quoteColumnName(
-        dotFieldPath ? dotFieldPath.rootFieldName : fieldName
-      );
-
-      await this._ensureColumnsExist(className, { [fieldName]: fieldValue }, schema, db);
-
+      const columnName = quoteColumnName(dotFieldPath ? dotFieldPath.rootFieldName : fieldName);
+      await this._ensureColumnsExist(className, {
+        [fieldName]: fieldValue
+      }, schema, db);
       if (fieldValue === null) {
         if (dotFieldPath) {
           appendNestedFieldUpdate(dotFieldPath.rootFieldName, dotFieldPath.jsonPath, null);
@@ -4287,17 +3538,13 @@ export class SQLiteStorageAdapter implements StorageAdapter {
         }
         return;
       }
-
       if (typeof fieldValue === 'object') {
         if (fieldValue.__op === 'Increment') {
           if (dotFieldPath) {
             appendNestedFieldUpdate(dotFieldPath.rootFieldName, dotFieldPath.jsonPath, fieldValue);
           } else {
             if (typeof fieldValue.amount !== 'number' || Number.isNaN(fieldValue.amount)) {
-              throw new Parse.Error(
-                Parse.Error.INVALID_JSON,
-                'Cannot increment by a non-numeric value.'
-              );
+              throw new _node.default.Error(_node.default.Error.INVALID_JSON, 'Cannot increment by a non-numeric value.');
             }
             validateFieldName(fieldName);
             setClauses.push(`${columnName} = COALESCE(${columnName}, 0) + ?`);
@@ -4353,7 +3600,7 @@ export class SQLiteStorageAdapter implements StorageAdapter {
           validateFieldName('authData');
           const existingAuthDataUpdate = nestedFieldUpdates.get('authData') || {
             expression: quoteColumnName('authData'),
-            params: [],
+            params: []
           };
           let authDataExpression = existingAuthDataUpdate.expression;
           const authDataParams = [...existingAuthDataUpdate.params];
@@ -4365,15 +3612,13 @@ export class SQLiteStorageAdapter implements StorageAdapter {
             if (val === null) {
               authDataExpression = `json_remove(COALESCE(${authDataExpression}, '{}'), '$."${provider}"')`;
             } else {
-              authDataExpression =
-                `json_set(COALESCE(${authDataExpression}, '{}'), '$."${provider}"', ` +
-                `${getParameterizedValueExpression(val)})`;
+              authDataExpression = `json_set(COALESCE(${authDataExpression}, '{}'), '$."${provider}"', ` + `${getParameterizedValueExpression(val)})`;
               authDataParams.push(toSQLiteValue(val));
             }
           }
           nestedFieldUpdates.set('authData', {
             expression: authDataExpression,
-            params: authDataParams,
+            params: authDataParams
           });
           appendNullFieldTrackerUpdate('authData', false);
           return;
@@ -4382,12 +3627,10 @@ export class SQLiteStorageAdapter implements StorageAdapter {
           return;
         }
       }
-
       if (dotFieldPath) {
         appendNestedFieldUpdate(dotFieldPath.rootFieldName, dotFieldPath.jsonPath, fieldValue);
         return;
       }
-
       validateNestedKeys(fieldValue);
       validateFieldName(fieldName);
       const sqliteValue = toSQLiteValue(fieldValue);
@@ -4395,7 +3638,6 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       params.push(sqliteValue);
       appendNullFieldTrackerUpdate(fieldName, sqliteValue === null);
     };
-
     if (update.$set) {
       for (const k of Object.keys(update.$set)) {
         await handleOp(k, update.$set[k]);
@@ -4403,14 +3645,22 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     }
     if (update.$inc) {
       for (const k of Object.keys(update.$inc)) {
-        await handleOp(k, { __op: 'Increment', amount: update.$inc[k] });
+        await handleOp(k, {
+          __op: 'Increment',
+          amount: update.$inc[k]
+        });
       }
     }
     if (update.$unset) {
       for (const k of Object.keys(update.$unset)) {
         if (k.indexOf('.') >= 0) {
-          const { rootFieldName, jsonPath } = buildDotFieldPath(k);
-          appendNestedFieldUpdate(rootFieldName, jsonPath, { __op: 'Delete' });
+          const {
+            rootFieldName,
+            jsonPath
+          } = buildDotFieldPath(k);
+          appendNestedFieldUpdate(rootFieldName, jsonPath, {
+            __op: 'Delete'
+          });
         } else {
           validateFieldName(k);
           setClauses.push(`${quoteColumnName(k)} = NULL`);
@@ -4420,37 +3670,41 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     }
     if (update.$add) {
       for (const k of Object.keys(update.$add)) {
-        await handleOp(k, { __op: 'Add', objects: update.$add[k] });
+        await handleOp(k, {
+          __op: 'Add',
+          objects: update.$add[k]
+        });
       }
     }
     if (update.$addUnique) {
       for (const k of Object.keys(update.$addUnique)) {
-        await handleOp(k, { __op: 'AddUnique', objects: update.$addUnique[k] });
+        await handleOp(k, {
+          __op: 'AddUnique',
+          objects: update.$addUnique[k]
+        });
       }
     }
     if (update.$remove) {
       for (const k of Object.keys(update.$remove)) {
-        await handleOp(k, { __op: 'Remove', objects: update.$remove[k] });
+        await handleOp(k, {
+          __op: 'Remove',
+          objects: update.$remove[k]
+        });
       }
     }
-
     for (const k of Object.keys(update)) {
       if (!k.startsWith('$')) {
         await handleOp(k, update[k]);
       }
     }
-
     for (const [rootFieldName, nestedFieldUpdate] of nestedFieldUpdates.entries()) {
       setClauses.push(`${quoteColumnName(rootFieldName)} = ${nestedFieldUpdate.expression}`);
       params.push(...nestedFieldUpdate.params);
     }
     if (nullFieldTrackerUpdate) {
-      setClauses.push(
-        `${quoteColumnName(nullFieldTrackerColumn)} = ${nullFieldTrackerUpdate.expression}`
-      );
+      setClauses.push(`${quoteColumnName(nullFieldTrackerColumn)} = ${nullFieldTrackerUpdate.expression}`);
       params.push(...nullFieldTrackerUpdate.params);
     }
-
     if (setClauses.length > 0) {
       let sql = `UPDATE ${tableName} SET ${setClauses.join(', ')}`;
       if (where.sql) {
@@ -4463,37 +3717,34 @@ export class SQLiteStorageAdapter implements StorageAdapter {
         throw this._transformDuplicateKeyError(err, className);
       }
     }
-
     const ids = existing.map(o => o.objectId);
-    const updated = await this.find(className, schema, { objectId: { $in: ids } }, {}, db);
+    const updated = await this.find(className, schema, {
+      objectId: {
+        $in: ids
+      }
+    }, {}, db);
     return updated;
   }
-
-  async findOneAndUpdate(
-    className: string,
-    schema: SchemaType,
-    query: QueryType,
-    update: any,
-    transactionalSession: ?any
-  ): Promise<any> {
+  async findOneAndUpdate(className, schema, query, update, transactionalSession) {
     const results = await this.updateObjectsByQuery(className, schema, query, update, transactionalSession);
     return results ? results[0] : undefined;
   }
-
-  async upsertOneObject(
-    className: string,
-    schema: SchemaType,
-    query: QueryType,
-    update: any,
-    transactionalSession: ?any
-  ): Promise<any> {
+  async upsertOneObject(className, schema, query, update, transactionalSession) {
     const db = transactionalSession || this._db;
-    const existing = await this.find(className, schema, query, { limit: 1 });
+    const existing = await this.find(className, schema, query, {
+      limit: 1
+    });
     if (existing && existing.length > 0) {
       await this.updateObjectsByQuery(className, schema, query, update, db);
-      return this.find(className, schema, { objectId: existing[0].objectId }, { limit: 1 }).then(r => r[0]);
+      return this.find(className, schema, {
+        objectId: existing[0].objectId
+      }, {
+        limit: 1
+      }).then(r => r[0]);
     } else {
-      const createObj = { ...query };
+      const createObj = {
+        ...query
+      };
       if (update.$set) {
         Object.assign(createObj, update.$set);
       }
@@ -4526,24 +3777,20 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       return createObj;
     }
   }
-
-  async ensureIndex(
-    className: string,
-    schema: SchemaType,
-    fieldNames: string[],
-    indexName?: string,
-    _caseSensitive?: boolean = false,
-    options?: Object = {}
-  ): Promise<any> {
+  async ensureIndex(className, schema, fieldNames, indexName, _caseSensitive = false, options = {}) {
     if (_caseSensitive) {
       // SQLite indexes are case sensitive by default for text comparisons unless NOCASE is specified
     }
     if (!(await this.classExists(className))) {
       const fields = {};
       fieldNames.forEach(f => {
-        fields[f] = { type: 'String' };
+        fields[f] = {
+          type: 'String'
+        };
       });
-      await this.createClass(className, schema || { fields });
+      await this.createClass(className, schema || {
+        fields
+      });
     }
     const tableName = this._tableName(className);
     const idxName = indexName || `parse_default_${fieldNames.sort().join('_')}`;
@@ -4552,7 +3799,6 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       validateFieldName(f);
       return `"${f.replace(/"/g, '""')}"`;
     });
-
     let sql = `CREATE INDEX IF NOT EXISTS ${safeIdxName} ON ${tableName} (${colExprs.join(', ')})`;
     if (options.ttl) {
       sql = `CREATE INDEX IF NOT EXISTS ${safeIdxName} ON ${tableName} ("_expiresAt")`;
@@ -4563,14 +3809,17 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       /* */
     }
   }
-
-  async ensureUniqueness(className: string, schema: SchemaType, fieldNames: Array<string>): Promise<void> {
+  async ensureUniqueness(className, schema, fieldNames) {
     if (!(await this.classExists(className))) {
       const fields = {};
       fieldNames.forEach(f => {
-        fields[f] = { type: 'String' };
+        fields[f] = {
+          type: 'String'
+        };
       });
-      await this.createClass(className, schema || { fields });
+      await this.createClass(className, schema || {
+        fields
+      });
     }
     const tableName = this._tableName(className);
     const idxName = `unique_${fieldNames.join('_')}`;
@@ -4579,24 +3828,25 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       validateFieldName(f);
       return `"${f.replace(/"/g, '""')}"`;
     });
-
     const sql = `CREATE UNIQUE INDEX IF NOT EXISTS ${safeIdxName} ON ${tableName} (${colExprs.join(', ')})`;
     try {
       this._prepare(sql).run();
     } catch (err) {
       if (err.message && err.message.includes('UNIQUE constraint failed')) {
-        throw new Parse.Error(
-          Parse.Error.DUPLICATE_VALUE,
-          'Tried to ensure field uniqueness for a class that already has duplicates.'
-        );
+        throw new _node.default.Error(_node.default.Error.DUPLICATE_VALUE, 'Tried to ensure field uniqueness for a class that already has duplicates.');
       }
       throw err;
     }
   }
-
-  async ensureAuthDataUniqueness(provider: string): Promise<void> {
+  async ensureAuthDataUniqueness(provider) {
     if (!(await this.classExists('_User'))) {
-      await this.createClass('_User', { fields: { authData: { type: 'Object' } } });
+      await this.createClass('_User', {
+        fields: {
+          authData: {
+            type: 'Object'
+          }
+        }
+      });
     }
     const indexName = `_User_unique_authData_${provider}_id`;
     const safeIdxName = `"${indexName.replace(/"/g, '""')}"`;
@@ -4606,100 +3856,75 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       this._prepare(sql).run();
     } catch (err) {
       if (err.message && err.message.includes('UNIQUE constraint failed')) {
-        throw new Parse.Error(
-          Parse.Error.DUPLICATE_VALUE,
-          'Tried to ensure field uniqueness for a class that already has duplicates.'
-        );
+        throw new _node.default.Error(_node.default.Error.DUPLICATE_VALUE, 'Tried to ensure field uniqueness for a class that already has duplicates.');
       }
       throw err;
     }
   }
-
-  async createIndex(className: string, index: any, options?: any, conn?: any): Promise<void> {
+  async createIndex(className, index, options, conn) {
     const storedSchema = this._getStoredSchemaObject(className) || {
       isParseClass: isSQLiteInternalClass(className) ? 0 : 1,
-      schema: { className, fields: {} },
+      schema: {
+        className,
+        fields: {}
+      }
     };
-    const indexName = (options && options.name) || buildAutomaticIndexName(index);
+    const indexName = options && options.name || buildAutomaticIndexName(index);
     const fields = storedSchema.schema.fields || {};
-
     for (const fieldName of Object.keys(index || {})) {
       if (!this.disableIndexFieldValidation && !this._fieldExistsForIndex(fields, fieldName)) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_QUERY,
-          `Field ${fieldName} does not exist, cannot add index.`
-        );
+        throw new _node.default.Error(_node.default.Error.INVALID_QUERY, `Field ${fieldName} does not exist, cannot add index.`);
       }
     }
-
-    await this.createIndexes(
-      className,
-      [
-        {
-          name: indexName,
-          key: index,
-          unique: Boolean(options && options.unique),
-          sparse: Boolean(options && options.sparse),
-          skipDatabaseCreation:
-            this.disableIndexFieldValidation &&
-            Object.keys(index || {}).some(fieldName => !this._fieldExistsForIndex(fields, fieldName)),
-        },
-      ],
-      conn
-    );
-
+    await this.createIndexes(className, [{
+      name: indexName,
+      key: index,
+      unique: Boolean(options && options.unique),
+      sparse: Boolean(options && options.sparse),
+      skipDatabaseCreation: this.disableIndexFieldValidation && Object.keys(index || {}).some(fieldName => !this._fieldExistsForIndex(fields, fieldName))
+    }], conn);
     storedSchema.schema.indexes = storedSchema.schema.indexes || buildDefaultSchemaIndexes();
     storedSchema.schema.indexes[indexName] = cloneIndexDefinition(index);
     this._saveStoredSchemaObject(className, storedSchema.schema, storedSchema.isParseClass);
     this._notifySchemaChange();
   }
-
-  async createIndexes(className: string, indexes: any, conn?: any): Promise<void> {
+  async createIndexes(className, indexes, conn) {
     if (!indexes) {
       return;
     }
-    await this._ensureClassExists(className, { fields: {} }, conn);
-    const normalizedIndexes = Array.isArray(indexes)
-      ? indexes.map(index => ({
-          name: index.name,
-          key: index.key,
-          unique: Boolean(index.unique),
-          sparse: Boolean(index.sparse),
-          skipDatabaseCreation: Boolean(index.skipDatabaseCreation),
-        }))
-      : Object.keys(indexes).map(name => ({
-          name,
-          key: indexes[name],
-          unique: false,
-          sparse: false,
-          skipDatabaseCreation: false,
-        }));
-
+    await this._ensureClassExists(className, {
+      fields: {}
+    }, conn);
+    const normalizedIndexes = Array.isArray(indexes) ? indexes.map(index => ({
+      name: index.name,
+      key: index.key,
+      unique: Boolean(index.unique),
+      sparse: Boolean(index.sparse),
+      skipDatabaseCreation: Boolean(index.skipDatabaseCreation)
+    })) : Object.keys(indexes).map(name => ({
+      name,
+      key: indexes[name],
+      unique: false,
+      sparse: false,
+      skipDatabaseCreation: false
+    }));
     const tableName = this._tableName(className);
     const columns = new Set(this._getTableColumns(className, conn));
-
     for (const index of normalizedIndexes) {
       const key = index.key || {};
-      if (
-        index.skipDatabaseCreation ||
-        Object.keys(key).length === 0 ||
-        isTextIndexDefinition(key)
-      ) {
+      if (index.skipDatabaseCreation || Object.keys(key).length === 0 || isTextIndexDefinition(key)) {
         continue;
       }
-
       const fieldNames = Object.keys(key).map(fieldName => this._normalizeIndexColumnName(fieldName));
       if (fieldNames.some(fieldName => !columns.has(fieldName))) {
         continue;
       }
-
       const idxName = `"${index.name.replace(/"/g, '""')}"`;
       const cols = fieldNames.map(fieldName => `"${fieldName.replace(/"/g, '""')}"`);
       let sql = `CREATE ${index.unique ? 'UNIQUE ' : ''}INDEX IF NOT EXISTS ${idxName} ON ${tableName} (${cols.join(', ')})`;
       if (index.sparse) {
         sql += ` WHERE ${cols.map(column => `${column} IS NOT NULL`).join(' AND ')}`;
       }
-
       try {
         this._prepare(sql, conn).run();
       } catch (err) {
@@ -4707,22 +3932,24 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       }
     }
   }
-
-  async getIndexes(className: string, connection?: any): Promise<Array<any>> {
+  async getIndexes(className, connection) {
     if (!(await this.classExists(className, connection))) {
       return [];
     }
     const rawName = this._rawTableName(className);
-    const indexes = [{ name: '_id_', key: { _id: 1 }, unique: true }];
+    const indexes = [{
+      name: '_id_',
+      key: {
+        _id: 1
+      },
+      unique: true
+    }];
     const rows = this._prepare(`PRAGMA index_list("${rawName.replace(/"/g, '""')}")`, connection).all();
     for (const row of rows) {
       if (!row.name || String(row.name).startsWith('sqlite_autoindex_')) {
         continue;
       }
-      const indexRows = this._prepare(
-        `PRAGMA index_info("${String(row.name).replace(/"/g, '""')}")`,
-        connection
-      ).all();
+      const indexRows = this._prepare(`PRAGMA index_info("${String(row.name).replace(/"/g, '""')}")`, connection).all();
       const key = {};
       for (const indexRow of indexRows) {
         if (!indexRow.name) {
@@ -4737,12 +3964,11 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       indexes.push({
         name: row.name,
         key,
-        unique: Boolean(row.unique),
+        unique: Boolean(row.unique)
       });
     }
-
     const storedSchema = this._getStoredSchemaObject(className);
-    const storedIndexes = (storedSchema && storedSchema.schema && storedSchema.schema.indexes) || {};
+    const storedIndexes = storedSchema && storedSchema.schema && storedSchema.schema.indexes || {};
     for (const name of Object.keys(storedIndexes)) {
       if (indexes.some(index => index.name === name)) {
         continue;
@@ -4750,26 +3976,20 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       indexes.push({
         name,
         key: cloneIndexDefinition(storedIndexes[name]),
-        unique: false,
+        unique: false
       });
     }
-
     return indexes;
   }
-
-  async dropIndexes(className: string, indexes: Array<string>, conn?: any): Promise<void> {
+  async dropIndexes(className, indexes, conn) {
     for (const indexName of indexes) {
       if (indexName === '_id_') {
         continue;
       }
-      this._prepare(
-        `DROP INDEX IF EXISTS "${String(indexName).replace(/"/g, '""')}"`,
-        conn
-      ).run();
+      this._prepare(`DROP INDEX IF EXISTS "${String(indexName).replace(/"/g, '""')}"`, conn).run();
     }
   }
-
-  async updateSchemaWithIndexes(): Promise<void> {
+  async updateSchemaWithIndexes() {
     const rows = this._prepare('SELECT "className", "schema", "isParseClass" FROM "_SCHEMA"').all();
     for (const row of rows) {
       let schemaObj = {};
@@ -4783,71 +4003,53 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       this._saveStoredSchemaObject(row.className, schemaObj, row.isParseClass);
     }
   }
-
-  async setIndexesWithSchemaFormat(
-    className: string,
-    submittedIndexes: any,
-    existingIndexes: any,
-    fields: any,
-    conn?: any
-  ): Promise<void> {
+  async setIndexesWithSchemaFormat(className, submittedIndexes, existingIndexes, fields, conn) {
     if (submittedIndexes === undefined) {
       return;
     }
-    const nextIndexes =
-      Object.keys(existingIndexes || {}).length > 0
-        ? { ...existingIndexes }
-        : buildDefaultSchemaIndexes();
+    const nextIndexes = Object.keys(existingIndexes || {}).length > 0 ? {
+      ...existingIndexes
+    } : buildDefaultSchemaIndexes();
     const deletedIndexes = [];
     const insertedIndexes = [];
-
     for (const name of Object.keys(submittedIndexes)) {
       const indexDefinition = submittedIndexes[name];
       if (nextIndexes[name] && indexDefinition.__op !== 'Delete') {
-        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Index ${name} exists, cannot update.`);
+        throw new _node.default.Error(_node.default.Error.INVALID_QUERY, `Index ${name} exists, cannot update.`);
       }
       if (!nextIndexes[name] && indexDefinition.__op === 'Delete') {
-        throw new Parse.Error(
-          Parse.Error.INVALID_QUERY,
-          `Index ${name} does not exist, cannot delete.`
-        );
+        throw new _node.default.Error(_node.default.Error.INVALID_QUERY, `Index ${name} does not exist, cannot delete.`);
       }
       if (indexDefinition.__op === 'Delete') {
         deletedIndexes.push(name);
         delete nextIndexes[name];
         continue;
       }
-
-      const missingField = Object.keys(indexDefinition).find(
-        fieldName => !this._fieldExistsForIndex(fields || {}, fieldName)
-      );
+      const missingField = Object.keys(indexDefinition).find(fieldName => !this._fieldExistsForIndex(fields || {}, fieldName));
       if (missingField && !this.disableIndexFieldValidation) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_QUERY,
-          `Field ${missingField} does not exist, cannot add index.`
-        );
+        throw new _node.default.Error(_node.default.Error.INVALID_QUERY, `Field ${missingField} does not exist, cannot add index.`);
       }
-
       nextIndexes[name] = cloneIndexDefinition(indexDefinition);
       insertedIndexes.push({
         name,
         key: indexDefinition,
         unique: false,
         sparse: false,
-        skipDatabaseCreation: Boolean(missingField),
+        skipDatabaseCreation: Boolean(missingField)
       });
     }
-
     if (insertedIndexes.length > 0) {
       await this.createIndexes(className, insertedIndexes, conn);
     }
     if (deletedIndexes.length > 0) {
       await this.dropIndexes(className, deletedIndexes, conn);
     }
-
     const storedSchema = this._getStoredSchemaObject(className, conn) || {
       isParseClass: isSQLiteInternalClass(className) ? 0 : 1,
-      schema: { className, fields: fields || {} },
+      schema: {
+        className,
+        fields: fields || {}
+      }
     };
     storedSchema.schema.indexes = nextIndexes;
     this._saveStoredSchemaObject(className, storedSchema.schema, storedSchema.isParseClass, conn);
@@ -4855,15 +4057,13 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       this._notifySchemaChange();
     }
   }
-
-  _collectionNameToClassName(collectionName: string): string {
+  _collectionNameToClassName(collectionName) {
     if (collectionName.startsWith(this._collectionPrefix)) {
       return collectionName.slice(this._collectionPrefix.length);
     }
     return collectionName;
   }
-
-  _normalizeLegacyDatabaseFieldName(className: string, fieldName: string): string {
+  _normalizeLegacyDatabaseFieldName(className, fieldName) {
     if (className === '_Audience') {
       if (fieldName === '_id') {
         return 'objectId';
@@ -4877,20 +4077,18 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     }
     return fieldName;
   }
-
-  _normalizeLegacyDatabaseQuery(className: string, query: any = {}): any {
+  _normalizeLegacyDatabaseQuery(className, query = {}) {
     return Object.keys(query || {}).reduce((output, fieldName) => {
       const normalizedFieldName = this._normalizeLegacyDatabaseFieldName(className, fieldName);
       let value = query[fieldName];
-      if (normalizedFieldName === 'lastUsed' && Utils.isDate(value)) {
-        value = Parse._encode(value);
+      if (normalizedFieldName === 'lastUsed' && _Utils.default.isDate(value)) {
+        value = _node.default._encode(value);
       }
       output[normalizedFieldName] = value;
       return output;
     }, {});
   }
-
-  _normalizeLegacyDatabaseUpdate(className: string, update: any = {}): any {
+  _normalizeLegacyDatabaseUpdate(className, update = {}) {
     const normalizedUpdate = {};
     for (const operator of Object.keys(update || {})) {
       if (operator !== '$set') {
@@ -4900,8 +4098,8 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       normalizedUpdate.$set = Object.keys(update.$set || {}).reduce((output, fieldName) => {
         const normalizedFieldName = this._normalizeLegacyDatabaseFieldName(className, fieldName);
         let value = update.$set[fieldName];
-        if (normalizedFieldName === 'lastUsed' && Utils.isDate(value)) {
-          value = Parse._encode(value);
+        if (normalizedFieldName === 'lastUsed' && _Utils.default.isDate(value)) {
+          value = _node.default._encode(value);
         }
         output[normalizedFieldName] = value;
         return output;
@@ -4909,8 +4107,7 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     }
     return normalizedUpdate;
   }
-
-  _toLegacyDatabaseRow(className: string, object: any): any {
+  _toLegacyDatabaseRow(className, object) {
     return Object.keys(object || {}).reduce((output, fieldName) => {
       const value = object[fieldName];
       if (className === '_Audience') {
@@ -4919,12 +4116,7 @@ export class SQLiteStorageAdapter implements StorageAdapter {
           return output;
         }
         if (fieldName === 'lastUsed') {
-          output._last_used =
-            value && value.__type === 'Date'
-              ? new Date(value.iso)
-              : typeof value === 'string'
-                ? new Date(value)
-                : value;
+          output._last_used = value && value.__type === 'Date' ? new Date(value.iso) : typeof value === 'string' ? new Date(value) : value;
           return output;
         }
         if (fieldName === 'timesUsed') {
@@ -4936,50 +4128,47 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       return output;
     }, {});
   }
-
-  _buildLegacyDatabaseCompat(): any {
+  _buildLegacyDatabaseCompat() {
     return {
-      collection: (collectionName: string) => {
+      collection: collectionName => {
         const className = this._collectionNameToClassName(collectionName);
-        const getSchema = () =>
-          (this._getStoredSchemaObject(className) || { schema: { className, fields: {} } }).schema;
-
+        const getSchema = () => (this._getStoredSchemaObject(className) || {
+          schema: {
+            className,
+            fields: {}
+          }
+        }).schema;
         return {
-          updateOne: async (query: any = {}, update: any = {}) => {
+          updateOne: async (query = {}, update = {}) => {
             const normalizedQuery = this._normalizeLegacyDatabaseQuery(className, query);
             const normalizedUpdate = this._normalizeLegacyDatabaseUpdate(className, update);
-            const result = await this.updateObjectsByQuery(
-              className,
-              getSchema(),
-              normalizedQuery,
-              normalizedUpdate
-            );
+            const result = await this.updateObjectsByQuery(className, getSchema(), normalizedQuery, normalizedUpdate);
             return {
               acknowledged: true,
               matchedCount: result.length,
-              modifiedCount: result.length,
+              modifiedCount: result.length
             };
           },
-          find: (query: any = {}) => ({
+          find: (query = {}) => ({
             toArray: async () => {
               const normalizedQuery = this._normalizeLegacyDatabaseQuery(className, query);
               const results = await this.find(className, getSchema(), normalizedQuery);
               return results.map(row => this._toLegacyDatabaseRow(className, row));
-            },
-          }),
+            }
+          })
         };
-      },
+      }
     };
   }
-
-  async _adaptiveCollection(className: string): Promise<any> {
+  async _adaptiveCollection(className) {
     return {
-      find: async (query: any = {}) => {
+      find: async (query = {}) => {
         const tableName = this._tableName(className);
-        const schema = normalizeSQLiteSchema(
-          className,
-          (this._getStoredSchemaObject(className) || { schema: { fields: {} } }).schema
-        );
+        const schema = normalizeSQLiteSchema(className, (this._getStoredSchemaObject(className) || {
+          schema: {
+            fields: {}
+          }
+        }).schema);
         const where = this._buildWhereClause(className, schema, query);
         let sql = `SELECT * FROM ${tableName}`;
         if (where.sql) {
@@ -4988,20 +4177,21 @@ export class SQLiteStorageAdapter implements StorageAdapter {
         const rows = this._prepare(sql).all(...where.params);
         return rows.map(row => this._buildRawStorageObject(row));
       },
-      _ensureSparseUniqueIndexInBackground: async (index: any) => {
+      _ensureSparseUniqueIndexInBackground: async index => {
         for (const fieldName of Object.keys(index || {})) {
-          await this.addFieldIfNotExists(className, fieldName, { type: 'Number' });
+          await this.addFieldIfNotExists(className, fieldName, {
+            type: 'Number'
+          });
         }
         await this.createIndex(className, index, {
           name: buildAutomaticIndexName(index),
           unique: true,
-          sparse: true,
+          sparse: true
         });
-      },
+      }
     };
   }
-
-  async performInitialization(options: any = {}): Promise<void> {
+  async performInitialization(options = {}) {
     this._initSchemaTable();
     const VolatileClassesSchemas = options.VolatileClassesSchemas || [];
     for (const schema of VolatileClassesSchemas) {
@@ -5009,21 +4199,19 @@ export class SQLiteStorageAdapter implements StorageAdapter {
         try {
           await this.createClass(schema.className, schema);
         } catch (err) {
-          if (err.code !== Parse.Error.DUPLICATE_VALUE) {
+          if (err.code !== _node.default.Error.DUPLICATE_VALUE) {
             throw err;
           }
         }
       }
     }
   }
-
-  async createTransactionalSession(): Promise<any> {
-    const txDb = createClient(this._dbOptions);
+  async createTransactionalSession() {
+    const txDb = (0, _SQLiteClient.createClient)(this._dbOptions);
     txDb.exec('BEGIN IMMEDIATE');
     return txDb;
   }
-
-  async commitTransactionalSession(transactionalSession: any): Promise<void> {
+  async commitTransactionalSession(transactionalSession) {
     try {
       transactionalSession.exec('COMMIT');
     } finally {
@@ -5031,8 +4219,7 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       this._reloadSchemaStateFromDatabase();
     }
   }
-
-  async abortTransactionalSession(transactionalSession: any): Promise<void> {
+  async abortTransactionalSession(transactionalSession) {
     try {
       transactionalSession.exec('ROLLBACK');
     } finally {
@@ -5041,7 +4228,6 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     }
   }
 }
-
-Object.setPrototypeOf(SQLiteStorageAdapter.prototype, PostgresStorageAdapter.prototype);
-
-export default SQLiteStorageAdapter;
+exports.SQLiteStorageAdapter = SQLiteStorageAdapter;
+Object.setPrototypeOf(SQLiteStorageAdapter.prototype, _PostgresStorageAdapter.default.prototype);
+var _default = exports.default = SQLiteStorageAdapter;

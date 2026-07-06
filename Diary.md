@@ -571,3 +571,508 @@
 - Environment note:
   - an attempted local `nvm install 20.15.0` was rolled back immediately after the interruption request
   - verification continued on the pre-existing system-managed `nvm` runtime `v22.22.0`
+
+### SQLite JSONB Feasibility Check
+
+- Official SQLite status:
+  - SQLite JSONB was introduced in SQLite `3.45.0` on `2024-01-15`
+  - it is SQLite's own internal binary JSON format, not PostgreSQL-compatible JSONB
+  - it is primarily a parse/render avoidance and storage-efficiency feature, not a magic O(1) lookup format
+  - most operations remain `O(N)` according to SQLite's own docs
+
+- Local runtime status in this repo:
+  - current `better-sqlite3` package version: `11.10.0`
+  - embedded SQLite version reported at runtime: `3.49.2`
+  - confirmed available functions:
+    - `jsonb`
+    - `jsonb_array`
+    - `jsonb_object`
+    - `jsonb_extract`
+    - `jsonb_set`
+    - `jsonb_insert`
+    - `jsonb_replace`
+    - `jsonb_remove`
+    - `jsonb_patch`
+  - confirmed behavior:
+    - `better-sqlite3` returns stored/generated JSONB values to Node as `Buffer`
+    - SQLite JSON functions can still operate on those stored JSONB blobs directly
+    - `json(column)` converts JSONB back to canonical text JSON when needed
+
+- Adapter impact:
+  - the current SQLite adapter is not ready for direct JSONB-at-rest storage as-is
+  - present read/write conversion paths still assume JSON-ish values are stored as text:
+    - writes use `JSON.stringify(...)`
+    - reads parse only string values with `JSON.parse(...)`
+  - if JSON columns start storing JSONB blobs directly, those adapter decode paths will not understand the resulting `Buffer` values
+
+- Practical recommendation:
+  - yes, JSONB is available here and worth experimenting with
+  - no, it should not be flipped on blindly for persistent storage without adjusting adapter decode/select behavior first
+  - lowest-risk path is:
+    - use JSONB only inside internal JSON function chains first
+    - keep external row materialization stable
+    - then benchmark before deciding whether to store JSONB blobs at rest
+
+- Important equality result from local verification:
+  - SQLite JSONB does **not** provide PostgreSQL-style structural equality for reordered object keys
+  - verified locally:
+    - `jsonb('{"a":1,"b":2}') = jsonb('{"b":2,"a":1}')` returns `0`
+    - `count(distinct jsonb(...))` also treats those two encodings as distinct
+  - the generated JSONB BLOB preserves object-key order from the input JSON text
+  - therefore JSONB does **not** remove the need for a canonicalization strategy in `AddUnique` / `Remove`
+
+- Performance implication:
+  - JSONB can still improve performance by avoiding repeated text-JSON parsing inside SQLite JSON functions
+  - but it does not solve structural compare semantics by itself
+  - and aggregate JSON functions are a known exception where SQLite docs prefer text-oriented `json_` inputs over `jsonb_` inputs
+
+### Standalone Drop-In Package Pass
+
+- Goal:
+  - make the SQLite adapter extractable as a folder that can be copied into a normal Parse Server app and loaded via `databaseAdapter` without modifying Parse Server core
+
+- Package shape added:
+  - source folder:
+    - `src/Adapters/Storage/SQLite/parse-server-sqlite-adapter`
+  - compiled folder after build:
+    - `lib/Adapters/Storage/SQLite/parse-server-sqlite-adapter`
+  - contents:
+    - `index.js`
+    - `package.json`
+    - `README.md`
+    - `loadParseServerInternal.js`
+    - copied SQLite adapter files:
+      - `SQLiteStorageAdapter.js`
+      - `SQLiteClient.js`
+      - `SQLiteConfigParser.js`
+      - `SQLiteUtils.js`
+    - maintainer refresh script:
+      - `refresh-from-repo.js`
+
+- Packaging strategy:
+  - copy the built SQLite adapter files, not the Flow source files
+  - retarget only the Parse Server internal imports to the host app:
+    - `parse-server/lib/Adapters/Storage/Postgres/PostgresStorageAdapter`
+    - `parse-server/lib/RestQuery`
+    - `parse-server/lib/Utils`
+    - `parse-server/lib/Error`
+    - `parse-server/lib/logger`
+  - keep all other logic adapter-local
+  - no Parse Server core edits required
+
+- Dev/test fallback:
+  - `loadParseServerInternal.js` first tries `parse-server/lib/...`
+  - if that package lookup is unavailable, it falls back to this repo's local `lib/...`
+  - that fallback is only to make the drop-in package testable in-tree; real deployment should load from the host app's installed `parse-server`
+
+- Verification:
+  - `npm run build` green after adding the standalone package
+  - direct `require('./lib/Adapters/Storage/SQLite/parse-server-sqlite-adapter')` works and constructs `SQLiteStorageAdapter`
+  - Parse Server adapter-loader path also works using:
+    - `PARSE_SERVER_DATABASE_ADAPTER={"module":".../lib/Adapters/Storage/SQLite/parse-server-sqlite-adapter","options":{"uri":"sqlite://:memory:"}}`
+  - verified executed Parse API cases through the packaged module path:
+    - `spec/ParseAPI.spec.js --filter='return the updated fields on PUT|should response should not change with triggers'`
+    - both specs passed
+
+- Caveat:
+  - this standalone package depends on Parse Server internals under `parse-server/lib/...`
+  - therefore it must stay version-matched with the Parse Server build it was copied from
+
+### SQLite `json()` Canonicalization Check
+
+- Question checked:
+  - whether SQLite `json()` sorts object keys alphabetically so we could rely on it as the canonical storage form
+
+- Official SQLite docs say:
+  - `json(X)` returns a minified JSON string with unnecessary whitespace removed
+  - JSON5 input is converted to canonical RFC-8259 text
+  - docs do **not** say object keys are reordered
+  - docs explicitly say duplicate-label preservation is currently preserved but undefined for the future
+
+- Local runtime check on this repo's SQLite:
+  - `select json('{"b":2,"a":1}')` returns `{"b":2,"a":1}`
+  - `select json(jsonb('{"b":2,"a":1}'))` also returns `{"b":2,"a":1}`
+  - `select json('{"a":1,"b":2}') = json('{"b":2,"a":1}')` returns `0`
+  - `select jsonb('{"a":1,"b":2}') = jsonb('{"b":2,"a":1}')` also returns `0`
+
+- Conclusion:
+  - SQLite's `canonical JSON` wording is about strict JSON syntax / minification, not recursive key sorting
+  - therefore `json()` alone cannot be used as the structural canonicalizer for Parse object equality
+  - if we want order-insensitive object equality, we still need our own recursive key-order canonicalization step
+  - JSONB can still be layered on top later for performance, but it does not remove the canonicalization requirement
+
+### Canonicalization Cost + JSONB Tradeoff Check
+
+- Local JS stringify benchmark against current helper and known stable-stringify libs already present in this repo:
+  - current helper:
+    - `canonicalJSONStringify` from `lib/Adapters/Storage/SQLite/SQLiteUtils.js`
+  - library candidates present in `node_modules`:
+    - `fast-json-stable-stringify` `2.1.0`
+    - `safe-stable-stringify` `2.4.1`
+
+- Benchmark results:
+  - small flat object:
+    - `JSON.stringify`: `0.0002ms` / op
+    - current `canonicalJSONStringify`: `0.0008ms` / op
+    - `fast-json-stable-stringify`: `0.0007ms` / op
+    - `safe-stable-stringify`: `0.0004ms` / op
+  - medium nested object (~4.4KB JSON):
+    - `JSON.stringify`: `0.0124ms` / op
+    - current `canonicalJSONStringify`: `0.0778ms` / op
+    - `fast-json-stable-stringify`: `0.0609ms` / op
+    - `safe-stable-stringify`: `0.0342ms` / op
+  - large nested object (~48KB JSON):
+    - `JSON.stringify`: `0.1423ms` / op
+    - current `canonicalJSONStringify`: `0.6001ms` / op
+    - `fast-json-stable-stringify`: `0.7252ms` / op
+    - `safe-stable-stringify`: `0.3910ms` / op
+
+- Takeaway on JS cost:
+  - deterministic canonicalization is roughly `2x` to `6x` the cost of plain `JSON.stringify` in these microbenches
+  - but the absolute cost is still sub-millisecond even for a ~48KB nested document
+  - among tested options here, `safe-stable-stringify` was the fastest stable implementation
+
+- Local SQLite text-vs-JSONB microbench on the same canonical JSON payload:
+  - SQL-side extract:
+    - `json_extract(text)`: `0.1313ms` / op
+    - `json_extract(jsonb)`: `0.0015ms` / op
+  - SQL-side update:
+    - `json_set(text, ...)`: `0.2388ms` / op
+    - `jsonb_set(jsonb, ...)`: `0.0024ms` / op
+  - whole-document materialization:
+    - raw text column read: `0.0070ms` / op
+    - `json(jsonb_column)` to materialize text: `0.1011ms` / op
+
+- Takeaway on JSONB:
+  - best case:
+    - huge win when the database is doing repeated JSON path extraction / mutation internally
+  - worst case:
+    - slower when we need to convert the whole JSONB document back to text for adapter materialization into JS
+  - so "JSONB for everything" is not automatically a win; it strongly depends on whether hot paths are SQL-side JSON ops or full-document reads back into Node
+
+- Architectural implication:
+  - canonicalization cost is low enough that it does not rule out JSONB
+  - but canonicalization and JSONB solve different problems:
+    - canonicalization: deterministic structural equality
+    - JSONB: faster in-engine JSON processing
+  - the best design likely looks like:
+    - canonicalize once on write / equality-sensitive mutation boundaries
+    - store JSONB only if we also adjust row materialization paths so read-heavy whole-document workloads do not regress badly
+
+### Whole-Document Materialization Clarification
+
+- Meaning of "whole-document materialization":
+  - this is the path where Parse does not just need a few JSON subfields for filtering or mutation
+  - it needs the actual complete value as a JavaScript object / array so the adapter can build the response object
+  - for SQLite text JSON this currently means:
+    - SQLite returns text
+    - adapter does `JSON.parse(text)`
+  - for SQLite JSONB-at-rest this would mean:
+    - SQLite / better-sqlite3 returns a BLOB
+    - we must convert that whole JSONB document into a JS object somehow before returning it
+
+- Current adapter evidence:
+  - `src/Adapters/Storage/SQLite/SQLiteStorageAdapter.js`
+    - `sqliteValueToParseValue(...)` parses object/array/bytes/geopoint JSON from strings
+    - `_buildRawStorageObject(...)` also opportunistically `JSON.parse(...)`s string fields
+    - `parseJSONValue(...)` only parses strings that start with `{` or `[`
+  - all of that assumes JSON columns come back as text strings, not BLOB buffers
+
+- better-sqlite3 behavior:
+  - official docs expose row-shape controls like `.get()`, `.all()`, `.iterate()`, `.pluck()`, `.expand()`, `.raw()`
+  - no documented API was found for custom per-column decode / row-factory conversion into arbitrary JS objects
+  - local runtime check:
+    - selecting a JSONB column returns a Node `Buffer`
+    - selecting `json(jsonb_column)` returns text
+  - local source check in `node_modules/better-sqlite3/src/better_sqlite3.cpp`:
+    - `SQLITE_BLOB` is mapped to `node::Buffer::Copy(...)`
+
+- SQLite JSONB traversal helpers:
+  - current SQLite docs say `jsonb_each()` / `jsonb_tree()` are only available starting with SQLite `3.51.0` (`2025-11-04`)
+  - bundled runtime here is SQLite `3.49.2`
+  - local runtime verification:
+    - `jsonb_each(...)` -> `no such function`
+    - `jsonb_tree(...)` -> `no such function`
+
+- Practical implication:
+  - for this runtime, there is no built-in path where better-sqlite3 hands us a fully decoded JS object from SQLite JSONB
+  - using many `json_extract(...)` calls or a row-walk reconstruction strategy only makes sense when we need a few known paths
+  - it is a poor fit for arbitrary nested whole-document retrieval, where `json(jsonb_column)` + `JSON.parse(...)` is the straightforward baseline
+
+### better-sqlite3 12.11.1 Re-check
+
+- Verified package metadata:
+  - npm reports `better-sqlite3@12.11.1` was published on `2026-06-15`
+  - tarball inspection shows bundled SQLite headers/source declare:
+    - `SQLITE_VERSION "3.53.2"`
+    - `SQLITE_SOURCE_ID "2026-06-03 19:12:13 ..."`
+
+- Important correction to earlier constraint:
+  - SQLite `3.53.2` is new enough to include `jsonb_each()` and `jsonb_tree()`
+  - so if we upgrade from the current local `better-sqlite3@11.10.0` / SQLite `3.49.2` to `12.11.1`, those JSONB table-valued functions become available
+
+- What does *not* change:
+  - better-sqlite3 still maps SQLite `BLOB` to Node `Buffer` at the native binding boundary
+  - there is still no documented official row-decoder API in better-sqlite3 that auto-converts JSONB blobs into arbitrary JS objects
+
+- Updated implication:
+  - upgrading to `12.11.1` opens a new implementation option for native JSONB tree walking inside SQLite
+  - but it still does not magically remove the adapter-side job of converting SQLite results into Parse/JS object structures
+
+### `jsonb_tree()` Reconstruction Benchmark
+
+- Goal checked:
+  - whether reconstructing a full JS object by iterating `jsonb_tree(...)` rows is faster than the simpler `json(jb)` + `JSON.parse(...)` baseline for whole-document reads
+
+- Prototype:
+  - stored canonical JSON as JSONB in SQLite `3.53.2`
+  - compared three full-document decode strategies:
+    - `json(jb)` + `JSON.parse(...)`
+    - `jsonb_tree(...).all()` + JS rebuild by `id` / `parent`
+    - `jsonb_tree(...).iterate()` + JS rebuild by `id` / `parent`
+  - rebuild correctness verified:
+    - both tree-based strategies produced the same JSON as the baseline
+
+- Row explosion:
+  - medium sample (~5.9KB JSON): `740` rows from `jsonb_tree`
+  - large sample (~70.8KB JSON): `8884` rows from `jsonb_tree`
+
+- Performance:
+  - medium sample:
+    - `json(jb)+JSON.parse`: `0.0566ms` / op
+    - `jsonb_tree().all()+rebuild`: `0.4173ms` / op
+    - `jsonb_tree().iterate()+rebuild`: `0.6988ms` / op
+  - large sample:
+    - `json(jb)+JSON.parse`: `0.6611ms` / op
+    - `jsonb_tree().all()+rebuild`: `5.4082ms` / op
+    - `jsonb_tree().iterate()+rebuild`: `8.6382ms` / op
+
+- Conclusion:
+  - for whole-document materialization, tree-walk reconstruction is much slower than `json(jb)` + `JSON.parse(...)`
+  - `.iterate()` was slower than `.all()` in this prototype, likely due to per-row iterator overhead in JS
+  - `jsonb_tree()` remains useful for selective/path-oriented processing, but it is not the right fast path for general Parse object hydration
+
+### Runtime Upgrade + Canonicalizer Swap
+
+- Installed on existing system `nvm` runtime `v22.22.0`:
+  - `better-sqlite3@12.11.1`
+  - direct dependency `safe-stable-stringify@^2.4.1`
+
+- Verified locally after install:
+  - runtime now reports:
+    - `better-sqlite3 12.11.1`
+    - SQLite `3.53.2`
+  - `jsonb_each(...)` and `jsonb_tree(...)` work when called correctly as table-valued functions
+  - object/array rows from `jsonb_each/jsonb_tree` still cross the driver boundary as BLOB/`Buffer`
+
+- Code change:
+  - replaced the custom recursive key-sorting serializer in:
+    - `src/Adapters/Storage/SQLite/SQLiteUtils.js`
+  - new implementation delegates to `safe-stable-stringify`
+  - rationale:
+    - same deterministic equality goal
+    - simpler code
+    - faster than the homegrown helper in local microbenchmarks
+
+- Packaging follow-up:
+  - standalone package metadata updated to declare:
+    - `safe-stable-stringify` dependency
+    - `better-sqlite3` peer dependency bumped to `^12.11.1`
+  - standalone folder refreshed from rebuilt adapter and rebuilt again into `lib/...`
+
+- Verification:
+  - `npm run build` green after dependency and helper changes
+  - standalone package export still instantiates
+  - `npm run test:sqlite:testonly -- spec/ParseAPI.spec.js ...`
+    - existing Parse API coverage passed under SQLite `3.53.2`
+    - includes the PUT cases exercising `Add`, `AddUnique`, and `Remove`
+
+### `json()` On JSONB Clarification
+
+- Yes:
+  - SQLite `json(...)` accepts a JSONB column/blob input and renders canonical text JSON for it
+  - local runtime checks confirmed `json(jsonb(...))` works under SQLite `3.53.2`
+
+- Why that does not automatically mean "switch everything now":
+  - it is a good bridge for whole-document reads
+  - but it adds a JSONB -> text conversion step on every such read
+  - that is still much cheaper than rebuilding whole documents from `jsonb_tree(...)`, but it is slower than reading a raw text JSON column directly
+
+- Practical implication:
+  - if we move to JSONB-at-rest, the right hydration path is likely:
+    - SQL: `json(jsonb_column)` (or equivalent projected expression)
+    - JS: `JSON.parse(...)`
+  - the likely win then comes from keeping JSON-heavy query/update work inside SQLite's JSONB engine, not from magically eliminating parse/materialization costs altogether
+
+### Text JSON vs JSONB Read Path Benchmarks
+
+- Direct single-document read benchmark:
+  - compared:
+    - raw text column + `JSON.parse(...)`
+    - `json(text_column)` + `JSON.parse(...)`
+    - `json(jsonb_column)` + `JSON.parse(...)`
+  - medium sample (~5.9KB):
+    - text raw: `0.0766ms`
+    - `json(text)`: `0.0712ms`
+    - `json(jsonb)`: `0.0549ms`
+  - large sample (~70.8KB):
+    - text raw: `0.6042ms`
+    - `json(text)`: `0.7919ms`
+    - `json(jsonb)`: `0.6662ms`
+
+- Mixed Parse-like row hydration benchmark:
+  - row shape:
+    - scalar columns: `objectId`, timestamps, score, name
+    - JSON-heavy columns: `profile`, `tags`, `authData`, `polygon`
+  - hydration path:
+    - text-at-rest: `SELECT *` then `JSON.parse(...)` the JSON columns
+    - JSONB-at-rest: explicit projection with `json(profile) as profile`, etc., then `JSON.parse(...)`
+  - results:
+    - full row text-at-rest: `0.6231ms`
+    - full row JSONB-at-rest via `json(...)`: `0.6865ms`
+  - implication:
+    - full-object Parse hydration regresses a bit (~10%) if all JSON columns are stored as JSONB and rendered back via `json(...)`
+
+- Mixed row nested-work benchmark on the same row:
+  - nested query:
+    - text-at-rest: `0.1666ms`
+    - JSONB-at-rest: `0.0019ms`
+  - nested update:
+    - text-at-rest: `0.5673ms`
+    - JSONB-at-rest: `0.3919ms`
+  - implication:
+    - path-oriented query/update work is where JSONB wins decisively
+
+### Code-Specific Parse Assessment
+
+- Current adapter shape strongly favors a hybrid conclusion, not a blanket "all text" or "all JSONB" slogan.
+
+- Why Parse full reads matter here:
+  - `find(...)` does `SELECT ${selectSql} FROM ...` and then hydrates every row with `_sqliteRowToParseObject(...)`
+  - `_sqliteRowToParseObject(...)` / `sqliteValueToParseValue(...)` expect JSON-ish fields as strings and `JSON.parse(...)` them
+  - that means standard Parse object reads are fundamentally full-document hydration paths
+
+- Why more SQLite pushdown still likely wins overall:
+  - the biggest bad path today is not just read hydration cost
+  - `updateObjectsByQuery(...)` currently does:
+    - `find(...)` existing objects first
+    - detect dot operations
+    - apply those dot operations in JS with `applyDotPathUpdate(...)`
+    - recursively call `updateObjectsByQuery(...)` again with rewritten root objects
+    - then `find(...)` the updated rows again
+  - that is expensive and extremely JS-heavy
+  - it also means the adapter is leaving a lot of potential SQLite JSON/JSONB performance unused
+
+- Important nuance:
+  - there is already SQL machinery in the adapter for nested JSON updates:
+    - `buildJsonPathUpdateExpression(...)`
+    - `json_set(...)` / `json_extract(...)` / `json_each(...)`
+  - but the early dot-operation fallback in `updateObjectsByQuery(...)` prevents those dot updates from staying in SQL for the main update path
+
+- Practical Parse-oriented conclusion:
+  - if we only switch storage to JSONB and keep the rest of the adapter logic mostly the same, full-object reads get slightly slower and we do not capture the big upside
+  - if we switch storage to JSONB *and* push dot-path updates / nested comparisons / array mutations / authData patching further into SQLite, Parse likely benefits overall because the worst current JS-heavy paths disappear
+
+### Internal Compare / Dot-Update Follow-up
+
+- Environment reality:
+  - repo `.nvmrc` points to Node `20.15.0`
+  - that version is not installed in the user's existing system `nvm`
+  - local `better-sqlite3` is currently built against Node ABI `127`, which matches installed `nvm` Node `22.22.0`
+  - installed `nvm` Node `18.17.1` fails to load the native module (`NODE_MODULE_VERSION 108` mismatch)
+  - practical effect for now: SQLite verification in this checkout has to run under the already-installed `nvm` Node `22.22.0` unless the user installs/rebuilds for another version
+
+- Internal SQLite compare result:
+  - using SQLite-side `jsonb(...) = jsonb(?)` comparison and `jsonb_each(...)` where the compared values are JSON containers is viable
+  - this is not a round-peg/square-hole dead end for the query path
+  - the earlier `Parse.Query` failure on `order by createdAt` did not reproduce on rerun
+
+- Adapter cleanup completed:
+  - removed the old JS dot-notation rewrite path from `updateObjectsByQuery(...)`
+  - deleted the `applyDotPathUpdate(...)` helper and its local path-mutation helpers
+  - nested updates now stay on the existing SQL path built around `buildJsonPathUpdateExpression(...)`
+  - the initial pre-read remains only to preserve update return semantics
+
+- Verification after removing the JS dot fallback:
+  - `npm run build`
+  - `npm run test:sqlite:testonly -- spec/SQLiteStorageAdapter.spec.js`
+  - `npm run test:sqlite:testonly -- spec/ParseAPI.spec.js --filter='response should not change with triggers|return the updated fields on PUT|response should not change with $operators on PUT|return the updated fields on PUT when triggered'`
+  - `npm run test:sqlite:testonly -- spec/ParseQuery.spec.js`
+  - result: all of the above passed under Node `22.22.0`
+
+- Immediate implication:
+  - the adapter is now doing less ad-hoc JS work for nested updates even before any broader JSONB-at-rest migration
+  - this is a clean adapter-scoped improvement and a better base for any later JSONB storage experiment
+
+### Pending / Disabled Spec Notes
+
+- `Temporarily disabled with xit` is Jasmine reporting an intentionally skipped spec, not a SQLite adapter crash.
+- In this repo there are two main skip paths:
+  - literal `xit(...)`
+    - example: [spec/ParseQuery.spec.js:5344](/Users/swittkongdachalert/Documents/Projects/Libraries/parse-server/spec/ParseQuery.spec.js:5344)
+    - note in file says `there is some problem with js sdk caching`
+  - DB-gated helpers that resolve to `xit` / `xdescribe`
+    - implementation: [spec/helper.js:529](/Users/swittkongdachalert/Documents/Projects/Libraries/parse-server/spec/helper.js:529)
+    - `it_only_db('mongo')` returns `xit` unless `PARSE_SERVER_TEST_DB === 'mongo'`
+    - `describe_only_db('mongo')` returns `xdescribe` unless `PARSE_SERVER_TEST_DB === 'mongo'`
+- Concrete SQLite-side pending examples:
+  - [spec/ParseQuery.spec.js:44](/Users/swittkongdachalert/Documents/Projects/Libraries/parse-server/spec/ParseQuery.spec.js:44)
+  - [spec/ParseQuery.spec.js:69](/Users/swittkongdachalert/Documents/Projects/Libraries/parse-server/spec/ParseQuery.spec.js:69)
+  - [spec/ParseQuery.spec.js:5363](/Users/swittkongdachalert/Documents/Projects/Libraries/parse-server/spec/ParseQuery.spec.js:5363)
+  - [spec/ParseQuery.spec.js:5407](/Users/swittkongdachalert/Documents/Projects/Libraries/parse-server/spec/ParseQuery.spec.js:5407)
+  - [spec/ParseGlobalConfig.spec.js:113](/Users/swittkongdachalert/Documents/Projects/Libraries/parse-server/spec/ParseGlobalConfig.spec.js:113)
+  - [spec/Idempotency.spec.js:100](/Users/swittkongdachalert/Documents/Projects/Libraries/parse-server/spec/Idempotency.spec.js:100)
+- Meaning:
+  - no, the runner is not executing literally every file-level example under SQLite
+  - it is executing the SQLite-enabled portion of the suite, while the repo itself intentionally suppresses Mongo/Postgres-only cases and a few hand-disabled specs
+
+### Broad SQLite Suite Rerun Summary
+
+- Broad command rerun:
+  - `npm run test:sqlite:testonly`
+  - result:
+    - `Executed 4123 of 4422 specs (23 FAILED) (299 PENDING) in 11 mins 19 secs.`
+
+- Important interpretation:
+  - this broad command is **not** a pure "adapter-only SQLite" signal
+  - several spec files intentionally switch storage engines or instantiate fresh Parse Server instances without carrying the SQLite adapter config through
+  - once those fail, later tests can be contaminated by dead Parse API / Mongo connection state
+
+- Isolated reruns used to separate real adapter regressions from suite contamination:
+  - `npm run test:sqlite:testonly -- spec/ParseRole.spec.js`
+    - result: `18 specs, 0 failures`
+    - implication: the large role failure cluster in the broad run was contamination, not a SQLite adapter break
+  - `npm run test:sqlite:testonly -- spec/SchemaPerformance.spec.js --filter='does reload with schemaCacheTtl'`
+    - result: only `does reload with schemaCacheTtl` fails
+    - source: [spec/SchemaPerformance.spec.js:212](/Users/swittkongdachalert/Documents/Projects/Libraries/parse-server/spec/SchemaPerformance.spec.js:212)
+    - note: this test explicitly reconfigures to `mongodb://localhost:27017/parseServerMongoAdapterTestDatabase` unless `PARSE_SERVER_TEST_DB === 'postgres'`
+    - implication: this failure is local Mongo/setup scope, not SQLite adapter behavior
+  - `npm run test:sqlite:testonly -- spec/ParseLiveQuery.spec.js`
+    - observed failing block:
+      - `does shutdown liveQuery server`
+      - `does shutdown separate liveQuery server`
+      - follow-on failures like `expect afterEvent delete` / `can handle async afterEvent modification`
+    - source body:
+      - [spec/ParseLiveQuery.spec.js:1242](/Users/swittkongdachalert/Documents/Projects/Libraries/parse-server/spec/ParseLiveQuery.spec.js:1242)
+      - [spec/ParseLiveQuery.spec.js:1277](/Users/swittkongdachalert/Documents/Projects/Libraries/parse-server/spec/ParseLiveQuery.spec.js:1277)
+    - note:
+      - these tests build fresh `ParseServer.startApp(config)` configs
+      - they only special-case `postgres`; they do **not** inject the SQLite adapter path for SQLite
+      - later failures in the same file show explicit `MongoServerSelectionError: connect ECONNREFUSED 127.0.0.1:27017`
+    - implication:
+      - at minimum, this spec file is not adapter-wired correctly for SQLite in its standalone `startApp(...)` path
+      - this is outside the adapter package boundary and should not be "fixed" by mutating Parse core semantics
+
+- Current adapter-side conclusion from this pass:
+  - the earlier SQLite adapter regressions around nested updates / `_PushStatus` / Parse API update semantics are fixed
+  - remaining broad-suite reds currently observed are dominated by non-adapter test/setup paths involving Mongo-default or Mongo-explicit server startup
+
+- Direct runtime probe for the two LiveQuery shutdown tests:
+  - created throwaway `node` probes that mirrored the spec flow but passed an explicit SQLite adapter into `ParseServer.startApp(...)`
+  - same-server shutdown result:
+    - `{"before":1,"after":0,"address":null,"subscriberOpen":false}`
+  - separate LiveQuery server shutdown result:
+    - `{"healthStatus":200,"before":1,"after":0,"address":null,"subscriberOpen":false,"close":true}`
+  - implication:
+    - with SQLite actually wired in, both shutdown paths behave correctly
+    - the spec failures are therefore not evidence of a broken SQLite adapter shutdown path
