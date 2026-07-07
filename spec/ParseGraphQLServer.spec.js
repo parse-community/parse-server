@@ -1176,8 +1176,10 @@ describe('ParseGraphQLServer', () => {
             const error = getReturnedError(e);
             expect(error.message).toContain('UserWhereInput');
             expect(error.message).not.toMatch(/Did you mean/);
-            expect(error.message).not.toContain('"username"');
-            expect(JSON.stringify(error)).not.toContain('"username"');
+            // JSON.stringify escapes embedded quotes, so assert against the bare
+            // identifier to reliably catch a leak duplicated into extensions.stacktrace.
+            expect(error.message).not.toContain('username');
+            expect(JSON.stringify(error)).not.toContain('username');
           }
         });
 
