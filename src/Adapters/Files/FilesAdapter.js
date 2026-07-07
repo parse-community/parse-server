@@ -173,12 +173,6 @@ export function validateFilepath(filepath): ?Parse.Error {
     );
   }
   for (const segment of segments) {
-    if (!segment) {
-      return new Parse.Error(
-        Parse.Error.INVALID_FILE_NAME,
-        'File path must not contain empty segments.'
-      );
-    }
     const error = validateFilename(segment);
     if (error) {
       return error;
