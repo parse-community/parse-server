@@ -240,13 +240,63 @@ describe('FilesController', () => {
     }
   });
 
-  it('rejects non-string filepaths without throwing', () => {
-    for (const bad of [null, undefined, 42, {}]) {
-      const error = validateFilepath(bad);
+  describe('validateFilepath', () => {
+    const expectRejected = (filepath, messagePart) => {
+      const error = validateFilepath(filepath);
       expect(error).not.toBeNull();
       expect(error.code).toBe(Parse.Error.INVALID_FILE_NAME);
-      expect(error.message).toMatch(/string/i);
-    }
+      if (messagePart) {
+        expect(error.message).toContain(messagePart);
+      }
+    };
+
+    it('accepts valid single- and multi-segment paths', () => {
+      for (const valid of [
+        'file.txt',
+        'docs/file.txt',
+        'docs/caf\u00e9.txt',
+        'docs/cafe\u0301.txt',
+        'a..b.txt',
+        'docs/a..b.txt',
+        'docs/metadata/file.txt',
+      ]) {
+        expect(validateFilepath(valid)).toBeNull();
+      }
+    });
+
+    it('rejects non-string filepaths without throwing', () => {
+      for (const bad of [null, undefined, 42, {}, '']) {
+        expectRejected(bad, 'string');
+      }
+    });
+
+    it('rejects path traversal segments', () => {
+      for (const bad of ['..', 'foo/../bar', '../bar', 'foo/..']) {
+        expectRejected(bad, '..');
+      }
+    });
+
+    it('rejects leading or trailing slashes', () => {
+      for (const bad of ['/foo', 'foo/', '/foo/bar', 'foo/bar/']) {
+        expectRejected(bad, 'start or end');
+      }
+    });
+
+    it('rejects consecutive slashes', () => {
+      expectRejected('foo//bar', 'consecutive slashes');
+    });
+
+    it('rejects reserved first segments only', () => {
+      expectRejected('metadata', 'reserved segment');
+      expectRejected('metadata/evil.txt', 'reserved segment');
+      expect(validateFilepath('docs/metadata/evil.txt')).toBeNull();
+    });
+
+    it('rejects invalid nested filename segments', () => {
+      expectRejected('docs/bad?.txt', 'invalid characters');
+      expectRejected(`docs/_${'a'.repeat(128)}`, 'too long');
+      expectRejected('docs/..', '..');
+    });
   });
 
   it('rejects non-string filenames from FilesController without throwing', () => {
@@ -262,28 +312,26 @@ describe('FilesController', () => {
     expect(validateFilename('cafe\u0301.txt')).toBeNull();
   });
 
-  it('validates multi-segment filepaths', () => {
-    expect(validateFilepath('docs/caf\u00e9.txt')).toBeNull();
-    expect(validateFilepath(`docs/cafe\u0301.txt`)).toBeNull();
-    expect(validateFilepath('a..b.txt')).toBeNull();
-    expect(validateFilepath('docs/a..b.txt')).toBeNull();
-    for (const bad of ['foo/../bar', '..', 'foo//bar', '/foo', 'foo/']) {
-      expect(validateFilepath(bad)).not.toBeNull();
-      expect(validateFilepath(bad).code).toBe(Parse.Error.INVALID_FILE_NAME);
+  it('rejects path traversal filenames and non-decimal number characters', () => {
+    const dotDotError = validateFilename('..');
+    expect(dotDotError).not.toBeNull();
+    expect(dotDotError.message).toContain('..');
+
+    for (const bad of ['\u2160.txt', '\u00bd.txt']) {
+      const error = validateFilename(bad);
+      expect(error).not.toBeNull();
+      expect(error.message).toContain('invalid characters');
     }
-    expect(validateFilepath('foo//bar').message).toContain('consecutive slashes');
+    expect(validateFilename('123.txt')).toBeNull();
   });
+
 
   it('returns non-string filenames unchanged from normalizeFilename', () => {
     expect(normalizeFilename(null)).toBeNull();
     expect(normalizeFilename(42)).toBe(42);
   });
 
-  it('rejects reserved filepath segments and invalid filename segments', () => {
-    const reservedError = validateFilepath('metadata/evil.txt');
-    expect(reservedError).not.toBeNull();
-    expect(reservedError.message).toContain('reserved segment');
-
+  it('rejects invalid filename segments', () => {
     const tooLongError = validateFilename(`_${'a'.repeat(128)}`);
     expect(tooLongError).not.toBeNull();
     expect(tooLongError.message).toContain('too long');
@@ -291,13 +339,5 @@ describe('FilesController', () => {
     const invalidCharsError = validateFilename('bad?.txt');
     expect(invalidCharsError).not.toBeNull();
     expect(invalidCharsError.message).toContain('invalid characters');
-
-    const nestedInvalidCharsError = validateFilepath('docs/bad?.txt');
-    expect(nestedInvalidCharsError).not.toBeNull();
-    expect(nestedInvalidCharsError.message).toContain('invalid characters');
-
-    const nestedTooLongError = validateFilepath(`docs/_${'a'.repeat(128)}`);
-    expect(nestedTooLongError).not.toBeNull();
-    expect(nestedTooLongError.message).toContain('too long');
   });
 });

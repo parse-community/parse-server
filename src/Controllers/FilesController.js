@@ -15,12 +15,8 @@ const legacyFilesRegex = new RegExp(
 );
 
 export class FilesController extends AdaptableController {
-  normalizeFilename(filename) {
-    return normalizeFilename(filename);
-  }
-
   getFileData(config, filename) {
-    return this.adapter.getFileData(this.normalizeFilename(filename));
+    return this.adapter.getFileData(normalizeFilename(filename));
   }
 
   async createFile(config, filename, data, contentType, options) {
@@ -45,7 +41,7 @@ export class FilesController extends AdaptableController {
       delete options.directory;
     }
 
-    filename = this.normalizeFilename(filename);
+    filename = normalizeFilename(filename);
 
     // Fallback: buffer stream for adapters that don't support streaming
     if (typeof data?.pipe === 'function' && !this.adapter.supportsStreaming) {
@@ -66,12 +62,12 @@ export class FilesController extends AdaptableController {
   }
 
   deleteFile(config, filename) {
-    return this.adapter.deleteFile(this.normalizeFilename(filename));
+    return this.adapter.deleteFile(normalizeFilename(filename));
   }
 
   getMetadata(filename) {
     if (typeof this.adapter.getMetadata === 'function') {
-      return this.adapter.getMetadata(this.normalizeFilename(filename));
+      return this.adapter.getMetadata(normalizeFilename(filename));
     }
     return Promise.resolve({});
   }
@@ -122,14 +118,14 @@ export class FilesController extends AdaptableController {
   }
 
   handleFileStream(config, filename, req, res, contentType) {
-    return this.adapter.handleFileStream(this.normalizeFilename(filename), req, res, contentType);
+    return this.adapter.handleFileStream(normalizeFilename(filename), req, res, contentType);
   }
 
   validateFilename(filename) {
     if (!filename || typeof filename !== 'string') {
       return new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Filename must be a string.');
     }
-    filename = this.normalizeFilename(filename);
+    filename = normalizeFilename(filename);
     if (typeof this.adapter.validateFilename === 'function') {
       const error = this.adapter.validateFilename(filename);
       if (typeof error !== 'string') {

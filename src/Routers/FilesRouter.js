@@ -7,7 +7,7 @@ const triggers = require('../triggers');
 const Utils = require('../Utils');
 import { Readable } from 'stream';
 import { createSanitizedHttpError } from '../Error';
-import { RESERVED_FILEPATH_SEGMENTS } from '../Adapters/Files/FilesAdapter';
+import { RESERVED_FILEPATH_SEGMENTS, normalizeFilename } from '../Adapters/Files/FilesAdapter';
 
 /**
  * Wraps a readable stream in a Readable that enforces a byte size limit.
@@ -222,7 +222,7 @@ export class FilesRouter {
 
     const filesController = config.filesController;
     let filename = FilesRouter._getFilenameFromParams(req);
-    filename = filesController.normalizeFilename(filename);
+    filename = normalizeFilename(filename);
     const filepathError = filesController.validateFilepath(filename);
     if (filepathError) {
       res.status(400);
@@ -241,7 +241,7 @@ export class FilesRouter {
         fileAuth
       );
       if (triggerResult?.file?._name) {
-        filename = filesController.normalizeFilename(triggerResult.file._name);
+        filename = normalizeFilename(triggerResult.file._name);
         const renamedPathError = filesController.validateFilepath(filename);
         if (renamedPathError) {
           res.status(400);
@@ -415,7 +415,7 @@ export class FilesRouter {
       }
     }
     const filesController = config.filesController;
-    const filename = filesController.normalizeFilename(req.params.filename);
+    const filename = normalizeFilename(req.params.filename);
     req.params.filename = filename;
     const contentType = req.get('Content-type');
 
@@ -816,7 +816,7 @@ export class FilesRouter {
     }
     try {
       const { filesController } = req.config;
-      const filename = filesController.normalizeFilename(FilesRouter._getFilenameFromParams(req));
+      const filename = normalizeFilename(FilesRouter._getFilenameFromParams(req));
       const filepathError = filesController.validateFilepath(filename);
       if (filepathError) {
         next(filepathError);
@@ -865,7 +865,7 @@ export class FilesRouter {
       FilesRouter._validateFileDownload(req, config);
       const { filesController } = config;
       let filename = FilesRouter._getFilenameFromParams(req);
-      filename = filesController.normalizeFilename(filename);
+      filename = normalizeFilename(filename);
       const filepathError = filesController.validateFilepath(filename);
       if (filepathError) {
         res.status(400);
@@ -881,7 +881,7 @@ export class FilesRouter {
         fileAuth
       );
       if (triggerResult?.file?._name) {
-        filename = filesController.normalizeFilename(triggerResult.file._name);
+        filename = normalizeFilename(triggerResult.file._name);
         const renamedPathError = filesController.validateFilepath(filename);
         if (renamedPathError) {
           res.status(400);
