@@ -1,3 +1,10 @@
+# [9.10.0-alpha.3](https://github.com/parse-community/parse-server/compare/9.10.0-alpha.2...9.10.0-alpha.3) (2026-07-07)
+
+
+### Bug Fixes
+
+* NumberOrBoolean config option (cluster) value not coerced from env/CLI ([#10531](https://github.com/parse-community/parse-server/issues/10531)) ([459786f](https://github.com/parse-community/parse-server/commit/459786fd41cc835ec650d951258f011737cdb4c9))
+
 # [9.10.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.10.0-alpha.1...9.10.0-alpha.2) (2026-06-25)
 
 
