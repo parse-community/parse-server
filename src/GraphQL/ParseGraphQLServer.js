@@ -90,15 +90,23 @@ const IntrospectionControlPlugin = (publicIntrospection) => ({
 
 });
 
-// graphql-js validation rules (FieldsOnCorrectTypeRule, KnownArgumentNamesRule,
-// KnownTypeNamesRule, ...) embed "Did you mean ...?" hints sourced from the live
-// schema in their error messages. Those messages are returned to the caller
-// before didResolveOperation runs, so they sidestep IntrospectionControlPlugin
-// and disclose schema identifiers the introspection guard is meant to hide.
-// Strip the hint suffix for callers that are not allowed to introspect.
+// graphql-js embeds "Did you mean ...?" hints sourced from the live schema in
+// its error messages. They are produced in two distinct phases:
+//   - validation rules (FieldsOnCorrectTypeRule, KnownArgumentNamesRule,
+//     KnownTypeNamesRule, ...), and
+//   - variable coercion (unknown enum values, unknown input-object fields),
+//     which runs during execution, after validation.
+// All of these are returned to the caller and disclose schema identifiers (Cloud
+// Code function names, class and field names) that the introspection guard is
+// meant to hide. Strip the hint suffix from every returned error — including the
+// copy graphql-js duplicates into extensions.stacktrace in non-production — for
+// callers that are not allowed to introspect.
+const stripSchemaSuggestion = message =>
+  typeof message === 'string' ? message.replace(/ ?Did you mean(.+?)\?$/, '') : message;
+
 const SchemaSuggestionsControlPlugin = (publicIntrospection) => ({
   requestDidStart: async (requestContext) => ({
-    validationDidStart: async () => {
+    willSendResponse: async () => {
       if (publicIntrospection) {
         return;
       }
@@ -108,11 +116,19 @@ const SchemaSuggestionsControlPlugin = (publicIntrospection) => ({
       if (isMasterOrMaintenance) {
         return;
       }
-      return async (validationErrors) => {
-        validationErrors?.forEach(error => {
-          error.message = error.message.replace(/ ?Did you mean(.+?)\?$/, '');
-        });
-      };
+      const body = requestContext.response?.body;
+      const errors =
+        body?.kind === 'single'
+          ? body.singleResult.errors
+          : body?.kind === 'incremental'
+            ? body.initialResult.errors
+            : undefined;
+      errors?.forEach(error => {
+        error.message = stripSchemaSuggestion(error.message);
+        if (Array.isArray(error.extensions?.stacktrace)) {
+          error.extensions.stacktrace = error.extensions.stacktrace.map(stripSchemaSuggestion);
+        }
+      });
     },
   }),
 });
