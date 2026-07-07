@@ -6,6 +6,20 @@ const {
   parseJSONArray,
 } = require('./SQLiteUtils');
 
+const DEFAULT_SQLITE_CACHE_SIZE_KB = 32768;
+
+function getSQLiteCacheSizeKb(options: Object) {
+  const rawValue = options.cacheSizeKb;
+  if (rawValue === undefined || rawValue === null) {
+    return DEFAULT_SQLITE_CACHE_SIZE_KB;
+  }
+  const cacheSizeKb = Number(rawValue);
+  if (!Number.isFinite(cacheSizeKb) || cacheSizeKb <= 0) {
+    return DEFAULT_SQLITE_CACHE_SIZE_KB;
+  }
+  return Math.trunc(cacheSizeKb);
+}
+
 function createClient(options: Object) {
   const filename = options.filename || ':memory:';
   const dbOptions = {
@@ -13,6 +27,7 @@ function createClient(options: Object) {
     timeout: options.timeout || 5000,
     verbose: options.verbose || null,
   };
+  const cacheSizeKb = getSQLiteCacheSizeKb(options);
 
   const db = new Database(filename, dbOptions);
 
@@ -22,7 +37,8 @@ function createClient(options: Object) {
   }
   db.pragma('synchronous = NORMAL');
   db.pragma('temp_store = MEMORY');
-  db.pragma('cache_size = -64000'); // 64MB cache size
+  // Keep the default cache modest for small Parse installs; callers can raise it.
+  db.pragma(`cache_size = -${cacheSizeKb}`);
   db.pragma('foreign_keys = ON');
 
   // Register REGEXP function for SQLite `REGEXP` operator

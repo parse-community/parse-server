@@ -23,6 +23,9 @@ function getDatabaseOptionsFromURI(uri: string) {
       if (searchParams.has('timeout')) {
         options.timeout = parseInt(searchParams.get('timeout') || '5000', 10);
       }
+      if (searchParams.has('cacheSizeKb')) {
+        options.cacheSizeKb = parseInt(searchParams.get('cacheSizeKb') || '32768', 10);
+      }
     }
   } else if (uri.startsWith('file:')) {
     options.filename = uri;

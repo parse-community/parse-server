@@ -805,11 +805,11 @@ const buildJSONArrayAppendExpression = targetExpression => {
   const appendedElementExpression = getJSONArrayElementValueExpression('item_value', 'item_type', 'item_json');
   return `(SELECT COALESCE(json_group_array(${appendedElementExpression}), '[]') ` + `FROM (` + `SELECT value AS item_value, json_each.type AS item_type, json_each.value AS item_json, ` + `CAST(json_each.key AS INTEGER) AS item_order ` + `FROM json_each(${normalizedTargetExpression}) ` + `UNION ALL ` + `SELECT value AS item_value, json_each.type AS item_type, json_each.value AS item_json, ` + `CAST(json_each.key AS INTEGER) + COALESCE(json_array_length(${normalizedTargetExpression}), 0) AS item_order ` + `FROM json_each(?) ` + `ORDER BY item_order))`;
 };
-const buildJsonPathUpdateExpression = (currentExpression, jsonPath, fieldValue) => {
-  const objectValueExpression = getJsonObjectValueExpression(currentExpression);
+const buildSingleEvaluationJSONMutationExpression = (currentObjectExpression, buildMutationExpression) => `(SELECT ${buildMutationExpression('__parse_current_json.obj')} ` + `FROM (SELECT ${currentObjectExpression} AS obj) AS __parse_current_json)`;
+const buildJsonPathUpdateExpression = (currentObjectExpression, jsonPath, fieldValue) => {
   if (fieldValue === null) {
     return {
-      expression: `json_set(${objectValueExpression}, '${jsonPath}', NULL)`,
+      expression: buildSingleEvaluationJSONMutationExpression(currentObjectExpression, objectExpression => `json_set(${objectExpression}, '${jsonPath}', NULL)`),
       params: []
     };
   }
@@ -819,41 +819,47 @@ const buildJsonPathUpdateExpression = (currentExpression, jsonPath, fieldValue) 
         throw new _node.default.Error(_node.default.Error.INVALID_JSON, 'Cannot increment by a non-numeric value.');
       }
       return {
-        expression: `json_set(${objectValueExpression}, '${jsonPath}', ` + `COALESCE(json_extract(${objectValueExpression}, '${jsonPath}'), 0) + ?)`,
+        expression: buildSingleEvaluationJSONMutationExpression(currentObjectExpression, objectExpression => `json_set(${objectExpression}, '${jsonPath}', ` + `COALESCE(json_extract(${objectExpression}, '${jsonPath}'), 0) + ?)`),
         params: [fieldValue.amount]
       };
     }
     if (fieldValue.__op === 'Add') {
-      const arrayValueExpression = getJsonArrayValueExpression(objectValueExpression, jsonPath);
       return {
-        expression: `json_set(${objectValueExpression}, '${jsonPath}', ` + `json(${buildJSONArrayAppendExpression(arrayValueExpression)}))`,
+        expression: buildSingleEvaluationJSONMutationExpression(currentObjectExpression, objectExpression => {
+          const arrayValueExpression = getJsonArrayValueExpression(objectExpression, jsonPath);
+          return `json_set(${objectExpression}, '${jsonPath}', ` + `json(${buildJSONArrayAppendExpression(arrayValueExpression)}))`;
+        }),
         params: [JSON.stringify(fieldValue.objects)]
       };
     }
     if (fieldValue.__op === 'AddUnique') {
-      const arrayValueExpression = getJsonArrayValueExpression(objectValueExpression, jsonPath);
       return {
-        expression: `json_set(${objectValueExpression}, '${jsonPath}', ` + `json(parse_array_add_unique(${arrayValueExpression}, ?)))`,
+        expression: buildSingleEvaluationJSONMutationExpression(currentObjectExpression, objectExpression => {
+          const arrayValueExpression = getJsonArrayValueExpression(objectExpression, jsonPath);
+          return `json_set(${objectExpression}, '${jsonPath}', ` + `json(parse_array_add_unique(${arrayValueExpression}, ?)))`;
+        }),
         params: [JSON.stringify(fieldValue.objects)]
       };
     }
     if (fieldValue.__op === 'Remove') {
-      const arrayValueExpression = getJsonArrayValueExpression(objectValueExpression, jsonPath);
       return {
-        expression: `json_set(${objectValueExpression}, '${jsonPath}', ` + `json(parse_array_remove(${arrayValueExpression}, ?)))`,
+        expression: buildSingleEvaluationJSONMutationExpression(currentObjectExpression, objectExpression => {
+          const arrayValueExpression = getJsonArrayValueExpression(objectExpression, jsonPath);
+          return `json_set(${objectExpression}, '${jsonPath}', ` + `json(parse_array_remove(${arrayValueExpression}, ?)))`;
+        }),
         params: [JSON.stringify(fieldValue.objects)]
       };
     }
     if (fieldValue.__op === 'Delete') {
       return {
-        expression: `json_remove(${objectValueExpression}, '${jsonPath}')`,
+        expression: buildSingleEvaluationJSONMutationExpression(currentObjectExpression, objectExpression => `json_remove(${objectExpression}, '${jsonPath}')`),
         params: []
       };
     }
   }
   validateNestedKeys(fieldValue);
   return {
-    expression: `json_set(${objectValueExpression}, '${jsonPath}', json(?))`,
+    expression: buildSingleEvaluationJSONMutationExpression(currentObjectExpression, objectExpression => `json_set(${objectExpression}, '${jsonPath}', json(?))`),
     params: [toSQLiteJSONObjectValue(fieldValue)]
   };
 };
@@ -1090,6 +1096,9 @@ class SQLiteStorageAdapter {
     this._usesSharedMemoryDatabase = false;
     const dbOptions = (0, _SQLiteConfigParser.getDatabaseOptionsFromURI)(this._uri);
     Object.assign(dbOptions, databaseOptions);
+    if (dbOptions.cacheSizeKb == null && options.cacheSizeKb != null) {
+      dbOptions.cacheSizeKb = options.cacheSizeKb;
+    }
     if (dbOptions.filename === ':memory:') {
       const temporaryDatabase = getSharedMemorySQLiteDatabasePath();
       dbOptions.filename = temporaryDatabase.filename;
@@ -1231,6 +1240,42 @@ class SQLiteStorageAdapter {
   _quotedFTSTableName(className, fieldName, diacriticSensitive) {
     return `"${this._rawFTSTableName(className, fieldName, diacriticSensitive).replace(/"/g, '""')}"`;
   }
+  _getFTS5TriggerNames(rawFTSTableName) {
+    const triggerBaseName = sanitizeFTS5Identifier(rawFTSTableName);
+    return {
+      insertTrigger: `"${`${triggerBaseName}_insert`.replace(/"/g, '""')}"`,
+      deleteTrigger: `"${`${triggerBaseName}_delete`.replace(/"/g, '""')}"`,
+      updateTrigger: `"${`${triggerBaseName}_update`.replace(/"/g, '""')}"`
+    };
+  }
+  _dropFTS5ArtifactsByRawTableName(rawFTSTableName, transactionalSession) {
+    const db = transactionalSession || this._db;
+    const ftsTableName = `"${rawFTSTableName.replace(/"/g, '""')}"`;
+    const {
+      insertTrigger,
+      deleteTrigger,
+      updateTrigger
+    } = this._getFTS5TriggerNames(rawFTSTableName);
+    db.exec(`DROP TRIGGER IF EXISTS ${updateTrigger}`);
+    db.exec(`DROP TRIGGER IF EXISTS ${deleteTrigger}`);
+    db.exec(`DROP TRIGGER IF EXISTS ${insertTrigger}`);
+    db.exec(`DROP TABLE IF EXISTS ${ftsTableName}`);
+  }
+  _dropFTS5ArtifactsForField(className, fieldName, transactionalSession) {
+    validateFieldName(fieldName);
+    this._dropFTS5ArtifactsByRawTableName(this._rawFTSTableName(className, fieldName, false), transactionalSession);
+    this._dropFTS5ArtifactsByRawTableName(this._rawFTSTableName(className, fieldName, true), transactionalSession);
+  }
+  _dropFTS5ArtifactsForClass(className, transactionalSession) {
+    const db = transactionalSession || this._db;
+    const rawFTSPrefix = `${this._rawTableName(className)}__fts__`;
+    const rows = this._prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'", db).all();
+    for (const row of rows) {
+      if (typeof row.name === 'string' && row.name.startsWith(rawFTSPrefix)) {
+        this._dropFTS5ArtifactsByRawTableName(row.name, db);
+      }
+    }
+  }
   async _ensureFTS5Index(className, fieldName, diacriticSensitive, transactionalSession) {
     validateFieldName(fieldName);
     const columns = this._getTableColumns(className, transactionalSession);
@@ -1244,10 +1289,11 @@ class SQLiteStorageAdapter {
     const ftsTableName = this._quotedFTSTableName(className, fieldName, diacriticSensitive);
     const tokenizer = diacriticSensitive ? 'unicode61 remove_diacritics 0' : 'unicode61 remove_diacritics 1';
     db.exec(`CREATE VIRTUAL TABLE IF NOT EXISTS ${ftsTableName} USING fts5(` + `"${fieldName.replace(/"/g, '""')}", ` + `content='${rawTableName.replace(/'/g, "''")}', ` + `content_rowid='rowid', ` + `tokenize='${tokenizer}'` + `)`);
-    const triggerBaseName = sanitizeFTS5Identifier(rawFTSTableName);
-    const insertTrigger = `"${triggerBaseName}_insert"`;
-    const deleteTrigger = `"${triggerBaseName}_delete"`;
-    const updateTrigger = `"${triggerBaseName}_update"`;
+    const {
+      insertTrigger,
+      deleteTrigger,
+      updateTrigger
+    } = this._getFTS5TriggerNames(rawFTSTableName);
     const quotedFieldName = quoteColumnName(fieldName);
     db.exec(`CREATE TRIGGER IF NOT EXISTS ${insertTrigger} AFTER INSERT ON ${tableName} BEGIN ` + `INSERT INTO ${ftsTableName}(rowid, ${quotedFieldName}) VALUES (new.rowid, new.${quotedFieldName}); ` + `END`);
     db.exec(`CREATE TRIGGER IF NOT EXISTS ${deleteTrigger} AFTER DELETE ON ${tableName} BEGIN ` + `INSERT INTO ${ftsTableName}(${ftsTableName}, rowid, ${quotedFieldName}) ` + `VALUES('delete', old.rowid, old.${quotedFieldName}); ` + `END`);
@@ -1448,6 +1494,7 @@ class SQLiteStorageAdapter {
         /* */
       }
     }
+    this._dropFTS5ArtifactsForClass(className);
     this._db.exec(`DROP TABLE IF EXISTS ${tableName}`);
     this._prepare('DELETE FROM "_SCHEMA" WHERE "className" = ?').run(className);
     this._existingClasses.delete(className);
@@ -1497,6 +1544,9 @@ class SQLiteStorageAdapter {
       }
     }
     const deletedColumnNames = fieldNames.filter(fieldName => !relationalFieldNames.has(fieldName));
+    for (const fieldName of deletedColumnNames) {
+      this._dropFTS5ArtifactsForField(className, fieldName);
+    }
     if (deletedColumnNames.length > 0) {
       const rawName = this._rawTableName(className);
       const tableName = this._tableName(className);
@@ -3500,7 +3550,7 @@ class SQLiteStorageAdapter {
     };
     const appendNestedFieldUpdate = (rootFieldName, jsonPath, fieldValue) => {
       const existingUpdate = nestedFieldUpdates.get(rootFieldName) || {
-        expression: quoteColumnName(rootFieldName),
+        expression: getJsonObjectValueExpression(quoteColumnName(rootFieldName)),
         params: []
       };
       const nextUpdate = buildJsonPathUpdateExpression(existingUpdate.expression, jsonPath, fieldValue);
@@ -4011,6 +4061,7 @@ class SQLiteStorageAdapter {
       ...existingIndexes
     } : buildDefaultSchemaIndexes();
     const deletedIndexes = [];
+    const deletedTextIndexFields = new Set();
     const insertedIndexes = [];
     for (const name of Object.keys(submittedIndexes)) {
       const indexDefinition = submittedIndexes[name];
@@ -4021,6 +4072,12 @@ class SQLiteStorageAdapter {
         throw new _node.default.Error(_node.default.Error.INVALID_QUERY, `Index ${name} does not exist, cannot delete.`);
       }
       if (indexDefinition.__op === 'Delete') {
+        const deletedIndexDefinition = nextIndexes[name] || existingIndexes[name];
+        if (isTextIndexDefinition(deletedIndexDefinition)) {
+          Object.keys(deletedIndexDefinition).forEach(fieldName => {
+            deletedTextIndexFields.add(fieldName);
+          });
+        }
         deletedIndexes.push(name);
         delete nextIndexes[name];
         continue;
@@ -4043,6 +4100,9 @@ class SQLiteStorageAdapter {
     }
     if (deletedIndexes.length > 0) {
       await this.dropIndexes(className, deletedIndexes, conn);
+    }
+    for (const fieldName of deletedTextIndexFields) {
+      this._dropFTS5ArtifactsForField(className, fieldName, conn);
     }
     const storedSchema = this._getStoredSchemaObject(className, conn) || {
       isParseClass: isSQLiteInternalClass(className) ? 0 : 1,

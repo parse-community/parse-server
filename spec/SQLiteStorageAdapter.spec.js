@@ -4,6 +4,26 @@ const Parse = require('parse/node');
 describe_only_db('sqlite')('SQLiteStorageAdapter Unit & Security Tests', () => {
   let adapter;
   let collectionPrefixIndex = 0;
+  const getFTSArtifactsForField = (currentAdapter, className, fieldName) => {
+    const rawTableNames = [
+      currentAdapter._rawFTSTableName(className, fieldName, false),
+      currentAdapter._rawFTSTableName(className, fieldName, true),
+    ];
+    const triggerNames = rawTableNames.flatMap(rawTableName =>
+      Object.values(currentAdapter._getFTS5TriggerNames(rawTableName)).map(triggerName =>
+        triggerName.slice(1, -1)
+      )
+    );
+    const allRows = currentAdapter._db
+      .prepare("SELECT type, name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%'")
+      .all();
+
+    return allRows.filter(
+      row =>
+        rawTableNames.some(rawTableName => row.name === rawTableName || row.name.startsWith(`${rawTableName}_`)) ||
+        triggerNames.includes(row.name)
+    );
+  };
 
   beforeEach(async () => {
     adapter = new SQLiteStorageAdapter({
@@ -15,6 +35,19 @@ describe_only_db('sqlite')('SQLiteStorageAdapter Unit & Security Tests', () => {
 
   afterEach(() => {
     adapter.handleShutdown();
+  });
+
+  it('supports configurable sqlite cache size', async () => {
+    const configuredAdapter = new SQLiteStorageAdapter({
+      uri: 'sqlite://:memory:?cacheSizeKb=16384',
+      collectionPrefix: `cache_${collectionPrefixIndex++}_`,
+    });
+
+    try {
+      expect(configuredAdapter._db.pragma('cache_size', { simple: true })).toBe(-16384);
+    } finally {
+      configuredAdapter.handleShutdown();
+    }
   });
 
   it('creates class and inserts objects', async () => {
@@ -221,6 +254,70 @@ describe_only_db('sqlite')('SQLiteStorageAdapter Unit & Security Tests', () => {
     await expectAsync(
       adapter.createObject('UniqueClass', schema, { objectId: 'u2', code: 'A1' })
     ).toBeRejected();
+  });
+
+  it('cleans up FTS artifacts when deleting text indexes', async () => {
+    const schema = {
+      className: 'FTSIndexClass',
+      fields: {
+        objectId: { type: 'String' },
+        subject: { type: 'String' },
+      },
+    };
+    await adapter.createClass('FTSIndexClass', schema);
+    await adapter.createIndex('FTSIndexClass', { subject: 'text' }, { name: 'subject_text' });
+    await adapter._ensureFTS5Index('FTSIndexClass', 'subject', false);
+    await adapter._ensureFTS5Index('FTSIndexClass', 'subject', true);
+
+    expect(getFTSArtifactsForField(adapter, 'FTSIndexClass', 'subject').length).toBeGreaterThan(0);
+
+    const storedSchema = await adapter.getClass('FTSIndexClass');
+    await adapter.setIndexesWithSchemaFormat(
+      'FTSIndexClass',
+      { subject_text: { __op: 'Delete' } },
+      storedSchema.indexes,
+      storedSchema.fields
+    );
+
+    expect(getFTSArtifactsForField(adapter, 'FTSIndexClass', 'subject')).toEqual([]);
+  });
+
+  it('cleans up FTS artifacts when deleting fields', async () => {
+    const schema = {
+      className: 'FTSFieldClass',
+      fields: {
+        objectId: { type: 'String' },
+        subject: { type: 'String' },
+      },
+    };
+    await adapter.createClass('FTSFieldClass', schema);
+    await adapter._ensureFTS5Index('FTSFieldClass', 'subject', false);
+    await adapter._ensureFTS5Index('FTSFieldClass', 'subject', true);
+
+    expect(getFTSArtifactsForField(adapter, 'FTSFieldClass', 'subject').length).toBeGreaterThan(0);
+
+    await adapter.deleteFields('FTSFieldClass', schema, ['subject']);
+
+    expect(getFTSArtifactsForField(adapter, 'FTSFieldClass', 'subject')).toEqual([]);
+  });
+
+  it('cleans up FTS artifacts when deleting classes', async () => {
+    const schema = {
+      className: 'FTSDeleteClass',
+      fields: {
+        objectId: { type: 'String' },
+        subject: { type: 'String' },
+      },
+    };
+    await adapter.createClass('FTSDeleteClass', schema);
+    await adapter._ensureFTS5Index('FTSDeleteClass', 'subject', false);
+    await adapter._ensureFTS5Index('FTSDeleteClass', 'subject', true);
+
+    expect(getFTSArtifactsForField(adapter, 'FTSDeleteClass', 'subject').length).toBeGreaterThan(0);
+
+    await adapter.deleteClass('FTSDeleteClass');
+
+    expect(getFTSArtifactsForField(adapter, 'FTSDeleteClass', 'subject')).toEqual([]);
   });
 
   it('throws object not found when delete query matches no rows', async () => {

@@ -1377,6 +1377,9 @@ export class SQLiteStorageAdapter implements StorageAdapter {
 
     const dbOptions = getDatabaseOptionsFromURI(this._uri);
     Object.assign(dbOptions, databaseOptions);
+    if (dbOptions.cacheSizeKb == null && options.cacheSizeKb != null) {
+      dbOptions.cacheSizeKb = options.cacheSizeKb;
+    }
     if (dbOptions.filename === ':memory:') {
       const temporaryDatabase = getSharedMemorySQLiteDatabasePath();
       dbOptions.filename = temporaryDatabase.filename;
@@ -1543,6 +1546,61 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     return `"${this._rawFTSTableName(className, fieldName, diacriticSensitive).replace(/"/g, '""')}"`;
   }
 
+  _getFTS5TriggerNames(rawFTSTableName: string): {
+    insertTrigger: string,
+    deleteTrigger: string,
+    updateTrigger: string,
+  } {
+    const triggerBaseName = sanitizeFTS5Identifier(rawFTSTableName);
+    return {
+      insertTrigger: `"${`${triggerBaseName}_insert`.replace(/"/g, '""')}"`,
+      deleteTrigger: `"${`${triggerBaseName}_delete`.replace(/"/g, '""')}"`,
+      updateTrigger: `"${`${triggerBaseName}_update`.replace(/"/g, '""')}"`,
+    };
+  }
+
+  _dropFTS5ArtifactsByRawTableName(rawFTSTableName: string, transactionalSession?: any): void {
+    const db = transactionalSession || this._db;
+    const ftsTableName = `"${rawFTSTableName.replace(/"/g, '""')}"`;
+    const { insertTrigger, deleteTrigger, updateTrigger } =
+      this._getFTS5TriggerNames(rawFTSTableName);
+    db.exec(`DROP TRIGGER IF EXISTS ${updateTrigger}`);
+    db.exec(`DROP TRIGGER IF EXISTS ${deleteTrigger}`);
+    db.exec(`DROP TRIGGER IF EXISTS ${insertTrigger}`);
+    db.exec(`DROP TABLE IF EXISTS ${ftsTableName}`);
+  }
+
+  _dropFTS5ArtifactsForField(
+    className: string,
+    fieldName: string,
+    transactionalSession?: any
+  ): void {
+    validateFieldName(fieldName);
+    this._dropFTS5ArtifactsByRawTableName(
+      this._rawFTSTableName(className, fieldName, false),
+      transactionalSession
+    );
+    this._dropFTS5ArtifactsByRawTableName(
+      this._rawFTSTableName(className, fieldName, true),
+      transactionalSession
+    );
+  }
+
+  _dropFTS5ArtifactsForClass(className: string, transactionalSession?: any): void {
+    const db = transactionalSession || this._db;
+    const rawFTSPrefix = `${this._rawTableName(className)}__fts__`;
+    const rows = this._prepare(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+      db
+    ).all();
+
+    for (const row of rows) {
+      if (typeof row.name === 'string' && row.name.startsWith(rawFTSPrefix)) {
+        this._dropFTS5ArtifactsByRawTableName(row.name, db);
+      }
+    }
+  }
+
   async _ensureFTS5Index(
     className: string,
     fieldName: string,
@@ -1571,10 +1629,8 @@ export class SQLiteStorageAdapter implements StorageAdapter {
       `)`
     );
 
-    const triggerBaseName = sanitizeFTS5Identifier(rawFTSTableName);
-    const insertTrigger = `"${triggerBaseName}_insert"`;
-    const deleteTrigger = `"${triggerBaseName}_delete"`;
-    const updateTrigger = `"${triggerBaseName}_update"`;
+    const { insertTrigger, deleteTrigger, updateTrigger } =
+      this._getFTS5TriggerNames(rawFTSTableName);
     const quotedFieldName = quoteColumnName(fieldName);
 
     db.exec(
@@ -1831,6 +1887,7 @@ export class SQLiteStorageAdapter implements StorageAdapter {
         /* */
       }
     }
+    this._dropFTS5ArtifactsForClass(className);
     this._db.exec(`DROP TABLE IF EXISTS ${tableName}`);
     this._prepare('DELETE FROM "_SCHEMA" WHERE "className" = ?').run(className);
     this._existingClasses.delete(className);
@@ -1886,6 +1943,9 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     }
 
     const deletedColumnNames = fieldNames.filter(fieldName => !relationalFieldNames.has(fieldName));
+    for (const fieldName of deletedColumnNames) {
+      this._dropFTS5ArtifactsForField(className, fieldName);
+    }
     if (deletedColumnNames.length > 0) {
       const rawName = this._rawTableName(className);
       const tableName = this._tableName(className);
@@ -4799,6 +4859,7 @@ export class SQLiteStorageAdapter implements StorageAdapter {
         ? { ...existingIndexes }
         : buildDefaultSchemaIndexes();
     const deletedIndexes = [];
+    const deletedTextIndexFields = new Set();
     const insertedIndexes = [];
 
     for (const name of Object.keys(submittedIndexes)) {
@@ -4813,6 +4874,12 @@ export class SQLiteStorageAdapter implements StorageAdapter {
         );
       }
       if (indexDefinition.__op === 'Delete') {
+        const deletedIndexDefinition = nextIndexes[name] || existingIndexes[name];
+        if (isTextIndexDefinition(deletedIndexDefinition)) {
+          Object.keys(deletedIndexDefinition).forEach(fieldName => {
+            deletedTextIndexFields.add(fieldName);
+          });
+        }
         deletedIndexes.push(name);
         delete nextIndexes[name];
         continue;
@@ -4843,6 +4910,9 @@ export class SQLiteStorageAdapter implements StorageAdapter {
     }
     if (deletedIndexes.length > 0) {
       await this.dropIndexes(className, deletedIndexes, conn);
+    }
+    for (const fieldName of deletedTextIndexFields) {
+      this._dropFTS5ArtifactsForField(className, fieldName, conn);
     }
 
     const storedSchema = this._getStoredSchemaObject(className, conn) || {

@@ -1076,3 +1076,87 @@
   - implication:
     - with SQLite actually wired in, both shutdown paths behave correctly
     - the spec failures are therefore not evidence of a broken SQLite adapter shutdown path
+
+### Deployment / Resource Notes
+
+- Relative-path DB URIs:
+  - parser in [src/Adapters/Storage/SQLite/parse-server-sqlite-adapter/SQLiteConfigParser.js](/Users/swittkongdachalert/Documents/Projects/Libraries/parse-server/src/Adapters/Storage/SQLite/parse-server-sqlite-adapter/SQLiteConfigParser.js) accepts relative paths as-is
+  - examples that work:
+    - `sqlite://./data/app.sqlite`
+    - `sqlite://data/app.sqlite`
+    - even plain `./data/app.sqlite` falls through as a filename
+  - important caveat:
+    - relative paths resolve against the Node process current working directory, not the config file directory
+
+- Index lifecycle:
+  - normal B-tree indexes are real SQLite indexes
+  - explicit index deletion path:
+    - [dropIndexes](/Users/swittkongdachalert/Documents/Projects/Libraries/parse-server/src/Adapters/Storage/SQLite/parse-server-sqlite-adapter/SQLiteStorageAdapter.js:3984) issues `DROP INDEX IF EXISTS`
+  - schema index mutation path:
+    - [setIndexesWithSchemaFormat](/Users/swittkongdachalert/Documents/Projects/Libraries/parse-server/src/Adapters/Storage/SQLite/parse-server-sqlite-adapter/SQLiteStorageAdapter.js:4008) computes inserted/deleted indexes and applies both
+  - field deletion path:
+    - [deleteFields](/Users/swittkongdachalert/Documents/Projects/Libraries/parse-server/src/Adapters/Storage/SQLite/parse-server-sqlite-adapter/SQLiteStorageAdapter.js:1467)
+    - strips index metadata for indexes touching deleted fields
+    - rebuilds the table without deleted columns
+    - recreates surviving indexes
+  - practical implication:
+    - yes, ordinary indexes are removed cleanly from schema metadata and the live SQLite schema
+    - but disk file size is not explicitly compacted afterward because there is no `VACUUM` path in the adapter
+
+- FTS / text-search cleanup caveat:
+  - text index definitions are special-cased and skipped by normal `CREATE INDEX`
+  - `$text` queries lazily create FTS5 virtual tables + triggers via [_ensureFTS5Index](/Users/swittkongdachalert/Documents/Projects/Libraries/parse-server/src/Adapters/Storage/SQLite/parse-server-sqlite-adapter/SQLiteStorageAdapter.js:1234)
+  - I do not see any explicit code that drops those FTS5 helper tables/triggers on:
+    - text-index deletion
+    - field deletion
+    - class deletion
+  - implication:
+    - ordinary indexes: clean removal path exists
+    - FTS helper artifacts: likely orphan-risk today and worth fixing
+
+- Memory baseline caveat:
+  - SQLite client currently hardcodes:
+    - `PRAGMA cache_size = -64000` in [SQLiteClient.js](/Users/swittkongdachalert/Documents/Projects/Libraries/parse-server/src/Adapters/Storage/SQLite/parse-server-sqlite-adapter/SQLiteClient.js:20)
+    - that is roughly a 64 MB page cache target
+    - also `temp_store = MEMORY`
+  - implication:
+    - SQLite is still far lighter than a separate `mongod` for small deployments
+    - but the adapter is not currently tuned for the absolute minimum memory floor
+
+### Follow-up: Cache Size + FTS Cleanup
+
+- SQLite page-cache tuning:
+  - reduced default cache target from roughly `64 MB` to `32 MB`
+  - rationale:
+    - the old value was a reasonable performance-biased default, but too fat for the small-server deployment profile we are targeting
+    - `32 MB` is a better default compromise for this adapter
+  - added configurability:
+    - URI query: `sqlite://./data/app.sqlite?cacheSizeKb=16384`
+    - adapter constructor shortcut: `new SQLiteStorageAdapter({ uri, cacheSizeKb: 16384 })`
+    - adapter constructor via nested options still works too because client options inherit from `databaseOptions`
+
+- FTS cleanup implemented:
+  - added teardown helpers in the adapter to drop:
+    - FTS5 virtual tables
+    - their insert/delete/update triggers
+  - cleanup now runs on:
+    - text-index deletion
+    - field deletion
+    - class deletion
+  - this closes the earlier orphan-risk note for normal adapter flows
+
+- Verification:
+  - `npm run build`
+  - `npm run test:sqlite:testonly -- spec/SQLiteStorageAdapter.spec.js`
+    - result: `20 specs, 0 failures`
+    - includes new coverage for:
+      - configurable cache size
+      - FTS cleanup on text-index deletion
+      - FTS cleanup on field deletion
+      - FTS cleanup on class deletion
+  - `npm run test:sqlite:testonly -- spec/ParseQuery.FullTextSearch.spec.js`
+    - result: SQLite-executed portion green (`9 specs, 0 failures`, mongo/postgres cases pending by design)
+
+- Standalone package refresh:
+  - refreshed [src/Adapters/Storage/SQLite/parse-server-sqlite-adapter](/Users/swittkongdachalert/Documents/Projects/Libraries/parse-server/src/Adapters/Storage/SQLite/parse-server-sqlite-adapter) from built source
+  - rebuilt repo so the `lib/.../parse-server-sqlite-adapter` copy matches
