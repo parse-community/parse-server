@@ -1125,6 +1125,110 @@ describe('ParseGraphQLServer', () => {
             expect(message).toContain('health');
           }
         });
+
+        const getReturnedError = e =>
+          (e.networkError && e.networkError.result && e.networkError.result.errors[0]) ||
+          (e.graphQLErrors && e.graphQLErrors[0]);
+
+        it('should strip "Did you mean" enum suggestions from variable-coercion errors without master or maintenance key', async () => {
+          Parse.Cloud.define('secretAdminTask', () => 'ok');
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation LeakFunction($input: CallCloudCodeInput!) {
+                  callCloudCode(input: $input) {
+                    result
+                  }
+                }
+              `,
+              variables: { input: { functionName: 'secretAdminTas', params: {} } },
+            });
+            fail('should have thrown a coercion error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            expect(error.message).toContain('CloudCodeFunction');
+            expect(error.message).not.toMatch(/Did you mean/);
+            expect(error.message).not.toContain('secretAdminTask');
+            // The cloud function name must not leak through any returned field
+            // (e.g. a stacktrace duplicated from the original message in non-production).
+            expect(JSON.stringify(error)).not.toContain('secretAdminTask');
+          }
+        });
+
+        it('should strip "Did you mean" field suggestions from variable-coercion errors without master or maintenance key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak($where: UserWhereInput) {
+                  users(where: $where) {
+                    edges {
+                      node {
+                        id
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: { where: { usernme: { equalTo: 'victim' } } },
+            });
+            fail('should have thrown a coercion error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            expect(error.message).toContain('UserWhereInput');
+            expect(error.message).not.toMatch(/Did you mean/);
+            expect(error.message).not.toContain('"username"');
+            expect(JSON.stringify(error)).not.toContain('"username"');
+          }
+        });
+
+        it('should keep "Did you mean" enum suggestions in variable-coercion errors with master key', async () => {
+          Parse.Cloud.define('secretAdminTask', () => 'ok');
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation LeakFunction($input: CallCloudCodeInput!) {
+                  callCloudCode(input: $input) {
+                    result
+                  }
+                }
+              `,
+              variables: { input: { functionName: 'secretAdminTas', params: {} } },
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+            fail('should have thrown a coercion error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            expect(error.message).toMatch(/Did you mean/);
+            expect(error.message).toContain('secretAdminTask');
+          }
+        });
+
+        it('should keep "Did you mean" enum suggestions in variable-coercion errors when public introspection is enabled', async () => {
+          const parseServer = await reconfigureServer();
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
+          Parse.Cloud.define('secretAdminTask', () => 'ok');
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation LeakFunction($input: CallCloudCodeInput!) {
+                  callCloudCode(input: $input) {
+                    result
+                  }
+                }
+              `,
+              variables: { input: { functionName: 'secretAdminTas', params: {} } },
+            });
+            fail('should have thrown a coercion error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            expect(error.message).toMatch(/Did you mean/);
+            expect(error.message).toContain('secretAdminTask');
+          }
+        });
       });
 
 
