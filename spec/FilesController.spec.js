@@ -315,7 +315,7 @@ describe('FilesController', () => {
   it('rejects path traversal filenames and non-decimal number characters', () => {
     const dotDotError = validateFilename('..');
     expect(dotDotError).not.toBeNull();
-    expect(dotDotError.message).toContain('..');
+    expect(dotDotError.message).toBe('Filename must not be "..".');
 
     for (const bad of ['\u2160.txt', '\u00bd.txt']) {
       const error = validateFilename(bad);
@@ -328,6 +328,7 @@ describe('FilesController', () => {
 
   it('returns non-string filenames unchanged from normalizeFilename', () => {
     expect(normalizeFilename(null)).toBeNull();
+    expect(normalizeFilename(undefined)).toBeUndefined();
     expect(normalizeFilename(42)).toBe(42);
   });
 
