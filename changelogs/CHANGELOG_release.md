@@ -1,3 +1,10 @@
+## [8.6.85](https://github.com/parse-community/parse-server/compare/8.6.84...8.6.85) (2026-07-08)
+
+
+### Bug Fixes
+
+* GraphQL variable-coercion suggestions disclose schema to unauthenticated callers ([GHSA-9g8f-h8f3-hjcm](https://github.com/parse-community/parse-server/security/advisories/GHSA-9g8f-h8f3-hjcm)) ([#10564](https://github.com/parse-community/parse-server/issues/10564)) ([2728fcb](https://github.com/parse-community/parse-server/commit/2728fcbabcd8462e92cb49f45fdb875dd9543347))
+
 ## [8.6.84](https://github.com/parse-community/parse-server/compare/8.6.83...8.6.84) (2026-06-25)
 
 
