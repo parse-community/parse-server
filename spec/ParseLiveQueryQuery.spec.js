@@ -57,9 +57,22 @@ describe('ParseLiveQuery query operation', function () {
     if (parseWebSocket.sessionToken) {
       subscriptionInfo.sessionToken = parseWebSocket.sessionToken;
     }
-    client.subscriptionInfos.set(requestId, subscriptionInfo);
+    client.addSubscriptionInfo(requestId, subscriptionInfo);
+    subscription.addClientSubscription(clientId, requestId);
 
     return subscription;
+  }
+
+  function createParseLiveQueryServer() {
+    const { ParseLiveQueryServer } = require('../lib/LiveQuery/ParseLiveQueryServer');
+    return new ParseLiveQueryServer(
+      {},
+      {
+        appId: 'test',
+        masterKey: 'test',
+        serverURL: Parse.serverURL,
+      }
+    );
   }
 
   it('can handle query command with existing subscription', async () => {
@@ -72,12 +85,7 @@ describe('ParseLiveQuery query operation', function () {
       silent: true,
     });
 
-    const { ParseLiveQueryServer } = require('../lib/LiveQuery/ParseLiveQueryServer');
-    const parseLiveQueryServer = new ParseLiveQueryServer({
-      appId: 'test',
-      masterKey: 'test',
-      serverURL: Parse.serverURL
-    });
+    const parseLiveQueryServer = createParseLiveQueryServer();
 
     // Create test objects
     const TestObject = Parse.Object.extend('TestObject');
@@ -112,6 +120,8 @@ describe('ParseLiveQuery query operation', function () {
     await parseLiveQueryServer._handleQuery(parseWebSocket, request);
 
     // Verify pushResult was called
+    const Client = require('../lib/LiveQuery/Client').Client;
+    expect(Client.pushError.calls.allArgs()).toEqual([]);
     expect(client.pushResult).toHaveBeenCalled();
     const results = client.pushResult.calls.mostRecent().args[1];
     expect(Array.isArray(results)).toBe(true);
@@ -158,12 +168,7 @@ describe('ParseLiveQuery query operation', function () {
       silent: true,
     });
 
-    const { ParseLiveQueryServer } = require('../lib/LiveQuery/ParseLiveQueryServer');
-    const parseLiveQueryServer = new ParseLiveQueryServer({
-      appId: 'test',
-      masterKey: 'test',
-      serverURL: Parse.serverURL
-    });
+    const parseLiveQueryServer = createParseLiveQueryServer();
 
     // Create test object with multiple fields
     const TestObject = Parse.Object.extend('TestObject');
@@ -197,6 +202,8 @@ describe('ParseLiveQuery query operation', function () {
     await parseLiveQueryServer._handleQuery(parseWebSocket, request);
 
     // Verify results
+    const Client = require('../lib/LiveQuery/Client').Client;
+    expect(Client.pushError.calls.allArgs()).toEqual([]);
     expect(client.pushResult).toHaveBeenCalled();
     const results = client.pushResult.calls.mostRecent().args[1];
     expect(results.length).toBe(1);
@@ -219,12 +226,7 @@ describe('ParseLiveQuery query operation', function () {
       silent: true,
     });
 
-    const { ParseLiveQueryServer } = require('../lib/LiveQuery/ParseLiveQueryServer');
-    const parseLiveQueryServer = new ParseLiveQueryServer({
-      appId: 'test',
-      masterKey: 'test',
-      serverURL: Parse.serverURL
-    });
+    const parseLiveQueryServer = createParseLiveQueryServer();
 
     // Create test objects
     const TestObject = Parse.Object.extend('TestObject');
@@ -261,6 +263,8 @@ describe('ParseLiveQuery query operation', function () {
     await parseLiveQueryServer._handleQuery(parseWebSocket, request);
 
     // Verify results
+    const Client = require('../lib/LiveQuery/Client').Client;
+    expect(Client.pushError.calls.allArgs()).toEqual([]);
     expect(client.pushResult).toHaveBeenCalled();
     const results = client.pushResult.calls.mostRecent().args[1];
     expect(results.length).toBe(1);

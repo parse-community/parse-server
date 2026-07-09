@@ -1414,7 +1414,6 @@ class ParseLiveQueryServer {
       const sessionToken = subscriptionInfo.sessionToken || client.sessionToken;
       const parseQuery = new Parse.Query(className);
       parseQuery.withJSON({
-        className,
         where: query || {},
       });
 
