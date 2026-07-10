@@ -930,6 +930,132 @@ describe('ParseGraphQLServer', () => {
             expect(error.message).toContain('secretAdminTask');
           }
         });
+
+        it('should strip required-field names from base coercion errors without master or maintenance key', async () => {
+          const schemaController = await parseServer.config.databaseController.loadSchema();
+          await schemaController.addClassIfNotExists('TestReqClass', {
+            secretRequiredField: { type: 'String', required: true },
+          });
+          await resetGraphQLCache();
+
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation Create($input: CreateTestReqClassInput!) {
+                  createTestReqClass(input: $input) {
+                    testReqClass {
+                      id
+                    }
+                  }
+                }
+              `,
+              variables: { input: { fields: {} } },
+            });
+            fail('should have thrown a coercion error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // The base graphql-js "... was not provided." coercion message carries no
+            // "Did you mean" clause, so it discloses the required custom field name to a
+            // caller who only has the public application id. It must be redacted.
+            expect(error.message).not.toContain('secretRequiredField');
+            // The message is duplicated into extensions.stacktrace in non-production;
+            // ensure the identifier does not leak through any returned field.
+            expect(JSON.stringify(error)).not.toContain('secretRequiredField');
+          }
+        });
+
+        it('should keep required-field names in base coercion errors with master key', async () => {
+          const schemaController = await parseServer.config.databaseController.loadSchema();
+          await schemaController.addClassIfNotExists('TestReqClass', {
+            secretRequiredField: { type: 'String', required: true },
+          });
+          await resetGraphQLCache();
+
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation Create($input: CreateTestReqClassInput!) {
+                  createTestReqClass(input: $input) {
+                    testReqClass {
+                      id
+                    }
+                  }
+                }
+              `,
+              variables: { input: { fields: {} } },
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+            fail('should have thrown a coercion error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            expect(error.message).toContain('secretRequiredField');
+          }
+        });
+
+        it('should keep required-field names in base coercion errors when public introspection is enabled', async () => {
+          const parseServer = await reconfigureServer();
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
+          const schemaController = await parseServer.config.databaseController.loadSchema();
+          await schemaController.addClassIfNotExists('TestReqClass', {
+            secretRequiredField: { type: 'String', required: true },
+          });
+          await resetGraphQLCache();
+
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation Create($input: CreateTestReqClassInput!) {
+                  createTestReqClass(input: $input) {
+                    testReqClass {
+                      id
+                    }
+                  }
+                }
+              `,
+              variables: { input: { fields: {} } },
+            });
+            fail('should have thrown a coercion error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            expect(error.message).toContain('secretRequiredField');
+          }
+        });
+
+        it('should strip required-field names from inline-literal coercion errors without master or maintenance key', async () => {
+          const schemaController = await parseServer.config.databaseController.loadSchema();
+          await schemaController.addClassIfNotExists('TestReqClass', {
+            secretRequiredField: { type: 'String', required: true },
+          });
+          await resetGraphQLCache();
+
+          try {
+            // Input written inline in the operation (not via a variable) is validated by
+            // ValuesOfCorrectTypeRule, which emits a type-qualified message
+            // ('Field "<Type>.<field>" of required type ...'), disclosing both the generated
+            // input type name (which embeds the class name) and the required field name.
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation Create {
+                  createTestReqClass(input: { fields: {} }) {
+                    testReqClass {
+                      id
+                    }
+                  }
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            expect(error.message).not.toContain('secretRequiredField');
+            expect(error.message).not.toContain('CreateTestReqClass');
+            expect(JSON.stringify(error)).not.toContain('secretRequiredField');
+          }
+        });
       });
 
 
