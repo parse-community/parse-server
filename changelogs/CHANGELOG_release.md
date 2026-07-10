@@ -1,3 +1,10 @@
+## [8.6.86](https://github.com/parse-community/parse-server/compare/8.6.85...8.6.86) (2026-07-10)
+
+
+### Bug Fixes
+
+* GraphQL error messages disclose required input field names when public introspection is disabled ([GHSA-2fgh-8j2g-w354](https://github.com/parse-community/parse-server/security/advisories/GHSA-2fgh-8j2g-w354)) ([#10567](https://github.com/parse-community/parse-server/issues/10567)) ([6985a38](https://github.com/parse-community/parse-server/commit/6985a388e0c4cfa54f914aa9ee7371fc0095f69e)), closes [GHSA-2f#8j2g-w354](https://github.com/GHSA-2f/issues/8j2g-w354) [/github.com/parse-community/parse-server/security/advisories/GHSA-2f#8j2g-w354](https://github.com//github.com/parse-community/parse-server/security/advisories/GHSA-2f/issues/8j2g-w354)
+
 ## [8.6.85](https://github.com/parse-community/parse-server/compare/8.6.84...8.6.85) (2026-07-08)
 
 
