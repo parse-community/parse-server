@@ -122,8 +122,86 @@ const stripSchemaCoercionIdentifiers = message =>
     )
     : message;
 
-const stripSchemaIdentifiers = message =>
-  stripSchemaCoercionIdentifiers(stripSchemaSuggestion(message));
+// graphql-js also emits base coercion / validation messages that name a nested input
+// TYPE without a "Did you mean" clause, so neither strip above reaches them. For a
+// Pointer or Relation field the generated input type name embeds the pointer's TARGET
+// class (`<Target>PointerInput`, `<Target>RelationWhereInput`, `Create<Target>FieldsInput`)
+// — a class the caller never referenced and cannot derive from the field name they
+// supplied — so these templates disclose a schema class name to a caller who has only the
+// public application id. Redact the quoted type identifier from those templates UNLESS the
+// caller referenced it in the operation text: a type name the caller wrote in the operation
+// (e.g. `$where: UserWhereInput`) is not a disclosure, and preserving it keeps the message
+// ('... is not defined by type "UserWhereInput".') useful. When the operation text is
+// unavailable the identifier is redacted (fail closed).
+const stripSchemaTypeIdentifiers = (message, operationText) => {
+  if (typeof message !== 'string') {
+    return message;
+  }
+  // A generated type identifier counts as "referenced" (and therefore not a disclosure)
+  // only if the caller wrote it as a whole token in the operation text. Matching it as a
+  // plain substring would wrongly preserve a target-class type name that is merely a suffix
+  // of a type the caller actually wrote (e.g. leaking "AuthorPointerInput" because the
+  // operation happens to contain "SecretAuthorPointerInput"). Strip the GraphQL list/non-null
+  // wrappers ("[", "]", "!") from the captured name first so a name reported as
+  // "SecretAuthorPointerInput!" still matches "$x: SecretAuthorPointerInput!" in the operation.
+  const isReferenced = typeName => {
+    if (typeof operationText !== 'string') {
+      return false;
+    }
+    const bareName = typeName.replace(/[[\]!]/g, '');
+    return bareName.length > 0 && new RegExp(`\\b${bareName}\\b`).test(operationText);
+  };
+  return message
+    // Input coercion / ValuesOfCorrectTypeRule (variables and inline literals).
+    .replace(/Expected value of type "([^"]+)"/g, (match, typeName) =>
+      isReferenced(typeName) ? match : 'Expected value of the correct type'
+    )
+    .replace(/Expected type "([^"]+)" to be an object\./g, (match, typeName) =>
+      isReferenced(typeName) ? match : 'Expected an object.'
+    )
+    .replace(/Expected non-nullable type "([^"]+)" not to be null\./g, (match, typeName) =>
+      isReferenced(typeName) ? match : 'Expected a non-null value.'
+    )
+    .replace(/ is not defined by type "([^"]+)"\./g, (match, typeName) =>
+      isReferenced(typeName) ? match : ' is not defined.'
+    )
+    // VariablesInAllowedPositionRule: the position type is the pointer/relation target
+    // input type; the caller only wrote their own variable's declared type.
+    .replace(/ used in position expecting type "([^"]+)"\./g, (match, typeName) =>
+      isReferenced(typeName) ? match : ' used in position expecting a different type.'
+    )
+    // FieldsOnCorrectTypeRule: descending into a Pointer/Relation output field names its
+    // target output object type.
+    .replace(/Cannot query field ("[^"]*") on type "([^"]+)"\./g, (match, fieldName, typeName) =>
+      isReferenced(typeName) ? match : `Cannot query field ${fieldName}.`
+    )
+    // ScalarLeafsRule: selecting a Pointer/Relation output field with no sub-selection names
+    // its target output object type.
+    .replace(
+      /Field ("[^"]*") of type "([^"]+)" must have a selection of subfields\./g,
+      (match, fieldName, typeName) =>
+        isReferenced(typeName) ? match : `Field ${fieldName} must have a selection of subfields.`
+    )
+    // PossibleFragmentSpreadsRule: an inline/named fragment on an incompatible type inside a
+    // Pointer/Relation output field names the target output object type (the parent type).
+    .replace(
+      /objects of type "([^"]+)" can never be of type "([^"]+)"\./g,
+      (match, parentType, fragType) => {
+        if (isReferenced(parentType) && isReferenced(fragType)) {
+          return match;
+        }
+        const parent = isReferenced(parentType) ? `type "${parentType}"` : 'the parent type';
+        const frag = isReferenced(fragType) ? `type "${fragType}"` : 'the given type';
+        return `objects of ${parent} can never be of ${frag}.`;
+      }
+    );
+};
+
+const stripSchemaIdentifiers = (message, operationText) =>
+  stripSchemaTypeIdentifiers(
+    stripSchemaCoercionIdentifiers(stripSchemaSuggestion(message)),
+    operationText
+  );
 
 const SchemaSuggestionsControlPlugin = (publicIntrospection) => ({
   requestDidStart: async (requestContext) => ({
@@ -144,10 +222,13 @@ const SchemaSuggestionsControlPlugin = (publicIntrospection) => ({
           : body?.kind === 'incremental'
             ? body.initialResult.errors
             : undefined;
+      const operationText = requestContext.request?.query;
       errors?.forEach(error => {
-        error.message = stripSchemaIdentifiers(error.message);
+        error.message = stripSchemaIdentifiers(error.message, operationText);
         if (Array.isArray(error.extensions?.stacktrace)) {
-          error.extensions.stacktrace = error.extensions.stacktrace.map(stripSchemaIdentifiers);
+          error.extensions.stacktrace = error.extensions.stacktrace.map(message =>
+            stripSchemaIdentifiers(message, operationText)
+          );
         }
       });
     },
