@@ -1325,6 +1325,38 @@ describe('ParseGraphQLServer', () => {
             expect(error.message).toContain('secretRequiredField');
           }
         });
+
+        it('should strip required-field names from inline-literal coercion errors without master or maintenance key', async () => {
+          const schemaController = await parseServer.config.databaseController.loadSchema();
+          await schemaController.addClassIfNotExists('TestReqClass', {
+            secretRequiredField: { type: 'String', required: true },
+          });
+          await resetGraphQLCache();
+
+          try {
+            // Input written inline in the operation (not via a variable) is validated by
+            // ValuesOfCorrectTypeRule, which emits a type-qualified message
+            // ('Field "<Type>.<field>" of required type ...'), disclosing both the generated
+            // input type name (which embeds the class name) and the required field name.
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation Create {
+                  createTestReqClass(input: { fields: {} }) {
+                    testReqClass {
+                      id
+                    }
+                  }
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            expect(error.message).not.toContain('secretRequiredField');
+            expect(error.message).not.toContain('CreateTestReqClass');
+            expect(JSON.stringify(error)).not.toContain('secretRequiredField');
+          }
+        });
       });
 
 
