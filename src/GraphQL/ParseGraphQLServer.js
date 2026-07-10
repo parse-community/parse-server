@@ -135,22 +135,19 @@ const stripSchemaCoercionIdentifiers = message =>
 // unavailable the identifier is redacted (fail closed).
 const stripSchemaTypeIdentifiers = (message, operationText) => {
   if (typeof message !== 'string') { return message; }
-  // A generated type identifier counts as "referenced" (and therefore not a disclosure)
-  // only if the caller wrote it as a whole token in the operation text. Matching it as a
-  // plain substring would wrongly preserve a target-class type name that is merely a suffix
-  // of a type the caller actually wrote (e.g. leaking "AuthorPointerInput" because the
-  // operation happens to contain "SecretAuthorPointerInput"). Strip the GraphQL list/non-null
-  // wrappers ("[", "]", "!") from the captured name first so a name reported as
-  // "SecretAuthorPointerInput!" still matches "$x: SecretAuthorPointerInput!" in the operation.
+  // A generated type identifier counts as "referenced" (and therefore not a disclosure) only if
+  // the caller wrote it as a whole token in the operation text. Tokenize the operation on
+  // non-identifier characters and compare exact tokens rather than building a RegExp from the
+  // captured name: this avoids substring false-matches (e.g. preserving "AuthorPointerInput"
+  // because the operation contains "SecretAuthorPointerInput") and any regex injection/ReDoS from
+  // an unusual captured name. GraphQL list/non-null wrappers ("[", "]", "!") are stripped from the
+  // captured name so e.g. "SecretAuthorPointerInput!" still matches "$x: SecretAuthorPointerInput!".
   // When the operation text is unavailable the type is treated as not referenced (fail closed).
-  const isReferenced = typeName => {
-    const bareName = typeName.replace(/[[\]!]/g, '');
-    return (
-      typeof operationText === 'string' &&
-      bareName.length > 0 &&
-      new RegExp(`\\b${bareName}\\b`).test(operationText)
-    );
-  };
+  const referencedTokens =
+    typeof operationText === 'string'
+      ? new Set(operationText.split(/[^_A-Za-z0-9]+/).filter(Boolean))
+      : new Set();
+  const isReferenced = typeName => referencedTokens.has(typeName.replace(/[[\]!]/g, ''));
   return message
     // Input coercion / ValuesOfCorrectTypeRule (variables and inline literals).
     .replace(/Expected value of type "([^"]+)"/g, (match, typeName) =>
