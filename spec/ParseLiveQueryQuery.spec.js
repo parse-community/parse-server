@@ -255,7 +255,7 @@ describe('ParseLiveQuery query operation', function () {
     );
     subscription.query = undefined;
     const withJSON = spyOn(Parse.Query.prototype, 'withJSON').and.callThrough();
-    spyOn(Parse.Query.prototype, 'find').and.resolveTo([]);
+    const find = spyOn(Parse.Query.prototype, 'find').and.resolveTo([]);
 
     await parseLiveQueryServer._handleQuery(parseWebSocket, {
       op: 'query',
@@ -265,6 +265,7 @@ describe('ParseLiveQuery query operation', function () {
     const Client = require('../lib/LiveQuery/Client').Client;
     expect(Client.pushError.calls.allArgs()).toEqual([]);
     expect(withJSON).toHaveBeenCalledWith({ where: {} });
+    expect(find).toHaveBeenCalledWith({ useMasterKey: true });
     expect(client.pushResult).toHaveBeenCalledWith(requestId, []);
   });
 
