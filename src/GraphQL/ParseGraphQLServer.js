@@ -134,9 +134,7 @@ const stripSchemaCoercionIdentifiers = message =>
 // ('... is not defined by type "UserWhereInput".') useful. When the operation text is
 // unavailable the identifier is redacted (fail closed).
 const stripSchemaTypeIdentifiers = (message, operationText) => {
-  if (typeof message !== 'string') {
-    return message;
-  }
+  if (typeof message !== 'string') { return message; }
   // A generated type identifier counts as "referenced" (and therefore not a disclosure)
   // only if the caller wrote it as a whole token in the operation text. Matching it as a
   // plain substring would wrongly preserve a target-class type name that is merely a suffix
@@ -144,12 +142,14 @@ const stripSchemaTypeIdentifiers = (message, operationText) => {
   // operation happens to contain "SecretAuthorPointerInput"). Strip the GraphQL list/non-null
   // wrappers ("[", "]", "!") from the captured name first so a name reported as
   // "SecretAuthorPointerInput!" still matches "$x: SecretAuthorPointerInput!" in the operation.
+  // When the operation text is unavailable the type is treated as not referenced (fail closed).
   const isReferenced = typeName => {
-    if (typeof operationText !== 'string') {
-      return false;
-    }
     const bareName = typeName.replace(/[[\]!]/g, '');
-    return bareName.length > 0 && new RegExp(`\\b${bareName}\\b`).test(operationText);
+    return (
+      typeof operationText === 'string' &&
+      bareName.length > 0 &&
+      new RegExp(`\\b${bareName}\\b`).test(operationText)
+    );
   };
   return message
     // Input coercion / ValuesOfCorrectTypeRule (variables and inline literals).
@@ -184,12 +184,11 @@ const stripSchemaTypeIdentifiers = (message, operationText) => {
     )
     // PossibleFragmentSpreadsRule: an inline/named fragment on an incompatible type inside a
     // Pointer/Relation output field names the target output object type (the parent type).
+    // Redact each type token the caller did not reference; when both are referenced the
+    // reconstruction is identical to the original message.
     .replace(
       /objects of type "([^"]+)" can never be of type "([^"]+)"\./g,
       (match, parentType, fragType) => {
-        if (isReferenced(parentType) && isReferenced(fragType)) {
-          return match;
-        }
         const parent = isReferenced(parentType) ? `type "${parentType}"` : 'the parent type';
         const frag = isReferenced(fragType) ? `type "${fragType}"` : 'the given type';
         return `objects of ${parent} can never be of ${frag}.`;
