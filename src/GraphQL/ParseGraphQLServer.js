@@ -104,6 +104,27 @@ const IntrospectionControlPlugin = (publicIntrospection) => ({
 const stripSchemaSuggestion = message =>
   typeof message === 'string' ? message.replace(/ ?Did you mean(.+?)\?$/, '') : message;
 
+// graphql-js also emits a base input-coercion message that names a schema
+// identifier WITHOUT a "Did you mean" clause, so the suggestion strip above
+// cannot reach it: when a required custom input field is omitted, coerceInputValue
+// returns 'Field "<name>" of required type "<type>" was not provided.', disclosing
+// a field name the caller never supplied. Redact the quoted identifiers from this
+// template while preserving the error shape, for callers that are not allowed to
+// introspect. The sibling coercion messages ('... is not defined by type "<type>".',
+// 'Expected type "<type>" to be an object.') are intentionally left intact: they
+// only echo an input type name the caller already referenced in the operation, so
+// they disclose nothing the caller did not already provide.
+const stripSchemaCoercionIdentifiers = message =>
+  typeof message === 'string'
+    ? message.replace(
+      /Field "[^"]*" of required type "[^"]*" was not provided\./g,
+      'Field of required type was not provided.'
+    )
+    : message;
+
+const stripSchemaIdentifiers = message =>
+  stripSchemaCoercionIdentifiers(stripSchemaSuggestion(message));
+
 const SchemaSuggestionsControlPlugin = (publicIntrospection) => ({
   requestDidStart: async (requestContext) => ({
     willSendResponse: async () => {
@@ -124,9 +145,9 @@ const SchemaSuggestionsControlPlugin = (publicIntrospection) => ({
             ? body.initialResult.errors
             : undefined;
       errors?.forEach(error => {
-        error.message = stripSchemaSuggestion(error.message);
+        error.message = stripSchemaIdentifiers(error.message);
         if (Array.isArray(error.extensions?.stacktrace)) {
-          error.extensions.stacktrace = error.extensions.stacktrace.map(stripSchemaSuggestion);
+          error.extensions.stacktrace = error.extensions.stacktrace.map(stripSchemaIdentifiers);
         }
       });
     },
