@@ -1,3 +1,10 @@
+## [8.6.87](https://github.com/parse-community/parse-server/compare/8.6.86...8.6.87) (2026-07-10)
+
+
+### Bug Fixes
+
+* GraphQL error messages disclose pointer and relation target class names when public introspection is disabled ([GHSA-r2g6-4f6j-f6rf](https://github.com/parse-community/parse-server/security/advisories/GHSA-r2g6-4f6j-f6rf)) ([#10569](https://github.com/parse-community/parse-server/issues/10569)) ([bc863d7](https://github.com/parse-community/parse-server/commit/bc863d70852fdd775b26a6dc5146ae5088f87779))
+
 ## [8.6.86](https://github.com/parse-community/parse-server/compare/8.6.85...8.6.86) (2026-07-10)
 
 
