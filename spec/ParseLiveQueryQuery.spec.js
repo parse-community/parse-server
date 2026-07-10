@@ -75,6 +75,24 @@ describe('ParseLiveQuery query operation', function () {
     );
   }
 
+  it('dispatches query command messages to the query handler', function () {
+    const parseLiveQueryServer = createParseLiveQueryServer();
+    parseLiveQueryServer._handleQuery = jasmine.createSpy('_handleQuery');
+    const EventEmitter = require('events');
+    const parseWebSocket = new EventEmitter();
+    parseLiveQueryServer._onConnect(parseWebSocket);
+
+    const request = JSON.stringify({
+      op: 'query',
+      requestId: 1,
+    });
+    parseWebSocket.emit('message', request);
+
+    const args = parseLiveQueryServer._handleQuery.calls.mostRecent().args;
+    expect(args[0]).toBe(parseWebSocket);
+    expect(JSON.stringify(args[1])).toBe(request);
+  });
+
   it('can handle query command with existing subscription', async () => {
     await reconfigureServer({
       liveQuery: {
@@ -140,6 +158,23 @@ describe('ParseLiveQuery query operation', function () {
     expect(Client.pushError).toHaveBeenCalled();
   });
 
+  it('can handle query command without a registered client', async () => {
+    const parseLiveQueryServer = createParseLiveQueryServer();
+    const parseWebSocket = { clientId: 1 };
+
+    await parseLiveQueryServer._handleQuery(parseWebSocket, {
+      op: 'query',
+      requestId: 2,
+    });
+
+    const Client = require('../lib/LiveQuery/Client').Client;
+    expect(Client.pushError).toHaveBeenCalledWith(
+      parseWebSocket,
+      2,
+      'Cannot find client with clientId 1'
+    );
+  });
+
   it('can handle query command without subscription', async () => {
     const { ParseLiveQueryServer } = require('../lib/LiveQuery/ParseLiveQueryServer');
     const parseLiveQueryServer = new ParseLiveQueryServer({});
@@ -156,6 +191,111 @@ describe('ParseLiveQuery query operation', function () {
 
     const Client = require('../lib/LiveQuery/Client').Client;
     expect(Client.pushError).toHaveBeenCalled();
+  });
+
+  it('can handle query command without a subscription object', async () => {
+    const parseLiveQueryServer = createParseLiveQueryServer();
+    const clientId = 1;
+    const requestId = 2;
+    const client = addMockClient(parseLiveQueryServer, clientId);
+    client.addSubscriptionInfo(requestId, {});
+    const parseWebSocket = { clientId };
+
+    await parseLiveQueryServer._handleQuery(parseWebSocket, {
+      op: 'query',
+      requestId,
+    });
+
+    const Client = require('../lib/LiveQuery/Client').Client;
+    expect(Client.pushError).toHaveBeenCalledWith(
+      parseWebSocket,
+      2,
+      'Subscription not found for requestId 2'
+    );
+    expect(client.pushResult).not.toHaveBeenCalled();
+  });
+
+  it('uses the subscription session token when executing query', async () => {
+    const parseLiveQueryServer = createParseLiveQueryServer();
+    const clientId = 1;
+    const requestId = 2;
+    const client = addMockClient(parseLiveQueryServer, clientId);
+    client.hasMasterKey = true;
+    const parseWebSocket = { clientId, sessionToken: 'session-token' };
+    addMockSubscription(parseLiveQueryServer, clientId, requestId, parseWebSocket, {
+      className: 'TestObject',
+      where: {},
+    });
+    const find = spyOn(Parse.Query.prototype, 'find').and.resolveTo([]);
+
+    await parseLiveQueryServer._handleQuery(parseWebSocket, {
+      op: 'query',
+      requestId,
+    });
+
+    const Client = require('../lib/LiveQuery/Client').Client;
+    expect(Client.pushError.calls.allArgs()).toEqual([]);
+    expect(find).toHaveBeenCalledWith({ sessionToken: 'session-token' });
+    expect(client.pushResult).toHaveBeenCalledWith(requestId, []);
+  });
+
+  it('uses an empty where clause when the stored query is missing', async () => {
+    const parseLiveQueryServer = createParseLiveQueryServer();
+    const clientId = 1;
+    const requestId = 2;
+    const client = addMockClient(parseLiveQueryServer, clientId);
+    client.hasMasterKey = true;
+    const parseWebSocket = { clientId };
+    const subscription = addMockSubscription(
+      parseLiveQueryServer,
+      clientId,
+      requestId,
+      parseWebSocket,
+      { className: 'TestObject' }
+    );
+    subscription.query = undefined;
+    const withJSON = spyOn(Parse.Query.prototype, 'withJSON').and.callThrough();
+    spyOn(Parse.Query.prototype, 'find').and.resolveTo([]);
+
+    await parseLiveQueryServer._handleQuery(parseWebSocket, {
+      op: 'query',
+      requestId,
+    });
+
+    const Client = require('../lib/LiveQuery/Client').Client;
+    expect(Client.pushError.calls.allArgs()).toEqual([]);
+    expect(withJSON).toHaveBeenCalledWith({ where: {} });
+    expect(client.pushResult).toHaveBeenCalledWith(requestId, []);
+  });
+
+  it('pushes an error when executing query fails', async () => {
+    const parseLiveQueryServer = createParseLiveQueryServer();
+    const clientId = 1;
+    const requestId = 2;
+    const client = addMockClient(parseLiveQueryServer, clientId);
+    client.hasMasterKey = true;
+    const parseWebSocket = { clientId };
+    addMockSubscription(parseLiveQueryServer, clientId, requestId, parseWebSocket, {
+      className: 'TestObject',
+      where: {},
+    });
+    const error = new Parse.Error(Parse.Error.INVALID_QUERY, 'query failed');
+    spyOn(Parse.Query.prototype, 'find').and.rejectWith(error);
+
+    await parseLiveQueryServer._handleQuery(parseWebSocket, {
+      op: 'query',
+      requestId,
+    });
+
+    const Client = require('../lib/LiveQuery/Client').Client;
+    expect(Client.pushError).toHaveBeenCalledWith(
+      parseWebSocket,
+      error.code,
+      error.message,
+      false,
+      requestId
+    );
+    expect(client.pushResult).not.toHaveBeenCalled();
   });
 
   it('respects field filtering (keys) when executing query', async () => {
