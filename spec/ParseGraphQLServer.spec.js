@@ -1056,6 +1056,377 @@ describe('ParseGraphQLServer', () => {
             expect(JSON.stringify(error)).not.toContain('secretRequiredField');
           }
         });
+
+        // A Pointer/Relation field maps to a generated input type whose name embeds the
+        // pointer's TARGET class (`<Target>PointerInput`, `<Target>RelationWhereInput`,
+        // `Create<Target>FieldsInput`). graphql-js interpolates that type name into base
+        // coercion/validation messages that the "Did you mean" and required-field strips do
+        // not touch, disclosing the target class name to a caller who only supplied the
+        // pointer field name (which does not reveal its target). Redact those identifiers
+        // for callers that are not allowed to introspect.
+        const setupPointerSchema = async _parseServer => {
+          const schemaController = await _parseServer.config.databaseController.loadSchema();
+          await schemaController.addClassIfNotExists('SecretAuthor', {
+            name: { type: 'String' },
+          });
+          await schemaController.addClassIfNotExists('DiagBook', {
+            writtenBy: { type: 'Pointer', targetClass: 'SecretAuthor' },
+          });
+          await resetGraphQLCache();
+        };
+
+        it('should strip pointer target class names from where-clause validation errors without master or maintenance key', async () => {
+          await setupPointerSchema(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak {
+                  diagBooks(where: { writtenBy: 123 }) {
+                    edges {
+                      node {
+                        id
+                      }
+                    }
+                  }
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // Expected value of type "SecretAuthorRelationWhereInput", found 123.
+            expect(error.message).not.toContain('SecretAuthor');
+            expect(JSON.stringify(error)).not.toContain('SecretAuthor');
+          }
+        });
+
+        it('should strip pointer target class names from non-object variable-coercion errors without master or maintenance key', async () => {
+          await setupPointerSchema(parseServer);
+
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation Create($input: CreateDiagBookInput!) {
+                  createDiagBook(input: $input) {
+                    diagBook {
+                      id
+                    }
+                  }
+                }
+              `,
+              variables: { input: { fields: { writtenBy: { createAndLink: 5 } } } },
+            });
+            fail('should have thrown a coercion error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // Expected type "CreateSecretAuthorFieldsInput" to be an object.
+            expect(error.message).not.toContain('SecretAuthor');
+            expect(JSON.stringify(error)).not.toContain('SecretAuthor');
+          }
+        });
+
+        it('should strip pointer target class names from unknown-field variable-coercion errors without master or maintenance key', async () => {
+          await setupPointerSchema(parseServer);
+
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation Create($input: CreateDiagBookInput!) {
+                  createDiagBook(input: $input) {
+                    diagBook {
+                      id
+                    }
+                  }
+                }
+              `,
+              variables: { input: { fields: { writtenBy: { bogusKey: 1 } } } },
+            });
+            fail('should have thrown a coercion error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // Field "bogusKey" is not defined by type "SecretAuthorPointerInput".
+            expect(error.message).not.toContain('SecretAuthor');
+            expect(JSON.stringify(error)).not.toContain('SecretAuthor');
+          }
+        });
+
+        it('should keep pointer target class names in errors with master key', async () => {
+          await setupPointerSchema(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak {
+                  diagBooks(where: { writtenBy: 123 }) {
+                    edges {
+                      node {
+                        id
+                      }
+                    }
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            expect(error.message).toContain('SecretAuthor');
+          }
+        });
+
+        it('should keep pointer target class names in errors when public introspection is enabled', async () => {
+          const parseServer = await reconfigureServer();
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
+          await setupPointerSchema(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak {
+                  diagBooks(where: { writtenBy: 123 }) {
+                    edges {
+                      node {
+                        id
+                      }
+                    }
+                  }
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            expect(error.message).toContain('SecretAuthor');
+          }
+        });
+
+        it('should strip pointer target class names from non-nullable variable-coercion errors without master or maintenance key', async () => {
+          const schemaController = await parseServer.config.databaseController.loadSchema();
+          await schemaController.addClassIfNotExists('SecretAuthor', { name: { type: 'String' } });
+          await schemaController.addClassIfNotExists('ReqDiagBook', {
+            writtenBy: { type: 'Pointer', targetClass: 'SecretAuthor', required: true },
+          });
+          await resetGraphQLCache();
+
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation Create($input: CreateReqDiagBookInput!) {
+                  createReqDiagBook(input: $input) {
+                    reqDiagBook {
+                      id
+                    }
+                  }
+                }
+              `,
+              variables: { input: { fields: { writtenBy: null } } },
+            });
+            fail('should have thrown a coercion error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // Expected non-nullable type "SecretAuthorPointerInput!" not to be null.
+            expect(error.message).not.toContain('SecretAuthor');
+            expect(JSON.stringify(error)).not.toContain('SecretAuthor');
+          }
+        });
+
+        it('should strip pointer target class names from variable-position validation errors without master or maintenance key', async () => {
+          await setupPointerSchema(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak($x: String) {
+                  diagBooks(where: { writtenBy: $x }) {
+                    edges {
+                      node {
+                        id
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: { x: 'anything' },
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // Variable "$x" of type "String" used in position expecting type "SecretAuthorRelationWhereInput".
+            expect(error.message).not.toContain('SecretAuthor');
+            expect(JSON.stringify(error)).not.toContain('SecretAuthor');
+          }
+        });
+
+        it('should strip pointer target class names from mutation variable-position validation errors without master or maintenance key', async () => {
+          await setupPointerSchema(parseServer);
+
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation Create($x: String) {
+                  createDiagBook(input: { fields: { writtenBy: { createAndLink: $x } } }) {
+                    diagBook {
+                      id
+                    }
+                  }
+                }
+              `,
+              variables: { x: 'anything' },
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // Variable "$x" of type "String" used in position expecting type "CreateSecretAuthorFieldsInput".
+            expect(error.message).not.toContain('SecretAuthor');
+            expect(JSON.stringify(error)).not.toContain('SecretAuthor');
+          }
+        });
+
+        it('should strip pointer target class names from output-field validation errors without master or maintenance key', async () => {
+          await setupPointerSchema(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak {
+                  diagBooks(where: {}) {
+                    edges {
+                      node {
+                        writtenBy {
+                          bogusSubField
+                        }
+                      }
+                    }
+                  }
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // Cannot query field "bogusSubField" on type "SecretAuthor".
+            expect(error.message).not.toContain('SecretAuthor');
+            expect(JSON.stringify(error)).not.toContain('SecretAuthor');
+          }
+        });
+
+        it('should strip pointer target class names from scalar-leaf validation errors without master or maintenance key', async () => {
+          await setupPointerSchema(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak {
+                  diagBooks(where: {}) {
+                    edges {
+                      node {
+                        writtenBy
+                      }
+                    }
+                  }
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // Field "writtenBy" of type "SecretAuthor" must have a selection of subfields.
+            expect(error.message).not.toContain('SecretAuthor');
+            expect(JSON.stringify(error)).not.toContain('SecretAuthor');
+          }
+        });
+
+        it('should keep pointer target class names in output-field errors with master key', async () => {
+          await setupPointerSchema(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak {
+                  diagBooks(where: {}) {
+                    edges {
+                      node {
+                        writtenBy
+                      }
+                    }
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            expect(error.message).toContain('SecretAuthor');
+          }
+        });
+
+        it('should strip pointer target class names from fragment-spread validation errors without master or maintenance key', async () => {
+          await setupPointerSchema(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak {
+                  diagBooks(where: {}) {
+                    edges {
+                      node {
+                        writtenBy {
+                          ... on DiagBook {
+                            id
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // Fragment cannot be spread here as objects of type "SecretAuthor" can never be of type "DiagBook".
+            expect(error.message).not.toContain('SecretAuthor');
+            expect(JSON.stringify(error)).not.toContain('SecretAuthor');
+          }
+        });
+
+        it('should keep caller-referenced input type names in validation errors without master or maintenance key', async () => {
+          await setupPointerSchema(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak($where: DiagBookWhereInput) {
+                  diagBooks(where: $where) {
+                    edges {
+                      node {
+                        id
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: { where: { nonexistentField: { equalTo: 1 } } },
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // The caller referenced DiagBookWhereInput in the operation text, so it is not a
+            // schema disclosure and must be preserved to keep validation feedback useful.
+            expect(error.message).toContain('DiagBookWhereInput');
+          }
+        });
       });
 
 
