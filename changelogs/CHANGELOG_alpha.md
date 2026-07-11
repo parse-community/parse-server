@@ -1,3 +1,10 @@
+# [9.10.0-alpha.7](https://github.com/parse-community/parse-server/compare/9.10.0-alpha.6...9.10.0-alpha.7) (2026-07-11)
+
+
+### Bug Fixes
+
+* Cloud Code beforeFind trigger context is not isolated from prototype pollution ([#10570](https://github.com/parse-community/parse-server/issues/10570)) ([bea001e](https://github.com/parse-community/parse-server/commit/bea001e7ef9cf991e99fe1eb1e8e25ef71c530f7))
+
 # [9.10.0-alpha.6](https://github.com/parse-community/parse-server/compare/9.10.0-alpha.5...9.10.0-alpha.6) (2026-07-10)
 
 
