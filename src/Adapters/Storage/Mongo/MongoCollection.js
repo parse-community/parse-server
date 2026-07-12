@@ -1,6 +1,48 @@
 const mongodb = require('mongodb');
 const Collection = mongodb.Collection;
 
+// Query operators that require a geospatial index and therefore trigger
+// on-demand `2d` index creation. `$geoWithin` / `$geoIntersects` are intentionally
+// excluded: they can run as a collection scan and never raise a "no index" error.
+const GEO_INDEX_QUERY_OPERATORS = ['$nearSphere', '$near', '$geoNear'];
+
+// Find the field in a Mongo query document that is constrained by a geo operator
+// requiring a geospatial index. Returns the field name (e.g. 'location'), or
+// undefined if none is found. Used as the reliable source of truth for on-demand
+// geo index creation, since the MongoDB error message that used to carry the field
+// name (`... field=<name> ...`) was dropped in MongoDB 8.3+.
+//
+// A geo-near expression must be top-level or inside `$and`: MongoDB rejects it inside
+// `$or` / `$nor` ("geo $near must be top-level expr") and forbids more than one per
+// query ("Too many geoNear expressions"). So there is at most one field to find, and
+// `$and` is the only combinator we need to recurse into.
+export function findGeoIndexField(query) {
+  if (!query || typeof query !== 'object') {
+    return undefined;
+  }
+  for (const field of Object.keys(query)) {
+    const value = query[field];
+    // Recurse into `$and`, which holds an array of sub-queries.
+    if (field === '$and' && Array.isArray(value)) {
+      for (const subQuery of value) {
+        const found = findGeoIndexField(subQuery);
+        if (found) {
+          return found;
+        }
+      }
+      continue;
+    }
+    if (
+      value &&
+      typeof value === 'object' &&
+      GEO_INDEX_QUERY_OPERATORS.some(op => Object.prototype.hasOwnProperty.call(value, op))
+    ) {
+      return field;
+    }
+  }
+  return undefined;
+}
+
 export default class MongoCollection {
   _mongoCollection: Collection;
 
@@ -51,8 +93,12 @@ export default class MongoCollection {
       if (error.code != 17007 && !error.message.match(/unable to find index for .geoNear/)) {
         throw error;
       }
-      // Figure out what key needs an index
-      const key = error.message.match(/field=([A-Za-z_0-9]+) /)[1];
+      // Figure out which field needs a geo index.
+      // Older MongoDB embeds the field name in the error message (`... field=<name> ...`);
+      // MongoDB 8.3+ shortened the message to `unable to find index for $geoNear query`
+      // and no longer includes it, so fall back to reading the field from the query itself.
+      const messageMatch = error.message.match(/field=([A-Za-z_0-9]+) /);
+      const key = (messageMatch && messageMatch[1]) || findGeoIndexField(query);
       if (!key) {
         throw error;
       }
