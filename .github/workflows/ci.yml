@@ -187,6 +187,10 @@ jobs:
             MONGODB_VERSION: 8.0.4
             MONGODB_TOPOLOGY: replset
             NODE_VERSION: 24.11.0
+          - name: MongoDB 8.3, ReplicaSet
+            MONGODB_VERSION: 8.3.4
+            MONGODB_TOPOLOGY: replset
+            NODE_VERSION: 24.11.0
           - name: Redis Cache
             PARSE_SERVER_TEST_CACHE: redis
             MONGODB_VERSION: 8.0.4

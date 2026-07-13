@@ -57,6 +57,56 @@ describe_only_db('mongo')('revocable sessions', () => {
       );
   });
 
+  it('should upgrade a legacy session token via a trailing-slash path variant', async () => {
+    // `/upgradeToRevocableSession/` routes to the same handler as `/upgradeToRevocableSession`,
+    // so the legacy-token branch must recognize it; otherwise the legacy token is sent to the
+    // revocable-session lookup and the upgrade fails.
+    const response = await request({
+      method: 'POST',
+      url: Parse.serverURL + '/upgradeToRevocableSession/',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Rest-API-Key': 'rest',
+        'X-Parse-Session-Token': sessionToken,
+      },
+    }).catch(e => e);
+    expect(response.status).not.toBe(400);
+    expect(response.data.sessionToken).toBeDefined();
+    expect(response.data.sessionToken.indexOf('r:')).toBe(0);
+  });
+
+  it('should upgrade a legacy session token when the request includes a query string', async () => {
+    const response = await request({
+      method: 'POST',
+      url: Parse.serverURL + '/upgradeToRevocableSession?foo=bar',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Rest-API-Key': 'rest',
+        'X-Parse-Session-Token': sessionToken,
+      },
+    }).catch(e => e);
+    expect(response.status).not.toBe(400);
+    expect(response.data.sessionToken).toBeDefined();
+    expect(response.data.sessionToken.indexOf('r:')).toBe(0);
+  });
+
+  it('should upgrade a legacy session token via a differently-cased path', async () => {
+    // handleParseSession matches the route case-insensitively (matchesExactRoute), mirroring
+    // Express routing, so a differently-cased path still takes the legacy-token branch.
+    const response = await request({
+      method: 'POST',
+      url: Parse.serverURL + '/UpgradeToRevocableSession',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Rest-API-Key': 'rest',
+        'X-Parse-Session-Token': sessionToken,
+      },
+    }).catch(e => e);
+    expect(response.status).not.toBe(400);
+    expect(response.data.sessionToken).toBeDefined();
+    expect(response.data.sessionToken.indexOf('r:')).toBe(0);
+  });
+
   it('should be able to become with revocable session token', done => {
     const user = Parse.Object.fromJSON({
       className: '_User',

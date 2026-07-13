@@ -1749,6 +1749,174 @@ describe('Vulnerabilities', () => {
     });
   });
 
+  describe('(GHSA-7wqv-xjf3-x35v) Stored XSS via trailing-dot filename bypassing file extension blocklist', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+
+    beforeEach(async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+        },
+      });
+    });
+
+    it('blocks trailing-dot SVG filename with dangerous _ContentType on JSON-body upload', async () => {
+      const svgContent = Buffer.from(
+        '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'
+      ).toString('base64');
+      // No X-Parse-Application-Id header — must be in JSON body to trigger
+      // _ContentType extraction via the fileViaJSON middleware path.
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/files/poc.svg.',
+          body: JSON.stringify({
+            _ApplicationId: 'test',
+            _JavaScriptKey: 'test',
+            _ContentType: 'image/svg+xml',
+            base64: svgContent,
+          }),
+        }).catch(e => {
+          throw new Error(e.data.error);
+        })
+      ).toBeRejectedWith(jasmine.objectContaining({
+        message: jasmine.stringMatching(/File upload of extension .+ is disabled/),
+      }));
+    });
+
+    it('blocks trailing-dot SVG filename with dangerous Content-Type on binary upload', async () => {
+      await expectAsync(
+        request({
+          method: 'POST',
+          headers: {
+            ...headers,
+            'Content-Type': 'image/svg+xml',
+          },
+          url: 'http://localhost:8378/1/files/poc.svg.',
+          body: '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+        }).catch(e => {
+          throw new Error(e.data.error);
+        })
+      ).toBeRejectedWith(jasmine.objectContaining({
+        message: jasmine.stringMatching(/File upload of extension .+ is disabled/),
+      }));
+    });
+
+    it('blocks filename with mixed trailing dots and whitespace', async () => {
+      for (const filename of ['poc.svg..', 'poc.svg. ', 'poc.svg . ']) {
+        await expectAsync(
+          request({
+            method: 'POST',
+            headers: {
+              ...headers,
+              'Content-Type': 'image/svg+xml',
+            },
+            url: `http://localhost:8378/1/files/${encodeURIComponent(filename)}`,
+            body: '<svg/>',
+          }).catch(e => {
+            throw new Error(e.data.error);
+          })
+        ).toBeRejectedWith(jasmine.objectContaining({
+          message: jasmine.stringMatching(/File upload of extension .+ is disabled/),
+        }));
+      }
+    });
+
+    it('still allows trailing-dot filename with allowed Content-Type', async () => {
+      const adapter = Config.get('test').filesController.adapter;
+      const spy = spyOn(adapter, 'createFile').and.callThrough();
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/files/notes.txt.',
+        body: JSON.stringify({
+          _ApplicationId: 'test',
+          _JavaScriptKey: 'test',
+          _ContentType: 'text/plain',
+          base64: Buffer.from('hello').toString('base64'),
+        }),
+        headers,
+      });
+      expect(response.status).toBe(201);
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it('FilesController treats trailing-dot filename as extensionless when appending derived extension via master key upload', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+        },
+        preserveFileName: true,
+      });
+      const adapter = Config.get('test').filesController.adapter;
+      const spy = spyOn(adapter, 'createFile').and.callThrough();
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/files/poc.svg.',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+          'Content-Type': 'image/svg+xml',
+        },
+        body: '<svg/>',
+      });
+      expect(response.status).toBe(201);
+      expect(spy).toHaveBeenCalled();
+      const filenameArg = spy.calls.mostRecent().args[0];
+      const contentTypeArg = spy.calls.mostRecent().args[2];
+      // Trailing-dot filename is treated as extensionless: derived extension appended without doubling the dot
+      expect(filenameArg).toBe('poc.svg.svg');
+      // Caller-supplied Content-Type is preserved on the extensionless path
+      expect(contentTypeArg).toBe('image/svg+xml');
+    });
+
+    it('allows trailing-dot filename when no Content-Type is supplied (no XSS path)', async () => {
+      // Trailing-dot filename with no caller-supplied Content-Type: the
+      // blocklist gate skips because no extension can be determined, but no
+      // attacker-controlled Content-Type reaches the storage adapter — only
+      // the SDK's benign default — so no stored XSS is possible.
+      const adapter = Config.get('test').filesController.adapter;
+      const spy = spyOn(adapter, 'createFile').and.callThrough();
+      const response = await request({
+        method: 'POST',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        url: 'http://localhost:8378/1/files/poc.svg.',
+        body: '<svg/>',
+      });
+      expect(response.status).toBe(201);
+      expect(spy).toHaveBeenCalled();
+      const contentTypeArg = spy.calls.mostRecent().args[2];
+      expect(contentTypeArg).not.toMatch(/svg|html|xml|xhtml|xslt|mathml/i);
+    });
+
+    it('falls back to raw Content-Type when Content-Type is malformed (no slash)', async () => {
+      // Exercises the last-resort branch: when both the filename has no usable
+      // extension AND the Content-Type lacks a "/" subtype to parse, the raw
+      // Content-Type is used as the extension so a malformed header that
+      // matches a blocked pattern still trips the blocklist.
+      await expectAsync(
+        request({
+          method: 'POST',
+          headers: {
+            ...headers,
+            'Content-Type': 'svg',
+          },
+          url: 'http://localhost:8378/1/files/poc',
+          body: '<svg/>',
+        }).catch(e => {
+          throw new Error(e.data.error);
+        })
+      ).toBeRejectedWith(jasmine.objectContaining({
+        message: jasmine.stringMatching(/File upload of extension svg is disabled/),
+      }));
+    });
+  });
+
   describe('(GHSA-q3vj-96h2-gwvg) SQL Injection via Increment amount on nested Object field', () => {
     const headers = {
       'Content-Type': 'application/json',
@@ -2136,6 +2304,207 @@ describe('Vulnerabilities', () => {
         qs: { where: JSON.stringify({ secretObj: { apiKey: 'SENSITIVE_KEY_123' } }) },
       }).catch(e => e);
       expect(res.status).toBe(400);
+    });
+  });
+
+  describe('(GHSA-wmwx-jr2p-4j4r) $relatedTo bypasses protectedFields and parent ACL for Relation fields', () => {
+    let childLinked;
+    let parentProtectedKey;
+    let parentPrivate;
+    let parentPublic;
+
+    const relatedToWhere = (parentId, key, extra = {}) => ({
+      $relatedTo: {
+        object: { __type: 'Pointer', className: 'RelParent', objectId: parentId },
+        key,
+      },
+      ...extra,
+    });
+
+    const queryChild = (where, headers = {}) =>
+      request({
+        method: 'GET',
+        url: `${Parse.serverURL}/classes/RelChild`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          ...headers,
+        },
+        qs: { where: JSON.stringify(where) },
+      }).catch(e => e);
+
+    beforeEach(async () => {
+      const schema = new Parse.Schema('RelParent');
+      schema.addString('name');
+      schema.addRelation('secretRel', 'RelChild');
+      schema.addRelation('openRel', 'RelChild');
+      schema.setCLP({
+        find: { '*': true },
+        get: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+        // secretRel is a protected Relation field for public clients
+        protectedFields: { '*': ['secretRel'] },
+      });
+      await schema.save();
+
+      childLinked = new Parse.Object('RelChild', { value: 'linked child' });
+      await childLinked.save(null, { useMasterKey: true });
+
+      const publicAcl = new Parse.ACL();
+      publicAcl.setPublicReadAccess(true);
+
+      const privateAcl = new Parse.ACL();
+      privateAcl.setPublicReadAccess(false);
+      privateAcl.setPublicWriteAccess(false);
+
+      // Publicly readable parent whose relation key is protected (isolates the
+      // protectedFields facet).
+      parentProtectedKey = new Parse.Object('RelParent', { name: 'protected-key parent' });
+      parentProtectedKey.setACL(publicAcl);
+      parentProtectedKey.relation('secretRel').add(childLinked);
+      await parentProtectedKey.save(null, { useMasterKey: true });
+
+      // Parent that is not readable by the public, queried via a non-protected
+      // relation key (isolates the parent-ACL facet).
+      parentPrivate = new Parse.Object('RelParent', { name: 'private parent' });
+      parentPrivate.setACL(privateAcl);
+      parentPrivate.relation('openRel').add(childLinked);
+      await parentPrivate.save(null, { useMasterKey: true });
+
+      // Publicly readable parent with a non-protected relation key (legitimate
+      // use that must keep working).
+      parentPublic = new Parse.Object('RelParent', { name: 'public parent' });
+      parentPublic.setACL(publicAcl);
+      parentPublic.relation('openRel').add(childLinked);
+      await parentPublic.save(null, { useMasterKey: true });
+    });
+
+    it('denies $relatedTo query that references a protected relation field', async () => {
+      const res = await queryChild(relatedToWhere(parentProtectedKey.id, 'secretRel'));
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    });
+
+    it('denies $relatedTo on a protected relation field nested in $or', async () => {
+      const res = await queryChild({
+        $or: [relatedToWhere(parentProtectedKey.id, 'secretRel')],
+      });
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    });
+
+    it('denies $relatedTo on a protected relation field nested in $and', async () => {
+      const res = await queryChild({
+        $and: [relatedToWhere(parentProtectedKey.id, 'secretRel')],
+      });
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    });
+
+    it('denies $relatedTo on a protected relation field nested in $nor', async () => {
+      const res = await queryChild({
+        $nor: [relatedToWhere(parentProtectedKey.id, 'secretRel')],
+      });
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    });
+
+    it('returns no results when the owning object is not readable by the caller', async () => {
+      const res = await queryChild(relatedToWhere(parentPrivate.id, 'openRel'));
+      expect(res.data.results).toEqual([]);
+    });
+
+    it('does not act as a membership oracle for an unreadable owning object', async () => {
+      const res = await queryChild(
+        relatedToWhere(parentPrivate.id, 'openRel', { objectId: childLinked.id })
+      );
+      expect(res.data.results).toEqual([]);
+    });
+
+    it('still returns related objects for a readable parent and non-protected key', async () => {
+      const res = await queryChild(relatedToWhere(parentPublic.id, 'openRel'));
+      expect(res.data.results.length).toBe(1);
+      expect(res.data.results[0].objectId).toBe(childLinked.id);
+    });
+
+    it('allows master key to query a protected relation and an unreadable parent', async () => {
+      const masterHeaders = { 'X-Parse-Master-Key': Parse.masterKey };
+      const resProtected = await queryChild(
+        relatedToWhere(parentProtectedKey.id, 'secretRel'),
+        masterHeaders
+      );
+      expect(resProtected.data.results.length).toBe(1);
+      const resPrivate = await queryChild(
+        relatedToWhere(parentPrivate.id, 'openRel'),
+        masterHeaders
+      );
+      expect(resPrivate.data.results.length).toBe(1);
+    });
+
+    it('respects user-level read access to the owning object', async () => {
+      const userA = await Parse.User.signUp('relUserA', 'pw');
+      const userB = await Parse.User.signUp('relUserB', 'pw');
+
+      const acl = new Parse.ACL();
+      acl.setReadAccess(userA, true);
+      const parent = new Parse.Object('RelParent', { name: 'user-scoped parent' });
+      parent.setACL(acl);
+      parent.relation('openRel').add(childLinked);
+      await parent.save(null, { useMasterKey: true });
+
+      const resA = await queryChild(relatedToWhere(parent.id, 'openRel'), {
+        'X-Parse-Session-Token': userA.getSessionToken(),
+      });
+      expect(resA.data.results.length).toBe(1);
+
+      const resB = await queryChild(relatedToWhere(parent.id, 'openRel'), {
+        'X-Parse-Session-Token': userB.getSessionToken(),
+      });
+      expect(resB.data.results).toEqual([]);
+    });
+
+    it('returns no results when the owning class denies get permission (CLP)', async () => {
+      // Owning class denies public `get`, so the owning-object read throws
+      // OPERATION_FORBIDDEN; the relation must then return no results.
+      const schema = new Parse.Schema('RelParentNoGet');
+      schema.addRelation('members', 'RelChild');
+      schema.setCLP({
+        find: { '*': true },
+        get: {},
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+      });
+      await schema.save();
+
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      const parent = new Parse.Object('RelParentNoGet', { name: 'no-get parent' });
+      parent.setACL(acl);
+      parent.relation('members').add(childLinked);
+      await parent.save(null, { useMasterKey: true });
+
+      const res = await request({
+        method: 'GET',
+        url: `${Parse.serverURL}/classes/RelChild`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        qs: {
+          where: JSON.stringify({
+            $relatedTo: {
+              object: { __type: 'Pointer', className: 'RelParentNoGet', objectId: parent.id },
+              key: 'members',
+            },
+          }),
+        },
+      }).catch(e => e);
+      expect(res.data.results).toEqual([]);
     });
   });
 
@@ -5732,6 +6101,66 @@ describe('Vulnerabilities', () => {
       expect(contextAfterDelete).toBeDefined();
       expect(contextAfterDelete.isAdmin).toBeUndefined();
     });
+
+    it('does not expose Object.prototype on beforeFind trigger context', async () => {
+      // getRequestQueryObject builds the beforeFind trigger request. Its context must be
+      // prototype-isolated like every other trigger path (getRequestObject), so a polluted
+      // Object.prototype cannot leak into the request.context read by Cloud Code.
+      let contextProto;
+      let contextValue;
+      Parse.Cloud.beforeFind('ContextTest', req => {
+        contextProto = Object.getPrototypeOf(req.context);
+        contextValue = req.context.foo;
+      });
+      const query = new Parse.Query('ContextTest');
+      await query.find({ context: { foo: 'bar' } });
+      expect(contextValue).toBe('bar');
+      expect(contextProto).toBeNull();
+    });
+
+    it('isolates beforeFind trigger context from Object.prototype pollution', async () => {
+      // Simulate a separate prototype-pollution issue elsewhere in the process and verify the
+      // beforeFind trigger context does not inherit the polluted property.
+      const probe = '__parseServerBeforeFindContextProbe';
+      let inheritedProbe;
+      Parse.Cloud.beforeFind('ContextTest', req => {
+        inheritedProbe = req.context[probe];
+      });
+      Object.defineProperty(Object.prototype, probe, {
+        value: true,
+        configurable: true,
+        enumerable: false,
+        writable: true,
+      });
+      try {
+        const query = new Parse.Query('ContextTest');
+        await query.find({ context: { foo: 'bar' } });
+      } finally {
+        delete Object.prototype[probe];
+      }
+      expect(inheritedProbe).toBeUndefined();
+    });
+
+    it('propagates beforeFind context mutations to afterFind with prototype isolation', async () => {
+      // Regression guard for the copy + write-back fix: beforeFind and afterFind must still
+      // share context mutations (as documented), and both trigger contexts must be isolated.
+      let beforeFindProto;
+      let afterFindProto;
+      let afterFindValue;
+      Parse.Cloud.beforeFind('ContextTest', req => {
+        beforeFindProto = Object.getPrototypeOf(req.context);
+        req.context.injected = 'from-beforeFind';
+      });
+      Parse.Cloud.afterFind('ContextTest', req => {
+        afterFindProto = Object.getPrototypeOf(req.context);
+        afterFindValue = req.context.injected;
+      });
+      const query = new Parse.Query('ContextTest');
+      await query.find({ context: { foo: 'bar' } });
+      expect(beforeFindProto).toBeNull();
+      expect(afterFindProto).toBeNull();
+      expect(afterFindValue).toBe('from-beforeFind');
+    });
   });
 
   describe('(GHSA-hpm8-9qx6-jvwv) Ranged file download bypasses afterFind(Parse.File) trigger and validators', () => {
@@ -5883,6 +6312,242 @@ describe('Vulnerabilities', () => {
       });
       expect(meResponse.data.createdWith).toBeDefined();
       expect(meResponse.data.sessionToken).toBe(sessionToken);
+    });
+  });
+
+  describe('(GHSA-38m6-82c8-4xfm) Pre-auth polynomial ReDoS via client version parsing', () => {
+    const middlewares = require('../lib/middlewares');
+    const AppCache = require('../lib/cache').AppCache;
+
+    const AppCachePut = (appId, config) =>
+      AppCache.put(appId, {
+        ...config,
+        maintenanceKeyIpsStore: new Map(),
+        masterKeyIpsStore: new Map(),
+        readOnlyMasterKeyIpsStore: new Map(),
+      });
+
+    const buildFakeReq = ({ headers = {}, body = {} } = {}) => {
+      const req = {
+        ip: '127.0.0.1',
+        originalUrl: 'http://example.com/parse/',
+        url: 'http://example.com/',
+        body: { _ApplicationId: 'FakeAppId', ...body },
+        headers,
+        get: key => req.headers[key.toLowerCase()],
+      };
+      return req;
+    };
+
+    beforeEach(() => {
+      AppCachePut('FakeAppId', {
+        masterKeyIps: ['0.0.0.0/0'],
+      });
+    });
+
+    afterEach(() => {
+      AppCache.del('FakeAppId');
+    });
+
+    it('does not capture client version from X-Parse-Client-Version header into req.info', async () => {
+      const req = buildFakeReq({ headers: { 'x-parse-client-version': 'js5.0.0' } });
+      const res = jasmine.createSpyObj('res', ['end', 'status']);
+      let nextCalled = false;
+      await middlewares.handleParseHeaders(req, res, () => {
+        nextCalled = true;
+      });
+      expect(nextCalled).toBe(true);
+      expect(res.status).not.toHaveBeenCalled();
+      expect(req.info.clientVersion).toBeUndefined();
+      expect(req.info.clientSDK).toBeUndefined();
+    });
+
+    it('does not capture client version from _ClientVersion body field into req.info', async () => {
+      const req = buildFakeReq({ body: { _ClientVersion: 'js5.0.0' } });
+      const res = jasmine.createSpyObj('res', ['end', 'status']);
+      let nextCalled = false;
+      await middlewares.handleParseHeaders(req, res, () => {
+        nextCalled = true;
+      });
+      expect(nextCalled).toBe(true);
+      expect(res.status).not.toHaveBeenCalled();
+      expect(req.info.clientVersion).toBeUndefined();
+      expect(req.info.clientSDK).toBeUndefined();
+      expect(req.body._ClientVersion).toBeUndefined();
+    });
+
+    it('does not invoke any regex on adversarial X-Parse-Client-Version header (16 KB of dashes)', async () => {
+      const adversarial = '-'.repeat(16000);
+      const req = buildFakeReq({ headers: { 'x-parse-client-version': adversarial } });
+      const res = jasmine.createSpyObj('res', ['end', 'status']);
+      await middlewares.handleParseHeaders(req, res, () => {});
+      expect(req.info.clientVersion).toBeUndefined();
+      expect(req.info.clientSDK).toBeUndefined();
+    });
+
+    it('does not invoke any regex on adversarial _ClientVersion body field (200 KB of dashes)', async () => {
+      const adversarial = '-'.repeat(200000);
+      const req = buildFakeReq({ body: { _ClientVersion: adversarial } });
+      const res = jasmine.createSpyObj('res', ['end', 'status']);
+      const t0 = process.hrtime.bigint();
+      await middlewares.handleParseHeaders(req, res, () => {});
+      const elapsedMs = Number(process.hrtime.bigint() - t0) / 1e6;
+      expect(elapsedMs).toBeLessThan(3000);
+      expect(req.info.clientVersion).toBeUndefined();
+      expect(req.info.clientSDK).toBeUndefined();
+      expect(req.body._ClientVersion).toBeUndefined();
+    });
+
+    it('strips _ClientVersion from req.body even when value is non-string (no rejection, no capture)', async () => {
+      const req = buildFakeReq({ body: { _ClientVersion: { toLowerCase: 'evil' } } });
+      const res = jasmine.createSpyObj('res', ['end', 'status']);
+      let nextCalled = false;
+      await middlewares.handleParseHeaders(req, res, () => {
+        nextCalled = true;
+      });
+      expect(nextCalled).toBe(true);
+      expect(res.status).not.toHaveBeenCalled();
+      expect(req.body._ClientVersion).toBeUndefined();
+      expect(req.info.clientVersion).toBeUndefined();
+      expect(req.info.clientSDK).toBeUndefined();
+    });
+  });
+
+  describe('(GHSA-75v4-m273-5j49) _User CLP refetch fallback leaks raw MFA secrets and protected fields', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+
+    const denyGetCLP = {
+      get: {},
+      find: {},
+      create: { '*': true },
+      update: { '*': true },
+      delete: {},
+    };
+
+    const updateUserCLP = classLevelPermissions =>
+      request({
+        method: 'PUT',
+        url: Parse.serverURL + '/schemas/_User',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ classLevelPermissions }),
+      });
+
+    async function setupMfaUser() {
+      const OTPAuth = require('otpauth');
+      const user = await Parse.User.signUp('victim', 'password');
+      const sessionToken = user.getSessionToken();
+      user.set('phone', '555-1234');
+      await user.save(null, { sessionToken });
+      const secret = new OTPAuth.Secret();
+      const totp = new OTPAuth.TOTP({ algorithm: 'SHA1', digits: 6, period: 30, secret });
+      await user.save(
+        { authData: { mfa: { secret: secret.base32, token: totp.generate() } } },
+        { sessionToken }
+      );
+      return { user, totp, secret };
+    }
+
+    beforeEach(async () => {
+      await reconfigureServer({
+        auth: {
+          mfa: { enabled: true, options: ['TOTP'], algorithm: 'SHA1', digits: 6, period: 30 },
+        },
+        protectedFields: { _User: { '*': ['phone'] } },
+        protectedFieldsOwnerExempt: false,
+      });
+    });
+
+    it('does not leak raw MFA secrets or protected fields from /verifyPassword when _User get CLP denies the re-fetch', async () => {
+      await setupMfaUser();
+      await updateUserCLP(denyGetCLP);
+
+      const response = await request({
+        method: 'POST',
+        url: Parse.serverURL + '/verifyPassword',
+        headers,
+        body: JSON.stringify({ username: 'victim', password: 'password' }),
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.data.objectId).toBeDefined();
+      // Access control denied the re-fetch, so no stored fields may be disclosed
+      expect(response.data.authData).toBeUndefined();
+      expect(response.data.phone).toBeUndefined();
+    });
+
+    it('does not leak raw MFA secrets or protected fields from /login when _User get CLP denies the re-fetch', async () => {
+      const { totp } = await setupMfaUser();
+      await updateUserCLP(denyGetCLP);
+
+      const response = await request({
+        method: 'POST',
+        url: Parse.serverURL + '/login',
+        headers,
+        body: JSON.stringify({
+          username: 'victim',
+          password: 'password',
+          authData: { mfa: { token: totp.generate() } },
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      // Login still succeeds and issues a session for the authenticated user
+      expect(response.data.objectId).toBeDefined();
+      expect(response.data.sessionToken).toBeDefined();
+      // But discloses no stored fields the caller may not read
+      expect(response.data.authData).toBeUndefined();
+      expect(response.data.phone).toBeUndefined();
+    });
+
+    it('sanitizes MFA secrets and protected fields on /verifyPassword when get CLP permits the re-fetch', async () => {
+      await setupMfaUser();
+
+      const response = await request({
+        method: 'POST',
+        url: Parse.serverURL + '/verifyPassword',
+        headers,
+        body: JSON.stringify({ username: 'victim', password: 'password' }),
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.data.objectId).toBeDefined();
+      // afterFind replaces raw MFA material with a status flag
+      expect(response.data.authData.mfa.status).toBe('enabled');
+      expect(response.data.authData.mfa.secret).toBeUndefined();
+      expect(response.data.authData.mfa.recovery).toBeUndefined();
+      // protectedFieldsOwnerExempt:false strips protected fields even for the owner
+      expect(response.data.phone).toBeUndefined();
+    });
+
+    it('returns the full user to a master-key /verifyPassword even when get CLP is denied', async () => {
+      await setupMfaUser();
+      await updateUserCLP(denyGetCLP);
+
+      const response = await request({
+        method: 'POST',
+        url: Parse.serverURL + '/verifyPassword',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: 'victim', password: 'password' }),
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.data.objectId).toBeDefined();
+      // Master bypasses CLP and protectedFields by design, so it still receives
+      // the full record (auth hierarchy preserved); the minimal denied-path
+      // response only applies to non-master callers.
+      expect(response.data.phone).toBe('555-1234');
     });
   });
 });

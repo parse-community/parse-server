@@ -31,7 +31,6 @@ const { createSanitizedError } = require('./Error');
  * @param options.className {string} The name of the class to query
  * @param options.restWhere {object} The where object for the query
  * @param options.restOptions {object} The options object for the query
- * @param options.clientSDK {string} The client SDK that is performing the query
  * @param options.runAfterFind {boolean} Whether to run the afterFind trigger
  * @param options.runBeforeFind {boolean} Whether to run the beforeFind trigger
  * @param options.context {object} The context object for the query
@@ -44,7 +43,6 @@ async function RestQuery({
   className,
   restWhere = {},
   restOptions = {},
-  clientSDK,
   runAfterFind = true,
   runBeforeFind = true,
   context,
@@ -73,7 +71,6 @@ async function RestQuery({
     className,
     result.restWhere || restWhere,
     result.restOptions || restOptions,
-    clientSDK,
     runAfterFind,
     context,
     isGet
@@ -93,7 +90,6 @@ RestQuery.Method = Object.freeze({
  * @param className
  * @param restWhere
  * @param restOptions
- * @param clientSDK
  * @param runAfterFind
  * @param context
  */
@@ -103,7 +99,6 @@ function _UnsafeRestQuery(
   className,
   restWhere = {},
   restOptions = {},
-  clientSDK,
   runAfterFind = true,
   context,
   isGet
@@ -113,7 +108,6 @@ function _UnsafeRestQuery(
   this.className = className;
   this.restWhere = restWhere;
   this.restOptions = restOptions;
-  this.clientSDK = clientSDK;
   this.runAfterFind = runAfterFind;
   this.response = null;
   this.findOptions = {};
@@ -322,7 +316,7 @@ _UnsafeRestQuery.prototype.execute = function (executeOptions) {
 };
 
 _UnsafeRestQuery.prototype.each = function (callback) {
-  const { config, auth, className, restWhere, restOptions, clientSDK } = this;
+  const { config, auth, className, restWhere, restOptions } = this;
   // if the limit is set, use it
   restOptions.limit = restOptions.limit || 100;
   restOptions.order = 'objectId';
@@ -341,7 +335,6 @@ _UnsafeRestQuery.prototype.each = function (callback) {
         className,
         restWhere,
         restOptions,
-        clientSDK,
         this.runAfterFind,
         this.context
       );
@@ -366,22 +359,29 @@ _UnsafeRestQuery.prototype.validateQueryDepth = function () {
     return;
   }
   const maxDepth = rc.queryDepth;
-  const checkDepth = (where, depth) => {
+  const checkDepth = (node, depth) => {
     if (depth > maxDepth) {
       throw new Parse.Error(
         Parse.Error.INVALID_QUERY,
         `Query condition nesting depth exceeds maximum allowed depth of ${maxDepth}`
       );
     }
-    if (typeof where !== 'object' || where === null) {
+    if (node === null || typeof node !== 'object') {
       return;
     }
-    for (const op of ['$or', '$and', '$nor']) {
-      if (Array.isArray(where[op])) {
-        for (const subQuery of where[op]) {
-          checkDepth(subQuery, depth + 1);
-        }
+    if (Array.isArray(node)) {
+      for (const item of node) {
+        checkDepth(item, depth);
       }
+      return;
+    }
+    // Descend into every value so that logical operators ($or/$and/$nor) nested
+    // under field-level operators (e.g. $elemMatch, $not) or plain field names are
+    // still counted. Only logical operators increase the depth, which preserves the
+    // documented meaning of `queryDepth`.
+    for (const key of Object.keys(node)) {
+      const isLogical = key === '$or' || key === '$and' || key === '$nor';
+      checkDepth(node[key], isLogical ? depth + 1 : depth);
     }
   };
   checkDepth(this.restWhere, 0);
@@ -1368,6 +1368,10 @@ function findObjectWithKey(root, key) {
         return answer;
       }
     }
+    // Arrays are fully traversed above; returning here avoids re-walking the same
+    // elements through the `for (subkey in root)` loop below, which would make this
+    // function O(2^n) for nested arrays (e.g. deeply nested $or/$and/$nor).
+    return;
   }
   if (root && root[key]) {
     return root;
