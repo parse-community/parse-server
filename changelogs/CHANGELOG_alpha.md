@@ -1,3 +1,10 @@
+## [9.10.1-alpha.1](https://github.com/parse-community/parse-server/compare/9.10.0...9.10.1-alpha.1) (2026-07-13)
+
+
+### Bug Fixes
+
+* Bump follow-redirects from 1.15.11 to 1.16.0 ([#10577](https://github.com/parse-community/parse-server/issues/10577)) ([d577327](https://github.com/parse-community/parse-server/commit/d577327bff073b0436a158e9694feed8eed2f8e7))
+
 # [9.10.0-alpha.8](https://github.com/parse-community/parse-server/compare/9.10.0-alpha.7...9.10.0-alpha.8) (2026-07-13)
 
 
