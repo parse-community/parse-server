@@ -1,3 +1,10 @@
+# [9.10.0-alpha.8](https://github.com/parse-community/parse-server/compare/9.10.0-alpha.7...9.10.0-alpha.8) (2026-07-13)
+
+
+### Bug Fixes
+
+* GeoPoint distance queries fail with an internal server error on MongoDB 8.3 and later ([#10572](https://github.com/parse-community/parse-server/issues/10572)) ([b706c22](https://github.com/parse-community/parse-server/commit/b706c22cd9e47d91ec00d3f6050d161fd721e2e1))
+
 # [9.10.0-alpha.7](https://github.com/parse-community/parse-server/compare/9.10.0-alpha.6...9.10.0-alpha.7) (2026-07-11)
 
 
