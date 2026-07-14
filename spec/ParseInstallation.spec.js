@@ -1317,6 +1317,7 @@ describe('Installations', () => {
           url: 'http://localhost:8378/1/installations',
         });
         fail('find should have been rejected');
+        return;
       } catch (e) {
         error = e;
       }
@@ -1337,6 +1338,7 @@ describe('Installations', () => {
           url: 'http://localhost:8378/1/installations/' + created.response.objectId,
         });
         fail('delete should have been rejected');
+        return;
       } catch (e) {
         error = e;
       }
@@ -1366,11 +1368,40 @@ describe('Installations', () => {
           url: 'http://localhost:8378/1/installations',
         });
         fail('find should have been rejected');
+        return;
       } catch (e) {
         error = e;
       }
       expect(error.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
       expect(error.data.error).toBe('Permission denied');
+    });
+
+    it('blocks the delete operation for an authenticated non-master user', async () => {
+      const user = await Parse.User.signUp('installation-acl-user', 'pass-12345678');
+      const created = await rest.create(config, auth.nobody(config), '_Installation', {
+        installationId: '12345678-abcd-abcd-abcd-123456789abc',
+        deviceType: 'android',
+      });
+      let error;
+      try {
+        await request({
+          method: 'DELETE',
+          headers: {
+            ...anonymousHeaders,
+            'X-Parse-Session-Token': user.getSessionToken(),
+          },
+          url: 'http://localhost:8378/1/installations/' + created.response.objectId,
+        });
+        fail('delete should have been rejected');
+        return;
+      } catch (e) {
+        error = e;
+      }
+      expect(error.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(error.data.error).toBe('Permission denied');
+      // The row is still present: the authenticated non-master delete did not take effect.
+      const remaining = await new Parse.Query(Parse.Installation).count({ useMasterKey: true });
+      expect(remaining).toBe(1);
     });
   });
 
