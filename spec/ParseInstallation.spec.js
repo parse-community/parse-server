@@ -1345,8 +1345,8 @@ describe('Installations', () => {
       expect(error.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
       expect(error.data.error).toBe('Permission denied');
       // The row is still present: the anonymous delete did not take effect.
-      const remaining = await new Parse.Query(Parse.Installation).count({ useMasterKey: true });
-      expect(remaining).toBe(1);
+      const remaining = await database.adapter.find('_Installation', installationSchema, {}, {});
+      expect(remaining.length).toBe(1);
     });
 
     it('blocks the find operation for an authenticated non-master user', async () => {
@@ -1400,8 +1400,8 @@ describe('Installations', () => {
       expect(error.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
       expect(error.data.error).toBe('Permission denied');
       // The row is still present: the authenticated non-master delete did not take effect.
-      const remaining = await new Parse.Query(Parse.Installation).count({ useMasterKey: true });
-      expect(remaining).toBe(1);
+      const remaining = await database.adapter.find('_Installation', installationSchema, {}, {});
+      expect(remaining.length).toBe(1);
     });
   });
 
