@@ -1,3 +1,10 @@
+## [9.10.1-alpha.2](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.1...9.10.1-alpha.2) (2026-07-14)
+
+
+### Bug Fixes
+
+* Creating a session can delete another user's session ([#10582](https://github.com/parse-community/parse-server/issues/10582)) ([0df8779](https://github.com/parse-community/parse-server/commit/0df8779c2ecccb055e615d42ee85ae2bce491670))
+
 ## [9.10.1-alpha.1](https://github.com/parse-community/parse-server/compare/9.10.0...9.10.1-alpha.1) (2026-07-13)
 
 
