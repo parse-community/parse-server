@@ -137,11 +137,8 @@ class Client {
       requestId: subscriptionId,
     };
 
-    if (results && Array.isArray(results)) {
-      let keys;
-      if (this.subscriptionInfos.has(subscriptionId)) {
-        keys = this.subscriptionInfos.get(subscriptionId).keys;
-      }
+    if (Array.isArray(results)) {
+      const keys = this.subscriptionInfos.get(subscriptionId)?.keys;
       response['results'] = results.map(obj => this._toJSONWithFields(obj, keys));
     } else {
       response['results'] = [];
