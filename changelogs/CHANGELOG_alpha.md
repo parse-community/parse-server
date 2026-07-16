@@ -1,3 +1,10 @@
+## [9.10.1-alpha.3](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.2...9.10.1-alpha.3) (2026-07-16)
+
+
+### Bug Fixes
+
+* Bump ws from 8.20.0 to 8.21.0 ([#10576](https://github.com/parse-community/parse-server/issues/10576)) ([629426f](https://github.com/parse-community/parse-server/commit/629426f00d619ca624fc2d7e64d98f406ce20acc))
+
 ## [9.10.1-alpha.2](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.1...9.10.1-alpha.2) (2026-07-14)
 
 
