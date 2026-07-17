@@ -1785,6 +1785,56 @@ describe('rest header aliases', () => {
       await reconfigureServer();
     }
   });
+
+  it('prefers canonical session token over alias on /users/me', async () => {
+    await reconfigureServer({
+      headerAliases: {
+        'X-Parse-Session-Token': ['X-Session-Token-Alias'],
+      },
+    });
+    try {
+      const canonicalUser = await Parse.User.signUp(`alias-rest-canonical-${Date.now()}`, 'password');
+      const aliasUser = await Parse.User.signUp(`alias-rest-alias-${Date.now()}`, 'password');
+      const response = await request({
+        url: `${Parse.serverURL}/users/me`,
+        method: 'GET',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': canonicalUser.getSessionToken(),
+          'X-Session-Token-Alias': aliasUser.getSessionToken(),
+        },
+      });
+      expect(response.data.objectId).toBe(canonicalUser.id);
+    } finally {
+      await reconfigureServer();
+    }
+  });
+
+  it('uses the first matching session-token alias over REST according to config order', async () => {
+    await reconfigureServer({
+      headerAliases: {
+        'X-Parse-Session-Token': ['X-Session-Token-Alias-A', 'X-Session-Token-Alias-B'],
+      },
+    });
+    try {
+      const firstAliasUser = await Parse.User.signUp(`alias-rest-a-${Date.now()}`, 'password');
+      const secondAliasUser = await Parse.User.signUp(`alias-rest-b-${Date.now()}`, 'password');
+      const response = await request({
+        url: `${Parse.serverURL}/users/me`,
+        method: 'GET',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Session-Token-Alias-B': secondAliasUser.getSessionToken(),
+          'X-Session-Token-Alias-A': firstAliasUser.getSessionToken(),
+        },
+      });
+      expect(response.data.objectId).toBe(firstAliasUser.id);
+    } finally {
+      await reconfigureServer();
+    }
+  });
 });
 
 describe('rest context', () => {

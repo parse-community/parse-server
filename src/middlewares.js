@@ -93,20 +93,18 @@ export function getHeaderAliases(headerAliases, canonicalHeader) {
 
 function applyHeaderAliases(req, headerAliases) {
   req.headers = req.headers || {};
-  const indexHeaderByAlias = Object.fromEntries(
-    Object.entries(headerAliases)
-      .map(([source, aliases]) =>
-        aliases
-          .map(alias => [alias.toLowerCase(), source.toLowerCase()])
-      )
-      .flat()
-  );
-  Object.entries(req.headers).forEach(([header, value]) => {
-    const targetHeader = indexHeaderByAlias[header.toLowerCase()];
-    if (targetHeader && !req.headers[targetHeader]) {
-      req.headers[targetHeader] = value;
+  for (const [canonicalHeader, aliases] of Object.entries(headerAliases || {})) {
+    const canonicalKey = String(canonicalHeader).trim().toLowerCase();
+    if (req.headers[canonicalKey] !== undefined) {
+      continue; // canonical wins
     }
-  });
+    const matchedAlias = (aliases || []).find(
+      alias => req.headers[String(alias).trim().toLowerCase()] !== undefined
+    );
+    if (matchedAlias) {
+      req.headers[canonicalKey] = req.headers[String(matchedAlias).trim().toLowerCase()];
+    }
+  }
 }
 
 export function handleHeaderAliases(appId) {

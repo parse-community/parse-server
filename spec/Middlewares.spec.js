@@ -480,6 +480,99 @@ describe('middlewares', () => {
     });
   });
 
+  it('should prefer canonical application id over alias when both headers are present', done => {
+    AppCachePut(fakeReq.body._ApplicationId, {
+      headerAliases: {
+        'X-Parse-Application-Id': ['X-App-Id'],
+      },
+      masterKeyIps: ['0.0.0.0/0'],
+    });
+    fakeReq.headers['x-parse-application-id'] = fakeReq.body._ApplicationId;
+    fakeReq.headers['x-app-id'] = 'other-app-id';
+    middlewares.handleHeaderAliases(fakeReq.body._ApplicationId)(fakeReq, fakeRes, () => {
+      expect(fakeReq.headers['x-parse-application-id']).toEqual(fakeReq.body._ApplicationId);
+      middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
+        expect(fakeReq.info.appId).toEqual(fakeReq.body._ApplicationId);
+        done();
+      });
+    });
+  });
+
+  it('should use the first matching alias according to config order', done => {
+    const firstAliasToken = 'session-token-alias-a';
+    const secondAliasToken = 'session-token-alias-b';
+    AppCachePut(fakeReq.body._ApplicationId, {
+      headerAliases: {
+        'X-Parse-Session-Token': ['X-Alias-A', 'X-Alias-B'],
+      },
+      masterKeyIps: ['0.0.0.0/0'],
+    });
+    // Insert B before A in req.headers so Object.entries order would prefer B
+    fakeReq.headers['x-alias-b'] = secondAliasToken;
+    fakeReq.headers['x-alias-a'] = firstAliasToken;
+    middlewares.handleHeaderAliases(fakeReq.body._ApplicationId)(fakeReq, fakeRes, () => {
+      middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
+        expect(fakeReq.info.sessionToken).toEqual(firstAliasToken);
+        done();
+      });
+    });
+  });
+
+  it('should use the second alias when the first configured alias is absent', done => {
+    const secondAliasToken = 'session-token-alias-b-only';
+    AppCachePut(fakeReq.body._ApplicationId, {
+      headerAliases: {
+        'X-Parse-Session-Token': ['X-Alias-A', 'X-Alias-B'],
+      },
+      masterKeyIps: ['0.0.0.0/0'],
+    });
+    fakeReq.headers['x-alias-b'] = secondAliasToken;
+    middlewares.handleHeaderAliases(fakeReq.body._ApplicationId)(fakeReq, fakeRes, () => {
+      middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
+        expect(fakeReq.info.sessionToken).toEqual(secondAliasToken);
+        done();
+      });
+    });
+  });
+
+  it('should not rewrite a canonical header when only unrelated headers are present', done => {
+    AppCachePut(fakeReq.body._ApplicationId, {
+      headerAliases: {
+        'X-Parse-Session-Token': ['X-Session-Token-Alias'],
+      },
+      masterKeyIps: ['0.0.0.0/0'],
+    });
+    fakeReq.headers['x-unrelated'] = 'value';
+    middlewares.handleHeaderAliases(fakeReq.body._ApplicationId)(fakeReq, fakeRes, () => {
+      expect(fakeReq.headers['x-parse-session-token']).toBeUndefined();
+      done();
+    });
+  });
+
+  it('should not overwrite an empty-string canonical header with an alias value', done => {
+    AppCachePut(fakeReq.body._ApplicationId, {
+      headerAliases: {
+        'X-Parse-Session-Token': ['X-Session-Token-Alias'],
+      },
+      masterKeyIps: ['0.0.0.0/0'],
+    });
+    fakeReq.headers['x-parse-session-token'] = '';
+    fakeReq.headers['x-session-token-alias'] = 'session-token-alias-value';
+    middlewares.handleHeaderAliases(fakeReq.body._ApplicationId)(fakeReq, fakeRes, () => {
+      expect(fakeReq.headers['x-parse-session-token']).toEqual('');
+      done();
+    });
+  });
+
+  it('should reject CRLF aliases at validation time before they can be served', () => {
+    const Config = require('../lib/Config');
+    expect(() =>
+      Config.validateHeaderAliases({
+        'X-Parse-Application-Id': ['X-Foo\r\nSet-Cookie: evil'],
+      })
+    ).toThrowError(/contains invalid characters/);
+  });
+
   it('should resolve master key from configured alias in handleParseAuth', async () => {
     AppCachePut(fakeReq.body._ApplicationId, {
       headerAliases: {

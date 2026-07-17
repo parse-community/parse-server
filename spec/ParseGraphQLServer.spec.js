@@ -266,6 +266,45 @@ describe('ParseGraphQLServer', () => {
       await new Promise(resolve => aliasMiddleware(req, {}, resolve));
       expect(req.headers['x-parse-application-id']).toBe(parseServerWithAliases.config.appId);
     });
+
+    it('prefers canonical application-id over alias in GraphQL alias middleware', async () => {
+      const parseServerWithAliases = await global.reconfigureServer({
+        maintenanceKey: 'test2',
+        maxUploadSize: '1kb',
+        headerAliases: {
+          'X-Parse-Application-Id': ['X-App-Id'],
+        },
+      });
+      const graphQLServerWithAliases = new ParseGraphQLServer(parseServerWithAliases, {
+        graphQLPath: '/graphql',
+        playgroundPath: '/playground',
+      });
+      const middlewares = require('../lib/middlewares');
+      const useCalls = [];
+      const app = {
+        use: (...args) => {
+          useCalls.push(args);
+        },
+      };
+      graphQLServerWithAliases.applyGraphQL(app);
+      const parseHeadersIndex = useCalls.findIndex(
+        ([path, middleware]) => path === '/graphql' && middleware === middlewares.handleParseHeaders
+      );
+      const [, aliasMiddleware] = useCalls[parseHeadersIndex - 1];
+      const req = {
+        originalUrl: '/graphql',
+        url: '/graphql',
+        protocol: 'http',
+        headers: {
+          host: 'localhost',
+          'x-parse-application-id': parseServerWithAliases.config.appId,
+          'x-app-id': 'other-app-id',
+        },
+        get: key => req.headers[key.toLowerCase()],
+      };
+      await new Promise(resolve => aliasMiddleware(req, {}, resolve));
+      expect(req.headers['x-parse-application-id']).toBe(parseServerWithAliases.config.appId);
+    });
   });
 
   describe('applyPlayground', () => {

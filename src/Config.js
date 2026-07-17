@@ -776,10 +776,33 @@ export class Config {
       if (Object.prototype.toString.call(headerAliases) !== '[object Object]') {
         throw 'Header aliases must be an object';
       }
+      const SAFE_HEADER_NAME = /^[A-Za-z0-9-]+$/;
+      const ALLOWED_CANONICAL_HEADERS = new Set([
+        'x-parse-application-id',
+        'x-parse-session-token',
+        'x-parse-master-key',
+        'x-parse-maintenance-key',
+        'x-parse-installation-id',
+        'x-parse-client-key',
+        'x-parse-javascript-key',
+        'x-parse-windows-key',
+        'x-parse-rest-api-key',
+      ]);
       const entries = Object.entries(headerAliases);
       for (const [canonicalHeader, aliases] of entries) {
         if (typeof canonicalHeader !== 'string' || !canonicalHeader.trim().length) {
           throw 'Header aliases must contain non-empty string keys';
+        }
+        const trimmedCanonical = canonicalHeader.trim();
+        if (!SAFE_HEADER_NAME.test(trimmedCanonical)) {
+          throw new Error(
+            `Header aliases canonical '${canonicalHeader}' contains invalid characters`
+          );
+        }
+        if (!ALLOWED_CANONICAL_HEADERS.has(trimmedCanonical.toLowerCase())) {
+          throw new Error(
+            `Header aliases canonical '${canonicalHeader}' is not an allowed Parse header`
+          );
         }
         if (!Array.isArray(aliases)) {
           throw `Header aliases for '${canonicalHeader}' must be an array`;
@@ -789,6 +812,12 @@ export class Config {
             throw `Header aliases for '${canonicalHeader}' must only contain strings`;
           } else if (!alias.trim().length) {
             throw `Header aliases for '${canonicalHeader}' must not contain empty strings`;
+          }
+          const trimmedAlias = alias.trim();
+          if (!SAFE_HEADER_NAME.test(trimmedAlias)) {
+            throw new Error(
+              `Header alias '${alias}' for canonical header '${canonicalHeader}' contains invalid characters`
+            );
           }
         });
       }
