@@ -6,6 +6,12 @@ import UsersRouter from './UsersRouter';
 
 export class AggregateRouter extends ClassesRouter {
   async handleFind(req) {
+    if (req.auth && req.auth.isReadOnly && req.config && !req.config.allowAggregationForReadOnlyMasterKey) {
+      throw new Parse.Error(
+        Parse.Error.OPERATION_FORBIDDEN,
+        'Cannot run an aggregation pipeline when using the readOnlyMasterKey'
+      );
+    }
     const body = Object.assign(req.body || {}, ClassesRouter.JSONFromQuery(req.query));
     const options = {};
     if (body.distinct) {
@@ -27,6 +33,24 @@ export class AggregateRouter extends ClassesRouter {
       options.readPreference = body.readPreference;
       delete body.readPreference;
     }
+    if (typeof body.rawValues === 'boolean') {
+      options.rawValues = body.rawValues;
+      delete body.rawValues;
+    }
+    if (typeof body.rawFieldNames === 'boolean') {
+      options.rawFieldNames = body.rawFieldNames;
+      delete body.rawFieldNames;
+    }
+    const queryOptions = (req.config && req.config.query) || {};
+    if (options.rawValues === undefined && typeof queryOptions.aggregationRawValues === 'boolean') {
+      options.rawValues = queryOptions.aggregationRawValues;
+    }
+    if (
+      options.rawFieldNames === undefined &&
+      typeof queryOptions.aggregationRawFieldNames === 'boolean'
+    ) {
+      options.rawFieldNames = queryOptions.aggregationRawFieldNames;
+    }
     options.pipeline = AggregateRouter.getPipeline(body);
     if (typeof body.where === 'string') {
       try {
@@ -42,12 +66,13 @@ export class AggregateRouter extends ClassesRouter {
         this.className(req),
         body.where,
         options,
-        req.info.clientSDK,
         req.info.context
       );
-      for (const result of response.results) {
-        if (typeof result === 'object') {
-          UsersRouter.removeHiddenProperties(result);
+      if (!options.rawValues && !options.rawFieldNames) {
+        for (const result of response.results) {
+          if (typeof result === 'object') {
+            UsersRouter.removeHiddenProperties(result);
+          }
         }
       }
       return { response };

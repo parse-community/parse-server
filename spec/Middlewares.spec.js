@@ -113,7 +113,6 @@ describe('middlewares', () => {
   });
 
   const BodyParams = {
-    clientVersion: '_ClientVersion',
     installationId: '_InstallationId',
     sessionToken: '_SessionToken',
     masterKey: '_MasterKey',
@@ -579,12 +578,6 @@ describe('middlewares', () => {
       expect(fakeRes.status).toHaveBeenCalledWith(403);
     });
 
-    it('should reject non-string _ClientVersion in body', async () => {
-      fakeReq.body._ClientVersion = { toLowerCase: 'evil' };
-      await middlewares.handleParseHeaders(fakeReq, fakeRes);
-      expect(fakeRes.status).toHaveBeenCalledWith(403);
-    });
-
     it('should reject non-string _InstallationId in body', async () => {
       fakeReq.body._InstallationId = { toString: 'evil' };
       await middlewares.handleParseHeaders(fakeReq, fakeRes);
@@ -613,7 +606,6 @@ describe('middlewares', () => {
       // Each request should be handled independently without affecting server stability.
       const payloads = [
         { _SessionToken: { toString: 'evil' } },
-        { _ClientVersion: { toLowerCase: 'evil' } },
         { _InstallationId: [1, 2, 3] },
         { _ContentType: { toString: 'evil' } },
       ];
@@ -650,12 +642,10 @@ describe('middlewares', () => {
 
     it('should still accept valid string body fields', done => {
       fakeReq.body._SessionToken = 'r:validtoken';
-      fakeReq.body._ClientVersion = 'js1.0.0';
       fakeReq.body._InstallationId = 'install123';
       fakeReq.body._ContentType = 'application/json';
       middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
         expect(fakeReq.info.sessionToken).toEqual('r:validtoken');
-        expect(fakeReq.info.clientVersion).toEqual('js1.0.0');
         expect(fakeReq.info.installationId).toEqual('install123');
         expect(fakeReq.headers['content-type']).toEqual('application/json');
         done();

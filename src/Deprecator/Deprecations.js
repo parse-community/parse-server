@@ -108,4 +108,14 @@ module.exports = [
     changeNewDefault: 'false',
     solution: "Set 'protectedFieldsSaveResponseExempt' to 'false' to strip protected fields from write operation responses (create, update), consistent with how they are stripped from query results. Set to 'true' to keep the current behavior where protected fields are included in write responses.",
   },
+  {
+    optionKey: 'installation.duplicateDeviceTokenActionEnforceAuth',
+    changeNewDefault: 'true',
+    solution: "Set 'installation.duplicateDeviceTokenActionEnforceAuth' to 'true' to enforce the caller's auth context (and the resulting ACL and CLP) when Parse Server deduplicates _Installation records sharing the same deviceToken. Set to 'false' to keep the current behavior of bypassing permissions on the dedup operation.",
+  },
+  {
+    optionKey: 'allowAggregationForReadOnlyMasterKey',
+    changeNewDefault: 'false',
+    solution: "Set 'allowAggregationForReadOnlyMasterKey' to 'false' to prevent the read-only master key from running aggregation pipelines, which can include write-capable stages (e.g. '$out', '$merge'). Set to 'true' to keep the current behavior where the read-only master key can run aggregation pipelines.",
+  },
 ];

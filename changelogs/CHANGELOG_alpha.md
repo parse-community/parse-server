@@ -1,3 +1,241 @@
+## [9.10.1-alpha.3](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.2...9.10.1-alpha.3) (2026-07-16)
+
+
+### Bug Fixes
+
+* Bump ws from 8.20.0 to 8.21.0 ([#10576](https://github.com/parse-community/parse-server/issues/10576)) ([629426f](https://github.com/parse-community/parse-server/commit/629426f00d619ca624fc2d7e64d98f406ce20acc))
+
+## [9.10.1-alpha.2](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.1...9.10.1-alpha.2) (2026-07-14)
+
+
+### Bug Fixes
+
+* Creating a session can delete another user's session ([#10582](https://github.com/parse-community/parse-server/issues/10582)) ([0df8779](https://github.com/parse-community/parse-server/commit/0df8779c2ecccb055e615d42ee85ae2bce491670))
+
+## [9.10.1-alpha.1](https://github.com/parse-community/parse-server/compare/9.10.0...9.10.1-alpha.1) (2026-07-13)
+
+
+### Bug Fixes
+
+* Bump follow-redirects from 1.15.11 to 1.16.0 ([#10577](https://github.com/parse-community/parse-server/issues/10577)) ([d577327](https://github.com/parse-community/parse-server/commit/d577327bff073b0436a158e9694feed8eed2f8e7))
+
+# [9.10.0-alpha.8](https://github.com/parse-community/parse-server/compare/9.10.0-alpha.7...9.10.0-alpha.8) (2026-07-13)
+
+
+### Bug Fixes
+
+* GeoPoint distance queries fail with an internal server error on MongoDB 8.3 and later ([#10572](https://github.com/parse-community/parse-server/issues/10572)) ([b706c22](https://github.com/parse-community/parse-server/commit/b706c22cd9e47d91ec00d3f6050d161fd721e2e1))
+
+# [9.10.0-alpha.7](https://github.com/parse-community/parse-server/compare/9.10.0-alpha.6...9.10.0-alpha.7) (2026-07-11)
+
+
+### Bug Fixes
+
+* Cloud Code beforeFind trigger context is not isolated from prototype pollution ([#10570](https://github.com/parse-community/parse-server/issues/10570)) ([bea001e](https://github.com/parse-community/parse-server/commit/bea001e7ef9cf991e99fe1eb1e8e25ef71c530f7))
+
+# [9.10.0-alpha.6](https://github.com/parse-community/parse-server/compare/9.10.0-alpha.5...9.10.0-alpha.6) (2026-07-10)
+
+
+### Bug Fixes
+
+* GraphQL error messages disclose pointer and relation target class names when public introspection is disabled ([GHSA-r2g6-4f6j-f6rf](https://github.com/parse-community/parse-server/security/advisories/GHSA-r2g6-4f6j-f6rf)) ([#10568](https://github.com/parse-community/parse-server/issues/10568)) ([cb9b542](https://github.com/parse-community/parse-server/commit/cb9b54264d4dae4c0f9306924c34d805130b600e))
+
+# [9.10.0-alpha.5](https://github.com/parse-community/parse-server/compare/9.10.0-alpha.4...9.10.0-alpha.5) (2026-07-10)
+
+
+### Bug Fixes
+
+* GraphQL error messages disclose required input field names when public introspection is disabled ([GHSA-2fgh-8j2g-w354](https://github.com/parse-community/parse-server/security/advisories/GHSA-2fgh-8j2g-w354)) ([#10566](https://github.com/parse-community/parse-server/issues/10566)) ([d96c945](https://github.com/parse-community/parse-server/commit/d96c945b6ddee652ecf27b240292e569367be550)), closes [GHSA-2f#8j2g-w354](https://github.com/GHSA-2f/issues/8j2g-w354) [/github.com/parse-community/parse-server/security/advisories/GHSA-2f#8j2g-w354](https://github.com//github.com/parse-community/parse-server/security/advisories/GHSA-2f/issues/8j2g-w354)
+
+# [9.10.0-alpha.4](https://github.com/parse-community/parse-server/compare/9.10.0-alpha.3...9.10.0-alpha.4) (2026-07-07)
+
+
+### Bug Fixes
+
+* GraphQL variable-coercion suggestions disclose schema to unauthenticated callers ([GHSA-9g8f-h8f3-hjcm](https://github.com/parse-community/parse-server/security/advisories/GHSA-9g8f-h8f3-hjcm)) ([#10563](https://github.com/parse-community/parse-server/issues/10563)) ([2625489](https://github.com/parse-community/parse-server/commit/2625489a27c07aed1283c5dc9c5e8f8f53a9e44c))
+
+# [9.10.0-alpha.3](https://github.com/parse-community/parse-server/compare/9.10.0-alpha.2...9.10.0-alpha.3) (2026-07-07)
+
+
+### Bug Fixes
+
+* NumberOrBoolean config option (cluster) value not coerced from env/CLI ([#10531](https://github.com/parse-community/parse-server/issues/10531)) ([459786f](https://github.com/parse-community/parse-server/commit/459786fd41cc835ec650d951258f011737cdb4c9))
+
+# [9.10.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.10.0-alpha.1...9.10.0-alpha.2) (2026-06-25)
+
+
+### Bug Fixes
+
+* Stored XSS via malformed Content-Type bypassing file upload extension blocklist ([GHSA-r899-h629-j84r](https://github.com/parse-community/parse-server/security/advisories/GHSA-r899-h629-j84r)) ([#10521](https://github.com/parse-community/parse-server/issues/10521)) ([cce91e5](https://github.com/parse-community/parse-server/commit/cce91e554818492d1b153c46dc3b91fa6e0309bc))
+
+# [9.10.0-alpha.1](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.13...9.10.0-alpha.1) (2026-06-19)
+
+
+### Features
+
+* Add option to disallow aggregation pipelines for the read-only master key ([#10517](https://github.com/parse-community/parse-server/issues/10517)) ([816078f](https://github.com/parse-community/parse-server/commit/816078fff7f95f333a99c1e2d7166a585742d466))
+
+## [9.9.1-alpha.13](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.12...9.9.1-alpha.13) (2026-06-19)
+
+
+### Bug Fixes
+
+* LiveQuery discloses object data to a subscriber across an ACL read-access change ([GHSA-97pr-9hgg-3p8r](https://github.com/parse-community/parse-server/security/advisories/GHSA-97pr-9hgg-3p8r)) ([#10515](https://github.com/parse-community/parse-server/issues/10515)) ([e9c85df](https://github.com/parse-community/parse-server/commit/e9c85dfe40a866a55ebae3b6ae56285ac0a22e64))
+
+## [9.9.1-alpha.12](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.11...9.9.1-alpha.12) (2026-06-17)
+
+
+### Bug Fixes
+
+* Denial of service via exponential-time processing of deeply nested query operators ([GHSA-cgxm-vr2f-6fj8](https://github.com/parse-community/parse-server/security/advisories/GHSA-cgxm-vr2f-6fj8)) ([#10511](https://github.com/parse-community/parse-server/issues/10511)) ([1103c7a](https://github.com/parse-community/parse-server/commit/1103c7a890e0455ba3dccd4bc5db17efe1789c9a))
+
+## [9.9.1-alpha.11](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.10...9.9.1-alpha.11) (2026-06-16)
+
+
+### Bug Fixes
+
+* Stored XSS via non-standard file extension bypassing file upload extension blocklist ([GHSA-v8x7-r927-cc93](https://github.com/parse-community/parse-server/security/advisories/GHSA-v8x7-r927-cc93)) ([#10505](https://github.com/parse-community/parse-server/issues/10505)) ([be12a60](https://github.com/parse-community/parse-server/commit/be12a60d65b6e140481882037fb896b1f951df50))
+
+## [9.9.1-alpha.10](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.9...9.9.1-alpha.10) (2026-06-12)
+
+
+### Bug Fixes
+
+* Middleware route checks do not match routing-equivalent path variants (trailing slash, case) ([#10501](https://github.com/parse-community/parse-server/issues/10501)) ([f861210](https://github.com/parse-community/parse-server/commit/f8612109e3175399b4f814efcc961128de6143a5))
+
+## [9.9.1-alpha.9](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.8...9.9.1-alpha.9) (2026-06-11)
+
+
+### Bug Fixes
+
+* rateLimit on exact static routes is bypassed by appending a query string ([#10500](https://github.com/parse-community/parse-server/issues/10500)) ([880e8e6](https://github.com/parse-community/parse-server/commit/880e8e6929fd62ed3680b138613bcfdcd572db07))
+
+## [9.9.1-alpha.8](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.7...9.9.1-alpha.8) (2026-06-10)
+
+
+### Bug Fixes
+
+* LiveQuery subscriptions leak when a client reuses a subscribe requestId ([#10499](https://github.com/parse-community/parse-server/issues/10499)) ([3fad4fb](https://github.com/parse-community/parse-server/commit/3fad4fb1c4b41f51dab96532245bb302d2be30e6))
+
+## [9.9.1-alpha.7](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.6...9.9.1-alpha.7) (2026-06-06)
+
+
+### Bug Fixes
+
+* Cloud Function multipart requests bypass the maxUploadSize limit ([#10498](https://github.com/parse-community/parse-server/issues/10498)) ([f12e1c3](https://github.com/parse-community/parse-server/commit/f12e1c3e31fb211bb7fe106a9a295ac7d0dd4ea7))
+
+## [9.9.1-alpha.6](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.5...9.9.1-alpha.6) (2026-06-03)
+
+
+### Bug Fixes
+
+* Relation `$relatedTo` query bypasses `protectedFields` and owning-object ACL ([GHSA-wmwx-jr2p-4j4r](https://github.com/parse-community/parse-server/security/advisories/GHSA-wmwx-jr2p-4j4r)) ([#10493](https://github.com/parse-community/parse-server/issues/10493)) ([43658f1](https://github.com/parse-community/parse-server/commit/43658f1fd83689b24a4350094f1071ac555ac9b3))
+
+## [9.9.1-alpha.5](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.4...9.9.1-alpha.5) (2026-06-03)
+
+
+### Bug Fixes
+
+* Endpoints `/login` and `/verifyPassword` disclose MFA secrets and protected fields when `_User` get is denied ([GHSA-75v4-m273-5j49](https://github.com/parse-community/parse-server/security/advisories/GHSA-75v4-m273-5j49)) ([#10492](https://github.com/parse-community/parse-server/issues/10492)) ([83e90ed](https://github.com/parse-community/parse-server/commit/83e90edbe4224c81172a20e40fa986662c9394ca))
+
+## [9.9.1-alpha.4](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.3...9.9.1-alpha.4) (2026-06-01)
+
+
+### Bug Fixes
+
+* Stored XSS via trailing-dot filename bypassing file upload extension blocklist ([GHSA-7wqv-xjf3-x35v](https://github.com/parse-community/parse-server/security/advisories/GHSA-7wqv-xjf3-x35v)) ([#10489](https://github.com/parse-community/parse-server/issues/10489)) ([66484ce](https://github.com/parse-community/parse-server/commit/66484ce8fdd87a5d4c23bf9e40f7ea379b4dce79))
+
+## [9.9.1-alpha.3](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.2...9.9.1-alpha.3) (2026-05-27)
+
+
+### Bug Fixes
+
+* Server option routeAllowList is bypassable through batch sub-requests ([GHSA-p84r-h6rx-f2xr](https://github.com/parse-community/parse-server/security/advisories/GHSA-p84r-h6rx-f2xr)) ([#10482](https://github.com/parse-community/parse-server/issues/10482)) ([552c6dd](https://github.com/parse-community/parse-server/commit/552c6dd754638c9f546fbceecd2ba0f7225a95d1))
+
+## [9.9.1-alpha.2](https://github.com/parse-community/parse-server/compare/9.9.1-alpha.1...9.9.1-alpha.2) (2026-05-18)
+
+
+### Bug Fixes
+
+* GraphQL "Did you mean" validation suggestions disclose schema to unauthenticated callers ([GHSA-8cph-rgr4-g5vj](https://github.com/parse-community/parse-server/security/advisories/GHSA-8cph-rgr4-g5vj)) ([#10467](https://github.com/parse-community/parse-server/issues/10467)) ([155123a](https://github.com/parse-community/parse-server/commit/155123ade9bc88cdf4807cf267ea1196f9274773))
+
+## [9.9.1-alpha.1](https://github.com/parse-community/parse-server/compare/9.9.0...9.9.1-alpha.1) (2026-05-17)
+
+
+### Bug Fixes
+
+* Pre-authentication denial of service via client version header regex backtracking ([GHSA-38m6-82c8-4xfm](https://github.com/parse-community/parse-server/security/advisories/GHSA-38m6-82c8-4xfm)) ([#10463](https://github.com/parse-community/parse-server/issues/10463)) ([56c159e](https://github.com/parse-community/parse-server/commit/56c159ec962d729df09ccaa5cc2537751511e375))
+
+# [9.9.0-alpha.3](https://github.com/parse-community/parse-server/compare/9.9.0-alpha.2...9.9.0-alpha.3) (2026-04-30)
+
+
+### Features
+
+* Add installation deviceToken deduplication options ([#10451](https://github.com/parse-community/parse-server/issues/10451)) ([9fee1a0](https://github.com/parse-community/parse-server/commit/9fee1a07080ab8bda2a3d4798881bcc288e5b37a))
+
+# [9.9.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.9.0-alpha.1...9.9.0-alpha.2) (2026-04-26)
+
+
+### Bug Fixes
+
+* MFA SMS one-time password accepted twice under concurrent login ([GHSA-jpq4-7fmq-q5fj](https://github.com/parse-community/parse-server/security/advisories/GHSA-jpq4-7fmq-q5fj)) ([#10448](https://github.com/parse-community/parse-server/issues/10448)) ([725be0d](https://github.com/parse-community/parse-server/commit/725be0d602baa619492606e7b3f6829082d93a4c))
+
+# [9.9.0-alpha.1](https://github.com/parse-community/parse-server/compare/9.8.1-alpha.1...9.9.0-alpha.1) (2026-04-17)
+
+
+### Features
+
+* Add `rawValues` and `rawFieldNames` options for aggregation queries ([#10438](https://github.com/parse-community/parse-server/issues/10438)) ([f26700e](https://github.com/parse-community/parse-server/commit/f26700e39d1980940467bee0d26ca3deb88e3924))
+
+## [9.8.1-alpha.1](https://github.com/parse-community/parse-server/compare/9.8.0...9.8.1-alpha.1) (2026-04-12)
+
+
+### Bug Fixes
+
+* Context mutations leak across requests in `ParseServerRESTController` ([#10291](https://github.com/parse-community/parse-server/issues/10291)) ([60a58ec](https://github.com/parse-community/parse-server/commit/60a58ec11a8bb67aaf217b1e7362b89d742b66da))
+
+# [9.8.0-alpha.13](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.12...9.8.0-alpha.13) (2026-04-12)
+
+
+### Bug Fixes
+
+* Facebook Standard Login missing app ID validation ([#10429](https://github.com/parse-community/parse-server/issues/10429)) ([fd31159](https://github.com/parse-community/parse-server/commit/fd31159859ed90f57eb3713f82c9f5b04b20a28c))
+
+# [9.8.0-alpha.12](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.11...9.8.0-alpha.12) (2026-04-10)
+
+
+### Features
+
+* Add `requestComplexity.subqueryLimit` option to limit subquery results ([#10420](https://github.com/parse-community/parse-server/issues/10420)) ([bf40004](https://github.com/parse-community/parse-server/commit/bf40004d258f114c06a3085052ca094384b52b43))
+
+# [9.8.0-alpha.11](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.10...9.8.0-alpha.11) (2026-04-09)
+
+
+### Features
+
+* Add `requestComplexity.allowRegex` option to disable `$regex` query operator ([#10418](https://github.com/parse-community/parse-server/issues/10418)) ([18482e3](https://github.com/parse-community/parse-server/commit/18482e386c1e723da2df3137f61fa5e2bc8983a6))
+
+# [9.8.0-alpha.10](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.9...9.8.0-alpha.10) (2026-04-07)
+
+
+### Bug Fixes
+
+* Master key does not bypass `protectedFields` on various endpoints ([#10412](https://github.com/parse-community/parse-server/issues/10412)) ([c0889c8](https://github.com/parse-community/parse-server/commit/c0889c8575ee6c6ee01c79cd1ae457124e2a08b3))
+
+# [9.8.0-alpha.9](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.8...9.8.0-alpha.9) (2026-04-07)
+
+
+### Bug Fixes
+
+* Endpoints `/login` and `/verifyPassword` ignore `_User` `protectedFields` ([#10409](https://github.com/parse-community/parse-server/issues/10409)) ([8a3db3b](https://github.com/parse-community/parse-server/commit/8a3db3b9666ea998a8843c629e1af55b105e22e0))
+
+# [9.8.0-alpha.8](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.7...9.8.0-alpha.8) (2026-04-07)
+
+
+### Bug Fixes
+
+* Endpoint `/upgradeToRevocableSession` ignores `_Session` `protectedFields` ([#10408](https://github.com/parse-community/parse-server/issues/10408)) ([c136e2b](https://github.com/parse-community/parse-server/commit/c136e2b7ab74609a5127fb68fc5ba40fef440f48))
+
 # [9.8.0-alpha.7](https://github.com/parse-community/parse-server/compare/9.8.0-alpha.6...9.8.0-alpha.7) (2026-04-06)
 
 

@@ -159,7 +159,10 @@ const validateQuery = (
   }
 
   Object.keys(query).forEach(key => {
-    if (query && query[key] && query[key].$regex) {
+    if (query && query[key] && query[key].$regex !== undefined) {
+      if (!isMaster && rc && rc.allowRegex === false) {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, '$regex operator is not allowed');
+      }
       if (typeof query[key].$regex !== 'string') {
         throw new Parse.Error(Parse.Error.INVALID_QUERY, '$regex value must be a string');
       }
@@ -1141,36 +1144,167 @@ class DatabaseController {
 
   // Modifies query so that it no longer has $relatedTo
   // Returns a promise that resolves when query is mutated
-  reduceRelationKeys(className: string, query: any, queryOptions: any): ?Promise<void> {
+  reduceRelationKeys(
+    className: string,
+    query: any,
+    queryOptions: any,
+    auth: any = {},
+    aclGroup: any[] = [],
+    isMaster: boolean = false,
+    schemaController: ?SchemaController.SchemaController
+  ): ?Promise<void> {
     if (query['$or']) {
       return Promise.all(
         query['$or'].map(aQuery => {
-          return this.reduceRelationKeys(className, aQuery, queryOptions);
+          return this.reduceRelationKeys(
+            className,
+            aQuery,
+            queryOptions,
+            auth,
+            aclGroup,
+            isMaster,
+            schemaController
+          );
         })
       );
     }
     if (query['$and']) {
       return Promise.all(
         query['$and'].map(aQuery => {
-          return this.reduceRelationKeys(className, aQuery, queryOptions);
+          return this.reduceRelationKeys(
+            className,
+            aQuery,
+            queryOptions,
+            auth,
+            aclGroup,
+            isMaster,
+            schemaController
+          );
+        })
+      );
+    }
+    if (Array.isArray(query['$nor'])) {
+      // Guard with Array.isArray (unlike the legacy $or/$and checks above) so a
+      // malformed non-array $nor still falls through to validateQuery and yields
+      // the existing INVALID_QUERY error instead of throwing here.
+      return Promise.all(
+        query['$nor'].map(aQuery => {
+          return this.reduceRelationKeys(
+            className,
+            aQuery,
+            queryOptions,
+            auth,
+            aclGroup,
+            isMaster,
+            schemaController
+          );
         })
       );
     }
     var relatedTo = query['$relatedTo'];
     if (relatedTo) {
-      return this.relatedIds(
-        relatedTo.object.className,
-        relatedTo.key,
-        relatedTo.object.objectId,
-        queryOptions
-      )
-        .then(ids => {
+      return this.authorizeRelatedToQuery(relatedTo, auth, aclGroup, isMaster, schemaController)
+        .then(canReadOwningObject => {
           delete query['$relatedTo'];
-          this.addInObjectIdsIds(ids, query);
-          return this.reduceRelationKeys(className, query, queryOptions);
+          if (!canReadOwningObject) {
+            // The caller is not allowed to read the owning object, so the
+            // relation must not disclose any linked objects (and must not act
+            // as a membership oracle for a known related id).
+            this.addInObjectIdsIds([], query);
+            return this.reduceRelationKeys(
+              className,
+              query,
+              queryOptions,
+              auth,
+              aclGroup,
+              isMaster,
+              schemaController
+            );
+          }
+          return this.relatedIds(
+            relatedTo.object.className,
+            relatedTo.key,
+            relatedTo.object.objectId,
+            queryOptions
+          ).then(ids => {
+            this.addInObjectIdsIds(ids, query);
+            return this.reduceRelationKeys(
+              className,
+              query,
+              queryOptions,
+              auth,
+              aclGroup,
+              isMaster,
+              schemaController
+            );
+          });
         })
         .then(() => {});
     }
+  }
+
+  // Authorizes a `$relatedTo` relation query against the owning object before
+  // its join table is read by `relatedIds`. Without this check, `$relatedTo`
+  // bypasses both `protectedFields` and the owning object's ACL/CLP, because
+  // the downstream protected-field and ACL filters only apply to the queried
+  // (target) class, never to the owning class referenced by `$relatedTo`.
+  //
+  // - Throws `OPERATION_FORBIDDEN` if the relation key is a protected field on
+  //   the owning class for the caller's auth context (mirrors the protected
+  //   WHERE-field denial in `RestQuery.denyProtectedFields`).
+  // - Resolves to `true` if the caller may read the owning object (so the join
+  //   table read may proceed), or `false` otherwise (so the relation yields no
+  //   results and cannot be used as a membership oracle).
+  //
+  // Master and maintenance requests bypass both checks by design.
+  authorizeRelatedToQuery(
+    relatedTo: any,
+    auth: any = {},
+    aclGroup: any[] = [],
+    isMaster: boolean = false,
+    schemaController: ?SchemaController.SchemaController
+  ): Promise<boolean> {
+    if (isMaster) {
+      return Promise.resolve(true);
+    }
+    const owningClassName = relatedTo && relatedTo.object && relatedTo.object.className;
+    const owningId = relatedTo && relatedTo.object && relatedTo.object.objectId;
+    const relationKey = relatedTo && relatedTo.key;
+    return this.loadSchemaIfNeeded(schemaController).then(loadedSchema => {
+      // 1. The relation key must not be a protected field on the owning class.
+      const protectedFields =
+        this.addProtectedFields(loadedSchema, owningClassName, {}, aclGroup, auth) || [];
+      const rootField = typeof relationKey === 'string' ? relationKey.split('.')[0] : relationKey;
+      if (protectedFields.includes(relationKey) || protectedFields.includes(rootField)) {
+        throw createSanitizedError(
+          Parse.Error.OPERATION_FORBIDDEN,
+          `This user is not allowed to query ${relationKey} on class ${owningClassName}`,
+          this.options
+        );
+      }
+      // 2. The caller must be able to read the owning object itself. A read with
+      //    the caller's auth context applies the owning class CLP, the object
+      //    ACL and pointer permissions. Any "not authorized" or "not found"
+      //    outcome maps to "cannot read", so the relation returns no results.
+      return this.find(
+        owningClassName,
+        { objectId: owningId },
+        { acl: aclGroup, limit: 1, keys: ['objectId'], op: 'get' },
+        auth,
+        loadedSchema
+      )
+        .then(results => Array.isArray(results) && results.length > 0)
+        .catch(error => {
+          if (
+            error instanceof Parse.Error &&
+            (error.code === Parse.Error.OPERATION_FORBIDDEN ||
+              error.code === Parse.Error.OBJECT_NOT_FOUND)
+          ) {
+            return false;
+          }
+          throw error;
+        });
+    });
   }
 
   addInObjectIdsIds(ids: ?Array<string> = null, query: any) {
@@ -1266,6 +1400,8 @@ class DatabaseController {
       caseInsensitive = false,
       explain,
       comment,
+      rawValues,
+      rawFieldNames,
     }: any = {},
     auth: any = {},
     validSchemaController: SchemaController.SchemaController
@@ -1336,7 +1472,17 @@ class DatabaseController {
             ? Promise.resolve()
             : schemaController.validatePermission(className, aclGroup, op)
           )
-            .then(() => this.reduceRelationKeys(className, query, queryOptions))
+            .then(() =>
+              this.reduceRelationKeys(
+                className,
+                query,
+                queryOptions,
+                auth,
+                aclGroup,
+                isMaster,
+                schemaController
+              )
+            )
             .then(() => this.reduceInRelation(className, query, schemaController))
             .then(() => {
               let protectedFields;
@@ -1406,7 +1552,9 @@ class DatabaseController {
                     readPreference,
                     hint,
                     explain,
-                    comment
+                    comment,
+                    rawValues,
+                    rawFieldNames
                   );
                 }
               } else if (explain) {

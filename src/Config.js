@@ -15,6 +15,7 @@ import {
   FileDownloadOptions,
   FileUploadOptions,
   IdempotencyOptions,
+  InstallationOptions,
   LiveQueryOptions,
   LogLevels,
   PagesOptions,
@@ -148,6 +149,7 @@ export class Config {
     requestComplexity,
     liveQuery,
     routeAllowList,
+    installation,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -199,6 +201,7 @@ export class Config {
     this.validateRequestComplexity(requestComplexity);
     this.validateLiveQueryOptions(liveQuery);
     this.validateRouteAllowList(routeAllowList);
+    this.validateInstallation(installation);
   }
 
   static validateCustomPages(customPages) {
@@ -699,12 +702,56 @@ export class Config {
     for (const key of validKeys) {
       if (requestComplexity[key] !== undefined) {
         const value = requestComplexity[key];
-        if (!Number.isInteger(value) || (value < 1 && value !== -1)) {
+        const def = RequestComplexityOptions[key];
+        if (typeof def.default === 'boolean') {
+          if (typeof value !== 'boolean') {
+            throw new Error(`requestComplexity.${key} must be a boolean.`);
+          }
+        } else if (!Number.isInteger(value) || (value < 1 && value !== -1)) {
           throw new Error(`requestComplexity.${key} must be a positive integer or -1 to disable.`);
         }
       } else {
         requestComplexity[key] = RequestComplexityOptions[key].default;
       }
+    }
+  }
+
+  static validateInstallation(installation) {
+    if (installation === undefined) {
+      return;
+    }
+    if (typeof installation !== 'object' || Array.isArray(installation) || installation === null) {
+      throw 'installation must be an object.';
+    }
+    const validKeys = [
+      'duplicateDeviceTokenActionEnforceAuth',
+      'duplicateDeviceTokenAction',
+      'duplicateDeviceTokenMergePriority',
+    ];
+    for (const key of Object.keys(installation)) {
+      if (!validKeys.includes(key)) {
+        throw `installation contains unknown property '${key}'.`;
+      }
+    }
+    if (installation.duplicateDeviceTokenActionEnforceAuth === undefined) {
+      installation.duplicateDeviceTokenActionEnforceAuth =
+        InstallationOptions.duplicateDeviceTokenActionEnforceAuth.default;
+    } else if (typeof installation.duplicateDeviceTokenActionEnforceAuth !== 'boolean') {
+      throw 'installation.duplicateDeviceTokenActionEnforceAuth must be a boolean.';
+    }
+    const validActions = ['delete', 'update'];
+    if (installation.duplicateDeviceTokenAction === undefined) {
+      installation.duplicateDeviceTokenAction =
+        InstallationOptions.duplicateDeviceTokenAction.default;
+    } else if (!validActions.includes(installation.duplicateDeviceTokenAction)) {
+      throw "installation.duplicateDeviceTokenAction must be one of: 'delete', 'update'.";
+    }
+    const validPriorities = ['deviceToken', 'installationId'];
+    if (installation.duplicateDeviceTokenMergePriority === undefined) {
+      installation.duplicateDeviceTokenMergePriority =
+        InstallationOptions.duplicateDeviceTokenMergePriority.default;
+    } else if (!validPriorities.includes(installation.duplicateDeviceTokenMergePriority)) {
+      throw "installation.duplicateDeviceTokenMergePriority must be one of: 'deviceToken', 'installationId'.";
     }
   }
 
