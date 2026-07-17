@@ -1,7 +1,10 @@
 import logger from '../logger';
 
 import type { FlattenedObjectData } from './Subscription';
-export type Message = { [attr: string]: any };
+export type Message = {
+  [attr: string]: any,
+  results?: Array<FlattenedObjectData>,
+};
 
 const dafaultFields = ['className', 'objectId', 'updatedAt', 'createdAt', 'ACL'];
 
@@ -139,9 +142,9 @@ class Client {
 
     if (Array.isArray(results)) {
       const keys = this.subscriptionInfos.get(subscriptionId)?.keys;
-      response['results'] = results.map(obj => this._toJSONWithFields(obj, keys));
+      response.results = results.map(obj => this._toJSONWithFields(obj, keys));
     } else {
-      response['results'] = [];
+      response.results = [];
     }
 
     Client.pushResponse(this.parseWebSocket, JSON.stringify(response));
