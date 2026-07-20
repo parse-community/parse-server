@@ -177,7 +177,7 @@ function mapperFor(elt, t) {
       return wrap(t.identifier('moduleOrObjectParser'));
     }
     if (type == 'NumberOrBoolean') {
-      return wrap(t.identifier('numberOrBooleanParser'));
+      return t.callExpression(wrap(t.identifier('numberOrBoolParser')), [t.stringLiteral(elt.name)]);
     }
     if (type == 'NumberOrString') {
       return t.callExpression(wrap(t.identifier('numberOrStringParser')), [t.stringLiteral(elt.name)]);
