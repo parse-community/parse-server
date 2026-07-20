@@ -128,7 +128,7 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
 
   // Handle update operators
   if (typeof restValue === 'object' && '__op' in restValue) {
-    return { key, value: transformUpdateOperator(restValue, false) };
+    return { key, value: transformUpdateOperator(restValue) };
   }
 
   // Handle normal objects by recursing
@@ -150,11 +150,6 @@ const isStartsWithRegex = value => {
 };
 
 const isAllValuesRegexOrNone = values => {
-  /* istanbul ignore if: the only caller guards with isAnyValueRegex, which short-circuits on an empty/non-array value */
-  if (!values || !Array.isArray(values) || values.length === 0) {
-    return true;
-  }
-
   const firstValuesIsRegex = isStartsWithRegex(values[0]);
   if (values.length === 1) {
     return firstValuesIsRegex;
@@ -186,33 +181,19 @@ const transformInteriorValue = restValue => {
       "Nested keys should not contain the '$' or '.' characters"
     );
   }
-  // Handle atomic values
+  // Handle atomic values; transformInteriorAtom returns plain arrays and
+  // objects unchanged, so recurse into those.
   var value = transformInteriorAtom(restValue);
-  if (value !== CannotTransform) {
-    if (value && typeof value === 'object') {
-      if (Utils.isDate(value)) {
-        return value;
-      }
-      if (Array.isArray(value)) {
-        value = value.map(transformInteriorValue);
-      } else {
-        value = mapValues(value, transformInteriorValue);
-      }
+  if (value && typeof value === 'object') {
+    if (Utils.isDate(value)) {
+      return value;
     }
-    return value;
+    if (Array.isArray(value)) {
+      return value.map(transformInteriorValue);
+    }
+    return mapValues(value, transformInteriorValue);
   }
-
-  // Unreachable: transformInteriorAtom never returns CannotTransform, so the branch above always returns.
-  /* istanbul ignore next */
-  if (Array.isArray(restValue)) {
-    return restValue.map(transformInteriorValue);
-  }
-  /* istanbul ignore next */
-  if (typeof restValue === 'object' && '__op' in restValue) {
-    return transformUpdateOperator(restValue, true);
-  }
-  /* istanbul ignore next */
-  return mapValues(restValue, transformInteriorValue);
+  return value;
 };
 
 const valueAsDate = value => {
@@ -963,42 +944,22 @@ function transformConstraint(constraint, field, queryKey, count = false) {
 
 // Transforms an update operator from REST format to mongo format.
 // To be transformed, the input should have an __op field.
-// If flatten is true, this will flatten operators to their static
-// data format. For example, an increment of 2 would simply become a
-// 2.
-// The output for a non-flattened operator is a hash with __op being
-// the mongo op, and arg being the argument.
-// The output for a flattened operator is just a value.
-// Returns undefined if this should be a no-op.
+// The output is a hash with __op being the mongo op, and arg being
+// the argument.
 
-function transformUpdateOperator({ __op, amount, objects }, flatten) {
+function transformUpdateOperator({ __op, amount, objects }) {
   switch (__op) {
     case 'Delete':
-      /* istanbul ignore if: flatten is always false via the only reachable caller (transformUpdate) */
-      if (flatten) {
-        return undefined;
-      } else {
-        return { __op: '$unset', arg: '' };
-      }
+      return { __op: '$unset', arg: '' };
 
     case 'Increment':
       if (typeof amount !== 'number') {
         throw new Parse.Error(Parse.Error.INVALID_JSON, 'incrementing must provide a number');
       }
-      /* istanbul ignore if: flatten is always false via the only reachable caller (transformUpdate) */
-      if (flatten) {
-        return amount;
-      } else {
-        return { __op: '$inc', arg: amount };
-      }
+      return { __op: '$inc', arg: amount };
 
     case 'SetOnInsert':
-      /* istanbul ignore if: flatten is always false via the only reachable caller (transformUpdate) */
-      if (flatten) {
-        return amount;
-      } else {
-        return { __op: '$setOnInsert', arg: amount };
-      }
+      return { __op: '$setOnInsert', arg: amount };
 
     case 'Add':
     case 'AddUnique':
@@ -1006,28 +967,18 @@ function transformUpdateOperator({ __op, amount, objects }, flatten) {
         throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
       }
       var toAdd = objects.map(transformInteriorAtom);
-      /* istanbul ignore if: flatten is always false via the only reachable caller (transformUpdate) */
-      if (flatten) {
-        return toAdd;
-      } else {
-        var mongoOp = {
-          Add: '$push',
-          AddUnique: '$addToSet',
-        }[__op];
-        return { __op: mongoOp, arg: { $each: toAdd } };
-      }
+      var mongoOp = {
+        Add: '$push',
+        AddUnique: '$addToSet',
+      }[__op];
+      return { __op: mongoOp, arg: { $each: toAdd } };
 
     case 'Remove':
       if (!Array.isArray(objects)) {
         throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to remove must be an array');
       }
       var toRemove = objects.map(transformInteriorAtom);
-      /* istanbul ignore if: flatten is always false via the only reachable caller (transformUpdate) */
-      if (flatten) {
-        return [];
-      } else {
-        return { __op: '$pullAll', arg: toRemove };
-      }
+      return { __op: '$pullAll', arg: toRemove };
 
     default:
       throw new Parse.Error(
