@@ -1102,6 +1102,20 @@ const transformPointerString = (schema, field, pointerString) => {
 
 // Converts from a mongo-format object to a REST-format object.
 // Does not strip out anything based on a lack of authentication.
+// Relation field names per schema object; recomputing this per row is wasteful
+// for large result sets (parse-community/parse-server#8689)
+const relationFieldNamesCache = new WeakMap();
+function getRelationFieldNames(schema) {
+  let names = relationFieldNamesCache.get(schema);
+  if (!names) {
+    names = Object.keys(schema.fields).filter(
+      fieldName => schema.fields[fieldName].type === 'Relation'
+    );
+    relationFieldNamesCache.set(schema, names);
+  }
+  return names;
+}
+
 const mongoObjectToParseObject = (className, mongoObject, schema) => {
   switch (typeof mongoObject) {
     case 'string':
@@ -1274,9 +1288,10 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
         }
       }
 
-      const relationFieldNames = Object.keys(schema.fields).filter(
-        fieldName => schema.fields[fieldName].type === 'Relation'
-      );
+      const relationFieldNames = getRelationFieldNames(schema);
+      if (relationFieldNames.length === 0) {
+        return restObject;
+      }
       const relationFields = {};
       relationFieldNames.forEach(relationFieldName => {
         relationFields[relationFieldName] = {
