@@ -25,6 +25,15 @@ describe('parseObjectToMongoObjectForCreate', () => {
     done();
   });
 
+  it('nested Bytes transform to mongodb.Binary', () => {
+    const bytes = { __type: 'Bytes', base64: Buffer.from('hello').toString('base64') };
+    const output = transform.parseObjectToMongoObjectForCreate(null, { arr: [bytes] }, {
+      fields: { arr: { type: 'Array' } },
+    });
+    expect(output.arr[0] instanceof mongodb.Binary).toBe(true);
+    expect(Buffer.from(output.arr[0].buffer).toString()).toBe('hello');
+  });
+
   it('built-in timestamps with date', done => {
     const input = {
       createdAt: '2015-10-06T21:24:50.332Z',
@@ -567,6 +576,18 @@ describe('transformUpdate', () => {
     });
     expect(output).toEqual({});
     done();
+  });
+
+  it('transforms nested Bytes to mongodb.Binary', () => {
+    const bytes = { __type: 'Bytes', base64: Buffer.from('hello').toString('base64') };
+    const output = transform.transformUpdate(
+      null,
+      { arr: [bytes], obj: { b: bytes } },
+      { fields: { arr: { type: 'Array' }, obj: { type: 'Object' } } }
+    );
+    expect(output.$set.arr[0] instanceof mongodb.Binary).toBe(true);
+    expect(Buffer.from(output.$set.arr[0].buffer).toString()).toBe('hello');
+    expect(output.$set.obj.b instanceof mongodb.Binary).toBe(true);
   });
 });
 

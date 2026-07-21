@@ -185,7 +185,7 @@ const transformInteriorValue = restValue => {
   // objects unchanged, so recurse into those.
   var value = transformInteriorAtom(restValue);
   if (value && typeof value === 'object') {
-    if (Utils.isDate(value)) {
+    if (Utils.isDate(value) || value instanceof mongodb.Binary) {
       return value;
     }
     if (Array.isArray(value)) {
