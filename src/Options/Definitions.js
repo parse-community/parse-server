@@ -58,6 +58,12 @@ module.exports.ParseServerOptions = {
     action: parsers.objectParser,
     type: 'AccountLockoutOptions',
   },
+  acknowledgeFutureDefaults: {
+    env: 'PARSE_SERVER_ACKNOWLEDGE_FUTURE_DEFAULTS',
+    help: 'Set to `true` to acknowledge and suppress warnings about Parse Server options whose default values will change in a future version.',
+    action: parsers.booleanParser,
+    default: false,
+  },
   allowAggregationForReadOnlyMasterKey: {
     env: 'PARSE_SERVER_ALLOW_AGGREGATION_FOR_READ_ONLY_MASTER_KEY',
     help: 'Whether the `readOnlyMasterKey` is allowed to run aggregation pipelines via the aggregate endpoint. An aggregation pipeline can contain write-capable stages (for example MongoDB `$out` and `$merge`), so allowing aggregation effectively gives the read-only master key a way to perform writes, contrary to its read-only intent. If `true` (default), the read-only master key can run aggregation pipelines. If `false`, the read-only master key cannot run aggregation pipelines at all. Note that the `readOnlyMasterKey` is a secret key for internal server-side use only and must never be distributed; this option is an additional safeguard, not a substitute for keeping the key confidential. Defaults to `true`.',

@@ -35,6 +35,15 @@ describe('Deprecator', () => {
     expect(logSpy).not.toHaveBeenCalled();
   });
 
+  it('does not log deprecation for new default if acknowledgeFutureDefaults is true', async () => {
+    deprecations = [{ optionKey: 'exampleKey', changeNewDefault: 'exampleNewDefault' }];
+
+    spyOn(Deprecator, '_getDeprecations').and.callFake(() => deprecations);
+    const logSpy = spyOn(Deprecator, '_logOption').and.callFake(() => {});
+    await reconfigureServer({ acknowledgeFutureDefaults: true });
+    expect(logSpy).not.toHaveBeenCalled();
+  });
+
   it('logs runtime deprecation', async () => {
     const logger = require('../lib/logger').logger;
     const logSpy = spyOn(logger, 'warn').and.callFake(() => {});

@@ -22,8 +22,12 @@ class Deprecator {
       const changeNewDefault = deprecation.changeNewDefault;
       const changeNewKey = deprecation.changeNewKey;
 
-      // If default will change, only throw a warning if option is not set
-      if (changeNewDefault != null && Utils.getNestedProperty(options, optionKey) == null) {
+      // If default will change, only throw a warning if option is not set and future defaults are not acknowledged
+      if (
+        changeNewDefault != null &&
+        Utils.getNestedProperty(options, optionKey) == null &&
+        !options.acknowledgeFutureDefaults
+      ) {
         Deprecator._logOption({ optionKey, changeNewDefault, solution });
       }
 
