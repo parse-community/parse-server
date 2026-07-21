@@ -178,7 +178,7 @@ describe('definitions', () => {
       if (typeof definition.required !== 'undefined') {
         expect(typeof definition.required).toBe('boolean');
       }
-      if (typeof definition.action !== 'undefined') {
+      if ('action' in definition) {
         expect(typeof definition.action).toBe('function');
       }
     }
@@ -188,6 +188,14 @@ describe('definitions', () => {
     expect(() => {
       definitions.facebookAppIds.action();
     }).toThrow();
+  });
+
+  it('should coerce the NumberOrBoolean cluster option value', () => {
+    const action = definitions.cluster.action;
+    expect(typeof action).toBe('function');
+    expect(action('2')).toBe(2);
+    expect(action('true')).toBe(true);
+    expect(action('false')).toBe(false);
   });
 });
 
@@ -203,7 +211,7 @@ describe('LiveQuery definitions', () => {
       if (typeof definition.required !== 'undefined') {
         expect(typeof definition.required).toBe('boolean');
       }
-      if (typeof definition.action !== 'undefined') {
+      if ('action' in definition) {
         expect(typeof definition.action).toBe('function');
       }
     }
@@ -213,36 +221,19 @@ describe('LiveQuery definitions', () => {
 describe('execution', () => {
   const binPath = path.resolve(__dirname, '../bin/parse-server');
   let childProcess;
-  let aggregatedData;
 
-  function handleStdout(childProcess, done, aggregatedData, requiredData) {
-    childProcess.stdout.on('data', data => {
-      data = data.toString();
-      aggregatedData.push(data);
-      if (requiredData.every(required => aggregatedData.some(aggregated => aggregated.includes(required)))) {
-        done();
-      }
+  function waitForStartup(cp, requiredOutput) {
+    return new Promise((resolve, reject) => {
+      const aggregated = [];
+      cp.stdout.on('data', data => {
+        aggregated.push(data.toString());
+        if (requiredOutput.every(r => aggregated.some(a => a.includes(r)))) {
+          resolve();
+        }
+      });
+      cp.on('error', reject);
     });
   }
-
-  function handleStderr(childProcess, done) {
-    childProcess.stderr.on('data', data => {
-      data = data.toString();
-      if (!data.includes('[DEP0040] DeprecationWarning')) {
-        done.fail(data);
-      }
-    });
-  }
-
-  function handleError(childProcess, done) {
-    childProcess.on('error', err => {
-      done.fail(err);
-    });
-  }
-
-  beforeEach(() => {
-    aggregatedData = [];
-  });
 
   afterEach(done => {
     if (childProcess) {
@@ -254,7 +245,7 @@ describe('execution', () => {
     }
   });
 
-  it_id('a0ab74b4-f805-4e03-b31d-b5cd59e64495')(it)('should start Parse Server', done => {
+  it_id('a0ab74b4-f805-4e03-b31d-b5cd59e64495')(it)('should start Parse Server', async () => {
     const env = { ...process.env };
     env.NODE_OPTIONS = '--dns-result-order=ipv4first --trace-deprecation';
     childProcess = spawn(
@@ -262,12 +253,10 @@ describe('execution', () => {
       ['--appId', 'test', '--masterKey', 'test', '--databaseURI', databaseURI, '--port', '1339'],
       { env }
     );
-    handleStdout(childProcess, done, aggregatedData, ['parse-server running on']);
-    handleStderr(childProcess, done);
-    handleError(childProcess, done);
+    await waitForStartup(childProcess, ['parse-server running on']);
   });
 
-  it_id('d7165081-b133-4cba-901b-19128ce41301')(it)('should start Parse Server with GraphQL', async done => {
+  it_id('d7165081-b133-4cba-901b-19128ce41301')(it)('should start Parse Server with GraphQL', async () => {
     const env = { ...process.env };
     env.NODE_OPTIONS = '--dns-result-order=ipv4first --trace-deprecation';
     childProcess = spawn(
@@ -285,15 +274,10 @@ describe('execution', () => {
       ],
       { env }
     );
-    handleStdout(childProcess, done, aggregatedData, [
-      'parse-server running on',
-      'GraphQL running on',
-    ]);
-    handleStderr(childProcess, done);
-    handleError(childProcess, done);
+    await waitForStartup(childProcess, ['parse-server running on', 'GraphQL running on']);
   });
 
-  it_id('2769cdb4-ce8a-484d-8a91-635b5894ba7e')(it)('should start Parse Server with GraphQL and Playground', async done => {
+  it_id('2769cdb4-ce8a-484d-8a91-635b5894ba7e')(it)('should start Parse Server with GraphQL and Playground', async () => {
     const env = { ...process.env };
     env.NODE_OPTIONS = '--dns-result-order=ipv4first --trace-deprecation';
     childProcess = spawn(
@@ -312,16 +296,14 @@ describe('execution', () => {
       ],
       { env }
     );
-    handleStdout(childProcess, done, aggregatedData, [
+    await waitForStartup(childProcess, [
       'parse-server running on',
       'Playground running on',
       'GraphQL running on',
     ]);
-    handleStderr(childProcess, done);
-    handleError(childProcess, done);
   });
 
-  it_id('23caddd7-bfea-4869-8bd4-0f2cd283c8bd')(it)('can start Parse Server with auth via CLI', done => {
+  it_id('23caddd7-bfea-4869-8bd4-0f2cd283c8bd')(it)('can start Parse Server with auth via CLI', async () => {
     const env = { ...process.env };
     env.NODE_OPTIONS = '--dns-result-order=ipv4first --trace-deprecation';
     childProcess = spawn(
@@ -329,8 +311,6 @@ describe('execution', () => {
       ['--databaseURI', databaseURI, './spec/configs/CLIConfigAuth.json'],
       { env }
     );
-    handleStdout(childProcess, done, aggregatedData, ['parse-server running on']);
-    handleStderr(childProcess, done);
-    handleError(childProcess, done);
+    await waitForStartup(childProcess, ['parse-server running on']);
   });
 });

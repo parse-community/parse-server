@@ -158,9 +158,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Check NPM lock file version
-        uses: mansona/npm-lockfile-version@v1
-        with:
-          version: 2
+        run: |
+          version=$(node -e "console.log(require('./package-lock.json').lockfileVersion)")
+          if [ "$version" != "2" ]; then
+            echo "::error::Expected lockfileVersion 2, got $version"
+            exit 1
+          fi
   check-types:
     name: Check Types
     timeout-minutes: 5
@@ -182,6 +185,10 @@ jobs:
             NODE_VERSION: 24.11.0
           - name: MongoDB 8, ReplicaSet
             MONGODB_VERSION: 8.0.4
+            MONGODB_TOPOLOGY: replset
+            NODE_VERSION: 24.11.0
+          - name: MongoDB 8.3, ReplicaSet
+            MONGODB_VERSION: 8.3.4
             MONGODB_TOPOLOGY: replset
             NODE_VERSION: 24.11.0
           - name: Redis Cache

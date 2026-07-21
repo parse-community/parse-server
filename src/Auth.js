@@ -448,7 +448,13 @@ const findUsersWithAuthData = async (config, authData, beforeFind, currentUserAu
       const isUnchanged = storedProviderData && incomingKeys.length > 0 &&
         !incomingKeys.some(key => !isDeepStrictEqual(providerAuthData[key], storedProviderData[key]));
 
-      const adapter = config.authDataManager.getValidatorForProvider(provider)?.adapter;
+      const validatorConfig = config.authDataManager.getValidatorForProvider(provider);
+      // Skip database query for unconfigured providers to avoid unindexed collection scans;
+      // the provider will be rejected later in handleAuthDataValidation with UNSUPPORTED_SERVICE
+      if (!validatorConfig?.validator) {
+        return null;
+      }
+      const adapter = validatorConfig.adapter;
       if (beforeFind && typeof adapter?.beforeFind === 'function' && !isUnchanged) {
         await adapter.beforeFind(providerAuthData);
       }

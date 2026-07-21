@@ -30,7 +30,11 @@ export class ClassesRouter extends PromiseRouter {
       options.redirectClassNameForKey = String(body.redirectClassNameForKey);
     }
     if (typeof body.where === 'string') {
-      body.where = JSON.parse(body.where);
+      try {
+        body.where = JSON.parse(body.where);
+      } catch {
+        throw new Parse.Error(Parse.Error.INVALID_JSON, 'where parameter is not valid JSON');
+      }
     }
     return rest
       .find(
@@ -39,7 +43,6 @@ export class ClassesRouter extends PromiseRouter {
         this.className(req),
         body.where,
         options,
-        req.info.clientSDK,
         req.info.context
       )
       .then(response => {
@@ -84,7 +87,6 @@ export class ClassesRouter extends PromiseRouter {
         this.className(req),
         req.params.objectId,
         options,
-        req.info.clientSDK,
         req.info.context
       )
       .then(response => {
@@ -119,7 +121,6 @@ export class ClassesRouter extends PromiseRouter {
       req.auth,
       this.className(req),
       req.body || {},
-      req.info.clientSDK,
       req.info.context
     );
   }
@@ -132,7 +133,6 @@ export class ClassesRouter extends PromiseRouter {
       this.className(req),
       where,
       req.body || {},
-      req.info.clientSDK,
       req.info.context
     );
   }

@@ -8,6 +8,11 @@
  * or set to an empty string if the current key will be removed without replacement.
  * - `changeNewDefault` {String}: Set the new default value if the key's default value
  * will change in a future version.
+ * - `resolvedValue` {any}: The option value that suppresses the deprecation warning,
+ * indicating the user has already adopted the future behavior. Only applicable when
+ * `changeNewKey` is an empty string (option will be removed without replacement).
+ * For example, `false` for an option that will be removed, if setting it to `false`
+ * disables the deprecated feature.
  * - `solution`: The instruction to resolve this deprecation warning. Optional. This
  * instruction must not include the deprecation warning which is auto-generated.
  * It should only contain additional instruction regarding the deprecation if
@@ -72,8 +77,45 @@ module.exports = [
     solution: "Set 'requestComplexity.graphQLFields' to a positive integer appropriate for your app to limit the number of GraphQL field selections, or to '-1' to disable.",
   },
   {
+    optionKey: 'requestComplexity.batchRequestLimit',
+    changeNewDefault: '100',
+    solution: "Set 'requestComplexity.batchRequestLimit' to a positive integer appropriate for your app to limit the number of sub-requests per batch request, or to '-1' to disable.",
+  },
+  {
     optionKey: 'enableProductPurchaseLegacyApi',
     changeNewKey: '',
+    resolvedValue: false,
     solution: "The product purchase API is an undocumented, unmaintained legacy feature that may not function as expected and will be removed in a future major version. We strongly advise against using it. Set 'enableProductPurchaseLegacyApi' to 'false' to disable it, or remove the option to accept the future removal.",
+  },
+  {
+    optionKey: 'allowExpiredAuthDataToken',
+    changeNewKey: '',
+    resolvedValue: false,
+    solution: "Auth providers are always validated on login regardless of this setting. Set 'allowExpiredAuthDataToken' to 'false' or remove the option to accept the future removal.",
+  },
+  {
+    optionKey: 'protectedFieldsOwnerExempt',
+    changeNewDefault: 'false',
+    solution: "Set 'protectedFieldsOwnerExempt' to 'false' to apply protectedFields consistently to the user's own _User object (same as all other classes), or to 'true' to keep the current behavior where a user can see all their own fields.",
+  },
+  {
+    optionKey: 'protectedFieldsTriggerExempt',
+    changeNewDefault: 'true',
+    solution: "Set 'protectedFieldsTriggerExempt' to 'true' to make Cloud Code triggers (e.g. beforeSave, afterSave) receive the full object including protected fields, or to 'false' to keep the current behavior where protected fields are stripped from trigger objects.",
+  },
+  {
+    optionKey: 'protectedFieldsSaveResponseExempt',
+    changeNewDefault: 'false',
+    solution: "Set 'protectedFieldsSaveResponseExempt' to 'false' to strip protected fields from write operation responses (create, update), consistent with how they are stripped from query results. Set to 'true' to keep the current behavior where protected fields are included in write responses.",
+  },
+  {
+    optionKey: 'installation.duplicateDeviceTokenActionEnforceAuth',
+    changeNewDefault: 'true',
+    solution: "Set 'installation.duplicateDeviceTokenActionEnforceAuth' to 'true' to enforce the caller's auth context (and the resulting ACL and CLP) when Parse Server deduplicates _Installation records sharing the same deviceToken. Set to 'false' to keep the current behavior of bypassing permissions on the dedup operation.",
+  },
+  {
+    optionKey: 'allowAggregationForReadOnlyMasterKey',
+    changeNewDefault: 'false',
+    solution: "Set 'allowAggregationForReadOnlyMasterKey' to 'false' to prevent the read-only master key from running aggregation pipelines, which can include write-capable stages (e.g. '$out', '$merge'). Set to 'true' to keep the current behavior where the read-only master key can run aggregation pipelines.",
   },
 ];

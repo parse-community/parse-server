@@ -19,7 +19,6 @@ export class InstallationsRouter extends ClassesRouter {
         '_Installation',
         body.where,
         options,
-        req.info.clientSDK,
         req.info.context
       )
       .then(response => {

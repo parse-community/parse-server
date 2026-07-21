@@ -205,16 +205,37 @@ describe('rest query', () => {
       '_password_changed_at',
       '_password_history',
     ];
-    await Promise.all([
-      ...internalFields.map(field =>
-        expectAsync(new Parse.Query(Parse.User).exists(field).find()).toBeRejectedWith(
-          new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${field}`)
-        )
-      ),
-      ...internalFields.map(field =>
-        new Parse.Query(Parse.User).exists(field).find({ useMasterKey: true })
-      ),
-    ]);
+    // Run rejection and success queries sequentially to avoid orphaned promises
+    // that can cause unhandled rejections when Promise.all short-circuits
+    for (const field of internalFields) {
+      await expectAsync(new Parse.Query(Parse.User).exists(field).find()).toBeRejectedWith(
+        new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${field}`)
+      );
+    }
+    for (const field of internalFields) {
+      await new Parse.Query(Parse.User).exists(field).find({ useMasterKey: true });
+    }
+  });
+
+  it('query internal field that has no database column', async () => {
+    const user = new Parse.User();
+    user.setUsername('user1');
+    user.setPassword('password');
+    await user.signUp();
+    // _tombstone is registered as an internal field but has no column in the
+    // Postgres _User table. Querying it with master key should return empty
+    // results (consistent with MongoDB behavior), not throw an error.
+    const results = await new Parse.Query(Parse.User).exists('_tombstone').find({ useMasterKey: true });
+    expect(results.length).toBe(0);
+  });
+
+  it('count internal field that has no database column', async () => {
+    const user = new Parse.User();
+    user.setUsername('user1');
+    user.setPassword('password');
+    await user.signUp();
+    const count = await new Parse.Query(Parse.User).exists('_tombstone').count({ useMasterKey: true });
+    expect(count).toBe(0);
   });
 
   it('query protected field', async () => {

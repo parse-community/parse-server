@@ -58,6 +58,12 @@ module.exports.ParseServerOptions = {
     action: parsers.objectParser,
     type: 'AccountLockoutOptions',
   },
+  allowAggregationForReadOnlyMasterKey: {
+    env: 'PARSE_SERVER_ALLOW_AGGREGATION_FOR_READ_ONLY_MASTER_KEY',
+    help: 'Whether the `readOnlyMasterKey` is allowed to run aggregation pipelines via the aggregate endpoint. An aggregation pipeline can contain write-capable stages (for example MongoDB `$out` and `$merge`), so allowing aggregation effectively gives the read-only master key a way to perform writes, contrary to its read-only intent. If `true` (default), the read-only master key can run aggregation pipelines. If `false`, the read-only master key cannot run aggregation pipelines at all. Note that the `readOnlyMasterKey` is a secret key for internal server-side use only and must never be distributed; this option is an additional safeguard, not a substitute for keeping the key confidential. Defaults to `true`.',
+    action: parsers.booleanParser,
+    default: true,
+  },
   allowClientClassCreation: {
     env: 'PARSE_SERVER_ALLOW_CLIENT_CLASS_CREATION',
     help: 'Enable (or disable) client class creation, defaults to false',
@@ -72,7 +78,7 @@ module.exports.ParseServerOptions = {
   },
   allowExpiredAuthDataToken: {
     env: 'PARSE_SERVER_ALLOW_EXPIRED_AUTH_DATA_TOKEN',
-    help: 'Allow a user to log in even if the 3rd party authentication token that was used to sign in to their account has expired. If this is set to `false`, then the token will be validated every time the user signs in to their account. This refers to the token that is stored in the `_User.authData` field. Defaults to `false`.',
+    help: 'Deprecated. This option will be removed in a future version. Auth providers are always validated on login. On update, if this is set to `true`, auth providers are only re-validated when the auth data has changed. If this is set to `false`, auth providers are re-validated on every update. Defaults to `false`.',
     action: parsers.booleanParser,
     default: false,
   },
@@ -133,7 +139,7 @@ module.exports.ParseServerOptions = {
   cluster: {
     env: 'PARSE_SERVER_CLUSTER',
     help: 'Run with cluster, optionally set the number of processes default to os.cpus().length',
-    action: parsers.numberOrBooleanParser,
+    action: parsers.numberOrBoolParser('cluster'),
   },
   collectionPrefix: {
     env: 'PARSE_SERVER_COLLECTION_PREFIX',
@@ -272,6 +278,13 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  fileDownload: {
+    env: 'PARSE_SERVER_FILE_DOWNLOAD_OPTIONS',
+    help: 'Options for file downloads',
+    action: parsers.objectParser,
+    type: 'FileDownloadOptions',
+    default: {},
+  },
   fileKey: {
     env: 'PARSE_SERVER_FILE_KEY',
     help: 'Key for your files',
@@ -315,6 +328,13 @@ module.exports.ParseServerOptions = {
     type: 'IdempotencyOptions',
     default: {},
   },
+  installation: {
+    env: 'PARSE_SERVER_INSTALLATION',
+    help: 'Options controlling how Parse Server deduplicates `_Installation` records that share the same `deviceToken`.',
+    action: parsers.objectParser,
+    type: 'InstallationOptions',
+    default: {},
+  },
   javascriptKey: {
     env: 'PARSE_SERVER_JAVASCRIPT_KEY',
     help: 'Key for the Javascript SDK',
@@ -326,13 +346,13 @@ module.exports.ParseServerOptions = {
   },
   liveQuery: {
     env: 'PARSE_SERVER_LIVE_QUERY',
-    help: "parse-server's LiveQuery configuration object",
+    help: "Configuration for LiveQuery on this Parse Server, for example `{ classNames: ['MyClass'] }`. `classNames` lists the classes that publish create/update/delete events to subscribers; without it no events are pushed, even while a LiveQuery server is running. Combine with `startLiveQueryServer` to run a LiveQuery server.",
     action: parsers.objectParser,
     type: 'LiveQueryOptions',
   },
   liveQueryServerOptions: {
     env: 'PARSE_SERVER_LIVE_QUERY_SERVER_OPTIONS',
-    help: 'Live query server configuration options (will start the liveQuery server)',
+    help: 'Configuration options for the LiveQuery server. Providing this also starts the LiveQuery server (like `startLiveQueryServer`); events are still only published for the classes set in `liveQuery.classNames`.',
     action: parsers.objectParser,
     type: 'LiveQueryServerOptions',
   },
@@ -470,13 +490,31 @@ module.exports.ParseServerOptions = {
   },
   protectedFields: {
     env: 'PARSE_SERVER_PROTECTED_FIELDS',
-    help: 'Protected fields that should be treated with extra security when fetching details.',
+    help: "Fields per class that are hidden from query results for specific user groups. Protected fields are stripped from the server response, but can still be used internally (e.g. in Cloud Code triggers). Configure as `{ 'ClassName': { 'UserGroup': ['field1', 'field2'] } }` where `UserGroup` is one of: `'*'` (all users), `'authenticated'` (authenticated users), `'role:RoleName'` (users with a specific role), `'userField:FieldName'` (users referenced by a pointer field), or a user `objectId` to target a specific user. When multiple groups apply, the intersection of their protected fields is used. Any field can be protected, including system fields like `createdAt` and `updatedAt`. By default, `email` is protected on the `_User` class for all users. On the `_User` class, the object owner is exempt from protected fields by default; see `protectedFieldsOwnerExempt` to change this.",
     action: parsers.objectParser,
     default: {
       _User: {
         '*': ['email'],
       },
     },
+  },
+  protectedFieldsOwnerExempt: {
+    env: 'PARSE_SERVER_PROTECTED_FIELDS_OWNER_EXEMPT',
+    help: "Whether the `_User` class is exempt from `protectedFields` when the logged-in user queries their own user object. If `true` (default), a user can see all their own fields regardless of `protectedFields` configuration; default protected fields (e.g. `email`) are merged into any custom `protectedFields` configuration. If `false`, `protectedFields` applies equally to the user's own object, consistent with all other classes; only explicitly configured protected fields apply, defaults are not merged. Defaults to `true`.",
+    action: parsers.booleanParser,
+    default: true,
+  },
+  protectedFieldsSaveResponseExempt: {
+    env: 'PARSE_SERVER_PROTECTED_FIELDS_SAVE_RESPONSE_EXEMPT',
+    help: 'Whether save operation responses (create, update) are exempt from `protectedFields`. If `true` (default), protected fields modified during a save are included in the response to the client. If `false`, protected fields are stripped from save responses, consistent with how they are stripped from query results. Defaults to `true`.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  protectedFieldsTriggerExempt: {
+    env: 'PARSE_SERVER_PROTECTED_FIELDS_TRIGGER_EXEMPT',
+    help: "Whether Cloud Code triggers (e.g. `beforeSave`, `afterSave`) are exempt from `protectedFields`. If `true`, triggers receive the full object including protected fields in `request.object` and `request.original`, regardless of the caller's auth context. If `false`, protected fields are stripped from the original object fetch used to build trigger objects. Defaults to `false`.",
+    action: parsers.booleanParser,
+    default: false,
   },
   publicServerURL: {
     env: 'PARSE_PUBLIC_SERVER_URL',
@@ -487,16 +525,23 @@ module.exports.ParseServerOptions = {
     help: 'Configuration for push, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#push-notifications',
     action: parsers.objectParser,
   },
+  query: {
+    env: 'PARSE_SERVER_QUERY',
+    help: 'Query-related server defaults.',
+    action: parsers.objectParser,
+    type: 'QueryServerOptions',
+    default: {},
+  },
   rateLimit: {
     env: 'PARSE_SERVER_RATE_LIMIT',
-    help: "Options to limit repeated requests to Parse Server APIs. This can be used to protect sensitive endpoints such as `/requestPasswordReset` from brute-force attacks or Parse Server as a whole from denial-of-service (DoS) attacks.<br><br>\u2139\uFE0F Mind the following limitations:<br>- rate limits applied per IP address; this limits protection against distributed denial-of-service (DDoS) attacks where many requests are coming from various IP addresses<br>- if multiple Parse Server instances are behind a load balancer or ran in a cluster, each instance will calculate it's own request rates, independent from other instances; this limits the applicability of this feature when using a load balancer and another rate limiting solution that takes requests across all instances into account may be more suitable<br>- this feature provides basic protection against denial-of-service attacks, but a more sophisticated solution works earlier in the request flow and prevents a malicious requests to even reach a server instance; it's therefore recommended to implement a solution according to architecture and user case.",
+    help: "Options to limit repeated requests to Parse Server APIs. This can be used to protect sensitive endpoints such as `/requestPasswordReset` from brute-force attacks or Parse Server as a whole from denial-of-service (DoS) attacks.<br><br>\u2139\uFE0F Mind the following limitations:<br>- rate limits applied per IP address; this limits protection against distributed denial-of-service (DDoS) attacks where many requests are coming from various IP addresses<br>- if multiple Parse Server instances are behind a load balancer or ran in a cluster, each instance will calculate it's own request rates, independent from other instances; this limits the applicability of this feature when using a load balancer and another rate limiting solution that takes requests across all instances into account may be more suitable<br>- this feature provides basic protection against denial-of-service attacks, but a more sophisticated solution works earlier in the request flow and prevents a malicious requests to even reach a server instance; it's therefore recommended to implement a solution according to architecture and use case.<br>- rate limits are matched against the REST API URL path (`requestPath`) and therefore apply to REST API routes only; they do not apply to GraphQL operations, which are all served under the single GraphQL endpoint path (`graphQLPath`, default `/graphql`) and are identified by the request payload rather than the URL. To rate limit GraphQL, either set a `requestPath` for the GraphQL endpoint path to throttle the entire GraphQL API, or use a GraphQL-aware rate limiting solution (for example a schema-directive-based rate limiter) for per-operation limits.",
     action: parsers.arrayParser,
     type: 'RateLimitOptions[]',
     default: [],
   },
   readOnlyMasterKey: {
     env: 'PARSE_SERVER_READ_ONLY_MASTER_KEY',
-    help: 'Read-only key, which has the same capabilities as MasterKey without writes',
+    help: 'The read-only master key is a secret key with the same read capabilities as the `masterKey`, but without the ability to perform writes. Like the `masterKey`, it bypasses all security mechanisms (Class Level Permissions, object ACLs, `protectedFields`), so it grants full read access to all data.<br><br>It is intended strictly for internal, server-side use \u2014 for example to give a trusted internal process read access while guarding against accidental writes during development or operations. It is not a credential for untrusted contexts: it must never be shipped, distributed, published, embedded in a client application, or otherwise exposed to untrusted parties, because anyone who obtains it can read all data in the database. Use `readOnlyMasterKeyIps` to restrict the IP addresses from which it may be used.',
   },
   readOnlyMasterKeyIps: {
     env: 'PARSE_SERVER_READ_ONLY_MASTER_KEY_IPS',
@@ -541,6 +586,11 @@ module.exports.ParseServerOptions = {
     help: "When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.",
     action: parsers.booleanParser,
     default: true,
+  },
+  routeAllowList: {
+    env: 'PARSE_SERVER_ROUTE_ALLOW_LIST',
+    help: '(Optional) Restricts external client access to a list of allowed REST API routes.<br><br>When this option is set, all external non-master-key REST API requests are denied by default. Only routes matching at least one of the configured regex patterns are allowed through. Internal calls from Cloud Code, Cloud Jobs, and triggers are not affected.<br><br>Each entry is a regex pattern string matched against the normalized route identifier (request path with mount prefix and leading slash stripped). Patterns are auto-anchored with `^` and `$` for full-match semantics.<br><br><b>Examples of normalized route identifiers:</b><ul><li>`classes/GameScore` (class CRUD)</li><li>`classes/GameScore/abc123` (object by ID)</li><li>`users` (user operations)</li><li>`login` (login endpoint)</li><li>`functions/sendEmail` (Cloud Function)</li><li>`jobs/cleanup` (Cloud Job)</li><li>`push` (push notifications)</li><li>`config` (client config)</li><li>`installations` (installations)</li></ul><b>Example patterns:</b><ul><li>`classes/ChatMessage` matches only `classes/ChatMessage`</li><li>`classes/Chat.*` matches `classes/ChatMessage`, `classes/ChatRoom`, etc.</li><li>`functions/.*` matches all Cloud Functions</li></ul>Setting an empty array `[]` blocks all external non-master-key REST API requests (full lockdown of REST API routes).<br><br>When setting the option via an environment variable, the notation is a comma-separated string, for example `"classes/ChatMessage,users,functions/.*"`.<br><br>Defaults to `undefined` which means the feature is inactive and all routes are accessible.<br><br><b>Note:</b> File routes and the GraphQL API are not covered by this option.',
+    action: parsers.arrayParser,
   },
   scheduledPush: {
     env: 'PARSE_SERVER_SCHEDULED_PUSH',
@@ -589,7 +639,7 @@ module.exports.ParseServerOptions = {
   },
   startLiveQueryServer: {
     env: 'PARSE_SERVER_START_LIVE_QUERY_SERVER',
-    help: 'Starts the liveQuery server',
+    help: 'Starts a LiveQuery server alongside this Parse Server. Events are only delivered for the classes set in `liveQuery.classNames`, so a minimal working setup is `liveQuery: { classNames: [...] }` together with `startLiveQueryServer: true`.',
     action: parsers.booleanParser,
   },
   trustProxy: {
@@ -654,7 +704,7 @@ module.exports.RateLimitOptions = {
   },
   requestMethods: {
     env: 'PARSE_SERVER_RATE_LIMIT_REQUEST_METHODS',
-    help: 'Optional, the HTTP request methods to which the rate limit should be applied, default is all methods.',
+    help: "Optional, the HTTP request methods to which the rate limit should be applied, default is all methods. The method is matched after any `_method` body override has been resolved, i.e. it is the method used to route the request. Note that some endpoints are reachable via more than one HTTP method (for example `/login` and `/verifyPassword` are available via both `GET` and `POST`); to rate limit such an endpoint reliably, include all relevant methods (e.g. `['GET', 'POST']`) or omit this option to apply the limit to all methods.",
     action: parsers.arrayParser,
   },
   requestPath: {
@@ -674,6 +724,18 @@ module.exports.RateLimitOptions = {
   },
 };
 module.exports.RequestComplexityOptions = {
+  allowRegex: {
+    env: 'PARSE_SERVER_REQUEST_COMPLEXITY_ALLOW_REGEX',
+    help: 'Whether to allow the `$regex` query operator. Set to `false` to reject `$regex` in queries for non-master-key users. Default is `true`.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  batchRequestLimit: {
+    env: 'PARSE_SERVER_REQUEST_COMPLEXITY_BATCH_REQUEST_LIMIT',
+    help: 'Maximum number of sub-requests in a single batch request. Set to `-1` to disable. Default is `-1`.',
+    action: parsers.numberParser('batchRequestLimit'),
+    default: -1,
+  },
   graphQLDepth: {
     env: 'PARSE_SERVER_REQUEST_COMPLEXITY_GRAPHQL_DEPTH',
     help: 'Maximum depth of GraphQL field selections. Set to `-1` to disable. Default is `-1`.',
@@ -710,6 +772,30 @@ module.exports.RequestComplexityOptions = {
     action: parsers.numberParser('subqueryDepth'),
     default: -1,
   },
+  subqueryLimit: {
+    env: 'PARSE_SERVER_REQUEST_COMPLEXITY_SUBQUERY_LIMIT',
+    help: 'Maximum number of results returned by a `$inQuery`, `$notInQuery`, `$select`, `$dontSelect` subquery. Set to `-1` to disable. Default is `-1`.',
+    action: parsers.numberParser('subqueryLimit'),
+    default: -1,
+  },
+};
+module.exports.InstallationOptions = {
+  duplicateDeviceTokenAction: {
+    env: 'PARSE_SERVER_INSTALLATION_DUPLICATE_DEVICE_TOKEN_ACTION',
+    help: "What Parse Server does to the conflicting `_Installation` row(s) when a new install's `deviceToken` collides with an existing row. `'delete'` destroys the conflicting row. `'update'` clears the now-conflicting ID field on the conflicting row, preserving custom fields, channels, and history. Default is `'delete'`.",
+    default: 'delete',
+  },
+  duplicateDeviceTokenActionEnforceAuth: {
+    env: 'PARSE_SERVER_INSTALLATION_DUPLICATE_DEVICE_TOKEN_ACTION_ENFORCE_AUTH',
+    help: "Whether the `_Installation` deduplication operation enforces the caller's auth context (and the resulting ACL and CLP). When `true`, the dedup `destroy`/`update` runs with the caller's `runOptions`, so ACL and CLP are honored. When `false`, the dedup runs as master and bypasses both. Master and maintenance keys always bypass regardless of this flag. Default is `false`.",
+    action: parsers.booleanParser,
+    default: false,
+  },
+  duplicateDeviceTokenMergePriority: {
+    env: 'PARSE_SERVER_INSTALLATION_DUPLICATE_DEVICE_TOKEN_MERGE_PRIORITY',
+    help: "At the merge case (when an existing row holds the new `deviceToken` but has no `installationId` of its own), which side wins. `'deviceToken'` \u2014 the deviceToken-only row survives, the request's `idMatch` row is the loser. `'installationId'` \u2014 the request's `idMatch` (active install) survives, the deviceToken-only orphan is the loser. Default is `'deviceToken'`.",
+    default: 'deviceToken',
+  },
 };
 module.exports.SecurityOptions = {
   checkGroups: {
@@ -726,6 +812,20 @@ module.exports.SecurityOptions = {
   enableCheckLog: {
     env: 'PARSE_SERVER_SECURITY_ENABLE_CHECK_LOG',
     help: 'Is true if the security check report should be written to logs. This should only be enabled temporarily to not expose weak security settings in logs.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+};
+module.exports.QueryServerOptions = {
+  aggregationRawFieldNames: {
+    env: 'PARSE_SERVER_QUERY_AGGREGATION_RAW_FIELD_NAMES',
+    help: 'When `true`, all aggregation queries default to using native MongoDB field names (no automatic `createdAt` \u2192 `_created_at` rewriting). Individual queries can still override this via the `rawFieldNames` option. Default is `false`.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  aggregationRawValues: {
+    env: 'PARSE_SERVER_QUERY_AGGREGATION_RAW_VALUES',
+    help: 'When `true`, all aggregation queries default to using MongoDB Extended JSON (EJSON) for explicit value typing and skip schema-based value coercion. Individual queries can still override this via the `rawValues` option. Default is `false`.',
     action: parsers.booleanParser,
     default: false,
   },
@@ -1082,6 +1182,26 @@ module.exports.FileUploadOptions = {
     default: [
       '^(?!([xXsS]?[hH][tT][mM][lL]?(\\+[xX][mM][lL])?|[xX][hH][tT]|[sS][vV][gG]([zZ]|\\+[xX][mM][lL])?|[xX][mM][lL]|[xX][sS][lL][tT]?(\\+[xX][mM][lL])?|[xX][sS][dD]|[rR][nN][gG]|[rR][dD][fF](\\+[xX][mM][lL])?|[oO][wW][lL]|[mM][aA][tT][hH][mM][lL](\\+[xX][mM][lL])?)$)',
     ],
+  },
+};
+module.exports.FileDownloadOptions = {
+  enableForAnonymousUser: {
+    env: 'PARSE_SERVER_FILE_DOWNLOAD_ENABLE_FOR_ANONYMOUS_USER',
+    help: 'Is true if file download should be allowed for anonymous users.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  enableForAuthenticatedUser: {
+    env: 'PARSE_SERVER_FILE_DOWNLOAD_ENABLE_FOR_AUTHENTICATED_USER',
+    help: 'Is true if file download should be allowed for authenticated users.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  enableForPublic: {
+    env: 'PARSE_SERVER_FILE_DOWNLOAD_ENABLE_FOR_PUBLIC',
+    help: 'Is true if file download should be allowed for anyone, regardless of user authentication.',
+    action: parsers.booleanParser,
+    default: true,
   },
 };
 /* The available log levels for Parse Server logging. Valid values are:<br>- `'error'` - Error level (highest priority)<br>- `'warn'` - Warning level<br>- `'info'` - Info level (default)<br>- `'verbose'` - Verbose level<br>- `'debug'` - Debug level<br>- `'silly'` - Silly level (lowest priority) */

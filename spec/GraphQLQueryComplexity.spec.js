@@ -2,7 +2,11 @@
 
 const http = require('http');
 const express = require('express');
-const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+const fetch = (...args) =>
+  import('node-fetch').then(({ default: fetch }) => {
+    const [url, options = {}] = args;
+    return fetch(url, { agent: new http.Agent({ keepAlive: false }), ...options });
+  });
 require('./helper');
 const { ParseGraphQLServer } = require('../lib/GraphQL/ParseGraphQLServer');
 
@@ -176,6 +180,34 @@ describe('graphql query complexity', () => {
       });
       const result = await graphqlRequest(buildWideQuery(50));
       expect(result.errors).toBeUndefined();
+    });
+  });
+
+  describe('fragment fan-out', () => {
+    it('should reject query with exponential fragment fan-out efficiently', async () => {
+      await setupGraphQL({
+        requestComplexity: { graphQLFields: 100 },
+      });
+      // Binary fan-out: each fragment spreads the next one twice.
+      // Without fix: 2^(levels-1) field visits = 2^25 ≈ 33M (hangs event loop).
+      // With fix (memoization): O(levels) traversal, same field count, instant rejection.
+      const levels = 26;
+      let query = 'query Q { ...F0 }\n';
+      for (let i = 0; i < levels; i++) {
+        if (i === levels - 1) {
+          query += `fragment F${i} on Query { __typename }\n`;
+        } else {
+          query += `fragment F${i} on Query { ...F${i + 1} ...F${i + 1} }\n`;
+        }
+      }
+      const start = Date.now();
+      const result = await graphqlRequest(query);
+      const elapsed = Date.now() - start;
+      // Must complete in under 5 seconds (without fix it would take seconds or hang)
+      expect(elapsed).toBeLessThan(5000);
+      // Field count is 2^(levels-1) = 16777216, which exceeds the limit of 100
+      expect(result.errors).toBeDefined();
+      expect(result.errors[0].message).toMatch(/Number of GraphQL fields .* exceeds maximum allowed/);
     });
   });
 

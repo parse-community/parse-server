@@ -15,13 +15,16 @@ const parsers = require('../src/Options/parsers');
 const nestedOptionTypes = [
   'CustomPagesOptions',
   'DatabaseOptions',
+  'FileDownloadOptions',
   'FileUploadOptions',
   'IdempotencyOptions',
+  'InstallationOptions',
   'Object',
   'PagesCustomUrlsOptions',
   'PagesOptions',
   'PagesRoute',
   'PasswordPolicyOptions',
+  'QueryServerOptions',
   'RequestComplexityOptions',
   'SecurityOptions',
   'SchemaOptions',
@@ -34,8 +37,10 @@ const nestedOptionEnvPrefix = {
   DatabaseOptionsClientMetadata: 'PARSE_SERVER_DATABASE_CLIENT_METADATA_',
   CustomPagesOptions: 'PARSE_SERVER_CUSTOM_PAGES_',
   DatabaseOptions: 'PARSE_SERVER_DATABASE_',
+  FileDownloadOptions: 'PARSE_SERVER_FILE_DOWNLOAD_',
   FileUploadOptions: 'PARSE_SERVER_FILE_UPLOAD_',
   IdempotencyOptions: 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_',
+  InstallationOptions: 'PARSE_SERVER_INSTALLATION_',
   LiveQueryOptions: 'PARSE_SERVER_LIVEQUERY_',
   LiveQueryServerOptions: 'PARSE_LIVE_QUERY_SERVER_',
   LogClientEvent: 'PARSE_SERVER_DATABASE_LOG_CLIENT_EVENTS_',
@@ -46,6 +51,7 @@ const nestedOptionEnvPrefix = {
   PagesRoute: 'PARSE_SERVER_PAGES_ROUTE_',
   ParseServerOptions: 'PARSE_SERVER_',
   PasswordPolicyOptions: 'PARSE_SERVER_PASSWORD_POLICY_',
+  QueryServerOptions: 'PARSE_SERVER_QUERY_',
   RateLimitOptions: 'PARSE_SERVER_RATE_LIMIT_',
   RequestComplexityOptions: 'PARSE_SERVER_REQUEST_COMPLEXITY_',
   SchemaOptions: 'PARSE_SERVER_SCHEMA_',
@@ -171,7 +177,7 @@ function mapperFor(elt, t) {
       return wrap(t.identifier('moduleOrObjectParser'));
     }
     if (type == 'NumberOrBoolean') {
-      return wrap(t.identifier('numberOrBooleanParser'));
+      return t.callExpression(wrap(t.identifier('numberOrBoolParser')), [t.stringLiteral(elt.name)]);
     }
     if (type == 'NumberOrString') {
       return t.callExpression(wrap(t.identifier('numberOrStringParser')), [t.stringLiteral(elt.name)]);

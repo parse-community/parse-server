@@ -10,13 +10,14 @@ var cryptoUtils = require('./cryptoUtils');
 var passwordCrypto = require('./password');
 var Parse = require('parse/node');
 var triggers = require('./triggers');
-var ClientSDK = require('./ClientSDK');
 const util = require('util');
 import RestQuery from './RestQuery';
 import _ from 'lodash';
 import logger from './logger';
 import { requiredColumns } from './Controllers/SchemaController';
 import { createSanitizedError } from './Error';
+import { applyAuthDataOptimisticLock } from './AuthDataLock';
+import * as InstallationDedup from './InstallationDedup';
 
 // query and data are both provided in REST API format. So data
 // types are encoded by plain old objects.
@@ -27,7 +28,7 @@ import { createSanitizedError } from './Error';
 // RestWrite will handle objectId, createdAt, and updatedAt for
 // everything. It also knows to use triggers and special modifications
 // for the _User class.
-function RestWrite(config, auth, className, query, data, originalData, clientSDK, context, action) {
+function RestWrite(config, auth, className, query, data, originalData, context, action) {
   if (auth.isReadOnly) {
     throw createSanitizedError(
       Parse.Error.OPERATION_FORBIDDEN,
@@ -38,7 +39,6 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
   this.config = config;
   this.auth = auth;
   this.className = className;
-  this.clientSDK = clientSDK;
   this.storage = {};
   this.runOptions = {};
   this.context = context || {};
@@ -132,6 +132,9 @@ RestWrite.prototype.execute = function () {
       return this.setRequiredFieldsIfNeeded();
     })
     .then(() => {
+      return this.validateCreatePermission();
+    })
+    .then(() => {
       return this.transformUser();
     })
     .then(() => {
@@ -154,6 +157,9 @@ RestWrite.prototype.execute = function () {
     })
     .then(() => {
       return this.cleanUserAuthData();
+    })
+    .then(() => {
+      return this.filterProtectedFieldsInResponse();
     })
     .then(() => {
       // Append the authDataResponse if exists
@@ -307,7 +313,7 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
       try {
         Utils.checkProhibitedKeywords(this.config, this.data);
       } catch (error) {
-        throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, error);
+        throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `${error}`);
       }
     });
 };
@@ -639,9 +645,10 @@ RestWrite.prototype.handleAuthData = async function (authData) {
         return;
       }
 
-      // Force to validate all provided authData on login
-      // on update only validate mutated ones
-      if (hasMutatedAuthData || !this.config.allowExpiredAuthDataToken) {
+      // Always validate all provided authData on login to prevent authentication
+      // bypass via partial authData (e.g. sending only the provider ID without
+      // an access token); on update only validate mutated ones
+      if (isLogin || hasMutatedAuthData || !this.config.allowExpiredAuthDataToken) {
         const res = await Auth.handleAuthDataValidation(
           isLogin ? authData : mutatedAuthData,
           this,
@@ -650,6 +657,15 @@ RestWrite.prototype.handleAuthData = async function (authData) {
         this.data.authData = res.authData;
         this.authDataResponse = res.authDataResponse;
       }
+
+      // Capture original authData before mutating userResult via the response reference
+      const originalAuthData = userResult?.authData
+        ? Object.fromEntries(
+          Object.entries(userResult.authData).map(([k, v]) =>
+            [k, v && typeof v === 'object' ? { ...v } : v]
+          )
+        )
+        : undefined;
 
       // IF we are in login we'll skip the database operation / beforeSave / afterSave etc...
       // we need to set it up there.
@@ -666,18 +682,32 @@ RestWrite.prototype.handleAuthData = async function (authData) {
         // uses the `doNotSave` option. Just update the authData part
         // Then we're good for the user, early exit of sorts
         if (Object.keys(this.data.authData).length) {
+          const query = { objectId: this.data.objectId };
+          // Optimistic locking: include each changed original field in the WHERE clause
+          // for providers whose data is being updated. This prevents concurrent requests
+          // from both succeeding when consuming single-use tokens (e.g. MFA recovery codes
+          // as arrays, or MFA SMS OTP tokens as strings).
+          applyAuthDataOptimisticLock(query, originalAuthData, this.data.authData);
           try {
             await this.config.database.update(
               this.className,
-              { objectId: this.data.objectId },
+              query,
               { authData: this.data.authData },
               {}
             );
           } catch (error) {
+            if (error.code === Parse.Error.OBJECT_NOT_FOUND) {
+              throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Invalid auth data');
+            }
             this._throwIfAuthDataDuplicate(error);
             throw error;
           }
         }
+      } else if (this.query && this.data.authData && Object.keys(this.data.authData).length) {
+        // UPDATE path (e.g. PUT /users/:id during linked-provider re-auth): apply
+        // the same optimistic lock to the subsequent runDatabaseOperation update so
+        // concurrent single-use token consumers cannot both succeed.
+        applyAuthDataOptimisticLock(this.query, originalAuthData, this.data.authData);
       }
     }
   }
@@ -695,6 +725,24 @@ RestWrite.prototype.checkRestrictedFields = async function () {
       this.config
     );
   }
+};
+
+// Validates the create class-level permission before transformUser runs.
+// This prevents user enumeration (username/email existence) when public
+// create is disabled on _User, because transformUser checks uniqueness
+// before the CLP is enforced in runDatabaseOperation.
+RestWrite.prototype.validateCreatePermission = async function () {
+  if (this.query || this.auth.isMaster || this.auth.isMaintenance) {
+    return;
+  }
+  if (!this.validSchemaController) {
+    return;
+  }
+  await this.validSchemaController.validatePermission(
+    this.className,
+    this.runOptions.acl || [],
+    'create'
+  );
 };
 
 // The non-third-party parts of User transformation
@@ -1107,6 +1155,14 @@ RestWrite.prototype.deleteEmailResetTokenIfNeeded = function () {
 };
 
 RestWrite.prototype.destroyDuplicatedSessions = function () {
+  // Skip if the response is already set, matching the other write-pipeline steps
+  // (runDatabaseOperation, runAfterSaveTrigger). A non-master POST /classes/_Session
+  // create has handleSession() set this.response before this runs, so this guard
+  // prevents the dedup delete from acting on the client-supplied `user`/`installationId`
+  // rather than on the server-generated session data.
+  if (this.response) {
+    return;
+  }
   // Only for _Session, and at creation time
   if (this.className != '_Session' || this.query) {
     return;
@@ -1119,7 +1175,7 @@ RestWrite.prototype.destroyDuplicatedSessions = function () {
   if (!user.objectId) {
     return;
   }
-  this.config.database.destroy(
+  return this.config.database.destroy(
     '_Session',
     {
       user,
@@ -1128,7 +1184,11 @@ RestWrite.prototype.destroyDuplicatedSessions = function () {
     },
     {},
     this.validSchemaController
-  );
+  ).catch(e => {
+    if (e.code !== Parse.Error.OBJECT_NOT_FOUND) {
+      throw e;
+    }
+  });
 };
 
 // Handles any followup logic
@@ -1172,17 +1232,21 @@ RestWrite.prototype.handleSession = function () {
   }
 
   // TODO: Verify proper error to throw
-  if (this.data.ACL) {
+  if ('ACL' in this.data) {
     throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Cannot set ' + 'ACL on a Session.');
   }
 
   if (this.query) {
-    if (this.data.user && !this.auth.isMaster && this.data.user.objectId != this.auth.user.id) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
-    } else if (this.data.installationId) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
-    } else if (this.data.sessionToken) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
+    if ('user' in this.data && !this.auth.isMaster && this.data.user?.objectId !== this.auth.user.id) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: user');
+    } else if ('installationId' in this.data) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: installationId');
+    } else if ('sessionToken' in this.data) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: sessionToken');
+    } else if ('expiresAt' in this.data && !this.auth.isMaster && !this.auth.isMaintenance) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: expiresAt');
+    } else if ('createdWith' in this.data && !this.auth.isMaster && !this.auth.isMaintenance) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: createdWith');
     }
     if (!this.auth.isMaster) {
       this.query = {
@@ -1393,10 +1457,10 @@ RestWrite.prototype.handleInstallation = function () {
         } else {
           // Multiple device token matches and we specified an installation ID,
           // or a single match where both the passed and matching objects have
-          // an installation ID. Try cleaning out old installations that match
-          // the deviceToken, and return nil to signal that a new object should
-          // be created.
-          var delQuery = {
+          // an installation ID. Clean out other installations that match the
+          // deviceToken, and return nil to signal that a new object should be
+          // created.
+          const delQuery = {
             deviceToken: this.data.deviceToken,
             installationId: {
               $ne: installationId,
@@ -1405,35 +1469,32 @@ RestWrite.prototype.handleInstallation = function () {
           if (this.data.appIdentifier) {
             delQuery['appIdentifier'] = this.data.appIdentifier;
           }
-          this.config.database.destroy('_Installation', delQuery).catch(err => {
-            if (err.code == Parse.Error.OBJECT_NOT_FOUND) {
-              // no deletions were made. Can be ignored.
-              return;
-            }
-            // rethrow the error
-            throw err;
+          const installationOpts = this.config.installation || {};
+          return InstallationDedup.removeConflictingDeviceToken({
+            database: this.config.database,
+            query: delQuery,
+            action: installationOpts.duplicateDeviceTokenAction || 'delete',
+            enforceAuth: installationOpts.duplicateDeviceTokenActionEnforceAuth === true,
+            runOptions: this.runOptions,
+            validSchemaController: this.validSchemaController,
           });
-          return;
         }
       } else {
         if (deviceTokenMatches.length == 1 && !deviceTokenMatches[0]['installationId']) {
           // Exactly one device token match and it doesn't have an installation
-          // ID. This is the one case where we want to merge with the existing
-          // object.
-          const delQuery = { objectId: idMatch.objectId };
-          return this.config.database
-            .destroy('_Installation', delQuery)
-            .then(() => {
-              return deviceTokenMatches[0]['objectId'];
-            })
-            .catch(err => {
-              if (err.code == Parse.Error.OBJECT_NOT_FOUND) {
-                // no deletions were made. Can be ignored
-                return;
-              }
-              // rethrow the error
-              throw err;
-            });
+          // ID. The two rows represent the same install; resolve the merge per
+          // the configured options.
+          const installationOpts = this.config.installation || {};
+          return InstallationDedup.applyDuplicateDeviceTokenMerge({
+            database: this.config.database,
+            idMatch,
+            deviceTokenMatch: deviceTokenMatches[0],
+            action: installationOpts.duplicateDeviceTokenAction || 'delete',
+            mergePriority: installationOpts.duplicateDeviceTokenMergePriority || 'deviceToken',
+            enforceAuth: installationOpts.duplicateDeviceTokenActionEnforceAuth === true,
+            runOptions: this.runOptions,
+            validSchemaController: this.validSchemaController,
+          });
         } else {
           if (this.data.deviceToken && idMatch.deviceToken != this.data.deviceToken) {
             // We're setting the device token on an existing installation, so
@@ -1464,14 +1525,15 @@ RestWrite.prototype.handleInstallation = function () {
             if (this.data.appIdentifier) {
               delQuery['appIdentifier'] = this.data.appIdentifier;
             }
-            this.config.database.destroy('_Installation', delQuery).catch(err => {
-              if (err.code == Parse.Error.OBJECT_NOT_FOUND) {
-                // no deletions were made. Can be ignored.
-                return;
-              }
-              // rethrow the error
-              throw err;
-            });
+            const installationOpts = this.config.installation || {};
+            return InstallationDedup.removeConflictingDeviceToken({
+              database: this.config.database,
+              query: delQuery,
+              action: installationOpts.duplicateDeviceTokenAction || 'delete',
+              enforceAuth: installationOpts.duplicateDeviceTokenActionEnforceAuth === true,
+              runOptions: this.runOptions,
+              validSchemaController: this.validSchemaController,
+            }).then(() => idMatch.objectId);
           }
           // In non-merge scenarios, just return the installation match id
           return idMatch.objectId;
@@ -1872,6 +1934,34 @@ RestWrite.prototype.cleanUserAuthData = function () {
   }
 };
 
+// Strips protected fields from the write response when protectedFieldsSaveResponseExempt is false.
+RestWrite.prototype.filterProtectedFieldsInResponse = async function () {
+  if (this.config.protectedFieldsSaveResponseExempt !== false) {
+    return;
+  }
+  if (this.auth.isMaster || this.auth.isMaintenance) {
+    return;
+  }
+  if (!this.response || !this.response.response) {
+    return;
+  }
+  const schemaController = await this.config.database.loadSchema();
+  const protectedFields = this.config.database.addProtectedFields(
+    schemaController,
+    this.className,
+    this.query ? { objectId: this.query.objectId } : {},
+    this.auth.user ? [this.auth.user.id].concat(this.auth.userRoles || []) : [],
+    this.auth,
+    {}
+  );
+  if (!protectedFields) {
+    return;
+  }
+  for (const field of protectedFields) {
+    delete this.response.response[field];
+  }
+};
+
 RestWrite.prototype._updateResponseWithData = function (response, data) {
   const stateController = Parse.CoreManager.getObjectStateController();
   const [pending] = stateController.getPendingOps(this.pendingOps.identifier);
@@ -1905,7 +1995,6 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
   if (_.isEmpty(this.storage.fieldsChangedByTrigger)) {
     return response;
   }
-  const clientSupportsDelete = ClientSDK.supportsForwardDelete(this.clientSDK);
   this.storage.fieldsChangedByTrigger.forEach(fieldName => {
     const dataValue = data[fieldName];
 
@@ -1913,10 +2002,9 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
       response[fieldName] = dataValue;
     }
 
-    // Strips operations from responses
     if (response[fieldName] && response[fieldName].__op) {
       delete response[fieldName];
-      if (clientSupportsDelete && dataValue.__op == 'Delete') {
+      if (dataValue.__op == 'Delete') {
         response[fieldName] = dataValue;
       }
     }

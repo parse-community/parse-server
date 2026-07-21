@@ -304,11 +304,11 @@ function transformQueryKeyValue(className, key, value, schema, count = false) {
       return { key: 'times_used', value: value };
     default: {
       // Other auth data
-      const authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
+      const authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)(\.(.+))?$/);
       if (authDataMatch && className === '_User') {
         const provider = authDataMatch[1];
-        // Special-case auth data.
-        return { key: `_auth_data_${provider}.id`, value };
+        const subField = authDataMatch[3];
+        return { key: `_auth_data_${provider}${subField ? `.${subField}` : ''}`, value };
       }
     }
   }

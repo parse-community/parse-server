@@ -916,7 +916,7 @@ describe('ParseLiveQuery', function () {
     ]);
   });
 
-  it('liveQuery on Session class', async done => {
+  it('liveQuery on Session class', async () => {
     await reconfigureServer({
       liveQuery: { classNames: [Parse.Session] },
       startLiveQueryServer: true,
@@ -932,17 +932,19 @@ describe('ParseLiveQuery', function () {
     const query = new Parse.Query(Parse.Session);
     const subscription = await query.subscribe();
 
-    subscription.on('create', async obj => {
-      expect(obj.get('user').id).toBe(user.id);
-      expect(obj.get('createdWith')).toEqual({ action: 'login', authProvider: 'password' });
-      expect(obj.get('expiresAt')).toBeInstanceOf(Date);
-      expect(obj.get('installationId')).toBeDefined();
-      expect(obj.get('createdAt')).toBeInstanceOf(Date);
-      expect(obj.get('updatedAt')).toBeInstanceOf(Date);
-      done();
+    const createEvent = new Promise(resolve => {
+      subscription.on('create', resolve);
     });
 
     await Parse.User.logIn('username', 'password');
+
+    const obj = await createEvent;
+    expect(obj.get('user').id).toBe(user.id);
+    expect(obj.get('createdWith')).toEqual({ action: 'login', authProvider: 'password' });
+    expect(obj.get('expiresAt')).toBeInstanceOf(Date);
+    expect(obj.get('installationId')).toBeDefined();
+    expect(obj.get('createdAt')).toBeInstanceOf(Date);
+    expect(obj.get('updatedAt')).toBeInstanceOf(Date);
   });
 
   it('prevent liveQuery on Session class when not logged in', async () => {
@@ -956,7 +958,7 @@ describe('ParseLiveQuery', function () {
     await expectAsync(query.subscribe()).toBeRejectedWith(new Error('Invalid session token'));
   });
 
-  it_id('4ccc9508-ae6a-46ec-932a-9f5e49ab3b9e')(it)('handle invalid websocket payload length', async done => {
+  it_id('4ccc9508-ae6a-46ec-932a-9f5e49ab3b9e')(it)('handle invalid websocket payload length', async () => {
     await reconfigureServer({
       liveQuery: {
         classNames: ['TestObject'],
@@ -980,17 +982,31 @@ describe('ParseLiveQuery', function () {
     // 0xfe = 11111110 = first bit is masking the remaining 7 are 1111110 or 126 the payload length
     // https://tools.ietf.org/html/rfc6455#section-5.2
     const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
-    client.socket._socket.write(Buffer.from([0x89, 0xfe]));
 
-    subscription.on('update', async object => {
-      expect(object.get('foo')).toBe('bar');
-      done();
+    // Wait for the initial subscription 'open' event (fires 200ms after subscribe)
+    // before sending the invalid frame, so we don't confuse it with the reconnection 'open'
+    await new Promise(resolve => subscription.on('open', resolve));
+
+    // Now listen for close followed by reopen from the reconnection cycle
+    const reopened = new Promise(resolve => {
+      subscription.on('close', () => {
+        subscription.on('open', resolve);
+      });
     });
-    // Wait for Websocket timeout to reconnect
-    setTimeout(async () => {
-      object.set({ foo: 'bar' });
-      await object.save();
-    }, 1000);
+
+    client.socket._socket.write(Buffer.from([0x89, 0xfe]));
+    await reopened;
+
+    // After reconnection, save an update and verify the subscription receives it
+    const updated = new Promise(resolve => {
+      subscription.on('update', object => {
+        expect(object.get('foo')).toBe('bar');
+        resolve();
+      });
+    });
+    object.set({ foo: 'bar' });
+    await object.save();
+    await updated;
   });
 
   it_id('39a9191f-26dd-4e05-a379-297a67928de8')(it)('should execute live query update on email validation', async done => {
@@ -1467,5 +1483,525 @@ describe('ParseLiveQuery', function () {
       const query = new Parse.Query('SecureChat');
       await expectAsync(query.subscribe()).toBeRejected();
     });
+  });
+});
+
+describe('ParseLiveQuery duplicate requestId handling', function () {
+  const WebSocket = require('ws');
+
+  const waitFor = async predicate => {
+    const deadline = Date.now() + 4000;
+    while (Date.now() < deadline) {
+      if (predicate()) {
+        return;
+      }
+      await sleep(20);
+    }
+    throw new Error('timed out waiting for condition');
+  };
+
+  let sockets;
+
+  beforeEach(() => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    sockets = [];
+  });
+
+  afterEach(() => {
+    for (const socket of sockets) {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.close();
+      }
+    }
+    sockets = [];
+  });
+
+  const configureServer = async () => {
+    const parseServer = await reconfigureServer({
+      liveQuery: { classNames: ['LQDupA', 'LQDupB'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    return parseServer.liveQueryServer;
+  };
+
+  // Opens a raw LiveQuery WebSocket client and returns a small protocol helper.
+  const openClient = async () => {
+    const socket = new WebSocket('ws://localhost:8378/1');
+    sockets.push(socket);
+    const messages = [];
+    socket.on('message', data => messages.push(JSON.parse(data.toString())));
+    await new Promise((resolve, reject) => {
+      socket.on('open', resolve);
+      socket.on('error', reject);
+    });
+    socket.send(JSON.stringify({ op: 'connect', applicationId: Parse.applicationId }));
+    const client = {
+      socket,
+      messages,
+      subscribe(requestId, className, where) {
+        socket.send(JSON.stringify({ op: 'subscribe', requestId, query: { className, where } }));
+      },
+      update(requestId, className, where) {
+        socket.send(JSON.stringify({ op: 'update', requestId, query: { className, where } }));
+      },
+      countOp(op) {
+        return messages.filter(message => message.op === op).length;
+      },
+      waitForOpCount(op, count) {
+        return waitFor(() => this.countOp(op) === count);
+      },
+    };
+    await waitFor(() => messages.some(message => message.op === 'connected'));
+    return client;
+  };
+
+  it('replaces rather than leaks subscriptions when a client reuses a requestId with different queries', async () => {
+    const lqServer = await configureServer();
+    const client = await openClient();
+
+    for (let i = 0; i < 5; i++) {
+      client.subscribe(7, 'LQDupA', { marker: `ws-${i}` });
+    }
+    await client.waitForOpCount('subscribed', 5);
+
+    // Reusing one requestId must keep a single active subscription, not one per frame.
+    expect(lqServer.subscriptions.get('LQDupA').size).toBe(1);
+
+    client.socket.close();
+    await waitFor(() => lqServer.clients.size === 0);
+
+    // No stale subscriptions may survive the disconnect.
+    expect(lqServer.subscriptions.get('LQDupA')?.size ?? 0).toBe(0);
+  });
+
+  it('does not leak subscriptions when a client reuses a requestId with the same query', async () => {
+    const lqServer = await configureServer();
+    const client = await openClient();
+
+    for (let i = 0; i < 5; i++) {
+      client.subscribe(7, 'LQDupA', { marker: 'same' });
+    }
+    await client.waitForOpCount('subscribed', 5);
+
+    expect(lqServer.subscriptions.get('LQDupA').size).toBe(1);
+
+    client.socket.close();
+    await waitFor(() => lqServer.clients.size === 0);
+
+    expect(lqServer.subscriptions.get('LQDupA')?.size ?? 0).toBe(0);
+  });
+
+  it('cleans up the prior subscription when a client reuses a requestId on a different class', async () => {
+    const lqServer = await configureServer();
+    const client = await openClient();
+
+    client.subscribe(7, 'LQDupA', { marker: 'a' });
+    await client.waitForOpCount('subscribed', 1);
+    client.subscribe(7, 'LQDupB', { marker: 'b' });
+    await client.waitForOpCount('subscribed', 2);
+    client.subscribe(7, 'LQDupA', { marker: 'a2' });
+    await client.waitForOpCount('subscribed', 3);
+
+    // Only the most recent subscription survives; the prior class entry is pruned.
+    expect(lqServer.subscriptions.get('LQDupA').size).toBe(1);
+    expect(lqServer.subscriptions.has('LQDupB')).toBe(false);
+
+    client.socket.close();
+    await waitFor(() => lqServer.clients.size === 0);
+
+    expect(lqServer.subscriptions.get('LQDupA')?.size ?? 0).toBe(0);
+    expect(lqServer.subscriptions.has('LQDupB')).toBe(false);
+  });
+
+  it('does not tear down a subscription still held by another client when a client reuses a requestId', async () => {
+    const lqServer = await configureServer();
+    const clientA = await openClient();
+    const clientB = await openClient();
+
+    // Both clients share the same query, so they share one Subscription.
+    clientA.subscribe(7, 'LQDupA', { marker: 'shared' });
+    await clientA.waitForOpCount('subscribed', 1);
+    clientB.subscribe(9, 'LQDupA', { marker: 'shared' });
+    await clientB.waitForOpCount('subscribed', 1);
+    expect(lqServer.subscriptions.get('LQDupA').size).toBe(1);
+
+    // Client A reuses its requestId with a different query.
+    clientA.subscribe(7, 'LQDupA', { marker: 'other' });
+    await clientA.waitForOpCount('subscribed', 2);
+
+    // The shared subscription must survive (B still holds it), alongside A's new one.
+    expect(lqServer.subscriptions.get('LQDupA').size).toBe(2);
+
+    // The shared subscription still delivers events to B, but not to A anymore.
+    const shared = new Parse.Object('LQDupA');
+    shared.set('marker', 'shared');
+    await shared.save(null, { useMasterKey: true });
+    await clientB.waitForOpCount('create', 1);
+    expect(clientB.countOp('create')).toBe(1);
+    expect(clientA.countOp('create')).toBe(0);
+
+    clientA.socket.close();
+    clientB.socket.close();
+    await waitFor(() => lqServer.clients.size === 0);
+    expect(lqServer.subscriptions.get('LQDupA')?.size ?? 0).toBe(0);
+  });
+
+  it('delivers events only for the replacement query after a client reuses a requestId', async () => {
+    const lqServer = await configureServer();
+    const client = await openClient();
+
+    client.subscribe(7, 'LQDupA', { marker: 'old' });
+    await client.waitForOpCount('subscribed', 1);
+    client.subscribe(7, 'LQDupA', { marker: 'new' });
+    await client.waitForOpCount('subscribed', 2);
+    expect(lqServer.subscriptions.get('LQDupA').size).toBe(1);
+
+    const oldObject = new Parse.Object('LQDupA');
+    oldObject.set('marker', 'old');
+    await oldObject.save(null, { useMasterKey: true });
+
+    const newObject = new Parse.Object('LQDupA');
+    newObject.set('marker', 'new');
+    await newObject.save(null, { useMasterKey: true });
+
+    await client.waitForOpCount('create', 1);
+    // Only the replacement query (marker 'new') may produce an event.
+    expect(client.countOp('create')).toBe(1);
+    expect(client.messages.find(message => message.op === 'create').object.marker).toBe('new');
+  });
+
+  it('keeps the update op working after the duplicate-subscribe cleanup', async () => {
+    const lqServer = await configureServer();
+    const client = await openClient();
+
+    client.subscribe(7, 'LQDupA', { marker: 'old' });
+    await client.waitForOpCount('subscribed', 1);
+    client.update(7, 'LQDupA', { marker: 'new' });
+    await client.waitForOpCount('subscribed', 2);
+
+    expect(lqServer.subscriptions.get('LQDupA').size).toBe(1);
+
+    const updated = new Parse.Object('LQDupA');
+    updated.set('marker', 'new');
+    await updated.save(null, { useMasterKey: true });
+    await client.waitForOpCount('create', 1);
+    expect(client.countOp('create')).toBe(1);
+
+    client.socket.close();
+    await waitFor(() => lqServer.clients.size === 0);
+    expect(lqServer.subscriptions.get('LQDupA')?.size ?? 0).toBe(0);
+  });
+});
+
+describe('ParseLiveQuery cross-origin connection authorization', function () {
+  // CSWSH report (WSAdapter): LiveQuery auth is bound to the sessionToken in the
+  // `connect` message body, not to ambient/cookie credentials. A cross-origin page
+  // cannot read the victim's sessionToken, so its connection is anonymous and ACL
+  // filtering limits it to public-read objects only.
+  const WebSocket = require('ws');
+
+  const waitFor = async predicate => {
+    const deadline = Date.now() + 4000;
+    while (Date.now() < deadline) {
+      if (predicate()) {
+        return;
+      }
+      await sleep(20);
+    }
+    throw new Error('timed out waiting for condition');
+  };
+
+  let sockets;
+
+  beforeEach(() => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    sockets = [];
+  });
+
+  afterEach(() => {
+    for (const socket of sockets) {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.close();
+      }
+    }
+    sockets = [];
+  });
+
+  // Opens a raw LiveQuery WebSocket client with no session token, modeling a
+  // cross-origin page that has no access to the victim's session.
+  const openClient = async () => {
+    const socket = new WebSocket('ws://localhost:8378/1');
+    sockets.push(socket);
+    const messages = [];
+    socket.on('message', data => messages.push(JSON.parse(data.toString())));
+    await new Promise((resolve, reject) => {
+      socket.on('open', resolve);
+      socket.on('error', reject);
+    });
+    socket.send(JSON.stringify({ op: 'connect', applicationId: Parse.applicationId }));
+    const client = {
+      socket,
+      messages,
+      subscribe(requestId, className, where) {
+        socket.send(JSON.stringify({ op: 'subscribe', requestId, query: { className, where } }));
+      },
+      countOp(op) {
+        return messages.filter(message => message.op === op).length;
+      },
+      createdIds() {
+        return messages.filter(m => m.op === 'create').map(m => m.object && m.object.objectId);
+      },
+      waitForOpCount(op, count) {
+        return waitFor(() => this.countOp(op) === count);
+      },
+    };
+    await waitFor(() => messages.some(message => message.op === 'connected'));
+    return client;
+  };
+
+  it('does not deliver ACL-protected objects to a connection that presents no session token', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['CrossOriginChat'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const victim = new Parse.User();
+    victim.setUsername('victim');
+    victim.setPassword('password');
+    await victim.signUp();
+
+    // The attacker page connects with no session token and subscribes to everything.
+    const attacker = await openClient();
+    attacker.subscribe(1, 'CrossOriginChat', {});
+    await attacker.waitForOpCount('subscribed', 1);
+
+    // A public-read object is delivered to the anonymous connection (proves the socket
+    // and subscription are live — the missing protected object below is a real denial,
+    // not a dead connection).
+    const publicObj = new Parse.Object('CrossOriginChat');
+    const publicACL = new Parse.ACL();
+    publicACL.setPublicReadAccess(true);
+    publicObj.setACL(publicACL);
+    publicObj.set('body', 'public');
+    await publicObj.save(null, { useMasterKey: true });
+    await attacker.waitForOpCount('create', 1);
+    expect(attacker.createdIds()).toEqual([publicObj.id]);
+
+    // The victim's private object (readable only by the victim) must never reach the
+    // attacker's session-less connection.
+    const secretObj = new Parse.Object('CrossOriginChat');
+    const secretACL = new Parse.ACL();
+    secretACL.setPublicReadAccess(false);
+    secretACL.setReadAccess(victim, true);
+    secretObj.setACL(secretACL);
+    secretObj.set('body', 'secret');
+    await secretObj.save(null, { useMasterKey: true });
+
+    // A second public save acts as an ordering barrier: LiveQuery delivers events on a
+    // subscription in publish order, so once this later object's `create` arrives, the
+    // earlier `secret` save has already had its chance. Asserting the exact id list is
+    // then deterministic rather than relying on a wall-clock window.
+    const publicObj2 = new Parse.Object('CrossOriginChat');
+    const publicACL2 = new Parse.ACL();
+    publicACL2.setPublicReadAccess(true);
+    publicObj2.setACL(publicACL2);
+    publicObj2.set('body', 'public-2');
+    await publicObj2.save(null, { useMasterKey: true });
+    await attacker.waitForOpCount('create', 2);
+    expect(attacker.createdIds()).toEqual([publicObj.id, publicObj2.id]);
+  });
+});
+
+describe('ParseLiveQuery ACL transition disclosure', function () {
+  const WebSocket = require('ws');
+
+  const waitFor = async predicate => {
+    const deadline = Date.now() + 6000;
+    while (Date.now() < deadline) {
+      if (predicate()) {
+        return;
+      }
+      await sleep(20);
+    }
+    throw new Error('timed out waiting for condition');
+  };
+
+  let sockets;
+
+  beforeEach(() => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    sockets = [];
+  });
+
+  afterEach(() => {
+    for (const socket of sockets) {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.close();
+      }
+    }
+    sockets = [];
+  });
+
+  // Opens a raw LiveQuery WebSocket client authenticated with the given session
+  // token so the exact wire payload of each event can be asserted directly.
+  const openClient = async sessionToken => {
+    const socket = new WebSocket('ws://localhost:8378/1');
+    sockets.push(socket);
+    const messages = [];
+    socket.on('message', data => messages.push(JSON.parse(data.toString())));
+    await new Promise((resolve, reject) => {
+      socket.on('open', resolve);
+      socket.on('error', reject);
+    });
+    socket.send(
+      JSON.stringify({ op: 'connect', applicationId: Parse.applicationId, sessionToken })
+    );
+    const client = {
+      socket,
+      messages,
+      subscribe(requestId, className, where) {
+        socket.send(
+          JSON.stringify({ op: 'subscribe', requestId, query: { className, where }, sessionToken })
+        );
+      },
+      messagesForOp(op) {
+        return messages.filter(message => message.op === op);
+      },
+      waitForOpCount(op, count) {
+        return waitFor(() => this.messagesForOp(op).length >= count);
+      },
+    };
+    await waitFor(() => messages.some(message => message.op === 'connected'));
+    return client;
+  };
+
+  it('does not leak the post-revocation object body in a leave event when a save revokes the subscriber ACL read access', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['TestObject'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const user = new Parse.User();
+    user.setUsername('leave-acl-user');
+    user.setPassword('password');
+    await user.signUp();
+
+    // Object readable by the user, with an initial value.
+    const obj = new Parse.Object('TestObject');
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(false);
+    acl.setReadAccess(user, true);
+    obj.setACL(acl);
+    obj.set('secretField', 'INITIAL');
+    await obj.save(null, { useMasterKey: true });
+
+    const client = await openClient(user.getSessionToken());
+    client.subscribe(1, 'TestObject', {});
+    await client.waitForOpCount('subscribed', 1);
+
+    // Control update: keep the user's ACL read access, only change the field. The
+    // user is still authorized and receives the new value via an update event.
+    await obj.save({ secretField: 'BENIGN_VISIBLE' }, { useMasterKey: true });
+    await client.waitForOpCount('update', 1);
+    expect(client.messagesForOp('update')[0].object.secretField).toBe('BENIGN_VISIBLE');
+
+    // Attack update: change the field AND remove the user's read access in the same save.
+    const revokedACL = new Parse.ACL();
+    revokedACL.setPublicReadAccess(false);
+    obj.setACL(revokedACL);
+    obj.set('secretField', 'POST_REVOCATION_SECRET');
+    await obj.save(null, { useMasterKey: true });
+    await client.waitForOpCount('leave', 1);
+
+    const leave = client.messagesForOp('leave')[0];
+    // The subscriber must not receive the post-revocation value they can no longer read.
+    expect(leave.object.secretField).not.toBe('POST_REVOCATION_SECRET');
+    // They receive the last value they were authorized to see.
+    expect(leave.object.secretField).toBe('BENIGN_VISIBLE');
+  });
+
+  it('does not leak the pre-grant original object body in an enter event when a save grants the subscriber ACL read access', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['TestObject'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const user = new Parse.User();
+    user.setUsername('enter-acl-user');
+    user.setPassword('password');
+    await user.signUp();
+
+    // Object NOT readable by the user, with a pre-grant value.
+    const obj = new Parse.Object('TestObject');
+    const noAccessACL = new Parse.ACL();
+    noAccessACL.setPublicReadAccess(false);
+    obj.setACL(noAccessACL);
+    obj.set('secretField', 'PRE_GRANT_SECRET');
+    await obj.save(null, { useMasterKey: true });
+
+    const client = await openClient(user.getSessionToken());
+    client.subscribe(1, 'TestObject', {});
+    await client.waitForOpCount('subscribed', 1);
+
+    // Grant update: change the field AND add the user's read access in the same save.
+    const grantedACL = new Parse.ACL();
+    grantedACL.setPublicReadAccess(false);
+    grantedACL.setReadAccess(user, true);
+    obj.setACL(grantedACL);
+    obj.set('secretField', 'GRANTED_VALUE');
+    await obj.save(null, { useMasterKey: true });
+    await client.waitForOpCount('enter', 1);
+
+    const enter = client.messagesForOp('enter')[0];
+    // The current (now-authorized) value is delivered.
+    expect(enter.object.secretField).toBe('GRANTED_VALUE');
+    // The pre-grant state the user was never authorized to read must not be delivered.
+    expect(enter.original).toBeUndefined();
+  });
+
+  it('still delivers the current object in a leave event caused by a query mismatch when the subscriber retains read access', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['TestObject'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const user = new Parse.User();
+    user.setUsername('leave-query-user');
+    user.setPassword('password');
+    await user.signUp();
+
+    // Object readable by the user that matches the subscription query.
+    const obj = new Parse.Object('TestObject');
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(false);
+    acl.setReadAccess(user, true);
+    obj.setACL(acl);
+    obj.set('status', 'active');
+    obj.set('secretField', 'INITIAL');
+    await obj.save(null, { useMasterKey: true });
+
+    const client = await openClient(user.getSessionToken());
+    client.subscribe(1, 'TestObject', { status: 'active' });
+    await client.waitForOpCount('subscribed', 1);
+
+    // Update the field so the object no longer matches the query (query-mismatch leave)
+    // while preserving the user's ACL read access. The user is still authorized to read
+    // the current object, so the current state is delivered as designed.
+    await obj.save({ status: 'archived', secretField: 'VISIBLE_NEW' }, { useMasterKey: true });
+    await client.waitForOpCount('leave', 1);
+
+    const leave = client.messagesForOp('leave')[0];
+    expect(leave.object.status).toBe('archived');
+    expect(leave.object.secretField).toBe('VISIBLE_NEW');
   });
 });

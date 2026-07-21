@@ -16,6 +16,11 @@ COPY package*.json ./
 # Copy src to have config files for install
 COPY . .
 
+# Increase npm network timeout and retries for slow platforms (e.g. arm64 via QEMU)
+ENV npm_config_fetch_retries=5
+ENV npm_config_fetch_retry_mintimeout=60000
+ENV npm_config_fetch_retry_maxtimeout=300000
+
 # Install without scripts
 RUN npm ci --omit=dev --ignore-scripts \
     # Copy production node_modules aside for later

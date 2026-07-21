@@ -514,4 +514,25 @@ describe('Utils', () => {
       expect(() => Utils.deepClone(Symbol('x'))).toThrow();
     });
   });
+
+  describe('getFileExtension', () => {
+    const cases = [
+      ['file.txt', 'txt'],
+      ['file.tar.gz', 'gz'],
+      ['.hidden', 'hidden'],
+      ['file.', ''],
+      ['file..', ''],
+      ['file', ''],
+      ['', ''],
+      [null, ''],
+      [undefined, ''],
+      ['poc.svg.', ''],
+      ['archive.tar.gz.', ''],
+    ];
+    for (const [input, expected] of cases) {
+      it(`returns ${JSON.stringify(expected)} for ${JSON.stringify(input)}`, () => {
+        expect(Utils.getFileExtension(input)).toBe(expected);
+      });
+    }
+  });
 });
