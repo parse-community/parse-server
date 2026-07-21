@@ -548,7 +548,7 @@ class DatabaseController {
     const originalQuery = query;
     const originalUpdate = update;
     // Make a copy of the object, so we don't mutate the incoming data.
-    update = structuredClone(update);
+    update = Utils.deepClone(update);
     var relationUpdates = [];
     var isMaster = acl === undefined;
     var aclGroup = acl || [];

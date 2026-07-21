@@ -74,8 +74,8 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
 
   // Processing this operation may mutate our data, so we operate on a
   // copy
-  this.query = structuredClone(query);
-  this.data = structuredClone(data);
+  this.query = Utils.deepClone(query);
+  this.data = Utils.deepClone(data);
   // We never change originalData, so we do not need a deep copy
   this.originalData = originalData;
 
@@ -376,10 +376,10 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function () {
         JSON.stringify(schema.classLevelPermissions.ACL) !==
           JSON.stringify({ '*': { read: true, write: true } })
       ) {
-        const acl = structuredClone(schema.classLevelPermissions.ACL);
+        const acl = Utils.deepClone(schema.classLevelPermissions.ACL);
         if (acl.currentUser) {
           if (this.auth.user?.id) {
-            acl[this.auth.user?.id] = structuredClone(acl.currentUser);
+            acl[this.auth.user?.id] = Utils.deepClone(acl.currentUser);
           }
           delete acl.currentUser;
         }
@@ -621,7 +621,7 @@ RestWrite.prototype.handleAuthData = async function (authData) {
         // Run beforeLogin hook before storing any updates
         // to authData on the db; changes to userResult
         // will be ignored.
-        await this.runBeforeLoginTrigger(structuredClone(userResult));
+        await this.runBeforeLoginTrigger(Utils.deepClone(userResult));
 
         // If we are in login operation via authData
         // we need to be sure that the user has provided
@@ -752,11 +752,15 @@ RestWrite.prototype.transformUser = async function () {
         });
       });
     })
-    .then(() => {
-      return this._validateUserName();
-    })
-    .then(() => {
-      return this._validateEmail();
+    .then(async () => {
+      // Independent uniqueness queries run in parallel; username errors keep
+      // priority over email errors when both would fail
+      const results = await Promise.allSettled([this._validateUserName(), this._validateEmail()]);
+      for (const result of results) {
+        if (result.status === 'rejected') {
+          throw result.reason;
+        }
+      }
     });
 };
 
@@ -1792,7 +1796,7 @@ RestWrite.prototype.sanitizedData = function () {
       delete data[key];
     }
     return data;
-  }, structuredClone(this.data));
+  }, Utils.deepClone(this.data));
   return Parse._decode(undefined, data);
 };
 
@@ -1842,7 +1846,7 @@ RestWrite.prototype.buildParseObjects = function () {
       delete data[key];
     }
     return data;
-  }, structuredClone(this.data));
+  }, Utils.deepClone(this.data));
 
   const sanitized = this.sanitizedData();
   for (const attribute of readOnlyAttributes) {
