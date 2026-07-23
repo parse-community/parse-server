@@ -34,13 +34,19 @@ function getAuth(options = {}, config) {
  * get the same per-request DI as Express HTTP requests.
  *
  * Synthetic request contract (minimal supported fields only):
- * - `req.config` — Parse Server config (DI target)
- * - `req.headers` — empty object `{}` (no HTTP headers on this path)
+ * - `req.config` — Parse Server config (DI target only)
+ * - `req.headers` — empty object `{}` (no HTTP headers on this path; DI support only)
+ * - `res` — bare object `{}` (not a real Express response)
  *
  * Express-only request properties and methods such as `req.get()`,
  * `req.header()`, `req.ip`, and `req.body` are unavailable. Middleware must
  * use only the supported fields above; this path intentionally does not add
  * partial Express compatibility.
+ *
+ * Settlement is required: the middleware must call `next()` / `next(err)`, or
+ * return a Promise that resolves or rejects. Do not rely on response
+ * termination (`res.send`, `res.end`, `res.json`, etc.) or other implicit
+ * paths — those will hang nested directAccess ops indefinitely.
  */
 async function applyRequestContextMiddleware(config) {
   if (typeof config.requestContextMiddleware !== 'function') {
