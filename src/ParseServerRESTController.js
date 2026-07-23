@@ -32,6 +32,15 @@ function getAuth(options = {}, config) {
 /**
  * Apply requestContextMiddleware on a synthetic request so directAccess ops
  * get the same per-request DI as Express HTTP requests.
+ *
+ * Synthetic request contract (minimal supported fields only):
+ * - `req.config` — Parse Server config (DI target)
+ * - `req.headers` — empty object `{}` (no HTTP headers on this path)
+ *
+ * Express-only request properties and methods such as `req.get()`,
+ * `req.header()`, `req.ip`, and `req.body` are unavailable. Middleware must
+ * use only the supported fields above; this path intentionally does not add
+ * partial Express compatibility.
  */
 function applyRequestContextMiddleware(config) {
   if (typeof config.requestContextMiddleware !== 'function') {
@@ -50,6 +59,7 @@ function applyRequestContextMiddleware(config) {
         resolve();
       }
     };
+    // Minimal synthetic req — see contract in JSDoc above.
     const req = { config, headers: {} };
     try {
       const maybePromise = config.requestContextMiddleware(req, {}, done);
