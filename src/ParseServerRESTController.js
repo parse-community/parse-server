@@ -63,155 +63,134 @@ function applyRequestContextMiddleware(config) {
 }
 
 function ParseServerRESTController(applicationId, router) {
-  function handleRequest(method, path, data = {}, options = {}, config) {
+  async function handleRequest(method, path, data = {}, options = {}, config) {
     // Store the arguments, for later use if internal fails
     const args = arguments;
     const configWasProvided = !!config;
 
-    return Promise.resolve()
-      .then(() => {
-        if (!configWasProvided) {
-          config = Config.get(applicationId);
-          // Fresh config from AppCache has no Express middleware mutations;
-          // re-apply requestContextMiddleware for DI parity with HTTP.
-          return applyRequestContextMiddleware(config);
-        }
-      })
-      .then(() => {
-        const serverURL = new URL(config.serverURL);
-        if (path.indexOf(serverURL.pathname) === 0) {
-          path = path.slice(serverURL.pathname.length, path.length);
-        }
+    if (!configWasProvided) {
+      config = Config.get(applicationId);
+      // Fresh config from AppCache has no Express middleware mutations;
+      // re-apply requestContextMiddleware for DI parity with HTTP.
+      await applyRequestContextMiddleware(config);
+    }
 
-        if (path[0] !== '/') {
-          path = '/' + path;
-        }
+    const serverURL = new URL(config.serverURL);
+    if (path.indexOf(serverURL.pathname) === 0) {
+      path = path.slice(serverURL.pathname.length, path.length);
+    }
 
-        if (path === '/batch') {
-          const batch = transactionRetries => {
-            let initialPromise = Promise.resolve();
-            if (data.transaction === true) {
-              initialPromise = config.database.createTransactionalSession();
-            }
-            return initialPromise.then(() => {
-              const promises = data.requests.map(request => {
-                return handleRequest(
-                  request.method,
-                  request.path,
-                  request.body,
-                  options,
-                  config
-                ).then(
-                  response => {
-                    if (options.returnStatus) {
-                      const status = response._status;
-                      const headers = response._headers;
-                      delete response._status;
-                      delete response._headers;
-                      return { success: response, _status: status, _headers: headers };
-                    }
-                    return { success: response };
-                  },
-                  error => {
-                    return {
-                      error: { code: error.code, error: error.message },
-                    };
-                  }
-                );
-              });
-              return Promise.all(promises)
-                .then(result => {
-                  if (data.transaction === true) {
-                    if (result.find(resultItem => typeof resultItem.error === 'object')) {
-                      return config.database.abortTransactionalSession().then(() => {
-                        return Promise.reject(result);
-                      });
-                    } else {
-                      return config.database.commitTransactionalSession().then(() => {
-                        return result;
-                      });
-                    }
-                  } else {
-                    return result;
-                  }
-                })
-                .catch(error => {
-                  if (
-                    error &&
-                    error.find(
-                      errorItem =>
-                        typeof errorItem.error === 'object' && errorItem.error.code === 251
-                    ) &&
-                    transactionRetries > 0
-                  ) {
-                    return batch(transactionRetries - 1);
-                  }
-                  throw error;
-                });
-            });
-          };
-          return batch(5);
-        }
+    if (path[0] !== '/') {
+      path = '/' + path;
+    }
 
-        let query;
-        if (method === 'GET') {
-          query = data;
+    if (path === '/batch') {
+      const batch = async transactionRetries => {
+        if (data.transaction === true) {
+          await config.database.createTransactionalSession();
         }
-
-        return new Promise((resolve, reject) => {
-          let requestContext;
-          try {
-            requestContext = structuredClone(options.context || {});
-          } catch (error) {
-            reject(
-              new Parse.Error(
-                Parse.Error.INVALID_VALUE,
-                `Context contains non-cloneable values: ${error.message}`
-              )
-            );
-            return;
-          }
-          getAuth(options, config).then(auth => {
-            const request = {
-              body: data,
-              config,
-              auth,
-              info: {
-                applicationId: applicationId,
-                sessionToken: options.sessionToken,
-                installationId: options.installationId,
-                context: requestContext,
-              },
-              query,
-            };
-            return Promise.resolve()
-              .then(() => {
-                return router.tryRouteRequest(method, path, request);
-              })
-              .then(
-                resp => {
-                  const { response, status, headers = {} } = resp;
-                  if (options.returnStatus) {
-                    resolve({ ...response, _status: status, _headers: headers });
-                  } else {
-                    resolve(response);
-                  }
-                },
-                err => {
-                  if (
-                    err instanceof Parse.Error &&
-                    err.code == Parse.Error.INVALID_JSON &&
-                    err.message == `cannot route ${method} ${path}`
-                  ) {
-                    RESTController.request.apply(null, args).then(resolve, reject);
-                  } else {
-                    reject(err);
-                  }
+        const result = await Promise.all(
+          data.requests.map(request => {
+            return handleRequest(
+              request.method,
+              request.path,
+              request.body,
+              options,
+              config
+            ).then(
+              response => {
+                if (options.returnStatus) {
+                  const status = response._status;
+                  const headers = response._headers;
+                  delete response._status;
+                  delete response._headers;
+                  return { success: response, _status: status, _headers: headers };
                 }
-              );
-          }, reject);
-        });
-      });
+                return { success: response };
+              },
+              error => {
+                return {
+                  error: { code: error.code, error: error.message },
+                };
+              }
+            );
+          })
+        );
+        try {
+          if (data.transaction === true) {
+            if (result.find(resultItem => typeof resultItem.error === 'object')) {
+              await config.database.abortTransactionalSession();
+              throw result;
+            }
+            await config.database.commitTransactionalSession();
+          }
+          return result;
+        } catch (error) {
+          if (
+            error &&
+            error.find &&
+            error.find(
+              errorItem => typeof errorItem.error === 'object' && errorItem.error.code === 251
+            ) &&
+            transactionRetries > 0
+          ) {
+            return batch(transactionRetries - 1);
+          }
+          throw error;
+        }
+      };
+      return batch(5);
+    }
+
+    let query;
+    if (method === 'GET') {
+      query = data;
+    }
+
+    let requestContext;
+    try {
+      requestContext = structuredClone(options.context || {});
+    } catch (error) {
+      throw new Parse.Error(
+        Parse.Error.INVALID_VALUE,
+        `Context contains non-cloneable values: ${error.message}`
+      );
+    }
+
+    const auth = await getAuth(options, config);
+    const request = {
+      body: data,
+      config,
+      auth,
+      info: {
+        applicationId: applicationId,
+        sessionToken: options.sessionToken,
+        installationId: options.installationId,
+        context: requestContext,
+      },
+      query,
+    };
+
+    try {
+      const { response, status, headers = {} } = await router.tryRouteRequest(
+        method,
+        path,
+        request
+      );
+      if (options.returnStatus) {
+        return { ...response, _status: status, _headers: headers };
+      }
+      return response;
+    } catch (err) {
+      if (
+        err instanceof Parse.Error &&
+        err.code == Parse.Error.INVALID_JSON &&
+        err.message == `cannot route ${method} ${path}`
+      ) {
+        return RESTController.request.apply(null, args);
+      }
+      throw err;
+    }
   }
 
   return {
