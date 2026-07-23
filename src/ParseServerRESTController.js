@@ -42,11 +42,17 @@ function getAuth(options = {}, config) {
  * use only the supported fields above; this path intentionally does not add
  * partial Express compatibility.
  */
-function applyRequestContextMiddleware(config) {
+async function applyRequestContextMiddleware(config) {
   if (typeof config.requestContextMiddleware !== 'function') {
-    return Promise.resolve();
+    return;
   }
-  return new Promise((resolve, reject) => {
+
+  // Minimal synthetic req — see contract in JSDoc above.
+  const req = { config, headers: {} };
+
+  // Bridge callback-style Express middleware (`next(err)`) and Promise-returning
+  // middleware into a single awaitable settlement.
+  await new Promise((resolve, reject) => {
     let settled = false;
     const done = err => {
       if (settled) {
@@ -59,15 +65,17 @@ function applyRequestContextMiddleware(config) {
         resolve();
       }
     };
-    // Minimal synthetic req — see contract in JSDoc above.
-    const req = { config, headers: {} };
+
+    let result;
     try {
-      const maybePromise = config.requestContextMiddleware(req, {}, done);
-      if (maybePromise && typeof maybePromise.then === 'function') {
-        maybePromise.then(() => done(), done);
-      }
+      result = config.requestContextMiddleware(req, {}, done);
     } catch (err) {
       done(err);
+      return;
+    }
+
+    if (result != null && typeof result.then === 'function') {
+      result.then(() => done(), done);
     }
   });
 }
