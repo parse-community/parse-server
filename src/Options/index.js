@@ -419,7 +419,7 @@ export interface ParseServerOptions {
   :DEFAULT: [] */
   rateLimit: ?(RateLimitOptions[]);
   /* Options to customize the request context using inversion of control/dependency injection. Also applied on internal `directAccess` requests via a synthetic `req` that exposes only `config` and empty `headers`. Express-only accessors such as `req.get()`, `req.header()`, `req.ip`, and `req.body` are unavailable on that path.*/
-  requestContextMiddleware: ?(req: any, res: any, next: any) => void;
+  requestContextMiddleware: ?(req: any, res: any, next: any) => void | Promise<void>;
   /* If set to `true`, error details are removed from error messages in responses to client requests, and instead a generic error message is sent. Default is `true`.
   :DEFAULT: true */
   enableSanitizedErrorResponse: ?boolean;
