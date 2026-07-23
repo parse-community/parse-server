@@ -558,8 +558,7 @@ module.exports.ParseServerOptions = {
   },
   requestContextMiddleware: {
     env: 'PARSE_SERVER_REQUEST_CONTEXT_MIDDLEWARE',
-    help:
-      'Options to customize the request context using inversion of control/dependency injection. Applied on Express HTTP requests and on internal directAccess requests via ParseServerRESTController (synthetic request; headers may be empty).',
+    help: 'Options to customize the request context using inversion of control/dependency injection.',
   },
   requestKeywordDenylist: {
     env: 'PARSE_SERVER_REQUEST_KEYWORD_DENYLIST',
