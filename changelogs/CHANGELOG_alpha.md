@@ -1,3 +1,10 @@
+## [9.10.1-alpha.4](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.3...9.10.1-alpha.4) (2026-07-24)
+
+
+### Bug Fixes
+
+* Install the latest Parse Server version in bootstrap.sh ([#10556](https://github.com/parse-community/parse-server/issues/10556)) ([997ee15](https://github.com/parse-community/parse-server/commit/997ee152c358524bd2b0dded490255742b61a1ba))
+
 ## [9.10.1-alpha.3](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.2...9.10.1-alpha.3) (2026-07-16)
 
 
