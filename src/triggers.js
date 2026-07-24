@@ -344,7 +344,9 @@ export function getRequestQueryObject(triggerType, auth, query, count, config, c
     isGet,
     headers: config.headers,
     ip: config.ip,
-    context: context || {},
+    // Set a copy of the context on the request object, with a null prototype so a
+    // polluted Object.prototype cannot leak into the trigger context
+    context: Object.assign(Object.create(null), context || {}),
     config,
   };
 
@@ -612,6 +614,12 @@ export function maybeRunQueryTrigger(
     })
     .then(
       result => {
+        // Propagate any context mutations made by the trigger back to the shared context,
+        // mirroring the write-back for other trigger types in maybeRunTrigger. This preserves
+        // beforeFind -> afterFind context propagation now that the request context is a copy.
+        if (context) {
+          Object.assign(context, requestObject.context);
+        }
         let queryResult = parseQuery;
         if (result && result instanceof Parse.Query) {
           queryResult = result;
