@@ -65,8 +65,8 @@
  * @property {InstallationOptions} installation Options controlling how Parse Server deduplicates `_Installation` records that share the same `deviceToken`.
  * @property {String} javascriptKey Key for the Javascript SDK
  * @property {Boolean} jsonLogs Log as structured JSON objects
- * @property {LiveQueryOptions} liveQuery parse-server's LiveQuery configuration object
- * @property {LiveQueryServerOptions} liveQueryServerOptions Live query server configuration options (will start the liveQuery server)
+ * @property {LiveQueryOptions} liveQuery Configuration for LiveQuery on this Parse Server, for example `{ classNames: ['MyClass'] }`. `classNames` lists the classes that publish create/update/delete events to subscribers; without it no events are pushed, even while a LiveQuery server is running. Combine with `startLiveQueryServer` to run a LiveQuery server.
+ * @property {LiveQueryServerOptions} liveQueryServerOptions Configuration options for the LiveQuery server. Providing this also starts the LiveQuery server (like `startLiveQueryServer`); events are still only published for the classes set in `liveQuery.classNames`.
  * @property {Adapter<LoggerAdapter>} loggerAdapter Adapter module for the logging sub-system
  * @property {String} logLevel Sets the level for logs
  * @property {LogLevels} logLevels (Optional) Overrides the log levels used internally by Parse Server to log events.
@@ -115,7 +115,7 @@
  * @property {String} serverURL The URL to Parse Server.<br><br>⚠️ Certain server features or adapters may require Parse Server to be able to call itself by making requests to the URL set in `serverURL`. If a feature requires this, it is mentioned in the documentation. In that case ensure that the URL is accessible from the server itself.
  * @property {Number} sessionLength Session duration, in seconds, defaults to 1 year
  * @property {Boolean} silent Disables console output
- * @property {Boolean} startLiveQueryServer Starts the liveQuery server
+ * @property {Boolean} startLiveQueryServer Starts a LiveQuery server alongside this Parse Server. Events are only delivered for the classes set in `liveQuery.classNames`, so a minimal working setup is `liveQuery: { classNames: [...] }` together with `startLiveQueryServer: true`.
  * @property {Any} trustProxy The trust proxy settings. It is important to understand the exact setup of the reverse proxy, since this setting will trust values provided in the Parse Server API request. See the <a href="https://expressjs.com/en/guide/behind-proxies.html">express trust proxy settings</a> documentation. Defaults to `false`.
  * @property {String[]} userSensitiveFields Personally identifiable information fields in the user table the should be removed for non-authorized users. Deprecated @see protectedFields
  * @property {Boolean} verbose Set the logging to verbose
