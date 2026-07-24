@@ -66,8 +66,9 @@ export class Config {
       template.version = version;
       configTemplates.set(cacheInfo, template);
     }
-    // Per-request assignments (e.g. req.config.headers) shadow the template
-    const config = Object.create(template);
+    // Flat copy: enumeration over Config instances (specs, cloud code) must
+    // keep working, so per-request configs carry all keys as own properties
+    const config = Object.assign(new Config(), template);
     if (cacheInfo.databaseController) {
       config.database = new DatabaseController(cacheInfo.databaseController.adapter, config);
     }
