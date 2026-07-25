@@ -1,3 +1,10 @@
+## [9.10.1-alpha.5](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.4...9.10.1-alpha.5) (2026-07-25)
+
+
+### Bug Fixes
+
+* Server crash from unhandled promise rejection when multiple Cloud Code validator fields fail ([#10540](https://github.com/parse-community/parse-server/issues/10540)) ([90c2778](https://github.com/parse-community/parse-server/commit/90c277894f31be8e64a4b049ad503621cf5f2285))
+
 ## [9.10.1-alpha.4](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.3...9.10.1-alpha.4) (2026-07-24)
 
 
