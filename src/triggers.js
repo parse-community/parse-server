@@ -344,7 +344,9 @@ export function getRequestQueryObject(triggerType, auth, query, count, config, c
     isGet,
     headers: config.headers,
     ip: config.ip,
-    context: context || {},
+    // Set a copy of the context on the request object, with a null prototype so a
+    // polluted Object.prototype cannot leak into the trigger context
+    context: Object.assign(Object.create(null), context || {}),
     config,
   };
 
@@ -612,6 +614,12 @@ export function maybeRunQueryTrigger(
     })
     .then(
       result => {
+        // Propagate any context mutations made by the trigger back to the shared context,
+        // mirroring the write-back for other trigger types in maybeRunTrigger. This preserves
+        // beforeFind -> afterFind context propagation now that the request context is a copy.
+        if (context) {
+          Object.assign(context, requestObject.context);
+        }
         let queryResult = parseQuery;
         if (result && result instanceof Parse.Query) {
           queryResult = result;
@@ -815,7 +823,7 @@ async function builtInTriggerValidator(options, request, auth) {
       requiredParam(key);
     }
   } else {
-    const optionPromises = [];
+    const optionValidations = [];
     for (const key in options.fields) {
       const opt = options.fields[key];
       let val = params[key];
@@ -850,12 +858,12 @@ async function builtInTriggerValidator(options, request, auth) {
             }
           }
           if (opt.options) {
-            optionPromises.push(validateOptions(opt, key, val));
+            optionValidations.push([opt, key, val]);
           }
         }
       }
     }
-    await Promise.all(optionPromises);
+    await Promise.all(optionValidations.map(([o, k, v]) => validateOptions(o, k, v)));
   }
   let userRoles = options.requireAnyUserRoles;
   let requireAllRoles = options.requireAllUserRoles;

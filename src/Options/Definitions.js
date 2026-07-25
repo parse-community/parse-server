@@ -139,7 +139,7 @@ module.exports.ParseServerOptions = {
   cluster: {
     env: 'PARSE_SERVER_CLUSTER',
     help: 'Run with cluster, optionally set the number of processes default to os.cpus().length',
-    action: parsers.numberOrBooleanParser,
+    action: parsers.numberOrBoolParser('cluster'),
   },
   collectionPrefix: {
     env: 'PARSE_SERVER_COLLECTION_PREFIX',
@@ -346,13 +346,13 @@ module.exports.ParseServerOptions = {
   },
   liveQuery: {
     env: 'PARSE_SERVER_LIVE_QUERY',
-    help: "parse-server's LiveQuery configuration object",
+    help: "Configuration for LiveQuery on this Parse Server, for example `{ classNames: ['MyClass'] }`. `classNames` lists the classes that publish create/update/delete events to subscribers; without it no events are pushed, even while a LiveQuery server is running. Combine with `startLiveQueryServer` to run a LiveQuery server.",
     action: parsers.objectParser,
     type: 'LiveQueryOptions',
   },
   liveQueryServerOptions: {
     env: 'PARSE_SERVER_LIVE_QUERY_SERVER_OPTIONS',
-    help: 'Live query server configuration options (will start the liveQuery server)',
+    help: 'Configuration options for the LiveQuery server. Providing this also starts the LiveQuery server (like `startLiveQueryServer`); events are still only published for the classes set in `liveQuery.classNames`.',
     action: parsers.objectParser,
     type: 'LiveQueryServerOptions',
   },
@@ -639,7 +639,7 @@ module.exports.ParseServerOptions = {
   },
   startLiveQueryServer: {
     env: 'PARSE_SERVER_START_LIVE_QUERY_SERVER',
-    help: 'Starts the liveQuery server',
+    help: 'Starts a LiveQuery server alongside this Parse Server. Events are only delivered for the classes set in `liveQuery.classNames`, so a minimal working setup is `liveQuery: { classNames: [...] }` together with `startLiveQueryServer: true`.',
     action: parsers.booleanParser,
   },
   trustProxy: {

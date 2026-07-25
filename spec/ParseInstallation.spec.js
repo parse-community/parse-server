@@ -1298,6 +1298,113 @@ describe('Installations', () => {
   // TODO: Do we need to support _tombstone disabling of installations?
   // TODO: Test deletion, badge increments
 
+  describe('access control for non-master clients', () => {
+    const anonymousHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+
+    it('blocks the find operation for an unauthenticated client', async () => {
+      await rest.create(config, auth.nobody(config), '_Installation', {
+        installationId: '12345678-abcd-abcd-abcd-123456789abc',
+        deviceType: 'android',
+      });
+      let error;
+      try {
+        await request({
+          method: 'GET',
+          headers: anonymousHeaders,
+          url: 'http://localhost:8378/1/installations',
+        });
+        fail('find should have been rejected');
+        return;
+      } catch (e) {
+        error = e;
+      }
+      expect(error.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(error.data.error).toBe('Permission denied');
+    });
+
+    it('blocks the delete operation for an unauthenticated client', async () => {
+      const created = await rest.create(config, auth.nobody(config), '_Installation', {
+        installationId: '12345678-abcd-abcd-abcd-123456789abc',
+        deviceType: 'android',
+      });
+      let error;
+      try {
+        await request({
+          method: 'DELETE',
+          headers: anonymousHeaders,
+          url: 'http://localhost:8378/1/installations/' + created.response.objectId,
+        });
+        fail('delete should have been rejected');
+        return;
+      } catch (e) {
+        error = e;
+      }
+      expect(error.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(error.data.error).toBe('Permission denied');
+      // The row is still present: the anonymous delete did not take effect.
+      const remaining = await database.adapter.find('_Installation', installationSchema, {}, {});
+      expect(remaining.length).toBe(1);
+    });
+
+    it('blocks the find operation for an authenticated non-master user', async () => {
+      // Even a logged-in user cannot enumerate installations, so another
+      // device's objectId cannot be discovered through an authenticated session.
+      const user = await Parse.User.signUp('installation-acl-user', 'pass-12345678');
+      await rest.create(config, auth.nobody(config), '_Installation', {
+        installationId: '12345678-abcd-abcd-abcd-123456789abc',
+        deviceType: 'android',
+      });
+      let error;
+      try {
+        await request({
+          method: 'GET',
+          headers: {
+            ...anonymousHeaders,
+            'X-Parse-Session-Token': user.getSessionToken(),
+          },
+          url: 'http://localhost:8378/1/installations',
+        });
+        fail('find should have been rejected');
+        return;
+      } catch (e) {
+        error = e;
+      }
+      expect(error.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(error.data.error).toBe('Permission denied');
+    });
+
+    it('blocks the delete operation for an authenticated non-master user', async () => {
+      const user = await Parse.User.signUp('installation-acl-user', 'pass-12345678');
+      const created = await rest.create(config, auth.nobody(config), '_Installation', {
+        installationId: '12345678-abcd-abcd-abcd-123456789abc',
+        deviceType: 'android',
+      });
+      let error;
+      try {
+        await request({
+          method: 'DELETE',
+          headers: {
+            ...anonymousHeaders,
+            'X-Parse-Session-Token': user.getSessionToken(),
+          },
+          url: 'http://localhost:8378/1/installations/' + created.response.objectId,
+        });
+        fail('delete should have been rejected');
+        return;
+      } catch (e) {
+        error = e;
+      }
+      expect(error.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(error.data.error).toBe('Permission denied');
+      // The row is still present: the authenticated non-master delete did not take effect.
+      const remaining = await database.adapter.find('_Installation', installationSchema, {}, {});
+      expect(remaining.length).toBe(1);
+    });
+  });
+
   describe('deviceToken deduplication on new install (no installationId match)', () => {
     const { randomUUID } = require('crypto');
     const installationSchema = {

@@ -3,6 +3,7 @@ on:
   push:
     branches: [release, alpha, beta, next-major, 'release-[0-9]+.x.x']
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - '**'
     paths-ignore:
@@ -15,6 +16,7 @@ permissions:
 jobs:
   check-code-analysis:
     name: Code Analysis
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -36,6 +38,7 @@ jobs:
         uses: github/codeql-action/analyze@v2
   check-ci:
     name: Node Engine Check
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
@@ -52,6 +55,7 @@ jobs:
         run: npm run ci:checkNodeEngine
   check-lint:
     name: Lint
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
@@ -72,6 +76,7 @@ jobs:
       - run: npm run lint
   check-definitions:
     name: Check Definitions
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
@@ -93,6 +98,7 @@ jobs:
         run: npm run ci:definitionsCheck
   check-circular:
     name: Circular Dependencies
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
@@ -113,6 +119,7 @@ jobs:
       - run: npm run madge:circular
   check-docs:
     name: Docs
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
@@ -136,6 +143,7 @@ jobs:
         run: npm run docs
   check-docker:
     name: Docker Build
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
@@ -153,6 +161,7 @@ jobs:
           platforms: linux/amd64, linux/arm64/v8
   check-lock-file-version:
     name: NPM Lock File Version
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
@@ -166,6 +175,7 @@ jobs:
           fi
   check-types:
     name: Check Types
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
@@ -187,6 +197,10 @@ jobs:
             MONGODB_VERSION: 8.0.4
             MONGODB_TOPOLOGY: replset
             NODE_VERSION: 24.11.0
+          - name: MongoDB 8.3, ReplicaSet
+            MONGODB_VERSION: 8.3.4
+            MONGODB_TOPOLOGY: replset
+            NODE_VERSION: 24.11.0
           - name: Redis Cache
             PARSE_SERVER_TEST_CACHE: redis
             MONGODB_VERSION: 8.0.4
@@ -202,6 +216,7 @@ jobs:
             NODE_VERSION: 22.12.0
       fail-fast: false
     name: ${{ matrix.name }}
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     timeout-minutes: 20
     runs-on: ubuntu-latest
     services:
@@ -256,6 +271,7 @@ jobs:
             NODE_VERSION: 24.11.0
       fail-fast: false
     name: ${{ matrix.name }}
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     timeout-minutes: 20
     runs-on: ubuntu-latest
     services:
