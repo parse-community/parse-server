@@ -2,6 +2,57 @@
 
 Instructions for AI coding agents working in this repository. Humans should read [CONTRIBUTING.md](CONTRIBUTING.md), which this file summarises and does not replace.
 
+## What Parse Server is
+
+Parse Server is an open source backend, an express module providing a Parse-compatible API server. Applications talk to it through the Parse client SDKs over REST, GraphQL and a WebSocket protocol (LiveQuery), and it persists their data to MongoDB or PostgreSQL. It is not an application, it is infrastructure other people deploy and run in production, so backward compatibility, security and performance are correctness properties here rather than nice-to-haves. See the [README](README.md) and the [Parse Server guide](https://docs.parseplatform.org/parse-server/guide/) for the product-level picture.
+
+Development happens on `alpha`, which is the default branch and the one to target. Changes flow `alpha` → `beta` → `release`, with LTS on `release-#.x.x`.
+
+The concepts the code assumes you already know:
+
+- **Classes and objects.** A class is a collection of schema-ed objects, reached at `/parse/classes/<ClassName>`. Classes beginning with `_` are system classes: `_User`, `_Installation`, `_Role`, `_Session`, `_Product`, `_PushStatus`, `_JobStatus`, `_JobSchedule`, `_Audience`, `_Idempotency` (`src/Controllers/SchemaController.js`). They mostly flow through the same write and query path as any other class, with extra rules layered on.
+- **Authorization has two independent layers.** Per-object **ACLs**, stored as `_rperm`/`_wperm` arrays, and per-class **CLPs** validated by `SchemaController.validatePermission`. On top of those, `protectedFields` hides named fields from readers. All three must be enforced on every path that can reach data, not just the obvious one.
+- **Keys.** The **master key** bypasses ACL and CLP entirely, so a test that only uses it proves nothing about authorization. There are also a read-only master key, a maintenance key, and per-user **session tokens**.
+- **Cloud Code.** User-supplied `beforeSave`/`afterSave`/`beforeFind`/`afterFind` triggers, invoked from `src/triggers.js`, run inside the request path and can change what the rest of the pipeline sees.
+- **Adapters.** Storage, files, cache, email, push, pub/sub and analytics are all pluggable behind adapter interfaces in `src/Adapters/`, which is why behaviour can differ per backend.
+- **Stored shape is not REST shape.** Pointers are stored as `_p_<field>`, ACLs as `_rperm`/`_wperm`, passwords as `_hashed_password`. Inspect the database, not just the response, when verifying a change.
+
+## How a request flows
+
+Almost everything funnels through one chain, which is why a guard added in a single router usually is not enough:
+
+```
+express app (src/ParseServer.ts)
+  -> middlewares (src/middlewares.js): CORS, body parsing, handleParseHeaders (validates keys, builds req.config),
+     rate limiting, handleParseSession (resolves req.auth from the session token)
+  -> PromiseRouter (src/PromiseRouter.js) -> the feature router (src/Routers/*.js, e.g. ClassesRouter)
+  -> src/rest.js, the thin dispatch layer
+  -> RestWrite.js / RestQuery.js, which run the ordered pipeline: ACL/role resolution, class-creation and schema
+     validation, Cloud Code triggers, then the database operation
+  -> DatabaseController (src/Controllers/DatabaseController.js): schema load, CLP check, protectedFields
+  -> storage adapter (src/Adapters/Storage/Mongo|Postgres), with MongoTransform.js converting
+     Parse objects to and from stored documents
+  -> handleParseErrors formats the response
+```
+
+`/batch`, GraphQL and LiveQuery are separate entry points that reach the same data, so a change to the REST path frequently needs the equivalent treatment in `src/GraphQL/` and `src/LiveQuery/`.
+
+## Where things live
+
+| Path | Contents |
+|---|---|
+| `src/Routers/` | One router per endpoint group (`ClassesRouter`, `UsersRouter`, `FilesRouter`, `SchemasRouter`, …) |
+| `src/RestWrite.js`, `src/RestQuery.js`, `src/rest.js` | The write and read pipelines every class operation goes through |
+| `src/Controllers/` | Service layer: `DatabaseController`, `SchemaController`, `UserController`, `FilesController`, `PushController`, … |
+| `src/Adapters/` | Pluggable backends, including the Mongo and Postgres storage adapters |
+| `src/LiveQuery/`, `src/GraphQL/` | The realtime WebSocket server and the generated GraphQL API |
+| `src/Options/` | Server option definitions, parsers and docs. Generated, see `npm run definitions` |
+| `src/Security/` | The Security Checks feature that audits a deployment's configuration |
+| `src/triggers.js`, `src/Auth.js`, `src/middlewares.js` | Cloud Code dispatch, authentication, and the express middleware chain |
+| `spec/` | The jasmine suite, with helpers and fixtures in `spec/support/` |
+| `lib/` | Build output, gitignored. Never edit it, edit `src/` and rebuild |
+| `types/` | Generated type definitions, committed but not hand-edited, see `npm run build:types` |
+
 ## The three rules agents get wrong
 
 1. **Specs run against `lib/`, not `src/`.** Every spec does `require('../lib/...')`. A change to `src/` is invisible to the suite until it is compiled, so a green run on an unbuilt `lib/` proves nothing. Run `npm run build` after every `src/` edit (or leave `npm run watch` running), then `grep` the compiled file to confirm the change is in.
