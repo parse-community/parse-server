@@ -1,3 +1,10 @@
+## [9.10.1-alpha.6](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.5...9.10.1-alpha.6) (2026-07-26)
+
+
+### Bug Fixes
+
+* `Parse.Query.explain` runs afterFind trigger on query plan results ([#10536](https://github.com/parse-community/parse-server/issues/10536)) ([64d58ff](https://github.com/parse-community/parse-server/commit/64d58ff726b42b45e107e27bc1f3b50be82b3189))
+
 ## [9.10.1-alpha.5](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.4...9.10.1-alpha.5) (2026-07-25)
 
 
