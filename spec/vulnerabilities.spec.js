@@ -6101,6 +6101,66 @@ describe('Vulnerabilities', () => {
       expect(contextAfterDelete).toBeDefined();
       expect(contextAfterDelete.isAdmin).toBeUndefined();
     });
+
+    it('does not expose Object.prototype on beforeFind trigger context', async () => {
+      // getRequestQueryObject builds the beforeFind trigger request. Its context must be
+      // prototype-isolated like every other trigger path (getRequestObject), so a polluted
+      // Object.prototype cannot leak into the request.context read by Cloud Code.
+      let contextProto;
+      let contextValue;
+      Parse.Cloud.beforeFind('ContextTest', req => {
+        contextProto = Object.getPrototypeOf(req.context);
+        contextValue = req.context.foo;
+      });
+      const query = new Parse.Query('ContextTest');
+      await query.find({ context: { foo: 'bar' } });
+      expect(contextValue).toBe('bar');
+      expect(contextProto).toBeNull();
+    });
+
+    it('isolates beforeFind trigger context from Object.prototype pollution', async () => {
+      // Simulate a separate prototype-pollution issue elsewhere in the process and verify the
+      // beforeFind trigger context does not inherit the polluted property.
+      const probe = '__parseServerBeforeFindContextProbe';
+      let inheritedProbe;
+      Parse.Cloud.beforeFind('ContextTest', req => {
+        inheritedProbe = req.context[probe];
+      });
+      Object.defineProperty(Object.prototype, probe, {
+        value: true,
+        configurable: true,
+        enumerable: false,
+        writable: true,
+      });
+      try {
+        const query = new Parse.Query('ContextTest');
+        await query.find({ context: { foo: 'bar' } });
+      } finally {
+        delete Object.prototype[probe];
+      }
+      expect(inheritedProbe).toBeUndefined();
+    });
+
+    it('propagates beforeFind context mutations to afterFind with prototype isolation', async () => {
+      // Regression guard for the copy + write-back fix: beforeFind and afterFind must still
+      // share context mutations (as documented), and both trigger contexts must be isolated.
+      let beforeFindProto;
+      let afterFindProto;
+      let afterFindValue;
+      Parse.Cloud.beforeFind('ContextTest', req => {
+        beforeFindProto = Object.getPrototypeOf(req.context);
+        req.context.injected = 'from-beforeFind';
+      });
+      Parse.Cloud.afterFind('ContextTest', req => {
+        afterFindProto = Object.getPrototypeOf(req.context);
+        afterFindValue = req.context.injected;
+      });
+      const query = new Parse.Query('ContextTest');
+      await query.find({ context: { foo: 'bar' } });
+      expect(beforeFindProto).toBeNull();
+      expect(afterFindProto).toBeNull();
+      expect(afterFindValue).toBe('from-beforeFind');
+    });
   });
 
   describe('(GHSA-hpm8-9qx6-jvwv) Ranged file download bypasses afterFind(Parse.File) trigger and validators', () => {
