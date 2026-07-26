@@ -1,220 +1,186 @@
 ---
 name: testing-parse-server
-description: Use when running, testing, or verifying a change in the parse-server repo - starting Parse Server with MongoDB/Postgres, running jasmine specs (single file or suite), writing specs that hold up under random-order isolation, or before claiming a parse-server feature/bugfix works. Covers the "tests pass but ran against stale lib/" trap and testing both database backends.
+description: Use when running, testing, verifying, reviewing, benchmarking or hardening a change in the parse-server repo - starting Parse Server with MongoDB/Postgres, running jasmine specs, writing specs that survive random-order isolation, hunting coverage gaps, probing edge cases, auditing security (injection, ACL/CLP bypass, prototype pollution, data exposure), checking for performance regressions or Mongo-vs-Postgres divergence, or before claiming a parse-server feature/bugfix works. Covers the "tests pass but ran against stale lib/" trap.
 ---
 
 # Testing Parse Server
 
 ## Overview
 
-Parse Server is a stable core product used in production by many. **A change is not "tested" until it has been exercised end-to-end against a real database - both MongoDB and PostgreSQL - with the change actually compiled in, and shipped with test coverage.** A green run against stale code, or against only one backend, is not verification.
+Parse Server is a stable core product running in production for many organisations, with a long history of CVEs in exactly the places tests don't look. **A change is not "tested" until it has been exercised end-to-end against a real database - both MongoDB and PostgreSQL - with the change actually compiled in, attacked deliberately, and shipped with test coverage.**
 
-**Recurring lessons live in [GOTCHAS.md](GOTCHAS.md)** - skim it before you start, and append any new trap you hit (terse dot points, not stories).
+A green run against stale code, against one backend, or against only the happy path is not verification. It is a green light you have not earned.
 
-## The rigor checklist
+Two properties of this product raise the bar above ordinary web-app testing, and both fail *silently*:
 
-Before claiming any `src/` change works:
+- **Security.** Parse Server's advisory history is long and repetitive - the repo's own specs cite 28 GHSA advisories. Nothing turns red when a guard is missing from one of the several paths that need it.
+- **Performance.** This runs at enterprise scale, where a millisecond added to the query path is paid on every request of every deployment, forever. Removing an "unused" optimisation produces a green suite and a production incident.
 
-1. **Build `lib/` first.** Tests `require('../lib/...')`, NOT `src/`. Editing `src/` is invisible to the suite until you compile. Skipping this is the #1 silent trap - you get a green run that never touched your change.
-2. **Confirm the change is in `lib/`.** After building, `grep` the compiled file. Don't trust green on faith.
-3. **Run the affected spec file(s) in isolation.** The suite is `random: true`; running many files together causes state-coupling flakiness. One file = clean signal. Find neighbouring specs worth running by grepping `spec/` for the symbol you changed (e.g. `grep -rl validateQuery spec/`).
-4. **Know the baseline before blaming your change.** Some specs fail/flake on clean `alpha` too. If a failure appears, reproduce it on the base branch (a git worktree off `upstream/alpha`, or `origin/alpha` if there's no `upstream` remote - check `git remote -v`) before attributing it to your work.
-5. **Test BOTH backends.** Behavior genuinely differs (e.g. a registered field with no Postgres column returns empty instead of throwing). Mongo-only is not enough for core changes.
-6. **Ship coverage.** Add or adjust a spec that fails without your change and passes with it. Rigorous = the change is guarded going forward.
-7. **Lint.** `npm run lint` (needs a non-default flag - see below).
+Four questions govern everything in this skill:
 
-## Levels of verification
+1. **Did the code I changed actually run?** (build, isolation, guard-proof)
+2. **Did I try to break it, or only to confirm it?** (edges, negatives, security, concurrency)
+3. **Does it behave the same everywhere it must?** (Mongo vs Postgres, REST vs stored, spec vs live server)
+4. **What does it cost?** (complexity, benchmark vs base branch, behaviour at scale)
 
-Each level catches what the level above it cannot. Anything behavioral needs all four; a pure refactor may stop at level 2.
+## Files in this skill
 
-| Level | What it proves | How |
-|-------|----------------|-----|
-| 1. Unit/spec | The code path behaves as asserted | `TESTING=1 npx jasmine spec/X.spec.js` |
-| 2. Both backends | Behaviour doesn't diverge on Mongo vs Postgres | same file with `PARSE_SERVER_TEST_DB=postgres` |
-| 3. Live REST | The real request path (express, middleware, routers, auth) reaches the change | boot `bin/parse-server`, drive it with `curl` |
-| 4. Stored state | What actually landed in the database is correct and nothing leaked | `mongosh` / `psql` before and after |
+| File | Use it for |
+|------|-----------|
+| **[VERIFICATION.md](VERIFICATION.md)** | The procedure: build discipline, running specs, guard-proof, both backends, live REST, DB inspection, evidence you must produce before claiming done |
+| **[ADVERSARIAL-QA.md](ADVERSARIAL-QA.md)** | Attacking your own change: coverage-gap analysis, edge/boundary matrix, consistency hunting, triage |
+| **[SECURITY.md](SECURITY.md)** | 13 recurring attack primitives distilled from 28 shipped GHSA advisories, surface-by-surface probes, how to write a security spec, disclosure |
+| **[PERFORMANCE.md](PERFORMANCE.md)** | Complexity review, the benchmark harness, base-branch comparison method, scale testing, the CI performance gate |
+| **[REFERENCE.md](REFERENCE.md)** | Verified commands, npm scripts, env vars, harness globals, spec-scoping helpers, CI matrix, spec layout |
+| **[GOTCHAS.md](GOTCHAS.md)** | Append-only log of traps already paid for. Skim before starting; append anything new you hit |
 
-A spec exercising a function is not the same as reproducing the reported symptom on a running server. For a bug fix, reproduce the symptom at level 3 **before** the fix, then show it gone after.
-
-## The guard-proof
-
-A spec that passes with your change proves nothing on its own; it has to fail without it.
+## Before you start: ask the file what it has been broken for
 
 ```bash
-git stash push -- src/            # or: git checkout <baseref> -- src/
-npm run build && TESTING=1 npx jasmine spec/X.spec.js   # expect FAIL on the new spec
-git stash pop                     # or: git checkout HEAD -- src/
-npm run build && TESTING=1 npx jasmine spec/X.spec.js   # expect PASS
+git log --oneline -- src/path/File.js | grep -iE "GHSA|injection|security|vulnerab"
 ```
 
-If the new spec passes both ways, it isn't testing the change. Note the stash caveat in GOTCHAS.md when working in a worktree or when the change is already committed.
+Commit messages here carry GHSA ids, so this returns the attacks that have already succeeded on the lines you are editing. If it returns hits, your change is modifying a security control, not adding a feature - see [SECURITY.md](SECURITY.md).
+
+## The Iron Law
+
+```
+TESTS LOAD lib/. EDITS LAND IN src/. NO BUILD = NO TEST.
+```
+
+Every spec does `require('../lib/...')`. Editing `src/` and running jasmine tests the *previous* build of your code. The suite goes green, you believe it, and you have verified nothing.
+
+**After every `src/` edit: `npm run build`** (or keep `npm run watch` running), then **`grep` the compiled file to confirm your change is in `lib/`.** Not "usually" - every time, including after `git checkout`, `git stash`, rebase, or branch switch.
+
+This is the single most common way an agent produces a confident, wrong "verified" claim in this repo.
+
+## The rigor gate
+
+Before claiming any `src/` change works, all eight must be true. Full procedure in [VERIFICATION.md](VERIFICATION.md).
+
+1. **Built.** `npm run build` ran after the last edit, and `grep lib/` shows the change.
+2. **Isolated.** Affected spec file(s) run alone (`random: true` makes multi-file runs state-couple). Find neighbours: `grep -rl <symbol> spec/`.
+3. **Guard-proofed.** The new spec *fails* without the change. A spec that passes both ways tests nothing.
+4. **Baselined.** Any failure reproduced on clean `alpha` before being blamed on your diff.
+5. **Both backends.** Mongo *and* Postgres. Behaviour genuinely diverges.
+6. **Attacked.** Negative paths and edges ([ADVERSARIAL-QA.md](ADVERSARIAL-QA.md)) and the reachable attack primitives ([SECURITY.md](SECURITY.md)) - not just the happy path.
+7. **Costed.** Complexity reviewed, and benchmarked against the base branch if it is on a hot path ([PERFORMANCE.md](PERFORMANCE.md)).
+8. **Covered + clean.** A spec that guards this going forward, plus `npm run lint`.
+
+## What your change type demands
+
+Do not apply the same ceremony to every diff. Pick the row, do everything in it.
+
+| Change type | Required verification |
+|---|---|
+| Pure refactor, no behaviour change | Build → affected specs isolated → both backends if the code is adapter-adjacent → lint |
+| Bug fix | Everything above **+** reproduce the symptom on a live server *before* the fix, guard-proof the new spec, confirm gone after |
+| New feature / endpoint | Everything above **+** live REST exercise, DB state inspection, negative + permission tests, docs/definitions if options changed |
+| Query / where-clause / operator handling | **+** injection probes (operator smuggling, regex, dot-notation field names, prototype-pollution keys), both backends mandatory ([SECURITY.md](SECURITY.md)) |
+| ACL / CLP / protectedFields / session / auth | **+** full permission matrix: anonymous, wrong user, right user, role member, master key, read-only master key, maintenance key ([SECURITY.md](SECURITY.md)) |
+| Anything reachable from LiveQuery, GraphQL or `/batch` | **+** verify the guard exists on *every* path, not just REST - the shape of several past advisories |
+| Schema / storage adapter | **+** both backends mandatory, stored-shape inspection, migration/existing-data path |
+| Transactions, change streams, LiveQuery | **+** replset topology (`MONGODB_TOPOLOGY=replset`) - standalone will not exercise the path |
+| Options (`src/Options/`) | **+** `npm run definitions`, `npm run build:types`, `npm run test:types`, `npm run ci:definitionsCheck`; is the default the safe one? |
+| Hot path (query, ACL application, cache, triggers, transforms) | **+** complexity review and a base-branch benchmark comparison ([PERFORMANCE.md](PERFORMANCE.md)) |
+| Removing code that "looks unused" | **+** prove it is not an optimisation or a live guard. Highest-risk category in this repo - [PERFORMANCE.md](PERFORMANCE.md) and [GOTCHAS.md](GOTCHAS.md) |
+| Any performance claim ("faster", "no regression") | **+** measured evidence against the base branch on the same data ([PERFORMANCE.md](PERFORMANCE.md)) |
+| Security fix | **+** everything, plus a spec that reproduces the exploit and fails without the fix; put it in `spec/vulnerabilities.spec.js` and name the GHSA id |
 
 ## Quick reference
 
+Full list in [REFERENCE.md](REFERENCE.md).
+
 ```bash
-# --- Build (do this after EVERY src/ edit) ---
-npm run build                       # babel src/ -> lib/  (~1.5s)
-npm run watch                       # OR: auto-rebuild lib/ on save (avoids the stale-lib trap)
-grep -n "myChange" lib/path/File.js # confirm the change compiled in
+# Build (after EVERY src/ edit) — or leave `npm run watch` running
+npm run build && grep -n "myChange" lib/path/File.js
 
-# --- MongoDB: run ONE spec file ---
-# If a mongod is already listening on :27017:
+# One spec file, MongoDB (needs a mongod on :27017)
 TESTING=1 npx jasmine spec/RestQuery.spec.js
-# If not, let mongodb-runner spin an ephemeral one:
-MONGODB_VERSION=8.0.4 MONGODB_TOPOLOGY=standalone \
-  mongodb-runner exec -t standalone --version 8.0.4 -- --port 27017 -- \
-  npx cross-env TESTING=1 jasmine spec/RestQuery.spec.js
 
-# --- MongoDB: full suite ---
-npm test           # spins ephemeral mongod, then runs everything
-npm run testonly   # runs against an already-running mongod on :27017
+# One spec, no mongod running — let mongodb-runner supply one
+npm test spec/RestQuery.spec.js
 
-# --- PostgreSQL: run ONE spec file (needs a PostGIS server; CI runs PostGIS 16/17/18) ---
-docker run -d --name parse-pg -p 5432:5432 -e POSTGRES_PASSWORD=password postgis/postgis:17-3.5
-docker exec parse-pg psql -U postgres -c "CREATE DATABASE parse_server_postgres_adapter_test_database;"
-docker exec parse-pg psql -U postgres -d parse_server_postgres_adapter_test_database -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+# Narrow to specific tests inside a file (jasmine 5.7 supports --filter)
+TESTING=1 npx jasmine spec/RestQuery.spec.js --filter="internal field"
+
+# Same spec against Postgres (needs PostGIS + extensions; see REFERENCE.md)
 TESTING=1 PARSE_SERVER_TEST_DB=postgres \
   PARSE_SERVER_TEST_DATABASE_URI=postgres://postgres:password@localhost:5432/parse_server_postgres_adapter_test_database \
   npx jasmine spec/RestQuery.spec.js
-docker rm -f parse-pg               # always tear down
-# Full Postgres suite: npm run test:postgres:testonly
 
-# --- Types, definitions, structure (CI checks all of these) ---
-npm run build:types                 # regenerate types/*.d.ts (never hand-edit them)
-npm run test:types                  # lint types/tests.ts against generated types
-npm run definitions                 # regenerate src/Options after changing options
-npm run ci:definitionsCheck         # what CI runs to verify the above was done
-npm run madge:circular              # circular dependency check
-npm run coverage                    # coverage/lcov-report/index.html
+# See what the server is doing during a spec (VERBOSE for logs; LOG_LEVEL=debug for the Postgres SQL tracer)
+VERBOSE=1 TESTING=1 npx jasmine spec/X.spec.js
+PARSE_SERVER_LOG_LEVEL=debug TESTING=1 PARSE_SERVER_TEST_DB=postgres npx jasmine spec/X.spec.js
 
-# --- Lint (default eslint invocation misses per-dir config -> false errors) ---
-npm run lint                        # whole repo
-npx eslint --flag unstable_config_lookup_from_file src/File.js spec/File.spec.js  # scoped
+# Full suites
+npm test                        # Mongo, ephemeral mongod
+npm run testonly                # Mongo, existing mongod on :27017
+npm run test:postgres:testonly  # Postgres
+MONGODB_TOPOLOGY=replset npm test   # what CI actually runs
+
+# Lint (the bare `npx eslint file.js` form produces bogus errors — see GOTCHAS.md)
+npm run lint
 ```
 
-## What CI will run
+## Performance is a correctness property here
 
-Matching CI locally avoids the slow loop of pushing to find out. `.github/workflows/ci.yml` runs:
+A correctness test at small N says nothing about cost, and cost is what enterprise deployments pay. Full method in **[PERFORMANCE.md](PERFORMANCE.md)**; the short version:
 
-- MongoDB 7.0.16 and 8.0.4, both **replset** topology, on Node 24.11.0
-- MongoDB 8.0.4 standalone on Node 20.19.0 and 22.12.0, plus a Redis-cache variant
-- Postgres via PostGIS 16-3.5, 17-3.5 and 18-3.6
-- Lint, definitions check, circular dependencies, types, Node engine check, CodeQL, Docker build
+- **Read the diff for complexity before benchmarking.** O(n)→O(n²), a query moved inside a loop (N+1), a limit/sort pushdown replaced by fetch-all-and-filter, a query shape that drops an index. A benchmark at small N cannot see any of these.
+- **Never remove an optimisation because it looks like dead code.** Removing one pushdown measured ~10-15× slower at 50k members. Prove it is unused before deleting it.
+- **A claim needs a paired measurement** against the base branch, same machine, same data, medians not means. "Reads are bounded so it's fine" is a hypothesis.
+- **Measure with latency and at scale.** Localhost hides added round trips (`dbLatency` in the harness exposes them); N=10 hides curve changes.
+- CI compares PR vs base benchmarks and **fails the job on any regression over 25%** - but only for operations that *have* a benchmark. No red mark is not evidence of no regression.
 
-Replset is the topology most local setups don't have. Transactions and change streams behave differently on standalone, so anything touching those needs a replset run: `MONGODB_TOPOLOGY=replset npm test`.
+## Red flags - stop and go back
 
-## Test isolation
+Each of these means the verification is not done, regardless of what the terminal printed:
 
-The harness in `spec/helper.js` gives every test a clean world, and the rules below exist because the suite runs in **random order**: a spec that depends on another spec's leftovers will pass alone and fail in CI.
-
-What the harness does for you:
-
-- `beforeAll` boots one server via `reconfigureServer()` and points the `Parse` SDK global at it.
-- `afterEach` wipes all data (`destroyAllDataPermanently`), clears the schema cache, removes all Cloud Code hooks, logs the current user out, restores mocked `fetch`, resets `protectedFields`, and asserts that no unexpected `_`-prefixed class was left behind.
-- If a test called `reconfigureServer({ ...options })` with a non-empty config, the harness reboots the default server after that test, so config changes don't bleed into the next one.
-
-What you still have to do:
-
-- **Create your own fixtures inside the test.** Never rely on objects, users, roles or schemas created by another spec, including one earlier in the same file.
-- **Don't assert on global counts** ("there should be 3 objects") unless the test created all of them.
-- **Reconfigure inside the test that needs it**, with `await reconfigureServer({ ... })`, not in a `beforeAll`, so the harness knows to restore the default server.
-- **Shut down any server you start yourself** with `await shutdownServer(server)`; it also asserts no connections were left open.
-- **Mock `fetch` via `mockFetch`**, not by overwriting the global directly, so `restoreFetch` can undo it.
-- **Don't depend on wall-clock ordering.** Sequential saves can land on the same millisecond, so sort ties are nondeterministic; add an explicit secondary sort or assert on a set.
-- **Clean up timers, intervals and listeners** you register, otherwise they fire during later specs.
-
-Known-flaky specs are listed in `spec/support/CurrentSpecReporter.js` and get retried automatically. Every test wrapped in `it_id('<uuid>')(it)(...)` can also be disabled by adding its UUID to an optional `spec/testExclusionList.json`, which is not committed. If your spec needs either mechanism to pass, it usually means it isn't isolated.
-
-## Writing specs
-
-Specs are jasmine, config at `spec/support/jasmine.json` (globals + `helper.js` load automatically even when you pass a single file).
-
-- `Parse` and `request` are globals; call `await reconfigureServer({ ...options })` in a test to boot a server with specific config.
-- Scope by backend or version: `it_exclude_dbs(['postgres'])(...)`, `it_only_db('mongo')(...)`, `describe_only_db('postgres')(...)`, `it_only_mongodb_version('>=8')(...)`, `it_only_postgres_version(...)`, `it_only_node_version(...)`.
-- Useful globals from `helper.js`: `reconfigureServer`, `shutdownServer`, `defaultConfiguration`, `databaseAdapter`, `mockFetch`/`restoreFetch`, `createTestUser`, `TestObject`, `Item`, `Container`, `range`, `jfail`.
-- Write `async`/`await`; assert rejections with `await expectAsync(p).toBeRejectedWith(...)` rather than `try`/`catch` + `fail()`. Older specs use `done()` callbacks, don't add more.
-- Default per-test timeout is 10s; override with `PARSE_SERVER_TEST_TIMEOUT`.
-- Test the failure modes, not just the happy path: wrong ACL/CLP, missing master key, invalid input, empty result, and the Postgres-vs-Mongo divergence for the same call.
-
-## Driving the live system & inspecting state
-
-Automated specs are necessary but not sufficient. For anything behavioral, **drive the real REST API and look at what actually landed in the database** - the stored shape differs from the REST response (pointers become `_p_<field>`, ACL becomes `_rperm`/`_wperm`, passwords become `_hashed_password`), and bugs often hide in that gap.
-
-**Boot a live server** (start a mongod on :27017 first - `mongodb-runner start` / docker / local). Run it backgrounded so you can hit it:
-
-```bash
-lsof -iTCP:1337 -sTCP:LISTEN -Pn    # first: a stray parse-server can bind :1337 without erroring -> confusing routing. Pick a free --port.
-node ./bin/parse-server --appId app --masterKey master \
-  --databaseURI mongodb://localhost:27017/dev --port 1337 &
-# REST base: http://localhost:1337/parse
-```
-
-**Exercise it with REST** (master key bypasses ACL/CLP so you can see and change everything).
-Write the `-H` flags **inline on every call** - do NOT stuff them in a shell variable: unquoted `$VAR` word-splits in bash but NOT in zsh (the default shell on macOS), which silently breaks the headers and yields 400/403s.
-
-```bash
-# CREATE (POST)
-curl -s -X POST -H X-Parse-Application-Id:app -H X-Parse-Master-Key:master -H Content-Type:application/json \
-  -d '{"score":10,"name":"a"}' http://localhost:1337/parse/classes/GameScore
-# QUERY (GET) - where clause must be url-encoded
-curl -s -G -H X-Parse-Application-Id:app -H X-Parse-Master-Key:master \
-  --data-urlencode 'where={"name":"a"}' http://localhost:1337/parse/classes/GameScore
-# READ one / UPDATE (PUT) / DELETE
-curl -s -H X-Parse-Application-Id:app -H X-Parse-Master-Key:master http://localhost:1337/parse/classes/GameScore/<id>
-curl -s -X PUT -H X-Parse-Application-Id:app -H X-Parse-Master-Key:master -H Content-Type:application/json \
-  -d '{"score":20}' http://localhost:1337/parse/classes/GameScore/<id>
-curl -s -X DELETE -H X-Parse-Application-Id:app -H X-Parse-Master-Key:master http://localhost:1337/parse/classes/GameScore/<id>
-# Cloud function / user signup / schema (master-key only) / health
-curl -s -X POST -H X-Parse-Application-Id:app -H X-Parse-Master-Key:master -H Content-Type:application/json \
-  -d '{}' http://localhost:1337/parse/functions/myFunc
-curl -s -X POST -H X-Parse-Application-Id:app -H X-Parse-Master-Key:master -H Content-Type:application/json \
-  -d '{"username":"u","password":"p"}' http://localhost:1337/parse/users
-curl -s -H X-Parse-Application-Id:app -H X-Parse-Master-Key:master http://localhost:1337/parse/schemas/_User
-curl -s -H X-Parse-Application-Id:app http://localhost:1337/parse/health
-```
-
-**Inspect the raw database directly** - this is how you confirm what was *stored*, not just what REST echoed back:
-
-```bash
-# MongoDB (mongosh). Live dev DB has no prefix; the TEST db is
-# `parseServerMongoAdapterTestDatabase` with a `test_` collection prefix (e.g. test__User).
-mongosh mongodb://localhost:27017/dev --quiet --eval 'db.getCollectionNames()'
-mongosh mongodb://localhost:27017/dev --quiet --eval 'db.GameScore.find().pretty()'
-mongosh mongodb://localhost:27017/dev --quiet --eval 'db._User.find().pretty()'  # see _hashed_password, _rperm, _p_* etc.
-
-# PostgreSQL (via the container). Test tables are prefixed `test_` -> "test__User".
-docker exec parse-pg psql -U postgres -d parse_server_postgres_adapter_test_database -c '\dt'
-docker exec parse-pg psql -U postgres -d parse_server_postgres_adapter_test_database -c 'SELECT * FROM "_User";'
-```
-
-**Before/after is the method:** snapshot DB state -> perform the operation via REST -> snapshot again -> diff. That is what proves a feature *did what it should* and *nothing it shouldn't* (no leaked internal fields, no stray writes).
-
-**Inside a spec you can assert the stored shape too**, not just REST output - query with the master key, or read the adapter directly:
-
-```js
-const config = Config.get('test');
-const stored = await config.database.adapter.find('_User', schema, { objectId: id }, {});
-// assert internal fields (_hashed_password absent from client reads, _tombstone not present, etc.)
-```
-
-## Non-functional claims
-
-A correctness test at small N says nothing about performance. Before claiming "faster", "no regression" or "parity", measure it: build a realistic dataset, drive the real REST path, and compare against the base branch on the same data. `npm run benchmark` (or `benchmark:quick`) is the starting point, but note the in-process caveat in GOTCHAS.md - a driver that requires `parse/node` in the same process bypasses express entirely.
+- "The tests passed" - but you did not run `npm run build` after your last edit
+- "I ran the full suite" - a failure scrolled past, or you piped through `| tail`
+- "The spec passes" - but you never checked it fails without the change
+- "It works on Mongo" - and the change touches queries, schema, or the adapter layer
+- "It's just a refactor" - and you skipped the isolated spec run
+- "A spec exercises that function" - but you never drove it over real HTTP
+- "The REST response looks right" - and you never looked at what was stored
+- "No new spec, the existing ones cover it" - then guard-proof it: they pass without your change too
+- "This failure is pre-existing" - asserted, not reproduced on clean `alpha`
+- "It's faster" - measured at N=10, in-process, or without a base-branch comparison
+- "No performance impact" - asserted from reading the diff, on a hot path, with no number
+- "This code looks unused" - deleting an optimisation or a legacy guard without proving it is dead
+- "The REST path is protected" - and you never checked LiveQuery, GraphQL, `/batch` or the direct DB path
+- "It validates the input" - and you only tried top-level keys, not nested or dot-notation
+- "It rejected the attack" - but you asserted *that* it rejected, not the specific error, so it may reject for the wrong reason
+- Reaching for `it_id` exclusion or the flaky-retry list to make your spec pass - it isn't isolated; fix that instead
 
 ## Common mistakes
 
 | Mistake | Consequence | Fix |
 |---------|-------------|-----|
-| Edit `src/`, run tests without building | Tests run stale `lib/` - green means nothing | `npm run build` (or `npm run watch`) first; `grep lib/` to confirm |
-| Only test MongoDB | Postgres-specific behavior (no-column fields, SQL) untested | Also run the spec with `PARSE_SERVER_TEST_DB=postgres` against PostGIS |
-| Only test standalone Mongo | Transaction/change-stream paths differ | Run `MONGODB_TOPOLOGY=replset` for anything touching those |
-| Run many spec files together to "save time" | Random-order state coupling -> phantom failures | Run the affected file(s) in isolation |
-| Blame a failure on your diff immediately | Waste time on a pre-existing/flaky failure | Reproduce on `upstream/alpha` in a worktree first |
-| New spec never checked against the old code | The spec may not test the change at all | Guard-proof it: revert `src/`, rebuild, watch it fail |
+| Edit `src/`, run tests without building | Tests run stale `lib/` - green means nothing | `npm run build` (or `npm run watch`); `grep lib/` to confirm |
+| Only test MongoDB | Postgres-specific behaviour untested (no-column fields, SQL, regex escaping) | Run the spec with `PARSE_SERVER_TEST_DB=postgres` |
+| Only test standalone Mongo | Transaction / change-stream / LiveQuery paths differ, and CI's two version-matrix jobs run replset | `MONGODB_TOPOLOGY=replset npm test` |
+| Run many spec files together to "save time" | Random-order state coupling → phantom failures | Run the affected file(s) in isolation |
+| Blame a failure on your diff immediately | Time wasted on a pre-existing/flaky failure | Reproduce on clean `alpha` in a worktree first |
+| New spec never checked against old code | The spec may not test the change at all | Guard-proof: revert `src/`, rebuild, watch it fail |
 | Rely on data another spec created | Passes alone, fails in random order | Create fixtures inside the test |
-| Change behavior, no new/updated spec | Regression risk on a core product | Add a spec that fails without the change |
-| Trust the REST response as "what's stored" | Miss leaked/mis-stored internal fields (`_p_*`, `_rperm`, `_hashed_password`) | Inspect the raw DB (mongosh/psql) before & after |
-| Only assert via specs, never drive it | Behavioral bugs slip past mocked/unit paths | Boot a live server, POST/PUT/GET/DELETE, observe DB state |
+| Test only the happy path | Ships the bug in the error/permission path | Work [ADVERSARIAL-QA.md](ADVERSARIAL-QA.md) |
+| Validate only top-level keys | Dot-notation and nested keys bypass it - 5 advisories live here | Probe nested + `a.b` forms ([SECURITY.md](SECURITY.md)) |
+| Fix the REST path only | LiveQuery/GraphQL/batch keep the vulnerability | Add the guard and a spec to every path |
+| Delete "dead" code on inspection | It may be an optimisation or a live legacy guard | Prove it, and benchmark ([PERFORMANCE.md](PERFORMANCE.md)) |
+| Trust the REST response as "what's stored" | Miss leaked/mis-stored internals (`_p_*`, `_rperm`, `_hashed_password`) | Inspect the raw DB before & after |
+| Assert only via specs, never drive it | Behavioural bugs slip past the spec harness | Boot a live server, POST/PUT/GET/DELETE, observe DB |
 | Hand-edit `types/*.d.ts` | Overwritten on next generation | `npm run build:types`; only `types/Options/index.d.ts` is manual |
-| `npx eslint file.js` directly | Bogus "'expect' is not defined" errors | Use `npm run lint` / add `--flag unstable_config_lookup_from_file` |
+| `npx eslint file.js` directly | Bogus "'expect' is not defined" errors | `npm run lint`, or add `--flag unstable_config_lookup_from_file` |
 | `prettier --write` on a touched file | Reformats unrelated lines into your diff | Fix only what your change introduced |
+| Pipe a long run through `\| tail -N` | Failure details discarded, only the summary survives | Capture full output to a file, grep it afterwards |
+
+## Reporting results
+
+State what you ran, on what, and what it printed. Never soften a failure and never generalise a partial run.
+
+- ✅ "Built, then `TESTING=1 npx jasmine spec/RestQuery.spec.js` → 42 specs, 0 failures. Same file on Postgres → 40 specs, 2 excluded (`it_exclude_dbs`), 0 failures. Guard-proof: reverted `src/`, rebuilt, new spec failed as expected."
+- ❌ "Tests pass." / "Verified working." / "Should be fine now."
+
+If something was not run - Postgres, replset, the live server - say so explicitly rather than letting silence imply coverage.

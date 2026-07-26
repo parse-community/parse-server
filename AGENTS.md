@@ -65,4 +65,12 @@ docker exec parse-pg psql -U postgres -d parse_server_postgres_adapter_test_data
 
 ## Deeper guidance
 
-`.claude/skills/testing-parse-server/` holds the full verification workflow, including driving a live server over REST and inspecting what actually landed in the database, plus [GOTCHAS.md](.claude/skills/testing-parse-server/GOTCHAS.md), an appendable list of traps this repo has already cost people time on. Add to it when you hit a new one.
+`.claude/skills/testing-parse-server/` holds the full verification workflow, split by concern:
+
+- [SKILL.md](.claude/skills/testing-parse-server/SKILL.md) — start here: the build-before-test rule, the rigor gate, and which verification each type of change actually demands.
+- [VERIFICATION.md](.claude/skills/testing-parse-server/VERIFICATION.md) — the procedure, including guard-proofing a spec against the unfixed code, running both backends, driving a live server over REST and inspecting what actually landed in the database.
+- [SECURITY.md](.claude/skills/testing-parse-server/SECURITY.md) — the recurring attack primitives behind this repo's past advisories, mapped to the surfaces they apply to, and how to write a security spec.
+- [PERFORMANCE.md](.claude/skills/testing-parse-server/PERFORMANCE.md) — complexity review, the benchmark harness, and comparing against the base branch before claiming a performance result.
+- [ADVERSARIAL-QA.md](.claude/skills/testing-parse-server/ADVERSARIAL-QA.md) — finding coverage gaps, probing edges, and hunting inconsistencies between backends and API paths.
+- [REFERENCE.md](.claude/skills/testing-parse-server/REFERENCE.md) — commands, environment variables, spec harness globals and the CI matrix.
+- [GOTCHAS.md](.claude/skills/testing-parse-server/GOTCHAS.md) — an appendable list of traps this repo has already cost people time on. Add to it when you hit a new one.
