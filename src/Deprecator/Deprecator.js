@@ -22,13 +22,12 @@ class Deprecator {
       const changeNewDefault = deprecation.changeNewDefault;
       const changeNewKey = deprecation.changeNewKey;
 
-      // If default will change, only throw a warning if option is not set and future defaults are not acknowledged
+      // If default will change, only throw a warning if option is not set
       if (
         changeNewDefault != null &&
-        Utils.getNestedProperty(options, optionKey) == null &&
-        !options.acknowledgeFutureDefaults
+        Utils.getNestedProperty(options, optionKey) == null
       ) {
-        Deprecator._logOption({ optionKey, changeNewDefault, solution });
+        Deprecator._logOption({ optionKey, changeNewDefault, solution, options });
       }
 
       // If key will be removed or renamed, only throw a warning if option is set;
@@ -36,7 +35,7 @@ class Deprecator {
       const resolvedValue = deprecation.resolvedValue;
       const optionValue = Utils.getNestedProperty(options, optionKey);
       if (changeNewKey != null && optionValue != null && optionValue !== resolvedValue) {
-        Deprecator._logOption({ optionKey, changeNewKey, solution });
+        Deprecator._logOption({ optionKey, changeNewKey, solution, options });
       }
     }
   }
@@ -107,8 +106,9 @@ class Deprecator {
    * message must not include the warning that the parameter is deprecated, that is
    * automatically added to the message. It should only contain the instruction on how
    * to resolve this warning.
+   * @param {Object} [options] The Parse Server options, used to determine log levels.
    */
-  static _logOption({ optionKey, envKey, changeNewKey, changeNewDefault, solution }) {
+  static _logOption({ optionKey, envKey, changeNewKey, changeNewDefault, solution, options }) {
     const type = optionKey ? 'option' : 'environment key';
     const key = optionKey ? optionKey : envKey;
     const keyAction =
@@ -118,6 +118,19 @@ class Deprecator {
           ? `renamed to '${changeNewKey}'`
           : `removed`;
 
+    // Determine the log level
+    const logLevels = (options && options.logLevels) || {};
+    let level = 'warn';
+    if (key && logLevels[`deprecation_${key}`]) {
+      level = logLevels[`deprecation_${key}`];
+    } else if (logLevels['deprecation']) {
+      level = logLevels['deprecation'];
+    }
+
+    if (level === 'silent') {
+      return;
+    }
+
     // Compose message
     let output = `DeprecationWarning: The Parse Server ${type} '${key}' `;
     output += changeNewKey != null ? `is deprecated and will be ${keyAction} in a future version.` : '';
@@ -125,7 +138,12 @@ class Deprecator {
       ? `default will change to '${changeNewDefault}' in a future version.`
       : '';
     output += solution ? ` ${solution}` : '';
-    logger.warn(output);
+    
+    if (typeof logger[level] === 'function') {
+      logger[level](output);
+    } else {
+      logger.warn(output);
+    }
   }
 }
 

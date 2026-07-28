@@ -76,10 +76,6 @@ export interface ParseServerOptions {
   /* Parse Server makes a HTTP request to the URL set in `serverURL` at the end of its launch routine to verify that the launch succeeded. If this option is set to `false`, the verification will be skipped. This can be useful in environments where the server URL is not accessible from the server itself, such as when running behind a firewall or in certain containerized environments.<br><br>⚠️ Server URL verification requires Parse Server to be able to call itself by making requests to the URL set in `serverURL`.<br><br>Default is `true`.
   :DEFAULT: true */
   verifyServerUrl: ?boolean;
-  /* Set to `true` to acknowledge and suppress warnings about Parse Server options whose default values will change in a future version.
-  :ENV: PARSE_SERVER_ACKNOWLEDGE_FUTURE_DEFAULTS
-  :DEFAULT: false */
-  acknowledgeFutureDefaults: ?boolean;
   /* (Optional) Restricts the use of master key permissions to a list of IP addresses or ranges.<br><br>This option accepts a list of single IP addresses, for example `['10.0.0.1', '10.0.0.2']`. You can also use CIDR notation to specify an IP address range, for example `['10.0.1.0/24']`.<br><br><b>Special scenarios:</b><br>- Setting an empty array `[]` means that the master key cannot be used even in Parse Server Cloud Code. This value cannot be set via an environment variable as there is no way to pass an empty array to Parse Server via an environment variable.<br>- Setting `['0.0.0.0/0', '::0']` means to allow any IPv4 and IPv6 address to use the master key and effectively disables the IP filter.<br><br><b>Considerations:</b><br>- IPv4 and IPv6 addresses are not compared against each other. Each IP version (IPv4 and IPv6) needs to be considered separately. For example, `['0.0.0.0/0']` allows any IPv4 address and blocks every IPv6 address. Conversely, `['::0']` allows any IPv6 address and blocks every IPv4 address.<br>- Keep in mind that the IP version in use depends on the network stack of the environment in which Parse Server runs. A local environment may use a different IP version than a remote environment. For example, it's possible that locally the value `['0.0.0.0/0']` allows the request IP because the environment is using IPv4, but when Parse Server is deployed remotely the request IP is blocked because the remote environment is using IPv6.<br>- When setting the option via an environment variable the notation is a comma-separated string, for example `"0.0.0.0/0,::0"`.<br>- IPv6 zone indices (`%` suffix) are not supported, for example `fe80::1%eth0`, `fe80::1%1` or `::1%lo`.<br><br>Defaults to `['127.0.0.1', '::1']` which means that only `localhost`, the server instance on which Parse Server runs, is allowed to use the master key.
   :DEFAULT: ["127.0.0.1","::1"] */
   masterKeyIps: ?(string[]);
@@ -958,4 +954,8 @@ export interface LogLevels {
   :DEFAULT: info
   */
   signupUsernameTaken: ?string;
+  /* Log level used for deprecation warnings. Default is `warn`. Set to `silent` to suppress all deprecations. You can also specify per-deprecation log levels by appending the option key, e.g., `deprecation_fileUpload`. See [LogLevel](LogLevel.html) for available values.
+  :DEFAULT: warn
+  */
+  deprecation: ?string;
 }
