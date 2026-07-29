@@ -112,6 +112,16 @@ describe('Config.validateHeaderAliases', () => {
     ).toThrowError(/contains invalid characters/);
   });
 
+  it('should reject CORS-safelisted request-header names and Range as aliases', () => {
+    for (const alias of ['Accept', 'accept-language', 'Content-Language', 'Content-Type', 'Range']) {
+      expect(() =>
+        Config.validateHeaderAliases({
+          'X-Parse-Application-Id': [alias],
+        })
+      ).toThrowError(/CORS-safelisted request header/);
+    }
+  });
+
   it('should reject a canonical header that contains invalid characters', () => {
     expect(() =>
       Config.validateHeaderAliases({

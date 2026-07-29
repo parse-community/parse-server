@@ -83,7 +83,11 @@ const mergeHeaders = (...headerSources) => {
 };
 
 export function getHeaderAliases(headerAliases, canonicalHeader) {
-  const aliases = headerAliases?.[canonicalHeader];
+  const target = String(canonicalHeader).trim().toLowerCase();
+  const matchedKey = Object.keys(headerAliases || {}).find(
+    key => String(key).trim().toLowerCase() === target
+  );
+  const aliases = matchedKey === undefined ? undefined : headerAliases[matchedKey];
   if (!Array.isArray(aliases)) {
     return [];
   }
@@ -103,9 +107,14 @@ function applyHeaderAliases(req, headerAliases) {
     if (req.headers[canonicalKey] !== undefined) {
       continue; // canonical wins
     }
-    const matchedAlias = (aliases || []).find(
-      alias => req.headers[String(alias).trim().toLowerCase()] !== undefined
-    );
+    const matchedAlias = (aliases || []).find(alias => {
+      const aliasKey = String(alias).trim().toLowerCase();
+      // Never rewrite CORS-safelisted / Range headers (GraphQL CSRF defense).
+      if (Config.HEADER_ALIAS_CSRF_BLOCKLIST.has(aliasKey)) {
+        return false;
+      }
+      return req.headers[aliasKey] !== undefined;
+    });
     if (matchedAlias) {
       req.headers[canonicalKey] = req.headers[String(matchedAlias).trim().toLowerCase()];
     }

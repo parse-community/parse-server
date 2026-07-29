@@ -113,6 +113,13 @@ describe('ParseGraphQLServer', () => {
       expect(headers).toEqual(['X-Parse-Application-Id', 'X-App-Id', 'X-Client-App']);
     });
 
+    it('should resolve aliases when canonical header key casing differs', () => {
+      const headers = getCSRFRequestHeaders({
+        'x-parse-application-id': ['X-App-Id'],
+      });
+      expect(headers).toEqual(['X-Parse-Application-Id', 'X-App-Id']);
+    });
+
     it('should exclude CORS-safelisted request-header names and Range from CSRF whitelist', () => {
       const headers = getCSRFRequestHeaders({
         'X-Parse-Application-Id': [
@@ -309,6 +316,53 @@ describe('ParseGraphQLServer', () => {
       };
       await new Promise(resolve => aliasMiddleware(req, {}, resolve));
       expect(req.headers['x-parse-application-id']).toBe(parseServerWithAliases.config.appId);
+    });
+
+    it('does not authorize GraphQL via Accept application-id alias before CSRF checks', async () => {
+      const AppCache = require('../lib/cache').default;
+      const parseServerWithAliases = await global.reconfigureServer({
+        maintenanceKey: 'test2',
+        maxUploadSize: '1kb',
+        headerAliases: {
+          'X-Parse-Application-Id': ['X-App-Id'],
+        },
+      });
+      // Inject a blocked alias without re-validation to prove rewrite defense.
+      const cached = AppCache.get(parseServerWithAliases.config.appId);
+      AppCache.put(parseServerWithAliases.config.appId, {
+        ...cached,
+        headerAliases: {
+          'X-Parse-Application-Id': ['Accept'],
+        },
+      });
+      const graphQLServerWithAliases = new ParseGraphQLServer(parseServerWithAliases, {
+        graphQLPath: '/graphql',
+        playgroundPath: '/playground',
+      });
+      const middlewares = require('../lib/middlewares');
+      const useCalls = [];
+      const app = {
+        use: (...args) => {
+          useCalls.push(args);
+        },
+      };
+      graphQLServerWithAliases.applyGraphQL(app);
+      const parseHeadersIndex = useCalls.findIndex(
+        ([path, middleware]) => path === '/graphql' && middleware === middlewares.handleParseHeaders
+      );
+      const [, aliasMiddleware] = useCalls[parseHeadersIndex - 1];
+      const req = {
+        originalUrl: '/graphql',
+        url: '/graphql',
+        protocol: 'http',
+        headers: {
+          host: 'localhost',
+          accept: parseServerWithAliases.config.appId,
+        },
+        get: key => req.headers[key.toLowerCase()],
+      };
+      await new Promise(resolve => aliasMiddleware(req, {}, resolve));
+      expect(req.headers['x-parse-application-id']).toBeUndefined();
     });
   });
 

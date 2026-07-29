@@ -55,8 +55,21 @@ const ALLOWED_HEADER_ALIAS_CANONICALS = new Set([
   'x-parse-rest-api-key',
 ]);
 
+// CORS-safelisted request-header names (case-insensitive) plus Range.
+// These must never be configured as aliases: browsers attach them ambiently,
+// and rewriting them into Parse headers (especially application-id) before
+// Apollo CSRF validation would let simple cross-site multipart requests pass.
+const HEADER_ALIAS_CSRF_BLOCKLIST = new Set([
+  'accept',
+  'accept-language',
+  'content-language',
+  'content-type',
+  'range',
+]);
+
 export class Config {
   static ALLOWED_HEADER_ALIAS_CANONICALS = ALLOWED_HEADER_ALIAS_CANONICALS;
+  static HEADER_ALIAS_CSRF_BLOCKLIST = HEADER_ALIAS_CSRF_BLOCKLIST;
   static get(applicationId: string, mount: string) {
     const cacheInfo = AppCache.get(applicationId);
     if (!cacheInfo) {
@@ -819,6 +832,11 @@ export class Config {
           if (!SAFE_HEADER_NAME.test(trimmedAlias)) {
             throw new Error(
               `Header alias '${alias}' for canonical header '${canonicalHeader}' contains invalid characters`
+            );
+          }
+          if (HEADER_ALIAS_CSRF_BLOCKLIST.has(trimmedAlias.toLowerCase())) {
+            throw new Error(
+              `Header alias '${alias}' for canonical header '${canonicalHeader}' is a CORS-safelisted request header and cannot be used as an alias`
             );
           }
         });

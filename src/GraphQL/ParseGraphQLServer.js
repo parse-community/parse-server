@@ -14,6 +14,7 @@ import {
 } from '../middlewares';
 import requiredParameter from '../requiredParameter';
 import defaultLogger from '../logger';
+import Config from '../Config';
 import { ParseGraphQLSchema } from './ParseGraphQLSchema';
 import ParseGraphQLController, { ParseGraphQLConfig } from '../Controllers/ParseGraphQLController';
 import { createComplexityValidationPlugin } from './helpers/queryComplexity';
@@ -97,23 +98,14 @@ const IntrospectionControlPlugin = (publicIntrospection) => ({
 
 });
 
-// Fetch no-CORS-safelisted request-header names (case-insensitive) plus Range, which
-// can also be CORS-safelisted for certain values. Apollo preventCsrf treats any
-// whitelisted header with a non-empty value as sufficient for multipart/simple
-// bodies; aliases that match these names must not be listed or browsers could
-// satisfy CSRF with ambient headers.
-const APOLLO_CSRF_ALIAS_BLOCKLIST = new Set([
-  'accept',
-  'accept-language',
-  'content-language',
-  'content-type',
-  'range',
-]);
-
+// Aliases matching CORS-safelisted names / Range must not appear on Apollo's
+// CSRF requestHeaders list. Config.validateHeaderAliases and applyHeaderAliases
+// also reject/skip these names so they cannot be rewritten into application-id
+// before Apollo's CSRF check.
 export const getCSRFRequestHeaders = headerAliases => {
   const aliases = getHeaderAliases(headerAliases, 'X-Parse-Application-Id');
   const safeAliases = aliases.filter(
-    alias => !APOLLO_CSRF_ALIAS_BLOCKLIST.has(alias.trim().toLowerCase())
+    alias => !Config.HEADER_ALIAS_CSRF_BLOCKLIST.has(alias.trim().toLowerCase())
   );
   return [...new Set(['X-Parse-Application-Id', ...safeAliases])];
 };

@@ -564,27 +564,32 @@ describe('middlewares', () => {
     });
   });
 
-  it('should reject CRLF aliases at validation time before they can be served', () => {
-    const Config = require('../lib/Config');
-    expect(() =>
-      Config.validateHeaderAliases({
-        'X-Parse-Application-Id': ['X-Foo\r\nSet-Cookie: evil'],
-      })
-    ).toThrowError(/contains invalid characters/);
+  it('should not rewrite CORS-safelisted Accept into application-id', done => {
+    AppCachePut(fakeReq.body._ApplicationId, {
+      headerAliases: {
+        'X-Parse-Application-Id': ['Accept'],
+      },
+      masterKeyIps: ['0.0.0.0/0'],
+    });
+    fakeReq.headers['accept'] = 'test';
+    middlewares.handleHeaderAliases(fakeReq.body._ApplicationId)(fakeReq, fakeRes, () => {
+      expect(fakeReq.headers['x-parse-application-id']).toBeUndefined();
+      done();
+    });
   });
 
-  it('should reject privileged master and maintenance key aliases at validation time', () => {
-    const Config = require('../lib/Config');
-    expect(() =>
-      Config.validateHeaderAliases({
-        'X-Parse-Master-Key': ['X-Master-Key-Alias'],
-      })
-    ).toThrowError(/is not an allowed Parse header/);
-    expect(() =>
-      Config.validateHeaderAliases({
-        'X-Parse-Maintenance-Key': ['X-Maintenance-Key-Alias'],
-      })
-    ).toThrowError(/is not an allowed Parse header/);
+  it('should resolve aliases when canonical header key casing differs', done => {
+    AppCachePut(fakeReq.body._ApplicationId, {
+      headerAliases: {
+        'x-parse-session-token': ['X-Session-Token-Alias'],
+      },
+      masterKeyIps: ['0.0.0.0/0'],
+    });
+    fakeReq.headers['x-session-token-alias'] = 'session-token-alias-value';
+    middlewares.handleHeaderAliases(fakeReq.body._ApplicationId)(fakeReq, fakeRes, () => {
+      expect(fakeReq.headers['x-parse-session-token']).toEqual('session-token-alias-value');
+      done();
+    });
   });
 
   it('should not rewrite master-key aliases when present in request headers', done => {
