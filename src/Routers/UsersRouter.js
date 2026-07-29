@@ -18,6 +18,7 @@ import { promiseEnsureIdempotency } from '../middlewares';
 import RestWrite from '../RestWrite';
 import { logger } from '../logger';
 import { createSanitizedError } from '../Error';
+import { applyAuthDataOptimisticLock } from '../AuthDataLock';
 
 export class UsersRouter extends ClassesRouter {
   className() {
@@ -108,7 +109,13 @@ export class UsersRouter extends ClassesRouter {
         .find('_User', query, {}, Auth.maintenance(req.config))
         .then(results => {
           if (!results.length) {
-            throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+            // Perform a dummy bcrypt compare to normalize response timing,
+            // preventing user enumeration via timing side-channel
+            return passwordCrypto
+              .compare(password, passwordCrypto.dummyHash)
+              .then(() => {
+                throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+              });
           }
 
           if (results.length > 1) {
@@ -121,6 +128,11 @@ export class UsersRouter extends ClassesRouter {
             user = results[0];
           }
 
+          if (typeof user.password !== 'string' || user.password.length === 0) {
+            // Passwordless account (e.g. OAuth-only): run dummy compare for
+            // timing normalization, discard result, always reject
+            return passwordCrypto.compare(password, passwordCrypto.dummyHash).then(() => false);
+          }
           return passwordCrypto.compare(password, user.password);
         })
         .then(correct => {
@@ -189,7 +201,6 @@ export class UsersRouter extends ClassesRouter {
       '_Session',
       { sessionToken },
       {},
-      req.info.clientSDK,
       req.info.context
     );
     if (
@@ -208,7 +219,6 @@ export class UsersRouter extends ClassesRouter {
       '_User',
       userId,
       {},
-      req.info.clientSDK,
       req.info.context
     );
     if (!userResponse.results || userResponse.results.length == 0) {
@@ -245,7 +255,6 @@ export class UsersRouter extends ClassesRouter {
           { objectId: user.objectId },
           req.body || {},
           user,
-          req.info.clientSDK,
           req.info.context
         ),
         user
@@ -303,26 +312,10 @@ export class UsersRouter extends ClassesRouter {
     // If we have some new validated authData update directly
     if (validatedAuthData && Object.keys(validatedAuthData).length) {
       const query = { objectId: user.objectId };
-      // Optimistic locking: include the original array fields in the WHERE clause
-      // for providers whose data is being updated. This prevents concurrent requests
-      // from both succeeding when consuming single-use tokens (e.g. MFA recovery codes).
-      // Only array fields need locking — element removal is vulnerable to TOCTOU;
-      // scalar fields are simply overwritten and don't have concurrency issues.
-      if (user.authData) {
-        for (const provider of Object.keys(validatedAuthData)) {
-          const original = user.authData[provider];
-          if (original && typeof original === 'object') {
-            for (const [field, value] of Object.entries(original)) {
-              if (
-                Array.isArray(value) &&
-                JSON.stringify(value) !== JSON.stringify(validatedAuthData[provider]?.[field])
-              ) {
-                query[`authData.${provider}.${field}`] = value;
-              }
-            }
-          }
-        }
-      }
+      // Prevent concurrent requests from both succeeding when consuming single-use
+      // tokens (e.g. MFA recovery codes or SMS OTP tokens) by extending the update
+      // WHERE clause with the original values of changed primitive/array fields.
+      applyAuthDataOptimisticLock(query, user.authData, validatedAuthData);
       try {
         await req.config.database.update('_User', query, { authData: validatedAuthData }, {});
       } catch (error) {
@@ -353,12 +346,53 @@ export class UsersRouter extends ClassesRouter {
       req.info.context
     );
 
-    if (authDataResponse) {
-      user.authDataResponse = authDataResponse;
+    // Re-fetch the user with the caller's auth context so that
+    // protectedFields and CLP apply correctly; if the caller used master key,
+    // protectedFields are bypassed, matching the behavior of GET /users/:id
+    const refetchAuth =
+      req.auth.isMaster || req.auth.isMaintenance
+        ? req.auth
+        : new Auth.Auth({
+          config: req.config,
+          isMaster: false,
+          user: Parse.Object.fromJSON({ className: '_User', objectId: user.objectId }),
+          installationId: req.info.installationId,
+        });
+    let filteredUser;
+    try {
+      const filteredUserResponse = await rest.get(
+        req.config,
+        refetchAuth,
+        '_User',
+        user.objectId,
+        {},
+        req.info.context
+      );
+      filteredUser = filteredUserResponse.results?.[0];
+    } catch {
+      // The re-fetch enforces `_User` `get` CLP and may be denied by access
+      // control (e.g. CLP `get: {}` or an ACL that excludes the caller).
+      // Handled below; never fall back to the raw row.
     }
-    await req.config.authDataManager.runAfterFind(req, user.authData);
+    if (!filteredUser) {
+      // Master/maintenance callers bypass CLP, protectedFields, and authData
+      // afterFind, so for them an empty re-fetch is a genuine not-found edge, not
+      // an access-control denial; they are entitled to the full row. For every
+      // other caller, an empty/denied re-fetch means access control withheld the
+      // record, so disclose only the identity — never the raw row, which would
+      // leak fields hidden by `protectedFields` and raw `authData` (e.g. MFA
+      // secrets and recovery codes) that the sanitizing re-fetch would remove.
+      // The session token is still attached below so login succeeds.
+      filteredUser =
+        req.auth.isMaster || req.auth.isMaintenance ? user : { objectId: user.objectId };
+    }
+    UsersRouter.removeHiddenProperties(filteredUser);
+    filteredUser.sessionToken = user.sessionToken;
+    if (authDataResponse) {
+      filteredUser.authDataResponse = authDataResponse;
+    }
 
-    return { response: user };
+    return { response: filteredUser };
   }
 
   /**
@@ -425,8 +459,47 @@ export class UsersRouter extends ClassesRouter {
       .then(async user => {
         // Remove hidden properties.
         UsersRouter.removeHiddenProperties(user);
-        await req.config.authDataManager.runAfterFind(req, user.authData);
-        return { response: user };
+        // Re-fetch the user with the caller's auth context so that
+        // protectedFields and CLP apply correctly; if the caller used master key,
+        // protectedFields are bypassed, matching the behavior of GET /users/:id
+        const refetchAuth =
+          req.auth.isMaster || req.auth.isMaintenance
+            ? req.auth
+            : new Auth.Auth({
+              config: req.config,
+              isMaster: false,
+              user: Parse.Object.fromJSON({ className: '_User', objectId: user.objectId }),
+              installationId: req.info.installationId,
+            });
+        let filteredUser;
+        try {
+          const filteredUserResponse = await rest.get(
+            req.config,
+            refetchAuth,
+            '_User',
+            user.objectId,
+            {},
+            req.info.context
+          );
+          filteredUser = filteredUserResponse.results?.[0];
+        } catch {
+          // The re-fetch enforces `_User` `get` CLP and may be denied by access
+          // control (e.g. CLP `get: {}` or an ACL that excludes the caller).
+          // Handled below; never fall back to the raw row.
+        }
+        if (!filteredUser) {
+          // See handleLogIn: master/maintenance callers bypass CLP,
+          // protectedFields, and authData afterFind, so an empty re-fetch is a
+          // genuine not-found edge for them and they are entitled to the full
+          // row. For all other callers, an empty/denied re-fetch means access
+          // control withheld the record, so disclose only the identity rather
+          // than the raw row, which would leak protectedFields and raw authData
+          // (e.g. MFA secrets and recovery codes).
+          filteredUser =
+            req.auth.isMaster || req.auth.isMaintenance ? user : { objectId: user.objectId };
+        }
+        UsersRouter.removeHiddenProperties(filteredUser);
+        return { response: filteredUser };
       })
       .catch(error => {
         throw error;
@@ -442,7 +515,6 @@ export class UsersRouter extends ClassesRouter {
         '_Session',
         { sessionToken: req.info.sessionToken },
         undefined,
-        req.info.clientSDK,
         req.info.context
       );
       if (records.results && records.results.length) {

@@ -1,6 +1,8 @@
 const Parse = require('parse/node').Parse;
 const path = require('path');
 const { isBatchRequestLimitExceeded, getBatchRequestLimit } = require('./batchRequestLimit');
+const { isRouteAllowed, matchesExactRoute } = require('./middlewares');
+const { createSanitizedError } = require('./Error');
 // These methods handle batch requests.
 const batchPath = '/batch';
 
@@ -102,10 +104,28 @@ async function handleBatch(router, req) {
   const rateLimits = req.config.rateLimits || [];
   for (const restRequest of req.body.requests) {
     const routablePath = makeRoutablePath(restRequest.path);
+    if ((restRequest.method || 'GET').toUpperCase() === 'POST' && routablePath === batchPath) {
+      throw new Parse.Error(Parse.Error.INVALID_JSON, 'nested batch requests are not allowed');
+    }
+    // Re-enforce routeAllowList on each sub-request. The enforceRouteAllowList
+    // middleware runs once on the outer /batch URL, so without this check an
+    // operator who allowlists `batch` would expose every route reachable via
+    // sub-request dispatch.
+    if (!isRouteAllowed(routablePath, req.config, req.auth)) {
+      throw createSanitizedError(
+        Parse.Error.OPERATION_FORBIDDEN,
+        `Route not allowed by routeAllowList: ${(restRequest.method || 'GET').toUpperCase()} ${routablePath}`,
+        req.config
+      );
+    }
     for (const limit of rateLimits) {
       const pathExp = limit.path.regexp || limit.path;
       if (!pathExp.test(routablePath)) {
         continue;
+      }
+      const info = { ...req.info };
+      if (matchesExactRoute(routablePath, '/login')) {
+        delete info.sessionToken;
       }
       const fakeReq = {
         ip: req.ip || req.config?.ip || '127.0.0.1',
@@ -113,7 +133,7 @@ async function handleBatch(router, req) {
         _batchOriginalMethod: 'POST',
         config: req.config,
         auth: req.auth,
-        info: req.info,
+        info,
       };
       const fakeRes = { setHeader() {} };
       try {

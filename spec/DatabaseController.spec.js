@@ -841,6 +841,102 @@ describe('DatabaseController', function () {
       expect(findOneAndUpdateSpy).toHaveBeenCalled();
     });
   });
+
+  describe_only_db('mongo')('update with many', () => {
+    it('should return matchedCount and modifiedCount when multiple docs are updated', async () => {
+      const config = Config.get(Parse.applicationId);
+      const obj1 = new Parse.Object('TestObject');
+      const obj2 = new Parse.Object('TestObject');
+      const obj3 = new Parse.Object('TestObject');
+      obj1.set('status', 'pending');
+      obj2.set('status', 'pending');
+      obj3.set('status', 'pending');
+      await Parse.Object.saveAll([obj1, obj2, obj3]);
+
+      const result = await config.database.update(
+        'TestObject',
+        { status: 'pending' },
+        { status: 'done' },
+        { many: true }
+      );
+
+      expect(result.matchedCount).toBe(3);
+      expect(result.modifiedCount).toBe(3);
+    });
+
+    it('should return matchedCount > 0 and modifiedCount 0 when values are already current', async () => {
+      const config = Config.get(Parse.applicationId);
+      const obj1 = new Parse.Object('TestObject');
+      const obj2 = new Parse.Object('TestObject');
+      obj1.set('status', 'done');
+      obj2.set('status', 'done');
+      await Parse.Object.saveAll([obj1, obj2]);
+
+      const result = await config.database.update(
+        'TestObject',
+        { status: 'done' },
+        { status: 'done' },
+        { many: true }
+      );
+
+      expect(result.matchedCount).toBe(2);
+      expect(result.modifiedCount).toBe(0);
+    });
+
+    it('should return matchedCount 0 and modifiedCount 0 when no docs match', async () => {
+      const config = Config.get(Parse.applicationId);
+      const result = await config.database.update(
+        'TestObject',
+        { status: 'nonexistent' },
+        { status: 'done' },
+        { many: true }
+      );
+
+      expect(result.matchedCount).toBe(0);
+      expect(result.modifiedCount).toBe(0);
+    });
+
+    it('should return only matchedCount and modifiedCount for op-based updates', async () => {
+      const config = Config.get(Parse.applicationId);
+      const obj1 = new Parse.Object('TestObject');
+      const obj2 = new Parse.Object('TestObject');
+      obj1.set('score', 1);
+      obj2.set('score', 1);
+      await Parse.Object.saveAll([obj1, obj2]);
+
+      const result = await config.database.update(
+        'TestObject',
+        { score: { $exists: true } },
+        { score: { __op: 'Increment', amount: 5 } },
+        { many: true }
+      );
+
+      expect(result.matchedCount).toBe(2);
+      expect(result.modifiedCount).toBe(2);
+      expect(Object.keys(result)).toEqual(['matchedCount', 'modifiedCount']);
+    });
+
+    it('should return raw adapter result when skipSanitization is true', async () => {
+      const config = Config.get(Parse.applicationId);
+      const obj1 = new Parse.Object('TestObject');
+      obj1.set('status', 'pending');
+      await obj1.save();
+
+      const result = await config.database.update(
+        'TestObject',
+        { status: 'pending' },
+        { status: 'done' },
+        { many: true },
+        true // skipSanitization
+      );
+
+      // skipSanitization returns raw adapter result, which for MongoDB
+      // includes additional fields beyond matchedCount and modifiedCount
+      expect(result.matchedCount).toBe(1);
+      expect(result.modifiedCount).toBe(1);
+      expect(result.acknowledged).toBe(true);
+    });
+  });
 });
 
 function buildCLP(pointerNames) {

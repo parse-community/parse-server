@@ -1,7 +1,11 @@
 const http = require('http');
 const express = require('express');
 const req = require('../lib/request');
-const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+const fetch = (...args) =>
+  import('node-fetch').then(({ default: fetch }) => {
+    const [url, options = {}] = args;
+    return fetch(url, { agent: new http.Agent({ keepAlive: false }), ...options });
+  });
 const FormData = require('form-data');
 require('./helper');
 const { updateCLP } = require('./support/dev');
@@ -30,7 +34,7 @@ const {
 const { ParseServer } = require('../');
 const { ParseGraphQLServer } = require('../lib/GraphQL/ParseGraphQLServer');
 const { ReadPreference, Collection } = require('mongodb');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID: uuidv4 } = require('crypto');
 
 function handleError(e) {
   if (e && e.networkError && e.networkError.result && e.networkError.result.errors) {
@@ -44,7 +48,6 @@ describe('ParseGraphQLServer', () => {
   let parseServer;
   let parseGraphQLServer;
   let loggerErrorSpy;
-
 
   beforeEach(async () => {
     parseServer = await global.reconfigureServer({
@@ -1012,6 +1015,718 @@ describe('ParseGraphQLServer', () => {
           });
           expect(introspection.data).toBeDefined();
           expect(introspection.data.__type).toBeDefined();
+        });
+
+        it('should strip "Did you mean" field suggestions from validation errors without master or maintenance key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Typo {
+                  healt
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const message = e.networkError.result.errors[0].message;
+            expect(message).toContain('Cannot query field "healt"');
+            expect(message).not.toMatch(/Did you mean/);
+            expect(message).not.toContain('health');
+          }
+        });
+
+        it('should strip "Did you mean" argument suggestions from validation errors without master or maintenance key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                query UnknownArg {
+                  users(wher: {}) {
+                    edges {
+                      node {
+                        id
+                      }
+                    }
+                  }
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const message = e.networkError.result.errors[0].message;
+            expect(message).toContain('Unknown argument "wher"');
+            expect(message).not.toMatch(/Did you mean/);
+            expect(message).not.toContain('"where"');
+          }
+        });
+
+        it('should keep "Did you mean" suggestions with master key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Typo {
+                  healt
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const message = e.networkError.result.errors[0].message;
+            expect(message).toContain('Cannot query field "healt"');
+            expect(message).toMatch(/Did you mean/);
+            expect(message).toContain('health');
+          }
+        });
+
+        it('should keep "Did you mean" suggestions with maintenance key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Typo {
+                  healt
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Maintenance-Key': 'test2',
+                },
+              },
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const message = e.networkError.result.errors[0].message;
+            expect(message).toContain('Cannot query field "healt"');
+            expect(message).toMatch(/Did you mean/);
+            expect(message).toContain('health');
+          }
+        });
+
+        it('should keep "Did you mean" suggestions when public introspection is enabled', async () => {
+          const parseServer = await reconfigureServer();
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Typo {
+                  healt
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const message = e.networkError.result.errors[0].message;
+            expect(message).toContain('Cannot query field "healt"');
+            expect(message).toMatch(/Did you mean/);
+            expect(message).toContain('health');
+          }
+        });
+
+        const getReturnedError = e =>
+          (e.networkError && e.networkError.result && e.networkError.result.errors[0]) ||
+          (e.graphQLErrors && e.graphQLErrors[0]);
+
+        it('should strip "Did you mean" enum suggestions from variable-coercion errors without master or maintenance key', async () => {
+          Parse.Cloud.define('secretAdminTask', () => 'ok');
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation LeakFunction($input: CallCloudCodeInput!) {
+                  callCloudCode(input: $input) {
+                    result
+                  }
+                }
+              `,
+              variables: { input: { functionName: 'secretAdminTas', params: {} } },
+            });
+            fail('should have thrown a coercion error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            expect(error.message).toContain('CloudCodeFunction');
+            expect(error.message).not.toMatch(/Did you mean/);
+            expect(error.message).not.toContain('secretAdminTask');
+            // The cloud function name must not leak through any returned field
+            // (e.g. a stacktrace duplicated from the original message in non-production).
+            expect(JSON.stringify(error)).not.toContain('secretAdminTask');
+          }
+        });
+
+        it('should strip "Did you mean" field suggestions from variable-coercion errors without master or maintenance key', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak($where: UserWhereInput) {
+                  users(where: $where) {
+                    edges {
+                      node {
+                        id
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: { where: { usernme: { equalTo: 'victim' } } },
+            });
+            fail('should have thrown a coercion error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            expect(error.message).toContain('UserWhereInput');
+            expect(error.message).not.toMatch(/Did you mean/);
+            // JSON.stringify escapes embedded quotes, so assert against the bare
+            // identifier to reliably catch a leak duplicated into extensions.stacktrace.
+            expect(error.message).not.toContain('username');
+            expect(JSON.stringify(error)).not.toContain('username');
+          }
+        });
+
+        it('should keep "Did you mean" enum suggestions in variable-coercion errors with master key', async () => {
+          Parse.Cloud.define('secretAdminTask', () => 'ok');
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation LeakFunction($input: CallCloudCodeInput!) {
+                  callCloudCode(input: $input) {
+                    result
+                  }
+                }
+              `,
+              variables: { input: { functionName: 'secretAdminTas', params: {} } },
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+            fail('should have thrown a coercion error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            expect(error.message).toMatch(/Did you mean/);
+            expect(error.message).toContain('secretAdminTask');
+          }
+        });
+
+        it('should keep "Did you mean" enum suggestions in variable-coercion errors when public introspection is enabled', async () => {
+          const parseServer = await reconfigureServer();
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
+          Parse.Cloud.define('secretAdminTask', () => 'ok');
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation LeakFunction($input: CallCloudCodeInput!) {
+                  callCloudCode(input: $input) {
+                    result
+                  }
+                }
+              `,
+              variables: { input: { functionName: 'secretAdminTas', params: {} } },
+            });
+            fail('should have thrown a coercion error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            expect(error.message).toMatch(/Did you mean/);
+            expect(error.message).toContain('secretAdminTask');
+          }
+        });
+
+        it('should strip required-field names from base coercion errors without master or maintenance key', async () => {
+          const schemaController = await parseServer.config.databaseController.loadSchema();
+          await schemaController.addClassIfNotExists('TestReqClass', {
+            secretRequiredField: { type: 'String', required: true },
+          });
+          await resetGraphQLCache();
+
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation Create($input: CreateTestReqClassInput!) {
+                  createTestReqClass(input: $input) {
+                    testReqClass {
+                      id
+                    }
+                  }
+                }
+              `,
+              variables: { input: { fields: {} } },
+            });
+            fail('should have thrown a coercion error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // The base graphql-js "... was not provided." coercion message carries no
+            // "Did you mean" clause, so it discloses the required custom field name to a
+            // caller who only has the public application id. It must be redacted.
+            expect(error.message).not.toContain('secretRequiredField');
+            // The message is duplicated into extensions.stacktrace in non-production;
+            // ensure the identifier does not leak through any returned field.
+            expect(JSON.stringify(error)).not.toContain('secretRequiredField');
+          }
+        });
+
+        it('should keep required-field names in base coercion errors with master key', async () => {
+          const schemaController = await parseServer.config.databaseController.loadSchema();
+          await schemaController.addClassIfNotExists('TestReqClass', {
+            secretRequiredField: { type: 'String', required: true },
+          });
+          await resetGraphQLCache();
+
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation Create($input: CreateTestReqClassInput!) {
+                  createTestReqClass(input: $input) {
+                    testReqClass {
+                      id
+                    }
+                  }
+                }
+              `,
+              variables: { input: { fields: {} } },
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+            fail('should have thrown a coercion error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            expect(error.message).toContain('secretRequiredField');
+          }
+        });
+
+        it('should keep required-field names in base coercion errors when public introspection is enabled', async () => {
+          const parseServer = await reconfigureServer();
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
+          const schemaController = await parseServer.config.databaseController.loadSchema();
+          await schemaController.addClassIfNotExists('TestReqClass', {
+            secretRequiredField: { type: 'String', required: true },
+          });
+          await resetGraphQLCache();
+
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation Create($input: CreateTestReqClassInput!) {
+                  createTestReqClass(input: $input) {
+                    testReqClass {
+                      id
+                    }
+                  }
+                }
+              `,
+              variables: { input: { fields: {} } },
+            });
+            fail('should have thrown a coercion error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            expect(error.message).toContain('secretRequiredField');
+          }
+        });
+
+        it('should strip required-field names from inline-literal coercion errors without master or maintenance key', async () => {
+          const schemaController = await parseServer.config.databaseController.loadSchema();
+          await schemaController.addClassIfNotExists('TestReqClass', {
+            secretRequiredField: { type: 'String', required: true },
+          });
+          await resetGraphQLCache();
+
+          try {
+            // Input written inline in the operation (not via a variable) is validated by
+            // ValuesOfCorrectTypeRule, which emits a type-qualified message
+            // ('Field "<Type>.<field>" of required type ...'), disclosing both the generated
+            // input type name (which embeds the class name) and the required field name.
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation Create {
+                  createTestReqClass(input: { fields: {} }) {
+                    testReqClass {
+                      id
+                    }
+                  }
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            expect(error.message).not.toContain('secretRequiredField');
+            expect(error.message).not.toContain('CreateTestReqClass');
+            expect(JSON.stringify(error)).not.toContain('secretRequiredField');
+          }
+        });
+
+        // A Pointer/Relation field maps to a generated input type whose name embeds the
+        // pointer's TARGET class (`<Target>PointerInput`, `<Target>RelationWhereInput`,
+        // `Create<Target>FieldsInput`). graphql-js interpolates that type name into base
+        // coercion/validation messages that the "Did you mean" and required-field strips do
+        // not touch, disclosing the target class name to a caller who only supplied the
+        // pointer field name (which does not reveal its target). Redact those identifiers
+        // for callers that are not allowed to introspect.
+        const setupPointerSchema = async _parseServer => {
+          const schemaController = await _parseServer.config.databaseController.loadSchema();
+          await schemaController.addClassIfNotExists('SecretAuthor', {
+            name: { type: 'String' },
+          });
+          await schemaController.addClassIfNotExists('DiagBook', {
+            writtenBy: { type: 'Pointer', targetClass: 'SecretAuthor' },
+          });
+          await resetGraphQLCache();
+        };
+
+        it('should strip pointer target class names from where-clause validation errors without master or maintenance key', async () => {
+          await setupPointerSchema(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak {
+                  diagBooks(where: { writtenBy: 123 }) {
+                    edges {
+                      node {
+                        id
+                      }
+                    }
+                  }
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // Expected value of type "SecretAuthorRelationWhereInput", found 123.
+            expect(error.message).not.toContain('SecretAuthor');
+            expect(JSON.stringify(error)).not.toContain('SecretAuthor');
+          }
+        });
+
+        it('should strip pointer target class names from non-object variable-coercion errors without master or maintenance key', async () => {
+          await setupPointerSchema(parseServer);
+
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation Create($input: CreateDiagBookInput!) {
+                  createDiagBook(input: $input) {
+                    diagBook {
+                      id
+                    }
+                  }
+                }
+              `,
+              variables: { input: { fields: { writtenBy: { createAndLink: 5 } } } },
+            });
+            fail('should have thrown a coercion error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // Expected type "CreateSecretAuthorFieldsInput" to be an object.
+            expect(error.message).not.toContain('SecretAuthor');
+            expect(JSON.stringify(error)).not.toContain('SecretAuthor');
+          }
+        });
+
+        it('should strip pointer target class names from unknown-field variable-coercion errors without master or maintenance key', async () => {
+          await setupPointerSchema(parseServer);
+
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation Create($input: CreateDiagBookInput!) {
+                  createDiagBook(input: $input) {
+                    diagBook {
+                      id
+                    }
+                  }
+                }
+              `,
+              variables: { input: { fields: { writtenBy: { bogusKey: 1 } } } },
+            });
+            fail('should have thrown a coercion error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // Field "bogusKey" is not defined by type "SecretAuthorPointerInput".
+            expect(error.message).not.toContain('SecretAuthor');
+            expect(JSON.stringify(error)).not.toContain('SecretAuthor');
+          }
+        });
+
+        it('should keep pointer target class names in errors with master key', async () => {
+          await setupPointerSchema(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak {
+                  diagBooks(where: { writtenBy: 123 }) {
+                    edges {
+                      node {
+                        id
+                      }
+                    }
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            expect(error.message).toContain('SecretAuthor');
+          }
+        });
+
+        it('should keep pointer target class names in errors when public introspection is enabled', async () => {
+          const parseServer = await reconfigureServer();
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
+          await setupPointerSchema(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak {
+                  diagBooks(where: { writtenBy: 123 }) {
+                    edges {
+                      node {
+                        id
+                      }
+                    }
+                  }
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            expect(error.message).toContain('SecretAuthor');
+          }
+        });
+
+        it('should strip pointer target class names from non-nullable variable-coercion errors without master or maintenance key', async () => {
+          const schemaController = await parseServer.config.databaseController.loadSchema();
+          await schemaController.addClassIfNotExists('SecretAuthor', { name: { type: 'String' } });
+          await schemaController.addClassIfNotExists('ReqDiagBook', {
+            writtenBy: { type: 'Pointer', targetClass: 'SecretAuthor', required: true },
+          });
+          await resetGraphQLCache();
+
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation Create($input: CreateReqDiagBookInput!) {
+                  createReqDiagBook(input: $input) {
+                    reqDiagBook {
+                      id
+                    }
+                  }
+                }
+              `,
+              variables: { input: { fields: { writtenBy: null } } },
+            });
+            fail('should have thrown a coercion error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // Expected non-nullable type "SecretAuthorPointerInput!" not to be null.
+            expect(error.message).not.toContain('SecretAuthor');
+            expect(JSON.stringify(error)).not.toContain('SecretAuthor');
+          }
+        });
+
+        it('should strip pointer target class names from variable-position validation errors without master or maintenance key', async () => {
+          await setupPointerSchema(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak($x: String) {
+                  diagBooks(where: { writtenBy: $x }) {
+                    edges {
+                      node {
+                        id
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: { x: 'anything' },
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // Variable "$x" of type "String" used in position expecting type "SecretAuthorRelationWhereInput".
+            expect(error.message).not.toContain('SecretAuthor');
+            expect(JSON.stringify(error)).not.toContain('SecretAuthor');
+          }
+        });
+
+        it('should strip pointer target class names from mutation variable-position validation errors without master or maintenance key', async () => {
+          await setupPointerSchema(parseServer);
+
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation Create($x: String) {
+                  createDiagBook(input: { fields: { writtenBy: { createAndLink: $x } } }) {
+                    diagBook {
+                      id
+                    }
+                  }
+                }
+              `,
+              variables: { x: 'anything' },
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // Variable "$x" of type "String" used in position expecting type "CreateSecretAuthorFieldsInput".
+            expect(error.message).not.toContain('SecretAuthor');
+            expect(JSON.stringify(error)).not.toContain('SecretAuthor');
+          }
+        });
+
+        it('should strip pointer target class names from output-field validation errors without master or maintenance key', async () => {
+          await setupPointerSchema(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak {
+                  diagBooks(where: {}) {
+                    edges {
+                      node {
+                        writtenBy {
+                          bogusSubField
+                        }
+                      }
+                    }
+                  }
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // Cannot query field "bogusSubField" on type "SecretAuthor".
+            expect(error.message).not.toContain('SecretAuthor');
+            expect(JSON.stringify(error)).not.toContain('SecretAuthor');
+          }
+        });
+
+        it('should strip pointer target class names from scalar-leaf validation errors without master or maintenance key', async () => {
+          await setupPointerSchema(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak {
+                  diagBooks(where: {}) {
+                    edges {
+                      node {
+                        writtenBy
+                      }
+                    }
+                  }
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // Field "writtenBy" of type "SecretAuthor" must have a selection of subfields.
+            expect(error.message).not.toContain('SecretAuthor');
+            expect(JSON.stringify(error)).not.toContain('SecretAuthor');
+          }
+        });
+
+        it('should keep pointer target class names in output-field errors with master key', async () => {
+          await setupPointerSchema(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak {
+                  diagBooks(where: {}) {
+                    edges {
+                      node {
+                        writtenBy
+                      }
+                    }
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            expect(error.message).toContain('SecretAuthor');
+          }
+        });
+
+        it('should strip pointer target class names from fragment-spread validation errors without master or maintenance key', async () => {
+          await setupPointerSchema(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak {
+                  diagBooks(where: {}) {
+                    edges {
+                      node {
+                        writtenBy {
+                          ... on DiagBook {
+                            id
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // Fragment cannot be spread here as objects of type "SecretAuthor" can never be of type "DiagBook".
+            expect(error.message).not.toContain('SecretAuthor');
+            expect(JSON.stringify(error)).not.toContain('SecretAuthor');
+          }
+        });
+
+        it('should keep caller-referenced input type names in validation errors without master or maintenance key', async () => {
+          await setupPointerSchema(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak($where: DiagBookWhereInput) {
+                  diagBooks(where: $where) {
+                    edges {
+                      node {
+                        id
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: { where: { nonexistentField: { equalTo: 1 } } },
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // The caller referenced DiagBookWhereInput in the operation text, so it is not a
+            // schema disclosure and must be preserved to keep validation feedback useful.
+            expect(error.message).toContain('DiagBookWhereInput');
+          }
         });
       });
 
