@@ -12615,7 +12615,7 @@ describe('ParseGraphQLServer', () => {
                 errorPolicy: 'all',
               });
               expect(result.errors).toBeDefined();
-              expect(result.errors[0].message).toContain('exceeds the limit of 2');
+              expect(result.errors[0].message).toBe('bulk input exceeds the allowed limit');
             } catch (e) {
               handleError(e);
             }
@@ -12654,7 +12654,7 @@ describe('ParseGraphQLServer', () => {
                 errorPolicy: 'all',
               });
               expect(result.errors).toBeDefined();
-              expect(result.errors[0].message).toContain('exceeds the limit of 2');
+              expect(result.errors[0].message).toBe('bulk input exceeds the allowed limit');
             } catch (e) {
               handleError(e);
             }
@@ -12684,6 +12684,67 @@ describe('ParseGraphQLServer', () => {
                   input: {
                     clientMutationId: uuidv4(),
                     ids: objs.map(o => toGlobalId('BulkTest', o.id)),
+                  },
+                },
+                context: clientKeyHeaders,
+                errorPolicy: 'all',
+              });
+              expect(result.errors).toBeDefined();
+              expect(result.errors[0].message).toBe('bulk input exceeds the allowed limit');
+            } catch (e) {
+              handleError(e);
+            }
+          });
+
+          it('should return detailed batchRequestLimit message when enableSanitizedErrorResponse is false', async () => {
+            try {
+              parseServer = await global.reconfigureServer({
+                requestComplexity: { batchRequestLimit: 2 },
+                enableSanitizedErrorResponse: false,
+              });
+              await createGQLFromParseServer(parseServer);
+              const httpLink = await createUploadLink({
+                uri: 'http://localhost:13377/graphql',
+                fetch,
+                headers,
+              });
+              apolloClient = new ApolloClient({
+                link: httpLink,
+                cache: new InMemoryCache(),
+                defaultOptions: {
+                  query: {
+                    fetchPolicy: 'no-cache',
+                  },
+                },
+              });
+              const sc = new Parse.Schema('BulkTest');
+              await sc.purge().catch(() => {});
+              await sc.delete().catch(() => {});
+              await sc.addString('title').save();
+              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+              await updateCLP(
+                {
+                  create: { '*': true },
+                  find: { '*': true },
+                  get: { '*': true },
+                  update: { '*': true },
+                  delete: { '*': true },
+                },
+                'BulkTest'
+              );
+
+              const result = await apolloClient.mutate({
+                mutation: gql`
+                  mutation CreateManyOverLimitDetailed($input: CreateManyBulkTestInput!) {
+                    createManyBulkTest(input: $input) {
+                      clientMutationId
+                    }
+                  }
+                `,
+                variables: {
+                  input: {
+                    clientMutationId: uuidv4(),
+                    fields: [{ title: 'a' }, { title: 'b' }, { title: 'c' }],
                   },
                 },
                 context: clientKeyHeaders,

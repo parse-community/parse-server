@@ -30,14 +30,17 @@ const assertBulkInputLength = (count, config, auth) => {
     throw createSanitizedError(
       Parse.Error.INVALID_JSON,
       'bulk input must contain at least one item',
-      config
+      config,
+      'bulk input must contain at least one item'
     );
   }
   if (isBatchRequestLimitExceeded(count, config, auth)) {
     const batchRequestLimit = getBatchRequestLimit(config);
-    throw new Parse.Error(
+    throw createSanitizedError(
       Parse.Error.INVALID_JSON,
-      `bulk input contains ${count} items, which exceeds the limit of ${batchRequestLimit}.`
+      `bulk input contains ${count} items, which exceeds the limit of ${batchRequestLimit}.`,
+      config,
+      'bulk input exceeds the allowed limit'
     );
   }
 };
@@ -397,7 +400,7 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
     });
     const createManyGraphQLMutation = mutationWithClientMutationId({
       name: `CreateMany${graphQLClassName}`,
-      description: `The ${createManyGraphQLMutationName} mutation creates multiple objects of the ${graphQLClassName} class. Each entry succeeds or fails independently.`,
+      description: `The ${createManyGraphQLMutationName} mutation creates multiple objects of the ${graphQLClassName} class. Items are processed concurrently via Promise.allSettled. Each entry succeeds or fails independently.`,
       inputFields: {
         fields: {
           description: 'List of field sets; one object will be created per element.',
@@ -550,7 +553,7 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
     });
     const updateManyGraphQLMutation = mutationWithClientMutationId({
       name: `UpdateMany${graphQLClassName}`,
-      description: `The ${updateManyGraphQLMutationName} mutation updates multiple objects of the ${graphQLClassName} class. Each entry succeeds or fails independently.`,
+      description: `The ${updateManyGraphQLMutationName} mutation updates multiple objects of the ${graphQLClassName} class. Items are processed concurrently via Promise.allSettled. Each entry succeeds or fails independently.`,
       inputFields: {
         updates: {
           description: 'List of id + fields pairs; one update per element.',
@@ -583,10 +586,10 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
           const settled = await Promise.allSettled(
             updates.map(updateEntry =>
               (async () => {
-                let { id, fields } = updateEntry;
-                if (!fields) {
-                  fields = {};
-                }
+                let { id } = updateEntry;
+                let fields = updateEntry.fields
+                  ? cloneArgs({ fields: updateEntry.fields }).fields
+                  : {};
                 id = normalizeObjectIdForClass(id, className);
                 const parseFields = await transformTypes('update', fields, {
                   className,
@@ -709,7 +712,7 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
     });
     const deleteManyGraphQLMutation = mutationWithClientMutationId({
       name: `DeleteMany${graphQLClassName}`,
-      description: `The ${deleteManyGraphQLMutationName} mutation deletes multiple objects of the ${graphQLClassName} class. Each entry succeeds or fails independently.`,
+      description: `The ${deleteManyGraphQLMutationName} mutation deletes multiple objects of the ${graphQLClassName} class. Items are processed concurrently via Promise.allSettled. Each entry succeeds or fails independently.`,
       inputFields: {
         ids: {
           description: 'Object ids to delete (global or object id).',
