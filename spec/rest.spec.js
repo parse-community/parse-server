@@ -1739,6 +1739,20 @@ describe('read-only masterKey', () => {
 });
 
 describe('rest header aliases', () => {
+  const signUpViaRest = async username => {
+    const response = await request({
+      url: `${Parse.serverURL}/users`,
+      method: 'POST',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+      body: { username, password: 'password' },
+    });
+    return response.data;
+  };
+
   it('supports REST requests with application-id header alias only', async () => {
     await reconfigureServer({
       headerAliases: {
@@ -1793,19 +1807,20 @@ describe('rest header aliases', () => {
       },
     });
     try {
-      const canonicalUser = await Parse.User.signUp(`alias-rest-canonical-${Date.now()}`, 'password');
-      const aliasUser = await Parse.User.signUp(`alias-rest-alias-${Date.now()}`, 'password');
+      // Create users via REST so the SDK current-user singleton is not shared/overwritten.
+      const canonicalUser = await signUpViaRest(`alias-rest-canonical-${Date.now()}`);
+      const aliasUser = await signUpViaRest(`alias-rest-alias-${Date.now()}`);
       const response = await request({
         url: `${Parse.serverURL}/users/me`,
         method: 'GET',
         headers: {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-REST-API-Key': 'rest',
-          'X-Parse-Session-Token': canonicalUser.getSessionToken(),
-          'X-Session-Token-Alias': aliasUser.getSessionToken(),
+          'X-Parse-Session-Token': canonicalUser.sessionToken,
+          'X-Session-Token-Alias': aliasUser.sessionToken,
         },
       });
-      expect(response.data.objectId).toBe(canonicalUser.id);
+      expect(response.data.objectId).toBe(canonicalUser.objectId);
     } finally {
       await reconfigureServer();
     }
@@ -1818,19 +1833,20 @@ describe('rest header aliases', () => {
       },
     });
     try {
-      const firstAliasUser = await Parse.User.signUp(`alias-rest-a-${Date.now()}`, 'password');
-      const secondAliasUser = await Parse.User.signUp(`alias-rest-b-${Date.now()}`, 'password');
+      // Create users via REST so the SDK current-user singleton is not shared/overwritten.
+      const firstAliasUser = await signUpViaRest(`alias-rest-a-${Date.now()}`);
+      const secondAliasUser = await signUpViaRest(`alias-rest-b-${Date.now()}`);
       const response = await request({
         url: `${Parse.serverURL}/users/me`,
         method: 'GET',
         headers: {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-REST-API-Key': 'rest',
-          'X-Session-Token-Alias-B': secondAliasUser.getSessionToken(),
-          'X-Session-Token-Alias-A': firstAliasUser.getSessionToken(),
+          'X-Session-Token-Alias-B': secondAliasUser.sessionToken,
+          'X-Session-Token-Alias-A': firstAliasUser.sessionToken,
         },
       });
-      expect(response.data.objectId).toBe(firstAliasUser.id);
+      expect(response.data.objectId).toBe(firstAliasUser.objectId);
     } finally {
       await reconfigureServer();
     }

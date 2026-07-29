@@ -43,7 +43,20 @@ function removeTrailingSlash(str) {
  */
 const asyncKeys = ['publicServerURL'];
 
+// Canonical Parse headers that may be aliased. Credential-bearing headers
+// (master key, maintenance key) are intentionally excluded.
+const ALLOWED_HEADER_ALIAS_CANONICALS = new Set([
+  'x-parse-application-id',
+  'x-parse-session-token',
+  'x-parse-installation-id',
+  'x-parse-client-key',
+  'x-parse-javascript-key',
+  'x-parse-windows-key',
+  'x-parse-rest-api-key',
+]);
+
 export class Config {
+  static ALLOWED_HEADER_ALIAS_CANONICALS = ALLOWED_HEADER_ALIAS_CANONICALS;
   static get(applicationId: string, mount: string) {
     const cacheInfo = AppCache.get(applicationId);
     if (!cacheInfo) {
@@ -777,17 +790,6 @@ export class Config {
         throw 'Header aliases must be an object';
       }
       const SAFE_HEADER_NAME = /^[A-Za-z0-9-]+$/;
-      const ALLOWED_CANONICAL_HEADERS = new Set([
-        'x-parse-application-id',
-        'x-parse-session-token',
-        'x-parse-master-key',
-        'x-parse-maintenance-key',
-        'x-parse-installation-id',
-        'x-parse-client-key',
-        'x-parse-javascript-key',
-        'x-parse-windows-key',
-        'x-parse-rest-api-key',
-      ]);
       const entries = Object.entries(headerAliases);
       for (const [canonicalHeader, aliases] of entries) {
         if (typeof canonicalHeader !== 'string' || !canonicalHeader.trim().length) {
@@ -799,7 +801,7 @@ export class Config {
             `Header aliases canonical '${canonicalHeader}' contains invalid characters`
           );
         }
-        if (!ALLOWED_CANONICAL_HEADERS.has(trimmedCanonical.toLowerCase())) {
+        if (!Config.ALLOWED_HEADER_ALIAS_CANONICALS.has(trimmedCanonical.toLowerCase())) {
           throw new Error(
             `Header aliases canonical '${canonicalHeader}' is not an allowed Parse header`
           );

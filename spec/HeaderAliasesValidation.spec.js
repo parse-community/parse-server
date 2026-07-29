@@ -143,6 +143,19 @@ describe('Config.validateHeaderAliases', () => {
     ).toThrowError(/is not an allowed Parse header/);
   });
 
+  it('should reject credential-bearing master and maintenance key aliases', () => {
+    expect(() =>
+      Config.validateHeaderAliases({
+        'X-Parse-Master-Key': ['X-Master-Key-Alias'],
+      })
+    ).toThrowError(/is not an allowed Parse header/);
+    expect(() =>
+      Config.validateHeaderAliases({
+        'X-Parse-Maintenance-Key': ['X-Maintenance-Key-Alias'],
+      })
+    ).toThrowError(/is not an allowed Parse header/);
+  });
+
   it('should reject an alias that normalizes to the same value as its canonical header', () => {
     expect(() =>
       Config.validateHeaderAliases({

@@ -52,6 +52,12 @@ export interface ParseServerOptions {
     maintenanceKeyIps?: (string[]);
     appName?: string;
     allowHeaders?: (string[]);
+    /**
+     * Optional aliases for non-secret Parse request headers only
+     * (application ID, session token, installation ID, client/API keys).
+     * Credential-bearing headers such as X-Parse-Master-Key and
+     * X-Parse-Maintenance-Key cannot be aliased and are rejected at validation.
+     */
     headerAliases?: { [headerName: string]: string[] };
     allowOrigin?: StringOrStringArray;
     analyticsAdapter?: Adapter<AnalyticsAdapter>;

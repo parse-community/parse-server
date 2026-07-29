@@ -127,6 +127,11 @@ describe('ParseGraphQLServer', () => {
       });
       expect(headers).toEqual(['X-Parse-Application-Id', 'X-Safe-Custom']);
     });
+
+    it('should tolerate null or undefined headerAliases without throwing', () => {
+      expect(getCSRFRequestHeaders(null)).toEqual(['X-Parse-Application-Id']);
+      expect(getCSRFRequestHeaders(undefined)).toEqual(['X-Parse-Application-Id']);
+    });
   });
 
   describe('_getServer', () => {

@@ -83,7 +83,7 @@ const mergeHeaders = (...headerSources) => {
 };
 
 export function getHeaderAliases(headerAliases, canonicalHeader) {
-  const aliases = headerAliases[canonicalHeader];
+  const aliases = headerAliases?.[canonicalHeader];
   if (!Array.isArray(aliases)) {
     return [];
   }
@@ -95,6 +95,11 @@ function applyHeaderAliases(req, headerAliases) {
   req.headers = req.headers || {};
   for (const [canonicalHeader, aliases] of Object.entries(headerAliases || {})) {
     const canonicalKey = String(canonicalHeader).trim().toLowerCase();
+    // Only rewrite allowlisted, non-secret Parse headers (one-to-one mapping
+    // and destination allowlist are also enforced in Config.validateHeaderAliases).
+    if (!Config.ALLOWED_HEADER_ALIAS_CANONICALS.has(canonicalKey)) {
+      continue;
+    }
     if (req.headers[canonicalKey] !== undefined) {
       continue; // canonical wins
     }

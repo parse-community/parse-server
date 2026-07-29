@@ -573,7 +573,21 @@ describe('middlewares', () => {
     ).toThrowError(/contains invalid characters/);
   });
 
-  it('should resolve master key from configured alias in handleParseAuth', async () => {
+  it('should reject privileged master and maintenance key aliases at validation time', () => {
+    const Config = require('../lib/Config');
+    expect(() =>
+      Config.validateHeaderAliases({
+        'X-Parse-Master-Key': ['X-Master-Key-Alias'],
+      })
+    ).toThrowError(/is not an allowed Parse header/);
+    expect(() =>
+      Config.validateHeaderAliases({
+        'X-Parse-Maintenance-Key': ['X-Maintenance-Key-Alias'],
+      })
+    ).toThrowError(/is not an allowed Parse header/);
+  });
+
+  it('should not rewrite master-key aliases when present in request headers', done => {
     AppCachePut(fakeReq.body._ApplicationId, {
       headerAliases: {
         'X-Parse-Master-Key': ['X-Master-Key-Alias'],
@@ -582,13 +596,10 @@ describe('middlewares', () => {
       masterKeyIps: ['0.0.0.0/0'],
     });
     fakeReq.headers['x-master-key-alias'] = 'masterKey';
-    await new Promise(resolve =>
-      middlewares.handleHeaderAliases(fakeReq.body._ApplicationId)(fakeReq, fakeRes, resolve)
-    );
-    await new Promise(resolve =>
-      middlewares.handleParseAuth(fakeReq.body._ApplicationId)(fakeReq, fakeRes, resolve)
-    );
-    expect(fakeReq.auth.isMaster).toBe(true);
+    middlewares.handleHeaderAliases(fakeReq.body._ApplicationId)(fakeReq, fakeRes, () => {
+      expect(fakeReq.headers['x-parse-master-key']).toBeUndefined();
+      done();
+    });
   });
 
   it('should call next without throwing when app is not in AppCache', () => {
