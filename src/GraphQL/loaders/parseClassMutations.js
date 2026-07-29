@@ -587,7 +587,7 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
             updates.map(updateEntry =>
               (async () => {
                 let { id } = updateEntry;
-                let fields = updateEntry.fields
+                const fields = updateEntry.fields
                   ? cloneArgs({ fields: updateEntry.fields }).fields
                   : {};
                 id = normalizeObjectIdForClass(id, className);
