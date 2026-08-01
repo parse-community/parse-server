@@ -675,4 +675,32 @@ describe('Parse Role testing', () => {
     const fetchedRole = await query.get(savedRole.id, { useMasterKey: true });
     expect(fetchedRole.get('name')).toBe('ModifiedName');
   });
+
+  it('clears the role cache when a role is deleted', async () => {
+    const cacheController = Parse.Server.cacheController;
+    const role = new Parse.Role('Doomed', new Parse.ACL());
+    await role.save(null, { useMasterKey: true });
+
+    // Saving the role already clears the cache, so seed the entry afterwards.
+    await cacheController.role.put('someUser', ['role:Doomed']);
+    expect(await cacheController.role.get('someUser')).toEqual(['role:Doomed']);
+
+    await role.destroy({ useMasterKey: true });
+    // The clear is issued without being awaited, matching RestWrite.
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    expect(await cacheController.role.get('someUser')).toEqual(null);
+  });
+
+  it('leaves the role cache alone when a non-role object is deleted', async () => {
+    const cacheController = Parse.Server.cacheController;
+    const object = new Parse.Object('TestObject');
+    await object.save(null, { useMasterKey: true });
+
+    await cacheController.role.put('someUser', ['role:Admin']);
+    await object.destroy({ useMasterKey: true });
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    expect(await cacheController.role.get('someUser')).toEqual(['role:Admin']);
+  });
 });

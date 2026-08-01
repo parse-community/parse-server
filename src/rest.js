@@ -241,6 +241,18 @@ function del(config, auth, className, objectId, context) {
       );
     })
     .then(() => {
+      // A deleted role is revoked from everyone who held it, so the cached role
+      // closures have to be dropped the same way they are on a role write (see
+      // RestWrite#runDatabaseOperation). The cached value is a flattened
+      // transitive closure, so deleting a parent role also affects the members
+      // of its children, and the whole role cache is cleared rather than one
+      // user's entry.
+      if (className === '_Role') {
+        config.cacheController.role.clear();
+        if (config.liveQueryController) {
+          config.liveQueryController.clearCachedRoles(auth.user);
+        }
+      }
       // Notify LiveQuery server if possible
       const perms = schemaController.getClassLevelPermissions(className);
       config.liveQueryController.onAfterDelete(className, inflatedObject, null, perms);
