@@ -21,8 +21,18 @@ export class LRUCache {
     this.cache.delete(key);
   }
 
-  clear() {
-    this.cache.clear();
+  clear(prefix) {
+    if (prefix == null) {
+      this.cache.clear();
+      return;
+    }
+    const scope = `${prefix}:`;
+    // Materialize the keys first, deleting while iterating the LRU is unsafe.
+    for (const key of [...this.cache.keys()]) {
+      if (typeof key === 'string' && key.startsWith(scope)) {
+        this.cache.delete(key);
+      }
+    }
   }
 }
 

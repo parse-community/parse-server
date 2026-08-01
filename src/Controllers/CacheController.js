@@ -34,8 +34,12 @@ export class SubCache {
     return this.cache.del(cacheKey);
   }
 
+  /**
+   * Empty this sub-cache, leaving keys owned by other sub-caches, other Parse
+   * apps, and other consumers of the same cache backend untouched.
+   */
   clear() {
-    return this.cache.clear();
+    return this.cache.clear(this.prefix);
   }
 }
 
@@ -63,8 +67,16 @@ export class CacheController extends AdaptableController {
     return this.adapter.del(cacheKey);
   }
 
-  clear() {
-    return this.adapter.clear();
+  /**
+   * Empty this app's cache. Keys belonging to other Parse apps sharing the
+   * same cache backend are left untouched.
+   *
+   * @param {String} prefix Optional sub-cache prefix to narrow the scope
+   * further, for example `role`.
+   */
+  clear(prefix) {
+    const scope = prefix == null ? this.appId : joinKeys(this.appId, prefix);
+    return this.adapter.clear(scope);
   }
 
   expectedAdapterType() {
