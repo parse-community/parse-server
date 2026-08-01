@@ -35,8 +35,11 @@ export class SubCache {
   }
 
   /**
-   * Empty this sub-cache, leaving keys owned by other sub-caches, other Parse
-   * apps, and other consumers of the same cache backend untouched.
+   * Empty this sub-cache by asking the adapter to clear only this sub-cache's
+   * key scope. Adapters that implement scoped clearing, which includes the
+   * built-in Redis and in-memory adapters, leave keys owned by other
+   * sub-caches, other Parse apps, and other consumers of the same backend
+   * untouched. An adapter that ignores the prefix empties the whole cache.
    */
   clear() {
     return this.cache.clear(this.prefix);
@@ -68,8 +71,10 @@ export class CacheController extends AdaptableController {
   }
 
   /**
-   * Empty this app's cache. Keys belonging to other Parse apps sharing the
-   * same cache backend are left untouched.
+   * Empty this app's cache by asking the adapter to clear only this app's key
+   * scope. Adapters that implement scoped clearing leave keys belonging to
+   * other Parse apps sharing the same backend untouched. An adapter that
+   * ignores the prefix empties the whole cache.
    *
    * @param {String} prefix Optional sub-cache prefix to narrow the scope
    * further, for example `role`.
