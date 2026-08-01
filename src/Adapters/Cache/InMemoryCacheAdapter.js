@@ -23,8 +23,8 @@ export class InMemoryCacheAdapter {
     return Promise.resolve();
   }
 
-  clear() {
-    this.cache.clear();
+  clear(prefix) {
+    this.cache.clear(prefix);
     return Promise.resolve();
   }
 }
