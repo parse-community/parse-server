@@ -168,6 +168,8 @@ describe_only_db('mongo')('Parse.Query hint', () => {
       expect(error.code).toBe(Parse.Error.INVALID_QUERY);
       expect(error.message.toLowerCase()).toContain('hint');
       expect(error.code).not.toBe(Parse.Error.INTERNAL_SERVER_ERROR);
+      expect(error.message).not.toContain('missing_index');
+      expect(error.message).not.toContain('hint provided does not correspond to an existing index');
     }
   });
 

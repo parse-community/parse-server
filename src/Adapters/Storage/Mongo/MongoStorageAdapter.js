@@ -312,7 +312,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     }
 
     if (isInvalidHintError(error)) {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid hint: ${error.message}`);
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Invalid hint');
     }
 
     throw error;
