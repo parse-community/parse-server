@@ -1,6 +1,7 @@
 const auth = require('../lib/Auth');
 const Config = require('../lib/Config');
 const rest = require('../lib/rest');
+const httpRequest = require('../lib/request');
 const InstallationsRouter = require('../lib/Routers/InstallationsRouter').InstallationsRouter;
 
 describe('InstallationsRouter', () => {
@@ -243,5 +244,73 @@ describe('InstallationsRouter', () => {
         fail(JSON.stringify(err));
         done();
       });
+  });
+
+  it('uses find condition from a where string in request.body', async () => {
+    const config = Config.get('test');
+    await rest.create(config, auth.nobody(config), '_Installation', {
+      installationId: '12345678-abcd-abcd-abcd-123456789abc',
+      deviceType: 'android',
+    });
+    await rest.create(config, auth.nobody(config), '_Installation', {
+      installationId: '12345678-abcd-abcd-abcd-123456789abd',
+      deviceType: 'ios',
+    });
+
+    const router = new InstallationsRouter();
+    const res = await router.handleFind({
+      config: config,
+      auth: auth.master(config),
+      body: { where: JSON.stringify({ deviceType: 'android' }) },
+      query: {},
+      info: {},
+    });
+
+    expect(res.response.results.length).toEqual(1);
+    expect(res.response.results[0].deviceType).toEqual('android');
+  });
+
+  it('rejects an invalid where string in request.body', async () => {
+    const config = Config.get('test');
+    const router = new InstallationsRouter();
+    expect(() =>
+      router.handleFind({
+        config: config,
+        auth: auth.master(config),
+        body: { where: 'not json' },
+        query: {},
+        info: {},
+      })
+    ).toThrowError(Parse.Error, 'where parameter is not valid JSON');
+  });
+
+  it('finds installations when the client sends the find as POST with _method=GET', async () => {
+    const config = Config.get('test');
+    await rest.create(config, auth.nobody(config), '_Installation', {
+      installationId: '12345678-abcd-abcd-abcd-123456789abc',
+      deviceType: 'android',
+    });
+    await rest.create(config, auth.nobody(config), '_Installation', {
+      installationId: '12345678-abcd-abcd-abcd-123456789abd',
+      deviceType: 'ios',
+    });
+
+    // A client that exceeds the maximum URL length sends the find as a POST
+    // with a urlencoded body, so `where` arrives as a string.
+    const response = await httpRequest({
+      method: 'POST',
+      url: 'http://localhost:8378/1/installations',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: `_method=GET&where=${encodeURIComponent(
+        JSON.stringify({ installationId: { $in: ['12345678-abcd-abcd-abcd-123456789abc'] } })
+      )}`,
+    });
+
+    expect(response.data.results.length).toEqual(1);
+    expect(response.data.results[0].deviceType).toEqual('android');
   });
 });
