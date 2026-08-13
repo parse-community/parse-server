@@ -46,11 +46,23 @@ export class FilesController extends AdaptableController {
       });
     }
 
-    const location = await this.adapter.getFileLocation(config, filename);
-    await this.adapter.createFile(filename, data, contentType, options);
+    // The adapter receives the server config so that it can derive a location
+    // itself, and may report back a filename it changed and a url it already
+    // resolved. An adapter that returns nothing keeps the previous behavior.
+    const createResult = await this.adapter.createFile(
+      filename,
+      data,
+      contentType,
+      options,
+      config
+    );
+    // The location has to be resolved after creation, not before, because the
+    // adapter may have renamed the file.
+    const name = createResult?.name || filename;
+    const url = createResult?.url || (await this.adapter.getFileLocation(config, name));
     return {
-      url: location,
-      name: filename,
+      url,
+      name,
     }
   }
 
