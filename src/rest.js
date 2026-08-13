@@ -255,9 +255,7 @@ function del(config, auth, className, objectId, context) {
         config.cacheController.role
           .clear()
           .catch(e => logger.error('Could not clear role cache after role deletion', { error: e }));
-        if (config.liveQueryController) {
-          config.liveQueryController.clearCachedRoles(auth.user);
-        }
+        config.liveQueryController.clearCachedRoles(auth.user);
       }
       // Notify LiveQuery server if possible
       const perms = schemaController.getClassLevelPermissions(className);
