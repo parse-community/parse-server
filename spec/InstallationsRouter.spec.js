@@ -273,15 +273,22 @@ describe('InstallationsRouter', () => {
   it('rejects an invalid where string in request.body', async () => {
     const config = Config.get('test');
     const router = new InstallationsRouter();
-    expect(() =>
-      router.handleFind({
+    let error;
+    try {
+      await router.handleFind({
         config: config,
         auth: auth.master(config),
         body: { where: 'not json' },
         query: {},
         info: {},
-      })
-    ).toThrowError(Parse.Error, 'where parameter is not valid JSON');
+      });
+      fail('find should have been rejected');
+      return;
+    } catch (e) {
+      error = e;
+    }
+    expect(error.code).toEqual(Parse.Error.INVALID_JSON);
+    expect(error.message).toEqual('where parameter is not valid JSON');
   });
 
   it('finds installations when the client sends the find as POST with _method=GET', async () => {
