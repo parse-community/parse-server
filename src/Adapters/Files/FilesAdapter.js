@@ -36,9 +36,15 @@ export class FilesAdapter {
    * @param {Config} config - (Optional) server configuration
    * @discussion config may be passed to adapter to allow for more complex configuration and internal call of getFileLocation (if needed). This argument is not supported by all file adapters. Check the your adapter's documentation for compatibility
    *
-   * @return {Promise<{url?: string, name?: string, location?: string}>|Promise<undefined>} Either a plain promise that should fail if storage didn't succeed, or a promise resolving to an object containing url and/or an updated filename and/or location (if relevant)
+   * @return {Promise<{url?: string, name?: string}>|Promise<undefined>} Either a plain promise that should fail if storage didn't succeed, or a promise resolving to an object containing a url the adapter already resolved and/or a filename the adapter changed. Anything the adapter omits falls back to the filename it was given and a url derived from getFileLocation.
    */
-  createFile(filename: string, data, contentType: string, options: Object, config: Config): Promise {}
+  createFile(
+    filename: string,
+    data,
+    contentType: string,
+    options: Object,
+    config?: Config
+  ): Promise {}
 
   /** Whether this adapter supports receiving Readable streams in createFile().
    * If false (default), streams are buffered to a Buffer before being passed.
