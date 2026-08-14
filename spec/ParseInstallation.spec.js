@@ -7,6 +7,7 @@ const Config = require('../lib/Config');
 const Parse = require('parse/node').Parse;
 const rest = require('../lib/rest');
 const request = require('../lib/request');
+const { applyDeviceTokenExists } = require('../lib/Push/utils');
 
 let config;
 let database;
@@ -602,8 +603,43 @@ describe('Installations', () => {
       .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
-        expect(results[0].deviceToken == null).toBeTrue();
+        expect(results[0].deviceToken).toBeUndefined();
         expect(results[0].installationId).toEqual(installId);
+        done();
+      })
+      .catch(err => {
+        jfail(err);
+        done();
+      });
+  });
+
+  it('removes an installation cleared via null from push recipients', done => {
+    const installId = '12345678-abcd-abcd-abcd-123456789abc';
+    const t = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
+    const input = {
+      installationId: installId,
+      deviceType: 'ios',
+      deviceToken: t,
+    };
+    // The push pipeline selects recipients with `deviceToken: { $exists: true }`,
+    // which a stored null would still satisfy.
+    const pushRecipientQuery = applyDeviceTokenExists({});
+    rest
+      .create(config, auth.nobody(config), '_Installation', input)
+      .then(() => database.adapter.find('_Installation', installationSchema, pushRecipientQuery, {}))
+      .then(results => {
+        expect(results.length).toEqual(1);
+        return rest.update(
+          config,
+          auth.nobody(config),
+          '_Installation',
+          { installationId: installId },
+          { deviceToken: null }
+        );
+      })
+      .then(() => database.adapter.find('_Installation', installationSchema, pushRecipientQuery, {}))
+      .then(results => {
+        expect(results.length).toEqual(0);
         done();
       })
       .catch(err => {

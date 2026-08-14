@@ -1305,6 +1305,14 @@ RestWrite.prototype.handleInstallation = function () {
       this.data.deviceToken.__op === 'Delete');
   let deviceTokenForLookup = clearingDeviceToken ? undefined : this.data.deviceToken;
 
+  // Collapse the null form onto the delete form so the field is removed rather
+  // than stored as null. A stored null still satisfies the `$exists: true`
+  // filter that selects push recipients, which would keep the installation
+  // addressable and hand an invalid token to the push adapter.
+  if (clearingDeviceToken) {
+    this.data.deviceToken = { __op: 'Delete' };
+  }
+
   if (
     !this.query &&
     !deviceTokenForLookup &&
