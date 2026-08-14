@@ -58,32 +58,44 @@ export class RedisCacheAdapter {
   async put(key, value, ttl = this.ttl) {
     value = JSON.stringify(value);
     debug('put', { key, value, ttl });
-    await this.queue.enqueue(key);
-    if (ttl === 0) {
-      // ttl of zero is a logical no-op, but redis cannot set expire time of zero
-      return;
-    }
+    try {
+      await this.queue.enqueue(key);
+      if (ttl === 0) {
+        // ttl of zero is a logical no-op, but redis cannot set expire time of zero
+        return;
+      }
 
-    if (ttl === Infinity) {
-      return this.client.set(key, value);
-    }
+      if (ttl === Infinity) {
+        return await this.client.set(key, value);
+      }
 
-    if (!isValidTTL(ttl)) {
-      ttl = this.ttl;
+      if (!isValidTTL(ttl)) {
+        ttl = this.ttl;
+      }
+      return await this.client.set(key, value, { PX: ttl });
+    } catch (err) {
+      logger.error('RedisCacheAdapter error on put', { error: err });
     }
-    return this.client.set(key, value, { PX: ttl });
   }
 
   async del(key) {
     debug('del', { key });
-    await this.queue.enqueue(key);
-    return this.client.del(key);
+    try {
+      await this.queue.enqueue(key);
+      return await this.client.del(key);
+    } catch (err) {
+      logger.error('RedisCacheAdapter error on del', { error: err });
+    }
   }
 
   async clear() {
     debug('clear');
-    await this.queue.enqueue(FLUSH_DB_KEY);
-    return this.client.sendCommand(['FLUSHDB']);
+    try {
+      await this.queue.enqueue(FLUSH_DB_KEY);
+      return await this.client.sendCommand(['FLUSHDB']);
+    } catch (err) {
+      logger.error('RedisCacheAdapter error on clear', { error: err });
+    }
   }
 
   // Used for testing
