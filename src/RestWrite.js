@@ -1151,6 +1151,14 @@ RestWrite.prototype.deleteEmailResetTokenIfNeeded = function () {
 };
 
 RestWrite.prototype.destroyDuplicatedSessions = function () {
+  // Skip if the response is already set, matching the other write-pipeline steps
+  // (runDatabaseOperation, runAfterSaveTrigger). A non-master POST /classes/_Session
+  // create has handleSession() set this.response before this runs, so this guard
+  // prevents the dedup delete from acting on the client-supplied `user`/`installationId`
+  // rather than on the server-generated session data.
+  if (this.response) {
+    return;
+  }
   // Only for _Session, and at creation time
   if (this.className != '_Session' || this.query) {
     return;

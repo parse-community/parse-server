@@ -58,6 +58,12 @@ module.exports.ParseServerOptions = {
     action: parsers.objectParser,
     type: 'AccountLockoutOptions',
   },
+  allowAggregationForReadOnlyMasterKey: {
+    env: 'PARSE_SERVER_ALLOW_AGGREGATION_FOR_READ_ONLY_MASTER_KEY',
+    help: 'Whether the `readOnlyMasterKey` is allowed to run aggregation pipelines via the aggregate endpoint. An aggregation pipeline can contain write-capable stages (for example MongoDB `$out` and `$merge`), so allowing aggregation effectively gives the read-only master key a way to perform writes, contrary to its read-only intent. If `true` (default), the read-only master key can run aggregation pipelines. If `false`, the read-only master key cannot run aggregation pipelines at all. Note that the `readOnlyMasterKey` is a secret key for internal server-side use only and must never be distributed; this option is an additional safeguard, not a substitute for keeping the key confidential. Defaults to `true`.',
+    action: parsers.booleanParser,
+    default: true,
+  },
   allowClientClassCreation: {
     env: 'PARSE_SERVER_ALLOW_CLIENT_CLASS_CREATION',
     help: 'Enable (or disable) client class creation, defaults to false',
@@ -133,7 +139,7 @@ module.exports.ParseServerOptions = {
   cluster: {
     env: 'PARSE_SERVER_CLUSTER',
     help: 'Run with cluster, optionally set the number of processes default to os.cpus().length',
-    action: parsers.numberOrBooleanParser,
+    action: parsers.numberOrBoolParser('cluster'),
   },
   collectionPrefix: {
     env: 'PARSE_SERVER_COLLECTION_PREFIX',
@@ -340,13 +346,13 @@ module.exports.ParseServerOptions = {
   },
   liveQuery: {
     env: 'PARSE_SERVER_LIVE_QUERY',
-    help: "parse-server's LiveQuery configuration object",
+    help: "Configuration for LiveQuery on this Parse Server, for example `{ classNames: ['MyClass'] }`. `classNames` lists the classes that publish create/update/delete events to subscribers; without it no events are pushed, even while a LiveQuery server is running. Combine with `startLiveQueryServer` to run a LiveQuery server.",
     action: parsers.objectParser,
     type: 'LiveQueryOptions',
   },
   liveQueryServerOptions: {
     env: 'PARSE_SERVER_LIVE_QUERY_SERVER_OPTIONS',
-    help: 'Live query server configuration options (will start the liveQuery server)',
+    help: 'Configuration options for the LiveQuery server. Providing this also starts the LiveQuery server (like `startLiveQueryServer`); events are still only published for the classes set in `liveQuery.classNames`.',
     action: parsers.objectParser,
     type: 'LiveQueryServerOptions',
   },
@@ -528,14 +534,14 @@ module.exports.ParseServerOptions = {
   },
   rateLimit: {
     env: 'PARSE_SERVER_RATE_LIMIT',
-    help: "Options to limit repeated requests to Parse Server APIs. This can be used to protect sensitive endpoints such as `/requestPasswordReset` from brute-force attacks or Parse Server as a whole from denial-of-service (DoS) attacks.<br><br>\u2139\uFE0F Mind the following limitations:<br>- rate limits applied per IP address; this limits protection against distributed denial-of-service (DDoS) attacks where many requests are coming from various IP addresses<br>- if multiple Parse Server instances are behind a load balancer or ran in a cluster, each instance will calculate it's own request rates, independent from other instances; this limits the applicability of this feature when using a load balancer and another rate limiting solution that takes requests across all instances into account may be more suitable<br>- this feature provides basic protection against denial-of-service attacks, but a more sophisticated solution works earlier in the request flow and prevents a malicious requests to even reach a server instance; it's therefore recommended to implement a solution according to architecture and use case.",
+    help: "Options to limit repeated requests to Parse Server APIs. This can be used to protect sensitive endpoints such as `/requestPasswordReset` from brute-force attacks or Parse Server as a whole from denial-of-service (DoS) attacks.<br><br>\u2139\uFE0F Mind the following limitations:<br>- rate limits applied per IP address; this limits protection against distributed denial-of-service (DDoS) attacks where many requests are coming from various IP addresses<br>- if multiple Parse Server instances are behind a load balancer or ran in a cluster, each instance will calculate it's own request rates, independent from other instances; this limits the applicability of this feature when using a load balancer and another rate limiting solution that takes requests across all instances into account may be more suitable<br>- this feature provides basic protection against denial-of-service attacks, but a more sophisticated solution works earlier in the request flow and prevents a malicious requests to even reach a server instance; it's therefore recommended to implement a solution according to architecture and use case.<br>- rate limits are matched against the REST API URL path (`requestPath`) and therefore apply to REST API routes only; they do not apply to GraphQL operations, which are all served under the single GraphQL endpoint path (`graphQLPath`, default `/graphql`) and are identified by the request payload rather than the URL. To rate limit GraphQL, either set a `requestPath` for the GraphQL endpoint path to throttle the entire GraphQL API, or use a GraphQL-aware rate limiting solution (for example a schema-directive-based rate limiter) for per-operation limits.",
     action: parsers.arrayParser,
     type: 'RateLimitOptions[]',
     default: [],
   },
   readOnlyMasterKey: {
     env: 'PARSE_SERVER_READ_ONLY_MASTER_KEY',
-    help: 'Read-only key, which has the same capabilities as MasterKey without writes',
+    help: 'The read-only master key is a secret key with the same read capabilities as the `masterKey`, but without the ability to perform writes. Like the `masterKey`, it bypasses all security mechanisms (Class Level Permissions, object ACLs, `protectedFields`), so it grants full read access to all data.<br><br>It is intended strictly for internal, server-side use \u2014 for example to give a trusted internal process read access while guarding against accidental writes during development or operations. It is not a credential for untrusted contexts: it must never be shipped, distributed, published, embedded in a client application, or otherwise exposed to untrusted parties, because anyone who obtains it can read all data in the database. Use `readOnlyMasterKeyIps` to restrict the IP addresses from which it may be used.',
   },
   readOnlyMasterKeyIps: {
     env: 'PARSE_SERVER_READ_ONLY_MASTER_KEY_IPS',
@@ -633,7 +639,7 @@ module.exports.ParseServerOptions = {
   },
   startLiveQueryServer: {
     env: 'PARSE_SERVER_START_LIVE_QUERY_SERVER',
-    help: 'Starts the liveQuery server',
+    help: 'Starts a LiveQuery server alongside this Parse Server. Events are only delivered for the classes set in `liveQuery.classNames`, so a minimal working setup is `liveQuery: { classNames: [...] }` together with `startLiveQueryServer: true`.',
     action: parsers.booleanParser,
   },
   trustProxy: {
@@ -698,7 +704,7 @@ module.exports.RateLimitOptions = {
   },
   requestMethods: {
     env: 'PARSE_SERVER_RATE_LIMIT_REQUEST_METHODS',
-    help: 'Optional, the HTTP request methods to which the rate limit should be applied, default is all methods.',
+    help: "Optional, the HTTP request methods to which the rate limit should be applied, default is all methods. The method is matched after any `_method` body override has been resolved, i.e. it is the method used to route the request. Note that some endpoints are reachable via more than one HTTP method (for example `/login` and `/verifyPassword` are available via both `GET` and `POST`); to rate limit such an endpoint reliably, include all relevant methods (e.g. `['GET', 'POST']`) or omit this option to apply the limit to all methods.",
     action: parsers.arrayParser,
   },
   requestPath: {

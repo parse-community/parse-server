@@ -158,8 +158,12 @@ export interface ParseServerOptions {
   /* Key for REST calls
   :ENV: PARSE_SERVER_REST_API_KEY */
   restAPIKey: ?string;
-  /* Read-only key, which has the same capabilities as MasterKey without writes */
+  /* The read-only master key is a secret key with the same read capabilities as the `masterKey`, but without the ability to perform writes. Like the `masterKey`, it bypasses all security mechanisms (Class Level Permissions, object ACLs, `protectedFields`), so it grants full read access to all data.<br><br>It is intended strictly for internal, server-side use — for example to give a trusted internal process read access while guarding against accidental writes during development or operations. It is not a credential for untrusted contexts: it must never be shipped, distributed, published, embedded in a client application, or otherwise exposed to untrusted parties, because anyone who obtains it can read all data in the database. Use `readOnlyMasterKeyIps` to restrict the IP addresses from which it may be used. */
   readOnlyMasterKey: ?string;
+  /* Whether the `readOnlyMasterKey` is allowed to run aggregation pipelines via the aggregate endpoint. An aggregation pipeline can contain write-capable stages (for example MongoDB `$out` and `$merge`), so allowing aggregation effectively gives the read-only master key a way to perform writes, contrary to its read-only intent. If `true` (default), the read-only master key can run aggregation pipelines. If `false`, the read-only master key cannot run aggregation pipelines at all. Note that the `readOnlyMasterKey` is a secret key for internal server-side use only and must never be distributed; this option is an additional safeguard, not a substitute for keeping the key confidential. Defaults to `true`.
+  :ENV: PARSE_SERVER_ALLOW_AGGREGATION_FOR_READ_ONLY_MASTER_KEY
+  :DEFAULT: true */
+  allowAggregationForReadOnlyMasterKey: ?boolean;
   /* Key sent with outgoing webhook calls */
   webhookKey: ?string;
   /* Key for your files */
@@ -284,7 +288,7 @@ export interface ParseServerOptions {
   /* custom pages for password validation and reset
   :DEFAULT: {} */
   customPages: ?CustomPagesOptions;
-  /* parse-server's LiveQuery configuration object */
+  /* Configuration for LiveQuery on this Parse Server, for example `{ classNames: ['MyClass'] }`. `classNames` lists the classes that publish create/update/delete events to subscribers; without it no events are pushed, even while a LiveQuery server is running. Combine with `startLiveQueryServer` to run a LiveQuery server. */
   liveQuery: ?LiveQueryOptions;
   /* Session duration, in seconds, defaults to 1 year
   :DEFAULT: 31536000 */
@@ -343,9 +347,9 @@ export interface ParseServerOptions {
   /* The trust proxy settings. It is important to understand the exact setup of the reverse proxy, since this setting will trust values provided in the Parse Server API request. See the <a href="https://expressjs.com/en/guide/behind-proxies.html">express trust proxy settings</a> documentation. Defaults to `false`.
   :DEFAULT: false */
   trustProxy: ?any;
-  /* Starts the liveQuery server */
+  /* Starts a LiveQuery server alongside this Parse Server. Events are only delivered for the classes set in `liveQuery.classNames`, so a minimal working setup is `liveQuery: { classNames: [...] }` together with `startLiveQueryServer: true`. */
   startLiveQueryServer: ?boolean;
-  /* Live query server configuration options (will start the liveQuery server) */
+  /* Configuration options for the LiveQuery server. Providing this also starts the LiveQuery server (like `startLiveQueryServer`); events are still only published for the classes set in `liveQuery.classNames`. */
   liveQueryServerOptions: ?LiveQueryServerOptions;
   /* Options for request idempotency to deduplicate identical requests that may be caused by network issues. Caution, this is an experimental feature that may not be appropriate for production.
   :ENV: PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS
@@ -411,7 +415,7 @@ export interface ParseServerOptions {
   /* An array of keys and values that are prohibited in database read and write requests to prevent potential security vulnerabilities. It is possible to specify only a key (`{"key":"..."}`), only a value (`{"value":"..."}`) or a key-value pair (`{"key":"...","value":"..."}`). The specification can use the following types: `boolean`, `numeric` or `string`, where `string` will be interpreted as a regex notation. Request data is deep-scanned for matching definitions to detect also any nested occurrences. Defaults are patterns that are likely to be used in malicious requests. Setting this option will override the default patterns.
   :DEFAULT: [{"key":"_bsontype","value":"Code"},{"key":"constructor"},{"key":"__proto__"}] */
   requestKeywordDenylist: ?(RequestKeywordDenylist[]);
-  /* Options to limit repeated requests to Parse Server APIs. This can be used to protect sensitive endpoints such as `/requestPasswordReset` from brute-force attacks or Parse Server as a whole from denial-of-service (DoS) attacks.<br><br>ℹ️ Mind the following limitations:<br>- rate limits applied per IP address; this limits protection against distributed denial-of-service (DDoS) attacks where many requests are coming from various IP addresses<br>- if multiple Parse Server instances are behind a load balancer or ran in a cluster, each instance will calculate it's own request rates, independent from other instances; this limits the applicability of this feature when using a load balancer and another rate limiting solution that takes requests across all instances into account may be more suitable<br>- this feature provides basic protection against denial-of-service attacks, but a more sophisticated solution works earlier in the request flow and prevents a malicious requests to even reach a server instance; it's therefore recommended to implement a solution according to architecture and use case.
+  /* Options to limit repeated requests to Parse Server APIs. This can be used to protect sensitive endpoints such as `/requestPasswordReset` from brute-force attacks or Parse Server as a whole from denial-of-service (DoS) attacks.<br><br>ℹ️ Mind the following limitations:<br>- rate limits applied per IP address; this limits protection against distributed denial-of-service (DDoS) attacks where many requests are coming from various IP addresses<br>- if multiple Parse Server instances are behind a load balancer or ran in a cluster, each instance will calculate it's own request rates, independent from other instances; this limits the applicability of this feature when using a load balancer and another rate limiting solution that takes requests across all instances into account may be more suitable<br>- this feature provides basic protection against denial-of-service attacks, but a more sophisticated solution works earlier in the request flow and prevents a malicious requests to even reach a server instance; it's therefore recommended to implement a solution according to architecture and use case.<br>- rate limits are matched against the REST API URL path (`requestPath`) and therefore apply to REST API routes only; they do not apply to GraphQL operations, which are all served under the single GraphQL endpoint path (`graphQLPath`, default `/graphql`) and are identified by the request payload rather than the URL. To rate limit GraphQL, either set a `requestPath` for the GraphQL endpoint path to throttle the entire GraphQL API, or use a GraphQL-aware rate limiting solution (for example a schema-directive-based rate limiter) for per-operation limits.
   :DEFAULT: [] */
   rateLimit: ?(RateLimitOptions[]);
   /* Options to customize the request context using inversion of control/dependency injection.*/
@@ -431,7 +435,7 @@ export interface RateLimitOptions {
   /* The error message that should be returned in the body of the HTTP 429 response when the rate limit is hit. Default is `Too many requests.`.
   :DEFAULT: Too many requests. */
   errorResponseMessage: ?string;
-  /* Optional, the HTTP request methods to which the rate limit should be applied, default is all methods. */
+  /* Optional, the HTTP request methods to which the rate limit should be applied, default is all methods. The method is matched after any `_method` body override has been resolved, i.e. it is the method used to route the request. Note that some endpoints are reachable via more than one HTTP method (for example `/login` and `/verifyPassword` are available via both `GET` and `POST`); to rate limit such an endpoint reliably, include all relevant methods (e.g. `['GET', 'POST']`) or omit this option to apply the limit to all methods. */
   requestMethods: ?(string[]);
   /* Optional, if `true` the rate limit will also apply to requests using the `masterKey`, default is `false`. Note that a public Cloud Code function that triggers internal requests using the `masterKey` may circumvent rate limiting and be vulnerable to attacks.
   :DEFAULT: false */
