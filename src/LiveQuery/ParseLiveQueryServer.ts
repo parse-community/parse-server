@@ -393,6 +393,35 @@ class ParseLiveQueryServer {
             if (!watchFieldsChanged && (type === 'update' || type === 'create')) {
               return;
             }
+            // A `leave` or `enter` transition can be caused either by the object's
+            // query match changing (the subscriber keeps read access) or by the
+            // subscriber's ACL read access being revoked or granted in the same save.
+            // In the access-change case the subscriber is not authorized to read the
+            // object state that triggered the transition, so that state must not be
+            // sent over the channel. (CLP read denial is handled earlier by
+            // `_matchesCLP`, which skips the event entirely.)
+            if (type === 'leave') {
+              // The post-update object is readable on a query-mismatch leave but not
+              // on an ACL-loss leave. Only send the post-update body when the
+              // subscriber can still read the current object; otherwise fall back to
+              // the last authorized (original) state, which still carries the objectId.
+              const currentReadable = isCurrentSubscriptionMatched
+                ? false
+                : await this._matchesACL(message.currentParseObject.getACL(), client, requestId);
+              if (!currentReadable) {
+                localCurrentParseObject = JSON.parse(JSON.stringify(localOriginalParseObject));
+              }
+            } else if (type === 'enter') {
+              // The pre-update object was readable on a query-match-gain enter but not
+              // on an ACL-grant enter. Only send the pre-update body as `original`
+              // when the subscriber could read the original object.
+              const originalReadable = isOriginalSubscriptionMatched
+                ? false
+                : await this._matchesACL(message.originalParseObject.getACL(), client, requestId);
+              if (!originalReadable) {
+                localOriginalParseObject = null;
+              }
+            }
             res = {
               event: type,
               sessionToken: client.sessionToken,
@@ -1037,25 +1066,32 @@ class ParseLiveQueryServer {
         const rc = appConfig.requestComplexity;
         if (rc && rc.queryDepth !== -1) {
           const maxDepth = rc.queryDepth;
-          const checkDepth = (where: any, depth: number) => {
+          const checkDepth = (node: any, depth: number) => {
             if (depth > maxDepth) {
               throw new Parse.Error(
                 Parse.Error.INVALID_QUERY,
                 `Query condition nesting depth exceeds maximum allowed depth of ${maxDepth}`
               );
             }
-            if (typeof where !== 'object' || where === null) {
+            if (node === null || typeof node !== 'object') {
               return;
             }
-            for (const op of ['$or', '$and', '$nor']) {
-              if (where[op] !== undefined && !Array.isArray(where[op])) {
-                throw new Parse.Error(Parse.Error.INVALID_QUERY, `${op} must be an array`);
+            if (Array.isArray(node)) {
+              for (const item of node) {
+                checkDepth(item, depth);
               }
-              if (Array.isArray(where[op])) {
-                for (const subQuery of where[op]) {
-                  checkDepth(subQuery, depth + 1);
-                }
+              return;
+            }
+            // Descend into every value so that logical operators ($or/$and/$nor)
+            // nested under field-level operators (e.g. $elemMatch, $not) or plain
+            // field names are still counted. Only logical operators increase the
+            // depth, which preserves the documented meaning of `queryDepth`.
+            for (const key of Object.keys(node)) {
+              const isLogical = key === '$or' || key === '$and' || key === '$nor';
+              if (isLogical && !Array.isArray(node[key])) {
+                throw new Parse.Error(Parse.Error.INVALID_QUERY, `${key} must be an array`);
               }
+              checkDepth(node[key], isLogical ? depth + 1 : depth);
             }
           };
           checkDepth(request.query.where, 0);

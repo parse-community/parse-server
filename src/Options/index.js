@@ -158,8 +158,12 @@ export interface ParseServerOptions {
   /* Key for REST calls
   :ENV: PARSE_SERVER_REST_API_KEY */
   restAPIKey: ?string;
-  /* Read-only key, which has the same capabilities as MasterKey without writes */
+  /* The read-only master key is a secret key with the same read capabilities as the `masterKey`, but without the ability to perform writes. Like the `masterKey`, it bypasses all security mechanisms (Class Level Permissions, object ACLs, `protectedFields`), so it grants full read access to all data.<br><br>It is intended strictly for internal, server-side use — for example to give a trusted internal process read access while guarding against accidental writes during development or operations. It is not a credential for untrusted contexts: it must never be shipped, distributed, published, embedded in a client application, or otherwise exposed to untrusted parties, because anyone who obtains it can read all data in the database. Use `readOnlyMasterKeyIps` to restrict the IP addresses from which it may be used. */
   readOnlyMasterKey: ?string;
+  /* Whether the `readOnlyMasterKey` is allowed to run aggregation pipelines via the aggregate endpoint. An aggregation pipeline can contain write-capable stages (for example MongoDB `$out` and `$merge`), so allowing aggregation effectively gives the read-only master key a way to perform writes, contrary to its read-only intent. If `true` (default), the read-only master key can run aggregation pipelines. If `false`, the read-only master key cannot run aggregation pipelines at all. Note that the `readOnlyMasterKey` is a secret key for internal server-side use only and must never be distributed; this option is an additional safeguard, not a substitute for keeping the key confidential. Defaults to `true`.
+  :ENV: PARSE_SERVER_ALLOW_AGGREGATION_FOR_READ_ONLY_MASTER_KEY
+  :DEFAULT: true */
+  allowAggregationForReadOnlyMasterKey: ?boolean;
   /* Key sent with outgoing webhook calls */
   webhookKey: ?string;
   /* Key for your files */
@@ -284,7 +288,7 @@ export interface ParseServerOptions {
   /* custom pages for password validation and reset
   :DEFAULT: {} */
   customPages: ?CustomPagesOptions;
-  /* parse-server's LiveQuery configuration object */
+  /* Configuration for LiveQuery on this Parse Server, for example `{ classNames: ['MyClass'] }`. `classNames` lists the classes that publish create/update/delete events to subscribers; without it no events are pushed, even while a LiveQuery server is running. Combine with `startLiveQueryServer` to run a LiveQuery server. */
   liveQuery: ?LiveQueryOptions;
   /* Session duration, in seconds, defaults to 1 year
   :DEFAULT: 31536000 */
@@ -343,9 +347,9 @@ export interface ParseServerOptions {
   /* The trust proxy settings. It is important to understand the exact setup of the reverse proxy, since this setting will trust values provided in the Parse Server API request. See the <a href="https://expressjs.com/en/guide/behind-proxies.html">express trust proxy settings</a> documentation. Defaults to `false`.
   :DEFAULT: false */
   trustProxy: ?any;
-  /* Starts the liveQuery server */
+  /* Starts a LiveQuery server alongside this Parse Server. Events are only delivered for the classes set in `liveQuery.classNames`, so a minimal working setup is `liveQuery: { classNames: [...] }` together with `startLiveQueryServer: true`. */
   startLiveQueryServer: ?boolean;
-  /* Live query server configuration options (will start the liveQuery server) */
+  /* Configuration options for the LiveQuery server. Providing this also starts the LiveQuery server (like `startLiveQueryServer`); events are still only published for the classes set in `liveQuery.classNames`. */
   liveQueryServerOptions: ?LiveQueryServerOptions;
   /* Options for request idempotency to deduplicate identical requests that may be caused by network issues. Caution, this is an experimental feature that may not be appropriate for production.
   :ENV: PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS
@@ -431,7 +435,7 @@ export interface RateLimitOptions {
   /* The error message that should be returned in the body of the HTTP 429 response when the rate limit is hit. Default is `Too many requests.`.
   :DEFAULT: Too many requests. */
   errorResponseMessage: ?string;
-  /* Optional, the HTTP request methods to which the rate limit should be applied, default is all methods. */
+  /* Optional, the HTTP request methods to which the rate limit should be applied, default is all methods. The method is matched after any `_method` body override has been resolved, i.e. it is the method used to route the request. Note that some endpoints are reachable via more than one HTTP method (for example `/login` and `/verifyPassword` are available via both `GET` and `POST`); to rate limit such an endpoint reliably, include all relevant methods (e.g. `['GET', 'POST']`) or omit this option to apply the limit to all methods. */
   requestMethods: ?(string[]);
   /* Optional, if `true` the rate limit will also apply to requests using the `masterKey`, default is `false`. Note that a public Cloud Code function that triggers internal requests using the `masterKey` may circumvent rate limiting and be vulnerable to attacks.
   :DEFAULT: false */
