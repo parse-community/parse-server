@@ -137,13 +137,16 @@ describe('LDAP Injection Prevention', () => {
         allowUnauthenticatedBind: true,
       });
       const client = ldapjs.createClient({ url: `ldap://localhost:${port}` });
-      await new Promise((resolve, reject) =>
-        client.bind('uid=testuser, o=example', '', err => (err ? reject(err) : resolve()))
-      );
-      client.destroy();
-      expect(server.bindAttempts.length).toBe(1);
-      expect(server.bindAttempts[0].credentials).toBe('');
-      await new Promise(resolve => server.close(resolve));
+      try {
+        await new Promise((resolve, reject) =>
+          client.bind('uid=testuser, o=example', '', err => (err ? reject(err) : resolve()))
+        );
+        expect(server.bindAttempts.length).toBe(1);
+        expect(server.bindAttempts[0].credentials).toBe('');
+      } finally {
+        client.destroy();
+        await new Promise(resolve => server.close(resolve));
+      }
     });
 
     it('should reject empty authData.password', async () => {
@@ -156,13 +159,16 @@ describe('LDAP Injection Prevention', () => {
         dn: 'uid={{id}}, o=example',
       };
       try {
-        await ldap.validateAuthData({ id: 'testuser', password: '' }, options);
-        fail('Should have rejected empty password');
-      } catch (err) {
-        expect(err.message).toBe('LDAP: Wrong username or password');
+        try {
+          await ldap.validateAuthData({ id: 'testuser', password: '' }, options);
+          fail('Should have rejected empty password');
+        } catch (err) {
+          expect(err.message).toBe('LDAP: Wrong username or password');
+        }
+        expect(server.bindAttempts.length).toBe(0);
+      } finally {
+        await new Promise(resolve => server.close(resolve));
       }
-      expect(server.bindAttempts.length).toBe(0);
-      await new Promise(resolve => server.close(resolve));
     });
 
     it('should reject missing authData.password', async () => {
@@ -175,13 +181,16 @@ describe('LDAP Injection Prevention', () => {
         dn: 'uid={{id}}, o=example',
       };
       try {
-        await ldap.validateAuthData({ id: 'testuser' }, options);
-        fail('Should have rejected missing password');
-      } catch (err) {
-        expect(err.message).toBe('LDAP: Wrong username or password');
+        try {
+          await ldap.validateAuthData({ id: 'testuser' }, options);
+          fail('Should have rejected missing password');
+        } catch (err) {
+          expect(err.message).toBe('LDAP: Wrong username or password');
+        }
+        expect(server.bindAttempts.length).toBe(0);
+      } finally {
+        await new Promise(resolve => server.close(resolve));
       }
-      expect(server.bindAttempts.length).toBe(0);
-      await new Promise(resolve => server.close(resolve));
     });
 
     it('should reject null authData.password', async () => {
@@ -194,13 +203,16 @@ describe('LDAP Injection Prevention', () => {
         dn: 'uid={{id}}, o=example',
       };
       try {
-        await ldap.validateAuthData({ id: 'testuser', password: null }, options);
-        fail('Should have rejected null password');
-      } catch (err) {
-        expect(err.message).toBe('LDAP: Wrong username or password');
+        try {
+          await ldap.validateAuthData({ id: 'testuser', password: null }, options);
+          fail('Should have rejected null password');
+        } catch (err) {
+          expect(err.message).toBe('LDAP: Wrong username or password');
+        }
+        expect(server.bindAttempts.length).toBe(0);
+      } finally {
+        await new Promise(resolve => server.close(resolve));
       }
-      expect(server.bindAttempts.length).toBe(0);
-      await new Promise(resolve => server.close(resolve));
     });
 
     it('should reject non-string authData.password', async () => {
@@ -212,16 +224,19 @@ describe('LDAP Injection Prevention', () => {
         url: `ldap://localhost:${port}`,
         dn: 'uid={{id}}, o=example',
       };
-      for (const password of [123, {}, [], true]) {
-        try {
-          await ldap.validateAuthData({ id: 'testuser', password }, options);
-          fail(`Should have rejected non-string password: ${JSON.stringify(password)}`);
-        } catch (err) {
-          expect(err.message).toBe('LDAP: Wrong username or password');
+      try {
+        for (const password of [123, {}, [], true]) {
+          try {
+            await ldap.validateAuthData({ id: 'testuser', password }, options);
+            fail(`Should have rejected non-string password: ${JSON.stringify(password)}`);
+          } catch (err) {
+            expect(err.message).toBe('LDAP: Wrong username or password');
+          }
         }
+        expect(server.bindAttempts.length).toBe(0);
+      } finally {
+        await new Promise(resolve => server.close(resolve));
       }
-      expect(server.bindAttempts.length).toBe(0);
-      await new Promise(resolve => server.close(resolve));
     });
   });
 
