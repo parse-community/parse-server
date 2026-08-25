@@ -132,7 +132,7 @@ describe('LDAP Injection Prevention', () => {
     // the connection to anonymous, so the credential must be refused by Parse Server
     // before it is sent. The mock directory used by the tests below accepts such a bind;
     // this test is the control that proves it does.
-    it('mock directory accepts a bind with a zero-length credential', async done => {
+    it('mock directory accepts a bind with a zero-length credential', async () => {
       const server = await mockLdapServer(port, 'uid=testuser, o=example', false, false, {
         allowUnauthenticatedBind: true,
       });
@@ -143,10 +143,10 @@ describe('LDAP Injection Prevention', () => {
       client.destroy();
       expect(server.bindAttempts.length).toBe(1);
       expect(server.bindAttempts[0].credentials).toBe('');
-      server.close(done);
+      await new Promise(resolve => server.close(resolve));
     });
 
-    it('should reject empty authData.password', async done => {
+    it('should reject empty authData.password', async () => {
       const server = await mockLdapServer(port, 'uid=testuser, o=example', false, false, {
         allowUnauthenticatedBind: true,
       });
@@ -162,10 +162,10 @@ describe('LDAP Injection Prevention', () => {
         expect(err.message).toBe('LDAP: Wrong username or password');
       }
       expect(server.bindAttempts.length).toBe(0);
-      server.close(done);
+      await new Promise(resolve => server.close(resolve));
     });
 
-    it('should reject missing authData.password', async done => {
+    it('should reject missing authData.password', async () => {
       const server = await mockLdapServer(port, 'uid=testuser, o=example', false, false, {
         allowUnauthenticatedBind: true,
       });
@@ -181,10 +181,10 @@ describe('LDAP Injection Prevention', () => {
         expect(err.message).toBe('LDAP: Wrong username or password');
       }
       expect(server.bindAttempts.length).toBe(0);
-      server.close(done);
+      await new Promise(resolve => server.close(resolve));
     });
 
-    it('should reject null authData.password', async done => {
+    it('should reject null authData.password', async () => {
       const server = await mockLdapServer(port, 'uid=testuser, o=example', false, false, {
         allowUnauthenticatedBind: true,
       });
@@ -200,10 +200,10 @@ describe('LDAP Injection Prevention', () => {
         expect(err.message).toBe('LDAP: Wrong username or password');
       }
       expect(server.bindAttempts.length).toBe(0);
-      server.close(done);
+      await new Promise(resolve => server.close(resolve));
     });
 
-    it('should reject non-string authData.password', async done => {
+    it('should reject non-string authData.password', async () => {
       const server = await mockLdapServer(port, 'uid=testuser, o=example', false, false, {
         allowUnauthenticatedBind: true,
       });
@@ -221,7 +221,7 @@ describe('LDAP Injection Prevention', () => {
         }
       }
       expect(server.bindAttempts.length).toBe(0);
-      server.close(done);
+      await new Promise(resolve => server.close(resolve));
     });
   });
 
