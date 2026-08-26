@@ -1095,13 +1095,14 @@ class DatabaseController {
           if (constraintKey === 'objectId') {
             relatedIds = [query[key].objectId];
           } else if (constraintKey == '$in') {
-            relatedIds = query[key]['$in'].map(r => r.objectId);
+            relatedIds = query[key]['$in'].map(r => (r ? r.objectId : undefined));
           } else if (constraintKey == '$nin') {
             isNegation = true;
-            relatedIds = query[key]['$nin'].map(r => r.objectId);
+            relatedIds = query[key]['$nin'].map(r => (r ? r.objectId : undefined));
           } else if (constraintKey == '$ne') {
             isNegation = true;
-            relatedIds = [query[key]['$ne'].objectId];
+            const ne = query[key]['$ne'];
+            relatedIds = [ne ? ne.objectId : undefined];
           } else {
             return;
           }
