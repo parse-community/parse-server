@@ -1301,6 +1301,42 @@ RestWrite.prototype.handleInstallation = function () {
     return;
   }
 
+  // installationId is the row's primary identity (used by the SDK auth
+  // header to bind a client request to its row). Reject any attempt to
+  // clear it via null or { __op: 'Delete' } before the lookup logic
+  // below runs — { __op: 'Delete' } would otherwise crash on
+  // `.toLowerCase()` (TypeError → 500) and null would silently orphan
+  // the row. Mirrors the existing 136 guard against changing
+  // installationId from one value to another.
+  const clearingInstallationId =
+    this.data.installationId === null ||
+    (typeof this.data.installationId === 'object' &&
+      this.data.installationId !== null &&
+      this.data.installationId.__op === 'Delete');
+  if (clearingInstallationId) {
+    if (this.query) {
+      throw new Parse.Error(
+        136,
+        'installationId may not be changed or cleared in this operation'
+      );
+    }
+    // Create path: drop the invalid value so the existing "must specify
+    // ID" guard below can run. If no alternative ID (deviceToken,
+    // auth.installationId) is supplied the create is rejected with
+    // error 135; otherwise the create proceeds with the remaining ID.
+    delete this.data.installationId;
+  }
+
+  // Any remaining non-string installationId (object, array, number, etc.)
+  // would crash on `.toLowerCase()` below; reject it as a Parse error
+  // rather than letting it surface as a 500.
+  if (
+    this.data.installationId !== undefined &&
+    typeof this.data.installationId !== 'string'
+  ) {
+    throw new Parse.Error(Parse.Error.INVALID_JSON, 'installationId must be a string');
+  }
+
   if (
     !this.query &&
     !this.data.deviceToken &&
