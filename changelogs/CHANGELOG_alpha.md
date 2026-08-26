@@ -1,3 +1,10 @@
+## [9.10.1-alpha.7](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.6...9.10.1-alpha.7) (2026-08-25)
+
+
+### Bug Fixes
+
+* Account takeover via empty password in LDAP auth adapter ([GHSA-863r-39r9-vfcf](https://github.com/parse-community/parse-server/security/advisories/GHSA-863r-39r9-vfcf)) ([#10642](https://github.com/parse-community/parse-server/issues/10642)) ([f261957](https://github.com/parse-community/parse-server/commit/f261957bdbf6ea29c151bcac9b04a9447f37b0bd))
+
 ## [9.10.1-alpha.6](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.5...9.10.1-alpha.6) (2026-07-26)
 
 
