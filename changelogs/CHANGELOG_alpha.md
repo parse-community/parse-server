@@ -1,3 +1,52 @@
+## [9.10.1-alpha.7](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.6...9.10.1-alpha.7) (2026-08-25)
+
+
+### Bug Fixes
+
+* Account takeover via empty password in LDAP auth adapter ([GHSA-863r-39r9-vfcf](https://github.com/parse-community/parse-server/security/advisories/GHSA-863r-39r9-vfcf)) ([#10642](https://github.com/parse-community/parse-server/issues/10642)) ([f261957](https://github.com/parse-community/parse-server/commit/f261957bdbf6ea29c151bcac9b04a9447f37b0bd))
+
+## [9.10.1-alpha.6](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.5...9.10.1-alpha.6) (2026-07-26)
+
+
+### Bug Fixes
+
+* `Parse.Query.explain` runs afterFind trigger on query plan results ([#10536](https://github.com/parse-community/parse-server/issues/10536)) ([64d58ff](https://github.com/parse-community/parse-server/commit/64d58ff726b42b45e107e27bc1f3b50be82b3189))
+
+## [9.10.1-alpha.5](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.4...9.10.1-alpha.5) (2026-07-25)
+
+
+### Bug Fixes
+
+* Server crash from unhandled promise rejection when multiple Cloud Code validator fields fail ([#10540](https://github.com/parse-community/parse-server/issues/10540)) ([90c2778](https://github.com/parse-community/parse-server/commit/90c277894f31be8e64a4b049ad503621cf5f2285))
+
+## [9.10.1-alpha.4](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.3...9.10.1-alpha.4) (2026-07-24)
+
+
+### Bug Fixes
+
+* Install the latest Parse Server version in bootstrap.sh ([#10556](https://github.com/parse-community/parse-server/issues/10556)) ([997ee15](https://github.com/parse-community/parse-server/commit/997ee152c358524bd2b0dded490255742b61a1ba))
+
+## [9.10.1-alpha.3](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.2...9.10.1-alpha.3) (2026-07-16)
+
+
+### Bug Fixes
+
+* Bump ws from 8.20.0 to 8.21.0 ([#10576](https://github.com/parse-community/parse-server/issues/10576)) ([629426f](https://github.com/parse-community/parse-server/commit/629426f00d619ca624fc2d7e64d98f406ce20acc))
+
+## [9.10.1-alpha.2](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.1...9.10.1-alpha.2) (2026-07-14)
+
+
+### Bug Fixes
+
+* Creating a session can delete another user's session ([#10582](https://github.com/parse-community/parse-server/issues/10582)) ([0df8779](https://github.com/parse-community/parse-server/commit/0df8779c2ecccb055e615d42ee85ae2bce491670))
+
+## [9.10.1-alpha.1](https://github.com/parse-community/parse-server/compare/9.10.0...9.10.1-alpha.1) (2026-07-13)
+
+
+### Bug Fixes
+
+* Bump follow-redirects from 1.15.11 to 1.16.0 ([#10577](https://github.com/parse-community/parse-server/issues/10577)) ([d577327](https://github.com/parse-community/parse-server/commit/d577327bff073b0436a158e9694feed8eed2f8e7))
+
 # [9.10.0-alpha.8](https://github.com/parse-community/parse-server/compare/9.10.0-alpha.7...9.10.0-alpha.8) (2026-07-13)
 
 
