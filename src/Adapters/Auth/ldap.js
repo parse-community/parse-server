@@ -40,7 +40,8 @@
  * ## Auth Payload
  * The adapter requires the following `authData` fields:
  * - `id`: The user's LDAP username.
- * - `password`: The user's LDAP password.
+ * - `password`: The user's LDAP password. Must be a non-empty string; an empty or missing
+ *   password is rejected without contacting the directory.
  *
  * ### Example Auth Payload
  * ```json
@@ -118,6 +119,18 @@ function validateAuthData(authData, options) {
     : { url: options.url };
 
   if (typeof authData.id !== 'string') {
+    return Promise.reject(
+      new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'LDAP: Wrong username or password')
+    );
+  }
+  // A missing, empty or non-string password is serialized by ldapjs as a zero-length
+  // credential, which makes the bind an unauthenticated authentication mechanism of simple
+  // bind (RFC 4513 section 5.1.2). A directory may answer that with success and map the
+  // connection to anonymous, which this adapter would otherwise read as a successful
+  // authentication. RFC 4513 section 5.1.2 states that clients must not use the
+  // unauthenticated mechanism to authenticate, so the credential is rejected here, before
+  // the directory is contacted.
+  if (typeof authData.password !== 'string' || authData.password.length === 0) {
     return Promise.reject(
       new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'LDAP: Wrong username or password')
     );
