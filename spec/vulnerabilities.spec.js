@@ -6554,6 +6554,7 @@ describe('Vulnerabilities', () => {
     let outsider;
     let outsiderToken;
     let doc;
+    let extraClients = [];
 
     async function updateCLP(className, permissions) {
       const response = await fetch(Parse.serverURL + '/schemas/' + className, {
@@ -6572,11 +6573,18 @@ describe('Vulnerabilities', () => {
       return body;
     }
 
-    async function setup(protectedFields) {
+    // `keyPairs` is opt-in per test: the default LiveQueryClient always sends the
+    // master key in its connect frame, so enabling key pairs globally would turn
+    // every subscription in this suite into a master-key subscription.
+    async function setup(protectedFields, { keyPairs = false } = {}) {
       Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+      extraClients = [];
       await reconfigureServer({
         liveQuery: { classNames: ['RoleProtectedDoc'] },
         startLiveQueryServer: true,
+        ...(keyPairs
+          ? { liveQueryServerOptions: { keyPairs: { masterKey: 'test', javascriptKey: 'test' } } }
+          : {}),
         verbose: false,
         silent: true,
       });
@@ -6618,6 +6626,10 @@ describe('Vulnerabilities', () => {
     }
 
     afterEach(async () => {
+      for (const client of extraClients) {
+        await client.close();
+      }
+      extraClients = [];
       try {
         const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
         if (client) {
@@ -6708,9 +6720,28 @@ describe('Vulnerabilities', () => {
     });
 
     it('delivers a role-scoped protected field to a LiveQuery subscriber using the master key', async () => {
-      await setup({ [`role:${roleName}`]: ['ssn'] });
+      await setup({ [`role:${roleName}`]: ['ssn'] }, { keyPairs: true });
 
-      const subscription = await new Parse.Query('RoleProtectedDoc').subscribe(Parse.masterKey);
+      const subscription = await subscribeWithMasterKey('RoleProtectedDoc');
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBe('999-88-7777');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+    });
+
+    it('delivers a public protected field to a LiveQuery subscriber using the master key', async () => {
+      // Only a genuine master-key client receives a field protected for '*';
+      // any non-master subscriber has it stripped, so this asserts that the
+      // master-key path is really exercised.
+      await setup({ '*': ['ssn'] }, { keyPairs: true });
+
+      const subscription = await subscribeWithMasterKey('RoleProtectedDoc');
 
       await Promise.all([
         new Promise(resolve => {
@@ -6760,6 +6791,24 @@ describe('Vulnerabilities', () => {
         doc.save({ name: 'bob2' }, { useMasterKey: true }),
       ]);
     });
+
+    // `query.subscribe(Parse.masterKey)` sends the master key as the subscription
+    // session token, which never sets `client.hasMasterKey` - that is derived from
+    // the connect frame (`_hasMasterKey` in ParseLiveQueryServer). A master-key
+    // subscriber must therefore be built as its own LiveQueryClient.
+    async function subscribeWithMasterKey(className) {
+      const client = new Parse.LiveQueryClient({
+        applicationId: Parse.applicationId,
+        serverURL: 'ws://localhost:8378',
+        javascriptKey: 'test',
+        masterKey: Parse.masterKey,
+      });
+      extraClients.push(client);
+      client.open();
+      const subscription = client.subscribe(new Parse.Query(className));
+      await new Promise(resolve => subscription.on('open', resolve));
+      return subscription;
+    }
 
     async function subscribeWithoutSubscriptionToken(className) {
       // Mirrors Parse.Query.subscribe() but omits the per-subscription session
