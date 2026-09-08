@@ -2007,7 +2007,10 @@ describe('Vulnerabilities', () => {
       );
     });
 
-    it('should not reject when role-only protection exists without * entry', async () => {
+    it('should reject when role-only protection exists without a * entry', async () => {
+      // Edge case: protectedFields only has a role entry, no '*'. The subscriber's
+      // roles are resolved (GHSA-9jpp-xhh6-75mf), so the role entry applies and the
+      // WHERE clause on the protected field is rejected for members of that role.
       const config = Config.get(Parse.applicationId);
       const schemaController = await config.database.loadSchema();
       await schemaController.updateClass(
@@ -2037,8 +2040,9 @@ describe('Vulnerabilities', () => {
 
       const query = new Parse.Query('SecretClass');
       query._addCondition('secretObj.apiKey', '$eq', 'SENSITIVE_KEY_123');
-      const subscription = await query.subscribe(user.getSessionToken());
-      expect(subscription).toBeDefined();
+      await expectAsync(query.subscribe(user.getSessionToken())).toBeRejectedWith(
+        new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+      );
     });
   });
 
@@ -5706,6 +5710,382 @@ describe('Vulnerabilities', () => {
         },
       }).catch(e => e);
       expect(res.data.results).toEqual([]);
+    });
+  });
+
+  describe('(GHSA-9jpp-xhh6-75mf) LiveQuery does not apply role-scoped protectedFields', () => {
+    const { sleep } = require('../lib/TestUtils');
+    const roleName = 'LqProtectedRole';
+    let member;
+    let memberToken;
+    let outsider;
+    let outsiderToken;
+    let doc;
+    let extraClients = [];
+
+    async function updateCLP(className, permissions) {
+      const response = await fetch(Parse.serverURL + '/schemas/' + className, {
+        method: 'PUT',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': Parse.masterKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ classLevelPermissions: permissions }),
+      });
+      const body = await response.json();
+      if (body.error) {
+        throw body;
+      }
+      return body;
+    }
+
+    // `keyPairs` is opt-in per test: the default LiveQueryClient always sends the
+    // master key in its connect frame, so enabling key pairs globally would turn
+    // every subscription in this suite into a master-key subscription.
+    async function setup(protectedFields, { keyPairs = false } = {}) {
+      Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+      extraClients = [];
+      await reconfigureServer({
+        liveQuery: { classNames: ['RoleProtectedDoc'] },
+        startLiveQueryServer: true,
+        ...(keyPairs
+          ? { liveQueryServerOptions: { keyPairs: { masterKey: 'test', javascriptKey: 'test' } } }
+          : {}),
+        verbose: false,
+        silent: true,
+      });
+
+      member = new Parse.User();
+      member.setUsername('lq_role_member');
+      member.setPassword('password123');
+      await member.signUp();
+      memberToken = member.getSessionToken();
+
+      outsider = new Parse.User();
+      outsider.setUsername('lq_role_outsider');
+      outsider.setPassword('password456');
+      await outsider.signUp();
+      outsiderToken = outsider.getSessionToken();
+      await Parse.User.logOut();
+
+      const roleACL = new Parse.ACL();
+      roleACL.setPublicReadAccess(true);
+      const role = new Parse.Role(roleName, roleACL);
+      role.getUsers().add(member);
+      await role.save(null, { useMasterKey: true });
+
+      // Create the object first so the class schema exists, then apply the CLP
+      doc = new Parse.Object('RoleProtectedDoc');
+      doc.set('ssn', '999-88-7777');
+      doc.set('name', 'bob');
+      await doc.save(null, { useMasterKey: true });
+
+      await updateCLP('RoleProtectedDoc', {
+        find: { '*': true },
+        get: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+        protectedFields,
+      });
+    }
+
+    afterEach(async () => {
+      for (const client of extraClients) {
+        await client.close();
+      }
+      extraClients = [];
+      try {
+        const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+        if (client) {
+          await client.close();
+        }
+      } catch (e) {
+        // Ignore cleanup errors when the client was never initialized
+      }
+    });
+
+    it('strips a role-scoped protected field from a REST get for a role member', async () => {
+      await setup({ [`role:${roleName}`]: ['ssn'] });
+
+      const response = await request({
+        method: 'GET',
+        url: `${Parse.serverURL}/classes/RoleProtectedDoc/${doc.id}`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': memberToken,
+        },
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.data.ssn).toBeUndefined();
+      expect(response.data.name).toBe('bob');
+    });
+
+    it('strips a role-scoped protected field from a LiveQuery update event for a role member', async () => {
+      await setup({ [`role:${roleName}`]: ['ssn'] });
+
+      const subscription = await new Parse.Query('RoleProtectedDoc').subscribe(
+        memberToken
+      );
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBeUndefined();
+            expect(object.get('name')).toBe('bob2');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+    });
+
+    it('strips a role-scoped protected field from a LiveQuery create event for a role member', async () => {
+      await setup({ [`role:${roleName}`]: ['ssn'] });
+
+      const subscription = await new Parse.Query('RoleProtectedDoc').subscribe(
+        memberToken
+      );
+
+      const created = new Parse.Object('RoleProtectedDoc');
+      created.set('ssn', '111-22-3333');
+      created.set('name', 'alice');
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('create', object => {
+            expect(object.get('ssn')).toBeUndefined();
+            expect(object.get('name')).toBe('alice');
+            resolve();
+          });
+        }),
+        created.save(null, { useMasterKey: true }),
+      ]);
+    });
+
+    it('delivers a role-scoped protected field to a LiveQuery subscriber outside the role', async () => {
+      await setup({ [`role:${roleName}`]: ['ssn'] });
+
+      const subscription = await new Parse.Query('RoleProtectedDoc').subscribe(
+        outsiderToken
+      );
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBe('999-88-7777');
+            expect(object.get('name')).toBe('bob2');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+    });
+
+    it('delivers a role-scoped protected field to a LiveQuery subscriber using the master key', async () => {
+      await setup({ [`role:${roleName}`]: ['ssn'] }, { keyPairs: true });
+
+      const subscription = await subscribeWithMasterKey('RoleProtectedDoc');
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBe('999-88-7777');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+    });
+
+    it('delivers a public protected field to a LiveQuery subscriber using the master key', async () => {
+      // Only a genuine master-key client receives a field protected for '*';
+      // any non-master subscriber has it stripped, so this asserts that the
+      // master-key path is really exercised.
+      await setup({ '*': ['ssn'] }, { keyPairs: true });
+
+      const subscription = await subscribeWithMasterKey('RoleProtectedDoc');
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBe('999-88-7777');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+    });
+
+    it('rejects a LiveQuery subscription with a role-scoped protected field in where', async () => {
+      await setup({ [`role:${roleName}`]: ['ssn'] });
+
+      const query = new Parse.Query('RoleProtectedDoc');
+      query.equalTo('ssn', '999-88-7777');
+      await expectAsync(query.subscribe(memberToken)).toBeRejectedWith(
+        new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+      );
+    });
+
+    it('rejects a LiveQuery subscription with a role-scoped protected field in watch', async () => {
+      await setup({ [`role:${roleName}`]: ['ssn'] });
+
+      const query = new Parse.Query('RoleProtectedDoc');
+      query.watch('ssn');
+      await expectAsync(query.subscribe(memberToken)).toBeRejectedWith(
+        new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+      );
+    });
+
+    it('allows a LiveQuery subscription with a role-scoped protected field in where for a user outside the role', async () => {
+      await setup({ [`role:${roleName}`]: ['ssn'] });
+
+      const query = new Parse.Query('RoleProtectedDoc');
+      query.equalTo('ssn', '999-88-7777');
+      const subscription = await query.subscribe(outsiderToken);
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBe('999-88-7777');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+    });
+
+    // `query.subscribe(Parse.masterKey)` sends the master key as the subscription
+    // session token, which never sets `client.hasMasterKey` - that is derived from
+    // the connect frame (`_hasMasterKey` in ParseLiveQueryServer). A master-key
+    // subscriber must therefore be built as its own LiveQueryClient.
+    async function subscribeWithMasterKey(className) {
+      const client = new Parse.LiveQueryClient({
+        applicationId: Parse.applicationId,
+        serverURL: 'ws://localhost:8378',
+        javascriptKey: 'test',
+        masterKey: Parse.masterKey,
+      });
+      extraClients.push(client);
+      client.open();
+      const subscription = client.subscribe(new Parse.Query(className));
+      await new Promise(resolve => subscription.on('open', resolve));
+      return subscription;
+    }
+
+    async function subscribeWithoutSubscriptionToken(className) {
+      // Mirrors Parse.Query.subscribe() but omits the per-subscription session
+      // token, so only the connect frame carries it. `client.subscribe(query)`
+      // without the optional second argument is public SDK API.
+      const query = new Parse.Query(className);
+      const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+      if (client.shouldOpen()) {
+        client.open();
+      }
+      const subscription = client.subscribe(query);
+      await subscription.subscribePromise;
+      return subscription;
+    }
+
+    it('strips a role-scoped protected field when the subscription carries no session token', async () => {
+      await setup({ [`role:${roleName}`]: ['ssn'] });
+      // The connect frame carries the member's token, the subscribe frame does not
+      await Parse.User.logIn('lq_role_member', 'password123');
+      const subscription = await subscribeWithoutSubscriptionToken('RoleProtectedDoc');
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBeUndefined();
+            expect(object.get('name')).toBe('bob2');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+    });
+
+    it('strips an authenticated-scoped protected field when the subscription carries no session token', async () => {
+      await setup({ authenticated: ['ssn'] });
+      await Parse.User.logIn('lq_role_member', 'password123');
+      const subscription = await subscribeWithoutSubscriptionToken('RoleProtectedDoc');
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBeUndefined();
+            expect(object.get('name')).toBe('bob2');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+    });
+
+    it('allows a LiveQuery subscription when a role-scoped exemption clears a public protected field', async () => {
+      // The '*' group protects the field, the role group exempts members via the
+      // intersection. Resolving roles relaxes the guard here: before the fix the
+      // role member was rejected because only the '*' group was ever applied.
+      await setup({ '*': ['ssn'], [`role:${roleName}`]: [] });
+
+      const query = new Parse.Query('RoleProtectedDoc');
+      query.equalTo('ssn', '999-88-7777');
+      const subscription = await query.subscribe(memberToken);
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBe('999-88-7777');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+    });
+
+    it('keeps stripping a public protected field on LiveQuery events', async () => {
+      await setup({ '*': ['ssn'] });
+
+      const subscription = await new Parse.Query('RoleProtectedDoc').subscribe(
+        memberToken
+      );
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBeUndefined();
+            expect(object.get('name')).toBe('bob2');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+    });
+
+    it('intersects a public and a role-scoped protected field set on LiveQuery events', async () => {
+      // '*' protects both fields, the role set protects only one; the
+      // intersection leaves 'ssn' protected and exposes 'name' to role members
+      await setup({ '*': ['ssn', 'name'], [`role:${roleName}`]: ['ssn'] });
+
+      const subscription = await new Parse.Query('RoleProtectedDoc').subscribe(
+        memberToken
+      );
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBeUndefined();
+            expect(object.get('name')).toBe('bob2');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+      await sleep(0);
     });
   });
 });
