@@ -774,6 +774,26 @@ class ParseLiveQueryServer {
     }
   }
 
+  // `addProtectedFields` reads role-scoped `protectedFields` groups from
+  // `Auth.userRoles`, which stays empty unless the roles are explicitly loaded.
+  // Without this, every `role:` group is silently skipped and LiveQuery would
+  // disclose fields that the REST path strips for the same caller. The roles are
+  // only fetched when the class actually declares a `role:` group, so classes
+  // without one keep subscribing and receiving events without a role lookup.
+  async _loadRolesForProtectedFields(classLevelPermissions?: any, clientAuth?: any) {
+    if (typeof clientAuth?.getUserRoles !== 'function') {
+      return;
+    }
+    const protectedFields = classLevelPermissions?.protectedFields;
+    if (!protectedFields || Array.isArray(protectedFields)) {
+      return;
+    }
+    if (!Object.keys(protectedFields).some(key => key.startsWith('role:'))) {
+      return;
+    }
+    await clientAuth.getUserRoles();
+  }
+
   async _filterSensitiveData(
     classLevelPermissions?: any,
     res?: any,
@@ -786,11 +806,22 @@ class ParseLiveQueryServer {
     const aclGroup = ['*'];
     let clientAuth;
     if (typeof subscriptionInfo !== 'undefined') {
-      const { userId, auth } = await this.getAuthForSessionToken(subscriptionInfo.sessionToken);
+      // Fall back to the connect-frame token, the same way `_matchesACL` and
+      // `getAuthFromClient` already do. The subscribe frame's session token is
+      // optional, so resolving only it would redact against an anonymous identity
+      // while the ACL check authorized the read against the connected user. That
+      // mismatch skips every identity-derived `protectedFields` group
+      // (`role:`, `authenticated` and `<objectId>`).
+      const { userId, auth } = await this.getAuthForSessionToken(
+        subscriptionInfo.sessionToken || client.sessionToken
+      );
       if (userId) {
         aclGroup.push(userId);
       }
       clientAuth = auth;
+    }
+    if (!client.hasMasterKey) {
+      await this._loadRolesForProtectedFields(classLevelPermissions, clientAuth);
     }
     const filter = obj => {
       if (!obj) {
@@ -1016,11 +1047,13 @@ class ParseLiveQueryServer {
     const client = this.clients.get(parseWebsocket.clientId);
     const className = request.query.className;
     let authCalled = false;
+    let clientAuth;
     try {
       const trigger = getTrigger(className, 'beforeSubscribe', Parse.applicationId);
       if (trigger) {
         const auth = await this.getAuthFromClient(client, request.requestId, request.sessionToken);
         authCalled = true;
+        clientAuth = auth;
         if (auth && auth.user) {
           request.user = auth.user;
         }
@@ -1041,6 +1074,7 @@ class ParseLiveQueryServer {
             request.requestId,
             request.sessionToken
           );
+          clientAuth = auth;
           if (auth && auth.user) {
             request.user = auth.user;
           }
@@ -1108,6 +1142,7 @@ class ParseLiveQueryServer {
           request.sessionToken
         );
         authCalled = true;
+        clientAuth = auth;
         if (auth && auth.user) {
           request.user = auth.user;
           aclGroup.push(auth.user.id);
@@ -1124,7 +1159,12 @@ class ParseLiveQueryServer {
 
       // Check protected fields in WHERE clause and WATCH parameter
       if (!client.hasMasterKey) {
-        const auth = request.user ? { user: request.user, userRoles: [] } : {};
+        await this._loadRolesForProtectedFields(classLevelPermissions, clientAuth);
+        // `clientAuth` is undefined only when no session token was supplied on
+        // either frame, in which case a `beforeSubscribe` trigger is the only way
+        // `request.user` can be set. There is no session to resolve roles from for
+        // such a trigger-assigned user, so `role:` groups cannot be applied to it.
+        const auth = request.user ? clientAuth || { user: request.user, userRoles: [] } : {};
         const protectedFields =
           appConfig.database.addProtectedFields(
             classLevelPermissions,
