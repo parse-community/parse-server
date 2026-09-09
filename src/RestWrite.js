@@ -1489,7 +1489,7 @@ RestWrite.prototype.handleInstallation = function () {
               $ne: installationId,
             },
           };
-          if (typeof this.data.appIdentifier === 'string') {
+          if (this.data.appIdentifier) {
             delQuery['appIdentifier'] = this.data.appIdentifier;
           }
           const installationOpts = this.config.installation || {};
@@ -1545,8 +1545,15 @@ RestWrite.prototype.handleInstallation = function () {
               // What to do here? can't really clean up everything...
               return idMatch.objectId;
             }
-            if (typeof this.data.appIdentifier === 'string') {
-              delQuery['appIdentifier'] = this.data.appIdentifier;
+            if (this.data.appIdentifier) {
+              // A `Delete` operation clears `appIdentifier` only after the deduplication
+              // runs, so scope the cleanup to the value the matched installation still
+              // holds; dropping the constraint would let the cleanup reach installations
+              // belonging to other applications.
+              delQuery['appIdentifier'] =
+                typeof this.data.appIdentifier === 'string'
+                  ? this.data.appIdentifier
+                  : idMatch.appIdentifier || this.data.appIdentifier;
             }
             const installationOpts = this.config.installation || {};
             return InstallationDedup.removeConflictingDeviceToken({

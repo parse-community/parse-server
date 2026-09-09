@@ -7108,6 +7108,36 @@ describe('Vulnerabilities', () => {
       expect(installation.get('appIdentifier')).toBeUndefined();
     });
 
+    it('does not clean up installations of other applications when appIdentifier is unset', async () => {
+      const victim = await postInstallation({
+        installationId: 'victim-uuid-0000-0000-00000000009',
+        deviceType: 'ios',
+        deviceToken: 'contested-token',
+        appIdentifier: 'com.example.victimapp',
+      });
+      expect(victim.status).toBe(201);
+      const attacker = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceType: 'android',
+        deviceToken: 'attacker-token',
+        appIdentifier: 'com.example.attackerapp',
+      });
+      expect(attacker.status).toBe(201);
+
+      // Claiming the other application's device token while unsetting `appIdentifier` must
+      // not drop the constraint that scopes the cleanup to the caller's own application.
+      const response = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceToken: 'contested-token',
+        appIdentifier: { __op: 'Delete' },
+      });
+      expect(response.status).toBe(200);
+
+      expect(await allInstallations()).toEqual(
+        ['victim-uuid-0000-0000-00000000009', attackerInstallationId].sort()
+      );
+    });
+
     it('guards every _Installation field that the schema declares as String and the deduplication queries use', () => {
       // The guard in `handleInstallation` hardcodes `String` because the schema's own type
       // check runs too late in the write pipeline to be reused. This pins the two together:
