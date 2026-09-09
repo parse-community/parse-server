@@ -1313,15 +1313,19 @@ RestWrite.prototype.handleInstallation = function () {
   // deduplication queries below.
   for (const fieldName of ['deviceToken', 'installationId', 'appIdentifier']) {
     const value = this.data[fieldName];
-    if (value !== undefined && value !== null && typeof value !== 'string') {
-      const actualType = Array.isArray(value)
-        ? 'Array'
-        : `${typeof value}`.replace(/^./, character => character.toUpperCase());
-      throw new Parse.Error(
-        Parse.Error.INCORRECT_TYPE,
-        `schema mismatch for _Installation.${fieldName}; expected String but got ${actualType}`
-      );
+    if (value === undefined || value === null || typeof value === 'string') {
+      continue;
     }
+    if (fieldName === 'appIdentifier' && value.__op === 'Delete') {
+      continue;
+    }
+    const actualType = Array.isArray(value)
+      ? 'Array'
+      : `${typeof value}`.replace(/^./, character => character.toUpperCase());
+    throw new Parse.Error(
+      Parse.Error.INCORRECT_TYPE,
+      `schema mismatch for _Installation.${fieldName}; expected String but got ${actualType}`
+    );
   }
 
   if (
@@ -1485,7 +1489,7 @@ RestWrite.prototype.handleInstallation = function () {
               $ne: installationId,
             },
           };
-          if (this.data.appIdentifier) {
+          if (typeof this.data.appIdentifier === 'string') {
             delQuery['appIdentifier'] = this.data.appIdentifier;
           }
           const installationOpts = this.config.installation || {};
@@ -1541,7 +1545,7 @@ RestWrite.prototype.handleInstallation = function () {
               // What to do here? can't really clean up everything...
               return idMatch.objectId;
             }
-            if (this.data.appIdentifier) {
+            if (typeof this.data.appIdentifier === 'string') {
               delQuery['appIdentifier'] = this.data.appIdentifier;
             }
             const installationOpts = this.config.installation || {};

@@ -7086,6 +7086,28 @@ describe('Vulnerabilities', () => {
       expect((await allInstallations()).length).toBe(1);
     });
 
+    it('still allows appIdentifier to be unset with a Delete operation', async () => {
+      const created = await postInstallation({
+        installationId: 'device-uuid-0000-0000-000000000009',
+        deviceType: 'ios',
+        deviceToken: 'unsettoken',
+        appIdentifier: 'com.example.app',
+      });
+      expect(created.status).toBe(201);
+
+      // `appIdentifier` only narrows the deduplication query, so unsetting it is a valid
+      // operation that must survive the type validation above.
+      const response = await putInstallation(created.data.objectId, {
+        appIdentifier: { __op: 'Delete' },
+      });
+
+      expect(response.status).toBe(200);
+      const query = new Parse.Query(Parse.Installation);
+      query.equalTo('objectId', created.data.objectId);
+      const [installation] = await query.find({ useMasterKey: true });
+      expect(installation.get('appIdentifier')).toBeUndefined();
+    });
+
     it('guards every _Installation field that the schema declares as String and the deduplication queries use', () => {
       // The guard in `handleInstallation` hardcodes `String` because the schema's own type
       // check runs too late in the write pipeline to be reused. This pins the two together:
