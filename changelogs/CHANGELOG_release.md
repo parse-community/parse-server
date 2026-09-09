@@ -1,3 +1,10 @@
+## [8.6.90](https://github.com/parse-community/parse-server/compare/8.6.89...8.6.90) (2026-09-09)
+
+
+### Bug Fixes
+
+* Unauthenticated deletion of installation records via operator injection in device token deduplication ([GHSA-cc6h-c8m4-hgrx](https://github.com/parse-community/parse-server/security/advisories/GHSA-cc6h-c8m4-hgrx)) ([#10658](https://github.com/parse-community/parse-server/issues/10658)) ([2a60732](https://github.com/parse-community/parse-server/commit/2a60732e7dd40a9d49cb71a3a3abc0cdf56dbd37))
+
 ## [8.6.89](https://github.com/parse-community/parse-server/compare/8.6.88...8.6.89) (2026-09-08)
 
 
