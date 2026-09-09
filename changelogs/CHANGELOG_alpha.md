@@ -1,3 +1,10 @@
+## [9.10.1-alpha.8](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.7...9.10.1-alpha.8) (2026-09-08)
+
+
+### Bug Fixes
+
+* LiveQuery discloses protected fields by resolving an incomplete subscriber identity ([GHSA-9jpp-xhh6-75mf](https://github.com/parse-community/parse-server/security/advisories/GHSA-9jpp-xhh6-75mf)) ([#10654](https://github.com/parse-community/parse-server/issues/10654)) ([66c507b](https://github.com/parse-community/parse-server/commit/66c507b7fb66611eb6c706969aae2b6bc2a930d9))
+
 ## [9.10.1-alpha.7](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.6...9.10.1-alpha.7) (2026-08-25)
 
 
