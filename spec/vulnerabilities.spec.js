@@ -6088,4 +6088,321 @@ describe('Vulnerabilities', () => {
       await sleep(0);
     });
   });
+
+  describe('(GHSA-cc6h-c8m4-hgrx) NoSQL injection via _Installation deviceToken deduplication', () => {
+    const serverURL = 'http://localhost:8378/1';
+    const publicHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const attackerInstallationId = 'attacker-uuid-0000-0000-000000000000';
+
+    const postInstallation = body =>
+      request({
+        method: 'POST',
+        headers: publicHeaders,
+        url: `${serverURL}/installations`,
+        body: JSON.stringify(body),
+      }).catch(e => e);
+
+    const putInstallation = (objectId, body) =>
+      request({
+        method: 'PUT',
+        headers: publicHeaders,
+        url: `${serverURL}/installations/${objectId}`,
+        body: JSON.stringify(body),
+      }).catch(e => e);
+
+    const allInstallations = async () => {
+      const query = new Parse.Query(Parse.Installation);
+      query.limit(1000);
+      const results = await query.find({ useMasterKey: true });
+      return results.map(r => r.get('installationId')).sort();
+    };
+
+    // Registers `count` unrelated installations, each with its own installationId and
+    // deviceToken, exactly as a device SDK would.
+    const seedVictimInstallations = async count => {
+      for (let i = 0; i < count; i++) {
+        const response = await postInstallation({
+          installationId: `victim-uuid-0000-0000-00000000000${i}`,
+          deviceType: 'ios',
+          deviceToken: `victimtoken${i}`,
+        });
+        expect(response.status).toBe(201);
+      }
+    };
+
+    // Doubles as a positive control: proves the unauthenticated client really reaches the
+    // application, so a later "nothing was deleted" result cannot be a broken harness.
+    const registerAttackerInstallation = async () => {
+      const response = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceType: 'android',
+      });
+      expect(response.status).toBe(201);
+    };
+
+    it('does not delete other installations when deviceToken is an operator object', async () => {
+      await seedVictimInstallations(4);
+      await registerAttackerInstallation();
+      expect((await allInstallations()).length).toBe(5);
+
+      const response = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceToken: { $ne: null },
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect((await allInstallations()).length).toBe(5);
+    });
+
+    it('does not delete other installations when deviceToken is an operator object and no installation matches the installationId', async () => {
+      await seedVictimInstallations(4);
+      expect((await allInstallations()).length).toBe(4);
+
+      // No prior registration, so the request reaches the deduplication branch that runs
+      // when no row matches the installationId.
+      const response = await postInstallation({
+        installationId: 'unregistered-uuid-0000-0000-0000',
+        deviceType: 'android',
+        deviceToken: { $ne: null },
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect((await allInstallations()).length).toBe(4);
+    });
+
+    it('does not delete targeted installations when deviceToken is a regex operator', async () => {
+      await seedVictimInstallations(4);
+      await registerAttackerInstallation();
+
+      const response = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceToken: { $regex: '^victimtoken' },
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect((await allInstallations()).length).toBe(5);
+    });
+
+    it('does not delete other installations when deviceToken is an operator object on update', async () => {
+      await seedVictimInstallations(4);
+      const created = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceType: 'android',
+      });
+      expect(created.status).toBe(201);
+
+      const response = await putInstallation(created.data.objectId, {
+        deviceToken: { $ne: null },
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect((await allInstallations()).length).toBe(5);
+    });
+
+    it('does not delete other installations when appIdentifier is an operator object', async () => {
+      await seedVictimInstallations(4);
+      await registerAttackerInstallation();
+
+      const response = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceToken: 'victimtoken0',
+        appIdentifier: { $ne: null },
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect((await allInstallations()).length).toBe(5);
+    });
+
+    it('rejects a non-string installationId with a client error', async () => {
+      await seedVictimInstallations(1);
+
+      const response = await postInstallation({
+        installationId: { $ne: null },
+        deviceType: 'android',
+        deviceToken: 'sometoken',
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect((await allInstallations()).length).toBe(1);
+    });
+
+    it('still allows appIdentifier to be unset with a Delete operation', async () => {
+      const created = await postInstallation({
+        installationId: 'device-uuid-0000-0000-000000000009',
+        deviceType: 'ios',
+        deviceToken: 'unsettoken',
+        appIdentifier: 'com.example.app',
+      });
+      expect(created.status).toBe(201);
+
+      // `appIdentifier` only narrows the deduplication query, so unsetting it is a valid
+      // operation that must survive the type validation above.
+      const response = await putInstallation(created.data.objectId, {
+        appIdentifier: { __op: 'Delete' },
+      });
+
+      expect(response.status).toBe(200);
+      const query = new Parse.Query(Parse.Installation);
+      query.equalTo('objectId', created.data.objectId);
+      const [installation] = await query.find({ useMasterKey: true });
+      expect(installation.get('appIdentifier')).toBeUndefined();
+    });
+
+    it('does not clean up installations of other applications when appIdentifier is unset', async () => {
+      const victim = await postInstallation({
+        installationId: 'victim-uuid-0000-0000-00000000009',
+        deviceType: 'ios',
+        deviceToken: 'contested-token',
+        appIdentifier: 'com.example.victimapp',
+      });
+      expect(victim.status).toBe(201);
+      const attacker = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceType: 'android',
+        deviceToken: 'attacker-token',
+        appIdentifier: 'com.example.attackerapp',
+      });
+      expect(attacker.status).toBe(201);
+
+      // Claiming the other application's device token while unsetting `appIdentifier` must
+      // not drop the constraint that scopes the cleanup to the caller's own application.
+      const response = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceToken: 'contested-token',
+        appIdentifier: { __op: 'Delete' },
+      });
+      expect(response.status).toBe(200);
+
+      expect(await allInstallations()).toEqual(
+        ['victim-uuid-0000-0000-00000000009', attackerInstallationId].sort()
+      );
+    });
+
+    it('reports the received type when a deviceToken is an array', async () => {
+      await seedVictimInstallations(1);
+      await registerAttackerInstallation();
+
+      const response = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceToken: ['victimtoken0'],
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect(response.data.error).toBe(
+        'schema mismatch for _Installation.deviceToken; expected String but got Array'
+      );
+      expect((await allInstallations()).length).toBe(2);
+    });
+
+    it('skips the cleanup when appIdentifier is unset and the matched installation has none', async () => {
+      const victim = await postInstallation({
+        installationId: 'victim-uuid-0000-0000-00000000010',
+        deviceType: 'ios',
+        deviceToken: 'unscoped-token',
+        appIdentifier: 'com.example.victimapp',
+      });
+      expect(victim.status).toBe(201);
+      // The caller's own installation carries no application scope to fall back to.
+      const attacker = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceType: 'android',
+        deviceToken: 'attacker-token',
+      });
+      expect(attacker.status).toBe(201);
+
+      const response = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceToken: 'unscoped-token',
+        appIdentifier: { __op: 'Delete' },
+      });
+
+      expect(response.status).toBe(200);
+      expect(await allInstallations()).toEqual(
+        ['victim-uuid-0000-0000-00000000010', attackerInstallationId].sort()
+      );
+    });
+
+    it('skips the cleanup when appIdentifier is unset and no installation matches', async () => {
+      const first = await postInstallation({
+        installationId: 'victim-uuid-0000-0000-00000000011',
+        deviceType: 'ios',
+        deviceToken: 'collide-token',
+        appIdentifier: 'com.example.appone',
+      });
+      expect(first.status).toBe(201);
+      const second = await postInstallation({
+        installationId: 'victim-uuid-0000-0000-00000000012',
+        deviceType: 'ios',
+        deviceToken: 'collide-token-2',
+        appIdentifier: 'com.example.apptwo',
+      });
+      expect(second.status).toBe(201);
+
+      // An unregistered installationId reaches the branch that runs when nothing matches.
+      const response = await postInstallation({
+        installationId: 'unregistered-uuid-0000-0000-0001',
+        deviceType: 'android',
+        deviceToken: 'collide-token',
+        appIdentifier: { __op: 'Delete' },
+      });
+
+      expect(response.status).toBe(201);
+      expect(await allInstallations()).toEqual(
+        [
+          'victim-uuid-0000-0000-00000000011',
+          'victim-uuid-0000-0000-00000000012',
+          'unregistered-uuid-0000-0000-0001',
+        ].sort()
+      );
+    });
+
+    it('guards every _Installation field that the schema declares as String and the deduplication queries use', () => {
+      // The guard in `handleInstallation` hardcodes `String` because the schema's own type
+      // check runs too late in the write pipeline to be reused. This pins the two together:
+      // if a field is renamed or redeclared, this fails rather than leaving a stale guard.
+      const { defaultColumns } = require('../lib/Controllers/SchemaController');
+      for (const fieldName of ['deviceToken', 'installationId', 'appIdentifier']) {
+        expect(defaultColumns._Installation[fieldName]).toEqual({ type: 'String' });
+      }
+    });
+
+    it('still deduplicates installations that share a string deviceToken', async () => {
+      const first = await postInstallation({
+        installationId: 'device-uuid-0000-0000-000000000001',
+        deviceType: 'ios',
+        deviceToken: 'sharedtoken',
+      });
+      expect(first.status).toBe(201);
+
+      // The same physical device re-registers under a new installationId: the stale row
+      // holding the device token must still be cleaned up.
+      const second = await postInstallation({
+        installationId: 'device-uuid-0000-0000-000000000002',
+        deviceType: 'ios',
+        deviceToken: 'sharedtoken',
+      });
+      expect(second.status).toBe(201);
+
+      // `handleInstallation` does not await the deduplication delete, so poll for it
+      // rather than assuming it has completed by the time the response is returned.
+      const { sleep } = require('../lib/TestUtils');
+      let installations = await allInstallations();
+      for (let attempt = 0; attempt < 20 && installations.length > 1; attempt++) {
+        await sleep(50);
+        installations = await allInstallations();
+      }
+      expect(installations).toEqual(['device-uuid-0000-0000-000000000002']);
+    });
+  });
 });
