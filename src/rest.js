@@ -241,9 +241,17 @@ function del(config, auth, className, objectId, context) {
       );
     })
     .then(() => {
-      // Notify LiveQuery server if possible
+      // Notify LiveQuery server if possible, unless the beforeLiveQueryEvent
+      // trigger prevents it. Fire-and-forget: the trigger and the notification
+      // must not delay the delete response.
       const perms = schemaController.getClassLevelPermissions(className);
-      config.liveQueryController.onAfterDelete(className, inflatedObject, null, perms);
+      triggers
+        .maybeRunBeforeLiveQueryEventTrigger(auth, inflatedObject, null, config, context)
+        .then(publish => {
+          if (publish) {
+            config.liveQueryController.onAfterDelete(className, inflatedObject, null, perms);
+          }
+        });
       return triggers.maybeRunTrigger(
         triggers.Types.afterDelete,
         auth,
