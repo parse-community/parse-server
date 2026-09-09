@@ -7208,7 +7208,13 @@ describe('Vulnerabilities', () => {
       });
 
       expect(response.status).toBe(201);
-      expect(await allInstallations()).toContain('victim-uuid-0000-0000-00000000011');
+      expect(await allInstallations()).toEqual(
+        [
+          'victim-uuid-0000-0000-00000000011',
+          'victim-uuid-0000-0000-00000000012',
+          'unregistered-uuid-0000-0000-0001',
+        ].sort()
+      );
     });
 
     it('guards every _Installation field that the schema declares as String and the deduplication queries use', () => {
