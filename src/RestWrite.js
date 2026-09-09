@@ -1490,6 +1490,12 @@ RestWrite.prototype.handleInstallation = function () {
             },
           };
           if (this.data.appIdentifier) {
+            // A `Delete` operation is applied only after the deduplication runs, and no
+            // installation matched here to take a scope from. Skip the cleanup rather than
+            // run it unscoped across every application, or query on the operation itself.
+            if (typeof this.data.appIdentifier !== 'string') {
+              return;
+            }
             delQuery['appIdentifier'] = this.data.appIdentifier;
           }
           const installationOpts = this.config.installation || {};
@@ -1546,14 +1552,19 @@ RestWrite.prototype.handleInstallation = function () {
               return idMatch.objectId;
             }
             if (this.data.appIdentifier) {
-              // A `Delete` operation clears `appIdentifier` only after the deduplication
-              // runs, so scope the cleanup to the value the matched installation still
-              // holds; dropping the constraint would let the cleanup reach installations
-              // belonging to other applications.
-              delQuery['appIdentifier'] =
+              // A `Delete` operation is applied only after the deduplication runs, so scope
+              // the cleanup to the value the matched installation still holds. Dropping the
+              // constraint would let the cleanup reach installations of other applications,
+              // and the operation itself cannot match a String, so skip the cleanup when no
+              // scope is available.
+              const appIdentifier =
                 typeof this.data.appIdentifier === 'string'
                   ? this.data.appIdentifier
-                  : idMatch.appIdentifier || this.data.appIdentifier;
+                  : idMatch.appIdentifier;
+              if (typeof appIdentifier !== 'string') {
+                return idMatch.objectId;
+              }
+              delQuery['appIdentifier'] = appIdentifier;
             }
             const installationOpts = this.config.installation || {};
             return InstallationDedup.removeConflictingDeviceToken({
