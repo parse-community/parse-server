@@ -6097,6 +6097,7 @@ describe('Vulnerabilities', () => {
       'Content-Type': 'application/json',
     };
     const attackerInstallationId = 'attacker-uuid-0000-0000-000000000000';
+    const { sleep } = require('../lib/TestUtils');
 
     const postInstallation = body =>
       request({
@@ -6115,6 +6116,10 @@ describe('Vulnerabilities', () => {
       }).catch(e => e);
 
     const allInstallations = async () => {
+      // `handleInstallation` does not await its deduplication delete, so give any pending
+      // delete time to land before asserting; otherwise an assertion that rows survived
+      // could pass simply because the delete had not run yet.
+      await sleep(100);
       const query = new Parse.Query(Parse.Installation);
       query.limit(1000);
       const results = await query.find({ useMasterKey: true });
@@ -6396,7 +6401,6 @@ describe('Vulnerabilities', () => {
 
       // `handleInstallation` does not await the deduplication delete, so poll for it
       // rather than assuming it has completed by the time the response is returned.
-      const { sleep } = require('../lib/TestUtils');
       let installations = await allInstallations();
       for (let attempt = 0; attempt < 20 && installations.length > 1; attempt++) {
         await sleep(50);
