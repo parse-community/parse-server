@@ -686,6 +686,8 @@ Parse Server deduplicates `_Installation` records when a new install collides wi
 
 When `true`, the dedup operation runs with the caller's auth context so ACL and CLP are honored. When `false`, the dedup runs as master and bypasses both. Master and maintenance keys always bypass regardless of this flag.
 
+Because what this option enforces is the ACL and the class-level permissions, it has no effect on its own for a record that carries no ACL under permissive class-level permissions — which is what the Parse SDKs create, as an unauthenticated device registration has no principal to grant write access to. To scope the deduplication, combine this option with either an ACL on `_Installation` records or class-level permissions that withhold the `delete` operation from the caller.
+
 #### `duplicateDeviceTokenAction`
 
 What Parse Server does to the conflicting `_Installation` row(s) when a new install's `deviceToken` collides with an existing row.
