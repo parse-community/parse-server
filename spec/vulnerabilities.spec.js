@@ -7138,6 +7138,79 @@ describe('Vulnerabilities', () => {
       );
     });
 
+    it('reports the received type when a deviceToken is an array', async () => {
+      await seedVictimInstallations(1);
+      await registerAttackerInstallation();
+
+      const response = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceToken: ['victimtoken0'],
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect(response.data.error).toBe(
+        'schema mismatch for _Installation.deviceToken; expected String but got Array'
+      );
+      expect((await allInstallations()).length).toBe(2);
+    });
+
+    it('skips the cleanup when appIdentifier is unset and the matched installation has none', async () => {
+      const victim = await postInstallation({
+        installationId: 'victim-uuid-0000-0000-00000000010',
+        deviceType: 'ios',
+        deviceToken: 'unscoped-token',
+        appIdentifier: 'com.example.victimapp',
+      });
+      expect(victim.status).toBe(201);
+      // The caller's own installation carries no application scope to fall back to.
+      const attacker = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceType: 'android',
+        deviceToken: 'attacker-token',
+      });
+      expect(attacker.status).toBe(201);
+
+      const response = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceToken: 'unscoped-token',
+        appIdentifier: { __op: 'Delete' },
+      });
+
+      expect(response.status).toBe(200);
+      expect(await allInstallations()).toEqual(
+        ['victim-uuid-0000-0000-00000000010', attackerInstallationId].sort()
+      );
+    });
+
+    it('skips the cleanup when appIdentifier is unset and no installation matches', async () => {
+      const first = await postInstallation({
+        installationId: 'victim-uuid-0000-0000-00000000011',
+        deviceType: 'ios',
+        deviceToken: 'collide-token',
+        appIdentifier: 'com.example.appone',
+      });
+      expect(first.status).toBe(201);
+      const second = await postInstallation({
+        installationId: 'victim-uuid-0000-0000-00000000012',
+        deviceType: 'ios',
+        deviceToken: 'collide-token-2',
+        appIdentifier: 'com.example.apptwo',
+      });
+      expect(second.status).toBe(201);
+
+      // An unregistered installationId reaches the branch that runs when nothing matches.
+      const response = await postInstallation({
+        installationId: 'unregistered-uuid-0000-0000-0001',
+        deviceType: 'android',
+        deviceToken: 'collide-token',
+        appIdentifier: { __op: 'Delete' },
+      });
+
+      expect(response.status).toBe(201);
+      expect(await allInstallations()).toContain('victim-uuid-0000-0000-00000000011');
+    });
+
     it('guards every _Installation field that the schema declares as String and the deduplication queries use', () => {
       // The guard in `handleInstallation` hardcodes `String` because the schema's own type
       // check runs too late in the write pipeline to be reused. This pins the two together:
