@@ -1702,4 +1702,32 @@ describe('Auth Adapter features', () => {
       expect(res.status).toBeLessThan(500);
     });
   });
+
+  it('does not crash fetching a _User with stale authData from a removed built-in provider (#10526)', async () => {
+    // Configure a built-in code-auth provider, then simulate a _User that still carries
+    // its `_auth_data_<provider>` after the provider is later removed from config.
+    await reconfigureServer({ auth: { line: { clientId: 'x', clientSecret: 'y' } } });
+    const config = Config.get(Parse.applicationId);
+    const user = new Parse.User();
+    await user.save({ username: 'stale-line-user', password: 'pass' });
+    // Inject stale built-in-provider authData directly, bypassing auth validation — this
+    // reproduces a row created while `line` was still configured.
+    const staleAuthData = { id: 'stale-line-id', access_token: 'stale-token' };
+    await config.database.update(
+      '_User',
+      { objectId: user.id },
+      { authData: { line: staleAuthData } }
+    );
+
+    // Remove the provider from config. `line` is still a built-in adapter, so loadAuthAdapter
+    // reaches validateOptions with no options and throws during afterFind.
+    await reconfigureServer({ auth: {} });
+
+    // Full fetch (no keys selected) with the master key mirrors Parse Dashboard opening _User.
+    const fetched = new Parse.User();
+    fetched.id = user.id;
+    await expectAsync(fetched.fetch({ useMasterKey: true })).toBeResolved();
+    // Skip-and-keep-raw: the stale provider's authData is returned unchanged, not stripped.
+    expect(fetched.get('authData')).toEqual({ line: staleAuthData });
+  });
 });
