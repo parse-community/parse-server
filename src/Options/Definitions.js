@@ -416,7 +416,7 @@ module.exports.ParseServerOptions = {
   },
   maxUploadSize: {
     env: 'PARSE_SERVER_MAX_UPLOAD_SIZE',
-    help: 'Max file size for uploads, defaults to 20mb',
+    help: 'The maximum size of the HTTP request body for file uploads, for example `20mb`. This limits the request body size, not the file size: the encoded upload is larger than the file itself, so set this higher than your largest intended file to allow for encoding overhead. Files sent as base64 (for example via the JavaScript SDK) inflate the payload by roughly 33%, and multipart uploads add boundary and header overhead. Defaults to `20mb`.',
     default: '20mb',
   },
   middleware: {
