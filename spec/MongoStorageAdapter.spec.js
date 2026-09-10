@@ -526,6 +526,55 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     expect(createdIndex.sparse).toBeFalsy();
   });
 
+  it('should ignore IndexKeySpecsConflict for an equivalent existing index', async () => {
+    const adapter = new MongoStorageAdapter({ uri: databaseURI });
+    const error = Object.assign(new Error('IndexKeySpecsConflict'), { code: 86 });
+    const mongoCollection = {
+      createIndex: jasmine.createSpy('createIndex').and.rejectWith(error),
+      indexes: jasmine.createSpy('indexes').and.resolveTo([
+        {
+          name: 'ttl',
+          key: { expire: 1 },
+          sparse: true,
+          expireAfterSeconds: 0,
+        },
+      ]),
+    };
+    spyOn(adapter, '_adaptiveCollection').and.resolveTo({ _mongoCollection: mongoCollection });
+
+    const schema = { fields: { expire: { type: 'Date' } } };
+    const result = await adapter.ensureIndex('_Idempotency', schema, ['expire'], 'ttl', false, {
+      ttl: 0,
+    });
+
+    expect(result).toBe('ttl');
+    expect(mongoCollection.indexes).toHaveBeenCalled();
+  });
+
+  it('should reject IndexKeySpecsConflict for a different existing index', async () => {
+    const adapter = new MongoStorageAdapter({ uri: databaseURI });
+    const error = Object.assign(new Error('IndexKeySpecsConflict'), { code: 86 });
+    const mongoCollection = {
+      createIndex: jasmine.createSpy('createIndex').and.rejectWith(error),
+      indexes: jasmine.createSpy('indexes').and.resolveTo([
+        {
+          name: 'ttl',
+          key: { other: 1 },
+          sparse: true,
+          expireAfterSeconds: 0,
+        },
+      ]),
+    };
+    spyOn(adapter, '_adaptiveCollection').and.resolveTo({ _mongoCollection: mongoCollection });
+
+    const schema = { fields: { expire: { type: 'Date' } } };
+    await adapter.ensureIndex('_Idempotency', schema, ['expire'], 'ttl', false, { ttl: 0 }).then(
+      () => fail('Expected IndexKeySpecsConflict to be rejected'),
+      rejectedError => expect(rejectedError).toBe(error)
+    );
+    expect(mongoCollection.indexes).toHaveBeenCalled();
+  });
+
   if (process.env.MONGODB_TOPOLOGY === 'replicaset') {
     describe('transactions', () => {
       const headers = {
