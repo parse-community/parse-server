@@ -684,11 +684,11 @@ export interface PasswordPolicyOptions {
   <br><br>
   If used in combination with `validatorCallback`, the password must pass both to be accepted. */
   validatorPattern: ?string;
-  /*   */
   /* Set a callback function to validate a password to be accepted.
+  Can return a `boolean` or `Promise<boolean>`.
   <br><br>
   If used in combination with `validatorPattern`, the password must pass both to be accepted. */
-  validatorCallback: ?() => void;
+  validatorCallback: ?(password: string) => boolean | Promise<boolean>;
   /* Set the error message to be sent.
   <br><br>
   Default is `Password does not meet the Password Policy requirements.` */

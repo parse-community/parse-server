@@ -265,7 +265,7 @@
  * @property {Boolean} resetTokenReuseIfValid Set to `true` if a password reset token should be reused in case another token is requested but there is a token that is still valid, i.e. has not expired. This avoids the often observed issue that a user requests multiple emails and does not know which link contains a valid token because each newly generated token would invalidate the previous token.<br><br>Default is `false`.
  * @property {Number} resetTokenValidityDuration Set the validity duration of the password reset token in seconds after which the token expires. The token is used in the link that is set in the email. After the token expires, the link becomes invalid and a new link has to be sent. If the option is not set or set to `undefined`, then the token never expires.<br><br>For example, to expire the token after 2 hours, set a value of 7200 seconds (= 60 seconds * 60 minutes * 2 hours).<br><br>Default is `undefined`.
  * @property {String} validationError Set the error message to be sent.<br><br>Default is `Password does not meet the Password Policy requirements.`
- * @property {Function} validatorCallback Set a callback function to validate a password to be accepted.<br><br>If used in combination with `validatorPattern`, the password must pass both to be accepted.
+ * @property {Function} validatorCallback Set a callback function to validate a password to be accepted. Can return a boolean or `Promise<boolean>`.<br><br>If used in combination with `validatorPattern`, the password must pass both to be accepted.
  * @property {String} validatorPattern Set the regular expression validation pattern a password must match to be accepted.<br><br>If used in combination with `validatorCallback`, the password must pass both to be accepted.
  */
 
