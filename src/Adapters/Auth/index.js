@@ -1,6 +1,7 @@
 import loadAdapter from '../AdapterLoader';
 import Parse from 'parse/node';
 import AuthAdapter from './AuthAdapter';
+import logger from '../../logger';
 
 const apple = require('./apple');
 const digits = require('./twitter'); // digits tokens are validated by twitter
@@ -228,7 +229,16 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
     const adapters = Object.keys(authData);
     await Promise.all(
       adapters.map(async provider => {
-        const authAdapter = getValidatorForProvider(provider);
+        let authAdapter;
+        try {
+          authAdapter = getValidatorForProvider(provider);
+        } catch (e) {
+          // A provider that is no longer configured (or misconfigured) throws in
+          // validateOptions; that must not break reads of users still carrying its
+          // legacy authData (#9885). Skip it, as getProviders does for the same call.
+          logger.verbose(`Skipping afterFind for unconfigured auth provider "${provider}": ${e}`);
+          return;
+        }
         if (!authAdapter) {
           return;
         }
