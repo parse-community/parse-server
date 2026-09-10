@@ -309,6 +309,24 @@ describe('Pages Router', () => {
         expect(replacedContent.text).not.toContain('{{error}}');
       });
 
+      it('omits the username clause on the password reset page when no username is set', async () => {
+        await expectAsync(router.goToPage(req, pages.passwordReset)).toBeResolved();
+
+        const replacedContent = await pageResponse.calls.all()[0].returnValue;
+        expect(replacedContent.text).not.toContain('for your account:');
+        expect(replacedContent.text).not.toContain('undefined');
+      });
+
+      it('shows the username on the password reset page when a username is set', async () => {
+        req.params = { appId: config.appId };
+        req.query.username = 'exampleUsername';
+
+        await expectAsync(router.passwordReset(req)).toBeResolved();
+
+        const replacedContent = await pageResponse.calls.all()[0].returnValue;
+        expect(replacedContent.text).toContain('for your account: exampleUsername');
+      });
+
       it('fills placeholders from config object', async () => {
         config.pages.enableLocalization = false;
         config.pages.placeholders = {
