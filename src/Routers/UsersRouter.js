@@ -578,6 +578,12 @@ export class UsersRouter extends ClassesRouter {
 
     // We can find the user using token
     if (token) {
+      // Match only EXPIRED tokens (`$lt` now) on purpose. This branch powers the
+      // "resend password reset email" flow: when a reset link has expired, PagesRouter
+      // preserves the expired token on the link-expired page, and the user resends from
+      // it to get a fresh token + email. A still-valid token needs no resend. Do NOT
+      // change `$lt` to `$gt` — that breaks this flow and the
+      // 'can resend email using an expired reset password token' spec. (#9935)
       userResults = await req.config.database.find('_User', {
         _perishable_token: token,
         _perishable_token_expires_at: { $lt: Parse._encode(new Date()) },
