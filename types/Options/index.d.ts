@@ -226,7 +226,7 @@ export interface AccountLockoutOptions {
 }
 export interface PasswordPolicyOptions {
     validatorPattern?: string;
-    validatorCallback?: () => void;
+    validatorCallback?: (password: string) => boolean;
     validationError?: string;
     doNotAllowUsername?: boolean;
     maxPasswordAge?: number;
