@@ -553,7 +553,12 @@ export function maybeRunAfterFindTrigger(
         }
         return responseFromTrigger;
       })
-      .then(success, error);
+      .then(success, error)
+      // See maybeRunTrigger: a throw in the success/error path must reject rather
+      // than leave this promise unsettled and hang the request (#7490).
+      .catch(e =>
+        reject(resolveError(e, { code: Parse.Error.SCRIPT_FAILED, message: 'Script failed.' }))
+      );
   }).then(resultsAsJSON => {
     logTriggerAfterHook(
       triggerType,
@@ -925,7 +930,7 @@ async function builtInTriggerValidator(options, request, auth) {
 // Resolves to an object, empty or containing an object key. A beforeSave
 // trigger will set the object key to the rest format object to save.
 // originalParseObject is optional, we only need that for before/afterSave functions
-export function maybeRunTrigger(
+export async function maybeRunTrigger(
   triggerType,
   auth,
   parseObject,
@@ -934,100 +939,110 @@ export function maybeRunTrigger(
   context
 ) {
   if (!parseObject) {
-    return Promise.resolve({});
+    return {};
   }
-  return new Promise(function (resolve, reject) {
-    var trigger = getTrigger(parseObject.className, triggerType, config.applicationId);
-    if (!trigger) { return resolve(); }
-    var request = getRequestObject(
-      triggerType,
-      auth,
-      parseObject,
-      originalParseObject,
-      config,
-      context
-    );
-    var { success, error } = getResponseObject(
-      request,
-      object => {
-        logTriggerSuccessBeforeHook(
-          triggerType,
-          parseObject.className,
-          parseObject.toJSON(),
-          object,
-          auth,
-          triggerType.startsWith('after')
-            ? config.logLevels.triggerAfter
-            : config.logLevels.triggerBeforeSuccess
-        );
-        if (
-          triggerType === Types.beforeSave ||
-          triggerType === Types.afterSave ||
-          triggerType === Types.beforeDelete ||
-          triggerType === Types.afterDelete
-        ) {
-          Object.assign(context, request.context);
-        }
-        resolve(object);
-      },
-      error => {
-        logTriggerErrorBeforeHook(
+  const trigger = getTrigger(parseObject.className, triggerType, config.applicationId);
+  if (!trigger) {
+    return;
+  }
+  const request = getRequestObject(
+    triggerType,
+    auth,
+    parseObject,
+    originalParseObject,
+    config,
+    context
+  );
+
+  try {
+    await maybeRunValidator(request, `${triggerType}.${parseObject.className}`, auth);
+
+    // AfterSave and afterDelete triggers can return a promise, which is awaited
+    // here so trigger execution is synced with the RestWrite.execute() call. If
+    // they do not return a promise, they run async code parallel to it.
+    let triggerResult;
+    if (request.skipWithMasterKey) {
+      triggerResult = undefined;
+    } else {
+      const returned = trigger(request);
+      if (
+        triggerType === Types.afterSave ||
+        triggerType === Types.afterDelete ||
+        triggerType === Types.afterLogin
+      ) {
+        logTriggerAfterHook(
           triggerType,
           parseObject.className,
           parseObject.toJSON(),
           auth,
-          error,
-          config.logLevels.triggerBeforeError
+          config.logLevels.triggerAfter
         );
-        reject(error);
       }
+      if (triggerType === Types.beforeSave) {
+        // beforeSave is expected to return null (nothing); only a returned object
+        // with an `object` key (e.g. from an express before hook) is honoured.
+        const response =
+          returned && typeof returned.then === 'function' ? await returned : null;
+        triggerResult = response && response.object ? response : null;
+      } else {
+        triggerResult = await returned;
+      }
+    }
+
+    // getResponseObject shapes the trigger's return value into the REST response.
+    // Serialising an object with a malformed pointer can throw here; awaiting the
+    // wrapped promise lets that reject cleanly instead of hanging forever (#7490).
+    const response = await new Promise((resolve, reject) => {
+      const { success, error } = getResponseObject(request, resolve, reject);
+      try {
+        success(triggerResult);
+      } catch (e) {
+        error(e);
+      }
+    });
+
+    logTriggerSuccessBeforeHook(
+      triggerType,
+      parseObject.className,
+      parseObject.toJSON(),
+      response,
+      auth,
+      triggerType.startsWith('after')
+        ? config.logLevels.triggerAfter
+        : config.logLevels.triggerBeforeSuccess
     );
-
-    // AfterSave and afterDelete triggers can return a promise, which if they
-    // do, needs to be resolved before this promise is resolved,
-    // so trigger execution is synced with RestWrite.execute() call.
-    // If triggers do not return a promise, they can run async code parallel
-    // to the RestWrite.execute() call.
-    return Promise.resolve()
-      .then(() => {
-        return maybeRunValidator(request, `${triggerType}.${parseObject.className}`, auth);
-      })
-      .then(() => {
-        if (request.skipWithMasterKey) {
-          return Promise.resolve();
-        }
-        const promise = trigger(request);
-        if (
-          triggerType === Types.afterSave ||
-          triggerType === Types.afterDelete ||
-          triggerType === Types.afterLogin
-        ) {
-          logTriggerAfterHook(
-            triggerType,
-            parseObject.className,
-            parseObject.toJSON(),
-            auth,
-            config.logLevels.triggerAfter
-          );
-        }
-        // beforeSave is expected to return null (nothing)
-        if (triggerType === Types.beforeSave) {
-          if (promise && typeof promise.then === 'function') {
-            return promise.then(response => {
-              // response.object may come from express routing before hook
-              if (response && response.object) {
-                return response;
-              }
-              return null;
-            });
-          }
-          return null;
-        }
-
-        return promise;
-      })
-      .then(success, error);
-  });
+    if (
+      triggerType === Types.beforeSave ||
+      triggerType === Types.afterSave ||
+      triggerType === Types.beforeDelete ||
+      triggerType === Types.afterDelete
+    ) {
+      Object.assign(context, request.context);
+    }
+    return response;
+  } catch (e) {
+    const resolvedError = resolveError(e, {
+      code: Parse.Error.SCRIPT_FAILED,
+      message: 'Script failed. Unknown error.',
+    });
+    let objectForLog;
+    try {
+      objectForLog = parseObject.toJSON();
+    } catch {
+      // A malformed object (e.g. a pointer with an empty objectId) cannot be
+      // serialised; log without it rather than mask the original error (#7490).
+      objectForLog = { className: parseObject.className };
+    }
+    logTriggerErrorBeforeHook(
+      triggerType,
+      parseObject.className,
+      objectForLog,
+      auth,
+      resolvedError,
+      config.logLevels.triggerBeforeError
+    );
+    throw resolvedError;
+  }
 }
 
 // Converts a REST-format object to a Parse.Object
