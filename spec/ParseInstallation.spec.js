@@ -1417,6 +1417,36 @@ describe('Installations', () => {
       database = config.database;
     }
 
+    // Grants the public every operation on `_Installation` except those overridden.
+    // `find` and `delete` are blocked for non-master callers at the REST layer
+    // regardless, but the deduplication delete runs below that layer, so the
+    // class-level permission is what it is checked against once `enforceAuth` is on.
+    async function setInstallationClassLevelPermissions(overrides) {
+      const response = await request({
+        method: 'PUT',
+        url: 'http://localhost:8378/1/schemas/_Installation',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          classLevelPermissions: Object.assign(
+            {
+              get: { '*': true },
+              find: { '*': true },
+              count: { '*': true },
+              create: { '*': true },
+              update: { '*': true },
+              addField: { '*': true },
+            },
+            overrides
+          ),
+        }),
+      });
+      expect(response.status).toBe(200);
+    }
+
     it('default options destroy conflicting rows', async () => {
       const t = randomUUID();
       await rest.create(config, auth.nobody(config), '_Installation', {
@@ -1536,31 +1566,7 @@ describe('Installations', () => {
         installationId: 'iid-clp-existing',
       });
 
-      const schemaResponse = await request({
-        method: 'PUT',
-        url: 'http://localhost:8378/1/schemas/_Installation',
-        headers: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-Master-Key': 'test',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          classLevelPermissions: {
-            get: { '*': true },
-            find: { '*': true },
-            count: { '*': true },
-            create: { '*': true },
-            update: { '*': true },
-            addField: { '*': true },
-            // The only operation withheld from the public. `find` and `delete` are
-            // blocked for non-master callers at the REST layer regardless, but the
-            // dedup delete runs below that layer, so the class-level permission is
-            // what it is checked against once `enforceAuth` is on.
-            delete: {},
-          },
-        }),
-      });
-      expect(schemaResponse.status).toBe(200);
+      await setInstallationClassLevelPermissions({ delete: {} });
 
       await rest.create(config, auth.nobody(config), '_Installation', {
         deviceToken: t,
@@ -1590,27 +1596,7 @@ describe('Installations', () => {
         installationId: 'iid-clp-existing',
       });
 
-      const schemaResponse = await request({
-        method: 'PUT',
-        url: 'http://localhost:8378/1/schemas/_Installation',
-        headers: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-Master-Key': 'test',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          classLevelPermissions: {
-            get: { '*': true },
-            find: { '*': true },
-            count: { '*': true },
-            create: { '*': true },
-            update: { '*': true },
-            addField: { '*': true },
-            delete: {},
-          },
-        }),
-      });
-      expect(schemaResponse.status).toBe(200);
+      await setInstallationClassLevelPermissions({ delete: {} });
 
       await rest.create(config, auth.nobody(config), '_Installation', {
         deviceToken: t,
