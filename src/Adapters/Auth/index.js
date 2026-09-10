@@ -213,7 +213,10 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
   // To handle the test cases on configuration
   const getValidatorForProvider = function (provider) {
     if (provider === 'anonymous' && !_enableAnonymousUsers) {
-      return { validator: undefined };
+      // Return undefined (not a partial object) so every consumer's `if (!authAdapter)` guard
+      // fires, rather than passing a shape with no `adapter` key that crashes runAfterFind /
+      // handleChallenge when they read `adapter.afterFind` / destructure `adapter` (#8681).
+      return;
     }
     const authAdapter = loadAuthAdapter(provider, authOptions);
     if (!authAdapter) { return; }
