@@ -62,5 +62,6 @@ lib/
 # Redis Dump
 dump.rdb
 
-# AI agents
-.claude
+# AI agents (shared skills in .claude/skills are tracked)
+.claude/*
+!.claude/skills
