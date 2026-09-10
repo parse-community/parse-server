@@ -838,8 +838,9 @@ export class FilesRouter {
     try {
       const config = Config.get(req.params.appId);
       if (!config) {
-        res.status(200);
-        res.json({});
+        const error = createSanitizedHttpError(403, 'Invalid application ID.', config);
+        res.status(error.status);
+        res.json({ error: error.message });
         return;
       }
       FilesRouter._validateFileDownload(req, config);
