@@ -664,7 +664,7 @@ export function promiseEnforceMasterKeyAccess(request) {
 
 export const addRateLimit = (route, config, cloud) => {
   if (typeof config === 'string') {
-    config = Config.get(config);
+    config = AppCache.get(config);
   }
   for (const key in route) {
     if (!RateLimitOptions[key]) {
