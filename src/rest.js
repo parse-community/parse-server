@@ -12,6 +12,7 @@ var Parse = require('parse/node').Parse;
 var RestQuery = require('./RestQuery');
 var RestWrite = require('./RestWrite');
 var triggers = require('./triggers');
+const { inflateQuery } = require('./cloud-code/QueryAdapter');
 const Auth = require('./Auth');
 const { enforceRoleSecurity } = require('./SharedRest');
 const { createSanitizedError } = require('./Error');
@@ -106,7 +107,7 @@ async function runFindTriggers(
       className,
       objectsForAfterFind,
       config,
-      new Parse.Query(className).withJSON({ where: restWhere, ...restOptions }),
+      inflateQuery(className, { where: restWhere, ...restOptions }),
       context,
       isGet
     );
