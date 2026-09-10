@@ -14,6 +14,10 @@ function equalObjects(a, b) {
   if (a === b) {
     return true;
   }
+  // typeof null is 'object', so guard before dereferencing either side (#7929)
+  if (a === null || b === null) {
+    return a === b;
+  }
   if (toString.call(a) === '[object Date]') {
     if (toString.call(b) === '[object Date]') {
       return +a === +b;
