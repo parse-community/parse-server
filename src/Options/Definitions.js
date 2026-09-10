@@ -1599,4 +1599,9 @@ module.exports.LogLevels = {
     help: 'Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on success. Default is `info`. See [LogLevel](LogLevel.html) for available values.',
     default: 'info',
   },
+  deprecation: {
+    env: 'PARSE_SERVER_LOG_LEVELS_DEPRECATION',
+    help: 'Log level used for deprecation warnings. Default is `warn`. Set to `silent` to suppress all deprecations. You can also specify per-deprecation log levels by appending the option key, e.g., `deprecation_fileUpload`. See [LogLevel](LogLevel.html) for available values.',
+    default: 'warn',
+  },
 };

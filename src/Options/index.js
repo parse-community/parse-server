@@ -954,4 +954,8 @@ export interface LogLevels {
   :DEFAULT: info
   */
   signupUsernameTaken: ?string;
+  /* Log level used for deprecation warnings. Default is `warn`. Set to `silent` to suppress all deprecations. You can also specify per-deprecation log levels by appending the option key, e.g., `deprecation_fileUpload`. See [LogLevel](LogLevel.html) for available values.
+  :DEFAULT: warn
+  */
+  deprecation: ?string;
 }
