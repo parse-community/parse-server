@@ -1,5 +1,6 @@
 import { ParsePubSub } from './ParsePubSub';
 import Parse from 'parse/node';
+import { toFullJSON } from '../cloud-code/ObjectAdapter';
 import logger from '../logger';
 
 class ParseCloudCodePublisher {
@@ -44,10 +45,10 @@ class ParseCloudCodePublisher {
     );
     // We need the full JSON which includes className
     const message = {
-      currentParseObject: request.object._toFullJSON(),
+      currentParseObject: toFullJSON(request.object),
     };
     if (request.original) {
-      message.originalParseObject = request.original._toFullJSON();
+      message.originalParseObject = toFullJSON(request.original);
     }
     if (request.classLevelPermissions) {
       message.classLevelPermissions = request.classLevelPermissions;

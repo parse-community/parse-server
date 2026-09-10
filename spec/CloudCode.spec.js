@@ -2673,6 +2673,19 @@ describe('beforeFind hooks', () => {
     });
   });
 
+  it('should preserve a falsy query override from beforeFind (limit 0)', async () => {
+    Parse.Cloud.beforeFind('MyObject', req => {
+      req.query.limit(0);
+    });
+
+    const obj0 = new Parse.Object('MyObject');
+    const obj1 = new Parse.Object('MyObject');
+    await Parse.Object.saveAll([obj0, obj1]);
+
+    const results = await new Parse.Query('MyObject').find();
+    expect(results.length).toBe(0);
+  });
+
   it('should have object found with nested relational data query', async () => {
     const obj1 = Parse.Object.extend('TestObject');
     const obj2 = Parse.Object.extend('TestObject2');

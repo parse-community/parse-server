@@ -1,6 +1,7 @@
 const Parse = require('parse/node');
 import { isDeepStrictEqual } from 'util';
 import { getRequestObject, resolveError } from './triggers';
+import { inflateObject } from './cloud-code/ObjectAdapter';
 import { logger } from './logger';
 import { LRUCache as LRU } from 'lru-cache';
 import RestQuery from './RestQuery';
@@ -140,7 +141,7 @@ const getAuthForSessionToken = async function ({
         cacheController.user.del(sessionToken);
         throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token is expired.');
       }
-      const cachedUser = Parse.Object.fromJSON(userJSON);
+      const cachedUser = inflateObject(userJSON);
       renewSessionIfNeeded({ config, sessionToken });
       return Promise.resolve(
         new Auth({
@@ -154,32 +155,21 @@ const getAuthForSessionToken = async function ({
     }
   }
 
-  let results;
-  if (config) {
-    const restOptions = {
-      limit: 1,
-      include: 'user',
-    };
-    const RestQuery = require('./RestQuery');
-    const query = await RestQuery({
-      method: RestQuery.Method.get,
-      config,
-      runBeforeFind: false,
-      auth: master(config),
-      className: '_Session',
-      restWhere: { sessionToken },
-      restOptions,
-    });
-    results = (await query.execute()).results;
-  } else {
-    results = (
-      await new Parse.Query(Parse.Session)
-        .limit(1)
-        .include('user')
-        .equalTo('sessionToken', sessionToken)
-        .find({ useMasterKey: true })
-    ).map(obj => obj.toJSON());
-  }
+  const restOptions = {
+    limit: 1,
+    include: 'user',
+  };
+  const RestQuery = require('./RestQuery');
+  const query = await RestQuery({
+    method: RestQuery.Method.get,
+    config,
+    runBeforeFind: false,
+    auth: master(config),
+    className: '_Session',
+    restWhere: { sessionToken },
+    restOptions,
+  });
+  const results = (await query.execute()).results;
 
   if (results.length !== 1 || !results[0]['user']) {
     throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
@@ -203,7 +193,7 @@ const getAuthForSessionToken = async function ({
     cacheController.user.put(sessionToken, { ...obj, expiresAt: expiresAt?.toISOString() });
   }
   renewSessionIfNeeded({ config, session, sessionToken });
-  const userObject = Parse.Object.fromJSON(obj);
+  const userObject = inflateObject(obj);
   return new Auth({
     config,
     cacheController,
@@ -239,7 +229,7 @@ var getAuthForLegacySessionToken = async function ({ config, sessionToken, insta
     }
 
     obj.className = '_User';
-    const userObject = Parse.Object.fromJSON(obj);
+    const userObject = inflateObject(obj);
     return new Auth({
       config,
       isMaster: false,
@@ -267,29 +257,23 @@ Auth.prototype.getUserRoles = function () {
 Auth.prototype.getRolesForUser = async function () {
   //Stack all Parse.Role
   const results = [];
-  if (this.config) {
-    const restWhere = {
-      users: {
-        __type: 'Pointer',
-        className: '_User',
-        objectId: this.user.id,
-      },
-    };
-    const RestQuery = require('./RestQuery');
-    const query = await RestQuery({
-      method: RestQuery.Method.find,
-      runBeforeFind: false,
-      config: this.config,
-      auth: master(this.config),
-      className: '_Role',
-      restWhere,
-    });
-    await query.each(result => results.push(result));
-  } else {
-    await new Parse.Query(Parse.Role)
-      .equalTo('users', this.user)
-      .each(result => results.push(result.toJSON()), { useMasterKey: true });
-  }
+  const restWhere = {
+    users: {
+      __type: 'Pointer',
+      className: '_User',
+      objectId: this.user.id,
+    },
+  };
+  const RestQuery = require('./RestQuery');
+  const query = await RestQuery({
+    method: RestQuery.Method.find,
+    runBeforeFind: false,
+    config: this.config,
+    auth: master(this.config),
+    className: '_Role',
+    restWhere,
+  });
+  await query.each(result => results.push(result));
   return results;
 };
 
@@ -355,37 +339,24 @@ Auth.prototype.clearRoleCache = function (sessionToken) {
 Auth.prototype.getRolesByIds = async function (ins) {
   const results = [];
   // Build an OR query across all parentRoles
-  if (!this.config) {
-    await new Parse.Query(Parse.Role)
-      .containedIn(
-        'roles',
-        ins.map(id => {
-          const role = new Parse.Object(Parse.Role);
-          role.id = id;
-          return role;
-        })
-      )
-      .each(result => results.push(result.toJSON()), { useMasterKey: true });
-  } else {
-    const roles = ins.map(id => {
-      return {
-        __type: 'Pointer',
-        className: '_Role',
-        objectId: id,
-      };
-    });
-    const restWhere = { roles: { $in: roles } };
-    const RestQuery = require('./RestQuery');
-    const query = await RestQuery({
-      method: RestQuery.Method.find,
-      config: this.config,
-      runBeforeFind: false,
-      auth: master(this.config),
+  const roles = ins.map(id => {
+    return {
+      __type: 'Pointer',
       className: '_Role',
-      restWhere,
-    });
-    await query.each(result => results.push(result));
-  }
+      objectId: id,
+    };
+  });
+  const restWhere = { roles: { $in: roles } };
+  const RestQuery = require('./RestQuery');
+  const query = await RestQuery({
+    method: RestQuery.Method.find,
+    config: this.config,
+    runBeforeFind: false,
+    auth: master(this.config),
+    className: '_Role',
+    restWhere,
+  });
+  await query.each(result => results.push(result));
   return results;
 };
 
@@ -585,7 +556,7 @@ const checkIfUserHasProvidedConfiguredProvidersForLogin = (
 const handleAuthDataValidation = async (authData, req, foundUser) => {
   let user;
   if (foundUser) {
-    user = Parse.User.fromJSON({ className: '_User', ...foundUser });
+    user = inflateObject({ className: '_User', ...foundUser });
     // Find user by session and current objectId; only pass user if it's the current user or master key is provided
   } else if (
     (req.auth &&

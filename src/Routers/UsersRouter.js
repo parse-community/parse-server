@@ -1,6 +1,7 @@
 // These methods handle the User-related routes.
 
 import Parse from 'parse/node';
+import { inflateObject } from '../cloud-code/ObjectAdapter';
 import Config from '../Config';
 import AccountLockout from '../AccountLockout';
 import ClassesRouter from './ClassesRouter';
@@ -161,7 +162,7 @@ export class UsersRouter extends ClassesRouter {
             master: req.auth.isMaster,
             ip: req.config.ip,
             installationId: req.auth.installationId,
-            object: Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
+            object: inflateObject(Object.assign({ className: '_User' }, user)),
             createdWith: RestWrite.buildCreatedWith('login', authProvider),
           };
 
@@ -303,7 +304,7 @@ export class UsersRouter extends ClassesRouter {
     await maybeRunTrigger(
       TriggerTypes.beforeLogin,
       req.auth,
-      Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
+      inflateObject(Object.assign({ className: '_User' }, user)),
       null,
       req.config,
       req.info.context
@@ -336,7 +337,7 @@ export class UsersRouter extends ClassesRouter {
 
     await createSession();
 
-    const afterLoginUser = Parse.User.fromJSON(Object.assign({ className: '_User' }, user));
+    const afterLoginUser = inflateObject(Object.assign({ className: '_User' }, user));
     await maybeRunTrigger(
       TriggerTypes.afterLogin,
       { ...req.auth, user: afterLoginUser },
@@ -355,7 +356,7 @@ export class UsersRouter extends ClassesRouter {
         : new Auth.Auth({
           config: req.config,
           isMaster: false,
-          user: Parse.Object.fromJSON({ className: '_User', objectId: user.objectId }),
+          user: inflateObject({ className: '_User', objectId: user.objectId }),
           installationId: req.info.installationId,
         });
     let filteredUser;
@@ -468,7 +469,7 @@ export class UsersRouter extends ClassesRouter {
             : new Auth.Auth({
               config: req.config,
               isMaster: false,
-              user: Parse.Object.fromJSON({ className: '_User', objectId: user.objectId }),
+              user: inflateObject({ className: '_User', objectId: user.objectId }),
               installationId: req.info.installationId,
             });
         let filteredUser;
@@ -750,7 +751,7 @@ export class UsersRouter extends ClassesRouter {
         // Find the provider used to find the user
         const provider = Object.keys(authData).find(key => authData[key] && authData[key].id);
 
-        parseUser = Parse.User.fromJSON({ className: '_User', ...results[0] });
+        parseUser = inflateObject({ className: '_User', ...results[0] });
         request = getRequestObject(undefined, req.auth, parseUser, parseUser, req.config);
         request.isChallenge = true;
         // Validate authData used to identify the user to avoid brute-force attack on `id`
@@ -767,7 +768,7 @@ export class UsersRouter extends ClassesRouter {
     }
 
     if (!parseUser) {
-      parseUser = user ? Parse.User.fromJSON({ className: '_User', ...user }) : undefined;
+      parseUser = user ? inflateObject({ className: '_User', ...user }) : undefined;
     }
 
     if (!request) {

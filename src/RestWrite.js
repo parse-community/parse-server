@@ -10,6 +10,7 @@ var cryptoUtils = require('./cryptoUtils');
 var passwordCrypto = require('./password');
 var Parse = require('parse/node');
 var triggers = require('./triggers');
+const { inflateObject } = require('./cloud-code/ObjectAdapter');
 const util = require('util');
 import RestQuery from './RestQuery';
 import _ from 'lodash';
@@ -1911,7 +1912,7 @@ RestWrite.prototype.buildParseObjects = function () {
     originalObject = triggers.inflate(extraData, this.originalData);
   }
 
-  const className = Parse.Object.fromJSON(extraData);
+  const className = inflateObject(extraData);
   const readOnlyAttributes = className.constructor.readOnlyAttributes
     ? className.constructor.readOnlyAttributes()
     : [];
