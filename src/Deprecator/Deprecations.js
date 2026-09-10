@@ -118,4 +118,9 @@ module.exports = [
     changeNewDefault: 'false',
     solution: "Set 'allowAggregationForReadOnlyMasterKey' to 'false' to prevent the read-only master key from running aggregation pipelines, which can include write-capable stages (e.g. '$out', '$merge'). Set to 'true' to keep the current behavior where the read-only master key can run aggregation pipelines.",
   },
+  {
+    optionKey: 'databaseOptions.explainResultsAsArray',
+    changeNewDefault: 'true',
+    solution: "Set 'databaseOptions.explainResultsAsArray' to 'true' to return MongoDB 'explain' results as an array, consistent with 'find' and the Postgres adapter. Set to 'false' to keep the current behavior where MongoDB returns a single object.",
+  },
 ];
