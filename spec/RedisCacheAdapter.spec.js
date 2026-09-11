@@ -182,3 +182,68 @@ describe_only(() => {
     expect(client.isOpen).toBeTrue();
   });
 });
+
+// These run without a Redis server: the client is replaced with one that always
+// rejects, which is what a Redis outage looks like to the adapter.
+describe('RedisCacheAdapter error handling', () => {
+  const KEY = 'hello';
+  const VALUE = 'world';
+  const failure = new Error('Redis is unavailable');
+
+  let cache;
+  let loggerErrorSpy;
+
+  beforeEach(() => {
+    cache = new RedisCacheAdapter(null, 100);
+    cache.client = {
+      get: () => Promise.reject(failure),
+      set: () => Promise.reject(failure),
+      del: () => Promise.reject(failure),
+      sendCommand: () => Promise.reject(failure),
+    };
+    const logger = require('../lib/logger').default;
+    loggerErrorSpy = spyOn(logger, 'error').and.callFake(() => {});
+  });
+
+  it('resolves and logs when get fails', async () => {
+    await expectAsync(cache.get(KEY)).toBeResolved();
+    expect(loggerErrorSpy.calls.mostRecent().args[0]).toBe('RedisCacheAdapter error on get');
+  });
+
+  it('resolves and logs when put fails', async () => {
+    await expectAsync(cache.put(KEY, VALUE)).toBeResolved();
+    expect(loggerErrorSpy.calls.mostRecent().args[0]).toBe('RedisCacheAdapter error on put');
+  });
+
+  it('resolves and logs when put with an infinite ttl fails', async () => {
+    await expectAsync(cache.put(KEY, VALUE, Infinity)).toBeResolved();
+    expect(loggerErrorSpy.calls.mostRecent().args[0]).toBe('RedisCacheAdapter error on put');
+  });
+
+  it('resolves and logs when del fails', async () => {
+    await expectAsync(cache.del(KEY)).toBeResolved();
+    expect(loggerErrorSpy.calls.mostRecent().args[0]).toBe('RedisCacheAdapter error on del');
+  });
+
+  it('resolves and logs when clear fails', async () => {
+    await expectAsync(cache.clear()).toBeResolved();
+    expect(loggerErrorSpy.calls.mostRecent().args[0]).toBe('RedisCacheAdapter error on clear');
+  });
+
+  it('does not reject when a caller does not await the write', async () => {
+    // The call sites in Auth and RestWrite are deliberately not awaited, so a
+    // rejection here would surface as an unhandled rejection.
+    const rejections = [];
+    const onUnhandled = reason => rejections.push(reason);
+    process.on('unhandledRejection', onUnhandled);
+
+    cache.put(KEY, VALUE);
+    cache.del(KEY);
+    cache.clear();
+    await new Promise(resolve => setImmediate(resolve));
+    await new Promise(resolve => setImmediate(resolve));
+
+    process.removeListener('unhandledRejection', onUnhandled);
+    expect(rejections).toEqual([]);
+  });
+});
