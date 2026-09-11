@@ -1,3 +1,45 @@
+## [9.10.1-alpha.9](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.8...9.10.1-alpha.9) (2026-09-09)
+
+
+### Bug Fixes
+
+* Unauthenticated deletion of installation records via operator injection in device token deduplication ([GHSA-cc6h-c8m4-hgrx](https://github.com/parse-community/parse-server/security/advisories/GHSA-cc6h-c8m4-hgrx)) ([#10657](https://github.com/parse-community/parse-server/issues/10657)) ([ad00f82](https://github.com/parse-community/parse-server/commit/ad00f82d4545d550969baa560c34144831c0dd88))
+
+## [9.10.1-alpha.8](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.7...9.10.1-alpha.8) (2026-09-08)
+
+
+### Bug Fixes
+
+* LiveQuery discloses protected fields by resolving an incomplete subscriber identity ([GHSA-9jpp-xhh6-75mf](https://github.com/parse-community/parse-server/security/advisories/GHSA-9jpp-xhh6-75mf)) ([#10654](https://github.com/parse-community/parse-server/issues/10654)) ([66c507b](https://github.com/parse-community/parse-server/commit/66c507b7fb66611eb6c706969aae2b6bc2a930d9))
+
+## [9.10.1-alpha.7](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.6...9.10.1-alpha.7) (2026-08-25)
+
+
+### Bug Fixes
+
+* Account takeover via empty password in LDAP auth adapter ([GHSA-863r-39r9-vfcf](https://github.com/parse-community/parse-server/security/advisories/GHSA-863r-39r9-vfcf)) ([#10642](https://github.com/parse-community/parse-server/issues/10642)) ([f261957](https://github.com/parse-community/parse-server/commit/f261957bdbf6ea29c151bcac9b04a9447f37b0bd))
+
+## [9.10.1-alpha.6](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.5...9.10.1-alpha.6) (2026-07-26)
+
+
+### Bug Fixes
+
+* `Parse.Query.explain` runs afterFind trigger on query plan results ([#10536](https://github.com/parse-community/parse-server/issues/10536)) ([64d58ff](https://github.com/parse-community/parse-server/commit/64d58ff726b42b45e107e27bc1f3b50be82b3189))
+
+## [9.10.1-alpha.5](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.4...9.10.1-alpha.5) (2026-07-25)
+
+
+### Bug Fixes
+
+* Server crash from unhandled promise rejection when multiple Cloud Code validator fields fail ([#10540](https://github.com/parse-community/parse-server/issues/10540)) ([90c2778](https://github.com/parse-community/parse-server/commit/90c277894f31be8e64a4b049ad503621cf5f2285))
+
+## [9.10.1-alpha.4](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.3...9.10.1-alpha.4) (2026-07-24)
+
+
+### Bug Fixes
+
+* Install the latest Parse Server version in bootstrap.sh ([#10556](https://github.com/parse-community/parse-server/issues/10556)) ([997ee15](https://github.com/parse-community/parse-server/commit/997ee152c358524bd2b0dded490255742b61a1ba))
+
 ## [9.10.1-alpha.3](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.2...9.10.1-alpha.3) (2026-07-16)
 
 

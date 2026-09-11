@@ -1,4 +1,5 @@
 const ldap = require('../lib/Adapters/Auth/ldap');
+const ldapjs = require('ldapjs');
 const mockLdapServer = require('./support/MockLdapServer');
 const fs = require('fs');
 const port = 12345;
@@ -124,6 +125,118 @@ describe('LDAP Injection Prevention', () => {
         expect(err.message).toBe('LDAP: Wrong username or password');
       }
       server.close(done);
+    });
+
+    // A zero-length credential in a simple bind is the unauthenticated authentication
+    // mechanism of RFC 4513 section 5.1.2. Directories may answer it with success and map
+    // the connection to anonymous, so the credential must be refused by Parse Server
+    // before it is sent. The mock directory used by the tests below accepts such a bind;
+    // this test is the control that proves it does.
+    it('mock directory accepts a bind with a zero-length credential', async () => {
+      const server = await mockLdapServer(port, 'uid=testuser, o=example', false, false, {
+        allowUnauthenticatedBind: true,
+      });
+      const client = ldapjs.createClient({ url: `ldap://localhost:${port}` });
+      try {
+        await new Promise((resolve, reject) =>
+          client.bind('uid=testuser, o=example', '', err => (err ? reject(err) : resolve()))
+        );
+        expect(server.bindAttempts.length).toBe(1);
+        expect(server.bindAttempts[0].credentials).toBe('');
+      } finally {
+        client.destroy();
+        await new Promise(resolve => server.close(resolve));
+      }
+    });
+
+    it('should reject empty authData.password', async () => {
+      const server = await mockLdapServer(port, 'uid=testuser, o=example', false, false, {
+        allowUnauthenticatedBind: true,
+      });
+      const options = {
+        suffix: 'o=example',
+        url: `ldap://localhost:${port}`,
+        dn: 'uid={{id}}, o=example',
+      };
+      try {
+        try {
+          await ldap.validateAuthData({ id: 'testuser', password: '' }, options);
+          fail('Should have rejected empty password');
+        } catch (err) {
+          expect(err.message).toBe('LDAP: Wrong username or password');
+        }
+        expect(server.bindAttempts.length).toBe(0);
+      } finally {
+        await new Promise(resolve => server.close(resolve));
+      }
+    });
+
+    it('should reject missing authData.password', async () => {
+      const server = await mockLdapServer(port, 'uid=testuser, o=example', false, false, {
+        allowUnauthenticatedBind: true,
+      });
+      const options = {
+        suffix: 'o=example',
+        url: `ldap://localhost:${port}`,
+        dn: 'uid={{id}}, o=example',
+      };
+      try {
+        try {
+          await ldap.validateAuthData({ id: 'testuser' }, options);
+          fail('Should have rejected missing password');
+        } catch (err) {
+          expect(err.message).toBe('LDAP: Wrong username or password');
+        }
+        expect(server.bindAttempts.length).toBe(0);
+      } finally {
+        await new Promise(resolve => server.close(resolve));
+      }
+    });
+
+    it('should reject null authData.password', async () => {
+      const server = await mockLdapServer(port, 'uid=testuser, o=example', false, false, {
+        allowUnauthenticatedBind: true,
+      });
+      const options = {
+        suffix: 'o=example',
+        url: `ldap://localhost:${port}`,
+        dn: 'uid={{id}}, o=example',
+      };
+      try {
+        try {
+          await ldap.validateAuthData({ id: 'testuser', password: null }, options);
+          fail('Should have rejected null password');
+        } catch (err) {
+          expect(err.message).toBe('LDAP: Wrong username or password');
+        }
+        expect(server.bindAttempts.length).toBe(0);
+      } finally {
+        await new Promise(resolve => server.close(resolve));
+      }
+    });
+
+    it('should reject non-string authData.password', async () => {
+      const server = await mockLdapServer(port, 'uid=testuser, o=example', false, false, {
+        allowUnauthenticatedBind: true,
+      });
+      const options = {
+        suffix: 'o=example',
+        url: `ldap://localhost:${port}`,
+        dn: 'uid={{id}}, o=example',
+      };
+      try {
+        for (const password of [123, {}, [], true]) {
+          try {
+            await ldap.validateAuthData({ id: 'testuser', password }, options);
+            fail(`Should have rejected non-string password: ${JSON.stringify(password)}`);
+          } catch (err) {
+            expect(err.message).toBe('LDAP: Wrong username or password');
+          }
+        }
+        expect(server.bindAttempts.length).toBe(0);
+      } finally {
+        await new Promise(resolve => server.close(resolve));
+      }
     });
   });
 
