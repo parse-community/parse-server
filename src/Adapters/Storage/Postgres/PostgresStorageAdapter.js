@@ -1957,6 +1957,9 @@ export class PostgresStorageAdapter implements StorageAdapter {
       sortPattern = `ORDER BY ${where.sorts.join()}`;
     }
 
+    // For postgres adapter we need to copy the `keys` variable to selectedKeys first 
+    // because `keys` will be mutated in the next block.
+    const selectedKeys = Array.isArray(keys) ? keys.slice() : undefined;
     let columns = '*';
     if (keys) {
       // Exclude empty keys
@@ -2004,7 +2007,30 @@ export class PostgresStorageAdapter implements StorageAdapter {
         if (explain) {
           return results;
         }
-        return results.map(object => this.postgresObjectToParseObject(className, object, schema));
+        return results.map(object => {
+          const parseObject = this.postgresObjectToParseObject(className, object, schema);
+          // If there are returned keys specified; we filter them first.
+          // We need to do this because in `postgresObjectToParseObject`, all 'Relation' fields
+          // are copied over from schema without any filters. (either keep this filtering here 
+          // or pass keys into `postgresObjectToParseObject` via additional optional parameter)
+          if (Array.isArray(selectedKeys) && selectedKeys.length > 0) {
+            // set of string keys
+            const keysSet = new Set(selectedKeys);
+            const shouldIncludeField = (fieldName) => {
+              return keysSet.has(fieldName);
+            };
+            // filter out relation fields
+            Object.keys(schema.fields).forEach(fieldName => {
+              if (
+                schema.fields[fieldName].type === 'Relation' &&
+                !shouldIncludeField(fieldName)
+              ) {
+                delete parseObject[fieldName];
+              }
+            });
+          }
+          return parseObject;
+        });
       });
   }
 

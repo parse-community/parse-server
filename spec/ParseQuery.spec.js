@@ -3772,6 +3772,71 @@ describe('Parse.Query testing', () => {
     expect(response.data.results[0].hello).toBe('world');
   });
 
+  it('respects keys selection for relation fields', async () => {
+    const parent = new Parse.Object('Parent');
+    parent.set('name', 'p1');
+    const child = new Parse.Object('Child');
+    await Parse.Object.saveAll([child, parent]);
+
+    parent.relation('children').add(child);
+    await parent.save();
+
+    // if we select only the name column we expect only that key.
+    const omitRelation = await request({
+      url: Parse.serverURL + '/classes/Parent',
+      qs: {
+        keys: 'name',
+        where: JSON.stringify({ objectId: parent.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    expect(omitRelation.data.results.length).toBe(1);
+    expect(omitRelation.data.results[0].name).toBe('p1');
+    expect(omitRelation.data.results[0].children).toBeUndefined();
+
+    // if we also include key of the children Relation column it should also be included
+    const includeRelation = await request({
+      url: Parse.serverURL + '/classes/Parent',
+      qs: {
+        keys: 'name,children',
+        where: JSON.stringify({ objectId: parent.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    expect(includeRelation.data.results.length).toBe(1);
+    expect(includeRelation.data.results[0].children).toEqual({
+      __type: 'Relation',
+      className: 'Child',
+    });
+
+    // if we exclude the children (Relation) column we expect it to not be returned.
+    const excludeRelation = await request({
+      url: Parse.serverURL + '/classes/Parent',
+      qs: {
+        excludeKeys: 'children',
+        where: JSON.stringify({ objectId: parent.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    expect(excludeRelation.data.results.length).toBe(1);
+    expect(excludeRelation.data.results[0].name).toBe('p1');
+    expect(excludeRelation.data.results[0].children).toBeUndefined();
+
+    // Default should still work, getting the relation column as normal.
+    const defaultResponse = await request({
+      url: Parse.serverURL + '/classes/Parent',
+      qs: {
+        where: JSON.stringify({ objectId: parent.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    expect(defaultResponse.data.results.length).toBe(1);
+    expect(defaultResponse.data.results[0].children).toEqual({
+      __type: 'Relation',
+      className: 'Child',
+    });
+  });
+
   it('select keys with each query', function (done) {
     const obj = new TestObject({ foo: 'baz', bar: 1 });
 

@@ -25,7 +25,9 @@ export function toGraphQLError(error) {
 }
 
 export const extractKeysAndInclude = selectedFields => {
-  selectedFields = selectedFields.filter(field => !field.includes('__typename'));
+  selectedFields = selectedFields
+    .filter(field => !field.includes('__typename'))
+
   // Handles "id" field for both current and included objects
   selectedFields = selectedFields.map(field => {
     if (field === 'id') { return 'objectId'; }
