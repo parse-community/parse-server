@@ -128,6 +128,26 @@ describe('Config.validateHeaderAliases', () => {
     }
   });
 
+  it('should reject browser-generated headers as aliases', () => {
+    for (const alias of ['Origin', 'Cookie', 'Referer', 'User-Agent']) {
+      expect(() =>
+        Config.validateHeaderAliases({
+          'X-Parse-Application-Id': [alias],
+        })
+      ).toThrowError(/browser-controlled, or CORS-safelisted request header/);
+    }
+  });
+
+  it('should reject reserved sec- and proxy- prefix aliases', () => {
+    for (const alias of ['Sec-Fetch-Site', 'Proxy-Authorization']) {
+      expect(() =>
+        Config.validateHeaderAliases({
+          'X-Parse-Application-Id': [alias],
+        })
+      ).toThrowError(/reserved, browser-controlled, or CORS-safelisted request header/);
+    }
+  });
+
   it('should reject a canonical header that contains invalid characters', () => {
     expect(() =>
       Config.validateHeaderAliases({

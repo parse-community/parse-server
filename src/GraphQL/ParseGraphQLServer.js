@@ -98,15 +98,14 @@ const IntrospectionControlPlugin = (publicIntrospection) => ({
 
 });
 
-// Aliases matching CORS-safelisted names / Range must not appear on Apollo's
-// CSRF requestHeaders list. Config.validateHeaderAliases and applyHeaderAliases
-// also reject/skip these names so they cannot be rewritten into application-id
-// before Apollo's CSRF check.
+// Aliases matching CORS-safelisted names, Range, browser-generated headers, or
+// reserved sec-/proxy- prefixes must not appear on Apollo's CSRF requestHeaders
+// list. Config.validateHeaderAliases and applyHeaderAliases also reject/skip
+// these names so they cannot be rewritten into application-id before Apollo's
+// CSRF check.
 export const getCSRFRequestHeaders = headerAliases => {
   const aliases = getHeaderAliases(headerAliases, 'X-Parse-Application-Id');
-  const safeAliases = aliases.filter(
-    alias => !Config.HEADER_ALIAS_CSRF_BLOCKLIST.has(alias.trim().toLowerCase())
-  );
+  const safeAliases = aliases.filter(alias => !Config.isCsrfBlockedAlias(alias));
   return [...new Set(['X-Parse-Application-Id', ...safeAliases])];
 };
 

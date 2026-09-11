@@ -63,22 +63,41 @@ const RESERVED_HEADER_ALIAS_NAMES = new Set([
   'x-parse-maintenance-key',
 ]);
 
-// CORS-safelisted request-header names (case-insensitive) plus Range.
-// These must never be configured as aliases: browsers attach them ambiently,
-// and rewriting them into Parse headers (especially application-id) before
-// Apollo CSRF validation would let simple cross-site multipart requests pass.
+// CORS-safelisted request-header names (case-insensitive) plus Range, and
+// browser-generated headers. These must never be configured as aliases: browsers
+// attach them ambiently, and rewriting them into Parse headers (especially
+// application-id) before Apollo CSRF validation would let simple cross-site
+// requests pass.
 const HEADER_ALIAS_CSRF_BLOCKLIST = new Set([
   'accept',
   'accept-language',
   'content-language',
   'content-type',
   'range',
+  'origin',
+  'cookie',
+  'referer',
+  'user-agent',
 ]);
+
+const HEADER_ALIAS_CSRF_PREFIX_BLOCKLIST = ['sec-', 'proxy-'];
+
+function isCsrfBlockedAlias(name) {
+  const key = String(name).trim().toLowerCase();
+  if (!key) {
+    return false;
+  }
+  if (HEADER_ALIAS_CSRF_BLOCKLIST.has(key)) {
+    return true;
+  }
+  return HEADER_ALIAS_CSRF_PREFIX_BLOCKLIST.some(prefix => key.startsWith(prefix));
+}
 
 export class Config {
   static ALLOWED_HEADER_ALIAS_CANONICALS = ALLOWED_HEADER_ALIAS_CANONICALS;
   static RESERVED_HEADER_ALIAS_NAMES = RESERVED_HEADER_ALIAS_NAMES;
   static HEADER_ALIAS_CSRF_BLOCKLIST = HEADER_ALIAS_CSRF_BLOCKLIST;
+  static isCsrfBlockedAlias = isCsrfBlockedAlias;
   static get(applicationId: string, mount: string) {
     const cacheInfo = AppCache.get(applicationId);
     if (!cacheInfo) {
@@ -843,9 +862,9 @@ export class Config {
               `Header alias '${alias}' for canonical header '${canonicalHeader}' contains invalid characters`
             );
           }
-          if (HEADER_ALIAS_CSRF_BLOCKLIST.has(trimmedAlias.toLowerCase())) {
+          if (isCsrfBlockedAlias(trimmedAlias)) {
             throw new Error(
-              `Header alias '${alias}' for canonical header '${canonicalHeader}' is a CORS-safelisted request header and cannot be used as an alias`
+              `Header alias '${alias}' for canonical header '${canonicalHeader}' cannot be used as an alias because it is a reserved, browser-controlled, or CORS-safelisted request header`
             );
           }
         });

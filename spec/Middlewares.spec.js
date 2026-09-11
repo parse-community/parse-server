@@ -593,6 +593,20 @@ describe('middlewares', () => {
     });
   });
 
+  it('should not rewrite Origin into application-id', done => {
+    AppCachePut(fakeReq.body._ApplicationId, {
+      headerAliases: {
+        'X-Parse-Application-Id': ['Origin'],
+      },
+      masterKeyIps: ['0.0.0.0/0'],
+    });
+    fakeReq.headers['origin'] = 'test';
+    middlewares.handleHeaderAliases(fakeReq.body._ApplicationId)(fakeReq, fakeRes, () => {
+      expect(fakeReq.headers['x-parse-application-id']).toBeUndefined();
+      done();
+    });
+  });
+
   it('should resolve aliases when canonical header key casing differs', done => {
     AppCachePut(fakeReq.body._ApplicationId, {
       headerAliases: {

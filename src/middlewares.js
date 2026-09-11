@@ -123,8 +123,9 @@ function applyHeaderAliases(req, headerAliases) {
         if (!aliasKey || claimedAliases.has(aliasKey)) {
           return false;
         }
-        // Never rewrite CORS-safelisted / Range headers (GraphQL CSRF defense).
-        if (Config.HEADER_ALIAS_CSRF_BLOCKLIST.has(aliasKey)) {
+        // Never rewrite CORS-safelisted, browser-generated, or reserved-prefix
+        // headers (GraphQL CSRF defense).
+        if (Config.isCsrfBlockedAlias(aliasKey)) {
           return false;
         }
         // Never copy one Parse canonical header into another.
