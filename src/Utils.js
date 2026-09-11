@@ -8,10 +8,62 @@ const path = require('path');
 const fs = require('fs').promises;
 const { types } = require('util');
 
+// structuredClone-compatible: plain objects/arrays cloned manually (with
+// `__proto__` poisoning protection and alias/cycle preservation via `seen`),
+// anything else delegated to structuredClone
+function deepCloneValue(value, seen) {
+  if (value === null || typeof value !== 'object') {
+    if (typeof value === 'function' || typeof value === 'symbol') {
+      return structuredClone(value);
+    }
+    return value;
+  }
+  const isArray = Array.isArray(value);
+  if (!isArray && Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null) {
+    return structuredClone(value);
+  }
+  const existing = seen.get(value);
+  if (existing !== undefined) {
+    return existing;
+  }
+  const clone = isArray ? new Array(value.length) : {};
+  seen.set(value, clone);
+  for (const key of Object.keys(value)) {
+    const clonedItem = deepCloneValue(value[key], seen);
+    if (key === '__proto__') {
+      Object.defineProperty(clone, key, {
+        value: clonedItem,
+        writable: true,
+        enumerable: true,
+        configurable: true,
+      });
+    } else {
+      clone[key] = clonedItem;
+    }
+  }
+  return clone;
+}
+
 /**
  * The general purpose utilities.
  */
 class Utils {
+  /**
+   * @function deepClone
+   * @description Deep-clones a value with `structuredClone` semantics, but
+   * optimized for plain JSON-like data such as request payloads.
+   * @param {any} value The value to clone.
+   * @returns {any} The cloned value.
+   */
+  static deepClone(value) {
+    if (value === null || typeof value !== 'object') {
+      if (typeof value === 'function' || typeof value === 'symbol') {
+        return structuredClone(value);
+      }
+      return value;
+    }
+    return deepCloneValue(value, new Map());
+  }
   /**
    * @function getLocalizedPath
    * @description Returns a localized file path accoring to the locale.

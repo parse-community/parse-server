@@ -43,46 +43,68 @@ function removeTrailingSlash(str) {
  */
 const asyncKeys = ['publicServerURL'];
 
+// Per-app Config prototypes; AppCache.put stores a new object on config
+// changes, which invalidates the entry
+const configTemplates = new WeakMap();
+
 export class Config {
   static get(applicationId: string, mount: string) {
     const cacheInfo = AppCache.get(applicationId);
     if (!cacheInfo) {
       return;
     }
-    const config = new Config();
-    config.applicationId = applicationId;
-    Object.keys(cacheInfo).forEach(key => {
-      if (key == 'databaseController') {
-        config.database = new DatabaseController(cacheInfo.databaseController.adapter, config);
-      } else {
-        config[key] = cacheInfo[key];
+    let template = configTemplates.get(cacheInfo);
+    if (!template) {
+      template = new Config();
+      template.applicationId = applicationId;
+      // for..in includes inherited keys; Config.put may store a Config instance
+      for (const key in cacheInfo) {
+        if (key !== 'databaseController') {
+          template[key] = cacheInfo[key];
+        }
       }
-    });
+      template.version = version;
+      configTemplates.set(cacheInfo, template);
+    }
+    // Flat copy: enumeration over Config instances (specs, cloud code) must
+    // keep working, so per-request configs carry all keys as own properties
+    const config = Object.assign(new Config(), template);
+    if (cacheInfo.databaseController) {
+      config.database = new DatabaseController(cacheInfo.databaseController.adapter, config);
+    }
     config.mount = removeTrailingSlash(mount);
     config.generateSessionExpiresAt = config.generateSessionExpiresAt.bind(config);
     config.generateEmailVerifyTokenExpiresAt = config.generateEmailVerifyTokenExpiresAt.bind(
       config
     );
-    config.version = version;
     return config;
   }
 
   async loadKeys() {
+    let resolvedAny = false;
     await Promise.all(
       asyncKeys.map(async key => {
         if (typeof this[`_${key}`] === 'function') {
           try {
             this[key] = await this[`_${key}`]();
+            resolvedAny = true;
           } catch (error) {
             throw new Error(`Failed to resolve async config key '${key}': ${error.message}`);
           }
         }
       })
     );
+    if (!resolvedAny) {
+      return;
+    }
 
     const cachedConfig = AppCache.get(this.appId);
-    if (cachedConfig) {
-      const updatedConfig = { ...cachedConfig };
+    if (cachedConfig && asyncKeys.some(key => cachedConfig[key] !== this[key])) {
+      const updatedConfig = {};
+      // for..in includes inherited keys; Config.put may store a Config instance
+      for (const key in cachedConfig) {
+        updatedConfig[key] = cachedConfig[key];
+      }
       asyncKeys.forEach(key => {
         updatedConfig[key] = this[key];
       });

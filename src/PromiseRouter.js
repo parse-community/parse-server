@@ -137,16 +137,17 @@ export default class PromiseRouter {
 function makeExpressHandler(appId, promiseHandler) {
   return function (req, res, next) {
     try {
-      const url = maskSensitiveUrl(req);
-      const body = Object.assign({}, req.body);
       const method = req.method;
-      const headers = req.headers;
-      log.logRequest({
-        method,
-        url,
-        headers,
-        body,
-      });
+      let url;
+      if (log.verboseEnabled !== false) {
+        url = maskSensitiveUrl(req);
+        log.logRequest({
+          method,
+          url,
+          headers: req.headers,
+          body: Object.assign({}, req.body),
+        });
+      }
       promiseHandler(req)
         .then(
           result => {
@@ -155,7 +156,9 @@ function makeExpressHandler(appId, promiseHandler) {
               throw 'control should not get here';
             }
 
-            log.logResponse({ method, url, result });
+            if (log.verboseEnabled !== false) {
+              log.logResponse({ method, url: url ?? maskSensitiveUrl(req), result });
+            }
 
             var status = result.status || 200;
             res.status(status);

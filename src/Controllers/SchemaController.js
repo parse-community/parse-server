@@ -20,6 +20,8 @@ import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
 import SchemaCache from '../Adapters/Cache/SchemaCache';
 import DatabaseController from './DatabaseController';
 import Config from '../Config';
+import AppCache from '../cache';
+import Utils from '../Utils';
 import { createSanitizedError } from '../Error';
 import type {
   Schema,
@@ -571,7 +573,7 @@ class SchemaData {
           if (!this.__data[schema.className]) {
             const data = {};
             data.fields = injectDefaultSchema(schema).fields;
-            data.classLevelPermissions = structuredClone(schema.classLevelPermissions);
+            data.classLevelPermissions = Utils.deepClone(schema.classLevelPermissions);
             data.indexes = schema.indexes;
 
             const classProtectedFields = this.__protectedFields[schema.className];
@@ -614,6 +616,36 @@ class SchemaData {
     });
   }
 }
+
+// SchemaData per schema snapshot; SchemaCache.put stores a new array on schema
+// changes, which invalidates the entry
+const schemaDataCache: WeakMap<Array<Schema>, { protectedFields: any, schemaData: SchemaData }> =
+  new WeakMap();
+
+const sameSchemas = (a: Array<Schema>, b: Array<Schema>) => {
+  if (a === b) {
+    return true;
+  }
+  if (a.length !== b.length) {
+    return false;
+  }
+  return a.every((schema, index) => schema === b[index]);
+};
+
+const getSchemaData = (allSchemas: Array<Schema>, protectedFields: any) => {
+  const cachedSchemas = SchemaCache.raw();
+  if (!cachedSchemas || !sameSchemas(cachedSchemas, allSchemas)) {
+    // Snapshot mismatch, e.g. a concurrent schema change; derive without caching
+    return new SchemaData(allSchemas, protectedFields);
+  }
+  const cached = schemaDataCache.get(cachedSchemas);
+  if (cached && cached.protectedFields === protectedFields) {
+    return cached.schemaData;
+  }
+  const schemaData = new SchemaData(allSchemas, protectedFields);
+  schemaDataCache.set(cachedSchemas, { protectedFields, schemaData });
+  return schemaData;
+};
 
 const injectDefaultSchema = ({ className, fields, classLevelPermissions, indexes }: Schema) => {
   const defaultSchema: Schema = {
@@ -719,9 +751,13 @@ export default class SchemaController {
 
   constructor(databaseAdapter: StorageAdapter) {
     this._dbAdapter = databaseAdapter;
-    const config = Config.get(Parse.applicationId);
-    this.schemaData = new SchemaData(SchemaCache.all(), this.protectedFields);
+    // AppCache avoids building a full Config incl. DatabaseController per request
+    const config = AppCache.get(Parse.applicationId);
     this.protectedFields = config.protectedFields;
+    const cachedSchemas = SchemaCache.raw();
+    this.schemaData = cachedSchemas
+      ? getSchemaData(cachedSchemas, this.protectedFields)
+      : new SchemaData();
 
     const customIds = config.allowCustomObjectId;
 
@@ -757,7 +793,7 @@ export default class SchemaController {
     this.reloadDataPromise = this.getAllClasses(options)
       .then(
         allSchemas => {
-          this.schemaData = new SchemaData(allSchemas, this.protectedFields);
+          this.schemaData = getSchemaData(allSchemas, this.protectedFields);
           delete this.reloadDataPromise;
         },
         err => {
@@ -1102,6 +1138,8 @@ export default class SchemaController {
     const cached = SchemaCache.get(className);
     if (cached) {
       cached.classLevelPermissions = perms;
+      // Re-put under a new array identity so cached derived data is discarded.
+      SchemaCache.put(SchemaCache.all());
     }
   }
 

@@ -448,6 +448,73 @@ describe('Utils', () => {
     });
   });
 
+  describe('deepClone', () => {
+    it('should return primitives unchanged', () => {
+      expect(Utils.deepClone(null)).toBeNull();
+      expect(Utils.deepClone(undefined)).toBeUndefined();
+      expect(Utils.deepClone(42)).toBe(42);
+      expect(Utils.deepClone('string')).toBe('string');
+      expect(Utils.deepClone(true)).toBe(true);
+      expect(Utils.deepClone(10n)).toBe(10n);
+    });
+
+    it('should deep-clone plain objects and arrays without sharing references', () => {
+      const original = { a: 1, b: { c: [1, 2, { d: 'x' }] }, e: null, f: undefined };
+      const clone = Utils.deepClone(original);
+      expect(clone).toEqual(original);
+      expect(clone).not.toBe(original);
+      expect(clone.b).not.toBe(original.b);
+      expect(clone.b.c).not.toBe(original.b.c);
+      expect(clone.b.c[2]).not.toBe(original.b.c[2]);
+      expect(Object.prototype.hasOwnProperty.call(clone, 'f')).toBe(true);
+      clone.b.c[2].d = 'changed';
+      expect(original.b.c[2].d).toBe('x');
+    });
+
+    it('should clone Date and typed array values like structuredClone', () => {
+      const date = new Date('2020-01-01T00:00:00.000Z');
+      const bytes = new Uint8Array([1, 2, 3]);
+      const clone = Utils.deepClone({ date, bytes });
+      expect(clone.date).not.toBe(date);
+      expect(clone.date.getTime()).toBe(date.getTime());
+      expect(clone.bytes).not.toBe(bytes);
+      expect(Array.from(clone.bytes)).toEqual([1, 2, 3]);
+    });
+
+    it('should not be vulnerable to prototype poisoning via __proto__', () => {
+      const original = JSON.parse('{"__proto__":{"polluted":"yes"},"a":1}');
+      const clone = Utils.deepClone(original);
+      expect(({}).polluted).toBeUndefined();
+      expect(Object.getPrototypeOf(clone)).toBe(Object.prototype);
+      expect(Object.prototype.hasOwnProperty.call(clone, '__proto__')).toBe(true);
+      expect(clone.a).toBe(1);
+    });
+
+    it('should clone objects with a null prototype as plain objects', () => {
+      const original = Object.create(null);
+      original.a = { b: 1 };
+      const clone = Utils.deepClone(original);
+      expect(clone.a).toEqual({ b: 1 });
+      expect(clone.a).not.toBe(original.a);
+    });
+
+    it('should preserve aliased and cyclic references', () => {
+      const shared = { v: 1 };
+      const original = { x: shared, y: shared };
+      original.self = original;
+      const clone = Utils.deepClone(original);
+      expect(clone.x).toBe(clone.y);
+      expect(clone.x).not.toBe(shared);
+      expect(clone.self).toBe(clone);
+    });
+
+    it('should throw for non-cloneable values like structuredClone', () => {
+      expect(() => Utils.deepClone(() => {})).toThrow();
+      expect(() => Utils.deepClone({ fn: () => {} })).toThrow();
+      expect(() => Utils.deepClone(Symbol('x'))).toThrow();
+    });
+  });
+
   describe('getFileExtension', () => {
     const cases = [
       ['file.txt', 'txt'],
