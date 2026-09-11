@@ -63,7 +63,7 @@ function safeBulkReasonDetailedMessage(reason) {
 
 /**
  * `{ code, message }` for GraphQL bulk mutation per-item failures (`ParseGraphQLBulkError`).
- * `Parse.Error` uses `createSanitizedError`; other values are logged and mapped to a generic message when sanitizing.
+ * `Parse.Error` keeps its original code and message; other values are logged and mapped to a generic message when sanitizing.
  *
  * @param {unknown} reason
  * @param {object} config
@@ -71,8 +71,7 @@ function safeBulkReasonDetailedMessage(reason) {
  */
 function bulkErrorPayloadFromReason(reason, config) {
   if (reason instanceof Parse.Error) {
-    const sanitized = createSanitizedError(reason.code, reason.message, config);
-    return { code: sanitized.code, message: sanitized.message };
+    return { code: reason.code, message: reason.message };
   }
   const detailedMessage = safeBulkReasonDetailedMessage(reason);
   if (process.env.TESTING) {
