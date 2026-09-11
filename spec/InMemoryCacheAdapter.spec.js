@@ -36,6 +36,20 @@ describe('InMemoryCacheAdapter', function () {
       .then(done);
   });
 
+  it('should only clear the given prefix', async () => {
+    const cache = new InMemoryCacheAdapter({ ttl: NaN });
+
+    await cache.put('myAppId:role:someUser', VALUE);
+    await cache.put('myAppId:user:someToken', VALUE);
+    await cache.put('otherAppId:role:someUser', VALUE);
+
+    await cache.clear('myAppId:role');
+
+    expect(await cache.get('myAppId:role:someUser')).toEqual(null);
+    expect(await cache.get('myAppId:user:someToken')).toEqual(VALUE);
+    expect(await cache.get('otherAppId:role:someUser')).toEqual(VALUE);
+  });
+
   it('should expire after ttl', done => {
     const cache = new InMemoryCacheAdapter({
       ttl: 10,
