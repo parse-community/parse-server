@@ -1121,8 +1121,8 @@ _UnsafeRestQuery.prototype.runAfterFindTrigger = function () {
   if (!hasAfterFindHook) {
     return Promise.resolve();
   }
-  // Skip Aggregate and Distinct Queries
-  if (this.findOptions.pipeline || this.findOptions.distinct) {
+  // Skip Aggregate, Distinct and Explain Queries
+  if (this.findOptions.pipeline || this.findOptions.distinct || this.findOptions.explain) {
     return Promise.resolve();
   }
 
