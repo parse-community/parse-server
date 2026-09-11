@@ -25,7 +25,9 @@ const getMountForRequest = function (req) {
 };
 
 const getBlockList = (ipRangeList, store) => {
-  if (store.get('blockList')) { return store.get('blockList'); }
+  if (store.get('blockList')) {
+    return store.get('blockList');
+  }
   const blockList = new BlockList();
   ipRangeList.forEach(fullIp => {
     if (fullIp === '::/0' || fullIp === '::' || fullIp === '::0') {
@@ -51,9 +53,15 @@ export const checkIp = (ip, ipRangeList, store) => {
   const incomingIpIsV4 = isIPv4(ip);
   const blockList = getBlockList(ipRangeList, store);
 
-  if (store.get(ip)) { return true; }
-  if (store.get('allowAllIpv4') && incomingIpIsV4) { return true; }
-  if (store.get('allowAllIpv6') && !incomingIpIsV4) { return true; }
+  if (store.get(ip)) {
+    return true;
+  }
+  if (store.get('allowAllIpv4') && incomingIpIsV4) {
+    return true;
+  }
+  if (store.get('allowAllIpv6') && !incomingIpIsV4) {
+    return true;
+  }
   const result = blockList.check(ip, incomingIpIsV4 ? 'ipv4' : 'ipv6');
 
   // If the ip is in the list, we store the result in the store
@@ -73,12 +81,14 @@ const getHeaderList = headers =>
 
 // Merge all headers into a single list
 const mergeHeaders = (...headerSources) => {
-  const reduced = headerSources.reduce((acc, source) => {
-    const headers = Array.isArray(source) ? source : getHeaderList(source || '');
-    const trimmedHeaders = headers.map(header => header.trim());
-    acc.push(...trimmedHeaders);
-    return acc;
-  }, []).filter(header => Boolean(header));
+  const reduced = headerSources
+    .reduce((acc, source) => {
+      const headers = Array.isArray(source) ? source : getHeaderList(source || '');
+      const trimmedHeaders = headers.map(header => header.trim());
+      acc.push(...trimmedHeaders);
+      return acc;
+    }, [])
+    .filter(header => Boolean(header));
   return [...new Set(reduced)];
 };
 
@@ -97,6 +107,7 @@ export function getHeaderAliases(headerAliases, canonicalHeader) {
 
 function applyHeaderAliases(req, headerAliases) {
   req.headers = req.headers || {};
+  const claimedAliases = new Set();
   for (const [canonicalHeader, aliases] of Object.entries(headerAliases || {})) {
     const canonicalKey = String(canonicalHeader).trim().toLowerCase();
     // Only rewrite allowlisted, non-secret Parse headers (one-to-one mapping
@@ -104,19 +115,33 @@ function applyHeaderAliases(req, headerAliases) {
     if (!Config.ALLOWED_HEADER_ALIAS_CANONICALS.has(canonicalKey)) {
       continue;
     }
-    if (req.headers[canonicalKey] !== undefined) {
-      continue; // canonical wins
-    }
-    const matchedAlias = (aliases || []).find(alias => {
-      const aliasKey = String(alias).trim().toLowerCase();
-      // Never rewrite CORS-safelisted / Range headers (GraphQL CSRF defense).
-      if (Config.HEADER_ALIAS_CSRF_BLOCKLIST.has(aliasKey)) {
-        return false;
+    const normalizedAliases = (Array.isArray(aliases) ? aliases : []).map(alias =>
+      String(alias).trim().toLowerCase()
+    );
+    if (req.headers[canonicalKey] === undefined) {
+      const matchedAlias = normalizedAliases.find(aliasKey => {
+        if (!aliasKey || claimedAliases.has(aliasKey)) {
+          return false;
+        }
+        // Never rewrite CORS-safelisted / Range headers (GraphQL CSRF defense).
+        if (Config.HEADER_ALIAS_CSRF_BLOCKLIST.has(aliasKey)) {
+          return false;
+        }
+        // Never copy one Parse canonical header into another.
+        if (Config.RESERVED_HEADER_ALIAS_NAMES.has(aliasKey)) {
+          return false;
+        }
+        return req.headers[aliasKey] !== undefined;
+      });
+      if (matchedAlias) {
+        req.headers[canonicalKey] = req.headers[matchedAlias];
       }
-      return req.headers[aliasKey] !== undefined;
-    });
-    if (matchedAlias) {
-      req.headers[canonicalKey] = req.headers[String(matchedAlias).trim().toLowerCase()];
+    }
+    // Claim every alias for this canonical so a later mapping cannot reuse it.
+    for (const aliasKey of normalizedAliases) {
+      if (aliasKey) {
+        claimedAliases.add(aliasKey);
+      }
     }
   }
 }
@@ -425,7 +450,9 @@ function getClientIp(req) {
 }
 
 function httpAuth(req) {
-  if (!(req.req || req).headers.authorization) { return; }
+  if (!(req.req || req).headers.authorization) {
+    return;
+  }
 
   var header = (req.req || req).headers.authorization;
   var appId, masterKey, javascriptKey;
@@ -471,7 +498,9 @@ export function allowCrossDomain(appId) {
     ).join(', ');
 
     const baseOrigins =
-      typeof config?.allowOrigin === 'string' ? [config.allowOrigin] : config?.allowOrigin ?? ['*'];
+      typeof config?.allowOrigin === 'string'
+        ? [config.allowOrigin]
+        : (config?.allowOrigin ?? ['*']);
     const requestOrigin = req.headers.origin;
     const allowOrigins =
       requestOrigin && baseOrigins.includes(requestOrigin) ? requestOrigin : baseOrigins[0];
@@ -665,8 +694,7 @@ export function handleParseErrors(err, req, res, next) {
     if (req.config && req.config.enableExpressErrorHandler) {
       return next(err);
     }
-    const signupUsernameTakenLevel =
-      req.config?.logLevels?.signupUsernameTaken || 'info';
+    const signupUsernameTakenLevel = req.config?.logLevels?.signupUsernameTaken || 'info';
     let httpStatus;
     // TODO: fill out this mapping
     switch (err.code) {
@@ -749,10 +777,12 @@ export const addRateLimit = (route, config, cloud) => {
     const client = createClient({
       url: route.redisUrl,
     });
-    client.on('error', err => { log.error('Middlewares addRateLimit Redis client error', { error: err }) });
-    client.on('connect', () => { });
-    client.on('reconnecting', () => { });
-    client.on('ready', () => { });
+    client.on('error', err => {
+      log.error('Middlewares addRateLimit Redis client error', { error: err });
+    });
+    client.on('connect', () => {});
+    client.on('reconnecting', () => {});
+    client.on('ready', () => {});
     redisStore.connectionPromise = async () => {
       if (client.isOpen) {
         return;
@@ -777,7 +807,8 @@ export const addRateLimit = (route, config, cloud) => {
     requestMethods: route.requestMethods,
     includeMasterKey: route.includeMasterKey,
     includeInternalRequests: route.includeInternalRequests,
-    errorResponseMessage: route.errorResponseMessage || RateLimitOptions.errorResponseMessage.default,
+    errorResponseMessage:
+      route.errorResponseMessage || RateLimitOptions.errorResponseMessage.default,
     handler: rateLimit({
       windowMs: route.requestTimeWindow,
       max: route.requestCount,

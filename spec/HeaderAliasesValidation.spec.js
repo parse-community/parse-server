@@ -113,7 +113,13 @@ describe('Config.validateHeaderAliases', () => {
   });
 
   it('should reject CORS-safelisted request-header names and Range as aliases', () => {
-    for (const alias of ['Accept', 'accept-language', 'Content-Language', 'Content-Type', 'Range']) {
+    for (const alias of [
+      'Accept',
+      'accept-language',
+      'Content-Language',
+      'Content-Type',
+      'Range',
+    ]) {
       expect(() =>
         Config.validateHeaderAliases({
           'X-Parse-Application-Id': [alias],
@@ -205,6 +211,32 @@ describe('Config.validateHeaderAliases', () => {
       Config.validateHeaderAliases({
         'X-Parse-Session-Token': [],
         'X-Parse-Application-Id': ['x-parse-session-token'],
+      })
+    ).toThrowError(/collides with canonical header/);
+  });
+
+  it('should reject an alias that is another allowlisted Parse header even if that header is not in the mapping', () => {
+    expect(() =>
+      Config.validateHeaderAliases({
+        'X-Parse-Application-Id': ['x-parse-session-token'],
+      })
+    ).toThrowError(/collides with canonical header/);
+    expect(() =>
+      Config.validateHeaderAliases({
+        'X-Parse-Session-Token': ['X-Parse-Installation-Id'],
+      })
+    ).toThrowError(/collides with canonical header/);
+  });
+
+  it('should reject an alias that is a credential-bearing Parse header', () => {
+    expect(() =>
+      Config.validateHeaderAliases({
+        'X-Parse-Application-Id': ['X-Parse-Master-Key'],
+      })
+    ).toThrowError(/collides with canonical header/);
+    expect(() =>
+      Config.validateHeaderAliases({
+        'X-Parse-Session-Token': ['x-parse-maintenance-key'],
       })
     ).toThrowError(/collides with canonical header/);
   });

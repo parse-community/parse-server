@@ -55,6 +55,14 @@ const ALLOWED_HEADER_ALIAS_CANONICALS = new Set([
   'x-parse-rest-api-key',
 ]);
 
+// Parse header names that cannot be used as aliases. Using a canonical
+// name as an alias would copy one request header into another Parse slot.
+const RESERVED_HEADER_ALIAS_NAMES = new Set([
+  ...ALLOWED_HEADER_ALIAS_CANONICALS,
+  'x-parse-master-key',
+  'x-parse-maintenance-key',
+]);
+
 // CORS-safelisted request-header names (case-insensitive) plus Range.
 // These must never be configured as aliases: browsers attach them ambiently,
 // and rewriting them into Parse headers (especially application-id) before
@@ -69,6 +77,7 @@ const HEADER_ALIAS_CSRF_BLOCKLIST = new Set([
 
 export class Config {
   static ALLOWED_HEADER_ALIAS_CANONICALS = ALLOWED_HEADER_ALIAS_CANONICALS;
+  static RESERVED_HEADER_ALIAS_NAMES = RESERVED_HEADER_ALIAS_NAMES;
   static HEADER_ALIAS_CSRF_BLOCKLIST = HEADER_ALIAS_CSRF_BLOCKLIST;
   static get(applicationId: string, mount: string) {
     const cacheInfo = AppCache.get(applicationId);
@@ -871,11 +880,11 @@ export class Config {
               `Header alias '${alias}' for canonical header '${canonicalHeader}' must not normalize to the same value as the canonical header name.`
             );
           }
-          if (canonicalNormToKey.has(normAlias) && normAlias !== normCanon) {
+          if (RESERVED_HEADER_ALIAS_NAMES.has(normAlias)) {
             throw new Error(
-              `Header alias '${alias}' for canonical header '${canonicalHeader}' collides with canonical header '${canonicalNormToKey.get(
-                normAlias
-              )}'.`
+              `Header alias '${alias}' for canonical header '${canonicalHeader}' collides with canonical header '${
+                canonicalNormToKey.get(normAlias) || alias
+              }'.`
             );
           }
           if (seenInArray.has(normAlias)) {

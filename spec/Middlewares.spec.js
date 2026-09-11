@@ -128,43 +128,49 @@ describe('middlewares', () => {
     const otherKeys = BodyKeys.filter(
       otherKey => otherKey !== infoKey && otherKey !== 'javascriptKey'
     );
-    it_id('f9abd7ac-b1f4-4607-b9b0-365ff0559d84')(it)(`it should pull ${bodyKey} into req.info`, done => {
-      AppCachePut(fakeReq.body._ApplicationId, {
-        masterKeyIps: ['0.0.0.0/0'],
-      });
-      fakeReq.ip = '127.0.0.1';
-      fakeReq.body[bodyKey] = keyValue;
-      middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
-        expect(fakeReq.body[bodyKey]).toEqual(undefined);
-        expect(fakeReq.info[infoKey]).toEqual(keyValue);
-
-        otherKeys.forEach(otherKey => {
-          expect(fakeReq.info[otherKey]).toEqual(undefined);
+    it_id('f9abd7ac-b1f4-4607-b9b0-365ff0559d84')(it)(
+      `it should pull ${bodyKey} into req.info`,
+      done => {
+        AppCachePut(fakeReq.body._ApplicationId, {
+          masterKeyIps: ['0.0.0.0/0'],
         });
+        fakeReq.ip = '127.0.0.1';
+        fakeReq.body[bodyKey] = keyValue;
+        middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
+          expect(fakeReq.body[bodyKey]).toEqual(undefined);
+          expect(fakeReq.info[infoKey]).toEqual(keyValue);
 
-        done();
-      });
-    });
-  });
+          otherKeys.forEach(otherKey => {
+            expect(fakeReq.info[otherKey]).toEqual(undefined);
+          });
 
-  it_id('4a0bce41-c536-4482-a873-12ed023380e2')(it)('should not succeed and log if the ip does not belong to masterKeyIps list', async () => {
-    const logger = require('../lib/logger').logger;
-    spyOn(logger, 'error').and.callFake(() => {});
-    AppCachePut(fakeReq.body._ApplicationId, {
-      masterKey: 'masterKey',
-      masterKeyIps: ['10.0.0.1'],
-    });
-    fakeReq.ip = '127.0.0.1';
-    fakeReq.headers['x-parse-master-key'] = 'masterKey';
-
-    const error = await middlewares.handleParseHeaders(fakeReq, fakeRes, () => {}).catch(e => e);
-
-    expect(error).toBeDefined();
-    expect(error.message).toEqual(`unauthorized`);
-    expect(logger.error).toHaveBeenCalledWith(
-      `Request using master key rejected as the request IP address '127.0.0.1' is not set in Parse Server option 'masterKeyIps'.`
+          done();
+        });
+      }
     );
   });
+
+  it_id('4a0bce41-c536-4482-a873-12ed023380e2')(it)(
+    'should not succeed and log if the ip does not belong to masterKeyIps list',
+    async () => {
+      const logger = require('../lib/logger').logger;
+      spyOn(logger, 'error').and.callFake(() => {});
+      AppCachePut(fakeReq.body._ApplicationId, {
+        masterKey: 'masterKey',
+        masterKeyIps: ['10.0.0.1'],
+      });
+      fakeReq.ip = '127.0.0.1';
+      fakeReq.headers['x-parse-master-key'] = 'masterKey';
+
+      const error = await middlewares.handleParseHeaders(fakeReq, fakeRes, () => {}).catch(e => e);
+
+      expect(error).toBeDefined();
+      expect(error.message).toEqual(`unauthorized`);
+      expect(logger.error).toHaveBeenCalledWith(
+        `Request using master key rejected as the request IP address '127.0.0.1' is not set in Parse Server option 'masterKeyIps'.`
+      );
+    }
+  );
 
   it('should not succeed and log if the ip does not belong to maintenanceKeyIps list', async () => {
     const logger = require('../lib/logger').logger;
@@ -185,52 +191,61 @@ describe('middlewares', () => {
     );
   });
 
-  it_id('5b8b9280-53ec-445a-b868-6992931d2236')(it)('should reject maintenance key from non-allowed IP instead of downgrading to anonymous auth', async () => {
-    await reconfigureServer({
-      maintenanceKeyIps: ['10.0.0.1'],
-    });
-    const logger = require('../lib/logger').logger;
-    spyOn(logger, 'error').and.callFake(() => {});
-    AppCachePut(fakeReq.body._ApplicationId, {
-      maintenanceKey: 'maintenanceKey',
-      maintenanceKeyIps: ['10.0.0.1'],
-      masterKey: 'masterKey',
-      masterKeyIps: ['0.0.0.0/0', '::0'],
-    });
-    fakeReq.ip = '127.0.0.1';
-    fakeReq.headers['x-parse-maintenance-key'] = 'maintenanceKey';
+  it_id('5b8b9280-53ec-445a-b868-6992931d2236')(it)(
+    'should reject maintenance key from non-allowed IP instead of downgrading to anonymous auth',
+    async () => {
+      await reconfigureServer({
+        maintenanceKeyIps: ['10.0.0.1'],
+      });
+      const logger = require('../lib/logger').logger;
+      spyOn(logger, 'error').and.callFake(() => {});
+      AppCachePut(fakeReq.body._ApplicationId, {
+        maintenanceKey: 'maintenanceKey',
+        maintenanceKeyIps: ['10.0.0.1'],
+        masterKey: 'masterKey',
+        masterKeyIps: ['0.0.0.0/0', '::0'],
+      });
+      fakeReq.ip = '127.0.0.1';
+      fakeReq.headers['x-parse-maintenance-key'] = 'maintenanceKey';
 
-    const error = await middlewares.handleParseHeaders(fakeReq, fakeRes, () => {}).catch(e => e);
+      const error = await middlewares.handleParseHeaders(fakeReq, fakeRes, () => {}).catch(e => e);
 
-    expect(error).toBeDefined();
-    expect(error.status).toBe(403);
-    expect(error.message).toEqual('unauthorized');
-    expect(logger.error).toHaveBeenCalledWith(
-      `Request using maintenance key rejected as the request IP address '127.0.0.1' is not set in Parse Server option 'maintenanceKeyIps'.`
-    );
-  });
+      expect(error).toBeDefined();
+      expect(error.status).toBe(403);
+      expect(error.message).toEqual('unauthorized');
+      expect(logger.error).toHaveBeenCalledWith(
+        `Request using maintenance key rejected as the request IP address '127.0.0.1' is not set in Parse Server option 'maintenanceKeyIps'.`
+      );
+    }
+  );
 
-  it_id('2f7fadec-a87c-4626-90d1-65c75653aea9')(it)('should succeed if the ip does belong to masterKeyIps list', async () => {
-    AppCachePut(fakeReq.body._ApplicationId, {
-      masterKey: 'masterKey',
-      masterKeyIps: ['10.0.0.1'],
-    });
-    fakeReq.ip = '10.0.0.1';
-    fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
-    expect(fakeReq.auth.isMaster).toBe(true);
-  });
+  it_id('2f7fadec-a87c-4626-90d1-65c75653aea9')(it)(
+    'should succeed if the ip does belong to masterKeyIps list',
+    async () => {
+      AppCachePut(fakeReq.body._ApplicationId, {
+        masterKey: 'masterKey',
+        masterKeyIps: ['10.0.0.1'],
+      });
+      fakeReq.ip = '10.0.0.1';
+      fakeReq.headers['x-parse-master-key'] = 'masterKey';
+      await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
+      expect(fakeReq.auth.isMaster).toBe(true);
+    }
+  );
 
-  it_id('2b251fd4-d43c-48f4-ada9-c8458e40c12a')(it)('should allow any ip to use masterKey if masterKeyIps is empty', async () => {
-    AppCachePut(fakeReq.body._ApplicationId, {
-      masterKey: 'masterKey',
-      masterKeyIps: ['0.0.0.0/0'],
-    });
-    fakeReq.ip = '10.0.0.1';
-    fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
-    expect(fakeReq.auth.isMaster).toBe(true);
-  });
+  it_id('2b251fd4-d43c-48f4-ada9-c8458e40c12a')(it)(
+    'should allow any ip to use masterKey if masterKeyIps is empty',
+    async () => {
+      AppCachePut(fakeReq.body._ApplicationId, {
+        masterKey: 'masterKey',
+        masterKeyIps: ['0.0.0.0/0'],
+      });
+      fakeReq.ip = '10.0.0.1';
+      fakeReq.headers['x-parse-master-key'] = 'masterKey';
+      await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
+      expect(fakeReq.auth.isMaster).toBe(true);
+    }
+  );
 
   it('should not succeed and log if the ip does not belong to readOnlyMasterKeyIps list', async () => {
     const logger = require('../lib/logger').logger;
@@ -588,6 +603,54 @@ describe('middlewares', () => {
     fakeReq.headers['x-session-token-alias'] = 'session-token-alias-value';
     middlewares.handleHeaderAliases(fakeReq.body._ApplicationId)(fakeReq, fakeRes, () => {
       expect(fakeReq.headers['x-parse-session-token']).toEqual('session-token-alias-value');
+      done();
+    });
+  });
+
+  it('should not rewrite a shared alias into more than one canonical header', done => {
+    AppCachePut(fakeReq.body._ApplicationId, {
+      headerAliases: {
+        'X-Parse-Application-Id': ['X-Shared-Alias'],
+        'X-Parse-Session-Token': ['X-Shared-Alias'],
+      },
+      masterKeyIps: ['0.0.0.0/0'],
+    });
+    fakeReq.headers['x-shared-alias'] = fakeReq.body._ApplicationId;
+    middlewares.handleHeaderAliases(fakeReq.body._ApplicationId)(fakeReq, fakeRes, () => {
+      expect(fakeReq.headers['x-parse-application-id']).toEqual(fakeReq.body._ApplicationId);
+      expect(fakeReq.headers['x-parse-session-token']).toBeUndefined();
+      done();
+    });
+  });
+
+  it('should not apply a claimed alias to a later canonical when the first already has a value', done => {
+    AppCachePut(fakeReq.body._ApplicationId, {
+      headerAliases: {
+        'X-Parse-Application-Id': ['X-Shared-Alias'],
+        'X-Parse-Session-Token': ['X-Shared-Alias'],
+      },
+      masterKeyIps: ['0.0.0.0/0'],
+    });
+    fakeReq.headers['x-parse-application-id'] = fakeReq.body._ApplicationId;
+    fakeReq.headers['x-shared-alias'] = 'session-token-via-shared';
+    middlewares.handleHeaderAliases(fakeReq.body._ApplicationId)(fakeReq, fakeRes, () => {
+      expect(fakeReq.headers['x-parse-application-id']).toEqual(fakeReq.body._ApplicationId);
+      expect(fakeReq.headers['x-parse-session-token']).toBeUndefined();
+      done();
+    });
+  });
+
+  it('should not copy a Parse canonical header into a different canonical header', done => {
+    AppCachePut(fakeReq.body._ApplicationId, {
+      headerAliases: {
+        'X-Parse-Application-Id': ['x-parse-session-token'],
+      },
+      masterKeyIps: ['0.0.0.0/0'],
+    });
+    fakeReq.headers['x-parse-session-token'] = 'session-token-value';
+    middlewares.handleHeaderAliases(fakeReq.body._ApplicationId)(fakeReq, fakeRes, () => {
+      expect(fakeReq.headers['x-parse-application-id']).toBeUndefined();
+      expect(fakeReq.headers['x-parse-session-token']).toEqual('session-token-value');
       done();
     });
   });
