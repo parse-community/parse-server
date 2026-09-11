@@ -1904,6 +1904,88 @@ describe('ParseLiveQueryServer', function () {
     expect(parseLiveQueryServer.authCache.get('invalid')).not.toBe(undefined);
   });
 
+  describe('role cache invalidation', () => {
+    const clearCacheChannel = () => `${Parse.applicationId}clearCache`;
+
+    // The subscriber is mocked, so the handler registered for the clearCache
+    // channel is recovered from the spy rather than by publishing for real.
+    const clearCacheHandler = server => {
+      const call = server.subscriber.subscribe.calls
+        .all()
+        .find(({ args }) => args[0] === clearCacheChannel());
+      return call.args[1];
+    };
+
+    it('publishes a full clear when a role changes without an acting user', () => {
+      const controller = new LiveQueryController({ classNames: ['Yolo'] });
+      const publish = controller.liveQueryPublisher.parsePublisher.publish;
+
+      controller.clearCachedRoles(undefined);
+
+      expect(publish).toHaveBeenCalledTimes(1);
+      const [channel, payload] = publish.calls.mostRecent().args;
+      expect(channel).toBe(clearCacheChannel());
+      expect(JSON.parse(payload)).toEqual({ clearAll: true });
+    });
+
+    it('keeps publishing the user id for older LiveQuery servers', () => {
+      const controller = new LiveQueryController({ classNames: ['Yolo'] });
+      const publish = controller.liveQueryPublisher.parsePublisher.publish;
+
+      controller.clearCachedRoles({ id: testUserId });
+
+      const payload = JSON.parse(publish.calls.mostRecent().args[1]);
+      expect(payload).toEqual({ userId: testUserId, clearAll: true });
+    });
+
+    it('clears every cached auth on a full clear message', async () => {
+      const parseLiveQueryServer = new ParseLiveQueryServer({});
+      const clearAll = spyOn(parseLiveQueryServer, '_clearAllCachedRoles').and.resolveTo();
+      const clearOne = spyOn(parseLiveQueryServer, '_clearCachedRoles').and.resolveTo();
+
+      clearCacheHandler(parseLiveQueryServer)(JSON.stringify({ clearAll: true }));
+
+      expect(clearAll).toHaveBeenCalledTimes(1);
+      expect(clearOne).not.toHaveBeenCalled();
+    });
+
+    it('falls back to the targeted clear when the message has no clearAll', async () => {
+      const parseLiveQueryServer = new ParseLiveQueryServer({});
+      const clearAll = spyOn(parseLiveQueryServer, '_clearAllCachedRoles').and.resolveTo();
+      const clearOne = spyOn(parseLiveQueryServer, '_clearCachedRoles').and.resolveTo();
+
+      clearCacheHandler(parseLiveQueryServer)(JSON.stringify({ userId: testUserId }));
+
+      expect(clearOne).toHaveBeenCalledWith(testUserId);
+      expect(clearAll).not.toHaveBeenCalled();
+    });
+
+    it('drops the auth cache and the role cache on a full clear', async () => {
+      const parseLiveQueryServer = new ParseLiveQueryServer({});
+      const roleClear = jasmine.createSpy('clear').and.resolveTo();
+      parseLiveQueryServer.cacheController = { role: { clear: roleClear } };
+      parseLiveQueryServer.authCache.set('someToken', Promise.resolve({}));
+      expect(parseLiveQueryServer.authCache.size).toBe(1);
+
+      await parseLiveQueryServer._clearAllCachedRoles();
+
+      expect(parseLiveQueryServer.authCache.size).toBe(0);
+      expect(roleClear).toHaveBeenCalledTimes(1);
+    });
+
+    it('survives a role cache that rejects on a full clear', async () => {
+      const parseLiveQueryServer = new ParseLiveQueryServer({});
+      parseLiveQueryServer.cacheController = {
+        role: { clear: () => Promise.reject(new Error('cache down')) },
+      };
+      parseLiveQueryServer.authCache.set('someToken', Promise.resolve({}));
+
+      await expectAsync(parseLiveQueryServer._clearAllCachedRoles()).toBeResolved();
+
+      expect(parseLiveQueryServer.authCache.size).toBe(0);
+    });
+  });
+
   afterEach(function () {
     jasmine.restoreLibrary('../lib/LiveQuery/ParseWebSocketServer', 'ParseWebSocketServer');
     jasmine.restoreLibrary('../lib/LiveQuery/Client', 'Client');
@@ -2115,4 +2197,5 @@ describe('LiveQueryController', () => {
       original: undefined,
     });
   });
+
 });

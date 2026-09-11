@@ -132,7 +132,13 @@ class ParseLiveQueryServer {
         return;
       }
       if (channel === Parse.applicationId + 'clearCache') {
-        this._clearCachedRoles(message.userId);
+        if (message.clearAll) {
+          this._clearAllCachedRoles();
+        } else {
+          // Sent by a Parse Server running an older version, which only
+          // invalidates the acting user.
+          this._clearCachedRoles(message.userId);
+        }
         return;
       }
       this._inflateParseObject(message);
@@ -656,6 +662,20 @@ class ParseLiveQueryServer {
           this.authCache.delete(sessionToken);
         })
       );
+    } catch (e) {
+      logger.verbose(`Could not clear role cache. ${e}`);
+    }
+  }
+
+  async _clearAllCachedRoles() {
+    try {
+      // Every cached auth holds a flattened role closure, and a role write can
+      // change the closure of any user, so the whole cache goes. Entries are
+      // repopulated lazily by getAuthForSessionToken.
+      this.authCache.clear();
+      // A standalone LiveQuery server has its own cache controller, which the
+      // Parse Server that published this message did not clear.
+      await this.cacheController?.role?.clear();
     } catch (e) {
       logger.verbose(`Could not clear role cache. ${e}`);
     }
