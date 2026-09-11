@@ -1070,7 +1070,7 @@ describe('ParseGraphQLController', () => {
         `Invalid graphQLConfig: classConfig:${className} is invalid because "mutation.destroyAlias" must be a string`
       );
 
-      expectAsync(
+      await expectAsync(
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
@@ -1082,11 +1082,12 @@ describe('ParseGraphQLController', () => {
             },
           ],
         })
-      ).toBeRejected(
+      ).toBeRejectedWithError(
+        Error,
         `Invalid graphQLConfig: classConfig:${className} is invalid because "mutation.createManyAlias" must be a string`
       );
 
-      expectAsync(
+      await expectAsync(
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
@@ -1098,11 +1099,12 @@ describe('ParseGraphQLController', () => {
             },
           ],
         })
-      ).toBeRejected(
+      ).toBeRejectedWithError(
+        Error,
         `Invalid graphQLConfig: classConfig:${className} is invalid because "mutation.updateManyAlias" must be a string`
       );
 
-      expectAsync(
+      await expectAsync(
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
@@ -1114,7 +1116,8 @@ describe('ParseGraphQLController', () => {
             },
           ],
         })
-      ).toBeRejected(
+      ).toBeRejectedWithError(
+        Error,
         `Invalid graphQLConfig: classConfig:${className} is invalid because "mutation.deleteManyAlias" must be a string`
       );
     });

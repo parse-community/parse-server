@@ -290,20 +290,14 @@ describe('Utils', () => {
   });
 
   describe('bulkErrorPayloadFromReason', () => {
-    it('should sanitize Parse.Error messages when enableSanitizedErrorResponse is true', () => {
-      const config = { enableSanitizedErrorResponse: true };
+    it('should return original Parse.Error code and message regardless of enableSanitizedErrorResponse', () => {
       const reason = new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Cloud script detail');
-      const payload = bulkErrorPayloadFromReason(reason, config);
-      expect(payload.code).toBe(Parse.Error.SCRIPT_FAILED);
-      expect(payload.message).toBe('Permission denied');
-    });
-
-    it('should return detailed Parse.Error messages when enableSanitizedErrorResponse is false', () => {
-      const config = { enableSanitizedErrorResponse: false };
-      const reason = new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Cloud script detail');
-      const payload = bulkErrorPayloadFromReason(reason, config);
-      expect(payload.code).toBe(Parse.Error.SCRIPT_FAILED);
-      expect(payload.message).toBe('Cloud script detail');
+      const sanitized = bulkErrorPayloadFromReason(reason, { enableSanitizedErrorResponse: true });
+      expect(sanitized.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(sanitized.message).toBe('Cloud script detail');
+      const detailed = bulkErrorPayloadFromReason(reason, { enableSanitizedErrorResponse: false });
+      expect(detailed.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(detailed.message).toBe('Cloud script detail');
     });
 
     it('should sanitize non-Parse reasons', () => {

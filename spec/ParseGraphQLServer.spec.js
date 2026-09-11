@@ -12873,6 +12873,67 @@ describe('ParseGraphQLServer', () => {
             }
           });
 
+          it('should process createMany items sequentially in input order', async () => {
+            try {
+              Parse.Cloud.beforeSave('BulkTest', async request => {
+                if (request.object.get('title') === 'second') {
+                  const q = new Parse.Query('BulkTest');
+                  q.equalTo('title', 'first');
+                  const found = await q.first({ useMasterKey: true });
+                  if (!found) {
+                    throw new Parse.Error(
+                      Parse.Error.SCRIPT_FAILED,
+                      'first object must already exist'
+                    );
+                  }
+                }
+              });
+
+              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+
+              const clientMutationId = uuidv4();
+              const { data } = await apolloClient.mutate({
+                mutation: gql`
+              mutation CreateManyBulkSequential($input: CreateManyBulkTestInput!) {
+                createManyBulkTest(input: $input) {
+                  clientMutationId
+                  results {
+                    success
+                    error {
+                      code
+                      message
+                    }
+                    bulkTest {
+                      objectId
+                      title
+                    }
+                  }
+                }
+              }
+            `,
+                variables: {
+                  input: {
+                    clientMutationId,
+                    fields: [{ title: 'first' }, { title: 'second' }],
+                  },
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+              const results = data.createManyBulkTest.results;
+              expect(results.length).toBe(2);
+              expect(results[0].success).toBe(true);
+              expect(results[0].bulkTest.title).toBe('first');
+              expect(results[1].success).toBe(true);
+              expect(results[1].bulkTest.title).toBe('second');
+            } catch (e) {
+              handleError(e);
+            }
+          });
+
           it('should updateMany with mixed success and failure', async () => {
             try {
               const a = new Parse.Object('BulkTest');
@@ -13079,7 +13140,7 @@ describe('ParseGraphQLServer', () => {
               expect(results[1].success).toBe(false);
               expect(results[1].bulkTest).toBeNull();
               expect(results[1].error.code).toBe(Parse.Error.SCRIPT_FAILED);
-              expect(results[1].error.message).toBe('Permission denied');
+              expect(results[1].error.message).toBe('beforeSave blocked this title');
 
               const q = new Parse.Query('BulkTest');
               q.equalTo('title', 'ok');
@@ -13194,10 +13255,10 @@ describe('ParseGraphQLServer', () => {
               const [ok, failed] = data.createManyBulkTest.results;
               expect(ok.success).toBe(true);
               expect(failed.success).toBe(false);
-              // Cloud Code wraps a plain Error as Parse.Error(SCRIPT_FAILED) before bulk handling;
-              // sanitized response matches other Parse.Error bulk failures.
+              // Cloud Code wraps a plain Error as Parse.Error(SCRIPT_FAILED) before bulk handling,
+              // so the original message is kept like other Parse.Error bulk failures.
               expect(failed.error.code).toBe(Parse.Error.SCRIPT_FAILED);
-              expect(failed.error.message).toBe('Permission denied');
+              expect(failed.error.message).toBe('internal stack detail');
             } catch (e) {
               handleError(e);
             }
@@ -13318,7 +13379,7 @@ describe('ParseGraphQLServer', () => {
               expect(results[1].success).toBe(false);
               expect(results[1].bulkTest).toBeNull();
               expect(results[1].error.code).toBe(Parse.Error.SCRIPT_FAILED);
-              expect(results[1].error.message).toBe('Permission denied');
+              expect(results[1].error.message).toBe('beforeSave blocked update to BLOCKED');
 
               await a.fetch({ useMasterKey: true });
               await b.fetch({ useMasterKey: true });
@@ -13406,7 +13467,7 @@ describe('ParseGraphQLServer', () => {
                 r => !r.success && r.error.code === Parse.Error.SCRIPT_FAILED
               );
               expect(blocked.bulkTest).toBeNull();
-              expect(blocked.error.message).toBe('Permission denied');
+              expect(blocked.error.message).toBe('beforeDelete blocked delete for nodelete');
 
               const q = new Parse.Query('BulkTest');
               const remaining = await q.find({ useMasterKey: true });

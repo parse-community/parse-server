@@ -45,6 +45,27 @@ const assertBulkInputLength = (count, config, auth) => {
   }
 };
 
+const mapBulkSettled = async (items, mapper, getGraphQLQueryName, config) => {
+  const results = [];
+  for (const item of items) {
+    try {
+      const value = await mapper(item);
+      results.push({
+        success: true,
+        [getGraphQLQueryName]: value,
+        error: null,
+      });
+    } catch (reason) {
+      results.push({
+        success: false,
+        [getGraphQLQueryName]: null,
+        error: bulkErrorPayloadFromReason(reason, config),
+      });
+    }
+  }
+  return results;
+};
+
 const filterDeletedFields = fields =>
   Object.keys(fields).reduce((acc, key) => {
     if (typeof fields[key] === 'object' && fields[key]?.__op === 'Delete') {
@@ -400,7 +421,7 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
     });
     const createManyGraphQLMutation = mutationWithClientMutationId({
       name: `CreateMany${graphQLClassName}`,
-      description: `The ${createManyGraphQLMutationName} mutation creates multiple objects of the ${graphQLClassName} class. Items are processed concurrently via Promise.allSettled. Each entry succeeds or fails independently.`,
+      description: `The ${createManyGraphQLMutationName} mutation creates multiple objects of the ${graphQLClassName} class. Items are processed sequentially in input order. Each entry succeeds or fails independently.`,
       inputFields: {
         fields: {
           description: 'List of field sets; one object will be created per element.',
@@ -426,93 +447,79 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
           const { config, auth, info } = context;
           assertBulkInputLength(fieldsList.length, config, auth);
 
-          const settled = await Promise.allSettled(
-            fieldsList.map(fieldSet =>
-              (async () => {
-                let fields = fieldSet ? cloneArgs({ fields: fieldSet }).fields : {};
-                if (!fields) {
-                  fields = {};
-                }
-                const parseFields = await transformTypes('create', fields, {
+          const results = await mapBulkSettled(
+            fieldsList,
+            async fieldSet => {
+              let fields = fieldSet ? cloneArgs({ fields: fieldSet }).fields : {};
+              if (!fields) {
+                fields = {};
+              }
+              const parseFields = await transformTypes('create', fields, {
+                className,
+                parseGraphQLSchema,
+                originalFields: fieldSet,
+                req: { config, auth, info },
+              });
+              const createdObject = await objectsMutations.createObject(
+                className,
+                parseFields,
+                config,
+                auth,
+                info
+              );
+              const selectedFields = getFieldNames(mutationInfo)
+                .filter(field => field.startsWith(createManyResultsPrefix))
+                .map(field => field.replace(createManyResultsPrefix, ''));
+              const { keys, include } = extractKeysAndInclude(selectedFields);
+              const { keys: requiredKeys, needGet } = getOnlyRequiredFields(
+                fields,
+                keys,
+                include,
+                ['id', 'objectId', 'createdAt', 'updatedAt']
+              );
+              const needToGetAllKeys = objectsQueries.needToGetAllKeys(
+                parseClass.fields,
+                keys,
+                parseGraphQLSchema.parseClasses
+              );
+              let optimizedObject = {};
+              if (needGet && !needToGetAllKeys) {
+                optimizedObject = await objectsQueries.getObject(
                   className,
-                  parseGraphQLSchema,
-                  originalFields: fieldSet,
-                  req: { config, auth, info },
-                });
-                const createdObject = await objectsMutations.createObject(
-                  className,
-                  parseFields,
+                  createdObject.objectId,
+                  requiredKeys,
+                  include,
+                  undefined,
+                  undefined,
                   config,
                   auth,
-                  info
-                );
-                const selectedFields = getFieldNames(mutationInfo)
-                  .filter(field => field.startsWith(createManyResultsPrefix))
-                  .map(field => field.replace(createManyResultsPrefix, ''));
-                const { keys, include } = extractKeysAndInclude(selectedFields);
-                const { keys: requiredKeys, needGet } = getOnlyRequiredFields(
-                  fields,
-                  keys,
-                  include,
-                  ['id', 'objectId', 'createdAt', 'updatedAt']
-                );
-                const needToGetAllKeys = objectsQueries.needToGetAllKeys(
-                  parseClass.fields,
-                  keys,
+                  info,
                   parseGraphQLSchema.parseClasses
                 );
-                let optimizedObject = {};
-                if (needGet && !needToGetAllKeys) {
-                  optimizedObject = await objectsQueries.getObject(
-                    className,
-                    createdObject.objectId,
-                    requiredKeys,
-                    include,
-                    undefined,
-                    undefined,
-                    config,
-                    auth,
-                    info,
-                    parseGraphQLSchema.parseClasses
-                  );
-                } else if (needToGetAllKeys) {
-                  optimizedObject = await objectsQueries.getObject(
-                    className,
-                    createdObject.objectId,
-                    undefined,
-                    include,
-                    undefined,
-                    undefined,
-                    config,
-                    auth,
-                    info,
-                    parseGraphQLSchema.parseClasses
-                  );
-                }
-                return {
-                  ...createdObject,
-                  updatedAt: createdObject.createdAt,
-                  ...filterDeletedFields(parseFields),
-                  ...optimizedObject,
-                };
-              })()
-            )
-          );
-
-          const results = settled.map(r => {
-            if (r.status === 'fulfilled') {
+              } else if (needToGetAllKeys) {
+                optimizedObject = await objectsQueries.getObject(
+                  className,
+                  createdObject.objectId,
+                  undefined,
+                  include,
+                  undefined,
+                  undefined,
+                  config,
+                  auth,
+                  info,
+                  parseGraphQLSchema.parseClasses
+                );
+              }
               return {
-                success: true,
-                [getGraphQLQueryName]: r.value,
-                error: null,
+                ...createdObject,
+                updatedAt: createdObject.createdAt,
+                ...filterDeletedFields(parseFields),
+                ...optimizedObject,
               };
-            }
-            return {
-              success: false,
-              [getGraphQLQueryName]: null,
-              error: bulkErrorPayloadFromReason(r.reason, config),
-            };
-          });
+            },
+            getGraphQLQueryName,
+            config
+          );
 
           return { results };
         } catch (e) {
@@ -553,7 +560,7 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
     });
     const updateManyGraphQLMutation = mutationWithClientMutationId({
       name: `UpdateMany${graphQLClassName}`,
-      description: `The ${updateManyGraphQLMutationName} mutation updates multiple objects of the ${graphQLClassName} class. Items are processed concurrently via Promise.allSettled. Each entry succeeds or fails independently.`,
+      description: `The ${updateManyGraphQLMutationName} mutation updates multiple objects of the ${graphQLClassName} class. Items are processed sequentially in input order. Each entry succeeds or fails independently.`,
       inputFields: {
         updates: {
           description: 'List of id + fields pairs; one update per element.',
@@ -583,95 +590,81 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
           const { config, auth, info } = context;
           assertBulkInputLength(updates.length, config, auth);
 
-          const settled = await Promise.allSettled(
-            updates.map(updateEntry =>
-              (async () => {
-                let { id } = updateEntry;
-                const fields = updateEntry.fields
-                  ? cloneArgs({ fields: updateEntry.fields }).fields
-                  : {};
-                id = normalizeObjectIdForClass(id, className);
-                const parseFields = await transformTypes('update', fields, {
-                  className,
-                  parseGraphQLSchema,
-                  originalFields: updateEntry.fields,
-                  req: { config, auth, info },
-                });
-                const updatedObject = await objectsMutations.updateObject(
+          const results = await mapBulkSettled(
+            updates,
+            async updateEntry => {
+              let { id } = updateEntry;
+              const fields = updateEntry.fields
+                ? cloneArgs({ fields: updateEntry.fields }).fields
+                : {};
+              id = normalizeObjectIdForClass(id, className);
+              const parseFields = await transformTypes('update', fields, {
+                className,
+                parseGraphQLSchema,
+                originalFields: updateEntry.fields,
+                req: { config, auth, info },
+              });
+              const updatedObject = await objectsMutations.updateObject(
+                className,
+                id,
+                parseFields,
+                config,
+                auth,
+                info
+              );
+              const selectedFields = getFieldNames(mutationInfo)
+                .filter(field => field.startsWith(updateManyResultsPrefix))
+                .map(field => field.replace(updateManyResultsPrefix, ''));
+              const { keys, include } = extractKeysAndInclude(selectedFields);
+              const { keys: requiredKeys, needGet } = getOnlyRequiredFields(
+                fields,
+                keys,
+                include,
+                ['id', 'objectId', 'updatedAt']
+              );
+              const needToGetAllKeys = objectsQueries.needToGetAllKeys(
+                parseClass.fields,
+                keys,
+                parseGraphQLSchema.parseClasses
+              );
+              let optimizedObject = {};
+              if (needGet && !needToGetAllKeys) {
+                optimizedObject = await objectsQueries.getObject(
                   className,
                   id,
-                  parseFields,
+                  requiredKeys,
+                  include,
+                  undefined,
+                  undefined,
                   config,
                   auth,
-                  info
-                );
-                const selectedFields = getFieldNames(mutationInfo)
-                  .filter(field => field.startsWith(updateManyResultsPrefix))
-                  .map(field => field.replace(updateManyResultsPrefix, ''));
-                const { keys, include } = extractKeysAndInclude(selectedFields);
-                const { keys: requiredKeys, needGet } = getOnlyRequiredFields(
-                  fields,
-                  keys,
-                  include,
-                  ['id', 'objectId', 'updatedAt']
-                );
-                const needToGetAllKeys = objectsQueries.needToGetAllKeys(
-                  parseClass.fields,
-                  keys,
+                  info,
                   parseGraphQLSchema.parseClasses
                 );
-                let optimizedObject = {};
-                if (needGet && !needToGetAllKeys) {
-                  optimizedObject = await objectsQueries.getObject(
-                    className,
-                    id,
-                    requiredKeys,
-                    include,
-                    undefined,
-                    undefined,
-                    config,
-                    auth,
-                    info,
-                    parseGraphQLSchema.parseClasses
-                  );
-                } else if (needToGetAllKeys) {
-                  optimizedObject = await objectsQueries.getObject(
-                    className,
-                    id,
-                    undefined,
-                    include,
-                    undefined,
-                    undefined,
-                    config,
-                    auth,
-                    info,
-                    parseGraphQLSchema.parseClasses
-                  );
-                }
-                return {
-                  objectId: id,
-                  ...updatedObject,
-                  ...filterDeletedFields(parseFields),
-                  ...optimizedObject,
-                };
-              })()
-            )
-          );
-
-          const results = settled.map(r => {
-            if (r.status === 'fulfilled') {
+              } else if (needToGetAllKeys) {
+                optimizedObject = await objectsQueries.getObject(
+                  className,
+                  id,
+                  undefined,
+                  include,
+                  undefined,
+                  undefined,
+                  config,
+                  auth,
+                  info,
+                  parseGraphQLSchema.parseClasses
+                );
+              }
               return {
-                success: true,
-                [getGraphQLQueryName]: r.value,
-                error: null,
+                objectId: id,
+                ...updatedObject,
+                ...filterDeletedFields(parseFields),
+                ...optimizedObject,
               };
-            }
-            return {
-              success: false,
-              [getGraphQLQueryName]: null,
-              error: bulkErrorPayloadFromReason(r.reason, config),
-            };
-          });
+            },
+            getGraphQLQueryName,
+            config
+          );
 
           return { results };
         } catch (e) {
@@ -712,7 +705,7 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
     });
     const deleteManyGraphQLMutation = mutationWithClientMutationId({
       name: `DeleteMany${graphQLClassName}`,
-      description: `The ${deleteManyGraphQLMutationName} mutation deletes multiple objects of the ${graphQLClassName} class. Items are processed concurrently via Promise.allSettled. Each entry succeeds or fails independently.`,
+      description: `The ${deleteManyGraphQLMutationName} mutation deletes multiple objects of the ${graphQLClassName} class. Items are processed sequentially in input order. Each entry succeeds or fails independently.`,
       inputFields: {
         ids: {
           description: 'Object ids to delete (global or object id).',
@@ -736,56 +729,42 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
           const { config, auth, info } = context;
           assertBulkInputLength(ids.length, config, auth);
 
-          const settled = await Promise.allSettled(
-            ids.map(id =>
-              (async () => {
-                const objectId = normalizeObjectIdForClass(id, className);
-                const selectedFields = getFieldNames(mutationInfo)
-                  .filter(field => field.startsWith(deleteManyResultsPrefix))
-                  .map(field => field.replace(deleteManyResultsPrefix, ''));
-                const { keys, include } = extractKeysAndInclude(selectedFields);
-                let optimizedObject = {};
-                if (
-                  keys &&
-                  keys.split(',').filter(key => !['id', 'objectId'].includes(key)).length > 0
-                ) {
-                  optimizedObject = await objectsQueries.getObject(
-                    className,
-                    objectId,
-                    keys,
-                    include,
-                    undefined,
-                    undefined,
-                    config,
-                    auth,
-                    info,
-                    parseGraphQLSchema.parseClasses
-                  );
-                }
-                await objectsMutations.deleteObject(className, objectId, config, auth, info);
-                return {
+          const results = await mapBulkSettled(
+            ids,
+            async id => {
+              const objectId = normalizeObjectIdForClass(id, className);
+              const selectedFields = getFieldNames(mutationInfo)
+                .filter(field => field.startsWith(deleteManyResultsPrefix))
+                .map(field => field.replace(deleteManyResultsPrefix, ''));
+              const { keys, include } = extractKeysAndInclude(selectedFields);
+              let optimizedObject = {};
+              if (
+                keys &&
+                keys.split(',').filter(key => !['id', 'objectId'].includes(key)).length > 0
+              ) {
+                optimizedObject = await objectsQueries.getObject(
                   className,
                   objectId,
-                  ...optimizedObject,
-                };
-              })()
-            )
-          );
-
-          const results = settled.map(r => {
-            if (r.status === 'fulfilled') {
+                  keys,
+                  include,
+                  undefined,
+                  undefined,
+                  config,
+                  auth,
+                  info,
+                  parseGraphQLSchema.parseClasses
+                );
+              }
+              await objectsMutations.deleteObject(className, objectId, config, auth, info);
               return {
-                success: true,
-                [getGraphQLQueryName]: r.value,
-                error: null,
+                className,
+                objectId,
+                ...optimizedObject,
               };
-            }
-            return {
-              success: false,
-              [getGraphQLQueryName]: null,
-              error: bulkErrorPayloadFromReason(r.reason, config),
-            };
-          });
+            },
+            getGraphQLQueryName,
+            config
+          );
 
           return { results };
         } catch (e) {
