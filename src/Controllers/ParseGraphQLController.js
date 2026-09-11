@@ -258,9 +258,15 @@ class ParseGraphQLController {
             create = null,
             update = null,
             destroy = null,
+            createMany = null,
+            updateMany = null,
+            deleteMany = null,
             createAlias = null,
             updateAlias = null,
             destroyAlias = null,
+            createManyAlias = null,
+            updateManyAlias = null,
+            deleteManyAlias = null,
             ...invalidKeys
           } = mutation;
           if (Object.keys(invalidKeys).length) {
@@ -275,6 +281,15 @@ class ParseGraphQLController {
           if (destroy !== null && typeof destroy !== 'boolean') {
             return `"mutation.destroy" must be a boolean`;
           }
+          if (createMany !== null && typeof createMany !== 'boolean') {
+            return `"mutation.createMany" must be a boolean`;
+          }
+          if (updateMany !== null && typeof updateMany !== 'boolean') {
+            return `"mutation.updateMany" must be a boolean`;
+          }
+          if (deleteMany !== null && typeof deleteMany !== 'boolean') {
+            return `"mutation.deleteMany" must be a boolean`;
+          }
           if (createAlias !== null && typeof createAlias !== 'string') {
             return `"mutation.createAlias" must be a string`;
           }
@@ -283,6 +298,15 @@ class ParseGraphQLController {
           }
           if (destroyAlias !== null && typeof destroyAlias !== 'string') {
             return `"mutation.destroyAlias" must be a string`;
+          }
+          if (createManyAlias !== null && typeof createManyAlias !== 'string') {
+            return `"mutation.createManyAlias" must be a string`;
+          }
+          if (updateManyAlias !== null && typeof updateManyAlias !== 'string') {
+            return `"mutation.updateManyAlias" must be a string`;
+          }
+          if (deleteManyAlias !== null && typeof deleteManyAlias !== 'string') {
+            return `"mutation.deleteManyAlias" must be a string`;
           }
         } else {
           return `"mutation" must be a valid object`;
@@ -352,9 +376,15 @@ export interface ParseGraphQLClassConfig {
     update: ?boolean,
     // delete is a reserved key word in js
     destroy: ?boolean,
+    createMany: ?boolean,
+    updateMany: ?boolean,
+    deleteMany: ?boolean,
     createAlias: ?String,
     updateAlias: ?String,
     destroyAlias: ?String,
+    createManyAlias: ?String,
+    updateManyAlias: ?String,
+    deleteManyAlias: ?String,
   };
 }
 
