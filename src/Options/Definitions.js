@@ -558,7 +558,7 @@ module.exports.ParseServerOptions = {
   },
   requestContextMiddleware: {
     env: 'PARSE_SERVER_REQUEST_CONTEXT_MIDDLEWARE',
-    help: 'Options to customize the request context using inversion of control/dependency injection.',
+    help: 'Options to customize the request context using inversion of control/dependency injection. Also applied on internal `directAccess` requests via a synthetic `req` that exposes only `config` and empty `headers`, with a bare `res` object. On that path the middleware must settle via `next()` or a Promise; do not rely on response termination. Express-only accessors such as `req.get()`, `req.header()`, `req.ip`, and `req.body` are unavailable.',
   },
   requestKeywordDenylist: {
     env: 'PARSE_SERVER_REQUEST_KEYWORD_DENYLIST',

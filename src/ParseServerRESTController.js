@@ -29,14 +29,76 @@ function getAuth(options = {}, config) {
   });
 }
 
+/**
+ * Apply requestContextMiddleware on a synthetic request so directAccess ops
+ * get the same per-request DI as Express HTTP requests.
+ *
+ * Synthetic request contract (minimal supported fields only):
+ * - `req.config` — Parse Server config (DI target only)
+ * - `req.headers` — empty object `{}` (no HTTP headers on this path; DI support only)
+ * - `res` — bare object `{}` (not a real Express response)
+ *
+ * Express-only request properties and methods such as `req.get()`,
+ * `req.header()`, `req.ip`, and `req.body` are unavailable. Middleware must
+ * use only the supported fields above; this path intentionally does not add
+ * partial Express compatibility.
+ *
+ * Settlement is required: the middleware must call `next()` / `next(err)`, or
+ * return a Promise that resolves or rejects. Do not rely on response
+ * termination (`res.send`, `res.end`, `res.json`, etc.) or other implicit
+ * paths — those will hang nested directAccess ops indefinitely.
+ */
+async function applyRequestContextMiddleware(config) {
+  if (typeof config.requestContextMiddleware !== 'function') {
+    return;
+  }
+
+  // Minimal synthetic req — see contract in JSDoc above.
+  const req = { config, headers: {} };
+
+  // Bridge callback-style Express middleware (`next(err)`) and Promise-returning
+  // middleware into a single awaitable settlement.
+  await new Promise((resolve, reject) => {
+    let settled = false;
+    const done = err => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    };
+
+    let result;
+    try {
+      result = config.requestContextMiddleware(req, {}, done);
+    } catch (err) {
+      done(err);
+      return;
+    }
+
+    if (result != null && typeof result.then === 'function') {
+      result.then(() => done(), done);
+    }
+  });
+}
+
 function ParseServerRESTController(applicationId, router) {
-  function handleRequest(method, path, data = {}, options = {}, config) {
+  async function handleRequest(method, path, data = {}, options = {}, config) {
     // Store the arguments, for later use if internal fails
     const args = arguments;
+    const configWasProvided = !!config;
 
-    if (!config) {
+    if (!configWasProvided) {
       config = Config.get(applicationId);
+      // Fresh config from AppCache has no Express middleware mutations;
+      // re-apply requestContextMiddleware for DI parity with HTTP.
+      await applyRequestContextMiddleware(config);
     }
+
     const serverURL = new URL(config.serverURL);
     if (path.indexOf(serverURL.pathname) === 0) {
       path = path.slice(serverURL.pathname.length, path.length);
@@ -47,14 +109,19 @@ function ParseServerRESTController(applicationId, router) {
     }
 
     if (path === '/batch') {
-      const batch = transactionRetries => {
-        let initialPromise = Promise.resolve();
+      const batch = async transactionRetries => {
         if (data.transaction === true) {
-          initialPromise = config.database.createTransactionalSession();
+          await config.database.createTransactionalSession();
         }
-        return initialPromise.then(() => {
-          const promises = data.requests.map(request => {
-            return handleRequest(request.method, request.path, request.body, options, config).then(
+        const result = await Promise.all(
+          data.requests.map(request => {
+            return handleRequest(
+              request.method,
+              request.path,
+              request.body,
+              options,
+              config
+            ).then(
               response => {
                 if (options.returnStatus) {
                   const status = response._status;
@@ -71,36 +138,30 @@ function ParseServerRESTController(applicationId, router) {
                 };
               }
             );
-          });
-          return Promise.all(promises)
-            .then(result => {
-              if (data.transaction === true) {
-                if (result.find(resultItem => typeof resultItem.error === 'object')) {
-                  return config.database.abortTransactionalSession().then(() => {
-                    return Promise.reject(result);
-                  });
-                } else {
-                  return config.database.commitTransactionalSession().then(() => {
-                    return result;
-                  });
-                }
-              } else {
-                return result;
-              }
-            })
-            .catch(error => {
-              if (
-                error &&
-                error.find(
-                  errorItem => typeof errorItem.error === 'object' && errorItem.error.code === 251
-                ) &&
-                transactionRetries > 0
-              ) {
-                return batch(transactionRetries - 1);
-              }
-              throw error;
-            });
-        });
+          })
+        );
+        try {
+          if (data.transaction === true) {
+            if (result.find(resultItem => typeof resultItem.error === 'object')) {
+              await config.database.abortTransactionalSession();
+              throw result;
+            }
+            await config.database.commitTransactionalSession();
+          }
+          return result;
+        } catch (error) {
+          if (
+            error &&
+            error.find &&
+            error.find(
+              errorItem => typeof errorItem.error === 'object' && errorItem.error.code === 251
+            ) &&
+            transactionRetries > 0
+          ) {
+            return batch(transactionRetries - 1);
+          }
+          throw error;
+        }
       };
       return batch(5);
     }
@@ -110,59 +171,50 @@ function ParseServerRESTController(applicationId, router) {
       query = data;
     }
 
-    return new Promise((resolve, reject) => {
-      let requestContext;
-      try {
-        requestContext = structuredClone(options.context || {});
-      } catch (error) {
-        reject(
-          new Parse.Error(
-            Parse.Error.INVALID_VALUE,
-            `Context contains non-cloneable values: ${error.message}`
-          )
-        );
-        return;
+    let requestContext;
+    try {
+      requestContext = structuredClone(options.context || {});
+    } catch (error) {
+      throw new Parse.Error(
+        Parse.Error.INVALID_VALUE,
+        `Context contains non-cloneable values: ${error.message}`
+      );
+    }
+
+    const auth = await getAuth(options, config);
+    const request = {
+      body: data,
+      config,
+      auth,
+      info: {
+        applicationId: applicationId,
+        sessionToken: options.sessionToken,
+        installationId: options.installationId,
+        context: requestContext,
+      },
+      query,
+    };
+
+    try {
+      const { response, status, headers = {} } = await router.tryRouteRequest(
+        method,
+        path,
+        request
+      );
+      if (options.returnStatus) {
+        return { ...response, _status: status, _headers: headers };
       }
-      getAuth(options, config).then(auth => {
-        const request = {
-          body: data,
-          config,
-          auth,
-          info: {
-            applicationId: applicationId,
-            sessionToken: options.sessionToken,
-            installationId: options.installationId,
-            context: requestContext,
-          },
-          query,
-        };
-        return Promise.resolve()
-          .then(() => {
-            return router.tryRouteRequest(method, path, request);
-          })
-          .then(
-            resp => {
-              const { response, status, headers = {} } = resp;
-              if (options.returnStatus) {
-                resolve({ ...response, _status: status, _headers: headers });
-              } else {
-                resolve(response);
-              }
-            },
-            err => {
-              if (
-                err instanceof Parse.Error &&
-                err.code == Parse.Error.INVALID_JSON &&
-                err.message == `cannot route ${method} ${path}`
-              ) {
-                RESTController.request.apply(null, args).then(resolve, reject);
-              } else {
-                reject(err);
-              }
-            }
-          );
-      }, reject);
-    });
+      return response;
+    } catch (err) {
+      if (
+        err instanceof Parse.Error &&
+        err.code == Parse.Error.INVALID_JSON &&
+        err.message == `cannot route ${method} ${path}`
+      ) {
+        return RESTController.request.apply(null, args);
+      }
+      throw err;
+    }
   }
 
   return {
