@@ -63,14 +63,18 @@ function safeBulkReasonDetailedMessage(reason) {
 
 /**
  * `{ code, message }` for GraphQL bulk mutation per-item failures (`ParseGraphQLBulkError`).
- * `Parse.Error` keeps its original code and message; other values are logged and mapped to a generic message when sanitizing.
+ * Explicit `Parse.Error` keeps its original code and message. Native hook errors wrapped by
+ * `resolveError` as `Parse.Error(SCRIPT_FAILED, error.message)` are sanitized like other
+ * non-Parse values when `enableSanitizedErrorResponse` is enabled.
  *
  * @param {unknown} reason
  * @param {object} config
  * @returns {{ code: number, message: string }}
  */
 function bulkErrorPayloadFromReason(reason, config) {
-  if (reason instanceof Parse.Error) {
+  const sanitize = config?.enableSanitizedErrorResponse !== false;
+  const isWrappedNativeError = reason instanceof Parse.Error && reason.wrappedNativeError;
+  if (reason instanceof Parse.Error && !(isWrappedNativeError && sanitize)) {
     return { code: reason.code, message: reason.message };
   }
   const detailedMessage = safeBulkReasonDetailedMessage(reason);
@@ -83,8 +87,7 @@ function bulkErrorPayloadFromReason(reason, config) {
       Utils.isNativeError(reason) ? reason.stack : ''
     );
   }
-  const message =
-    config?.enableSanitizedErrorResponse !== false ? 'Internal server error' : detailedMessage;
+  const message = sanitize ? 'Internal server error' : detailedMessage;
   return { code: Parse.Error.INTERNAL_SERVER_ERROR, message };
 }
 

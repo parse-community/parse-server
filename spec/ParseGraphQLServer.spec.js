@@ -13255,10 +13255,10 @@ describe('ParseGraphQLServer', () => {
               const [ok, failed] = data.createManyBulkTest.results;
               expect(ok.success).toBe(true);
               expect(failed.success).toBe(false);
-              // Cloud Code wraps a plain Error as Parse.Error(SCRIPT_FAILED) before bulk handling,
-              // so the original message is kept like other Parse.Error bulk failures.
-              expect(failed.error.code).toBe(Parse.Error.SCRIPT_FAILED);
-              expect(failed.error.message).toBe('internal stack detail');
+              // Cloud Code wraps a plain Error as Parse.Error(SCRIPT_FAILED, error.message).
+              // Wrapped native errors are sanitized separately from explicit Parse.Error values.
+              expect(failed.error.code).toBe(Parse.Error.INTERNAL_SERVER_ERROR);
+              expect(failed.error.message).toBe('Internal server error');
             } catch (e) {
               handleError(e);
             }

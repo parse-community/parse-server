@@ -1,5 +1,6 @@
 const Utils = require('../lib/Utils');
 const { createSanitizedError, createSanitizedHttpError, bulkErrorPayloadFromReason } = require("../lib/Error")
+const { resolveError } = require('../lib/triggers');
 const vm = require('vm');
 
 describe('Utils', () => {
@@ -298,6 +299,26 @@ describe('Utils', () => {
       const detailed = bulkErrorPayloadFromReason(reason, { enableSanitizedErrorResponse: false });
       expect(detailed.code).toBe(Parse.Error.SCRIPT_FAILED);
       expect(detailed.message).toBe('Cloud script detail');
+    });
+
+    it('should sanitize wrapped native Parse.Error when enableSanitizedErrorResponse is true', () => {
+      const reason = resolveError(new Error('internal stack detail'), {
+        code: Parse.Error.SCRIPT_FAILED,
+        message: 'Script failed. Unknown error.',
+      });
+      const payload = bulkErrorPayloadFromReason(reason, { enableSanitizedErrorResponse: true });
+      expect(payload.code).toBe(Parse.Error.INTERNAL_SERVER_ERROR);
+      expect(payload.message).toBe('Internal server error');
+    });
+
+    it('should keep wrapped native Parse.Error message when enableSanitizedErrorResponse is false', () => {
+      const reason = resolveError(new Error('internal stack detail'), {
+        code: Parse.Error.SCRIPT_FAILED,
+        message: 'Script failed. Unknown error.',
+      });
+      const payload = bulkErrorPayloadFromReason(reason, { enableSanitizedErrorResponse: false });
+      expect(payload.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(payload.message).toBe('internal stack detail');
     });
 
     it('should sanitize non-Parse reasons', () => {
