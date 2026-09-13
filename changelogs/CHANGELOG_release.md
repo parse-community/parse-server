@@ -1,3 +1,10 @@
+## [8.6.91](https://github.com/parse-community/parse-server/compare/8.6.90...8.6.91) (2026-09-13)
+
+
+### Bug Fixes
+
+* Unverified auth provider identity accepted on password login for code-based auth adapters ([GHSA-mr43-w6c2-mvjq](https://github.com/parse-community/parse-server/security/advisories/GHSA-mr43-w6c2-mvjq)) ([#10663](https://github.com/parse-community/parse-server/issues/10663)) ([85f5dc0](https://github.com/parse-community/parse-server/commit/85f5dc06e9ea35a14091fb620a2bbcf7b13d1c90))
+
 ## [8.6.90](https://github.com/parse-community/parse-server/compare/8.6.89...8.6.90) (2026-09-09)
 
 
