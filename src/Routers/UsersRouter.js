@@ -240,6 +240,12 @@ export class UsersRouter extends ClassesRouter {
     let authDataResponse;
     let validatedAuthData;
     if (authData) {
+      // Run the adapters' `beforeFind` (the credential check for code-based adapters) as the
+      // signup/link path does, and reject an identity already linked to another user
+      const linkedUsers = await Auth.findUsersWithAuthData(req.config, authData, true);
+      if (linkedUsers.some(linkedUser => linkedUser.objectId !== user.objectId)) {
+        throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
+      }
       const res = await Auth.handleAuthDataValidation(
         authData,
         new RestWrite(
@@ -652,9 +658,9 @@ export class UsersRouter extends ClassesRouter {
         );
       }
 
-      const results = await Auth.findUsersWithAuthData(req.config, authData);
-
       try {
+        // Run `beforeFind` so a bare client-supplied provider id cannot select the user
+        const results = await Auth.findUsersWithAuthData(req.config, authData, true);
         if (!results[0] || results.length > 1) {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'User not found.');
         }
