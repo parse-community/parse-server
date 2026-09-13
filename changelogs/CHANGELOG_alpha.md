@@ -1,3 +1,10 @@
+## [9.10.1-alpha.11](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.10...9.10.1-alpha.11) (2026-09-13)
+
+
+### Bug Fixes
+
+* Rate limit is bypassed by sending request header `X-Forwarded-For: 127.0.0.1` when Parse Server option `trustProxy` is permissive ([#10664](https://github.com/parse-community/parse-server/issues/10664)) ([ebd425e](https://github.com/parse-community/parse-server/commit/ebd425e65d4e3abe78aae725193330710257c476))
+
 ## [9.10.1-alpha.10](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.9...9.10.1-alpha.10) (2026-09-13)
 
 
