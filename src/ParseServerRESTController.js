@@ -29,6 +29,30 @@ function getAuth(options = {}, config) {
   });
 }
 
+function stripUndefined(obj) {
+  if (obj === null || obj === undefined || typeof obj !== 'object') {
+    return obj;
+  }
+  if (Array.isArray(obj)) {
+    for (let i = 0; i < obj.length; i++) {
+      if (obj[i] === undefined) {
+        obj[i] = null;
+      } else {
+        stripUndefined(obj[i]);
+      }
+    }
+    return obj;
+  }
+  for (const key of Object.keys(obj)) {
+    if (obj[key] === undefined) {
+      delete obj[key];
+    } else {
+      stripUndefined(obj[key]);
+    }
+  }
+  return obj;
+}
+
 function ParseServerRESTController(applicationId, router) {
   function handleRequest(method, path, data = {}, options = {}, config) {
     // Store the arguments, for later use if internal fails
@@ -125,7 +149,7 @@ function ParseServerRESTController(applicationId, router) {
       }
       getAuth(options, config).then(auth => {
         const request = {
-          body: data,
+          body: stripUndefined(data),
           config,
           auth,
           info: {
@@ -134,7 +158,7 @@ function ParseServerRESTController(applicationId, router) {
             installationId: options.installationId,
             context: requestContext,
           },
-          query,
+          query: query ? stripUndefined(query) : query,
         };
         return Promise.resolve()
           .then(() => {
@@ -143,10 +167,11 @@ function ParseServerRESTController(applicationId, router) {
           .then(
             resp => {
               const { response, status, headers = {} } = resp;
+              const strippedResponse = stripUndefined(response);
               if (options.returnStatus) {
-                resolve({ ...response, _status: status, _headers: headers });
+                resolve({ ...strippedResponse, _status: status, _headers: headers });
               } else {
-                resolve(response);
+                resolve(strippedResponse);
               }
             },
             err => {
