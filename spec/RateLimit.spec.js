@@ -369,7 +369,7 @@ describe('rate limit', () => {
         },
         get: key => fakeReq.headers[key],
       };
-      if (forwardedFor) {
+      if (forwardedFor !== undefined) {
         fakeReq.headers['x-forwarded-for'] = forwardedFor;
       }
       return fakeReq;
@@ -462,6 +462,40 @@ describe('rate limit', () => {
       expect(first).toBe('next');
       const second = await runThroughRateLimiter(
         makeFakeReq({ remoteAddress: '203.0.113.5', forwardedFor: '127.0.0.1' })
+      );
+      expect(second).toBe('rejected');
+    });
+
+    it('does not exempt a request that presents an empty X-Forwarded-For header when trustProxy is true', async () => {
+      await reconfigureServer({ trustProxy: true, rateLimit: [loginRateLimit] });
+      const emptyForwardedHeaders = { ...headers, 'X-Forwarded-For': '' };
+      await request({
+        method: 'POST',
+        headers: emptyForwardedHeaders,
+        url: loginUrl,
+        body: loginBody,
+      }).catch(e => e);
+      const response = await request({
+        method: 'POST',
+        headers: emptyForwardedHeaders,
+        url: loginUrl,
+        body: loginBody,
+      }).catch(e => e);
+      expect(response.status).toBe(429);
+      expect(response.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many requests',
+      });
+    });
+
+    it('does not exempt a request that arrives over loopback with an empty X-Forwarded-For header', async () => {
+      await reconfigureServer({ rateLimit: [loginRateLimit] });
+      const first = await runThroughRateLimiter(
+        makeFakeReq({ remoteAddress: '127.0.0.1', forwardedFor: '' })
+      );
+      expect(first).toBe('next');
+      const second = await runThroughRateLimiter(
+        makeFakeReq({ remoteAddress: '127.0.0.1', forwardedFor: '' })
       );
       expect(second).toBe('rejected');
     });
