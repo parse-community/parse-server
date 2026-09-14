@@ -1,7 +1,15 @@
 import MongoCollection from './MongoCollection';
 import Parse from 'parse/node';
 
-function mongoFieldToParseSchemaField(type) {
+function mongoFieldToParseSchemaField(type, fieldName, className) {
+  // Add type validation to prevent TypeError
+  if (!type || typeof type !== 'string') {
+    throw new Parse.Error(
+      Parse.Error.INVALID_SCHEMA_OPERATION,
+      `Invalid field type: ${type} for field '${fieldName}' in class '_SCHEMA' (id: ${className}). Expected a string. Fix the type mismatch in your schema configuration.`
+    );
+  }
+
   if (type[0] === '*') {
     return {
       type: 'Pointer',
@@ -43,7 +51,7 @@ const nonFieldSchemaKeys = ['_id', '_metadata', '_client_permissions'];
 function mongoSchemaFieldsToParseSchemaFields(schema) {
   var fieldNames = Object.keys(schema).filter(key => nonFieldSchemaKeys.indexOf(key) === -1);
   var response = fieldNames.reduce((obj, fieldName) => {
-    obj[fieldName] = mongoFieldToParseSchemaField(schema[fieldName]);
+    obj[fieldName] = mongoFieldToParseSchemaField(schema[fieldName], fieldName, schema._id);
     if (
       schema._metadata &&
       schema._metadata.fields_options &&
