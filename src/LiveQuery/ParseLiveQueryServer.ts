@@ -521,6 +521,9 @@ class ParseLiveQueryServer {
         case 'unsubscribe':
           this._handleUnsubscribe(parseWebsocket, request);
           break;
+        case 'query':
+          this._handleQuery(parseWebsocket, request);
+          break;
         default:
           Client.pushError(parseWebsocket, 3, 'Get unknown operation');
           logger.error('Get unknown operation', request.op);
@@ -1414,6 +1417,78 @@ class ParseLiveQueryServer {
     logger.verbose(
       `Delete client: ${parseWebsocket.clientId} | subscription: ${request.requestId}`
     );
+  }
+
+  async _handleQuery(parseWebsocket: any, request: any): Promise<any> {
+    if (!Object.prototype.hasOwnProperty.call(parseWebsocket, 'clientId')) {
+      Client.pushError(parseWebsocket, 2, 'Can not find this client, make sure you connect to server before querying');
+      logger.error('Can not find this client, make sure you connect to server before querying');
+      return;
+    }
+
+    const client = this.clients.get(parseWebsocket.clientId);
+    if (!client) {
+      Client.pushError(parseWebsocket, 2, 'Cannot find client with clientId ' + parseWebsocket.clientId);
+      logger.error('Can not find client ' + parseWebsocket.clientId);
+      return;
+    }
+
+    const requestId = request.requestId;
+    const subscriptionInfo = client.getSubscriptionInfo(requestId);
+    if (!subscriptionInfo) {
+      Client.pushError(parseWebsocket, 2, 'Cannot find subscription with requestId ' + requestId);
+      logger.error('Can not find subscription with requestId ' + requestId);
+      return;
+    }
+
+    const { subscription } = subscriptionInfo;
+    if (!subscription) {
+      Client.pushError(parseWebsocket, 2, 'Subscription not found for requestId ' + requestId);
+      logger.error('Subscription not found for requestId ' + requestId);
+      return;
+    }
+
+    const { className, query } = subscription;
+
+    try {
+      const sessionToken = subscriptionInfo.sessionToken || client.sessionToken;
+      const parseQuery = new Parse.Query(className);
+      parseQuery.withJSON({
+        where: query || {},
+      });
+
+      if (subscriptionInfo.keys && Array.isArray(subscriptionInfo.keys) && subscriptionInfo.keys.length > 0) {
+        parseQuery.select(...subscriptionInfo.keys);
+      }
+
+      const findOptions: any = {};
+      if (sessionToken) {
+        findOptions.sessionToken = sessionToken;
+      } else if (client.hasMasterKey) {
+        findOptions.useMasterKey = true;
+      }
+
+      const results = await parseQuery.find(findOptions);
+      const jsonResults = results.map(obj => obj.toJSON());
+      client.pushResult(requestId, jsonResults);
+
+      logger.verbose(`Executed query for client ${parseWebsocket.clientId} subscription ${requestId}`);
+
+      runLiveQueryEventHandlers({
+        client,
+        event: 'query',
+        clients: this.clients.size,
+        subscriptions: this.subscriptions.size,
+        sessionToken,
+        useMasterKey: client.hasMasterKey,
+        installationId: client.installationId,
+      });
+    } catch (e) {
+      logger.error(`Exception in _handleQuery:`, e);
+      const error = resolveError(e);
+      Client.pushError(parseWebsocket, error.code, error.message, false, request.requestId);
+      logger.error(`Failed running query on ${className}: ${JSON.stringify(error)}`);
+    }
   }
 }
 
