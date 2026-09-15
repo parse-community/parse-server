@@ -2212,6 +2212,52 @@ describe('OTP SMS auth adatper', () => {
     );
   });
 
+  it('can request an SMS token when maxPasswordHistory is set (#9528)', async () => {
+    await reconfigureServer({
+      auth: { mfa },
+      passwordPolicy: { maxPasswordHistory: 5 },
+    });
+    const user = await Parse.User.signUp('username', 'password');
+    const spy = spyOn(mfa, 'sendSMS').and.callThrough();
+    await user.save(
+      { authData: { mfa: { mobile: '+11111111111' } } },
+      { sessionToken: user.getSessionToken() }
+    );
+    await user.save(
+      { authData: { mfa: { mobile, token: code } } },
+      { sessionToken: user.getSessionToken() }
+    );
+    spy.calls.reset();
+
+    const res = await request({
+      headers,
+      method: 'POST',
+      url: 'http://localhost:8378/1/login',
+      body: JSON.stringify({
+        username: 'username',
+        password: 'password',
+        authData: { mfa: { token: 'request' } },
+      }),
+    }).catch(e => e.data);
+    // Before the fix this was { code: 142, error: 'New password should not be the same as last 5 passwords.' }
+    expect(res).toEqual({ code: Parse.Error.SCRIPT_FAILED, error: 'Please enter the token' });
+    expect(spy).toHaveBeenCalledWith(code, '+11111111111');
+
+    // Entering the received code still logs in end-to-end
+    const response = await request({
+      headers,
+      method: 'POST',
+      url: 'http://localhost:8378/1/login',
+      body: JSON.stringify({
+        username: 'username',
+        password: 'password',
+        authData: { mfa: { token: code } },
+      }),
+    }).then(res => res.data);
+    expect(response.objectId).toEqual(user.id);
+    expect(response.sessionToken).toBeDefined();
+  });
+
   it('partially enrolled users can still login', async () => {
     const user = await Parse.User.signUp('username', 'password');
     await user.save({ authData: { mfa: { mobile: '+11111111111' } } });
