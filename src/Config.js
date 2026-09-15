@@ -43,7 +43,61 @@ function removeTrailingSlash(str) {
  */
 const asyncKeys = ['publicServerURL'];
 
+// Canonical Parse headers that may be aliased. Credential-bearing headers
+// (master key, maintenance key) are intentionally excluded.
+const ALLOWED_HEADER_ALIAS_CANONICALS = new Set([
+  'x-parse-application-id',
+  'x-parse-session-token',
+  'x-parse-installation-id',
+  'x-parse-client-key',
+  'x-parse-javascript-key',
+  'x-parse-windows-key',
+  'x-parse-rest-api-key',
+]);
+
+// Parse header names that cannot be used as aliases. Using a canonical
+// name as an alias would copy one request header into another Parse slot.
+const RESERVED_HEADER_ALIAS_NAMES = new Set([
+  ...ALLOWED_HEADER_ALIAS_CANONICALS,
+  'x-parse-master-key',
+  'x-parse-maintenance-key',
+]);
+
+// CORS-safelisted request-header names (case-insensitive) plus Range, and
+// browser-generated headers. These must never be configured as aliases: browsers
+// attach them ambiently, and rewriting them into Parse headers (especially
+// application-id) before Apollo CSRF validation would let simple cross-site
+// requests pass.
+const HEADER_ALIAS_CSRF_BLOCKLIST = new Set([
+  'accept',
+  'accept-language',
+  'content-language',
+  'content-type',
+  'range',
+  'origin',
+  'cookie',
+  'referer',
+  'user-agent',
+]);
+
+const HEADER_ALIAS_CSRF_PREFIX_BLOCKLIST = ['sec-', 'proxy-'];
+
+function isCsrfBlockedAlias(name) {
+  const key = String(name).trim().toLowerCase();
+  if (!key) {
+    return false;
+  }
+  if (HEADER_ALIAS_CSRF_BLOCKLIST.has(key)) {
+    return true;
+  }
+  return HEADER_ALIAS_CSRF_PREFIX_BLOCKLIST.some(prefix => key.startsWith(prefix));
+}
+
 export class Config {
+  static ALLOWED_HEADER_ALIAS_CANONICALS = ALLOWED_HEADER_ALIAS_CANONICALS;
+  static RESERVED_HEADER_ALIAS_NAMES = RESERVED_HEADER_ALIAS_NAMES;
+  static HEADER_ALIAS_CSRF_BLOCKLIST = HEADER_ALIAS_CSRF_BLOCKLIST;
+  static isCsrfBlockedAlias = isCsrfBlockedAlias;
   static get(applicationId: string, mount: string) {
     const cacheInfo = AppCache.get(applicationId);
     if (!cacheInfo) {
@@ -130,6 +184,7 @@ export class Config {
     readOnlyMasterKey,
     readOnlyMasterKeyIps,
     allowHeaders,
+    headerAliases,
     idempotencyOptions,
     fileUpload,
     fileDownload,
@@ -183,6 +238,7 @@ export class Config {
     this.validateDefaultLimit(defaultLimit);
     this.validateMaxLimit(maxLimit);
     this.validateAllowHeaders(allowHeaders);
+    this.validateHeaderAliases(headerAliases);
     this.validateIdempotencyOptions(idempotencyOptions);
     this.validatePagesOptions(pages);
     this.validateSecurityOptions(security);
@@ -765,6 +821,106 @@ export class Config {
         });
       } else {
         throw 'Allow headers must be an array';
+      }
+    }
+  }
+
+  static validateHeaderAliases(headerAliases) {
+    if (![null, undefined].includes(headerAliases)) {
+      if (Object.prototype.toString.call(headerAliases) !== '[object Object]') {
+        throw 'Header aliases must be an object';
+      }
+      const SAFE_HEADER_NAME = /^[A-Za-z0-9-]+$/;
+      const entries = Object.entries(headerAliases);
+      for (const [canonicalHeader, aliases] of entries) {
+        if (typeof canonicalHeader !== 'string' || !canonicalHeader.trim().length) {
+          throw 'Header aliases must contain non-empty string keys';
+        }
+        const trimmedCanonical = canonicalHeader.trim();
+        if (!SAFE_HEADER_NAME.test(trimmedCanonical)) {
+          throw new Error(
+            `Header aliases canonical '${canonicalHeader}' contains invalid characters`
+          );
+        }
+        if (!Config.ALLOWED_HEADER_ALIAS_CANONICALS.has(trimmedCanonical.toLowerCase())) {
+          throw new Error(
+            `Header aliases canonical '${canonicalHeader}' is not an allowed Parse header`
+          );
+        }
+        if (!Array.isArray(aliases)) {
+          throw `Header aliases for '${canonicalHeader}' must be an array`;
+        }
+        aliases.forEach(alias => {
+          if (typeof alias !== 'string') {
+            throw `Header aliases for '${canonicalHeader}' must only contain strings`;
+          } else if (!alias.trim().length) {
+            throw `Header aliases for '${canonicalHeader}' must not contain empty strings`;
+          }
+          const trimmedAlias = alias.trim();
+          if (!SAFE_HEADER_NAME.test(trimmedAlias)) {
+            throw new Error(
+              `Header alias '${alias}' for canonical header '${canonicalHeader}' contains invalid characters`
+            );
+          }
+          if (isCsrfBlockedAlias(trimmedAlias)) {
+            throw new Error(
+              `Header alias '${alias}' for canonical header '${canonicalHeader}' cannot be used as an alias because it is a reserved, browser-controlled, or CORS-safelisted request header`
+            );
+          }
+        });
+      }
+
+      const normalizeHeaderAliasIdentifier = s => s.trim().toLowerCase();
+
+      const canonicalNormToKey = new Map();
+      for (const [canonicalHeader] of entries) {
+        const norm = normalizeHeaderAliasIdentifier(canonicalHeader);
+        if (canonicalNormToKey.has(norm)) {
+          throw new Error(
+            `Header aliases canonical '${canonicalHeader}' collides with '${canonicalNormToKey.get(
+              norm
+            )}' after trim and lowercasing.`
+          );
+        }
+        canonicalNormToKey.set(norm, canonicalHeader);
+      }
+
+      const globalAliasNorm = new Map();
+
+      for (const [canonicalHeader, aliases] of entries) {
+        const normCanon = normalizeHeaderAliasIdentifier(canonicalHeader);
+        const seenInArray = new Set();
+
+        for (const alias of aliases) {
+          const normAlias = normalizeHeaderAliasIdentifier(alias);
+
+          if (normAlias === normCanon) {
+            throw new Error(
+              `Header alias '${alias}' for canonical header '${canonicalHeader}' must not normalize to the same value as the canonical header name.`
+            );
+          }
+          if (RESERVED_HEADER_ALIAS_NAMES.has(normAlias)) {
+            throw new Error(
+              `Header alias '${alias}' for canonical header '${canonicalHeader}' collides with canonical header '${
+                canonicalNormToKey.get(normAlias) || alias
+              }'.`
+            );
+          }
+          if (seenInArray.has(normAlias)) {
+            throw new Error(
+              `Duplicate normalized header alias '${alias}' for canonical header '${canonicalHeader}'.`
+            );
+          }
+          seenInArray.add(normAlias);
+
+          if (globalAliasNorm.has(normAlias)) {
+            const prev = globalAliasNorm.get(normAlias);
+            throw new Error(
+              `Header alias '${alias}' for canonical header '${canonicalHeader}' collides with alias '${prev.alias}' for canonical header '${prev.canonicalHeader}'.`
+            );
+          }
+          globalAliasNorm.set(normAlias, { canonicalHeader, alias });
+        }
       }
     }
   }

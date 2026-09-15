@@ -25,6 +25,7 @@ const DefinitionDefaults = Object.keys(ParseServerOptions).reduce((memo, key) =>
 }, {});
 
 const computedDefaults = {
+  headerAliases: {},
   jsonLogs: process.env.JSON_LOGS || false,
   logsFolder,
   verbose,

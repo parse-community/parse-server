@@ -311,6 +311,7 @@ class ParseServer {
     //api.use("/apps", express.static(__dirname + "/public"));
     api.use(middlewares.allowCrossDomain(appId));
     api.use(middlewares.allowDoubleForwardSlash);
+    api.use(middlewares.handleHeaderAliases(appId));
     api.use(middlewares.handleParseAuth(appId));
     // File handling needs to be before the default JSON body parser because file
     // uploads send binary data that should not be parsed as JSON.

@@ -4,9 +4,17 @@ import { expressMiddleware } from '@as-integrations/express5';
 import { ApolloServerPluginCacheControlDisabled } from '@apollo/server/plugin/disabled';
 import express from 'express';
 import { GraphQLError, parse } from 'graphql';
-import { allowCrossDomain, handleParseErrors, handleParseHeaders, handleParseSession } from '../middlewares';
+import {
+  allowCrossDomain,
+  getHeaderAliases,
+  handleHeaderAliases,
+  handleParseErrors,
+  handleParseHeaders,
+  handleParseSession,
+} from '../middlewares';
 import requiredParameter from '../requiredParameter';
 import defaultLogger from '../logger';
+import Config from '../Config';
 import { ParseGraphQLSchema } from './ParseGraphQLSchema';
 import ParseGraphQLController, { ParseGraphQLConfig } from '../Controllers/ParseGraphQLController';
 import { createComplexityValidationPlugin } from './helpers/queryComplexity';
@@ -89,6 +97,17 @@ const IntrospectionControlPlugin = (publicIntrospection) => ({
   })
 
 });
+
+// Aliases matching CORS-safelisted names, Range, browser-generated headers, or
+// reserved sec-/proxy- prefixes must not appear on Apollo's CSRF requestHeaders
+// list. Config.validateHeaderAliases and applyHeaderAliases also reject/skip
+// these names so they cannot be rewritten into application-id before Apollo's
+// CSRF check.
+export const getCSRFRequestHeaders = headerAliases => {
+  const aliases = getHeaderAliases(headerAliases, 'X-Parse-Application-Id');
+  const safeAliases = aliases.filter(alias => !Config.isCsrfBlockedAlias(alias));
+  return [...new Set(['X-Parse-Application-Id', ...safeAliases])];
+};
 
 // graphql-js embeds "Did you mean ...?" hints sourced from the live schema in
 // its error messages. They are produced in two distinct phases:
@@ -285,11 +304,13 @@ class ParseGraphQLServer {
     const createServer = async () => {
       try {
         const { schema, context } = await this._getGraphQLOptions();
+        const csrfRequestHeaders = getCSRFRequestHeaders(this.parseServer.config.headerAliases);
         const apollo = new ApolloServer({
           csrfPrevention: {
             // See https://www.apollographql.com/docs/router/configuration/csrf/
-            // needed since we use graphql upload
-            requestHeaders: ['X-Parse-Application-Id'],
+            // needed since we use graphql upload. handleHeaderAliases runs on this path
+            // before Apollo; getCSRFRequestHeaders lists canonical + safe aliases only.
+            requestHeaders: csrfRequestHeaders,
           },
           // We need always true introspection because apollo server have changing behavior based on the NODE_ENV variable
           // we delegate the introspection control to the IntrospectionControlPlugin
@@ -344,6 +365,7 @@ class ParseGraphQLServer {
       requiredParameter('You must provide an Express.js app instance!');
     }
     app.use(this.config.graphQLPath, allowCrossDomain(this.parseServer.config.appId));
+    app.use(this.config.graphQLPath, handleHeaderAliases(this.parseServer.config.appId));
     app.use(this.config.graphQLPath, handleParseHeaders);
     app.use(this.config.graphQLPath, handleParseSession);
     this.applyRequestContextMiddleware(app, this.parseServer.config);

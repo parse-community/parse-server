@@ -91,6 +91,9 @@ export interface ParseServerOptions {
   appName: ?string;
   /* Add headers to Access-Control-Allow-Headers */
   allowHeaders: ?(string[]);
+  /* (Optional) Define aliases for Parse request headers. For each allowed canonical Parse header, set an array of accepted alias headers. Aliases are supported for application ID, session token, installation ID, and client/API keys. Aliases for session tokens require the same protection as the canonical session-token header. Credential-bearing headers such as X-Parse-Master-Key and X-Parse-Maintenance-Key cannot be aliased. If the canonical header is not present in a request, Parse Server uses the first matching alias.<br><br>Example:<br>`{ "X-Parse-Application-Id": ["X-App-Id"], "X-Parse-Session-Token": ["X-Session-Token"] }`<br><br>When setting this option via an environment variable, provide a JSON object string.
+  :ENV: PARSE_SERVER_HEADER_ALIASES */
+  headerAliases: ?{ [string]: string[] };
   /* Sets origins for Access-Control-Allow-Origin. This can be a string for a single origin or an array of strings for multiple origins. */
   allowOrigin: ?StringOrStringArray;
   /* Adapter module for the analytics */
