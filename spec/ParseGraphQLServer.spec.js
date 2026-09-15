@@ -12503,6 +12503,982 @@ describe('ParseGraphQLServer', () => {
 
           expect(getResult.data.get.objectId).toEqual(product.id);
         });
+
+        describe('Bulk class mutations', () => {
+          beforeEach(async () => {
+            const sc = new Parse.Schema('BulkTest');
+            await sc.purge().catch(() => {});
+            await sc.delete().catch(() => {});
+            await sc.addString('title').save();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+          });
+
+          async function reconfigureGraphQLWithBatchLimit2AndOpenClient() {
+            parseServer = await global.reconfigureServer({
+              requestComplexity: { batchRequestLimit: 2 },
+            });
+            await createGQLFromParseServer(parseServer);
+            const httpLink = await createUploadLink({
+              uri: 'http://localhost:13377/graphql',
+              fetch,
+              headers,
+            });
+            apolloClient = new ApolloClient({
+              link: httpLink,
+              cache: new InMemoryCache(),
+              defaultOptions: {
+                query: {
+                  fetchPolicy: 'no-cache',
+                },
+              },
+            });
+            const sc = new Parse.Schema('BulkTest');
+            await sc.purge().catch(() => {});
+            await sc.delete().catch(() => {});
+            await sc.addString('title').save();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+            await updateCLP(
+              {
+                create: { '*': true },
+                find: { '*': true },
+                get: { '*': true },
+                update: { '*': true },
+                delete: { '*': true },
+              },
+              'BulkTest'
+            );
+          }
+
+          async function reconfigureGraphQLWithUnsanitizedErrorsAndOpenClient() {
+            parseServer = await global.reconfigureServer({
+              maintenanceKey: 'test2',
+              maxUploadSize: '1kb',
+              enableSanitizedErrorResponse: false,
+            });
+            await createGQLFromParseServer(parseServer);
+            const httpLink = await createUploadLink({
+              uri: 'http://localhost:13377/graphql',
+              fetch,
+              headers,
+            });
+            apolloClient = new ApolloClient({
+              link: httpLink,
+              cache: new InMemoryCache(),
+              defaultOptions: {
+                query: {
+                  fetchPolicy: 'no-cache',
+                },
+              },
+            });
+            const sc = new Parse.Schema('BulkTest');
+            await sc.purge().catch(() => {});
+            await sc.delete().catch(() => {});
+            await sc.addString('title').save();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+            await updateCLP(
+              {
+                create: { '*': true },
+                find: { '*': true },
+                get: { '*': true },
+                update: { '*': true },
+                delete: { '*': true },
+              },
+              'BulkTest'
+            );
+          }
+
+          const clientKeyHeaders = {
+            headers: {
+              'X-Parse-Application-Id': 'test',
+              'X-Parse-Javascript-Key': 'test',
+            },
+          };
+
+          it('should reject createMany when item count exceeds batchRequestLimit', async () => {
+            try {
+              await reconfigureGraphQLWithBatchLimit2AndOpenClient();
+              const result = await apolloClient.mutate({
+                mutation: gql`
+                  mutation CreateManyOverLimit($input: CreateManyBulkTestInput!) {
+                    createManyBulkTest(input: $input) {
+                      clientMutationId
+                    }
+                  }
+                `,
+                variables: {
+                  input: {
+                    clientMutationId: uuidv4(),
+                    fields: [{ title: 'a' }, { title: 'b' }, { title: 'c' }],
+                  },
+                },
+                context: clientKeyHeaders,
+                errorPolicy: 'all',
+              });
+              expect(result.errors).toBeDefined();
+              expect(result.errors[0].message).toBe('bulk input exceeds the allowed limit');
+            } catch (e) {
+              handleError(e);
+            }
+          });
+
+          it('should reject updateMany when item count exceeds batchRequestLimit', async () => {
+            try {
+              await reconfigureGraphQLWithBatchLimit2AndOpenClient();
+              const objs = [];
+              for (let i = 0; i < 3; i++) {
+                const o = new Parse.Object('BulkTest');
+                o.set('title', `t${i}`);
+                await o.save(null, { useMasterKey: true });
+                objs.push(o);
+              }
+              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+
+              const result = await apolloClient.mutate({
+                mutation: gql`
+                  mutation UpdateManyOverLimit($input: UpdateManyBulkTestInput!) {
+                    updateManyBulkTest(input: $input) {
+                      clientMutationId
+                    }
+                  }
+                `,
+                variables: {
+                  input: {
+                    clientMutationId: uuidv4(),
+                    updates: objs.map((o, i) => ({
+                      id: toGlobalId('BulkTest', o.id),
+                      fields: { title: `u${i}` },
+                    })),
+                  },
+                },
+                context: clientKeyHeaders,
+                errorPolicy: 'all',
+              });
+              expect(result.errors).toBeDefined();
+              expect(result.errors[0].message).toBe('bulk input exceeds the allowed limit');
+            } catch (e) {
+              handleError(e);
+            }
+          });
+
+          it('should reject deleteMany when item count exceeds batchRequestLimit', async () => {
+            try {
+              await reconfigureGraphQLWithBatchLimit2AndOpenClient();
+              const objs = [];
+              for (let i = 0; i < 3; i++) {
+                const o = new Parse.Object('BulkTest');
+                o.set('title', `d${i}`);
+                await o.save(null, { useMasterKey: true });
+                objs.push(o);
+              }
+              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+
+              const result = await apolloClient.mutate({
+                mutation: gql`
+                  mutation DeleteManyOverLimit($input: DeleteManyBulkTestInput!) {
+                    deleteManyBulkTest(input: $input) {
+                      clientMutationId
+                    }
+                  }
+                `,
+                variables: {
+                  input: {
+                    clientMutationId: uuidv4(),
+                    ids: objs.map(o => toGlobalId('BulkTest', o.id)),
+                  },
+                },
+                context: clientKeyHeaders,
+                errorPolicy: 'all',
+              });
+              expect(result.errors).toBeDefined();
+              expect(result.errors[0].message).toBe('bulk input exceeds the allowed limit');
+            } catch (e) {
+              handleError(e);
+            }
+          });
+
+          it('should return detailed batchRequestLimit message when enableSanitizedErrorResponse is false', async () => {
+            try {
+              parseServer = await global.reconfigureServer({
+                requestComplexity: { batchRequestLimit: 2 },
+                enableSanitizedErrorResponse: false,
+              });
+              await createGQLFromParseServer(parseServer);
+              const httpLink = await createUploadLink({
+                uri: 'http://localhost:13377/graphql',
+                fetch,
+                headers,
+              });
+              apolloClient = new ApolloClient({
+                link: httpLink,
+                cache: new InMemoryCache(),
+                defaultOptions: {
+                  query: {
+                    fetchPolicy: 'no-cache',
+                  },
+                },
+              });
+              const sc = new Parse.Schema('BulkTest');
+              await sc.purge().catch(() => {});
+              await sc.delete().catch(() => {});
+              await sc.addString('title').save();
+              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+              await updateCLP(
+                {
+                  create: { '*': true },
+                  find: { '*': true },
+                  get: { '*': true },
+                  update: { '*': true },
+                  delete: { '*': true },
+                },
+                'BulkTest'
+              );
+
+              const result = await apolloClient.mutate({
+                mutation: gql`
+                  mutation CreateManyOverLimitDetailed($input: CreateManyBulkTestInput!) {
+                    createManyBulkTest(input: $input) {
+                      clientMutationId
+                    }
+                  }
+                `,
+                variables: {
+                  input: {
+                    clientMutationId: uuidv4(),
+                    fields: [{ title: 'a' }, { title: 'b' }, { title: 'c' }],
+                  },
+                },
+                context: clientKeyHeaders,
+                errorPolicy: 'all',
+              });
+              expect(result.errors).toBeDefined();
+              expect(result.errors[0].message).toContain('exceeds the limit of 2');
+            } catch (e) {
+              handleError(e);
+            }
+          });
+
+          it('should allow createMany at exactly batchRequestLimit with client key', async () => {
+            try {
+              await reconfigureGraphQLWithBatchLimit2AndOpenClient();
+              const clientMutationId = uuidv4();
+              const { data } = await apolloClient.mutate({
+                mutation: gql`
+                  mutation CreateManyAtLimit($input: CreateManyBulkTestInput!) {
+                    createManyBulkTest(input: $input) {
+                      clientMutationId
+                      results {
+                        success
+                        bulkTest {
+                          title
+                        }
+                      }
+                    }
+                  }
+                `,
+                variables: {
+                  input: {
+                    clientMutationId,
+                    fields: [{ title: 'one' }, { title: 'two' }],
+                  },
+                },
+                context: clientKeyHeaders,
+              });
+              expect(data.createManyBulkTest.results.length).toBe(2);
+              expect(data.createManyBulkTest.results.every(r => r.success)).toBe(true);
+            } catch (e) {
+              handleError(e);
+            }
+          });
+
+          it('should bypass batchRequestLimit for master key on createMany', async () => {
+            try {
+              await reconfigureGraphQLWithBatchLimit2AndOpenClient();
+              const clientMutationId = uuidv4();
+              const { data } = await apolloClient.mutate({
+                mutation: gql`
+                  mutation CreateManyMasterBypass($input: CreateManyBulkTestInput!) {
+                    createManyBulkTest(input: $input) {
+                      clientMutationId
+                      results {
+                        success
+                        bulkTest {
+                          title
+                        }
+                      }
+                    }
+                  }
+                `,
+                variables: {
+                  input: {
+                    clientMutationId,
+                    fields: [{ title: 'm1' }, { title: 'm2' }, { title: 'm3' }],
+                  },
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Application-Id': 'test',
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+              expect(data.createManyBulkTest.results.length).toBe(3);
+              expect(data.createManyBulkTest.results.every(r => r.success)).toBe(true);
+            } catch (e) {
+              handleError(e);
+            }
+          });
+
+          it('should createMany with ordered successes', async () => {
+            try {
+              const clientMutationId = uuidv4();
+              const { data } = await apolloClient.mutate({
+                mutation: gql`
+              mutation CreateManyBulk($input: CreateManyBulkTestInput!) {
+                createManyBulkTest(input: $input) {
+                  clientMutationId
+                  results {
+                    success
+                    error {
+                      code
+                      message
+                    }
+                    bulkTest {
+                      id
+                      objectId
+                      title
+                    }
+                  }
+                }
+              }
+            `,
+                variables: {
+                  input: {
+                    clientMutationId,
+                    fields: [{ title: 'first' }, { title: 'second' }],
+                  },
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+              expect(data.createManyBulkTest.results.length).toBe(2);
+              expect(data.createManyBulkTest.results[0].success).toBe(true);
+              expect(data.createManyBulkTest.results[0].bulkTest.title).toBe('first');
+              expect(data.createManyBulkTest.results[1].success).toBe(true);
+              expect(data.createManyBulkTest.results[1].bulkTest.title).toBe('second');
+            } catch (e) {
+              handleError(e);
+            }
+          });
+
+          it('should process createMany items sequentially in input order', async () => {
+            try {
+              Parse.Cloud.beforeSave('BulkTest', async request => {
+                if (request.object.get('title') === 'second') {
+                  const q = new Parse.Query('BulkTest');
+                  q.equalTo('title', 'first');
+                  const found = await q.first({ useMasterKey: true });
+                  if (!found) {
+                    throw new Parse.Error(
+                      Parse.Error.SCRIPT_FAILED,
+                      'first object must already exist'
+                    );
+                  }
+                }
+              });
+
+              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+
+              const clientMutationId = uuidv4();
+              const { data } = await apolloClient.mutate({
+                mutation: gql`
+              mutation CreateManyBulkSequential($input: CreateManyBulkTestInput!) {
+                createManyBulkTest(input: $input) {
+                  clientMutationId
+                  results {
+                    success
+                    error {
+                      code
+                      message
+                    }
+                    bulkTest {
+                      objectId
+                      title
+                    }
+                  }
+                }
+              }
+            `,
+                variables: {
+                  input: {
+                    clientMutationId,
+                    fields: [{ title: 'first' }, { title: 'second' }],
+                  },
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+              const results = data.createManyBulkTest.results;
+              expect(results.length).toBe(2);
+              expect(results[0].success).toBe(true);
+              expect(results[0].bulkTest.title).toBe('first');
+              expect(results[1].success).toBe(true);
+              expect(results[1].bulkTest.title).toBe('second');
+            } catch (e) {
+              handleError(e);
+            }
+          });
+
+          it('should updateMany with mixed success and failure', async () => {
+            try {
+              const a = new Parse.Object('BulkTest');
+              a.set('title', 'a');
+              const b = new Parse.Object('BulkTest');
+              b.set('title', 'b');
+              await Parse.Object.saveAll([a, b]);
+              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+
+              const clientMutationId = uuidv4();
+              const { data } = await apolloClient.mutate({
+                mutation: gql`
+              mutation UpdateManyBulk($input: UpdateManyBulkTestInput!) {
+                updateManyBulkTest(input: $input) {
+                  clientMutationId
+                  results {
+                    success
+                    error {
+                      code
+                      message
+                    }
+                    bulkTest {
+                      objectId
+                      title
+                    }
+                  }
+                }
+              }
+            `,
+                variables: {
+                  input: {
+                    clientMutationId,
+                    updates: [
+                      { id: toGlobalId('BulkTest', a.id), fields: { title: 'a2' } },
+                      { id: 'nonexistentid000', fields: { title: 'x' } },
+                    ],
+                  },
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+              expect(data.updateManyBulkTest.results.length).toBe(2);
+              expect(data.updateManyBulkTest.results[0].success).toBe(true);
+              expect(data.updateManyBulkTest.results[0].bulkTest.title).toBe('a2');
+              expect(data.updateManyBulkTest.results[1].success).toBe(false);
+              expect(data.updateManyBulkTest.results[1].error).toBeDefined();
+              expect(data.updateManyBulkTest.results[1].bulkTest).toBeNull();
+            } catch (e) {
+              handleError(e);
+            }
+          });
+
+          it('should deleteMany', async () => {
+            try {
+              const a = new Parse.Object('BulkTest');
+              a.set('title', 'del1');
+              const b = new Parse.Object('BulkTest');
+              b.set('title', 'del2');
+              await Parse.Object.saveAll([a, b]);
+              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+
+              const clientMutationId = uuidv4();
+              const { data } = await apolloClient.mutate({
+                mutation: gql`
+              mutation DeleteManyBulk($input: DeleteManyBulkTestInput!) {
+                deleteManyBulkTest(input: $input) {
+                  clientMutationId
+                  results {
+                    success
+                    bulkTest {
+                      objectId
+                      title
+                    }
+                  }
+                }
+              }
+            `,
+                variables: {
+                  input: {
+                    clientMutationId,
+                    ids: [toGlobalId('BulkTest', a.id), toGlobalId('BulkTest', b.id)],
+                  },
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+              expect(data.deleteManyBulkTest.results.length).toBe(2);
+              expect(data.deleteManyBulkTest.results[0].success).toBe(true);
+              expect(data.deleteManyBulkTest.results[1].success).toBe(true);
+
+              const dup = new Parse.Object('BulkTest');
+              dup.set('title', 'dupDel');
+              await dup.save(null, { useMasterKey: true });
+              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+
+              const dupClientMutationId = uuidv4();
+              const { data: dupData } = await apolloClient.mutate({
+                mutation: gql`
+              mutation DeleteManyBulkDup($input: DeleteManyBulkTestInput!) {
+                deleteManyBulkTest(input: $input) {
+                  clientMutationId
+                  results {
+                    success
+                    error {
+                      code
+                      message
+                    }
+                    bulkTest {
+                      objectId
+                      title
+                    }
+                  }
+                }
+              }
+            `,
+                variables: {
+                  input: {
+                    clientMutationId: dupClientMutationId,
+                    ids: [
+                      toGlobalId('BulkTest', dup.id),
+                      toGlobalId('BulkTest', dup.id),
+                    ],
+                  },
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+              const dupResults = dupData.deleteManyBulkTest.results;
+              expect(dupResults.length).toBe(2);
+              expect(dupResults.filter(r => r.success).length).toBe(1);
+              expect(dupResults.filter(r => !r.success).length).toBe(1);
+              expect(dupResults.find(r => !r.success).error.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+              expect(dupResults.find(r => r.success).bulkTest.title).toBe('dupDel');
+
+              const qDup = new Parse.Query('BulkTest');
+              qDup.equalTo('objectId', dup.id);
+              const dupRemaining = await qDup.find({ useMasterKey: true });
+              expect(dupRemaining.length).toBe(0);
+            } catch (e) {
+              handleError(e);
+            }
+          });
+
+          it('should createMany with partial failure when beforeSave rejects', async () => {
+            try {
+              Parse.Cloud.beforeSave('BulkTest', request => {
+                if (request.object.get('title') === 'FAIL') {
+                  throw new Parse.Error(
+                    Parse.Error.SCRIPT_FAILED,
+                    'beforeSave blocked this title'
+                  );
+                }
+              });
+
+              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+
+              const clientMutationId = uuidv4();
+              const { data } = await apolloClient.mutate({
+                mutation: gql`
+                mutation CreateManyBulkPartial($input: CreateManyBulkTestInput!) {
+                  createManyBulkTest(input: $input) {
+                    clientMutationId
+                    results {
+                      success
+                      error {
+                        code
+                        message
+                      }
+                      bulkTest {
+                        objectId
+                        title
+                      }
+                    }
+                  }
+                }
+              `,
+                variables: {
+                  input: {
+                    clientMutationId,
+                    fields: [{ title: 'ok' }, { title: 'FAIL' }],
+                  },
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+
+              const results = data.createManyBulkTest.results;
+              expect(results.length).toBe(2);
+              expect(results[0].success).toBe(true);
+              expect(results[0].bulkTest.title).toBe('ok');
+              expect(results[0].error).toBeNull();
+              expect(results[1].success).toBe(false);
+              expect(results[1].bulkTest).toBeNull();
+              expect(results[1].error.code).toBe(Parse.Error.SCRIPT_FAILED);
+              expect(results[1].error.message).toBe('beforeSave blocked this title');
+
+              const q = new Parse.Query('BulkTest');
+              q.equalTo('title', 'ok');
+              const saved = await q.find({ useMasterKey: true });
+              expect(saved.length).toBe(1);
+            } catch (e) {
+              handleError(e);
+            }
+          });
+
+          it('should return detailed Parse.Error message in createMany bulk when enableSanitizedErrorResponse is false', async () => {
+            try {
+              await reconfigureGraphQLWithUnsanitizedErrorsAndOpenClient();
+
+              Parse.Cloud.beforeSave('BulkTest', request => {
+                if (request.object.get('title') === 'FAIL') {
+                  throw new Parse.Error(
+                    Parse.Error.SCRIPT_FAILED,
+                    'beforeSave blocked this title'
+                  );
+                }
+              });
+
+              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+
+              const clientMutationId = uuidv4();
+              const { data } = await apolloClient.mutate({
+                mutation: gql`
+                mutation CreateManyBulkUnsanitized($input: CreateManyBulkTestInput!) {
+                  createManyBulkTest(input: $input) {
+                    clientMutationId
+                    results {
+                      success
+                      error {
+                        code
+                        message
+                      }
+                      bulkTest {
+                        objectId
+                        title
+                      }
+                    }
+                  }
+                }
+              `,
+                variables: {
+                  input: {
+                    clientMutationId,
+                    fields: [{ title: 'ok' }, { title: 'FAIL' }],
+                  },
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+
+              const results = data.createManyBulkTest.results;
+              expect(results.length).toBe(2);
+              expect(results[1].success).toBe(false);
+              expect(results[1].error.code).toBe(Parse.Error.SCRIPT_FAILED);
+              expect(results[1].error.message).toBe('beforeSave blocked this title');
+            } catch (e) {
+              handleError(e);
+            }
+          });
+
+          it('should sanitize non-Parse Error messages in createMany bulk when sanitization is enabled', async () => {
+            try {
+              await reconfigureGraphQLWithBatchLimit2AndOpenClient();
+
+              Parse.Cloud.beforeSave('BulkTest', request => {
+                if (request.object.get('title') === 'FAIL') {
+                  throw new Error('internal stack detail');
+                }
+              });
+
+              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+
+              const { data } = await apolloClient.mutate({
+                mutation: gql`
+                  mutation CreateManyBulkPlainErrorSanitized($input: CreateManyBulkTestInput!) {
+                    createManyBulkTest(input: $input) {
+                      results {
+                        success
+                        error {
+                          code
+                          message
+                        }
+                        bulkTest {
+                          objectId
+                          title
+                        }
+                      }
+                    }
+                  }
+                `,
+                variables: {
+                  input: {
+                    clientMutationId: uuidv4(),
+                    fields: [{ title: 'ok' }, { title: 'FAIL' }],
+                  },
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+
+              const [ok, failed] = data.createManyBulkTest.results;
+              expect(ok.success).toBe(true);
+              expect(failed.success).toBe(false);
+              // Cloud Code wraps a plain Error as Parse.Error(SCRIPT_FAILED, error.message).
+              // Wrapped native errors are sanitized separately from explicit Parse.Error values.
+              expect(failed.error.code).toBe(Parse.Error.INTERNAL_SERVER_ERROR);
+              expect(failed.error.message).toBe('Internal server error');
+            } catch (e) {
+              handleError(e);
+            }
+          });
+
+          it('should return raw non-Parse Error message in createMany bulk when sanitization is disabled', async () => {
+            try {
+              await reconfigureGraphQLWithUnsanitizedErrorsAndOpenClient();
+
+              Parse.Cloud.beforeSave('BulkTest', request => {
+                if (request.object.get('title') === 'FAIL') {
+                  throw new Error('internal stack detail');
+                }
+              });
+
+              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+
+              const { data } = await apolloClient.mutate({
+                mutation: gql`
+                  mutation CreateManyBulkPlainErrorUnsanitized($input: CreateManyBulkTestInput!) {
+                    createManyBulkTest(input: $input) {
+                      results {
+                        success
+                        error {
+                          code
+                          message
+                        }
+                        bulkTest {
+                          objectId
+                          title
+                        }
+                      }
+                    }
+                  }
+                `,
+                variables: {
+                  input: {
+                    clientMutationId: uuidv4(),
+                    fields: [{ title: 'ok' }, { title: 'FAIL' }],
+                  },
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+
+              const failed = data.createManyBulkTest.results[1];
+              expect(failed.success).toBe(false);
+              expect(failed.error.code).toBe(Parse.Error.SCRIPT_FAILED);
+              expect(failed.error.message).toBe('internal stack detail');
+            } catch (e) {
+              handleError(e);
+            }
+          });
+
+          it('should updateMany with partial failure when beforeSave rejects', async () => {
+            try {
+              const a = new Parse.Object('BulkTest');
+              a.set('title', 'a');
+              const b = new Parse.Object('BulkTest');
+              b.set('title', 'b');
+              await Parse.Object.saveAll([a, b]);
+
+              Parse.Cloud.beforeSave('BulkTest', request => {
+                if (request.object.get('title') === 'BLOCKED') {
+                  throw new Parse.Error(
+                    Parse.Error.SCRIPT_FAILED,
+                    'beforeSave blocked update to BLOCKED'
+                  );
+                }
+              });
+
+              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+
+              const clientMutationId = uuidv4();
+              const { data } = await apolloClient.mutate({
+                mutation: gql`
+                mutation UpdateManyBulkPartial($input: UpdateManyBulkTestInput!) {
+                  updateManyBulkTest(input: $input) {
+                    clientMutationId
+                    results {
+                      success
+                      error {
+                        code
+                        message
+                      }
+                      bulkTest {
+                        objectId
+                        title
+                      }
+                    }
+                  }
+                }
+              `,
+                variables: {
+                  input: {
+                    clientMutationId,
+                    updates: [
+                      { id: toGlobalId('BulkTest', a.id), fields: { title: 'a2' } },
+                      { id: toGlobalId('BulkTest', b.id), fields: { title: 'BLOCKED' } },
+                    ],
+                  },
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+
+              const results = data.updateManyBulkTest.results;
+              expect(results.length).toBe(2);
+              expect(results[0].success).toBe(true);
+              expect(results[0].bulkTest.title).toBe('a2');
+              expect(results[0].error).toBeNull();
+              expect(results[1].success).toBe(false);
+              expect(results[1].bulkTest).toBeNull();
+              expect(results[1].error.code).toBe(Parse.Error.SCRIPT_FAILED);
+              expect(results[1].error.message).toBe('beforeSave blocked update to BLOCKED');
+
+              await a.fetch({ useMasterKey: true });
+              await b.fetch({ useMasterKey: true });
+              expect(a.get('title')).toBe('a2');
+              expect(b.get('title')).toBe('b');
+            } catch (e) {
+              handleError(e);
+            }
+          });
+
+          it('should deleteMany with partial failure when beforeDelete rejects', async () => {
+            try {
+              const a = new Parse.Object('BulkTest');
+              a.set('title', 'deletable');
+              const b = new Parse.Object('BulkTest');
+              b.set('title', 'nodelete');
+              await Parse.Object.saveAll([a, b]);
+
+              Parse.Cloud.beforeDelete('BulkTest', request => {
+                if (request.object.get('title') === 'nodelete') {
+                  throw new Parse.Error(
+                    Parse.Error.SCRIPT_FAILED,
+                    'beforeDelete blocked delete for nodelete'
+                  );
+                }
+              });
+
+              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+
+              const clientMutationId = uuidv4();
+              const { data } = await apolloClient.mutate({
+                mutation: gql`
+                mutation DeleteManyBulkPartial($input: DeleteManyBulkTestInput!) {
+                  deleteManyBulkTest(input: $input) {
+                    clientMutationId
+                    results {
+                      success
+                      error {
+                        code
+                        message
+                      }
+                      bulkTest {
+                        objectId
+                        title
+                      }
+                    }
+                  }
+                }
+              `,
+                variables: {
+                  input: {
+                    clientMutationId,
+                    ids: [
+                      toGlobalId('BulkTest', a.id),
+                      toGlobalId('BulkTest', a.id),
+                      toGlobalId('BulkTest', b.id),
+                    ],
+                  },
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+
+              const results = data.deleteManyBulkTest.results;
+              expect(results.length).toBe(3);
+              expect(results.filter(r => r.success).length).toBe(1);
+              expect(
+                results.filter(r => !r.success && r.error.code === Parse.Error.OBJECT_NOT_FOUND)
+                  .length
+              ).toBe(1);
+              expect(
+                results.filter(r => !r.success && r.error.code === Parse.Error.SCRIPT_FAILED).length
+              ).toBe(1);
+              const deleted = results.find(r => r.success);
+              expect(deleted.bulkTest.title).toBe('deletable');
+              expect(deleted.error).toBeNull();
+              const notFound = results.find(
+                r => !r.success && r.error.code === Parse.Error.OBJECT_NOT_FOUND
+              );
+              expect(notFound.bulkTest).toBeNull();
+              const blocked = results.find(
+                r => !r.success && r.error.code === Parse.Error.SCRIPT_FAILED
+              );
+              expect(blocked.bulkTest).toBeNull();
+              expect(blocked.error.message).toBe('beforeDelete blocked delete for nodelete');
+
+              const q = new Parse.Query('BulkTest');
+              const remaining = await q.find({ useMasterKey: true });
+              expect(remaining.length).toBe(1);
+              expect(remaining[0].id).toBe(b.id);
+              expect(remaining[0].get('title')).toBe('nodelete');
+            } catch (e) {
+              handleError(e);
+            }
+          });
+        });
       });
     });
   });
@@ -12932,6 +13908,7 @@ describe('ParseGraphQLServer', () => {
         expect(result3.data.updateSomeClass.someClass.type).toEqual('human');
       });
     });
+
     describe('Async Function Based Merge', () => {
       let httpServer;
       const headers = {

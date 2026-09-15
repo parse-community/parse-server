@@ -495,7 +495,16 @@ describe('ParseGraphQLSchema', () => {
       expect(Object.keys(queries1).sort()).toEqual(Object.keys(queries2).sort());
       expect(mutations1).not.toBe(mutations2);
       expect(
-        Object.keys(mutations1).concat('createCars', 'updateCars', 'deleteCars').sort()
+        Object.keys(mutations1)
+          .concat(
+            'createCars',
+            'updateCars',
+            'deleteCars',
+            'createManyCars',
+            'updateManyCars',
+            'deleteManyCars'
+          )
+          .sort()
       ).toEqual(Object.keys(mutations2).sort());
     });
   });

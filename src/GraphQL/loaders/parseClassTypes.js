@@ -186,6 +186,20 @@ const load = (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseGraphQLCla
   });
   classGraphQLUpdateType = parseGraphQLSchema.addGraphQLType(classGraphQLUpdateType);
 
+  const classGraphQLUpdateManyItemTypeName = `UpdateMany${graphQLClassName}ItemInput`;
+  let classGraphQLUpdateManyItemType = new GraphQLInputObjectType({
+    name: classGraphQLUpdateManyItemTypeName,
+    description: `The ${classGraphQLUpdateManyItemTypeName} type is used for each entry in updateMany on the ${graphQLClassName} class.`,
+    fields: () => ({
+      id: defaultGraphQLTypes.GLOBAL_OR_OBJECT_ID_ATT,
+      fields: {
+        description: 'These are the fields that will be used to update the object.',
+        type: new GraphQLNonNull(classGraphQLUpdateType || defaultGraphQLTypes.OBJECT),
+      },
+    }),
+  });
+  classGraphQLUpdateManyItemType = parseGraphQLSchema.addGraphQLType(classGraphQLUpdateManyItemType);
+
   const classGraphQLPointerTypeName = `${graphQLClassName}PointerInput`;
   let classGraphQLPointerType = new GraphQLInputObjectType({
     name: classGraphQLPointerTypeName,
@@ -505,6 +519,7 @@ const load = (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseGraphQLCla
     classGraphQLRelationType,
     classGraphQLCreateType,
     classGraphQLUpdateType,
+    classGraphQLUpdateManyItemType,
     classGraphQLConstraintsType,
     classGraphQLRelationConstraintsType,
     classGraphQLFindArgs,
