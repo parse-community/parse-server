@@ -1758,4 +1758,36 @@ describe('rest context', () => {
 
     expect(called).toBe(true);
   });
+
+  it('should support dependency injection on nested directAccess ops', async () => {
+    const ParseServerRESTController = require('../lib/ParseServerRESTController')
+      .ParseServerRESTController;
+    const ParseServer = require('../lib/ParseServer').default;
+    const requestContextMiddleware = (req, res, next) => {
+      req.config.aCustomController = 'aCustomController';
+      next();
+    };
+    await reconfigureServer({ requestContextMiddleware, directAccess: true });
+    // reconfigureServer restores the HTTP RESTController; re-enable directAccess
+    // so nested Cloud Code SDK ops go through ParseServerRESTController.
+    Parse.CoreManager.setRESTController(
+      ParseServerRESTController(
+        Parse.applicationId,
+        ParseServer.promiseRouter({ appId: Parse.applicationId })
+      )
+    );
+
+    let nestedCalled = false;
+    Parse.Cloud.beforeSave('Child', request => {
+      expect(request.config.aCustomController).toEqual('aCustomController');
+      nestedCalled = true;
+    });
+    Parse.Cloud.afterSave('Parent', async () => {
+      const child = new Parse.Object('Child');
+      await child.save(null, { useMasterKey: true });
+    });
+
+    await new Parse.Object('Parent').save(null, { useMasterKey: true });
+    expect(nestedCalled).toBe(true);
+  });
 });
