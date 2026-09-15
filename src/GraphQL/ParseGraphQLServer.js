@@ -294,6 +294,13 @@ class ParseGraphQLServer {
           // We need always true introspection because apollo server have changing behavior based on the NODE_ENV variable
           // we delegate the introspection control to the IntrospectionControlPlugin
           introspection: true,
+          // A new ApolloServer is created every time the GraphQL schema changes, and Parse Server
+          // already manages its own SIGTERM/SIGINT graceful shutdown (see configureListeners in
+          // ParseServer). Left to its default, apollo.start() registers a SIGINT and a SIGTERM
+          // listener on the global `process` per build and only removes them on apollo.stop() —
+          // which is never called on the discarded server — pinning every old ApolloServer and its
+          // entire GraphQL schema graph in memory forever. (#9813)
+          stopOnTerminationSignals: false,
           plugins: [ApolloServerPluginCacheControlDisabled(), IntrospectionControlPlugin(this.config.graphQLPublicIntrospection), SchemaSuggestionsControlPlugin(this.config.graphQLPublicIntrospection), createComplexityValidationPlugin(() => this.parseServer.config.requestComplexity)],
           schema,
         });
