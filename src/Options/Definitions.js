@@ -1315,6 +1315,12 @@ module.exports.DatabaseOptions = {
     action: parsers.booleanParser,
     default: true,
   },
+  createIndexJoinTables: {
+    env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_JOIN_TABLES',
+    help: 'Set to `true` to automatically create an index on the owningId field of the relation join tables (`_Join:<field>:<class>`) on server start, so that relation (`$relatedTo`) queries use an index seek instead of a full table scan. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.',
+    action: parsers.booleanParser,
+    default: true,
+  },
   createIndexRoleName: {
     env: 'PARSE_SERVER_DATABASE_CREATE_INDEX_ROLE_NAME',
     help: 'Set to `true` to automatically create a unique index on the name field of the _Role collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>\u26A0\uFE0F When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.',

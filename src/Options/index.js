@@ -903,6 +903,9 @@ export interface DatabaseOptions {
   /* Set to `true` to automatically create a unique index on the name field of the _Role collection on server start. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
   :DEFAULT: true */
   createIndexRoleName: ?boolean;
+  /* Set to `true` to automatically create an index on the owningId field of the relation join tables (`_Join:<field>:<class>`) on server start, so that relation (`$relatedTo`) queries use an index seek instead of a full table scan. Set to `false` to skip index creation. Default is `true`.<br><br>⚠️ When setting this option to `false` to manually create the index, keep in mind that the otherwise automatically created index may change in the future to be optimized for the internal usage by Parse Server.
+  :DEFAULT: true */
+  createIndexJoinTables: ?boolean;
   /* Set to `true` to disable validation of index fields. When disabled, indexes can be created even if the fields do not exist in the schema. This can be useful when creating indexes on fields that will be added later. */
   disableIndexFieldValidation: ?boolean;
   /* Set to `true` to allow `Parse.Query.explain` without master key.<br><br>⚠️ Enabling this option may expose sensitive query performance data to unauthorized users and could potentially be exploited for malicious purposes.
