@@ -2005,3 +2005,304 @@ describe('ParseLiveQuery ACL transition disclosure', function () {
     expect(leave.object.secretField).toBe('VISIBLE_NEW');
   });
 });
+
+describe('ParseLiveQuery beforeLiveQueryEvent', function () {
+  beforeEach(() => {
+    Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+  });
+  afterEach(async () => {
+    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+    await client.close();
+  });
+
+  it('runs beforeLiveQueryEvent when creating an object', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const triggerPromise = resolvingPromise();
+    Parse.Cloud.beforeLiveQueryEvent('TestObject', req => {
+      expect(req.user).toBeUndefined();
+      expect(req.object.get('foo')).toBe('bar');
+      triggerPromise.resolve();
+    });
+
+    const query = new Parse.Query(TestObject);
+    const subscription = await query.subscribe();
+    const createPromise = resolvingPromise();
+    subscription.on('create', object => {
+      createPromise.resolve(object);
+    });
+
+    const object = new TestObject();
+    object.set('foo', 'bar');
+    await object.save();
+
+    await triggerPromise;
+    const created = await createPromise;
+    expect(created.get('foo')).toBe('bar');
+    // The published object must keep its identifier so LiveQuery clients can
+    // correlate the event with the object.
+    expect(created.id).toBe(object.id);
+  });
+
+  it('runs beforeLiveQueryEvent when updating an object', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const object = new TestObject();
+    object.set('foo', 'bar');
+    await object.save();
+
+    const triggerPromise = resolvingPromise();
+    Parse.Cloud.beforeLiveQueryEvent('TestObject', async req => {
+      expect(req.object.get('foo')).toBe('baz');
+      triggerPromise.resolve();
+    });
+
+    const query = new Parse.Query(TestObject);
+    const subscription = await query.subscribe();
+    const updatePromise = resolvingPromise();
+    subscription.on('update', updated => {
+      updatePromise.resolve(updated);
+    });
+
+    object.set('foo', 'baz');
+    await object.save();
+
+    await triggerPromise;
+    const updated = await updatePromise;
+    expect(updated.get('foo')).toBe('baz');
+    expect(updated.id).toBe(object.id);
+  });
+
+  it('prevents a LiveQuery create event when beforeLiveQueryEvent returns false', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    Parse.Cloud.beforeLiveQueryEvent('TestObject', req => {
+      expect(req.object.get('foo')).toBe('bar');
+      return false;
+    });
+
+    const query = new Parse.Query(TestObject).equalTo('foo', 'bar');
+    const subscription = await query.subscribe();
+    const createSpy = jasmine.createSpy('create');
+    subscription.on('create', createSpy);
+
+    const object = new TestObject();
+    object.set('foo', 'bar');
+    await object.save();
+
+    await sleep(500);
+    expect(createSpy).not.toHaveBeenCalled();
+  });
+
+  it('prevents a LiveQuery update event when beforeLiveQueryEvent returns false', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const object = new TestObject();
+    object.set('foo', 'bar');
+    await object.save();
+
+    Parse.Cloud.beforeLiveQueryEvent('TestObject', async req => {
+      expect(req.object.get('foo')).toBe('baz');
+      return false;
+    });
+
+    const query = new Parse.Query(TestObject).equalTo('foo', 'baz');
+    const subscription = await query.subscribe();
+    const updateSpy = jasmine.createSpy('update');
+    subscription.on('update', updateSpy);
+
+    object.set('foo', 'baz');
+    await object.save();
+
+    await sleep(500);
+    expect(updateSpy).not.toHaveBeenCalled();
+  });
+
+  it('still publishes the event and logs when beforeLiveQueryEvent throws', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const logger = require('../lib/logger').logger;
+    const warnSpy = spyOn(logger, 'warn').and.callThrough();
+
+    Parse.Cloud.beforeLiveQueryEvent('TestObject', () => {
+      throw new Error('beforeLiveQueryEvent failure');
+    });
+
+    const query = new Parse.Query(TestObject);
+    const subscription = await query.subscribe();
+    const createPromise = resolvingPromise();
+    subscription.on('create', object => {
+      createPromise.resolve(object);
+    });
+
+    const object = new TestObject();
+    object.set('foo', 'bar');
+    await object.save();
+
+    // The event is still published even though the trigger threw.
+    const created = await createPromise;
+    expect(created.get('foo')).toBe('bar');
+    expect(warnSpy).toHaveBeenCalledWith('beforeLiveQueryEvent caught an error', jasmine.anything());
+  });
+
+  it('runs beforeLiveQueryEvent when deleting an object', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const object = new TestObject();
+    object.set('foo', 'bar');
+    await object.save();
+
+    const triggerPromise = resolvingPromise();
+    Parse.Cloud.beforeLiveQueryEvent('TestObject', req => {
+      expect(req.object.id).toBe(object.id);
+      expect(req.object.get('foo')).toBe('bar');
+      triggerPromise.resolve();
+    });
+
+    const query = new Parse.Query(TestObject);
+    const subscription = await query.subscribe();
+    const deletePromise = resolvingPromise();
+    subscription.on('delete', deleted => {
+      deletePromise.resolve(deleted);
+    });
+
+    await object.destroy();
+
+    await triggerPromise;
+    const deleted = await deletePromise;
+    expect(deleted.id).toBe(object.id);
+  });
+
+  it('prevents a LiveQuery delete event when beforeLiveQueryEvent returns false', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const object = new TestObject();
+    object.set('foo', 'bar');
+    await object.save();
+
+    Parse.Cloud.beforeLiveQueryEvent('TestObject', req => {
+      expect(req.object.id).toBe(object.id);
+      return false;
+    });
+
+    const query = new Parse.Query(TestObject);
+    const subscription = await query.subscribe();
+    const deleteSpy = jasmine.createSpy('delete');
+    subscription.on('delete', deleteSpy);
+
+    await object.destroy();
+
+    await sleep(500);
+    expect(deleteSpy).not.toHaveBeenCalled();
+  });
+
+  it('prevents a LiveQuery leave event when beforeLiveQueryEvent returns false', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const object = new TestObject();
+    object.set('foo', 'bar');
+    await object.save();
+
+    Parse.Cloud.beforeLiveQueryEvent('TestObject', req => {
+      expect(req.object.get('foo')).toBe('baz');
+      return false;
+    });
+
+    const query = new Parse.Query(TestObject).equalTo('foo', 'bar');
+    const subscription = await query.subscribe();
+    const leaveSpy = jasmine.createSpy('leave');
+    subscription.on('leave', leaveSpy);
+
+    // The object leaves the subscription's query, which would publish a
+    // leave event if the trigger did not prevent it.
+    object.set('foo', 'baz');
+    await object.save();
+
+    await sleep(500);
+    expect(leaveSpy).not.toHaveBeenCalled();
+  });
+
+  it('does not publish the event when the beforeLiveQueryEvent validator fails', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const logger = require('../lib/logger').logger;
+    const warnSpy = spyOn(logger, 'warn').and.callThrough();
+
+    const handlerSpy = jasmine.createSpy('handler');
+    Parse.Cloud.beforeLiveQueryEvent('TestObject', handlerSpy, {
+      requireMaster: true,
+    });
+
+    const query = new Parse.Query(TestObject);
+    const subscription = await query.subscribe();
+    const createSpy = jasmine.createSpy('create');
+    subscription.on('create', createSpy);
+
+    const object = new TestObject();
+    object.set('foo', 'bar');
+    await object.save();
+
+    await sleep(500);
+    expect(createSpy).not.toHaveBeenCalled();
+    expect(handlerSpy).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledWith('beforeLiveQueryEvent validation failed', jasmine.anything());
+  });
+});

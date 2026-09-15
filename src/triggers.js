@@ -16,6 +16,7 @@ export const Types = {
   afterFind: 'afterFind',
   beforeConnect: 'beforeConnect',
   beforeSubscribe: 'beforeSubscribe',
+  beforeEvent: 'beforeEvent',
   afterEvent: 'afterEvent',
 };
 
@@ -307,7 +308,8 @@ export function getRequestObject(
     triggerType === Types.beforeLogin ||
     triggerType === Types.afterLogin ||
     triggerType === Types.beforePasswordResetRequest ||
-    triggerType === Types.afterFind
+    triggerType === Types.afterFind ||
+    triggerType === Types.beforeEvent
   ) {
     // Set a copy of the context on the request object.
     request.context = Object.assign(Object.create(null), context);
@@ -375,6 +377,11 @@ export function getRequestQueryObject(triggerType, auth, query, count, config, c
 export function getResponseObject(request, resolve, reject) {
   return {
     success: function (response) {
+      if (request.triggerName === Types.beforeEvent) {
+        // Pass the handler's return value through unchanged so that the caller
+        // can react to it (e.g. returning `false` to prevent a LiveQuery event).
+        return resolve(response);
+      }
       if (request.triggerName === Types.afterFind) {
         if (!response) {
           response = request.objects;
@@ -1028,6 +1035,39 @@ export function maybeRunTrigger(
       })
       .then(success, error);
   });
+}
+
+// Runs the beforeLiveQueryEvent trigger, if defined, and returns whether the
+// LiveQuery event should be published. The event is not published when the
+// trigger returns `false` or when its validator fails (a failing validator is a
+// deliberate gate, so it fails closed). Any other trigger error is logged and
+// the event is published as usual, so a faulty trigger cannot silently drop
+// events. This function never rejects.
+export async function maybeRunBeforeLiveQueryEventTrigger(
+  auth,
+  parseObject,
+  originalParseObject,
+  config,
+  context
+) {
+  try {
+    const result = await maybeRunTrigger(
+      Types.beforeEvent,
+      auth,
+      parseObject,
+      originalParseObject,
+      config,
+      context
+    );
+    return result !== false;
+  } catch (error) {
+    if (error && error.code === Parse.Error.VALIDATION_ERROR) {
+      logger.warn('beforeLiveQueryEvent validation failed', error);
+      return false;
+    }
+    logger.warn('beforeLiveQueryEvent caught an error', error);
+    return true;
+  }
 }
 
 // Converts a REST-format object to a Parse.Object
