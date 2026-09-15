@@ -575,6 +575,27 @@ describe('google auth adapter', () => {
     expect(result).toEqual(fakeClaim);
   });
 
+  it('(using client id as array with multiple items) should verify id_token (google.com)', async () => {
+    const fakeClaim = {
+      iss: 'https://accounts.google.com',
+      aud: 'secret',
+      exp: Date.now(),
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = { kid: '123', alg: 'RS256' };
+    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    await expectAsync(
+      google.validateAuthData(
+        { id: 'the_user_id', id_token: 'the_token' },
+        { clientId: ['secret', 'other-client-id'] }
+      )
+    ).toBeResolvedTo(fakeClaim);
+  });
+
   it('(using client id as string) should throw error with with invalid jwt issuer (google.com)', async () => {
     const fakeClaim = {
       iss: 'https://not.google.com',
@@ -654,6 +675,14 @@ describe('google auth adapter', () => {
     } catch (e) {
       expect(e.message).toBe('Google auth is not configured.');
     }
+  });
+
+  it('should throw error when clientId is an empty array', async () => {
+    await expectAsync(
+      google.validateAuthData({ id: 'the_user_id', id_token: 'the_token' }, { clientId: [] })
+    ).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Google auth is not configured.')
+    );
   });
 });
 
@@ -1469,6 +1498,14 @@ describe('apple signin auth adapter', () => {
     } catch (e) {
       expect(e.message).toBe('Apple auth is not configured.');
     }
+  });
+
+  it('should throw error when clientId is an empty array', async () => {
+    await expectAsync(
+      apple.validateAuthData({ id: 'the_user_id', token: 'the_token' }, { clientId: [] })
+    ).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Apple auth is not configured.')
+    );
   });
 });
 
