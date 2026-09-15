@@ -101,6 +101,18 @@ export class FilesAdapter {
   // getMetadata(filename: string): Promise<any> {}
 }
 
+export const RESERVED_FILEPATH_SEGMENTS = ['metadata'];
+
+export function normalizeFilename(filename: any): any {
+  if (typeof filename !== 'string') {
+    return filename;
+  }
+  return filename
+    .split('/')
+    .map(segment => segment.normalize('NFC'))
+    .join('/');
+}
+
 /**
  * Simple filename validation
  *
@@ -108,13 +120,63 @@ export class FilesAdapter {
  * @returns {null|Parse.Error}
  */
 export function validateFilename(filename): ?Parse.Error {
+  if (!filename || typeof filename !== 'string') {
+    return new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Filename must be a string.');
+  }
+  filename = normalizeFilename(filename);
   if (filename.length > 128) {
     return new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Filename too long.');
   }
+  if (filename === '..') {
+    return new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Filename must not be "..".');
+  }
 
-  const regx = /^[_a-zA-Z0-9][a-zA-Z0-9@. ~_-]*$/;
+  const regx = /^[_\p{L}\p{Nd}][\p{L}\p{Nd}@. ~_-]*$/u;
   if (!filename.match(regx)) {
     return new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Filename contains invalid characters.');
+  }
+  return null;
+}
+
+/**
+ * Validate a stored file path that may contain directory segments.
+ *
+ * @param filepath
+ * @returns {null|Parse.Error}
+ */
+export function validateFilepath(filepath): ?Parse.Error {
+  if (!filepath || typeof filepath !== 'string') {
+    return new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Filename must be a string.');
+  }
+  const normalized = normalizeFilename(filepath);
+  const segments = normalized.split('/');
+  if (segments.includes('..')) {
+    return new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'File path must not contain "..".');
+  }
+  if (normalized.startsWith('/') || normalized.endsWith('/')) {
+    return new Parse.Error(
+      Parse.Error.INVALID_FILE_NAME,
+      'File path must not start or end with "/".'
+    );
+  }
+  if (normalized.includes('//')) {
+    return new Parse.Error(
+      Parse.Error.INVALID_FILE_NAME,
+      'File path must not contain consecutive slashes.'
+    );
+  }
+  const firstSegment = segments[0];
+  if (RESERVED_FILEPATH_SEGMENTS.includes(firstSegment)) {
+    return new Parse.Error(
+      Parse.Error.INVALID_FILE_NAME,
+      `File path must not start with reserved segment "${firstSegment}".`
+    );
+  }
+  for (const segment of segments) {
+    const error = validateFilename(segment);
+    if (error) {
+      return error;
+    }
   }
   return null;
 }

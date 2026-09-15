@@ -7,6 +7,7 @@ const triggers = require('../triggers');
 const Utils = require('../Utils');
 import { Readable } from 'stream';
 import { createSanitizedHttpError } from '../Error';
+import { RESERVED_FILEPATH_SEGMENTS, normalizeFilename } from '../Adapters/Files/FilesAdapter';
 
 /**
  * Wraps a readable stream in a Readable that enforces a byte size limit.
@@ -83,7 +84,7 @@ export function createSizeLimitedStream(source, maxBytes) {
 // Segments that conflict with sub-routes under GET /files/:appId/*. If a file
 // directory starts with one of these, its URL would match the wrong route
 // handler. Update this list when adding new sub-routes to expressRouter().
-export const RESERVED_DIRECTORY_SEGMENTS = ['metadata'];
+export const RESERVED_DIRECTORY_SEGMENTS = RESERVED_FILEPATH_SEGMENTS;
 
 export class FilesRouter {
   expressRouter({ maxUploadSize = '20Mb' } = {}) {
@@ -219,9 +220,16 @@ export class FilesRouter {
 
     FilesRouter._validateFileDownload(req, config);
 
+    const filesController = config.filesController;
     let filename = FilesRouter._getFilenameFromParams(req);
+    filename = normalizeFilename(filename);
+    const filepathError = filesController.validateFilepath(filename);
+    if (filepathError) {
+      res.status(400);
+      res.json({ code: filepathError.code, error: filepathError.message });
+      return;
+    }
     try {
-      const filesController = config.filesController;
       const mime = (await import('mime')).default;
       let contentType = mime.getType(filename);
       let file = new Parse.File(filename, { base64: '' }, contentType);
@@ -233,7 +241,13 @@ export class FilesRouter {
         fileAuth
       );
       if (triggerResult?.file?._name) {
-        filename = triggerResult?.file?._name;
+        filename = normalizeFilename(triggerResult.file._name);
+        const renamedPathError = filesController.validateFilepath(filename);
+        if (renamedPathError) {
+          res.status(400);
+          res.json({ code: renamedPathError.code, error: renamedPathError.message });
+          return;
+        }
         contentType = mime.getType(filename);
       }
 
@@ -401,7 +415,8 @@ export class FilesRouter {
       }
     }
     const filesController = config.filesController;
-    const { filename } = req.params;
+    const filename = normalizeFilename(req.params.filename);
+    req.params.filename = filename;
     const contentType = req.get('Content-type');
 
     const error = filesController.validateFilename(filename);
@@ -801,7 +816,12 @@ export class FilesRouter {
     }
     try {
       const { filesController } = req.config;
-      const filename = FilesRouter._getFilenameFromParams(req);
+      const filename = normalizeFilename(FilesRouter._getFilenameFromParams(req));
+      const filepathError = filesController.validateFilepath(filename);
+      if (filepathError) {
+        next(filepathError);
+        return;
+      }
       // run beforeDeleteFile trigger
       const file = new Parse.File(filename);
       file._url = await filesController.adapter.getFileLocation(req.config, filename);
@@ -845,6 +865,13 @@ export class FilesRouter {
       FilesRouter._validateFileDownload(req, config);
       const { filesController } = config;
       let filename = FilesRouter._getFilenameFromParams(req);
+      filename = normalizeFilename(filename);
+      const filepathError = filesController.validateFilepath(filename);
+      if (filepathError) {
+        res.status(400);
+        res.json({ code: filepathError.code, error: filepathError.message });
+        return;
+      }
       const file = new Parse.File(filename, { base64: '' });
       const fileAuth = req.auth;
       const triggerResult = await triggers.maybeRunFileTrigger(
@@ -854,7 +881,13 @@ export class FilesRouter {
         fileAuth
       );
       if (triggerResult?.file?._name) {
-        filename = triggerResult.file._name;
+        filename = normalizeFilename(triggerResult.file._name);
+        const renamedPathError = filesController.validateFilepath(filename);
+        if (renamedPathError) {
+          res.status(400);
+          res.json({ code: renamedPathError.code, error: renamedPathError.message });
+          return;
+        }
       }
       const data = await filesController.getMetadata(filename).catch(() => {
         res.status(200);
