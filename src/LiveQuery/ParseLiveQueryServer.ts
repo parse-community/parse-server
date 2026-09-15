@@ -18,7 +18,9 @@ import {
   resolveError,
   toJSONwithObjects,
 } from '../triggers';
-import { getAuthForSessionToken, Auth } from '../Auth';
+import { getAuthForSessionToken, master, Auth } from '../Auth';
+import RestQuery from '../RestQuery';
+import { inflateQuery, deflateQuery } from '../cloud-code/QueryAdapter';
 import { getCacheController, getDatabaseController } from '../Controllers';
 import Config from '../Config';
 import { LRUCache as LRU } from 'lru-cache';
@@ -637,19 +639,36 @@ class ParseLiveQueryServer {
 
   async _clearCachedRoles(userId: string) {
     try {
-      const validTokens = await new Parse.Query(Parse.Session)
-        .equalTo('user', Parse.User.createWithoutData(userId))
-        .find({ useMasterKey: true });
+      const config = Config.get(this.config.appId);
+      const query = await RestQuery({
+        method: RestQuery.Method.find,
+        config,
+        runBeforeFind: false,
+        auth: master(config),
+        className: '_Session',
+        restWhere: {
+          user: {
+            __type: 'Pointer',
+            className: '_User',
+            objectId: userId,
+          },
+        },
+      });
+      const { results: validTokens } = await query.execute();
       await Promise.all(
         validTokens.map(async token => {
-          const sessionToken = token.get('sessionToken');
+          const sessionToken = token.sessionToken;
           const authPromise = this.authCache.get(sessionToken);
           if (!authPromise) {
             return;
           }
           const [auth1, auth2] = await Promise.all([
             authPromise,
-            getAuthForSessionToken({ cacheController: this.cacheController, sessionToken }),
+            getAuthForSessionToken({
+              cacheController: this.cacheController,
+              sessionToken,
+              config: Config.get(this.config.appId),
+            }),
           ]);
           auth1.auth?.clearRoleCache(sessionToken);
           auth2.auth?.clearRoleCache(sessionToken);
@@ -672,6 +691,7 @@ class ParseLiveQueryServer {
     const authPromise = getAuthForSessionToken({
       cacheController: this.cacheController,
       sessionToken: sessionToken,
+      config: Config.get(this.config.appId),
     })
       .then(auth => {
         return { auth, userId: auth && auth.user && auth.user.id };
@@ -1060,13 +1080,10 @@ class ParseLiveQueryServer {
           request.user = auth.user;
         }
 
-        const parseQuery = new Parse.Query(className);
-        parseQuery.withJSON(request.query);
-        request.query = parseQuery;
+        request.query = inflateQuery(className, request.query);
         await runTrigger(trigger, `beforeSubscribe.${className}`, request, auth);
 
-        const query = request.query.toJSON();
-        request.query = query;
+        request.query = deflateQuery(request.query);
       }
 
       if (className === '_Session') {

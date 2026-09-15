@@ -1576,34 +1576,16 @@ describe('ParseLiveQueryServer', function () {
     };
     const requestId = 0;
 
-    spyOn(Parse, 'Query').and.callFake(function () {
-      let shouldReturn = false;
-      return {
-        equalTo() {
-          shouldReturn = true;
-          // Nothing to do here
-          return this;
+    // The user has the "liveQueryRead" role, but the ACL only grants read access
+    // to "otherLiveQueryRead", so it should not match.
+    spyOn(parseLiveQueryServer, 'getAuthForSessionToken').and.returnValue(
+      Promise.resolve({
+        userId: 'someUserId',
+        auth: {
+          getUserRoles: () => Promise.resolve(['role:liveQueryRead']),
         },
-        containedIn() {
-          shouldReturn = false;
-          return this;
-        },
-        find() {
-          if (!shouldReturn) {
-            return Promise.resolve([]);
-          }
-          //Return a role with the name "liveQueryRead" as that is what was set on the ACL
-          const liveQueryRole = new Parse.Role('liveQueryRead', new Parse.ACL());
-          liveQueryRole.id = 'abcdef1234';
-          return Promise.resolve([liveQueryRole]);
-        },
-      };
-    });
-
-    parseLiveQueryServer._matchesACL(acl, client, requestId).then(function (isMatched) {
-      expect(isMatched).toBe(false);
-      done();
-    });
+      })
+    );
 
     parseLiveQueryServer._matchesACL(acl, client, requestId).then(function (isMatched) {
       expect(isMatched).toBe(false);
@@ -1623,36 +1605,15 @@ describe('ParseLiveQueryServer', function () {
     };
     const requestId = 0;
 
-    spyOn(Parse, 'Query').and.callFake(function () {
-      let shouldReturn = false;
-      return {
-        equalTo() {
-          shouldReturn = true;
-          // Nothing to do here
-          return this;
+    // The user has the "liveQueryRead" role, which the ACL grants read access to.
+    spyOn(parseLiveQueryServer, 'getAuthForSessionToken').and.returnValue(
+      Promise.resolve({
+        userId: 'someUserId',
+        auth: {
+          getUserRoles: () => Promise.resolve(['role:liveQueryRead']),
         },
-        containedIn() {
-          shouldReturn = false;
-          return this;
-        },
-        find() {
-          if (!shouldReturn) {
-            return Promise.resolve([]);
-          }
-          //Return a role with the name "liveQueryRead" as that is what was set on the ACL
-          const liveQueryRole = new Parse.Role('liveQueryRead', new Parse.ACL());
-          liveQueryRole.id = 'abcdef1234';
-          return Promise.resolve([liveQueryRole]);
-        },
-        each(callback) {
-          //Return a role with the name "liveQueryRead" as that is what was set on the ACL
-          const liveQueryRole = new Parse.Role('liveQueryRead', new Parse.ACL());
-          liveQueryRole.id = 'abcdef1234';
-          callback(liveQueryRole);
-          return Promise.resolve();
-        },
-      };
-    });
+      })
+    );
 
     parseLiveQueryServer._matchesACL(acl, client, requestId).then(function (isMatched) {
       expect(isMatched).toBe(true);
