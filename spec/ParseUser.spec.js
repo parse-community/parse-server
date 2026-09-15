@@ -2478,6 +2478,18 @@ describe('Parse.User testing', () => {
         expect(username2).not.toBe(username1);
         expect(username2.toLowerCase()).toBe(username1.toLowerCase()); // this is redundant :).
       });
+
+      it('does not crash querying _User when anonymous authData exists but anonymous is disabled (#8681)', async () => {
+        const user = await Parse.User.logInWith('anonymous', {
+          authData: { id: '00000000-0000-0000-0000-000000000abc' },
+        });
+        // App later turns anonymous users off while the user still carries anonymous authData
+        await reconfigureServer({ enableAnonymousUsers: false });
+        // afterFind runs over each provider on _User reads; 'anonymous' must be skipped, not crash
+        const results = await new Parse.Query(Parse.User).find({ useMasterKey: true });
+        expect(results.length).toBe(1);
+        expect(results[0].id).toBe(user.id);
+      });
     });
   });
 
