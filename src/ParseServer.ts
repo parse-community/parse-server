@@ -13,6 +13,7 @@ import { setRegexTimeout } from './LiveQuery/QueryTools';
 import defaults, { DatabaseOptionDefaults } from './defaults';
 import * as logging from './logger';
 import Config from './Config';
+import Utils from './Utils';
 import PromiseRouter from './PromiseRouter';
 import requiredParameter from './requiredParameter';
 import { AnalyticsRouter } from './Routers/AnalyticsRouter';
@@ -596,6 +597,11 @@ function injectDefaults(options: ParseServerOptions) {
       options[key] = defaults[key];
     }
   });
+
+  // Clone: protectedFields may reference the shared option default and is
+  // merged into below; mutating the shared object would leak the merge across
+  // configurations and defeat identity-keyed caches
+  options.protectedFields = Utils.deepClone(options.protectedFields || {});
 
   // Inject defaults for database options; only when no explicit database adapter is set,
   // because an explicit adapter manages its own options and passing databaseOptions alongside
