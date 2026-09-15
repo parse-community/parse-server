@@ -4005,6 +4005,27 @@ describe('ParseGraphQLServer', () => {
       });
 
       describe('Class Schema Mutations', () => {
+        it('classes query passes an options object (not a boolean) to getAllClasses (#7677)', async () => {
+          const { SchemaController } = require('../lib/Controllers/SchemaController');
+          const spy = spyOn(SchemaController.prototype, 'getAllClasses').and.callThrough();
+          await apolloClient.query({
+            query: gql`
+              query {
+                classes {
+                  name
+                }
+              }
+            `,
+            context: {
+              headers: {
+                'X-Parse-Master-Key': 'test',
+              },
+            },
+          });
+          expect(spy).toHaveBeenCalled();
+          expect(spy).not.toHaveBeenCalledWith(true);
+        });
+
         it('should create a new class', async () => {
           try {
             const result = await apolloClient.mutate({
