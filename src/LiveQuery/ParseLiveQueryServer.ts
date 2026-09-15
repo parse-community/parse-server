@@ -8,6 +8,11 @@ import logger from '../logger';
 import RequestSchema from './RequestSchema';
 import { matchesQuery, queryHash } from './QueryTools';
 import { ParsePubSub } from './ParsePubSub';
+import {
+  inflateObject,
+  hydrateFromFullJSON,
+  disableSingleInstance,
+} from '../cloud-code/ObjectAdapter';
 import SchemaController from '../Controllers/SchemaController';
 import _ from 'lodash';
 import { randomUUID } from 'crypto';
@@ -18,7 +23,9 @@ import {
   resolveError,
   toJSONwithObjects,
 } from '../triggers';
-import { getAuthForSessionToken, Auth } from '../Auth';
+import { getAuthForSessionToken, master, Auth } from '../Auth';
+import RestQuery from '../RestQuery';
+import { inflateQuery, deflateQuery } from '../cloud-code/QueryAdapter';
 import { getCacheController, getDatabaseController } from '../Controllers';
 import Config from '../Config';
 import { LRUCache as LRU } from 'lru-cache';
@@ -58,7 +65,7 @@ class ParseLiveQueryServer {
     logger.verbose('Support key pairs', this.keyPairs);
 
     // Initialize Parse
-    Parse.Object.disableSingleInstance();
+    disableSingleInstance();
     const serverURL = config.serverURL || Parse.serverURL;
     Parse.serverURL = serverURL;
     Parse.initialize(config.appId, Parse.javaScriptKey, config.masterKey);
@@ -157,18 +164,18 @@ class ParseLiveQueryServer {
     // Inflate merged object
     const currentParseObject = message.currentParseObject;
     UserRouter.removeHiddenProperties(currentParseObject);
-    let className = currentParseObject.className;
-    let parseObject = new Parse.Object(className);
-    parseObject._finishFetch(currentParseObject);
-    message.currentParseObject = parseObject;
+    message.currentParseObject = hydrateFromFullJSON(
+      currentParseObject.className,
+      currentParseObject
+    );
     // Inflate original object
     const originalParseObject = message.originalParseObject;
     if (originalParseObject) {
       UserRouter.removeHiddenProperties(originalParseObject);
-      className = originalParseObject.className;
-      parseObject = new Parse.Object(className);
-      parseObject._finishFetch(originalParseObject);
-      message.originalParseObject = parseObject;
+      message.originalParseObject = hydrateFromFullJSON(
+        originalParseObject.className,
+        originalParseObject
+      );
     }
   }
 
@@ -244,7 +251,7 @@ class ParseLiveQueryServer {
                 res.user = auth.user;
               }
               if (res.object) {
-                res.object = Parse.Object.fromJSON(res.object);
+                res.object = inflateObject(res.object);
               }
               await runTrigger(trigger, `afterEvent.${className}`, res, auth);
             }
@@ -436,10 +443,10 @@ class ParseLiveQueryServer {
             const trigger = getTrigger(className, 'afterEvent', Parse.applicationId);
             if (trigger) {
               if (res.object) {
-                res.object = Parse.Object.fromJSON(res.object);
+                res.object = inflateObject(res.object);
               }
               if (res.original) {
-                res.original = Parse.Object.fromJSON(res.original);
+                res.original = inflateObject(res.original);
               }
               const auth = await this.getAuthFromClient(client, requestId);
               if (auth && auth.user) {
@@ -637,19 +644,36 @@ class ParseLiveQueryServer {
 
   async _clearCachedRoles(userId: string) {
     try {
-      const validTokens = await new Parse.Query(Parse.Session)
-        .equalTo('user', Parse.User.createWithoutData(userId))
-        .find({ useMasterKey: true });
+      const config = Config.get(this.config.appId);
+      const query = await RestQuery({
+        method: RestQuery.Method.find,
+        config,
+        runBeforeFind: false,
+        auth: master(config),
+        className: '_Session',
+        restWhere: {
+          user: {
+            __type: 'Pointer',
+            className: '_User',
+            objectId: userId,
+          },
+        },
+      });
+      const { results: validTokens } = await query.execute();
       await Promise.all(
         validTokens.map(async token => {
-          const sessionToken = token.get('sessionToken');
+          const sessionToken = token.sessionToken;
           const authPromise = this.authCache.get(sessionToken);
           if (!authPromise) {
             return;
           }
           const [auth1, auth2] = await Promise.all([
             authPromise,
-            getAuthForSessionToken({ cacheController: this.cacheController, sessionToken }),
+            getAuthForSessionToken({
+              cacheController: this.cacheController,
+              sessionToken,
+              config: Config.get(this.config.appId),
+            }),
           ]);
           auth1.auth?.clearRoleCache(sessionToken);
           auth2.auth?.clearRoleCache(sessionToken);
@@ -672,6 +696,7 @@ class ParseLiveQueryServer {
     const authPromise = getAuthForSessionToken({
       cacheController: this.cacheController,
       sessionToken: sessionToken,
+      config: Config.get(this.config.appId),
     })
       .then(auth => {
         return { auth, userId: auth && auth.user && auth.user.id };
@@ -1060,13 +1085,10 @@ class ParseLiveQueryServer {
           request.user = auth.user;
         }
 
-        const parseQuery = new Parse.Query(className);
-        parseQuery.withJSON(request.query);
-        request.query = parseQuery;
+        request.query = inflateQuery(className, request.query);
         await runTrigger(trigger, `beforeSubscribe.${className}`, request, auth);
 
-        const query = request.query.toJSON();
-        request.query = query;
+        request.query = deflateQuery(request.query);
       }
 
       if (className === '_Session') {
