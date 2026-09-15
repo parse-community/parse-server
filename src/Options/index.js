@@ -908,6 +908,9 @@ export interface DatabaseOptions {
   /* Set to `true` to allow `Parse.Query.explain` without master key.<br><br>⚠️ Enabling this option may expose sensitive query performance data to unauthorized users and could potentially be exploited for malicious purposes.
   :DEFAULT: false */
   allowPublicExplain: ?boolean;
+  /* Set to `true` to return `Parse.Query.explain` results for MongoDB as an array, consistent with `find` and the Postgres adapter. When `false`, MongoDB returns a single explain object (legacy behaviour), which is inconsistent with `find` and breaks strongly-typed SDKs that expect an array.
+  :DEFAULT: false */
+  explainResultsAsArray: ?boolean;
   /* An array of MongoDB client event configurations to enable logging of specific events. */
   logClientEvents: ?(LogClientEvent[]);
   /* Custom metadata to append to database client connections for identifying Parse Server instances in database logs. If set, this metadata will be visible in database logs during connection handshakes. This can help with debugging and monitoring in deployments with multiple database clients. Set `name` to identify your application (e.g., 'MyApp') and `version` to your application's version. Leave undefined (default) to disable this feature and avoid the additional data transfer overhead. */

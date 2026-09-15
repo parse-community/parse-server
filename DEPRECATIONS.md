@@ -28,6 +28,7 @@ The following is a list of deprecations, according to the [Deprecation Policy](h
 | DEPPS22 | Config option `protectedFieldsTriggerExempt` defaults to `true`                              |                                                                        | 9.6.0 (2026)                    | 10.0.0 (2027)                   | deprecated            | -     |
 | DEPPS23 | Config option `protectedFieldsSaveResponseExempt` defaults to `false`                               |                                                                        | 9.7.0 (2026)                    | 10.0.0 (2027)                   | deprecated            | -     |
 | DEPPS24 | Config option `installation.duplicateDeviceTokenActionEnforceAuth` defaults to `true`         | [#10451](https://github.com/parse-community/parse-server/pull/10451)   | 9.9.0 (2026)                    | 10.0.0 (2027)                   | deprecated            | -     |
+| DEPPS25 | Database option `databaseOptions.explainResultsAsArray` defaults to `true`                    | [#7442](https://github.com/parse-community/parse-server/issues/7442)   | 9.11.0 (2026)                   | 10.0.0 (2027)                   | deprecated            | -     |
 
 [i_deprecation]: ## "The version and date of the deprecation."
 [i_change]: ## "The version and date of the planned change."

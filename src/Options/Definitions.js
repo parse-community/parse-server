@@ -1373,6 +1373,12 @@ module.exports.DatabaseOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  explainResultsAsArray: {
+    env: 'PARSE_SERVER_DATABASE_EXPLAIN_RESULTS_AS_ARRAY',
+    help: 'Set to `true` to return `Parse.Query.explain` results for MongoDB as an array, consistent with `find` and the Postgres adapter. When `false`, MongoDB returns a single explain object (legacy behaviour), which is inconsistent with `find` and breaks strongly-typed SDKs that expect an array.',
+    action: parsers.booleanParser,
+    default: false,
+  },
   forceServerObjectId: {
     env: 'PARSE_SERVER_DATABASE_FORCE_SERVER_OBJECT_ID',
     help: 'The MongoDB driver option to force server to assign _id values instead of driver.',
