@@ -1972,6 +1972,34 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
+        it('should keep built-in enum type names in validation errors without master or maintenance key', async () => {
+          await setupRelationSchema(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak {
+                  diagShelves(where: {}, options: { readPreference: BOGUS }) {
+                    edges {
+                      node {
+                        id
+                      }
+                    }
+                  }
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // Value "BOGUS" does not exist in "ReadPreference" enum. ReadPreference is a built-in
+            // enum, identical on every deployment and reachable from the `options` argument of
+            // every generated find query, so redacting it would degrade the message for no
+            // security gain. Guards the non-disclosing-name carve-out the enum templates rely on.
+            expect(error.message).toContain('ReadPreference');
+          }
+        });
+
         // The advisory also lists ProvidedRequiredArgumentsRule and the opposite branch of
         // ScalarLeafsRule. Both templates are genuinely uncovered, but neither can name a class
         // the caller did not already write in Parse Server's generated schema: no generated field
