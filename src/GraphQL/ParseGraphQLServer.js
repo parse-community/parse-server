@@ -9,6 +9,7 @@ import requiredParameter from '../requiredParameter';
 import { createComplexityValidationPlugin } from './helpers/queryComplexity';
 import defaultLogger from '../logger';
 import { ParseGraphQLSchema, RESERVED_GRAPHQL_TYPE_NAMES } from './ParseGraphQLSchema';
+import { READ_PREFERENCE } from './loaders/defaultGraphQLTypes';
 import ParseGraphQLController, { ParseGraphQLConfig } from '../Controllers/ParseGraphQLController';
 
 
@@ -82,6 +83,16 @@ const stripSchemaCoercionIdentifiers = message =>
     )
     : message;
 
+// Type names that reveal nothing about THIS application's schema, so redacting them would cost
+// message quality for no security gain. `RESERVED_GRAPHQL_TYPE_NAMES` covers the names the schema
+// builder refuses to let a class generate, but Parse registers built-in types outside that list
+// too. Of those, only an ENUM can reach the enum templates below, and the GraphQL layer defines
+// exactly three enums: `CloudCodeFunction` (reserved), the per-class `<Class>Order` (the
+// disclosure these templates exist to redact) and `ReadPreference`. Include the last one so that
+// an invalid `options.readPreference` value still names its enum, just as `CloudCodeFunction`
+// does — it is identical on every deployment and reachable from every generated find query.
+const NON_DISCLOSING_TYPE_NAMES = new Set([...RESERVED_GRAPHQL_TYPE_NAMES, READ_PREFERENCE.name]);
+
 // graphql-js also emits base coercion / validation messages that name a nested input
 // TYPE without a "Did you mean" clause, so neither strip above reaches them. For a
 // Pointer or Relation field the generated input type name embeds the pointer's TARGET
@@ -96,7 +107,7 @@ const stripSchemaCoercionIdentifiers = message =>
 const stripSchemaTypeIdentifiers = (message, operationText) => {
   if (typeof message !== 'string') { return message; }
   // A generated type identifier is kept (it is not a disclosure) if the caller wrote it as a
-  // whole token in the operation text, or if it is a reserved name (see below). Tokenize the
+  // whole token in the operation text, or if it is a non-disclosing name (above). Tokenize the
   // operation on non-identifier characters and compare exact tokens rather than building a
   // RegExp from the captured name: this avoids substring false-matches (e.g. preserving
   // "AuthorPointerInput" because the operation contains "SecretAuthorPointerInput") and any
@@ -108,16 +119,14 @@ const stripSchemaTypeIdentifiers = (message, operationText) => {
     typeof operationText === 'string'
       ? new Set(operationText.split(/[^_A-Za-z0-9]+/).filter(Boolean))
       : new Set();
-  // A reserved type name (`CloudCodeFunction`, `Viewer`, `PageInfo`, the built-in scalars, ...)
-  // is identical on every Parse Server deployment and cannot collide with a user class, since
-  // `ParseGraphQLSchema` rejects class names that would produce one. Echoing a reserved name
-  // therefore discloses nothing about THIS application's schema, so it is preserved like a
+  // A non-disclosing type name (`CloudCodeFunction`, `ReadPreference`, `Viewer`, `PageInfo`, the
+  // built-in scalars, ...) is identical on every Parse Server deployment and cannot collide with
+  // a user class, since `ParseGraphQLSchema` rejects class names that would produce one. Echoing
+  // one therefore discloses nothing about THIS application's schema, so it is preserved like a
   // caller-referenced name and the message stays useful.
   const shouldKeepTypeName = typeName => {
     const bareTypeName = typeName.replace(/[[\]!]/g, '');
-    return (
-      RESERVED_GRAPHQL_TYPE_NAMES.includes(bareTypeName) || referencedTokens.has(bareTypeName)
-    );
+    return NON_DISCLOSING_TYPE_NAMES.has(bareTypeName) || referencedTokens.has(bareTypeName);
   };
   return message
     // Input coercion / ValuesOfCorrectTypeRule (variables and inline literals).
