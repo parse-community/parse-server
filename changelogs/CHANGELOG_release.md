@@ -1,3 +1,10 @@
+## [8.6.92](https://github.com/parse-community/parse-server/compare/8.6.91...8.6.92) (2026-09-21)
+
+
+### Bug Fixes
+
+* GraphQL argument and enum validation errors disclose target class names when public introspection is disabled ([GHSA-6m77-f8xr-f723](https://github.com/parse-community/parse-server/security/advisories/GHSA-6m77-f8xr-f723)) ([#10666](https://github.com/parse-community/parse-server/issues/10666)) ([1cd1f8f](https://github.com/parse-community/parse-server/commit/1cd1f8fdecf3e3fc99f2487d3360ef06f7452de2))
+
 ## [8.6.91](https://github.com/parse-community/parse-server/compare/8.6.90...8.6.91) (2026-09-13)
 
 
