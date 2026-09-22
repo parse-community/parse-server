@@ -1,3 +1,10 @@
+## [9.10.1-alpha.13](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.12...9.10.1-alpha.13) (2026-09-22)
+
+
+### Bug Fixes
+
+* Relation count query bypasses protectedFields for identity-scoped groups ([GHSA-rmhf-xv62-rm99](https://github.com/parse-community/parse-server/security/advisories/GHSA-rmhf-xv62-rm99)) ([#10667](https://github.com/parse-community/parse-server/issues/10667)) ([a32977f](https://github.com/parse-community/parse-server/commit/a32977fb82a6c6f66be0747cd6d4e76a8c62714a))
+
 ## [9.10.1-alpha.12](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.11...9.10.1-alpha.12) (2026-09-21)
 
 
