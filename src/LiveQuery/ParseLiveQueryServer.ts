@@ -681,7 +681,9 @@ class ParseLiveQueryServer {
         const result: any = {};
         if (error && error.code === Parse.Error.INVALID_SESSION_TOKEN) {
           result.error = error;
-          this.authCache.set(sessionToken, Promise.resolve(result), this.config.cacheTimeout);
+          this.authCache.set(sessionToken, Promise.resolve(result), {
+            ttl: this.config.cacheTimeout,
+          });
         } else {
           this.authCache.delete(sessionToken);
         }
