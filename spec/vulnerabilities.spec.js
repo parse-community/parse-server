@@ -5713,6 +5713,170 @@ describe('Vulnerabilities', () => {
     });
   });
 
+  describe('(GHSA-rmhf-xv62-rm99) $relatedTo count query omits caller auth for protectedFields', () => {
+    let childLinked;
+    let parent;
+    let roleUser;
+    let otherUser;
+
+    const relatedToWhere = (parentId, key, extra = {}) => ({
+      $relatedTo: {
+        object: { __type: 'Pointer', className: 'RelParent', objectId: parentId },
+        key,
+      },
+      ...extra,
+    });
+
+    const queryChild = (where, qs = {}, headers = {}) =>
+      request({
+        method: 'GET',
+        url: `${Parse.serverURL}/classes/RelChild`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          ...headers,
+        },
+        qs: { where: JSON.stringify(where), ...qs },
+      }).catch(e => e);
+
+    // Mirrors the JS SDK `query.count()` request: `count=1&limit=0` skips the
+    // find path entirely, so only the count path is exercised.
+    const countChild = (where, headers = {}) => queryChild(where, { count: 1, limit: 0 }, headers);
+    const findChild = (where, headers = {}) => queryChild(where, {}, headers);
+
+    const setProtectedFields = async protectedFields => {
+      const schema = new Parse.Schema('RelParent');
+      schema.setCLP({
+        find: { '*': true },
+        get: { '*': true },
+        count: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+        protectedFields,
+      });
+      await schema.update();
+    };
+
+    beforeEach(async () => {
+      const schema = new Parse.Schema('RelParent');
+      schema.addString('name');
+      schema.addRelation('secretRel', 'RelChild');
+      schema.setCLP({
+        find: { '*': true },
+        get: { '*': true },
+        count: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+        // Protected only for members of the Guest role, with no '*' entry, so
+        // the guard has to resolve the caller's identity to enforce it.
+        protectedFields: { 'role:Guest': ['secretRel'] },
+      });
+      await schema.save();
+
+      roleUser = await Parse.User.signUp('relCountRoleUser', 'pw');
+      otherUser = await Parse.User.signUp('relCountOtherUser', 'pw');
+
+      const roleAcl = new Parse.ACL();
+      roleAcl.setPublicReadAccess(true);
+      const role = new Parse.Role('Guest', roleAcl);
+      role.getUsers().add(roleUser);
+      await role.save(null, { useMasterKey: true });
+
+      childLinked = new Parse.Object('RelChild', { value: 'linked child' });
+      await childLinked.save(null, { useMasterKey: true });
+
+      // Publicly readable parent, so the owning-object read passes and only the
+      // protected relation key decides the outcome.
+      const publicAcl = new Parse.ACL();
+      publicAcl.setPublicReadAccess(true);
+      parent = new Parse.Object('RelParent', { name: 'protected-key parent' });
+      parent.setACL(publicAcl);
+      parent.relation('secretRel').add(childLinked);
+      await parent.save(null, { useMasterKey: true });
+    });
+
+    it('denies count with $relatedTo on a relation protected for the caller role', async () => {
+      const headers = { 'X-Parse-Session-Token': roleUser.getSessionToken() };
+      const find = await findChild(relatedToWhere(parent.id, 'secretRel'), headers);
+      expect(find.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(find.data.error).toBe('Permission denied');
+
+      const count = await countChild(relatedToWhere(parent.id, 'secretRel'), headers);
+      expect(count.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(count.data.error).toBe('Permission denied');
+    });
+
+    it('does not act as a membership oracle via count with an objectId constraint', async () => {
+      const res = await countChild(
+        relatedToWhere(parent.id, 'secretRel', { objectId: childLinked.id }),
+        { 'X-Parse-Session-Token': roleUser.getSessionToken() }
+      );
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    });
+
+    it('allows count for a user outside the protected role', async () => {
+      const res = await countChild(relatedToWhere(parent.id, 'secretRel'), {
+        'X-Parse-Session-Token': otherUser.getSessionToken(),
+      });
+      expect(res.data.count).toBe(1);
+    });
+
+    it('denies count with $relatedTo on a relation protected for authenticated users', async () => {
+      await setProtectedFields({ authenticated: ['secretRel'] });
+      const res = await countChild(relatedToWhere(parent.id, 'secretRel'), {
+        'X-Parse-Session-Token': otherUser.getSessionToken(),
+      });
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+
+      // The `authenticated` group does not apply to unauthenticated callers.
+      const publicRes = await countChild(relatedToWhere(parent.id, 'secretRel'));
+      expect(publicRes.data.count).toBe(1);
+    });
+
+    it('denies count with $relatedTo on a relation protected for a specific user', async () => {
+      await setProtectedFields({ [roleUser.id]: ['secretRel'] });
+      const res = await countChild(relatedToWhere(parent.id, 'secretRel'), {
+        'X-Parse-Session-Token': roleUser.getSessionToken(),
+      });
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+
+      const other = await countChild(relatedToWhere(parent.id, 'secretRel'), {
+        'X-Parse-Session-Token': otherUser.getSessionToken(),
+      });
+      expect(other.data.count).toBe(1);
+    });
+
+    it('denies count with $relatedTo on a relation protected for the public', async () => {
+      await setProtectedFields({ '*': ['secretRel'] });
+      const res = await countChild(relatedToWhere(parent.id, 'secretRel'));
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    });
+
+    it('allows master key count on a protected relation', async () => {
+      await setProtectedFields({ '*': ['secretRel'] });
+      const res = await countChild(relatedToWhere(parent.id, 'secretRel'), {
+        'X-Parse-Master-Key': Parse.masterKey,
+      });
+      expect(res.data.count).toBe(1);
+    });
+
+    it('allows maintenance key count on a protected relation', async () => {
+      await setProtectedFields({ '*': ['secretRel'] });
+      const res = await countChild(relatedToWhere(parent.id, 'secretRel'), {
+        'X-Parse-Maintenance-Key': 'testing',
+      });
+      expect(res.data.count).toBe(1);
+    });
+  });
+
   describe('(GHSA-9jpp-xhh6-75mf) LiveQuery does not apply role-scoped protectedFields', () => {
     const { sleep } = require('../lib/TestUtils');
     const roleName = 'LqProtectedRole';
