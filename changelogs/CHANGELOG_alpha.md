@@ -1,3 +1,10 @@
+## [9.10.1-alpha.16](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.15...9.10.1-alpha.16) (2026-09-22)
+
+
+### Bug Fixes
+
+* Per-entry cache TTL is ignored by the in-memory cache adapter ([#10671](https://github.com/parse-community/parse-server/issues/10671)) ([1352c67](https://github.com/parse-community/parse-server/commit/1352c6731fcb2e066c9a86561d22a55ca6d69c91))
+
 ## [9.10.1-alpha.15](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.14...9.10.1-alpha.15) (2026-09-22)
 
 
