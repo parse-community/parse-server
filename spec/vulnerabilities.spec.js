@@ -7247,4 +7247,162 @@ describe('Vulnerabilities', () => {
       expect(await allInstallations()).toEqual(['device-uuid-0000-0000-000000000002']);
     });
   });
+
+  describe('(GHSA-mr43-w6c2-mvjq) Unverified provider identity accepted on password login for code-based auth adapters', () => {
+    const tokenUrl = 'https://github.com/login/oauth/access_token';
+    const userUrl = 'https://api.github.com/user';
+    const victimProviderId = '13370001';
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+
+    // Stands in for the provider: the code exchange succeeds and resolves to `providerId`.
+    const mockProvider = providerId =>
+      mockFetch([
+        {
+          url: tokenUrl,
+          method: 'POST',
+          response: { ok: true, json: () => Promise.resolve({ access_token: 'provider-token' }) },
+        },
+        {
+          url: userUrl,
+          method: 'GET',
+          response: { ok: true, json: () => Promise.resolve({ id: providerId, login: 'login' }) },
+        },
+      ]);
+
+    const passwordLogin = (username, password, authData) =>
+      request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/login',
+        headers,
+        body: JSON.stringify({ username, password, authData }),
+      }).catch(e => e);
+
+    const challenge = body =>
+      request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/challenge',
+        headers,
+        body: JSON.stringify(body),
+      }).catch(e => e);
+
+    // Reads the row directly so the adapter's afterFind cannot mask what was persisted.
+    const storedProviderData = async objectId => {
+      const [row] = await Config.get('test').database.find('_User', { objectId });
+      return row.authData?.github;
+    };
+
+    let attacker;
+
+    beforeEach(async () => {
+      await reconfigureServer({
+        auth: { github: { clientId: 'clientId', clientSecret: 'clientSecret' } },
+      });
+      attacker = new Parse.User();
+      await attacker.signUp({ username: 'attacker', password: 'attacker-password' });
+    });
+
+    it('rejects a provider id on password login when no authorization code is supplied', async () => {
+      mockFetch();
+
+      const response = await passwordLogin('attacker', 'attacker-password', {
+        github: { id: victimProviderId },
+      });
+
+      const body = JSON.parse(response.text);
+      expect(body.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(body.error).toBe('GitHub code is required.');
+      expect(global.fetch.calls.count()).toBe(0);
+      expect(await storedProviderData(attacker.id)).toBeUndefined();
+    });
+
+    it('links a provider on password login with the identity the provider returns for the code', async () => {
+      mockProvider('attacker-provider-id');
+
+      const response = await passwordLogin('attacker', 'attacker-password', {
+        github: { code: 'valid-code' },
+      });
+
+      expect(response.status).toBe(200);
+      expect(global.fetch.calls.count()).toBe(2);
+      const stored = await storedProviderData(attacker.id);
+      expect(stored.id).toBe('attacker-provider-id');
+      expect(stored.code).toBeUndefined();
+    });
+
+    it('rejects a provider id on password login that differs from the identity the provider returns', async () => {
+      mockProvider('attacker-provider-id');
+
+      const response = await passwordLogin('attacker', 'attacker-password', {
+        github: { code: 'valid-code', id: victimProviderId },
+      });
+
+      const body = JSON.parse(response.text);
+      expect(body.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      expect(await storedProviderData(attacker.id)).toBeUndefined();
+    });
+
+    it("does not let a planted provider id capture the provider account owner's later sign-in", async () => {
+      mockFetch();
+      await passwordLogin('attacker', 'attacker-password', { github: { id: victimProviderId } });
+
+      mockProvider(victimProviderId);
+      const victim = await Parse.User.logInWith('github', { authData: { code: 'victim-code' } });
+
+      expect(victim.id).not.toBe(attacker.id);
+      expect((await storedProviderData(victim.id)).id).toBe(victimProviderId);
+      expect(await storedProviderData(attacker.id)).toBeUndefined();
+    });
+
+    it('rejects linking a provider identity on password login that is already linked to another user', async () => {
+      mockProvider(victimProviderId);
+      const victim = await Parse.User.logInWith('github', { authData: { code: 'victim-code' } });
+
+      mockProvider(victimProviderId);
+      const response = await passwordLogin('attacker', 'attacker-password', {
+        github: { code: 'leaked-code' },
+      });
+
+      const body = JSON.parse(response.text);
+      expect(body.code).toBe(Parse.Error.ACCOUNT_ALREADY_LINKED);
+      expect(await storedProviderData(attacker.id)).toBeUndefined();
+      expect((await storedProviderData(victim.id)).id).toBe(victimProviderId);
+    });
+
+    describe('challenge endpoint', () => {
+      beforeEach(async () => {
+        mockProvider(victimProviderId);
+        await Parse.User.logInWith('github', { authData: { code: 'victim-code' } });
+      });
+
+      it('rejects a provider id without an authorization code', async () => {
+        mockFetch();
+
+        const response = await challenge({
+          authData: { github: { id: victimProviderId } },
+          challengeData: { github: {} },
+        });
+
+        const body = JSON.parse(response.text);
+        expect(body.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+        expect(body.error).toBe('User not found.');
+        expect(global.fetch.calls.count()).toBe(0);
+      });
+
+      it('resolves the user by a valid authorization code', async () => {
+        mockProvider(victimProviderId);
+
+        const response = await challenge({
+          authData: { github: { code: 'victim-code' } },
+          challengeData: { github: {} },
+        });
+
+        expect(response.status).toBe(200);
+        expect(global.fetch.calls.count()).toBe(2);
+      });
+    });
+  });
 });

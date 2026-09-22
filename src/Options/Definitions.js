@@ -787,7 +787,7 @@ module.exports.InstallationOptions = {
   },
   duplicateDeviceTokenActionEnforceAuth: {
     env: 'PARSE_SERVER_INSTALLATION_DUPLICATE_DEVICE_TOKEN_ACTION_ENFORCE_AUTH',
-    help: "Whether the `_Installation` deduplication operation enforces the caller's auth context (and the resulting ACL and CLP). When `true`, the dedup `destroy`/`update` runs with the caller's `runOptions`, so ACL and CLP are honored. When `false`, the dedup runs as master and bypasses both. Master and maintenance keys always bypass regardless of this flag. Default is `false`.",
+    help: "Whether the `_Installation` deduplication operation enforces the caller's auth context (and the resulting ACL and CLP). When `true`, the dedup `destroy`/`update` runs with the caller's `runOptions`, so ACL and CLP are honored. When `false`, the dedup runs as master and bypasses both. Master and maintenance keys always bypass regardless of this flag. Because what this option enforces is the ACL and the class-level permissions, it has no effect on its own for a record that carries no ACL under permissive class-level permissions; to scope the deduplication, combine this option with an ACL on `_Installation` records or with class-level permissions that withhold the `delete` operation from the caller. Default is `false`.",
     action: parsers.booleanParser,
     default: false,
   },

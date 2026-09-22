@@ -1728,6 +1728,340 @@ describe('ParseGraphQLServer', () => {
             expect(error.message).toContain('DiagBookWhereInput');
           }
         });
+
+        // graphql-js also names a generated type in message templates that none of the strips
+        // above match. Two of them interpolate a name the caller never wrote: the parent OUTPUT
+        // type of an unknown argument (KnownArgumentNamesRule), which for a Pointer/Relation
+        // sub-selection is the TARGET class, and the enum type behind a Relation field's `order`
+        // argument (`<Target>Order`, src/GraphQL/loaders/parseClassTypes.js:311,332), which is
+        // reported by GraphQLEnumType itself rather than by a validation rule. Redact those
+        // identifiers for callers that are not allowed to introspect.
+        const setupRelationSchema = async _parseServer => {
+          const schemaController = await _parseServer.config.databaseController.loadSchema();
+          await schemaController.addClassIfNotExists('SecretAuthor', {
+            name: { type: 'String' },
+          });
+          await schemaController.addClassIfNotExists('DiagShelf', {
+            authors: { type: 'Relation', targetClass: 'SecretAuthor' },
+          });
+          await resetGraphQLCache();
+        };
+
+        it('should strip target class names from unknown-argument validation errors without master or maintenance key', async () => {
+          await setupPointerSchema(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak {
+                  diagBooks(where: {}) {
+                    edges {
+                      node {
+                        writtenBy {
+                          name(bogusArg: 1)
+                        }
+                      }
+                    }
+                  }
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // Unknown argument "bogusArg" on field "SecretAuthor.name".
+            expect(error.message).not.toContain('SecretAuthor');
+            expect(JSON.stringify(error)).not.toContain('SecretAuthor');
+          }
+        });
+
+        it('should strip target class names from enum literal validation errors without master or maintenance key', async () => {
+          await setupRelationSchema(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak {
+                  diagShelves(where: {}) {
+                    edges {
+                      node {
+                        authors(order: BOGUS) {
+                          edges {
+                            node {
+                              id
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // Value "BOGUS" does not exist in "SecretAuthorOrder" enum.
+            expect(error.message).not.toContain('SecretAuthor');
+            expect(JSON.stringify(error)).not.toContain('SecretAuthor');
+          }
+        });
+
+        it('should strip target class names from non-enum literal validation errors without master or maintenance key', async () => {
+          await setupRelationSchema(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak {
+                  diagShelves(where: {}) {
+                    edges {
+                      node {
+                        authors(order: "BOGUS") {
+                          edges {
+                            node {
+                              id
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // Enum "SecretAuthorOrder" cannot represent non-enum value: "BOGUS".
+            expect(error.message).not.toContain('SecretAuthor');
+            expect(JSON.stringify(error)).not.toContain('SecretAuthor');
+          }
+        });
+
+        it('should keep caller-referenced enum type names in variable-coercion errors without master or maintenance key', async () => {
+          await setupRelationSchema(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak($order: [SecretAuthorOrder!]) {
+                  diagShelves(where: {}) {
+                    edges {
+                      node {
+                        authors(order: $order) {
+                          edges {
+                            node {
+                              id
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: { order: ['BOGUS'] },
+            });
+            fail('should have thrown a coercion error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // The caller wrote SecretAuthorOrder in the operation text, so the enum name is not a
+            // disclosure and must be preserved to keep validation feedback useful. Sending a
+            // variable requires declaring its type, so the variable path can never name an enum
+            // the caller did not already write; only the literal paths above disclose.
+            expect(error.message).toContain('SecretAuthorOrder');
+          }
+        });
+
+        it('should keep target class names in unknown-argument errors with master key', async () => {
+          await setupPointerSchema(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak {
+                  diagBooks(where: {}) {
+                    edges {
+                      node {
+                        writtenBy {
+                          name(bogusArg: 1)
+                        }
+                      }
+                    }
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            expect(error.message).toContain('SecretAuthor');
+          }
+        });
+
+        it('should keep target class names in enum errors with maintenance key', async () => {
+          await setupRelationSchema(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak {
+                  diagShelves(where: {}) {
+                    edges {
+                      node {
+                        authors(order: BOGUS) {
+                          edges {
+                            node {
+                              id
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Maintenance-Key': 'test2',
+                },
+              },
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            expect(error.message).toContain('SecretAuthorOrder');
+          }
+        });
+
+        it('should keep target class names in enum errors when public introspection is enabled', async () => {
+          const parseServer = await reconfigureServer();
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: true });
+          await setupRelationSchema(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak {
+                  diagShelves(where: {}) {
+                    edges {
+                      node {
+                        authors(order: BOGUS) {
+                          edges {
+                            node {
+                              id
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            expect(error.message).toContain('SecretAuthorOrder');
+          }
+        });
+
+        it('should keep built-in enum type names in validation errors without master or maintenance key', async () => {
+          await setupRelationSchema(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak {
+                  diagShelves(where: {}, options: { readPreference: BOGUS }) {
+                    edges {
+                      node {
+                        id
+                      }
+                    }
+                  }
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // Value "BOGUS" does not exist in "ReadPreference" enum. ReadPreference is a built-in
+            // enum, identical on every deployment and reachable from the `options` argument of
+            // every generated find query, so redacting it would degrade the message for no
+            // security gain. Guards the non-disclosing-name carve-out the enum templates rely on.
+            expect(error.message).toContain('ReadPreference');
+          }
+        });
+
+        // The advisory also lists ProvidedRequiredArgumentsRule and the opposite branch of
+        // ScalarLeafsRule. Both templates are genuinely uncovered, but neither can name a class
+        // the caller did not already write in Parse Server's generated schema: no generated field
+        // carries a non-null argument naming a foreign class (a Relation field's find args are all
+        // nullable, src/GraphQL/loaders/parseClassTypes.js:332), and no generated leaf output type
+        // embeds a class name (leaf fields resolve to built-in scalars). Pinned rather than fixed.
+        it('should not disclose unreferenced class names in required-argument validation errors without master or maintenance key', async () => {
+          await setupPointerSchema(parseServer);
+
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation Leak {
+                  createDiagBook {
+                    diagBook {
+                      id
+                    }
+                  }
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // Field "createDiagBook" argument "input" of type "CreateDiagBookInput!" is required,
+            // but it was not provided. CreateDiagBookInput derives from the mutation name the
+            // caller wrote; SecretAuthor is the canary for a class name they did not write.
+            expect(error.message).not.toContain('SecretAuthor');
+            expect(JSON.stringify(error)).not.toContain('SecretAuthor');
+          }
+        });
+
+        it('should not disclose unreferenced class names in scalar-leaf selection validation errors without master or maintenance key', async () => {
+          await setupPointerSchema(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Leak {
+                  diagBooks(where: {}) {
+                    edges {
+                      node {
+                        writtenBy {
+                          name {
+                            bogusSubField
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const error = getReturnedError(e);
+            // Field "name" must not have a selection since type "String" has no subfields.
+            expect(error.message).not.toContain('SecretAuthor');
+            expect(JSON.stringify(error)).not.toContain('SecretAuthor');
+          }
+        });
+
       });
 
 

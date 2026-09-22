@@ -1,3 +1,24 @@
+## [9.10.1-alpha.12](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.11...9.10.1-alpha.12) (2026-09-21)
+
+
+### Bug Fixes
+
+* GraphQL argument and enum validation errors disclose target class names when public introspection is disabled ([GHSA-6m77-f8xr-f723](https://github.com/parse-community/parse-server/security/advisories/GHSA-6m77-f8xr-f723)) ([#10665](https://github.com/parse-community/parse-server/issues/10665)) ([fead3db](https://github.com/parse-community/parse-server/commit/fead3db67ad94b44e0d55b29d2913e2eb795fe92))
+
+## [9.10.1-alpha.11](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.10...9.10.1-alpha.11) (2026-09-13)
+
+
+### Bug Fixes
+
+* Rate limit is bypassed by sending request header `X-Forwarded-For: 127.0.0.1` when Parse Server option `trustProxy` is permissive ([#10664](https://github.com/parse-community/parse-server/issues/10664)) ([ebd425e](https://github.com/parse-community/parse-server/commit/ebd425e65d4e3abe78aae725193330710257c476))
+
+## [9.10.1-alpha.10](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.9...9.10.1-alpha.10) (2026-09-13)
+
+
+### Bug Fixes
+
+* Unverified auth provider identity accepted on password login for code-based auth adapters ([GHSA-mr43-w6c2-mvjq](https://github.com/parse-community/parse-server/security/advisories/GHSA-mr43-w6c2-mvjq)) ([#10662](https://github.com/parse-community/parse-server/issues/10662)) ([9b73e6f](https://github.com/parse-community/parse-server/commit/9b73e6fdfd5d2336870120b699625adc210ad3e0))
+
 ## [9.10.1-alpha.9](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.8...9.10.1-alpha.9) (2026-09-09)
 
 
