@@ -920,7 +920,7 @@ _UnsafeRestQuery.prototype.runCount = function () {
   this.findOptions.count = true;
   delete this.findOptions.skip;
   delete this.findOptions.limit;
-  return this.config.database.find(this.className, this.restWhere, this.findOptions).then(c => {
+  return this.config.database.find(this.className, this.restWhere, this.findOptions, this.auth).then(c => {
     this.response.count = c;
   });
 };
