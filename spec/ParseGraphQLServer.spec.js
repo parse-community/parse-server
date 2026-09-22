@@ -31,6 +31,7 @@ const { ParseServer } = require('../');
 const { ParseGraphQLServer } = require('../lib/GraphQL/ParseGraphQLServer');
 const { ReadPreference, Collection } = require('mongodb');
 const { v4: uuidv4 } = require('uuid');
+const { createHash } = require('crypto');
 
 function handleError(e) {
   if (e && e.networkError && e.networkError.result && e.networkError.result.errors) {
@@ -714,6 +715,86 @@ describe('ParseGraphQLServer', () => {
               `,
             })
           expect(introspection.data).toBeDefined();
+        });
+
+        // Apollo Server enables automatic persisted queries by default. On a cache hit it
+        // resolves the operation text from its persisted-query cache into
+        // `requestContext.source` and leaves `requestContext.request.query` undefined, so a
+        // guard that reads `request.query` sees nothing to inspect. Registering an operation
+        // requires passing the same guard, so only a privileged client can seed the cache;
+        // replaying it by hash afterwards requires only the public application id.
+        const persistedQueryRequest = async (body, extraHeaders = {}) => {
+          const res = await fetch('http://localhost:13377/graphql', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Parse-Application-Id': 'test',
+              'X-Parse-Javascript-Key': 'test',
+              ...extraHeaders,
+            },
+            body: JSON.stringify(body),
+          });
+          return { status: res.status, body: JSON.parse(await res.text()) };
+        };
+
+        const registerPersistedQuery = async (query, variables) => {
+          const sha256Hash = createHash('sha256').update(query).digest('hex');
+          const registration = await persistedQueryRequest(
+            {
+              query,
+              variables,
+              extensions: { persistedQuery: { version: 1, sha256Hash } },
+            },
+            { 'X-Parse-Master-Key': 'test' }
+          );
+          return { sha256Hash, registration };
+        };
+
+        it('should block __schema introspection replayed from the persisted query cache without master key', async () => {
+          const query = 'query Introspection { __schema { types { name } } }';
+          const { sha256Hash, registration } = await registerPersistedQuery(query);
+          expect(registration.status).toEqual(200);
+          expect(registration.body.data.__schema).toBeDefined();
+
+          const replay = await persistedQueryRequest({
+            extensions: { persistedQuery: { version: 1, sha256Hash } },
+          });
+
+          expect(replay.status).toEqual(403);
+          expect(replay.body.data).toBeUndefined();
+          expect(replay.body.errors?.[0]?.message).toEqual('Introspection is not allowed');
+        });
+
+        it('should allow __schema introspection replayed from the persisted query cache with master key', async () => {
+          const query = 'query Introspection { __schema { types { name } } }';
+          const { sha256Hash } = await registerPersistedQuery(query);
+
+          const replay = await persistedQueryRequest(
+            { extensions: { persistedQuery: { version: 1, sha256Hash } } },
+            { 'X-Parse-Master-Key': 'test' }
+          );
+
+          expect(replay.status).toEqual(200);
+          expect(replay.body.data.__schema).toBeDefined();
+          expect(replay.body.errors).not.toBeDefined();
+        });
+
+        it('should preserve a caller-referenced type name in an error replayed from the persisted query cache', async () => {
+          const query =
+            'query Leak($where: UserWhereInput) { users(where: $where) { edges { node { id } } } }';
+          const variables = { where: { usernme: { equalTo: 'victim' } } };
+          const { sha256Hash } = await registerPersistedQuery(query, variables);
+
+          const replay = await persistedQueryRequest({
+            variables,
+            extensions: { persistedQuery: { version: 1, sha256Hash } },
+          });
+
+          const message = replay.body.errors?.[0]?.message;
+          expect(message).toContain('UserWhereInput');
+          expect(message).not.toMatch(/Did you mean/);
+          expect(message).not.toContain('username');
+          expect(JSON.stringify(replay.body)).not.toContain('username');
         });
 
         it('should strip "Did you mean" field suggestions from validation errors without master or maintenance key', async () => {
