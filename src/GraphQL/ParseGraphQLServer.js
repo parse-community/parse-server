@@ -33,8 +33,17 @@ const IntrospectionControlPlugin = (publicIntrospection) => ({
       // this check strategy should work in 99.99% cases
       // we can have an issue if a user name a field or class __schemaSomething
       // we want to avoid a full AST check
-      const isIntrospectionQuery =
-        requestContext.request.query?.includes('__schema')
+      // Apollo resolves the operation text into `requestContext.source` before this hook
+      // runs and guarantees it is set here. It is NOT the same as `request.query`: on an
+      // automatic persisted query cache hit the text comes from the persisted-query cache
+      // and `request.query` is never populated, so reading `request.query` would leave
+      // nothing to inspect and silently skip the guard below. Apollo enables automatic
+      // persisted queries by default, so that path is reachable on every deployment. Fall
+      // back to `request.query` only for robustness. An operation text that is not a string
+      // cannot be inspected at all, so it is denied for the same reason: this guard must
+      // never let an operation through uninspected.
+      const query = requestContext.source ?? requestContext.request.query;
+      const isIntrospectionQuery = typeof query !== 'string' || query.includes('__schema')
 
       if (isIntrospectionQuery) {
         throw new GraphQLError('Introspection is not allowed', {
@@ -227,7 +236,12 @@ const SchemaSuggestionsControlPlugin = (publicIntrospection) => ({
           : body?.kind === 'incremental'
             ? body.initialResult.errors
             : undefined;
-      const operationText = requestContext.request?.query;
+      // Same as in `IntrospectionControlPlugin`: `requestContext.source` carries the
+      // operation text for every request, including an automatic persisted query cache hit
+      // where `request.query` is undefined. Reading `request.query` alone would make the
+      // allowlist below empty on those requests and redact type names the caller wrote
+      // themselves.
+      const operationText = requestContext.source ?? requestContext.request?.query;
       errors?.forEach(error => {
         error.message = stripSchemaIdentifiers(error.message, operationText);
         if (Array.isArray(error.extensions?.stacktrace)) {
