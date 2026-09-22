@@ -1,3 +1,10 @@
+## [9.10.1-alpha.15](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.14...9.10.1-alpha.15) (2026-09-22)
+
+
+### Bug Fixes
+
+* Bump express-rate-limit from 8.3.1 to 8.7.0 ([#10672](https://github.com/parse-community/parse-server/issues/10672)) ([73d8600](https://github.com/parse-community/parse-server/commit/73d8600725cfe2f8424603dc5e0c5f2363283ea2))
+
 ## [9.10.1-alpha.14](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.13...9.10.1-alpha.14) (2026-09-22)
 
 
