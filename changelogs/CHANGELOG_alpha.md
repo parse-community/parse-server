@@ -1,3 +1,10 @@
+## [9.10.1-alpha.14](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.13...9.10.1-alpha.14) (2026-09-22)
+
+
+### Bug Fixes
+
+* GraphQL schema is disclosed by replaying an automatic persisted query when public introspection is disabled ([GHSA-gxxq-pghq-9vrc](https://github.com/parse-community/parse-server/security/advisories/GHSA-gxxq-pghq-9vrc)) ([#10669](https://github.com/parse-community/parse-server/issues/10669)) ([8d22053](https://github.com/parse-community/parse-server/commit/8d22053ada7d0aceb57c41fea08e8ff677b71e11))
+
 ## [9.10.1-alpha.13](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.12...9.10.1-alpha.13) (2026-09-22)
 
 
