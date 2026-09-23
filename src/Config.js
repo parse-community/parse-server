@@ -804,6 +804,11 @@ export class Config {
     } else if (typeof databaseOptions.allowPublicExplain !== 'boolean') {
       throw `Parse Server option 'databaseOptions.allowPublicExplain' must be a boolean.`;
     }
+    if (databaseOptions.explainResultsAsArray === undefined) {
+      databaseOptions.explainResultsAsArray = DatabaseOptions.explainResultsAsArray.default;
+    } else if (typeof databaseOptions.explainResultsAsArray !== 'boolean') {
+      throw `Parse Server option 'databaseOptions.explainResultsAsArray' must be a boolean.`;
+    }
   }
 
   static validateLiveQueryOptions(liveQuery) {

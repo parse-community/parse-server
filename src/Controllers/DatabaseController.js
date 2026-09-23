@@ -1558,7 +1558,16 @@ class DatabaseController {
                   );
                 }
               } else if (explain) {
-                return this.adapter.find(className, schema, query, queryOptions);
+                return this.adapter
+                  .find(className, schema, query, queryOptions)
+                  .then(results =>
+                    // Normalise MongoDB's single explain object to an array, consistent with `find`
+                    // and the Postgres adapter (which already returns an array). Opt-in until the
+                    // default flips in a future major, see databaseOptions.explainResultsAsArray.
+                    this.options.databaseOptions?.explainResultsAsArray && !Array.isArray(results)
+                      ? [results]
+                      : results
+                  );
               } else {
                 return this.adapter
                   .find(className, schema, query, queryOptions)
