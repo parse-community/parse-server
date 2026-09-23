@@ -1,3 +1,10 @@
+## [9.10.1-alpha.20](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.19...9.10.1-alpha.20) (2026-09-23)
+
+
+### Bug Fixes
+
+* Bump body-parser from 2.2.2 to 2.3.0 ([#10600](https://github.com/parse-community/parse-server/issues/10600)) ([77e955f](https://github.com/parse-community/parse-server/commit/77e955f9b7a864694eb9b1bf26da15ee631ff3c2))
+
 ## [9.10.1-alpha.19](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.18...9.10.1-alpha.19) (2026-09-23)
 
 
