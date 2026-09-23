@@ -1874,6 +1874,44 @@ describe('ParseLiveQueryServer', function () {
       expect(getUserRoles).not.toHaveBeenCalled();
     });
 
+    it('does not resolve roles when the caller has no resolvable auth', async () => {
+      const parseLiveQueryServer = new ParseLiveQueryServer({});
+
+      // `getAuthForSessionToken` resolves to `{}` for an invalid or absent token,
+      // so there is no `Auth` instance to read roles from.
+      await expectAsync(
+        parseLiveQueryServer._rolesForCLPOperation(
+          { find: { 'role:liveQueryRead': true } },
+          undefined,
+          'find',
+          { enableLiveQueryClassLevelPermissionRoles: true }
+        )
+      ).toBeResolvedTo([]);
+    });
+
+    it('does not resolve roles when the operation has no CLP entry', async () => {
+      const parseLiveQueryServer = new ParseLiveQueryServer({});
+      const getUserRoles = jasmine
+        .createSpy('getUserRoles')
+        .and.returnValue(Promise.resolve(['role:liveQueryRead']));
+      const appConfig = { enableLiveQueryClassLevelPermissionRoles: true };
+
+      // No entry at all for the operation.
+      await expectAsync(
+        parseLiveQueryServer._rolesForCLPOperation({}, { getUserRoles }, 'find', appConfig)
+      ).toBeResolvedTo([]);
+      // Entry present but not an object.
+      await expectAsync(
+        parseLiveQueryServer._rolesForCLPOperation(
+          { find: true },
+          { getUserRoles },
+          'find',
+          appConfig
+        )
+      ).toBeResolvedTo([]);
+      expect(getUserRoles).not.toHaveBeenCalled();
+    });
+
     it('does not resolve roles when the operation grants no role', async () => {
       const parseLiveQueryServer = new ParseLiveQueryServer({});
       const getUserRoles = jasmine.createSpy('getUserRoles').and.returnValue(Promise.resolve([]));
