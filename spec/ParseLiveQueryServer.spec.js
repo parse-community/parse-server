@@ -1713,15 +1713,210 @@ describe('ParseLiveQueryServer', function () {
       };
       const requestId = 0;
 
+      // The mocked session token resolves to `testUserId`, so the grant has to
+      // name a different user for this to assert that an unlisted user is denied.
       await expectAsync(
         parseLiveQueryServer._matchesCLP(
-          { find: { userId: true } },
+          { find: { anotherUserId: true } },
           { className: 'Yolo' },
           client,
           requestId,
           'find'
         )
       ).toBeRejected();
+    });
+
+    it('resolves CLP against the connect frame when the subscribe frame omits the session token', async () => {
+      const parseLiveQueryServer = new ParseLiveQueryServer({});
+      const client = {
+        sessionToken: 'sessionToken',
+        getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue({
+          sessionToken: undefined,
+        }),
+      };
+      const requestId = 0;
+
+      await expectAsync(
+        parseLiveQueryServer._matchesCLP(
+          { find: { [testUserId]: true } },
+          { className: 'Yolo' },
+          client,
+          requestId,
+          'find'
+        )
+      ).toBeResolved();
+    });
+
+    it('rejects CLP when neither frame carries a session token', async () => {
+      const parseLiveQueryServer = new ParseLiveQueryServer({});
+      const client = {
+        sessionToken: undefined,
+        getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue({
+          sessionToken: undefined,
+        }),
+      };
+      const requestId = 0;
+
+      await expectAsync(
+        parseLiveQueryServer._matchesCLP(
+          { find: { [testUserId]: true } },
+          { className: 'Yolo' },
+          client,
+          requestId,
+          'find'
+        )
+      ).toBeRejected();
+    });
+
+    it('satisfies requiresAuthentication from the connect frame alone', async () => {
+      const parseLiveQueryServer = new ParseLiveQueryServer({});
+      const client = {
+        sessionToken: 'sessionToken',
+        getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue({
+          sessionToken: undefined,
+        }),
+      };
+      const requestId = 0;
+
+      await expectAsync(
+        parseLiveQueryServer._matchesCLP(
+          { find: { requiresAuthentication: true } },
+          { className: 'Yolo' },
+          client,
+          requestId,
+          'find'
+        )
+      ).toBeResolved();
+    });
+
+    it('resolves CLP when find is granted to a role the user belongs to', async () => {
+      await reconfigureServer({ enableLiveQueryClassLevelPermissionRoles: true });
+      const parseLiveQueryServer = new ParseLiveQueryServer({});
+      const client = {
+        sessionToken: 'sessionToken',
+        getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue({
+          sessionToken: 'sessionToken',
+        }),
+      };
+      const requestId = 0;
+      spyOn(auth.Auth.prototype, 'getUserRoles').and.returnValue(
+        Promise.resolve(['role:liveQueryRead'])
+      );
+
+      await expectAsync(
+        parseLiveQueryServer._matchesCLP(
+          { find: { 'role:liveQueryRead': true } },
+          { className: 'Yolo' },
+          client,
+          requestId,
+          'find'
+        )
+      ).toBeResolved();
+    });
+
+    it('rejects CLP when find is granted to a role the user does not belong to', async () => {
+      await reconfigureServer({ enableLiveQueryClassLevelPermissionRoles: true });
+      const parseLiveQueryServer = new ParseLiveQueryServer({});
+      const client = {
+        sessionToken: 'sessionToken',
+        getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue({
+          sessionToken: 'sessionToken',
+        }),
+      };
+      const requestId = 0;
+      spyOn(auth.Auth.prototype, 'getUserRoles').and.returnValue(
+        Promise.resolve(['role:somethingElse'])
+      );
+
+      await expectAsync(
+        parseLiveQueryServer._matchesCLP(
+          { find: { 'role:liveQueryRead': true } },
+          { className: 'Yolo' },
+          client,
+          requestId,
+          'find'
+        )
+      ).toBeRejected();
+    });
+
+    it('does not resolve roles when the option is disabled', async () => {
+      const parseLiveQueryServer = new ParseLiveQueryServer({});
+      const getUserRoles = jasmine
+        .createSpy('getUserRoles')
+        .and.returnValue(Promise.resolve(['role:liveQueryRead']));
+
+      const roles = await parseLiveQueryServer._rolesForCLPOperation(
+        { find: { 'role:liveQueryRead': true } },
+        { getUserRoles },
+        'find',
+        { enableLiveQueryClassLevelPermissionRoles: false }
+      );
+
+      expect(roles).toEqual([]);
+      expect(getUserRoles).not.toHaveBeenCalled();
+    });
+
+    it('does not resolve roles when the app config cannot be resolved', async () => {
+      const parseLiveQueryServer = new ParseLiveQueryServer({});
+      const getUserRoles = jasmine
+        .createSpy('getUserRoles')
+        .and.returnValue(Promise.resolve(['role:liveQueryRead']));
+
+      // `Config.get` returns undefined for a standalone LiveQuery server.
+      const roles = await parseLiveQueryServer._rolesForCLPOperation(
+        { find: { 'role:liveQueryRead': true } },
+        { getUserRoles },
+        'find',
+        undefined
+      );
+
+      expect(roles).toEqual([]);
+      expect(getUserRoles).not.toHaveBeenCalled();
+    });
+
+    it('does not resolve roles when the operation grants no role', async () => {
+      const parseLiveQueryServer = new ParseLiveQueryServer({});
+      const getUserRoles = jasmine.createSpy('getUserRoles').and.returnValue(Promise.resolve([]));
+
+      const roles = await parseLiveQueryServer._rolesForCLPOperation(
+        { find: { '*': true, [testUserId]: true } },
+        { getUserRoles },
+        'find',
+        { enableLiveQueryClassLevelPermissionRoles: true }
+      );
+
+      expect(roles).toEqual([]);
+      expect(getUserRoles).not.toHaveBeenCalled();
+    });
+
+    it('resolves roles only for the operation that grants one', async () => {
+      const parseLiveQueryServer = new ParseLiveQueryServer({});
+      const getUserRoles = jasmine
+        .createSpy('getUserRoles')
+        .and.returnValue(Promise.resolve(['role:liveQueryRead']));
+      const classLevelPermissions = {
+        find: { 'role:liveQueryRead': true },
+        get: { '*': true },
+      };
+      const appConfig = { enableLiveQueryClassLevelPermissionRoles: true };
+
+      await expectAsync(
+        parseLiveQueryServer._rolesForCLPOperation(
+          classLevelPermissions,
+          { getUserRoles },
+          'get',
+          appConfig
+        )
+      ).toBeResolvedTo([]);
+      await expectAsync(
+        parseLiveQueryServer._rolesForCLPOperation(
+          classLevelPermissions,
+          { getUserRoles },
+          'find',
+          appConfig
+        )
+      ).toBeResolvedTo(['role:liveQueryRead']);
+      expect(getUserRoles).toHaveBeenCalledTimes(1);
     });
   });
 

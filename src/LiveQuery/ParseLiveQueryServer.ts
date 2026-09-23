@@ -704,10 +704,28 @@ class ParseLiveQueryServer {
     const aclGroup = ['*'];
     let userId;
     if (typeof subscriptionInfo !== 'undefined') {
-      const result = await this.getAuthForSessionToken(subscriptionInfo.sessionToken);
+      // Fall back to the connect-frame token, the same way `_matchesACL`,
+      // `getAuthFromClient` and `_filterSensitiveData` already do. The subscribe
+      // frame's session token is optional, so resolving only it would evaluate the
+      // CLP against an anonymous identity while the ACL check authorized the read
+      // against the connected user.
+      const result = await this.getAuthForSessionToken(
+        subscriptionInfo.sessionToken || client.sessionToken
+      );
       userId = result.userId;
       if (userId) {
         aclGroup.push(userId);
+        // Read per call rather than caching on the instance: the whole app config
+        // can be replaced at runtime through the `Parse.Server` setter.
+        const appConfig = Config.get(this.config.appId);
+        aclGroup.push(
+          ...(await this._rolesForCLPOperation(
+            classLevelPermissions,
+            result.auth,
+            op,
+            appConfig
+          ))
+        );
       }
     }
     await SchemaController.validatePermission(
@@ -796,6 +814,44 @@ class ParseLiveQueryServer {
       return;
     }
     await clientAuth.getUserRoles();
+  }
+
+  // `SchemaController.testPermissions` matches CLP entries against the caller's
+  // ACL group, so a `role:` grant only applies when the caller's roles are in that
+  // group. The REST path builds the same group in `RestQuery.getUserAndRoleACL`;
+  // without this LiveQuery denies `find`/`get` to legitimate role members that the
+  // equivalent REST query serves.
+  //
+  // Honouring the grant widens what LiveQuery delivers, so it is opt-in until the
+  // next major via `enableLiveQueryClassLevelPermissionRoles` (see DEPPS25). The
+  // option lives on `ParseServerOptions`, which is NOT what `this.config` holds --
+  // that is `liveQueryServerOptions` -- so it has to be read through `Config.get`.
+  // The optional chaining is required: `Config.get` returns `undefined` for a
+  // standalone LiveQuery server, whose `AppCache` is empty.
+  //
+  // The roles are only resolved when the operation's CLP actually declares a
+  // `role:` entry, so classes that grant by `*` or by user id keep matching events
+  // without a role lookup.
+  async _rolesForCLPOperation(
+    classLevelPermissions?: any,
+    clientAuth?: any,
+    op?: string,
+    appConfig?: any
+  ): Promise<string[]> {
+    if (!appConfig?.enableLiveQueryClassLevelPermissionRoles) {
+      return [];
+    }
+    if (typeof clientAuth?.getUserRoles !== 'function') {
+      return [];
+    }
+    const opPermissions = classLevelPermissions?.[op];
+    if (!opPermissions || typeof opPermissions !== 'object') {
+      return [];
+    }
+    if (!Object.keys(opPermissions).some(key => key.startsWith('role:'))) {
+      return [];
+    }
+    return await clientAuth.getUserRoles();
   }
 
   async _filterSensitiveData(
@@ -1179,6 +1235,16 @@ class ParseLiveQueryServer {
         }
       } else if (request.user) {
         aclGroup.push(request.user.id);
+      }
+      if (request.user) {
+        aclGroup.push(
+          ...(await this._rolesForCLPOperation(
+            classLevelPermissions,
+            clientAuth,
+            op,
+            appConfig
+          ))
+        );
       }
       await SchemaController.validatePermission(
         classLevelPermissions,
