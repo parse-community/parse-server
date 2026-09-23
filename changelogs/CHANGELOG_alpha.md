@@ -1,3 +1,10 @@
+## [9.10.1-alpha.18](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.17...9.10.1-alpha.18) (2026-09-23)
+
+
+### Bug Fixes
+
+* Bump undici from 7.28.0 to 7.29.1 ([#10674](https://github.com/parse-community/parse-server/issues/10674)) ([2f09a30](https://github.com/parse-community/parse-server/commit/2f09a30c6f9283aa339af82d98647aa4f69ee54b))
+
 ## [9.10.1-alpha.17](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.16...9.10.1-alpha.17) (2026-09-23)
 
 
