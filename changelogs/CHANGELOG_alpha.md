@@ -1,3 +1,10 @@
+## [9.10.1-alpha.17](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.16...9.10.1-alpha.17) (2026-09-23)
+
+
+### Bug Fixes
+
+* Bump @parse/push-adapter from 8.4.0 to 8.5.3 ([#10676](https://github.com/parse-community/parse-server/issues/10676)) ([ae167c4](https://github.com/parse-community/parse-server/commit/ae167c4ccd1cf53c9fd0bcea07edbd2955be0e35))
+
 ## [9.10.1-alpha.16](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.15...9.10.1-alpha.16) (2026-09-22)
 
 
