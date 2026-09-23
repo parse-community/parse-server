@@ -1,3 +1,10 @@
+## [9.10.1-alpha.19](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.18...9.10.1-alpha.19) (2026-09-23)
+
+
+### Bug Fixes
+
+* Bump qs from 6.15.2 to 6.16.0 ([#10651](https://github.com/parse-community/parse-server/issues/10651)) ([25263e7](https://github.com/parse-community/parse-server/commit/25263e7e061f122c58393bd3b390cae203b5cd26))
+
 ## [9.10.1-alpha.18](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.17...9.10.1-alpha.18) (2026-09-23)
 
 
