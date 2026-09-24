@@ -504,6 +504,27 @@ describe('cloud validator', () => {
       });
   });
 
+  it('does not leave an unhandled rejection when multiple fields fail validation (#8826)', async () => {
+    const rejections = [];
+    const onUnhandledRejection = reason => rejections.push(reason);
+    process.on('unhandledRejection', onUnhandledRejection);
+    try {
+      Parse.Cloud.define('hello', () => 'Hello world!', {
+        fields: {
+          type: { type: String, options: ['Option A', 'Option B'] },
+          project: { required: true },
+        },
+      });
+      await expectAsync(Parse.Cloud.run('hello', { type: 'Invalid' })).toBeRejectedWith(
+        jasmine.objectContaining({ code: Parse.Error.VALIDATION_ERROR })
+      );
+      await new Promise(resolve => setTimeout(resolve, 100));
+      expect(rejections).toEqual([]);
+    } finally {
+      process.removeListener('unhandledRejection', onUnhandledRejection);
+    }
+  });
+
   it('set params options function', done => {
     Parse.Cloud.define(
       'hello',

@@ -4,7 +4,8 @@
     "text-summary"
   ],
   "exclude": [
-    "**/spec/**"
+    "**/spec/**",
+    "resources/**"
   ]
 }
 

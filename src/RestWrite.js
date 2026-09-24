@@ -1151,6 +1151,14 @@ RestWrite.prototype.deleteEmailResetTokenIfNeeded = function () {
 };
 
 RestWrite.prototype.destroyDuplicatedSessions = function () {
+  // Skip if the response is already set, matching the other write-pipeline steps
+  // (runDatabaseOperation, runAfterSaveTrigger). A non-master POST /classes/_Session
+  // create has handleSession() set this.response before this runs, so this guard
+  // prevents the dedup delete from acting on the client-supplied `user`/`installationId`
+  // rather than on the server-generated session data.
+  if (this.response) {
+    return;
+  }
   // Only for _Session, and at creation time
   if (this.className != '_Session' || this.query) {
     return;
@@ -1291,6 +1299,33 @@ RestWrite.prototype.handleSession = function () {
 RestWrite.prototype.handleInstallation = function () {
   if (this.response || this.className !== '_Installation') {
     return;
+  }
+
+  // The deduplication below embeds these client-supplied values directly into database
+  // queries that delete or update rows with master privileges, and it runs before
+  // `validateSchema`, so their types must be enforced here: a non-string value would
+  // otherwise reach the database as a query constraint (such as an operator object
+  // `{"$ne": null}`) matching rows the client never identified, instead of as a literal
+  // value to match against. The schema declares all three as `String`, but that check
+  // cannot be reused here; it runs later in the write pipeline and moving it earlier
+  // would mutate the schema before the permission check. The field list is a property of
+  // this function rather than of the schema: it is the set of values spliced into the
+  // deduplication queries below.
+  for (const fieldName of ['deviceToken', 'installationId', 'appIdentifier']) {
+    const value = this.data[fieldName];
+    if (value === undefined || value === null || typeof value === 'string') {
+      continue;
+    }
+    if (fieldName === 'appIdentifier' && value.__op === 'Delete') {
+      continue;
+    }
+    const actualType = Array.isArray(value)
+      ? 'Array'
+      : `${typeof value}`.replace(/^./, character => character.toUpperCase());
+    throw new Parse.Error(
+      Parse.Error.INCORRECT_TYPE,
+      `schema mismatch for _Installation.${fieldName}; expected String but got ${actualType}`
+    );
   }
 
   if (
@@ -1455,6 +1490,12 @@ RestWrite.prototype.handleInstallation = function () {
             },
           };
           if (this.data.appIdentifier) {
+            // A `Delete` operation is applied only after the deduplication runs, and no
+            // installation matched here to take a scope from. Skip the cleanup rather than
+            // run it unscoped across every application, or query on the operation itself.
+            if (typeof this.data.appIdentifier !== 'string') {
+              return;
+            }
             delQuery['appIdentifier'] = this.data.appIdentifier;
           }
           const installationOpts = this.config.installation || {};
@@ -1511,7 +1552,19 @@ RestWrite.prototype.handleInstallation = function () {
               return idMatch.objectId;
             }
             if (this.data.appIdentifier) {
-              delQuery['appIdentifier'] = this.data.appIdentifier;
+              // A `Delete` operation is applied only after the deduplication runs, so scope
+              // the cleanup to the value the matched installation still holds. Dropping the
+              // constraint would let the cleanup reach installations of other applications,
+              // and the operation itself cannot match a String, so skip the cleanup when no
+              // scope is available.
+              const appIdentifier =
+                typeof this.data.appIdentifier === 'string'
+                  ? this.data.appIdentifier
+                  : idMatch.appIdentifier;
+              if (typeof appIdentifier !== 'string') {
+                return idMatch.objectId;
+              }
+              delQuery['appIdentifier'] = appIdentifier;
             }
             const installationOpts = this.config.installation || {};
             return InstallationDedup.removeConflictingDeviceToken({

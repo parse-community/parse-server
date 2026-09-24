@@ -920,7 +920,7 @@ _UnsafeRestQuery.prototype.runCount = function () {
   this.findOptions.count = true;
   delete this.findOptions.skip;
   delete this.findOptions.limit;
-  return this.config.database.find(this.className, this.restWhere, this.findOptions).then(c => {
+  return this.config.database.find(this.className, this.restWhere, this.findOptions, this.auth).then(c => {
     this.response.count = c;
   });
 };
@@ -1121,8 +1121,8 @@ _UnsafeRestQuery.prototype.runAfterFindTrigger = function () {
   if (!hasAfterFindHook) {
     return Promise.resolve();
   }
-  // Skip Aggregate and Distinct Queries
-  if (this.findOptions.pipeline || this.findOptions.distinct) {
+  // Skip Aggregate, Distinct and Explain Queries
+  if (this.findOptions.pipeline || this.findOptions.distinct || this.findOptions.explain) {
     return Promise.resolve();
   }
 

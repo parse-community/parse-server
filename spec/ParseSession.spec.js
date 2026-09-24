@@ -257,6 +257,71 @@ describe('Parse.Session', () => {
     expect(newSession.createdWith.authProvider).toBeUndefined();
   });
 
+  it('does not delete another user\'s session when creating a session via POST /classes/_Session', async () => {
+    const victim = await Parse.User.signUp('dedupvictim', 'password');
+    const attacker = await Parse.User.signUp('dedupattacker', 'password');
+    const victimId = victim.id;
+    const installationId = 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d';
+
+    // Victim logs in on a known installation, creating a session with that installationId.
+    const victimLogin = await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/login',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Installation-Id': installationId,
+        'Content-Type': 'application/json',
+      },
+      body: { username: 'dedupvictim', password: 'password' },
+    });
+    const victimSessionToken = victimLogin.data.sessionToken;
+
+    // Another user creates a session while naming the victim as `user` and supplying
+    // the victim's installationId. The session dedup must not delete the victim's session.
+    await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/_Session',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': attacker.getSessionToken(),
+        'Content-Type': 'application/json',
+      },
+      body: {
+        user: { __type: 'Pointer', className: '_User', objectId: victimId },
+        installationId,
+        sessionToken: 'r:someothertoken',
+      },
+    });
+
+    // The victim's session on that installation must still exist...
+    const sessions = await request({
+      method: 'GET',
+      url: 'http://localhost:8378/1/classes/_Session',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+      },
+    });
+    const victimSession = sessions.data.results.find(
+      s => s.installationId === installationId && s.user && s.user.objectId === victimId
+    );
+    expect(victimSession).toBeDefined();
+
+    // ...and the victim's session token must still authenticate.
+    const meResponse = await request({
+      method: 'GET',
+      url: 'http://localhost:8378/1/users/me',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': victimSessionToken,
+      },
+    });
+    expect(meResponse.data.objectId).toBe(victimId);
+  });
+
   it('should reject expiresAt when updating a session via PUT', async () => {
     const user = await Parse.User.signUp('sessionupdateuser1', 'password');
     const sessionToken = user.getSessionToken();

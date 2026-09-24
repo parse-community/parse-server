@@ -5375,6 +5375,22 @@ describe('Parse.Query testing', () => {
     expect(result.executionStats).not.toBeUndefined();
   });
 
+  it_only_db('mongo')('does not run afterFind on explain results', async () => {
+    let afterFindCalled = false;
+    Parse.Cloud.afterFind('AfterFindExplain', () => {
+      afterFindCalled = true;
+      return []; // empty return would drop the explain plan if the trigger ran
+    });
+    const obj = new Parse.Object('AfterFindExplain');
+    await obj.save();
+    const query = new Parse.Query('AfterFindExplain');
+    query.equalTo('objectId', obj.id);
+    query.explain();
+    const result = await query.find({ useMasterKey: true });
+    expect(result.executionStats).not.toBeUndefined(); // plan passed through untouched
+    expect(afterFindCalled).toBe(false); // afterFind skipped for explain
+  });
+
   it('should query with distinct within eachBatch and direct access enabled', async () => {
     await reconfigureServer({
       directAccess: true,
