@@ -1,3 +1,10 @@
+## [9.10.1-alpha.21](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.20...9.10.1-alpha.21) (2026-09-24)
+
+
+### Bug Fixes
+
+* Bump parse from 8.6.0 to 8.6.2, @parse/push-adapter from 8.5.3 to 8.5.5 and ws from 8.21.0 to 8.21.3 ([#10688](https://github.com/parse-community/parse-server/issues/10688)) ([11c8a40](https://github.com/parse-community/parse-server/commit/11c8a40da966655ac6d1403ad6a8693638aee0b5))
+
 ## [9.10.1-alpha.20](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.19...9.10.1-alpha.20) (2026-09-23)
 
 
