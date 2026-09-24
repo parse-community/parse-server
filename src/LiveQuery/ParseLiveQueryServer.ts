@@ -883,6 +883,16 @@ class ParseLiveQueryServer {
     if (!client.hasMasterKey) {
       await this._loadRolesForProtectedFields(classLevelPermissions, clientAuth);
     }
+    // `DatabaseController.filterSensitiveData` reads the class permissions through
+    // `schema.getClassLevelPermissions(className)` and falls back to `{}` when the
+    // argument does not expose that method. The LiveQuery server only ever holds
+    // the serialized CLP from the published message and has no `SchemaController`
+    // for the class, so passing the raw CLP silently skipped the entire
+    // `userField:` block: those groups intersect against the other groups, so
+    // skipping them left fields protected that the REST path returns. Wrap the CLP
+    // so the helper can reach it. (`addProtectedFields` above needs no wrapper --
+    // it already falls back to treating its argument as the permissions object.)
+    const schema = { getClassLevelPermissions: () => classLevelPermissions };
     const filter = obj => {
       if (!obj) {
         return;
@@ -905,7 +915,7 @@ class ParseLiveQueryServer {
         aclGroup,
         clientAuth,
         op,
-        classLevelPermissions,
+        schema,
         res.object.className,
         protectedFields,
         obj,
