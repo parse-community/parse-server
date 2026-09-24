@@ -1,3 +1,10 @@
+## [9.10.2-alpha.1](https://github.com/parse-community/parse-server/compare/9.10.1...9.10.2-alpha.1) (2026-09-24)
+
+
+### Bug Fixes
+
+* LiveQuery evaluates class-level permissions against an incomplete caller identity ([#10675](https://github.com/parse-community/parse-server/issues/10675)) ([6bf4bd9](https://github.com/parse-community/parse-server/commit/6bf4bd927962571b88b9326a420e52284ddb26cb))
+
 ## [9.10.1-alpha.21](https://github.com/parse-community/parse-server/compare/9.10.1-alpha.20...9.10.1-alpha.21) (2026-09-24)
 
 
