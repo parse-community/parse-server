@@ -1,3 +1,10 @@
+## [9.10.2-alpha.2](https://github.com/parse-community/parse-server/compare/9.10.2-alpha.1...9.10.2-alpha.2) (2026-09-24)
+
+
+### Bug Fixes
+
+* LiveQuery ignores userField protectedFields groups and over-redacts fields the REST path returns ([#10690](https://github.com/parse-community/parse-server/issues/10690)) ([e8b3c92](https://github.com/parse-community/parse-server/commit/e8b3c9290e94b3eff21e6db2b182175a371a7667))
+
 ## [9.10.2-alpha.1](https://github.com/parse-community/parse-server/compare/9.10.1...9.10.2-alpha.1) (2026-09-24)
 
 
