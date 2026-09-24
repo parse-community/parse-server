@@ -244,6 +244,12 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  enableLiveQueryClassLevelPermissionRoles: {
+    env: 'PARSE_SERVER_ENABLE_LIVE_QUERY_CLASS_LEVEL_PERMISSION_ROLES',
+    help: "Whether LiveQuery includes the subscriber's roles when evaluating Class Level Permissions (CLP). If `true`, a CLP that grants `find` or `get` to `role:<RoleName>` applies to LiveQuery subscriptions for members of that role, the same way it already applies to the equivalent REST query. If `false` (default), roles are not resolved for CLP and such a subscription is rejected even for legitimate role members, so LiveQuery is more restrictive than REST for the same CLP. This option does not affect object ACLs, whose `role:` entries LiveQuery already honors regardless of this setting. Defaults to `false`.",
+    action: parsers.booleanParser,
+    default: false,
+  },
   enableProductPurchaseLegacyApi: {
     env: 'PARSE_SERVER_ENABLE_PRODUCT_PURCHASE_LEGACY_API',
     help: 'Deprecated. Enables the legacy product purchase API including the `_Product` class and the `/validate_purchase` endpoint. This is an undocumented, unmaintained legacy feature inherited from the original Parse platform that may not function as expected. We strongly advise against using it. It will be removed in a future major version.',
