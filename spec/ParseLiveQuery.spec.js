@@ -1205,6 +1205,117 @@ describe('ParseLiveQuery', function () {
     ]);
   });
 
+  it('applies userField protectedFields groups the same way the REST path does', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['ProbeDoc'] },
+      startLiveQueryServer: true,
+    });
+
+    const viewer = new Parse.User();
+    viewer.setUsername('viewer');
+    viewer.setPassword('password');
+    await viewer.signUp();
+
+    const doc = new Parse.Object('ProbeDoc');
+    doc.set('ssn', 'secret');
+    doc.set('note', 'public');
+    doc.set('viewer', viewer);
+    await doc.save(null, { useMasterKey: true });
+
+    const config = Config.get(Parse.applicationId);
+    const schemaController = await config.database.loadSchema();
+    await schemaController.updateClass(
+      'ProbeDoc',
+      {},
+      {
+        get: { '*': true },
+        find: { '*': true },
+        update: { '*': true },
+        protectedFields: {
+          '*': ['ssn'],
+          'userField:viewer': [],
+        },
+      }
+    );
+    Config.get(Parse.applicationId).schemaCache.clear();
+
+    // The REST path exempts the pointed-to viewer, because `userField:` groups
+    // intersect against the other groups.
+    const restDoc = await new Parse.Query('ProbeDoc').get(doc.id, {
+      sessionToken: viewer.getSessionToken(),
+    });
+    expect(restDoc.get('ssn')).toBe('secret');
+
+    const subscription = await new Parse.Query('ProbeDoc').subscribe(viewer.getSessionToken());
+    await Promise.all([
+      new Promise(resolve => {
+        subscription.on('update', obj => {
+          expect(obj.get('ssn')).toBe('secret');
+          expect(obj.get('note')).toBeDefined();
+          resolve();
+        });
+      }),
+      doc.save({ note: 'changed' }, { useMasterKey: true }),
+    ]);
+  });
+
+  it('still strips a userField protected field from a user the pointer does not name', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['ProbeDoc'] },
+      startLiveQueryServer: true,
+    });
+
+    const viewer = new Parse.User();
+    viewer.setUsername('viewer');
+    viewer.setPassword('password');
+    await viewer.signUp();
+
+    const other = new Parse.User();
+    other.setUsername('other');
+    other.setPassword('password');
+    await other.signUp();
+
+    const doc = new Parse.Object('ProbeDoc');
+    doc.set('ssn', 'secret');
+    doc.set('note', 'public');
+    doc.set('viewer', viewer);
+    await doc.save(null, { useMasterKey: true });
+
+    const config = Config.get(Parse.applicationId);
+    const schemaController = await config.database.loadSchema();
+    await schemaController.updateClass(
+      'ProbeDoc',
+      {},
+      {
+        get: { '*': true },
+        find: { '*': true },
+        update: { '*': true },
+        protectedFields: {
+          '*': ['ssn'],
+          'userField:viewer': [],
+        },
+      }
+    );
+    Config.get(Parse.applicationId).schemaCache.clear();
+
+    const restDoc = await new Parse.Query('ProbeDoc').get(doc.id, {
+      sessionToken: other.getSessionToken(),
+    });
+    expect(restDoc.get('ssn')).toBe(undefined);
+
+    const subscription = await new Parse.Query('ProbeDoc').subscribe(other.getSessionToken());
+    await Promise.all([
+      new Promise(resolve => {
+        subscription.on('update', obj => {
+          expect(obj.get('ssn')).toBe(undefined);
+          expect(obj.get('note')).toBeDefined();
+          resolve();
+        });
+      }),
+      doc.save({ note: 'changed' }, { useMasterKey: true }),
+    ]);
+  });
+
   it('can subscribe to query and return object with withinKilometers with last parameter on update', async done => {
     await reconfigureServer({
       liveQuery: {
