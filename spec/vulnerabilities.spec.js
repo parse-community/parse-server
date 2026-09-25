@@ -6731,4 +6731,239 @@ describe('Vulnerabilities', () => {
       });
     });
   });
+
+  describe('(GHSA-gpr6-gr9g-pfw6) Save with a file pointer without URL', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const file = { __type: 'File', name: 'x.jpg' };
+
+    let unhandled;
+    const onUnhandled = reason => unhandled.push(reason);
+    beforeEach(() => {
+      unhandled = [];
+      process.on('unhandledRejection', onUnhandled);
+    });
+    afterEach(() => {
+      process.removeListener('unhandledRejection', onUnhandled);
+    });
+
+    const post = (className, body) =>
+      request({
+        method: 'POST',
+        url: `http://localhost:8378/1/classes/${className}`,
+        headers,
+        body,
+      });
+
+    it('provides file URL to beforeSave trigger', async () => {
+      let url;
+      Parse.Cloud.beforeSave('Item', req => {
+        url = req.object.get('file').url();
+      });
+      const res = await post('Item', { file });
+      expect(res.status).toBe(201);
+      expect(url).toBe('http://localhost:8378/1/files/test/x.jpg');
+      const obj = await new Parse.Query('Item').get(res.data.objectId);
+      expect(obj.get('file').name()).toBe('x.jpg');
+    });
+
+    it('provides file URL to beforeSave trigger for nested file', async () => {
+      let urls;
+      Parse.Cloud.beforeSave('Item', req => {
+        urls = [req.object.get('nested').file.url(), req.object.get('list')[0].url()];
+      });
+      const res = await post('Item', { nested: { file }, list: [file] });
+      expect(res.status).toBe(201);
+      expect(urls).toEqual([
+        'http://localhost:8378/1/files/test/x.jpg',
+        'http://localhost:8378/1/files/test/x.jpg',
+      ]);
+      const obj = await new Parse.Query('Item').get(res.data.objectId);
+      expect(obj.get('nested').file.name()).toBe('x.jpg');
+      expect(obj.get('list')[0].name()).toBe('x.jpg');
+    });
+
+    it('provides file URL to afterSave trigger for file pointer set in beforeSave trigger', async () => {
+      Parse.Cloud.beforeSave('Item', req => {
+        req.object.set('raw', { __type: 'File', name: 'y.jpg' });
+      });
+      let url;
+      Parse.Cloud.afterSave('Item', req => {
+        url = req.object.get('raw').url();
+      });
+      const res = await post('Item', {});
+      expect(res.status).toBe(201);
+      expect(url).toBe('http://localhost:8378/1/files/test/y.jpg');
+      await new Promise(resolve => setTimeout(resolve, 100));
+      expect(unhandled).toEqual([]);
+    });
+
+    it('provides file URL to afterSave trigger', async () => {
+      let url;
+      Parse.Cloud.afterSave('Item', req => {
+        url = req.object.get('file').url();
+      });
+      const res = await post('Item', { file });
+      expect(res.status).toBe(201);
+      expect(url).toBe('http://localhost:8378/1/files/test/x.jpg');
+      await new Promise(resolve => setTimeout(resolve, 100));
+      expect(unhandled).toEqual([]);
+    });
+
+    it('provides file URL to beforeSave trigger on update with array operation', async () => {
+      const res = await post('Item', {});
+      let url;
+      Parse.Cloud.beforeSave('Item', req => {
+        url = req.object.get('list')[0].url();
+      });
+      const update = await request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/classes/Item/${res.data.objectId}`,
+        headers,
+        body: { list: { __op: 'Add', objects: [file] } },
+      });
+      expect(update.status).toBe(200);
+      expect(url).toBe('http://localhost:8378/1/files/test/x.jpg');
+    });
+
+    it('provides file URL to beforeSave trigger on user sign-up', async () => {
+      let url;
+      Parse.Cloud.beforeSave(Parse.User, req => {
+        url = req.object.get('file').url();
+      });
+      const res = await post('_User', { username: 'u', password: 'p', file });
+      expect(res.status).toBe(201);
+      expect(url).toBe('http://localhost:8378/1/files/test/x.jpg');
+    });
+
+    for (const invalid of [{ __type: 'File' }, { __type: 'File', name: 5 }]) {
+      it(`rejects invalid file pointer ${JSON.stringify(invalid)}`, async () => {
+        Parse.Cloud.beforeSave('Item', () => {});
+        for (const body of [{ file: invalid }, { list: [invalid] }, { nested: { invalid } }]) {
+          const res = await post('Item', body).catch(e => e);
+          expect(res.status).toBe(400);
+          expect(res.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+        }
+        await new Promise(resolve => setTimeout(resolve, 100));
+        expect(unhandled).toEqual([]);
+      });
+    }
+
+    describe('stored in array without URL', () => {
+      let objectId;
+      beforeEach(async () => {
+        const res = await post('Item', { list: [file], nested: { file } });
+        objectId = res.data.objectId;
+      });
+
+      const expectUrls = object => {
+        expect(object.get('list')[0].url()).toBe('http://localhost:8378/1/files/test/x.jpg');
+        expect(object.get('nested').file.url()).toBe('http://localhost:8378/1/files/test/x.jpg');
+      };
+
+      it('provides file URL to beforeSave trigger on update', async () => {
+        let original;
+        Parse.Cloud.beforeSave('Item', req => {
+          original = req.original;
+          expectUrls(req.object);
+        });
+        const res = await request({
+          method: 'PUT',
+          url: `http://localhost:8378/1/classes/Item/${objectId}`,
+          headers,
+          body: { foo: 'bar' },
+        });
+        expect(res.status).toBe(200);
+        expectUrls(original);
+      });
+
+      it('provides file URL to afterSave trigger on update', async () => {
+        let object;
+        Parse.Cloud.afterSave('Item', req => {
+          object = req.object;
+        });
+        const res = await request({
+          method: 'PUT',
+          url: `http://localhost:8378/1/classes/Item/${objectId}`,
+          headers,
+          body: { foo: 'bar' },
+        });
+        expect(res.status).toBe(200);
+        expectUrls(object);
+        await new Promise(resolve => setTimeout(resolve, 100));
+        expect(unhandled).toEqual([]);
+      });
+
+      it('provides file URL to afterFind trigger', async () => {
+        let object;
+        Parse.Cloud.afterFind('Item', req => {
+          object = req.objects[0];
+        });
+        const res = await request({
+          url: `http://localhost:8378/1/classes/Item/${objectId}`,
+          headers,
+        });
+        expect(res.status).toBe(200);
+        expectUrls(object);
+        expect(res.data.list[0].url).toBe('http://localhost:8378/1/files/test/x.jpg');
+      });
+
+      it('provides file URL to beforeDelete and afterDelete triggers', async () => {
+        const objects = [];
+        Parse.Cloud.beforeDelete('Item', req => {
+          objects.push(req.object);
+        });
+        Parse.Cloud.afterDelete('Item', req => {
+          objects.push(req.object);
+        });
+        const res = await request({
+          method: 'DELETE',
+          url: `http://localhost:8378/1/classes/Item/${objectId}`,
+          headers,
+        });
+        expect(res.status).toBe(200);
+        expect(objects.length).toBe(2);
+        objects.forEach(expectUrls);
+      });
+    });
+
+    it('does not cause unhandled rejection on LiveQuery publish', async () => {
+      await reconfigureServer({
+        liveQuery: { classNames: ['Chat'] },
+        startLiveQueryServer: true,
+      });
+      const res = await post('Chat', { file });
+      expect(res.status).toBe(201);
+      await new Promise(resolve => setTimeout(resolve, 200));
+      expect(unhandled).toEqual([]);
+    });
+
+    it('publishes LiveQuery update for object with stored file without URL', async () => {
+      Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+      await reconfigureServer({
+        liveQuery: { classNames: ['Chat'] },
+        startLiveQueryServer: true,
+      });
+      const res = await post('Chat', { list: [file] });
+      const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+      try {
+        const subscription = await new Parse.Query('Chat').subscribe();
+        const updated = new Promise(resolve => subscription.on('update', resolve));
+        await request({
+          method: 'PUT',
+          url: `http://localhost:8378/1/classes/Chat/${res.data.objectId}`,
+          headers,
+          body: { foo: 'bar' },
+        });
+        const object = await updated;
+        expect(object.get('list')[0].url()).toBe('http://localhost:8378/1/files/test/x.jpg');
+        expect(unhandled).toEqual([]);
+      } finally {
+        await client.close();
+      }
+    });
+  });
 });
