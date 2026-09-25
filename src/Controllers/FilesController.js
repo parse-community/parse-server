@@ -66,8 +66,8 @@ export class FilesController extends AdaptableController {
   }
 
   /**
-   * Find file references in REST-format object and adds the url key
-   * with the current mount point and app id.
+   * Find file references in REST-format object, including nested objects and
+   * arrays, and adds the url key with the current mount point and app id.
    * Object may be a single object or list of REST-format objects.
    */
   async expandFilesInObject(config, object) {
@@ -76,32 +76,37 @@ export class FilesController extends AdaptableController {
       await Promise.all(promises);
       return;
     }
-    if (typeof object !== 'object') {
+    if (!object || typeof object !== 'object') {
+      return;
+    }
+    if (object['__type'] === 'File') {
+      await this.expandFile(config, object);
       return;
     }
     for (const key in object) {
-      const fileObject = object[key];
-      if (fileObject && fileObject['__type'] === 'File') {
-        if (fileObject['url']) {
-          continue;
-        }
-        const filename = fileObject['name'];
-        // all filenames starting with "tfss-" should be from files.parsetfss.com
-        // all filenames starting with a "-" seperated UUID should be from files.parse.com
-        // all other filenames have been migrated or created from Parse Server
-        if (config.fileKey === undefined) {
-          fileObject['url'] = await this.adapter.getFileLocation(config, filename);
-        } else {
-          if (filename.indexOf('tfss-') === 0) {
-            fileObject['url'] =
-              'http://files.parsetfss.com/' + config.fileKey + '/' + encodeURIComponent(filename);
-          } else if (legacyFilesRegex.test(filename)) {
-            fileObject['url'] =
-              'http://files.parse.com/' + config.fileKey + '/' + encodeURIComponent(filename);
-          } else {
-            fileObject['url'] = await this.adapter.getFileLocation(config, filename);
-          }
-        }
+      await this.expandFilesInObject(config, object[key]);
+    }
+  }
+
+  async expandFile(config, fileObject) {
+    const filename = fileObject['name'];
+    if (fileObject['url'] || typeof filename !== 'string') {
+      return;
+    }
+    // all filenames starting with "tfss-" should be from files.parsetfss.com
+    // all filenames starting with a "-" seperated UUID should be from files.parse.com
+    // all other filenames have been migrated or created from Parse Server
+    if (config.fileKey === undefined) {
+      fileObject['url'] = await this.adapter.getFileLocation(config, filename);
+    } else {
+      if (filename.indexOf('tfss-') === 0) {
+        fileObject['url'] =
+          'http://files.parsetfss.com/' + config.fileKey + '/' + encodeURIComponent(filename);
+      } else if (legacyFilesRegex.test(filename)) {
+        fileObject['url'] =
+          'http://files.parse.com/' + config.fileKey + '/' + encodeURIComponent(filename);
+      } else {
+        fileObject['url'] = await this.adapter.getFileLocation(config, filename);
       }
     }
   }
