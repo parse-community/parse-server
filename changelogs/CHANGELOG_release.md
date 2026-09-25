@@ -1,3 +1,10 @@
+## [8.6.95](https://github.com/parse-community/parse-server/compare/8.6.94...8.6.95) (2026-09-25)
+
+
+### Bug Fixes
+
+* Server crash via file pointer without URL in an object write ([GHSA-gpr6-gr9g-pfw6](https://github.com/parse-community/parse-server/security/advisories/GHSA-gpr6-gr9g-pfw6)) ([#10695](https://github.com/parse-community/parse-server/issues/10695)) ([726b1ea](https://github.com/parse-community/parse-server/commit/726b1ea332f901d493b3ed901a9c160652a11f5a))
+
 ## [8.6.94](https://github.com/parse-community/parse-server/compare/8.6.93...8.6.94) (2026-09-22)
 
 
