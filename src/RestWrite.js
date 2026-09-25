@@ -256,12 +256,12 @@ RestWrite.prototype.resolveFileUrls = async function () {
     return;
   }
   await this.config.filesController.expandFilesInObject(this.config, files);
-  this.fileUrls = files;
+  this.fileUrls = Object.assign(this.fileUrls || Object.create(null), files);
 };
 
 // Returns a copy of the data with the resolved URLs added to file pointers.
-RestWrite.prototype.cloneDataWithFileUrls = function () {
-  const data = structuredClone(this.data);
+RestWrite.prototype.cloneWithFileUrls = function (object) {
+  const data = structuredClone(object);
   if (!this.fileUrls) {
     return data;
   }
@@ -367,6 +367,10 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
         Utils.checkProhibitedKeywords(this.config, this.data);
       } catch (error) {
         throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `${error}`);
+      }
+      if (response && response.object) {
+        // The trigger may have set file pointers without URL
+        return this.resolveFileUrls();
       }
     });
 };
@@ -1887,7 +1891,10 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
   }
 
   const { originalObject, updatedObject } = this.buildParseObjects();
-  updatedObject._handleSaveResponse(this.response.response, this.response.status || 200);
+  updatedObject._handleSaveResponse(
+    this.cloneWithFileUrls(this.response.response),
+    this.response.status || 200
+  );
 
   if (hasLiveQuery) {
     this.config.database
@@ -1957,7 +1964,7 @@ RestWrite.prototype.sanitizedData = function () {
       delete data[key];
     }
     return data;
-  }, this.cloneDataWithFileUrls());
+  }, this.cloneWithFileUrls(this.data));
   return Parse._decode(undefined, data);
 };
 
@@ -2007,7 +2014,7 @@ RestWrite.prototype.buildParseObjects = function () {
       delete data[key];
     }
     return data;
-  }, this.cloneDataWithFileUrls());
+  }, this.cloneWithFileUrls(this.data));
 
   const sanitized = this.sanitizedData();
   for (const attribute of readOnlyAttributes) {

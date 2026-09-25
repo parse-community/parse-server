@@ -7624,6 +7624,21 @@ describe('Vulnerabilities', () => {
       expect(obj.get('list')[0].name()).toBe('x.jpg');
     });
 
+    it('provides file URL to afterSave trigger for file pointer set in beforeSave trigger', async () => {
+      Parse.Cloud.beforeSave('Item', req => {
+        req.object.set('raw', { __type: 'File', name: 'y.jpg' });
+      });
+      let url;
+      Parse.Cloud.afterSave('Item', req => {
+        url = req.object.get('raw').url();
+      });
+      const res = await post('Item', {});
+      expect(res.status).toBe(201);
+      expect(url).toBe('http://localhost:8378/1/files/test/y.jpg');
+      await new Promise(resolve => setTimeout(resolve, 100));
+      expect(unhandled).toEqual([]);
+    });
+
     it('provides file URL to afterSave trigger', async () => {
       let url;
       Parse.Cloud.afterSave('Item', req => {
