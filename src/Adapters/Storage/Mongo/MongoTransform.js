@@ -1154,11 +1154,16 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
             break;
           case '_acl':
             break;
+          // `_tombstone` is a legacy field that is no longer used by Parse Server,
+          // but documents created by old Parse Server / Parse.com versions may still
+          // have it persisted. It is kept here so those documents don't fall through
+          // to the `default` branch and throw "bad key in untransform".
+          // See https://github.com/parse-community/parse-server/issues/570
+          case '_tombstone':
           case '_email_verify_token':
           case '_perishable_token':
           case '_perishable_token_expires_at':
           case '_password_changed_at':
-          case '_tombstone':
           case '_email_verify_token_expires_at':
           case '_account_lockout_expires_at':
           case '_failed_login_count':

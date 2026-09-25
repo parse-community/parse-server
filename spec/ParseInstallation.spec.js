@@ -1295,7 +1295,6 @@ describe('Installations', () => {
   });
 
   // TODO: Look at additional tests from installation_collection_test.go:882
-  // TODO: Do we need to support _tombstone disabling of installations?
   // TODO: Test deletion, badge increments
 
   describe('access control for non-master clients', () => {
