@@ -992,7 +992,7 @@ class DatabaseController {
       runOptions.addsField = true;
 
       const action = runOptions.action;
-      return schema.validatePermission(className, aclGroup, 'addField', action);
+      return schema.validatePermission(className, aclGroup, 'addField', action, newKeys);
     }
     return Promise.resolve();
   }

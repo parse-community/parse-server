@@ -1847,6 +1847,7 @@ describe('schemas', () => {
           expect(err.message).toEqual('Permission denied');
           expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
           expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('Permission denied for action addField on class AClass'));
+          expect(loggerErrorSpy).toHaveBeenCalledWith('Sanitized error:', jasmine.stringContaining('field hello'));
           done();
         }
       );
