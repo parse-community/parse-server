@@ -148,6 +148,11 @@ export class ClassesRouter extends PromiseRouter {
   static JSONFromQuery(query) {
     const json = {};
     for (const [key, value] of _.entries(query)) {
+      if (typeof value === 'string' && !ClassesRouter.mayBeJSON(value)) {
+        // Skip a guaranteed-to-throw JSON.parse, e.g. for `order=-createdAt`
+        json[key] = value;
+        continue;
+      }
       try {
         json[key] = JSON.parse(value);
       } catch {
@@ -155,6 +160,30 @@ export class ClassesRouter extends PromiseRouter {
       }
     }
     return json;
+  }
+
+  // False only for strings guaranteed to throw a SyntaxError in JSON.parse
+  static mayBeJSON(value) {
+    const trimmed = value.trim();
+    const char = trimmed.charAt(0);
+    switch (char) {
+      case '{':
+      case '[':
+      case '"':
+        return true;
+      case '-': {
+        const next = trimmed.charCodeAt(1);
+        return next >= 48 && next <= 57;
+      }
+      case 't':
+        return trimmed === 'true';
+      case 'f':
+        return trimmed === 'false';
+      case 'n':
+        return trimmed === 'null';
+      default:
+        return char >= '0' && char <= '9';
+    }
   }
 
   static optionsFromBody(body, defaultLimit) {

@@ -398,7 +398,8 @@ function decodeBase64(str) {
 
 export function allowCrossDomain(appId) {
   return (req, res, next) => {
-    const config = Config.get(appId, getMountForRequest(req));
+    // AppCache avoids building a full Config incl. DatabaseController per request
+    const config = AppCache.get(appId);
     let allowHeaders = DEFAULT_ALLOWED_HEADERS;
     if (config && config.allowHeaders) {
       allowHeaders += `, ${config.allowHeaders.join(', ')}`;

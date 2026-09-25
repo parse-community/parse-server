@@ -44,12 +44,21 @@ function validateFileUrl(fileUrl, config) {
  * @throws {Parse.Error} If any File URL is not allowed.
  */
 function validateFileUrlsInObject(obj, config) {
+  const domains = config?.fileUpload?.allowedFileUrlDomains;
+  if (!Array.isArray(domains) || domains.includes('*')) {
+    // No restriction configured; skip the recursive scan of the object.
+    return;
+  }
+  scanFileUrlsInObject(obj, config);
+}
+
+function scanFileUrlsInObject(obj, config) {
   if (obj == null || typeof obj !== 'object') {
     return;
   }
   if (Array.isArray(obj)) {
     for (const item of obj) {
-      validateFileUrlsInObject(item, config);
+      scanFileUrlsInObject(item, config);
     }
     return;
   }
@@ -60,7 +69,7 @@ function validateFileUrlsInObject(obj, config) {
   for (const key of Object.keys(obj)) {
     const value = obj[key];
     if (value && typeof value === 'object') {
-      validateFileUrlsInObject(value, config);
+      scanFileUrlsInObject(value, config);
     }
   }
 }

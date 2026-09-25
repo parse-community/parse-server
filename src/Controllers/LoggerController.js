@@ -29,6 +29,8 @@ export class LoggerController extends AdaptableController {
       level = options.logLevel;
     }
     const index = logLevels.indexOf(level); // info by default
+    // Lets callers skip preparing log data that verbose() would silence anyway
+    this.verboseEnabled = logLevels.indexOf('verbose') <= index;
     logLevels.forEach((level, levelIndex) => {
       if (levelIndex > index) {
         // silence the levels that are > maxIndex

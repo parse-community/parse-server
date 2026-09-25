@@ -5,8 +5,13 @@ export default {
     return [...(SchemaCache.allClasses || [])];
   },
 
+  // The stored array itself as identity key for derived caches; must not be mutated
+  raw() {
+    return SchemaCache.allClasses;
+  },
+
   get(className) {
-    return this.all().find(cached => cached.className === className);
+    return (SchemaCache.allClasses || []).find(cached => cached.className === className);
   },
 
   put(allSchema) {
