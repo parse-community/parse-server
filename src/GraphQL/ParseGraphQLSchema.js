@@ -497,4 +497,4 @@ class ParseGraphQLSchema {
   }
 }
 
-export { ParseGraphQLSchema };
+export { ParseGraphQLSchema, RESERVED_GRAPHQL_TYPE_NAMES };

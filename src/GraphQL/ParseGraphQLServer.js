@@ -7,7 +7,8 @@ import { GraphQLError, parse } from 'graphql';
 import { allowCrossDomain, handleParseErrors, handleParseHeaders, handleParseSession } from '../middlewares';
 import requiredParameter from '../requiredParameter';
 import defaultLogger from '../logger';
-import { ParseGraphQLSchema } from './ParseGraphQLSchema';
+import { ParseGraphQLSchema, RESERVED_GRAPHQL_TYPE_NAMES } from './ParseGraphQLSchema';
+import { READ_PREFERENCE } from './loaders/defaultGraphQLTypes';
 import ParseGraphQLController, { ParseGraphQLConfig } from '../Controllers/ParseGraphQLController';
 import { createComplexityValidationPlugin } from './helpers/queryComplexity';
 
@@ -69,19 +70,28 @@ const IntrospectionControlPlugin = (publicIntrospection) => ({
         return;
       }
 
-      const query = requestContext.request.query;
-
+      // Apollo resolves the operation text into `requestContext.source` before this hook
+      // runs and guarantees it is set here. It is NOT the same as `request.query`: on an
+      // automatic persisted query cache hit the text comes from the persisted-query cache
+      // and `request.query` is never populated, so reading `request.query` would leave
+      // nothing to inspect and silently skip both guards below. Apollo enables automatic
+      // persisted queries by default, so that path is reachable on every deployment. Fall
+      // back to `request.query` only for robustness, and fail closed when neither is a
+      // string so that an operation which cannot be inspected is never allowed through.
+      const query = requestContext.source ?? requestContext.request.query;
 
       // Fast path: simple string check for __schema
       // This avoids parsing the query in most cases
-      if (query?.includes('__schema')) {
+      // An operation text that is not a string cannot be inspected at all, so it is denied
+      // for the same reason: this guard must never let an operation through uninspected.
+      if (typeof query !== 'string' || query.includes('__schema')) {
         return throwIntrospectionError();
       }
 
       // Smart check for __type: only parse if the string is present
       // This avoids false positives (e.g., "__type" in strings or comments)
       // while still being efficient for the common case
-      if (query?.includes('__type') && hasTypeIntrospection(query)) {
+      if (query.includes('__type') && hasTypeIntrospection(query)) {
         return throwIntrospectionError();
       }
     },
@@ -122,6 +132,16 @@ const stripSchemaCoercionIdentifiers = message =>
     )
     : message;
 
+// Type names that reveal nothing about THIS application's schema, so redacting them would cost
+// message quality for no security gain. `RESERVED_GRAPHQL_TYPE_NAMES` covers the names the schema
+// builder refuses to let a class generate, but Parse registers built-in types outside that list
+// too. Of those, only an ENUM can reach the enum templates below, and the GraphQL layer defines
+// exactly three enums: `CloudCodeFunction` (reserved), the per-class `<Class>Order` (the
+// disclosure these templates exist to redact) and `ReadPreference`. Include the last one so that
+// an invalid `options.readPreference` value still names its enum, just as `CloudCodeFunction`
+// does — it is identical on every deployment and reachable from every generated find query.
+const NON_DISCLOSING_TYPE_NAMES = new Set([...RESERVED_GRAPHQL_TYPE_NAMES, READ_PREFERENCE.name]);
+
 // graphql-js also emits base coercion / validation messages that name a nested input
 // TYPE without a "Did you mean" clause, so neither strip above reaches them. For a
 // Pointer or Relation field the generated input type name embeds the pointer's TARGET
@@ -135,49 +155,60 @@ const stripSchemaCoercionIdentifiers = message =>
 // unavailable the identifier is redacted (fail closed).
 const stripSchemaTypeIdentifiers = (message, operationText) => {
   if (typeof message !== 'string') { return message; }
-  // A generated type identifier counts as "referenced" (and therefore not a disclosure) only if
-  // the caller wrote it as a whole token in the operation text. Tokenize the operation on
-  // non-identifier characters and compare exact tokens rather than building a RegExp from the
-  // captured name: this avoids substring false-matches (e.g. preserving "AuthorPointerInput"
-  // because the operation contains "SecretAuthorPointerInput") and any regex injection/ReDoS from
-  // an unusual captured name. GraphQL list/non-null wrappers ("[", "]", "!") are stripped from the
-  // captured name so e.g. "SecretAuthorPointerInput!" still matches "$x: SecretAuthorPointerInput!".
-  // When the operation text is unavailable the type is treated as not referenced (fail closed).
+  // A generated type identifier is kept (it is not a disclosure) if the caller wrote it as a
+  // whole token in the operation text, or if it is a non-disclosing name (above). Tokenize the
+  // operation on non-identifier characters and compare exact tokens rather than building a
+  // RegExp from the captured name: this avoids substring false-matches (e.g. preserving
+  // "AuthorPointerInput" because the operation contains "SecretAuthorPointerInput") and any
+  // regex injection/ReDoS from an unusual captured name. GraphQL list/non-null wrappers ("[",
+  // "]", "!") are stripped from the captured name so e.g. "SecretAuthorPointerInput!" still
+  // matches "$x: SecretAuthorPointerInput!". When the operation text is unavailable the type is
+  // treated as not referenced (fail closed).
   const referencedTokens =
     typeof operationText === 'string'
       ? new Set(operationText.split(/[^_A-Za-z0-9]+/).filter(Boolean))
       : new Set();
-  const isReferenced = typeName => referencedTokens.has(typeName.replace(/[[\]!]/g, ''));
+  // A non-disclosing type name (`CloudCodeFunction`, `ReadPreference`, `Viewer`, `PageInfo`, the
+  // built-in scalars, ...) is identical on every Parse Server deployment and cannot collide with
+  // a user class, since `ParseGraphQLSchema` rejects class names that would produce one. Echoing
+  // one therefore discloses nothing about THIS application's schema, so it is preserved like a
+  // caller-referenced name and the message stays useful.
+  const shouldKeepTypeName = typeName => {
+    const bareTypeName = typeName.replace(/[[\]!]/g, '');
+    return NON_DISCLOSING_TYPE_NAMES.has(bareTypeName) || referencedTokens.has(bareTypeName);
+  };
   return message
     // Input coercion / ValuesOfCorrectTypeRule (variables and inline literals).
     .replace(/Expected value of type "([^"]+)"/g, (match, typeName) =>
-      isReferenced(typeName) ? match : 'Expected value of the correct type'
+      shouldKeepTypeName(typeName) ? match : 'Expected value of the correct type'
     )
     .replace(/Expected type "([^"]+)" to be an object\./g, (match, typeName) =>
-      isReferenced(typeName) ? match : 'Expected an object.'
+      shouldKeepTypeName(typeName) ? match : 'Expected an object.'
     )
     .replace(/Expected non-nullable type "([^"]+)" not to be null\./g, (match, typeName) =>
-      isReferenced(typeName) ? match : 'Expected a non-null value.'
+      shouldKeepTypeName(typeName) ? match : 'Expected a non-null value.'
     )
     .replace(/ is not defined by type "([^"]+)"\./g, (match, typeName) =>
-      isReferenced(typeName) ? match : ' is not defined.'
+      shouldKeepTypeName(typeName) ? match : ' is not defined.'
     )
     // VariablesInAllowedPositionRule: the position type is the pointer/relation target
     // input type; the caller only wrote their own variable's declared type.
     .replace(/ used in position expecting type "([^"]+)"\./g, (match, typeName) =>
-      isReferenced(typeName) ? match : ' used in position expecting a different type.'
+      shouldKeepTypeName(typeName) ? match : ' used in position expecting a different type.'
     )
     // FieldsOnCorrectTypeRule: descending into a Pointer/Relation output field names its
     // target output object type.
     .replace(/Cannot query field ("[^"]*") on type "([^"]+)"\./g, (match, fieldName, typeName) =>
-      isReferenced(typeName) ? match : `Cannot query field ${fieldName}.`
+      shouldKeepTypeName(typeName) ? match : `Cannot query field ${fieldName}.`
     )
     // ScalarLeafsRule: selecting a Pointer/Relation output field with no sub-selection names
     // its target output object type.
     .replace(
       /Field ("[^"]*") of type "([^"]+)" must have a selection of subfields\./g,
       (match, fieldName, typeName) =>
-        isReferenced(typeName) ? match : `Field ${fieldName} must have a selection of subfields.`
+        shouldKeepTypeName(typeName)
+          ? match
+          : `Field ${fieldName} must have a selection of subfields.`
     )
     // PossibleFragmentSpreadsRule: an inline/named fragment on an incompatible type inside a
     // Pointer/Relation output field names the target output object type (the parent type).
@@ -186,10 +217,37 @@ const stripSchemaTypeIdentifiers = (message, operationText) => {
     .replace(
       /objects of type "([^"]+)" can never be of type "([^"]+)"\./g,
       (match, parentType, fragType) => {
-        const parent = isReferenced(parentType) ? `type "${parentType}"` : 'the parent type';
-        const frag = isReferenced(fragType) ? `type "${fragType}"` : 'the given type';
+        const parent = shouldKeepTypeName(parentType) ? `type "${parentType}"` : 'the parent type';
+        const frag = shouldKeepTypeName(fragType) ? `type "${fragType}"` : 'the given type';
         return `objects of ${parent} can never be of ${frag}.`;
       }
+    )
+    // KnownArgumentNamesRule: the argument's parent OUTPUT type. Inside a Pointer/Relation
+    // sub-selection that parent is the TARGET class, whose output type is named exactly the
+    // class name (`parseClassTypes.js`), so it discloses a class the caller never wrote — they
+    // only supplied the pointer field name. The type is embedded in a dotted "<Type>.<field>"
+    // token; keep the field name (the caller wrote it) and redact only the type half. Note the
+    // directive form ('... on directive "@name".') carries no type and is left alone.
+    .replace(
+      /Unknown argument ("[^"]*") on field "([^".]+)\.([^".]+)"\./g,
+      (match, argName, typeName, fieldName) =>
+        shouldKeepTypeName(typeName)
+          ? match
+          : `Unknown argument ${argName} on field "${fieldName}".`
+    )
+    // GraphQLEnumType.parseValue/parseLiteral: a Relation field's `order` argument is typed
+    // `[<Target>Order!]` (`parseClassTypes.js`), so an invalid enum literal names the target
+    // class. These messages come from the enum type itself rather than from a validation rule,
+    // which is why the ValuesOfCorrectTypeRule templates above do not reach them. The offending
+    // value is caller-supplied and is preserved; only the enum type name is redacted.
+    .replace(/Value ("[^"]*") does not exist in "([^"]+)" enum\./g, (match, value, typeName) =>
+      shouldKeepTypeName(typeName) ? match : `Value ${value} does not exist in the enum.`
+    )
+    // Sibling branches of the same enum type, reached when the literal is not an enum value at
+    // all ('cannot represent non-enum value: ...', 'cannot represent non-string value: ...',
+    // 'cannot represent value: ...'). Same disclosure, same redaction.
+    .replace(/Enum "([^"]+)" cannot represent /g, (match, typeName) =>
+      shouldKeepTypeName(typeName) ? match : 'Enum cannot represent '
     );
 };
 
@@ -218,7 +276,12 @@ const SchemaSuggestionsControlPlugin = (publicIntrospection) => ({
           : body?.kind === 'incremental'
             ? body.initialResult.errors
             : undefined;
-      const operationText = requestContext.request?.query;
+      // Same as in `IntrospectionControlPlugin`: `requestContext.source` carries the
+      // operation text for every request, including an automatic persisted query cache hit
+      // where `request.query` is undefined. Reading `request.query` alone would make the
+      // allowlist below empty on those requests and redact type names the caller wrote
+      // themselves.
+      const operationText = requestContext.source ?? requestContext.request?.query;
       errors?.forEach(error => {
         error.message = stripSchemaIdentifiers(error.message, operationText);
         if (Array.isArray(error.extensions?.stacktrace)) {

@@ -2508,6 +2508,170 @@ describe('Vulnerabilities', () => {
     });
   });
 
+  describe('(GHSA-rmhf-xv62-rm99) $relatedTo count query omits caller auth for protectedFields', () => {
+    let childLinked;
+    let parent;
+    let roleUser;
+    let otherUser;
+
+    const relatedToWhere = (parentId, key, extra = {}) => ({
+      $relatedTo: {
+        object: { __type: 'Pointer', className: 'RelParent', objectId: parentId },
+        key,
+      },
+      ...extra,
+    });
+
+    const queryChild = (where, qs = {}, headers = {}) =>
+      request({
+        method: 'GET',
+        url: `${Parse.serverURL}/classes/RelChild`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          ...headers,
+        },
+        qs: { where: JSON.stringify(where), ...qs },
+      }).catch(e => e);
+
+    // Mirrors the JS SDK `query.count()` request: `count=1&limit=0` skips the
+    // find path entirely, so only the count path is exercised.
+    const countChild = (where, headers = {}) => queryChild(where, { count: 1, limit: 0 }, headers);
+    const findChild = (where, headers = {}) => queryChild(where, {}, headers);
+
+    const setProtectedFields = async protectedFields => {
+      const schema = new Parse.Schema('RelParent');
+      schema.setCLP({
+        find: { '*': true },
+        get: { '*': true },
+        count: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+        protectedFields,
+      });
+      await schema.update();
+    };
+
+    beforeEach(async () => {
+      const schema = new Parse.Schema('RelParent');
+      schema.addString('name');
+      schema.addRelation('secretRel', 'RelChild');
+      schema.setCLP({
+        find: { '*': true },
+        get: { '*': true },
+        count: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+        // Protected only for members of the Guest role, with no '*' entry, so
+        // the guard has to resolve the caller's identity to enforce it.
+        protectedFields: { 'role:Guest': ['secretRel'] },
+      });
+      await schema.save();
+
+      roleUser = await Parse.User.signUp('relCountRoleUser', 'pw');
+      otherUser = await Parse.User.signUp('relCountOtherUser', 'pw');
+
+      const roleAcl = new Parse.ACL();
+      roleAcl.setPublicReadAccess(true);
+      const role = new Parse.Role('Guest', roleAcl);
+      role.getUsers().add(roleUser);
+      await role.save(null, { useMasterKey: true });
+
+      childLinked = new Parse.Object('RelChild', { value: 'linked child' });
+      await childLinked.save(null, { useMasterKey: true });
+
+      // Publicly readable parent, so the owning-object read passes and only the
+      // protected relation key decides the outcome.
+      const publicAcl = new Parse.ACL();
+      publicAcl.setPublicReadAccess(true);
+      parent = new Parse.Object('RelParent', { name: 'protected-key parent' });
+      parent.setACL(publicAcl);
+      parent.relation('secretRel').add(childLinked);
+      await parent.save(null, { useMasterKey: true });
+    });
+
+    it('denies count with $relatedTo on a relation protected for the caller role', async () => {
+      const headers = { 'X-Parse-Session-Token': roleUser.getSessionToken() };
+      const find = await findChild(relatedToWhere(parent.id, 'secretRel'), headers);
+      expect(find.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(find.data.error).toBe('Permission denied');
+
+      const count = await countChild(relatedToWhere(parent.id, 'secretRel'), headers);
+      expect(count.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(count.data.error).toBe('Permission denied');
+    });
+
+    it('does not act as a membership oracle via count with an objectId constraint', async () => {
+      const res = await countChild(
+        relatedToWhere(parent.id, 'secretRel', { objectId: childLinked.id }),
+        { 'X-Parse-Session-Token': roleUser.getSessionToken() }
+      );
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    });
+
+    it('allows count for a user outside the protected role', async () => {
+      const res = await countChild(relatedToWhere(parent.id, 'secretRel'), {
+        'X-Parse-Session-Token': otherUser.getSessionToken(),
+      });
+      expect(res.data.count).toBe(1);
+    });
+
+    it('denies count with $relatedTo on a relation protected for authenticated users', async () => {
+      await setProtectedFields({ authenticated: ['secretRel'] });
+      const res = await countChild(relatedToWhere(parent.id, 'secretRel'), {
+        'X-Parse-Session-Token': otherUser.getSessionToken(),
+      });
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+
+      // The `authenticated` group does not apply to unauthenticated callers.
+      const publicRes = await countChild(relatedToWhere(parent.id, 'secretRel'));
+      expect(publicRes.data.count).toBe(1);
+    });
+
+    it('denies count with $relatedTo on a relation protected for a specific user', async () => {
+      await setProtectedFields({ [roleUser.id]: ['secretRel'] });
+      const res = await countChild(relatedToWhere(parent.id, 'secretRel'), {
+        'X-Parse-Session-Token': roleUser.getSessionToken(),
+      });
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+
+      const other = await countChild(relatedToWhere(parent.id, 'secretRel'), {
+        'X-Parse-Session-Token': otherUser.getSessionToken(),
+      });
+      expect(other.data.count).toBe(1);
+    });
+
+    it('denies count with $relatedTo on a relation protected for the public', async () => {
+      await setProtectedFields({ '*': ['secretRel'] });
+      const res = await countChild(relatedToWhere(parent.id, 'secretRel'));
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    });
+
+    it('allows master key count on a protected relation', async () => {
+      await setProtectedFields({ '*': ['secretRel'] });
+      const res = await countChild(relatedToWhere(parent.id, 'secretRel'), {
+        'X-Parse-Master-Key': Parse.masterKey,
+      });
+      expect(res.data.count).toBe(1);
+    });
+
+    it('allows maintenance key count on a protected relation', async () => {
+      await setProtectedFields({ '*': ['secretRel'] });
+      const res = await countChild(relatedToWhere(parent.id, 'secretRel'), {
+        'X-Parse-Maintenance-Key': 'testing',
+      });
+      expect(res.data.count).toBe(1);
+    });
+  });
+
   describe('(GHSA-j7mm-f4rv-6q6q) Protected fields bypass via LiveQuery dot-notation WHERE', () => {
     let obj;
 
@@ -2667,13 +2831,10 @@ describe('Vulnerabilities', () => {
       );
     });
 
-    it('should not reject when role-only protection exists without * entry', async () => {
-      // Edge case: protectedFields only has a role entry, no '*'.
-      // Without resolving roles, the protection set is empty, so the subscription is allowed.
-      // This is a correctness gap, not a security issue: the role entry means "protect this
-      // field FROM role members" (i.e. admins should not see it). Not resolving roles means
-      // the admin loses their own restriction — they see data meant to be hidden from them.
-      // This does not allow unprivileged users to access protected data.
+    it('should reject when role-only protection exists without a * entry', async () => {
+      // Edge case: protectedFields only has a role entry, no '*'. The subscriber's
+      // roles are resolved (GHSA-9jpp-xhh6-75mf), so the role entry applies and the
+      // WHERE clause on the protected field is rejected for members of that role.
       const config = Config.get(Parse.applicationId);
       const schemaController = await config.database.loadSchema();
       await schemaController.updateClass(
@@ -2701,13 +2862,11 @@ describe('Vulnerabilities', () => {
       role.getUsers().add(user);
       await role.save(null, { useMasterKey: true });
 
-      // This subscribes successfully because without '*' entry, no fields are protected
-      // for purposes of WHERE clause validation. The role-only config means "hide secretObj
-      // from admins" — a restriction ON the privileged user, not a security boundary.
       const query = new Parse.Query('SecretClass');
       query._addCondition('secretObj.apiKey', '$eq', 'SENSITIVE_KEY_123');
-      const subscription = await query.subscribe(user.getSessionToken());
-      expect(subscription).toBeDefined();
+      await expectAsync(query.subscribe(user.getSessionToken())).toBeRejectedWith(
+        new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+      );
     });
 
     // Note: master key bypass is inherently tested by the `!client.hasMasterKey` guard
@@ -6548,6 +6707,866 @@ describe('Vulnerabilities', () => {
       // the full record (auth hierarchy preserved); the minimal denied-path
       // response only applies to non-master callers.
       expect(response.data.phone).toBe('555-1234');
+    });
+  });
+
+  describe('(GHSA-9jpp-xhh6-75mf) LiveQuery does not apply role-scoped protectedFields', () => {
+    const { sleep } = require('../lib/TestUtils');
+    const roleName = 'LqProtectedRole';
+    let member;
+    let memberToken;
+    let outsider;
+    let outsiderToken;
+    let doc;
+    let extraClients = [];
+
+    async function updateCLP(className, permissions) {
+      const response = await fetch(Parse.serverURL + '/schemas/' + className, {
+        method: 'PUT',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': Parse.masterKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ classLevelPermissions: permissions }),
+      });
+      const body = await response.json();
+      if (body.error) {
+        throw body;
+      }
+      return body;
+    }
+
+    // `keyPairs` is opt-in per test: the default LiveQueryClient always sends the
+    // master key in its connect frame, so enabling key pairs globally would turn
+    // every subscription in this suite into a master-key subscription.
+    async function setup(protectedFields, { keyPairs = false } = {}) {
+      Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+      extraClients = [];
+      await reconfigureServer({
+        liveQuery: { classNames: ['RoleProtectedDoc'] },
+        startLiveQueryServer: true,
+        ...(keyPairs
+          ? { liveQueryServerOptions: { keyPairs: { masterKey: 'test', javascriptKey: 'test' } } }
+          : {}),
+        verbose: false,
+        silent: true,
+      });
+
+      member = new Parse.User();
+      member.setUsername('lq_role_member');
+      member.setPassword('password123');
+      await member.signUp();
+      memberToken = member.getSessionToken();
+
+      outsider = new Parse.User();
+      outsider.setUsername('lq_role_outsider');
+      outsider.setPassword('password456');
+      await outsider.signUp();
+      outsiderToken = outsider.getSessionToken();
+      await Parse.User.logOut();
+
+      const roleACL = new Parse.ACL();
+      roleACL.setPublicReadAccess(true);
+      const role = new Parse.Role(roleName, roleACL);
+      role.getUsers().add(member);
+      await role.save(null, { useMasterKey: true });
+
+      // Create the object first so the class schema exists, then apply the CLP
+      doc = new Parse.Object('RoleProtectedDoc');
+      doc.set('ssn', '999-88-7777');
+      doc.set('name', 'bob');
+      await doc.save(null, { useMasterKey: true });
+
+      await updateCLP('RoleProtectedDoc', {
+        find: { '*': true },
+        get: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+        protectedFields,
+      });
+    }
+
+    afterEach(async () => {
+      for (const client of extraClients) {
+        await client.close();
+      }
+      extraClients = [];
+      try {
+        const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+        if (client) {
+          await client.close();
+        }
+      } catch (e) {
+        // Ignore cleanup errors when the client was never initialized
+      }
+    });
+
+    it('strips a role-scoped protected field from a REST get for a role member', async () => {
+      await setup({ [`role:${roleName}`]: ['ssn'] });
+
+      const response = await request({
+        method: 'GET',
+        url: `${Parse.serverURL}/classes/RoleProtectedDoc/${doc.id}`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': memberToken,
+        },
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.data.ssn).toBeUndefined();
+      expect(response.data.name).toBe('bob');
+    });
+
+    it('strips a role-scoped protected field from a LiveQuery update event for a role member', async () => {
+      await setup({ [`role:${roleName}`]: ['ssn'] });
+
+      const subscription = await new Parse.Query('RoleProtectedDoc').subscribe(
+        memberToken
+      );
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBeUndefined();
+            expect(object.get('name')).toBe('bob2');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+    });
+
+    it('strips a role-scoped protected field from a LiveQuery create event for a role member', async () => {
+      await setup({ [`role:${roleName}`]: ['ssn'] });
+
+      const subscription = await new Parse.Query('RoleProtectedDoc').subscribe(
+        memberToken
+      );
+
+      const created = new Parse.Object('RoleProtectedDoc');
+      created.set('ssn', '111-22-3333');
+      created.set('name', 'alice');
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('create', object => {
+            expect(object.get('ssn')).toBeUndefined();
+            expect(object.get('name')).toBe('alice');
+            resolve();
+          });
+        }),
+        created.save(null, { useMasterKey: true }),
+      ]);
+    });
+
+    it('delivers a role-scoped protected field to a LiveQuery subscriber outside the role', async () => {
+      await setup({ [`role:${roleName}`]: ['ssn'] });
+
+      const subscription = await new Parse.Query('RoleProtectedDoc').subscribe(
+        outsiderToken
+      );
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBe('999-88-7777');
+            expect(object.get('name')).toBe('bob2');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+    });
+
+    it('delivers a role-scoped protected field to a LiveQuery subscriber using the master key', async () => {
+      await setup({ [`role:${roleName}`]: ['ssn'] }, { keyPairs: true });
+
+      const subscription = await subscribeWithMasterKey('RoleProtectedDoc');
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBe('999-88-7777');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+    });
+
+    it('delivers a public protected field to a LiveQuery subscriber using the master key', async () => {
+      // Only a genuine master-key client receives a field protected for '*';
+      // any non-master subscriber has it stripped, so this asserts that the
+      // master-key path is really exercised.
+      await setup({ '*': ['ssn'] }, { keyPairs: true });
+
+      const subscription = await subscribeWithMasterKey('RoleProtectedDoc');
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBe('999-88-7777');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+    });
+
+    it('rejects a LiveQuery subscription with a role-scoped protected field in where', async () => {
+      await setup({ [`role:${roleName}`]: ['ssn'] });
+
+      const query = new Parse.Query('RoleProtectedDoc');
+      query.equalTo('ssn', '999-88-7777');
+      await expectAsync(query.subscribe(memberToken)).toBeRejectedWith(
+        new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+      );
+    });
+
+    it('rejects a LiveQuery subscription with a role-scoped protected field in watch', async () => {
+      await setup({ [`role:${roleName}`]: ['ssn'] });
+
+      const query = new Parse.Query('RoleProtectedDoc');
+      query.watch('ssn');
+      await expectAsync(query.subscribe(memberToken)).toBeRejectedWith(
+        new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+      );
+    });
+
+    it('allows a LiveQuery subscription with a role-scoped protected field in where for a user outside the role', async () => {
+      await setup({ [`role:${roleName}`]: ['ssn'] });
+
+      const query = new Parse.Query('RoleProtectedDoc');
+      query.equalTo('ssn', '999-88-7777');
+      const subscription = await query.subscribe(outsiderToken);
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBe('999-88-7777');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+    });
+
+    // `query.subscribe(Parse.masterKey)` sends the master key as the subscription
+    // session token, which never sets `client.hasMasterKey` - that is derived from
+    // the connect frame (`_hasMasterKey` in ParseLiveQueryServer). A master-key
+    // subscriber must therefore be built as its own LiveQueryClient.
+    async function subscribeWithMasterKey(className) {
+      const client = new Parse.LiveQueryClient({
+        applicationId: Parse.applicationId,
+        serverURL: 'ws://localhost:8378',
+        javascriptKey: 'test',
+        masterKey: Parse.masterKey,
+      });
+      extraClients.push(client);
+      client.open();
+      const subscription = client.subscribe(new Parse.Query(className));
+      await new Promise(resolve => subscription.on('open', resolve));
+      return subscription;
+    }
+
+    async function subscribeWithoutSubscriptionToken(className) {
+      // Mirrors Parse.Query.subscribe() but omits the per-subscription session
+      // token, so only the connect frame carries it. `client.subscribe(query)`
+      // without the optional second argument is public SDK API.
+      const query = new Parse.Query(className);
+      const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+      if (client.shouldOpen()) {
+        client.open();
+      }
+      const subscription = client.subscribe(query);
+      await subscription.subscribePromise;
+      return subscription;
+    }
+
+    it('strips a role-scoped protected field when the subscription carries no session token', async () => {
+      await setup({ [`role:${roleName}`]: ['ssn'] });
+      // The connect frame carries the member's token, the subscribe frame does not
+      await Parse.User.logIn('lq_role_member', 'password123');
+      const subscription = await subscribeWithoutSubscriptionToken('RoleProtectedDoc');
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBeUndefined();
+            expect(object.get('name')).toBe('bob2');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+    });
+
+    it('strips an authenticated-scoped protected field when the subscription carries no session token', async () => {
+      await setup({ authenticated: ['ssn'] });
+      await Parse.User.logIn('lq_role_member', 'password123');
+      const subscription = await subscribeWithoutSubscriptionToken('RoleProtectedDoc');
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBeUndefined();
+            expect(object.get('name')).toBe('bob2');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+    });
+
+    it('allows a LiveQuery subscription when a role-scoped exemption clears a public protected field', async () => {
+      // The '*' group protects the field, the role group exempts members via the
+      // intersection. Resolving roles relaxes the guard here: before the fix the
+      // role member was rejected because only the '*' group was ever applied.
+      await setup({ '*': ['ssn'], [`role:${roleName}`]: [] });
+
+      const query = new Parse.Query('RoleProtectedDoc');
+      query.equalTo('ssn', '999-88-7777');
+      const subscription = await query.subscribe(memberToken);
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBe('999-88-7777');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+    });
+
+    it('keeps stripping a public protected field on LiveQuery events', async () => {
+      await setup({ '*': ['ssn'] });
+
+      const subscription = await new Parse.Query('RoleProtectedDoc').subscribe(
+        memberToken
+      );
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBeUndefined();
+            expect(object.get('name')).toBe('bob2');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+    });
+
+    it('intersects a public and a role-scoped protected field set on LiveQuery events', async () => {
+      // '*' protects both fields, the role set protects only one; the
+      // intersection leaves 'ssn' protected and exposes 'name' to role members
+      await setup({ '*': ['ssn', 'name'], [`role:${roleName}`]: ['ssn'] });
+
+      const subscription = await new Parse.Query('RoleProtectedDoc').subscribe(
+        memberToken
+      );
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBeUndefined();
+            expect(object.get('name')).toBe('bob2');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+      await sleep(0);
+    });
+  });
+
+  describe('(GHSA-cc6h-c8m4-hgrx) NoSQL injection via _Installation deviceToken deduplication', () => {
+    const serverURL = 'http://localhost:8378/1';
+    const publicHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const attackerInstallationId = 'attacker-uuid-0000-0000-000000000000';
+
+    const postInstallation = body =>
+      request({
+        method: 'POST',
+        headers: publicHeaders,
+        url: `${serverURL}/installations`,
+        body: JSON.stringify(body),
+      }).catch(e => e);
+
+    const putInstallation = (objectId, body) =>
+      request({
+        method: 'PUT',
+        headers: publicHeaders,
+        url: `${serverURL}/installations/${objectId}`,
+        body: JSON.stringify(body),
+      }).catch(e => e);
+
+    const allInstallations = async () => {
+      const query = new Parse.Query(Parse.Installation);
+      query.limit(1000);
+      const results = await query.find({ useMasterKey: true });
+      return results.map(r => r.get('installationId')).sort();
+    };
+
+    // Registers `count` unrelated installations, each with its own installationId and
+    // deviceToken, exactly as a device SDK would.
+    const seedVictimInstallations = async count => {
+      for (let i = 0; i < count; i++) {
+        const response = await postInstallation({
+          installationId: `victim-uuid-0000-0000-00000000000${i}`,
+          deviceType: 'ios',
+          deviceToken: `victimtoken${i}`,
+        });
+        expect(response.status).toBe(201);
+      }
+    };
+
+    // Doubles as a positive control: proves the unauthenticated client really reaches the
+    // application, so a later "nothing was deleted" result cannot be a broken harness.
+    const registerAttackerInstallation = async () => {
+      const response = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceType: 'android',
+      });
+      expect(response.status).toBe(201);
+    };
+
+    it('does not delete other installations when deviceToken is an operator object', async () => {
+      await seedVictimInstallations(4);
+      await registerAttackerInstallation();
+      expect((await allInstallations()).length).toBe(5);
+
+      const response = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceToken: { $ne: null },
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect((await allInstallations()).length).toBe(5);
+    });
+
+    it('does not delete other installations when deviceToken is an operator object and no installation matches the installationId', async () => {
+      await seedVictimInstallations(4);
+      expect((await allInstallations()).length).toBe(4);
+
+      // No prior registration, so the request reaches the deduplication branch that runs
+      // when no row matches the installationId.
+      const response = await postInstallation({
+        installationId: 'unregistered-uuid-0000-0000-0000',
+        deviceType: 'android',
+        deviceToken: { $ne: null },
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect((await allInstallations()).length).toBe(4);
+    });
+
+    it('does not delete targeted installations when deviceToken is a regex operator', async () => {
+      await seedVictimInstallations(4);
+      await registerAttackerInstallation();
+
+      const response = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceToken: { $regex: '^victimtoken' },
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect((await allInstallations()).length).toBe(5);
+    });
+
+    it('does not clear device tokens when deviceToken is an operator object and the duplicate action is update', async () => {
+      await reconfigureServer({ installation: { duplicateDeviceTokenAction: 'update' } });
+      await seedVictimInstallations(4);
+      await registerAttackerInstallation();
+
+      const response = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceToken: { $ne: null },
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      const query = new Parse.Query(Parse.Installation);
+      query.exists('deviceToken');
+      expect(await query.count({ useMasterKey: true })).toBe(4);
+    });
+
+    it('does not delete other installations when deviceToken is an operator object on update', async () => {
+      await seedVictimInstallations(4);
+      const created = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceType: 'android',
+      });
+      expect(created.status).toBe(201);
+
+      const response = await putInstallation(created.data.objectId, {
+        deviceToken: { $ne: null },
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect((await allInstallations()).length).toBe(5);
+    });
+
+    it('does not delete other installations when appIdentifier is an operator object', async () => {
+      await seedVictimInstallations(4);
+      await registerAttackerInstallation();
+
+      const response = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceToken: 'victimtoken0',
+        appIdentifier: { $ne: null },
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect((await allInstallations()).length).toBe(5);
+    });
+
+    it('rejects a non-string installationId with a client error', async () => {
+      await seedVictimInstallations(1);
+
+      const response = await postInstallation({
+        installationId: { $ne: null },
+        deviceType: 'android',
+        deviceToken: 'sometoken',
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect((await allInstallations()).length).toBe(1);
+    });
+
+    it('still allows appIdentifier to be unset with a Delete operation', async () => {
+      const created = await postInstallation({
+        installationId: 'device-uuid-0000-0000-000000000009',
+        deviceType: 'ios',
+        deviceToken: 'unsettoken',
+        appIdentifier: 'com.example.app',
+      });
+      expect(created.status).toBe(201);
+
+      // `appIdentifier` only narrows the deduplication query, so unsetting it is a valid
+      // operation that must survive the type validation above.
+      const response = await putInstallation(created.data.objectId, {
+        appIdentifier: { __op: 'Delete' },
+      });
+
+      expect(response.status).toBe(200);
+      const query = new Parse.Query(Parse.Installation);
+      query.equalTo('objectId', created.data.objectId);
+      const [installation] = await query.find({ useMasterKey: true });
+      expect(installation.get('appIdentifier')).toBeUndefined();
+    });
+
+    it('does not clean up installations of other applications when appIdentifier is unset', async () => {
+      const victim = await postInstallation({
+        installationId: 'victim-uuid-0000-0000-00000000009',
+        deviceType: 'ios',
+        deviceToken: 'contested-token',
+        appIdentifier: 'com.example.victimapp',
+      });
+      expect(victim.status).toBe(201);
+      const attacker = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceType: 'android',
+        deviceToken: 'attacker-token',
+        appIdentifier: 'com.example.attackerapp',
+      });
+      expect(attacker.status).toBe(201);
+
+      // Claiming the other application's device token while unsetting `appIdentifier` must
+      // not drop the constraint that scopes the cleanup to the caller's own application.
+      const response = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceToken: 'contested-token',
+        appIdentifier: { __op: 'Delete' },
+      });
+      expect(response.status).toBe(200);
+
+      expect(await allInstallations()).toEqual(
+        ['victim-uuid-0000-0000-00000000009', attackerInstallationId].sort()
+      );
+    });
+
+    it('reports the received type when a deviceToken is an array', async () => {
+      await seedVictimInstallations(1);
+      await registerAttackerInstallation();
+
+      const response = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceToken: ['victimtoken0'],
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect(response.data.error).toBe(
+        'schema mismatch for _Installation.deviceToken; expected String but got Array'
+      );
+      expect((await allInstallations()).length).toBe(2);
+    });
+
+    it('skips the cleanup when appIdentifier is unset and the matched installation has none', async () => {
+      const victim = await postInstallation({
+        installationId: 'victim-uuid-0000-0000-00000000010',
+        deviceType: 'ios',
+        deviceToken: 'unscoped-token',
+        appIdentifier: 'com.example.victimapp',
+      });
+      expect(victim.status).toBe(201);
+      // The caller's own installation carries no application scope to fall back to.
+      const attacker = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceType: 'android',
+        deviceToken: 'attacker-token',
+      });
+      expect(attacker.status).toBe(201);
+
+      const response = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceToken: 'unscoped-token',
+        appIdentifier: { __op: 'Delete' },
+      });
+
+      expect(response.status).toBe(200);
+      expect(await allInstallations()).toEqual(
+        ['victim-uuid-0000-0000-00000000010', attackerInstallationId].sort()
+      );
+    });
+
+    it('skips the cleanup when appIdentifier is unset and no installation matches', async () => {
+      const first = await postInstallation({
+        installationId: 'victim-uuid-0000-0000-00000000011',
+        deviceType: 'ios',
+        deviceToken: 'collide-token',
+        appIdentifier: 'com.example.appone',
+      });
+      expect(first.status).toBe(201);
+      const second = await postInstallation({
+        installationId: 'victim-uuid-0000-0000-00000000012',
+        deviceType: 'ios',
+        deviceToken: 'collide-token-2',
+        appIdentifier: 'com.example.apptwo',
+      });
+      expect(second.status).toBe(201);
+
+      // An unregistered installationId reaches the branch that runs when nothing matches.
+      const response = await postInstallation({
+        installationId: 'unregistered-uuid-0000-0000-0001',
+        deviceType: 'android',
+        deviceToken: 'collide-token',
+        appIdentifier: { __op: 'Delete' },
+      });
+
+      expect(response.status).toBe(201);
+      expect(await allInstallations()).toEqual(
+        [
+          'victim-uuid-0000-0000-00000000011',
+          'victim-uuid-0000-0000-00000000012',
+          'unregistered-uuid-0000-0000-0001',
+        ].sort()
+      );
+    });
+
+    it('guards every _Installation field that the schema declares as String and the deduplication queries use', () => {
+      // The guard in `handleInstallation` hardcodes `String` because the schema's own type
+      // check runs too late in the write pipeline to be reused. This pins the two together:
+      // if a field is renamed or redeclared, this fails rather than leaving a stale guard.
+      const { defaultColumns } = require('../lib/Controllers/SchemaController');
+      for (const fieldName of ['deviceToken', 'installationId', 'appIdentifier']) {
+        expect(defaultColumns._Installation[fieldName]).toEqual({ type: 'String' });
+      }
+    });
+
+    it('still deduplicates installations that share a string deviceToken', async () => {
+      const first = await postInstallation({
+        installationId: 'device-uuid-0000-0000-000000000001',
+        deviceType: 'ios',
+        deviceToken: 'sharedtoken',
+      });
+      expect(first.status).toBe(201);
+
+      // The same physical device re-registers under a new installationId: the stale row
+      // holding the device token must still be cleaned up.
+      const second = await postInstallation({
+        installationId: 'device-uuid-0000-0000-000000000002',
+        deviceType: 'ios',
+        deviceToken: 'sharedtoken',
+      });
+      expect(second.status).toBe(201);
+
+      expect(await allInstallations()).toEqual(['device-uuid-0000-0000-000000000002']);
+    });
+  });
+
+  describe('(GHSA-mr43-w6c2-mvjq) Unverified provider identity accepted on password login for code-based auth adapters', () => {
+    const tokenUrl = 'https://github.com/login/oauth/access_token';
+    const userUrl = 'https://api.github.com/user';
+    const victimProviderId = '13370001';
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+
+    // Stands in for the provider: the code exchange succeeds and resolves to `providerId`.
+    const mockProvider = providerId =>
+      mockFetch([
+        {
+          url: tokenUrl,
+          method: 'POST',
+          response: { ok: true, json: () => Promise.resolve({ access_token: 'provider-token' }) },
+        },
+        {
+          url: userUrl,
+          method: 'GET',
+          response: { ok: true, json: () => Promise.resolve({ id: providerId, login: 'login' }) },
+        },
+      ]);
+
+    const passwordLogin = (username, password, authData) =>
+      request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/login',
+        headers,
+        body: JSON.stringify({ username, password, authData }),
+      }).catch(e => e);
+
+    const challenge = body =>
+      request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/challenge',
+        headers,
+        body: JSON.stringify(body),
+      }).catch(e => e);
+
+    // Reads the row directly so the adapter's afterFind cannot mask what was persisted.
+    const storedProviderData = async objectId => {
+      const [row] = await Config.get('test').database.find('_User', { objectId });
+      return row.authData?.github;
+    };
+
+    let attacker;
+
+    beforeEach(async () => {
+      await reconfigureServer({
+        auth: { github: { clientId: 'clientId', clientSecret: 'clientSecret' } },
+      });
+      attacker = new Parse.User();
+      await attacker.signUp({ username: 'attacker', password: 'attacker-password' });
+    });
+
+    it('rejects a provider id on password login when no authorization code is supplied', async () => {
+      mockFetch();
+
+      const response = await passwordLogin('attacker', 'attacker-password', {
+        github: { id: victimProviderId },
+      });
+
+      const body = JSON.parse(response.text);
+      expect(body.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(body.error).toBe('GitHub code is required.');
+      expect(global.fetch.calls.count()).toBe(0);
+      expect(await storedProviderData(attacker.id)).toBeUndefined();
+    });
+
+    it('links a provider on password login with the identity the provider returns for the code', async () => {
+      mockProvider('attacker-provider-id');
+
+      const response = await passwordLogin('attacker', 'attacker-password', {
+        github: { code: 'valid-code' },
+      });
+
+      expect(response.status).toBe(200);
+      expect(global.fetch.calls.count()).toBe(2);
+      const stored = await storedProviderData(attacker.id);
+      expect(stored.id).toBe('attacker-provider-id');
+      expect(stored.code).toBeUndefined();
+    });
+
+    it('rejects a provider id on password login that differs from the identity the provider returns', async () => {
+      mockProvider('attacker-provider-id');
+
+      const response = await passwordLogin('attacker', 'attacker-password', {
+        github: { code: 'valid-code', id: victimProviderId },
+      });
+
+      const body = JSON.parse(response.text);
+      expect(body.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      expect(await storedProviderData(attacker.id)).toBeUndefined();
+    });
+
+    it("does not let a planted provider id capture the provider account owner's later sign-in", async () => {
+      mockFetch();
+      await passwordLogin('attacker', 'attacker-password', { github: { id: victimProviderId } });
+
+      mockProvider(victimProviderId);
+      const victim = await Parse.User.logInWith('github', { authData: { code: 'victim-code' } });
+
+      expect(victim.id).not.toBe(attacker.id);
+      expect((await storedProviderData(victim.id)).id).toBe(victimProviderId);
+      expect(await storedProviderData(attacker.id)).toBeUndefined();
+    });
+
+    it('rejects linking a provider identity on password login that is already linked to another user', async () => {
+      mockProvider(victimProviderId);
+      const victim = await Parse.User.logInWith('github', { authData: { code: 'victim-code' } });
+
+      mockProvider(victimProviderId);
+      const response = await passwordLogin('attacker', 'attacker-password', {
+        github: { code: 'leaked-code' },
+      });
+
+      const body = JSON.parse(response.text);
+      expect(body.code).toBe(Parse.Error.ACCOUNT_ALREADY_LINKED);
+      expect(await storedProviderData(attacker.id)).toBeUndefined();
+      expect((await storedProviderData(victim.id)).id).toBe(victimProviderId);
+    });
+
+    describe('challenge endpoint', () => {
+      beforeEach(async () => {
+        mockProvider(victimProviderId);
+        await Parse.User.logInWith('github', { authData: { code: 'victim-code' } });
+      });
+
+      it('rejects a provider id without an authorization code', async () => {
+        mockFetch();
+
+        const response = await challenge({
+          authData: { github: { id: victimProviderId } },
+          challengeData: { github: {} },
+        });
+
+        const body = JSON.parse(response.text);
+        expect(body.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+        expect(body.error).toBe('User not found.');
+        expect(global.fetch.calls.count()).toBe(0);
+      });
+
+      it('resolves the user by a valid authorization code', async () => {
+        mockProvider(victimProviderId);
+
+        const response = await challenge({
+          authData: { github: { code: 'victim-code' } },
+          challengeData: { github: {} },
+        });
+
+        expect(response.status).toBe(200);
+        expect(global.fetch.calls.count()).toBe(2);
+      });
     });
   });
 });
