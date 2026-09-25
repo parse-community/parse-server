@@ -7780,22 +7780,28 @@ describe('Vulnerabilities', () => {
     });
 
     it('publishes LiveQuery update for object with stored file without URL', async () => {
+      Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
       await reconfigureServer({
         liveQuery: { classNames: ['Chat'] },
         startLiveQueryServer: true,
       });
       const res = await post('Chat', { list: [file] });
-      const subscription = await new Parse.Query('Chat').subscribe();
-      const updated = new Promise(resolve => subscription.on('update', resolve));
-      await request({
-        method: 'PUT',
-        url: `http://localhost:8378/1/classes/Chat/${res.data.objectId}`,
-        headers,
-        body: { foo: 'bar' },
-      });
-      const object = await updated;
-      expect(object.get('list')[0].url()).toBe('http://localhost:8378/1/files/test/x.jpg');
-      expect(unhandled).toEqual([]);
+      const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+      try {
+        const subscription = await new Parse.Query('Chat').subscribe();
+        const updated = new Promise(resolve => subscription.on('update', resolve));
+        await request({
+          method: 'PUT',
+          url: `http://localhost:8378/1/classes/Chat/${res.data.objectId}`,
+          headers,
+          body: { foo: 'bar' },
+        });
+        const object = await updated;
+        expect(object.get('list')[0].url()).toBe('http://localhost:8378/1/files/test/x.jpg');
+        expect(unhandled).toEqual([]);
+      } finally {
+        await client.close();
+      }
     });
   });
 });
