@@ -460,10 +460,51 @@ describe('server', () => {
     });
   });
 
+  it('fails if you provide an invalid CIDR mask in masterKeyIps', async () => {
+    const invalidIps = [
+      '127.0.0.1/999',
+      '10.0.0.0/8.9',
+      '127.0.0.0/32.0',
+      '127.0.0.0/3.2e1',
+      '127.0.0.0/0x20',
+      '127.0.0.0/0b100000',
+      '127.0.0.0/ 32',
+      '127.0.0.0/32 ',
+      '127.0.0.1/-1',
+      '127.0.0.1/',
+      '127.0.0.1/32/ignored',
+      '2001:db8::/129',
+    ];
+
+    for (const ip of invalidIps) {
+      expect(() => Config.validateIps('masterKeyIps', [ip]))
+        .withContext(ip)
+        .toThrow(
+          `The Parse Server option "masterKeyIps" contains an invalid CIDR notation "${ip}".`
+        );
+    }
+
+    const startupIp = '127.0.0.1/33';
+    await expectAsync(reconfigureServer({ masterKeyIps: [startupIp] })).toBeRejectedWith(
+      `The Parse Server option \"masterKeyIps\" contains an invalid CIDR notation \"${startupIp}\".`
+    );
+  });
+
   it('should succeed if you provide valid ip in masterKeyIps', done => {
     reconfigureServer({
       masterKeyIps: ['1.2.3.4', '2001:0db8:0000:0042:0000:8a2e:0370:7334'],
     }).then(done);
+  });
+
+  it('should succeed if you provide valid CIDR boundaries in masterKeyIps', () => {
+    expect(() =>
+      Config.validateIps('masterKeyIps', [
+        '0.0.0.0/0',
+        '255.255.255.255/32',
+        '::/0',
+        '2001:db8::/128',
+      ])
+    ).not.toThrow();
   });
 
   it('should set default masterKeyIps for IPv4 and IPv6 localhost', () => {

@@ -625,12 +625,19 @@ export class Config {
   }
 
   static validateIps(field, masterKeyIps) {
-    for (let ip of masterKeyIps) {
-      if (ip.includes('/')) {
-        ip = ip.split('/')[0];
+    for (const ip of masterKeyIps) {
+      const parts = ip.split('/');
+      const address = parts[0];
+      const ipVersion = net.isIP(address);
+      if (!ipVersion) {
+        throw `The Parse Server option "${field}" contains an invalid IP address "${address}".`;
       }
-      if (!net.isIP(ip)) {
-        throw `The Parse Server option "${field}" contains an invalid IP address "${ip}".`;
+      if (parts.length > 1) {
+        const mask = parts[1];
+        const maxMask = ipVersion === 4 ? 32 : 128;
+        if (parts.length !== 2 || !/^\d+$/.test(mask) || Number(mask) > maxMask) {
+          throw `The Parse Server option "${field}" contains an invalid CIDR notation "${ip}".`;
+        }
       }
     }
   }
