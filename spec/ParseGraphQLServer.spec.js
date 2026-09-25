@@ -135,6 +135,29 @@ describe('ParseGraphQLServer', () => {
         expect(server).toBe(firstServer);
       });
     });
+
+    it('does not leak process signal listeners across schema rebuilds (#9813)', async () => {
+      const originalNodeEnv = process.env.NODE_ENV;
+      // Apollo registers SIGINT/SIGTERM handlers only when NODE_ENV !== 'test'; force the
+      // production path so the (pre-fix) leak is exercised deterministically.
+      process.env.NODE_ENV = 'production';
+      try {
+        parseGraphQLServer.server = undefined;
+        await parseGraphQLServer._getServer();
+        const before = process.listenerCount('SIGTERM') + process.listenerCount('SIGINT');
+        // Force several real schema rebuilds (each new class changes the schema).
+        for (let i = 0; i < 5; i++) {
+          await new Parse.Object(`LeakClass${i}`).save();
+          await parseGraphQLServer._getServer();
+        }
+        const after = process.listenerCount('SIGTERM') + process.listenerCount('SIGINT');
+        // Fix: discarded ApolloServers register no process listeners, so the count is stable.
+        // Baseline: each rebuild leaks a SIGINT + SIGTERM listener (grows by 2 per rebuild).
+        expect(after).toBe(before);
+      } finally {
+        process.env.NODE_ENV = originalNodeEnv;
+      }
+    });
   });
 
   describe('_getGraphQLOptions', () => {
