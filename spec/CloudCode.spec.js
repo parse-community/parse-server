@@ -4144,11 +4144,13 @@ describe('saveFile hooks', () => {
         foo: 'bar',
       },
     };
+
     expect(createFileSpy).toHaveBeenCalledWith(
       jasmine.any(String),
       newData,
       'text/plain',
-      newOptions
+      newOptions,
+      jasmine.objectContaining({ applicationId: 'test', mount: Parse.serverURL })
     );
   });
 
@@ -4176,11 +4178,13 @@ describe('saveFile hooks', () => {
         foo: 'bar',
       },
     };
+
     expect(createFileSpy).toHaveBeenCalledWith(
       jasmine.any(String),
       newData,
       newContentType,
-      newOptions
+      newOptions,
+      jasmine.objectContaining({ applicationId: 'test', mount: Parse.serverURL })
     );
     const expectedFileName = 'donald_duck.pdf';
     expect(file._name.indexOf(expectedFileName)).toBe(file._name.length - expectedFileName.length);
@@ -4206,11 +4210,13 @@ describe('saveFile hooks', () => {
       metadata: { foo: 'bar' },
       tags: { bar: 'foo' },
     };
+
     expect(createFileSpy).toHaveBeenCalledWith(
       jasmine.any(String),
       jasmine.any(Buffer),
       'text/plain',
-      options
+      options,
+      jasmine.objectContaining({ applicationId: 'test', mount: Parse.serverURL })
     );
   });
 
