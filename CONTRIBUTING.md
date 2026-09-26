@@ -306,6 +306,8 @@ Note that the script above will ONLY be executed during initialization of the co
 
 Parse Server includes an automated performance benchmarking system that runs on every pull request to detect performance regressions and track improvements over time.
 
+A benchmark is flagged as a regression if it is more than 25% slower than on the base branch. To rule out noise of the CI runner, a flagged benchmark is measured again 3 times for the base branch and 3 times for the pull request, alternating between them. The check only fails if the regression persists in the medians of these measurements, or if a flagged benchmark cannot be measured again.
+
 #### Adding Tests
 
 You should consider adding performance benchmarks if your contribution:
@@ -342,6 +344,7 @@ Performance benchmarks are located in [`benchmark/performance.js`](benchmark/per
    ```bash
    npm run benchmark:quick  # Quick test with 10 iterations
    npm run benchmark        # Full test with 10,000 iterations
+   BENCHMARK_NAMES='["Feature Name"]' npm run benchmark  # Run only the listed benchmarks
    ```
 
 For new features where no baseline exists, the CI will establish new benchmarks that future PRs will be compared against.
