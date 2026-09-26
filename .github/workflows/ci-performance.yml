@@ -199,6 +199,9 @@ jobs:
           console.log('| Benchmark | Baseline | PR | Change | Status |');
           console.log('|-----------|----------|----|---------| ------ |');
 
+          // Ignore relative changes below this absolute delta (milliseconds).
+          const ABSOLUTE_NOISE_FLOOR_MS = 2;
+
           let hasRegression = false;
           let hasImprovement = false;
 
@@ -214,14 +217,21 @@ jobs:
             const change = ((prValue - baseValue) / baseValue * 100);
             const changeStr = change > 0 ? \`+\${change.toFixed(1)}%\` : \`\${change.toFixed(1)}%\`;
 
+            // Benchmarks measured in fractions of a millisecond move by tens of
+            // percent on ordinary runner noise, so a relative threshold alone
+            // fails unrelated pull requests. Require the absolute change to
+            // clear a floor before the percentage decides the status.
+            const absoluteChange = prValue - baseValue;
+            const clearsNoiseFloor = Math.abs(absoluteChange) >= ABSOLUTE_NOISE_FLOOR_MS;
+
             let status = '✅';
-            if (change > 50) {
+            if (change > 50 && clearsNoiseFloor) {
               status = '❌ Much Slower';
               hasRegression = true;
-            } else if (change > 25) {
+            } else if (change > 25 && clearsNoiseFloor) {
               status = '⚠️ Slower';
               hasRegression = true;
-            } else if (change < -25) {
+            } else if (change < -25 && clearsNoiseFloor) {
               status = '🚀 Faster';
               hasImprovement = true;
             }
