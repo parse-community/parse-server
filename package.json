@@ -85,7 +85,7 @@
     "cross-env": "10.1.0",
     "deep-diff": "1.0.2",
     "eslint": "9.27.0",
-    "eslint-plugin-expect-type": "0.6.2",
+    "eslint-plugin-expect-type": "0.7.0",
     "eslint-plugin-unused-imports": "4.4.1",
     "form-data": "4.0.6",
     "globals": "17.3.0",
