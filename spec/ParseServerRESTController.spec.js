@@ -503,6 +503,15 @@ describe('ParseServerRESTController', () => {
     expect(res.results[0].key).toEqual('value');
   });
 
+  it('sets a loopback ip on the trigger request under direct access (#8806)', async () => {
+    let ip;
+    Parse.Cloud.beforeSave('MyObject', req => {
+      ip = req.ip;
+    });
+    await RESTController.request('POST', '/classes/MyObject', { key: 'value' });
+    expect(['127.0.0.1', '::1']).toContain(ip);
+  });
+
   it('should handle a POST request with context', async () => {
     Parse.Cloud.beforeSave('MyObject', req => {
       expect(req.context.a).toEqual('a');
