@@ -1,3 +1,10 @@
+## [9.10.2-alpha.4](https://github.com/parse-community/parse-server/compare/9.10.2-alpha.3...9.10.2-alpha.4) (2026-09-26)
+
+
+### Bug Fixes
+
+* Parse Server option `graphQLPublicIntrospection` has no effect ([#10696](https://github.com/parse-community/parse-server/issues/10696)) ([1ce39d4](https://github.com/parse-community/parse-server/commit/1ce39d427f2b2a348b33acef9a666cecefd084ce))
+
 ## [9.10.2-alpha.3](https://github.com/parse-community/parse-server/compare/9.10.2-alpha.2...9.10.2-alpha.3) (2026-09-25)
 
 
