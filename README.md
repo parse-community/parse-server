@@ -104,6 +104,8 @@ A big _thank you_ 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
 - [Sponsors](#sponsors)
 - [Backers](#backers)
 
+<a id="flavors--branches"></a>
+
 # Flavors & Branches
 
 Parse Server is available in different flavors on different branches:
@@ -130,6 +132,8 @@ Before you start make sure you have installed:
 - Optionally [Docker](https://www.docker.com/)
 
 ### Compatibility
+
+<a id="nodejs"></a>
 
 #### Node.js
 
@@ -225,6 +229,8 @@ We have provided a basic [Node.js application](https://github.com/parse-communit
 - [Glitch](https://glitch.com/edit/#!/parse-server)
 - [Flynn](https://flynn.io/blog/parse-apps-on-flynn)
 - [Elestio](https://elest.io/open-source/parse)
+
+<a id="parse-server--express"></a>
 
 ### Parse Server + Express
 
@@ -993,6 +999,8 @@ $ docker run --name my-parse-server --link my-mongo:mongo -v config-vol:/parse-s
 After starting the server, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
 
 **_Note:_** Do **_NOT_** use --mountPlayground option in production. The GraphQL Playground exposes the master key in the browser page. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and is the recommended option for production apps.
+
+<a id="using-expressjs"></a>
 
 ### Using Express.js
 
