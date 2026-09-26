@@ -469,6 +469,28 @@ describe('Parse.File testing', () => {
       });
     });
 
+    it('allows accented filename characters', done => {
+      const headers = {
+        'Content-Type': 'text/plain',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      };
+      request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/files/caf%C3%A9.txt',
+        body: 'accented filename',
+      }).then(response => {
+        const b = response.data;
+        expect(b.name).toMatch(/_café.txt$/);
+        expect(b.url).toMatch(/^http:\/\/localhost:8378\/1\/files\/test\/.*caf%C3%A9.txt$/);
+        request({ url: b.url }).then(response => {
+          expect(response.text).toEqual('accented filename');
+          done();
+        });
+      }, fail);
+    });
+
     it('validates filename length', done => {
       const headers = {
         'Content-Type': 'text/plain',

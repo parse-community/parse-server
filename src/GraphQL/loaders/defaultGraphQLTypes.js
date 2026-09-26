@@ -15,8 +15,8 @@ import {
   GraphQLUnionType,
 } from 'graphql';
 import { toGlobalId } from 'graphql-relay';
-import GraphQLUpload from 'graphql-upload/GraphQLUpload.js';
 import Utils from '../../Utils';
+import { getGraphQLUpload } from '../helpers/graphqlUpload';
 
 class TypeValidationError extends Error {
   constructor(value, type) {
@@ -356,21 +356,25 @@ const FILE_INFO = new GraphQLObjectType({
   },
 });
 
-const FILE_INPUT = new GraphQLInputObjectType({
-  name: 'FileInput',
-  description:
-    'If this field is set to null the file will be unlinked (the file will not be deleted on cloud storage).',
-  fields: {
-    file: {
-      description: 'A File Scalar can be an url or a FileInfo object.',
-      type: FILE,
+let GraphQLUpload;
+let FILE_INPUT;
+
+const createFileInputType = graphQLUpload =>
+  new GraphQLInputObjectType({
+    name: 'FileInput',
+    description:
+      'If this field is set to null the file will be unlinked (the file will not be deleted on cloud storage).',
+    fields: {
+      file: {
+        description: 'A File Scalar can be an url or a FileInfo object.',
+        type: FILE,
+      },
+      upload: {
+        description: 'Use this field if you want to create a new file.',
+        type: graphQLUpload,
+      },
     },
-    upload: {
-      description: 'Use this field if you want to create a new file.',
-      type: GraphQLUpload,
-    },
-  },
-});
+  });
 
 const GEO_POINT_FIELDS = {
   latitude: {
@@ -1219,7 +1223,11 @@ const loadArrayResult = (parseGraphQLSchema, parseClassesArray) => {
   parseGraphQLSchema.graphQLTypes.push(ARRAY_RESULT);
 };
 
-const load = parseGraphQLSchema => {
+const load = async parseGraphQLSchema => {
+  GraphQLUpload = await getGraphQLUpload();
+  if (!FILE_INPUT) {
+    FILE_INPUT = createFileInputType(GraphQLUpload);
+  }
   parseGraphQLSchema.addGraphQLType(GraphQLUpload, true);
   parseGraphQLSchema.addGraphQLType(ANY, true);
   parseGraphQLSchema.addGraphQLType(OBJECT, true);

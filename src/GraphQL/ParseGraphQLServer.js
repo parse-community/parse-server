@@ -1,4 +1,3 @@
-import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.js';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@as-integrations/express5';
 import { ApolloServerPluginCacheControlDisabled } from '@apollo/server/plugin/disabled';
@@ -11,6 +10,7 @@ import { ParseGraphQLSchema, RESERVED_GRAPHQL_TYPE_NAMES } from './ParseGraphQLS
 import { READ_PREFERENCE } from './loaders/defaultGraphQLTypes';
 import ParseGraphQLController, { ParseGraphQLConfig } from '../Controllers/ParseGraphQLController';
 import { createComplexityValidationPlugin } from './helpers/queryComplexity';
+import { createGraphQLUploadMiddleware } from './helpers/graphqlUpload';
 
 
 const hasTypeIntrospection = (query) => {
@@ -418,7 +418,7 @@ class ParseGraphQLServer {
     app.use(this.config.graphQLPath, handleParseErrors);
     app.use(
       this.config.graphQLPath,
-      graphqlUploadExpress({
+      createGraphQLUploadMiddleware({
         maxFileSize: this._transformMaxUploadSizeToBytes(
           this.parseServer.config.maxUploadSize || '20mb'
         ),
