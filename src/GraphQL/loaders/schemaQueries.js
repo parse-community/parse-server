@@ -60,7 +60,7 @@ const load = parseGraphQLSchema => {
           enforceMasterKeyAccess(auth, config);
 
           const schema = await config.database.loadSchema({ clearCache: true });
-          return (await schema.getAllClasses(true)).map(parseClass => ({
+          return (await schema.getAllClasses({ clearCache: true })).map(parseClass => ({
             name: parseClass.className,
             schemaFields: transformToGraphQL(parseClass.fields),
           }));
