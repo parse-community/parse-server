@@ -2,6 +2,8 @@
 import Parse from 'parse/node';
 import { logger } from './logger';
 import Utils from './Utils';
+import { inflateQuery, isQuery, applyQueryToRest } from './cloud-code/QueryAdapter';
+import { inflateObject, isObject } from './cloud-code/ObjectAdapter';
 
 export const Types = {
   beforeLogin: 'beforeLogin',
@@ -487,7 +489,7 @@ export function maybeRunAfterFindTrigger(
     const trigger = getTrigger(classNameQuery, triggerType, config.applicationId);
 
     if (!trigger) {
-      if (objectsInput && objectsInput.length > 0 && objectsInput[0] instanceof Parse.Object) {
+      if (objectsInput && objectsInput.length > 0 && isObject(objectsInput[0])) {
         return resolve(objectsInput.map(obj => toJSONwithObjects(obj)));
       }
       return resolve(objectsInput || []);
@@ -495,16 +497,12 @@ export function maybeRunAfterFindTrigger(
 
     const request = getRequestObject(triggerType, auth, null, null, config, context, isGet);
     // Convert query parameter to Parse.Query instance
-    if (query instanceof Parse.Query) {
+    if (isQuery(query)) {
       request.query = query;
     } else if (typeof query === 'object' && query !== null) {
-      const parseQueryInstance = new Parse.Query(classNameQuery);
-      if (query.where) {
-        parseQueryInstance.withJSON(query);
-      }
-      request.query = parseQueryInstance;
+      request.query = inflateQuery(classNameQuery, query);
     } else {
-      request.query = new Parse.Query(classNameQuery);
+      request.query = inflateQuery(classNameQuery);
     }
 
     const { success, error } = getResponseObject(
@@ -521,7 +519,7 @@ export function maybeRunAfterFindTrigger(
       classNameQuery,
       'AfterFind Input (Pre-Transform)',
       JSON.stringify(
-        objectsInput.map(o => (o instanceof Parse.Object ? o.id + ':' + o.className : o))
+        objectsInput.map(o => (isObject(o) ? o.id + ':' + o.className : o))
       ),
       auth,
       config.logLevels.triggerBeforeSuccess
@@ -529,13 +527,13 @@ export function maybeRunAfterFindTrigger(
 
     // Convert plain objects to Parse.Object instances for trigger
     request.objects = objectsInput.map(currentObject => {
-      if (currentObject instanceof Parse.Object) {
+      if (isObject(currentObject)) {
         return currentObject;
       }
       // Preserve the original className if it exists, otherwise use the query className
       const originalClassName = currentObject.className || classNameQuery;
       const tempObjectWithClassName = { ...currentObject, className: originalClassName };
-      return Parse.Object.fromJSON(tempObjectWithClassName);
+      return inflateObject(tempObjectWithClassName);
     });
     return Promise.resolve()
       .then(() => {
@@ -586,8 +584,7 @@ export function maybeRunQueryTrigger(
   const json = Object.assign({}, restOptions);
   json.where = restWhere;
 
-  const parseQuery = new Parse.Query(className);
-  parseQuery.withJSON(json);
+  const parseQuery = inflateQuery(className, json);
 
   let count = false;
   if (restOptions) {
@@ -621,49 +618,10 @@ export function maybeRunQueryTrigger(
           Object.assign(context, requestObject.context);
         }
         let queryResult = parseQuery;
-        if (result && result instanceof Parse.Query) {
+        if (result && isQuery(result)) {
           queryResult = result;
         }
-        const jsonQuery = queryResult.toJSON();
-        if (jsonQuery.where) {
-          restWhere = jsonQuery.where;
-        }
-        if (jsonQuery.limit) {
-          restOptions = restOptions || {};
-          restOptions.limit = jsonQuery.limit;
-        }
-        if (jsonQuery.skip) {
-          restOptions = restOptions || {};
-          restOptions.skip = jsonQuery.skip;
-        }
-        if (jsonQuery.include) {
-          restOptions = restOptions || {};
-          restOptions.include = jsonQuery.include;
-        }
-        if (jsonQuery.excludeKeys) {
-          restOptions = restOptions || {};
-          restOptions.excludeKeys = jsonQuery.excludeKeys;
-        }
-        if (jsonQuery.explain) {
-          restOptions = restOptions || {};
-          restOptions.explain = jsonQuery.explain;
-        }
-        if (jsonQuery.keys) {
-          restOptions = restOptions || {};
-          restOptions.keys = jsonQuery.keys;
-        }
-        if (jsonQuery.order) {
-          restOptions = restOptions || {};
-          restOptions.order = jsonQuery.order;
-        }
-        if (jsonQuery.hint) {
-          restOptions = restOptions || {};
-          restOptions.hint = jsonQuery.hint;
-        }
-        if (jsonQuery.comment) {
-          restOptions = restOptions || {};
-          restOptions.comment = jsonQuery.comment;
-        }
+        ({ restWhere, restOptions } = applyQueryToRest(queryResult, restWhere, restOptions));
         if (requestObject.readPreference) {
           restOptions = restOptions || {};
           restOptions.readPreference = requestObject.readPreference;
@@ -677,11 +635,11 @@ export function maybeRunQueryTrigger(
           restOptions.subqueryReadPreference = requestObject.subqueryReadPreference;
         }
         let objects = undefined;
-        if (result instanceof Parse.Object) {
+        if (isObject(result)) {
           objects = [result];
         } else if (
           Array.isArray(result) &&
-          (!result.length || result.every(obj => obj instanceof Parse.Object))
+          (!result.length || result.every(obj => isObject(obj)))
         ) {
           objects = result;
         }
@@ -1030,15 +988,10 @@ export function maybeRunTrigger(
   });
 }
 
-// Converts a REST-format object to a Parse.Object
-// data is either className or an object
-export function inflate(data, restObject) {
-  var copy = typeof data == 'object' ? data : { className: data };
-  for (var key in restObject) {
-    copy[key] = restObject[key];
-  }
-  return Parse.Object.fromJSON(copy);
-}
+// Converts a REST-format object to a Parse.Object.
+// Thin re-export of the ObjectAdapter conversion seam so existing
+// `triggers.inflate` callers keep working.
+export const inflate = inflateObject;
 
 export function runLiveQueryEventHandlers(data, applicationId = Parse.applicationId) {
   if (!_triggerStore || !_triggerStore[applicationId] || !_triggerStore[applicationId].LiveQuery) {
