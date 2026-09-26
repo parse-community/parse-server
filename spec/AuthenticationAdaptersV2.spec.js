@@ -1702,4 +1702,36 @@ describe('Auth Adapter features', () => {
       expect(res.status).toBeLessThan(500);
     });
   });
+
+  it('reads a user with legacy authData for a now-misconfigured provider (#9885)', async () => {
+    let optionsShouldThrow = false;
+    const legacyProvider = {
+      validateAppId: () => Promise.resolve(),
+      validateSetUp: () => Promise.resolve(),
+      validateUpdate: () => Promise.resolve(),
+      validateLogin: () => Promise.resolve(),
+      validateOptions: () => {
+        // Mirrors e.g. the Twitter adapter throwing when its keys are not (or no
+        // longer) configured on the server.
+        if (optionsShouldThrow) {
+          throw new Error('Consumer key and secret are required.');
+        }
+      },
+      afterFind: () => ({ id: 'user1' }),
+    };
+
+    await reconfigureServer({ auth: { legacyProvider } });
+
+    const user = new Parse.User();
+    await user.save({ authData: { legacyProvider: { id: 'user1' } } });
+    expect(user.id).toBeDefined();
+
+    // The provider becomes unconfigured/misconfigured after the user already
+    // carries its authData; reading that user must not fail.
+    optionsShouldThrow = true;
+
+    const query = new Parse.Query(Parse.User);
+    const fetched = await query.get(user.id, { useMasterKey: true });
+    expect(fetched.id).toEqual(user.id);
+  });
 });
