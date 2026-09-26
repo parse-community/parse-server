@@ -211,6 +211,34 @@ describe('server', () => {
       .catch(done.fail);
   });
 
+  it('does not load the push adapter when push is not configured', async () => {
+    const Controllers = require('../lib/Controllers');
+    const AdapterLoader = require('../lib/Adapters/AdapterLoader');
+    const loadModule = spyOn(AdapterLoader, 'loadModule').and.callThrough();
+    const result = await Controllers.getPushController({ push: undefined });
+    expect(loadModule).not.toHaveBeenCalled();
+    expect(result.hasPushSupport).toBe(false);
+    expect(result.hasPushScheduledSupport).toBe(false);
+    expect(result.pushWorker).toBeUndefined();
+  });
+
+  it('loads the push adapter when push is configured', async () => {
+    const Controllers = require('../lib/Controllers');
+    const AdapterLoader = require('../lib/Adapters/AdapterLoader');
+    const loadModule = spyOn(AdapterLoader, 'loadModule').and.callThrough();
+    const result = await Controllers.getPushController({
+      push: {
+        adapter: {
+          send() {},
+          getValidPushTypes() {},
+        },
+        queueOptions: { disablePushWorker: true },
+      },
+    });
+    expect(loadModule).toHaveBeenCalledWith('@parse/push-adapter');
+    expect(result.hasPushSupport).toBe(true);
+  });
+
   it('can properly sets the push support ', done => {
     reconfigureServer({
       push: {
