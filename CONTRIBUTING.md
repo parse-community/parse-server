@@ -306,7 +306,7 @@ Note that the script above will ONLY be executed during initialization of the co
 
 Parse Server includes an automated performance benchmarking system that runs on every pull request to detect performance regressions and track improvements over time.
 
-A benchmark is flagged as a regression if it is more than 25% slower than on the base branch. To rule out noise of the CI runner, a flagged benchmark is measured again 3 times for the base branch and 3 times for the pull request, alternating between them. The check only fails if the regression persists in the medians of these measurements, or if a flagged benchmark cannot be measured again.
+A benchmark is flagged as a regression if it is more than 25% slower than on the base branch. To rule out noise of the CI runner, a flagged benchmark is measured again 3 times for the base branch and 3 times for the pull request, alternating between them. The check only fails if the regression persists in the medians of these measurements, or if any of these measurements fails.
 
 #### Adding Tests
 

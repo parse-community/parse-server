@@ -193,6 +193,18 @@ describe('Benchmark comparison', () => {
       expect(output).toContain('| A | N/A | N/A | - | ⚠️ Retest failed |');
     });
 
+    it('fails if any retest measurement yields no results for a flagged benchmark', () => {
+      const runner = runnerWith({ base: [null, 1, 1], pr: [1, 1, 1] });
+      const { exitCode, output } = run({
+        baseline: [result('A', 1)],
+        pr: [result('A', 1.3)],
+        runBenchmark: runner.runBenchmark,
+        rounds: 3,
+      });
+      expect(exitCode).toBe(1);
+      expect(output).toContain('| A | N/A | N/A | - | ⚠️ Retest failed |');
+    });
+
     it('fails without retest if flagged benchmarks cannot be measured again', () => {
       const { exitCode, output } = run({
         baseline: [result('A', 1)],

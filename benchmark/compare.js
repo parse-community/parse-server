@@ -151,7 +151,9 @@ function retest({ names, rounds, runBenchmark, log }) {
     }
   }
   return names.map(name => {
-    if (!values.base[name] || !values.pr[name]) {
+    // Only clear a regression if every measurement of both branches succeeded
+    const isComplete = side => (values[side][name] || []).length >= rounds;
+    if (!isComplete('base') || !isComplete('pr')) {
       return { name, status: '⚠️ Retest failed', isRegression: true };
     }
     const baseline = [{ name, value: median(values.base[name]) }];
