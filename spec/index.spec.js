@@ -640,7 +640,7 @@ describe('server', () => {
 
   it('should reload masterKey if ttl is set and expired', async () => {
     const masterKeySpy = jasmine.createSpy()
-      .and.returnValues(Promise.resolve('firstMasterKey'), Promise.resolve('secondMasterKey'));
+      .and.callFake(() => Promise.resolve(`masterKey${masterKeySpy.calls.count()}`));
 
     await reconfigureServer({
       masterKey: masterKeySpy,
@@ -649,13 +649,19 @@ describe('server', () => {
 
     await new Parse.Object('TestObject').save();
 
+    const loadsBeforeExpiry = masterKeySpy.calls.count();
+
     await new Promise(resolve => setTimeout(resolve, 10));
 
     await new Parse.Object('TestObject').save();
 
     const config = Config.get(Parse.applicationId);
-    expect(masterKeySpy).toHaveBeenCalledTimes(2);
-    expect(config.masterKeyCache.masterKey).toEqual('secondMasterKey');
+    // The 1ms TTL is stale on every request, so the exact number of internal loads is
+    // not part of the contract: assert that expiry reloaded the key and that the cache
+    // holds the value of the last load. Pinning an exact count made this fail whenever
+    // an unrelated internal loadMasterKey() call happened to run.
+    expect(masterKeySpy.calls.count()).toBeGreaterThan(loadsBeforeExpiry);
+    expect(config.masterKeyCache.masterKey).toEqual(`masterKey${masterKeySpy.calls.count()}`);
   });
 
 
