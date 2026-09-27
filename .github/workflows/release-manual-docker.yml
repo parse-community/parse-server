@@ -26,6 +26,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.ref }}
+      # Emulation is only needed for refs with a Dockerfile that runs commands on the target platform
       - name: Set up QEMU
         id: qemu
         uses: docker/setup-qemu-action@v2
