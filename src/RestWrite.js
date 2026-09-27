@@ -116,6 +116,9 @@ RestWrite.prototype.execute = function () {
       return this.checkRestrictedFields();
     })
     .then(() => {
+      return this.resolveFileUrls();
+    })
+    .then(() => {
       return this.runBeforeSaveTrigger();
     })
     .then(() => {
@@ -229,6 +232,56 @@ RestWrite.prototype.validateSchema = function () {
   );
 };
 
+// Resolves the URLs of file pointers in the data that have no URL, so that the
+// Parse objects built for triggers and LiveQuery can be encoded.
+RestWrite.prototype.resolveFileUrls = async function () {
+  const files = Object.create(null);
+  const collect = value => {
+    if (!value || typeof value !== 'object') {
+      return;
+    }
+    if (value.__type === 'File') {
+      if (typeof value.name !== 'string' || value.name === '') {
+        throw new Parse.Error(Parse.Error.INCORRECT_TYPE, 'This is not a valid File');
+      }
+      if (!value.url) {
+        files[value.name] = { __type: 'File', name: value.name };
+      }
+      return;
+    }
+    Object.values(value).forEach(collect);
+  };
+  collect(this.data);
+  if (Object.keys(files).length === 0) {
+    return;
+  }
+  await this.config.filesController.expandFilesInObject(this.config, files);
+  this.fileUrls = Object.assign(this.fileUrls || Object.create(null), files);
+};
+
+// Returns a copy of the data with the resolved URLs added to file pointers.
+RestWrite.prototype.cloneWithFileUrls = function (object) {
+  const data = structuredClone(object);
+  if (!this.fileUrls) {
+    return data;
+  }
+  const addUrls = value => {
+    if (!value || typeof value !== 'object') {
+      return;
+    }
+    if (value.__type === 'File') {
+      const file = typeof value.name === 'string' && this.fileUrls[value.name];
+      if (!value.url && file) {
+        value.url = file.url;
+      }
+      return;
+    }
+    Object.values(value).forEach(addUrls);
+  };
+  addUrls(data);
+  return data;
+};
+
 // Runs any beforeSave triggers against this operation.
 // Any change leads to our data being mutated.
 RestWrite.prototype.runBeforeSaveTrigger = function () {
@@ -314,6 +367,10 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
         Utils.checkProhibitedKeywords(this.config, this.data);
       } catch (error) {
         throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `${error}`);
+      }
+      if (response && response.object) {
+        // The trigger may have set file pointers without URL
+        return this.resolveFileUrls();
       }
     });
 };
@@ -1834,19 +1891,27 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
   }
 
   const { originalObject, updatedObject } = this.buildParseObjects();
-  updatedObject._handleSaveResponse(this.response.response, this.response.status || 200);
+  updatedObject._handleSaveResponse(
+    this.cloneWithFileUrls(this.response.response),
+    this.response.status || 200
+  );
 
   if (hasLiveQuery) {
-    this.config.database.loadSchema().then(schemaController => {
-      // Notify LiveQueryServer if possible
-      const perms = schemaController.getClassLevelPermissions(updatedObject.className);
-      this.config.liveQueryController.onAfterSave(
-        updatedObject.className,
-        updatedObject,
-        originalObject,
-        perms
-      );
-    });
+    this.config.database
+      .loadSchema()
+      .then(schemaController => {
+        // Notify LiveQueryServer if possible
+        const perms = schemaController.getClassLevelPermissions(updatedObject.className);
+        this.config.liveQueryController.onAfterSave(
+          updatedObject.className,
+          updatedObject,
+          originalObject,
+          perms
+        );
+      })
+      .catch(err => {
+        logger.error('LiveQuery afterSave notification failed', err);
+      });
   }
   if (!hasAfterSaveHook) {
     return Promise.resolve();
@@ -1899,7 +1964,7 @@ RestWrite.prototype.sanitizedData = function () {
       delete data[key];
     }
     return data;
-  }, structuredClone(this.data));
+  }, this.cloneWithFileUrls(this.data));
   return Parse._decode(undefined, data);
 };
 
@@ -1949,7 +2014,7 @@ RestWrite.prototype.buildParseObjects = function () {
       delete data[key];
     }
     return data;
-  }, structuredClone(this.data));
+  }, this.cloneWithFileUrls(this.data));
 
   const sanitized = this.sanitizedData();
   for (const attribute of readOnlyAttributes) {

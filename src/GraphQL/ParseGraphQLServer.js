@@ -348,6 +348,11 @@ class ParseGraphQLServer {
     const createServer = async () => {
       try {
         const { schema, context } = await this._getGraphQLOptions();
+        // A value passed to this GraphQL server takes precedence; otherwise use the Parse Server
+        // option, where the option is documented and where the security check reads it.
+        const publicIntrospection =
+          this.config.graphQLPublicIntrospection ??
+          this.parseServer.config.graphQLPublicIntrospection;
         const apollo = new ApolloServer({
           csrfPrevention: {
             // See https://www.apollographql.com/docs/router/configuration/csrf/
@@ -357,7 +362,7 @@ class ParseGraphQLServer {
           // We need always true introspection because apollo server have changing behavior based on the NODE_ENV variable
           // we delegate the introspection control to the IntrospectionControlPlugin
           introspection: true,
-          plugins: [ApolloServerPluginCacheControlDisabled(), IntrospectionControlPlugin(this.config.graphQLPublicIntrospection), SchemaSuggestionsControlPlugin(this.config.graphQLPublicIntrospection), createComplexityValidationPlugin(() => this.parseServer.config.requestComplexity)],
+          plugins: [ApolloServerPluginCacheControlDisabled(), IntrospectionControlPlugin(publicIntrospection), SchemaSuggestionsControlPlugin(publicIntrospection), createComplexityValidationPlugin(() => this.parseServer.config.requestComplexity)],
           schema,
         });
         await apollo.start();
