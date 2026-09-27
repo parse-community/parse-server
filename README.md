@@ -403,6 +403,9 @@ The following table lists all route groups covered by `routeAllowList` with exam
 > [!NOTE]
 > The GraphQL API is not covered by `routeAllowList`. `routeAllowList` gates the REST API per route, while every GraphQL operation is transported over a single endpoint with the operation, target class, and field set encoded in the request body — so per-route allow-list semantics do not compose with it.
 
+> [!NOTE]
+> The Pages API is not covered by `routeAllowList`. Its routes (default endpoint `apps`, configurable via `pages.pagesEndpoint`) serve the browser pages for email verification and password reset that Parse Server links to in the emails it sends to end users, so they must remain reachable without any Parse credentials and are not part of the client REST API. Their behavior is controlled by the email verification and password reset options (`verifyUserEmails`, `emailAdapter`) and the `pages` option.
+
 ## Email Verification and Password Reset
 
 Verifying user email addresses and enabling password reset via email requires an email adapter. There are many email adapters provided and maintained by the community. The following is an example configuration with an example email adapter. See the [Parse Server Options][server-options] for more details and a full list of available options.
@@ -682,6 +685,8 @@ Parse Server deduplicates `_Installation` records when a new install collides wi
 #### `duplicateDeviceTokenActionEnforceAuth`
 
 When `true`, the dedup operation runs with the caller's auth context so ACL and CLP are honored. When `false`, the dedup runs as master and bypasses both. Master and maintenance keys always bypass regardless of this flag.
+
+Because what this option enforces is the ACL and the class-level permissions, it has no effect on its own for a record that carries no ACL under permissive class-level permissions. To scope the deduplication, combine this option with either an ACL on `_Installation` records or class-level permissions that withhold the `delete` operation from the caller.
 
 #### `duplicateDeviceTokenAction`
 

@@ -118,4 +118,9 @@ module.exports = [
     changeNewDefault: 'false',
     solution: "Set 'allowAggregationForReadOnlyMasterKey' to 'false' to prevent the read-only master key from running aggregation pipelines, which can include write-capable stages (e.g. '$out', '$merge'). Set to 'true' to keep the current behavior where the read-only master key can run aggregation pipelines.",
   },
+  {
+    optionKey: 'enableLiveQueryClassLevelPermissionRoles',
+    changeNewDefault: 'true',
+    solution: "Set 'enableLiveQueryClassLevelPermissionRoles' to 'true' to include the subscriber's roles when LiveQuery evaluates Class Level Permissions, so that a CLP granting 'find' or 'get' to 'role:<RoleName>' applies to LiveQuery subscriptions the same way it applies to the equivalent REST query. Set to 'false' to keep the current behavior where such a subscription is rejected even for members of that role.",
+  },
 ];

@@ -1205,6 +1205,117 @@ describe('ParseLiveQuery', function () {
     ]);
   });
 
+  it('applies userField protectedFields groups the same way the REST path does', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['ProbeDoc'] },
+      startLiveQueryServer: true,
+    });
+
+    const viewer = new Parse.User();
+    viewer.setUsername('viewer');
+    viewer.setPassword('password');
+    await viewer.signUp();
+
+    const doc = new Parse.Object('ProbeDoc');
+    doc.set('ssn', 'secret');
+    doc.set('note', 'public');
+    doc.set('viewer', viewer);
+    await doc.save(null, { useMasterKey: true });
+
+    const config = Config.get(Parse.applicationId);
+    const schemaController = await config.database.loadSchema();
+    await schemaController.updateClass(
+      'ProbeDoc',
+      {},
+      {
+        get: { '*': true },
+        find: { '*': true },
+        update: { '*': true },
+        protectedFields: {
+          '*': ['ssn'],
+          'userField:viewer': [],
+        },
+      }
+    );
+    Config.get(Parse.applicationId).schemaCache.clear();
+
+    // The REST path exempts the pointed-to viewer, because `userField:` groups
+    // intersect against the other groups.
+    const restDoc = await new Parse.Query('ProbeDoc').get(doc.id, {
+      sessionToken: viewer.getSessionToken(),
+    });
+    expect(restDoc.get('ssn')).toBe('secret');
+
+    const subscription = await new Parse.Query('ProbeDoc').subscribe(viewer.getSessionToken());
+    await Promise.all([
+      new Promise(resolve => {
+        subscription.on('update', obj => {
+          expect(obj.get('ssn')).toBe('secret');
+          expect(obj.get('note')).toBeDefined();
+          resolve();
+        });
+      }),
+      doc.save({ note: 'changed' }, { useMasterKey: true }),
+    ]);
+  });
+
+  it('still strips a userField protected field from a user the pointer does not name', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['ProbeDoc'] },
+      startLiveQueryServer: true,
+    });
+
+    const viewer = new Parse.User();
+    viewer.setUsername('viewer');
+    viewer.setPassword('password');
+    await viewer.signUp();
+
+    const other = new Parse.User();
+    other.setUsername('other');
+    other.setPassword('password');
+    await other.signUp();
+
+    const doc = new Parse.Object('ProbeDoc');
+    doc.set('ssn', 'secret');
+    doc.set('note', 'public');
+    doc.set('viewer', viewer);
+    await doc.save(null, { useMasterKey: true });
+
+    const config = Config.get(Parse.applicationId);
+    const schemaController = await config.database.loadSchema();
+    await schemaController.updateClass(
+      'ProbeDoc',
+      {},
+      {
+        get: { '*': true },
+        find: { '*': true },
+        update: { '*': true },
+        protectedFields: {
+          '*': ['ssn'],
+          'userField:viewer': [],
+        },
+      }
+    );
+    Config.get(Parse.applicationId).schemaCache.clear();
+
+    const restDoc = await new Parse.Query('ProbeDoc').get(doc.id, {
+      sessionToken: other.getSessionToken(),
+    });
+    expect(restDoc.get('ssn')).toBe(undefined);
+
+    const subscription = await new Parse.Query('ProbeDoc').subscribe(other.getSessionToken());
+    await Promise.all([
+      new Promise(resolve => {
+        subscription.on('update', obj => {
+          expect(obj.get('ssn')).toBe(undefined);
+          expect(obj.get('note')).toBeDefined();
+          resolve();
+        });
+      }),
+      doc.save({ note: 'changed' }, { useMasterKey: true }),
+    ]);
+  });
+
   it('can subscribe to query and return object with withinKilometers with last parameter on update', async done => {
     await reconfigureServer({
       liveQuery: {
@@ -1482,6 +1593,217 @@ describe('ParseLiveQuery', function () {
 
       const query = new Parse.Query('SecureChat');
       await expectAsync(query.subscribe()).toBeRejected();
+    });
+
+    it('delivers LiveQuery event when CLP grants find to a role the user belongs to', async () => {
+      await reconfigureServer({
+        liveQuery: {
+          classNames: ['SecureChat'],
+        },
+        startLiveQueryServer: true,
+        enableLiveQueryClassLevelPermissionRoles: true,
+        verbose: false,
+        silent: true,
+      });
+
+      const user = new Parse.User();
+      user.setUsername('moderator');
+      user.setPassword('password');
+      await user.signUp();
+
+      const role = new Parse.Role('Moderator', new Parse.ACL());
+      role.getUsers().add(user);
+      await role.save(null, { useMasterKey: true });
+
+      await setPermissionsOnClass('SecureChat', {
+        create: { '*': true },
+        find: { 'role:Moderator': true },
+        get: { 'role:Moderator': true },
+      });
+
+      const subscription = await new Parse.Query('SecureChat').subscribe(user.getSessionToken());
+      const spy = jasmine.createSpy('create');
+      subscription.on('create', spy);
+
+      const obj = new Parse.Object('SecureChat');
+      obj.set('secret', 'data');
+      await obj.save(null, { useMasterKey: true });
+
+      await sleep(500);
+      expect(spy).toHaveBeenCalledTimes(1);
+    });
+
+    it('matches the REST result when CLP grants find to a role the user belongs to', async () => {
+      await reconfigureServer({
+        liveQuery: {
+          classNames: ['SecureChat'],
+        },
+        startLiveQueryServer: true,
+        enableLiveQueryClassLevelPermissionRoles: true,
+        verbose: false,
+        silent: true,
+      });
+
+      const user = new Parse.User();
+      user.setUsername('moderator');
+      user.setPassword('password');
+      await user.signUp();
+
+      const role = new Parse.Role('Moderator', new Parse.ACL());
+      role.getUsers().add(user);
+      await role.save(null, { useMasterKey: true });
+
+      await setPermissionsOnClass('SecureChat', {
+        create: { '*': true },
+        find: { 'role:Moderator': true },
+        get: { 'role:Moderator': true },
+      });
+
+      const obj = new Parse.Object('SecureChat');
+      obj.set('secret', 'data');
+      await obj.save(null, { useMasterKey: true });
+
+      const restResults = await new Parse.Query('SecureChat').find({
+        sessionToken: user.getSessionToken(),
+      });
+      expect(restResults.length).toBe(1);
+
+      await expectAsync(
+        new Parse.Query('SecureChat').subscribe(user.getSessionToken())
+      ).toBeResolved();
+    });
+
+    it('rejects a role-granted CLP subscription while the role option is disabled', async () => {
+      await reconfigureServer({
+        liveQuery: {
+          classNames: ['SecureChat'],
+        },
+        startLiveQueryServer: true,
+        verbose: false,
+        silent: true,
+      });
+
+      const user = new Parse.User();
+      user.setUsername('moderator');
+      user.setPassword('password');
+      await user.signUp();
+
+      const role = new Parse.Role('Moderator', new Parse.ACL());
+      role.getUsers().add(user);
+      await role.save(null, { useMasterKey: true });
+
+      await setPermissionsOnClass('SecureChat', {
+        create: { '*': true },
+        find: { 'role:Moderator': true },
+        get: { 'role:Moderator': true },
+      });
+
+      const obj = new Parse.Object('SecureChat');
+      obj.set('secret', 'data');
+      await obj.save(null, { useMasterKey: true });
+
+      // REST already serves this caller, so the option is the only thing keeping
+      // LiveQuery more restrictive until the default flips (DEPPS25).
+      const restResults = await new Parse.Query('SecureChat').find({
+        sessionToken: user.getSessionToken(),
+      });
+      expect(restResults.length).toBe(1);
+
+      await expectAsync(
+        new Parse.Query('SecureChat').subscribe(user.getSessionToken())
+      ).toBeRejected();
+    });
+
+    it('delivers LiveQuery event when the subscribe frame omits the session token', async () => {
+      await reconfigureServer({
+        liveQuery: {
+          classNames: ['SecureChat'],
+        },
+        startLiveQueryServer: true,
+        verbose: false,
+        silent: true,
+      });
+
+      const user = new Parse.User();
+      user.setUsername('admin');
+      user.setPassword('password');
+      await user.signUp();
+
+      await setPermissionsOnClass('SecureChat', {
+        create: { '*': true },
+        find: { [user.id]: true },
+        get: { [user.id]: true },
+      });
+
+      // `Parse.Query.subscribe()` copies the current user's token onto the
+      // subscribe frame, so the raw client is the only way to exercise the
+      // protocol's optional `sessionToken`. The identity is then carried by the
+      // connect frame alone, exactly like `_matchesACL` and `getAuthFromClient`
+      // already handle.
+      const liveQueryClient = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+      if (liveQueryClient.shouldOpen()) {
+        liveQueryClient.open();
+      }
+      const subscription = liveQueryClient.subscribe(new Parse.Query('SecureChat'));
+      await subscription.subscribePromise;
+      const spy = jasmine.createSpy('create');
+      subscription.on('create', spy);
+
+      const obj = new Parse.Object('SecureChat');
+      obj.set('secret', 'data');
+      await obj.save(null, { useMasterKey: true });
+
+      await sleep(500);
+      expect(spy).toHaveBeenCalledTimes(1);
+    });
+
+    it('still denies the event when neither frame carries a session token', async () => {
+      await reconfigureServer({
+        liveQuery: {
+          classNames: ['SecureChat'],
+        },
+        startLiveQueryServer: true,
+        verbose: false,
+        silent: true,
+      });
+
+      const user = new Parse.User();
+      user.setUsername('admin');
+      user.setPassword('password');
+      await user.signUp();
+
+      await setPermissionsOnClass('SecureChat', {
+        create: { '*': true },
+        find: { '*': true },
+        get: { '*': true },
+      });
+
+      await Parse.User.logOut();
+      const liveQueryClient = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+      if (liveQueryClient.shouldOpen()) {
+        liveQueryClient.open();
+      }
+      const subscription = liveQueryClient.subscribe(new Parse.Query('SecureChat'));
+      await subscription.subscribePromise;
+      const spy = jasmine.createSpy('create');
+      subscription.on('create', spy);
+
+      await setPermissionsOnClass(
+        'SecureChat',
+        {
+          create: { '*': true },
+          find: { [user.id]: true },
+          get: { [user.id]: true },
+        },
+        true
+      );
+
+      const obj = new Parse.Object('SecureChat');
+      obj.set('secret', 'data');
+      await obj.save(null, { useMasterKey: true });
+
+      await sleep(500);
+      expect(spy).toHaveBeenCalledTimes(0);
     });
   });
 });

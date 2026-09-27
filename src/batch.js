@@ -127,7 +127,8 @@ async function handleBatch(router, req) {
         delete info.sessionToken;
       }
       const fakeReq = {
-        ip: req.ip || req.config?.ip || '127.0.0.1',
+        socket: req.socket,
+        headers: req.headers,
         method: (restRequest.method || 'GET').toUpperCase(),
         _batchOriginalMethod: 'POST',
         config: req.config,

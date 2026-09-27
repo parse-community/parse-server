@@ -375,6 +375,122 @@ describe('routeAllowList', () => {
       });
     });
 
+    describe('Pages exemption', () => {
+      // routeAllowList gates the client-facing REST API. The Pages API serves
+      // the browser pages for email verification and password reset that Parse
+      // Server links to in the emails it sends to end users, so those routes
+      // must remain reachable without Parse credentials. The Pages router is
+      // mounted ahead of the Parse request middleware chain and is not covered
+      // by the allow list; its behavior is governed by the email verification
+      // and password reset options instead.
+      const request = require('../lib/request');
+      const pagesConfig = () => ({
+        appName: 'exampleAppName',
+        publicServerURL: 'http://localhost:8378/1',
+        verifyUserEmails: true,
+        emailAdapter: {
+          sendVerificationEmail: () => Promise.resolve(),
+          sendPasswordResetEmail: () => Promise.resolve(),
+          sendMail: () => {},
+        },
+      });
+      const expectForbidden = promise =>
+        expectAsync(promise).toBeRejectedWith(
+          jasmine.objectContaining({
+            data: jasmine.objectContaining({ code: Parse.Error.OPERATION_FORBIDDEN }),
+          })
+        );
+
+      it('reaches the email verification page when routeAllowList is empty array', async () => {
+        await reconfigureServer({ ...pagesConfig(), routeAllowList: [] });
+        await expectForbidden(request({ method: 'GET', url: 'http://localhost:8378/1/health' }));
+        const response = await request({
+          url: 'http://localhost:8378/1/apps/test/verify_email?token=invalidToken',
+          followRedirects: false,
+        });
+        expect(response.status).toBe(200);
+        expect(response.text).toContain('Invalid verification link!');
+      });
+
+      it('reaches the password reset page when routeAllowList is empty array', async () => {
+        await reconfigureServer({ ...pagesConfig(), routeAllowList: [] });
+        await expectForbidden(
+          request({
+            method: 'POST',
+            url: 'http://localhost:8378/1/requestPasswordReset',
+            headers: {
+              'X-Parse-Application-Id': 'test',
+              'X-Parse-REST-API-Key': 'rest',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email: 'user@example.com' }),
+          })
+        );
+        const response = await request({
+          url: 'http://localhost:8378/1/apps/test/request_password_reset?token=invalidToken',
+          followRedirects: false,
+        });
+        expect(response.status).toBe(200);
+        expect(response.text).toContain('Invalid password reset link!');
+      });
+
+      it('reaches the resend verification email route when routeAllowList is empty array', async () => {
+        await reconfigureServer({ ...pagesConfig(), routeAllowList: [] });
+        const response = await request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/apps/test/resend_verification_email',
+          body: 'username=unknownUser',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          followRedirects: false,
+        }).catch(e => e);
+        expect(response.status).toBe(303);
+        expect(response.headers.location).toContain('email_verification_send_success');
+      });
+
+      it('reaches static pages when routeAllowList is empty array', async () => {
+        await reconfigureServer({ ...pagesConfig(), routeAllowList: [] });
+        const response = await request({
+          url: 'http://localhost:8378/1/apps/password_reset.html',
+          followRedirects: false,
+        });
+        expect(response.status).toBe(200);
+        expect(response.text).toContain('Reset Your Password');
+      });
+
+      it('reaches Pages routes when routeAllowList contains only REST routes', async () => {
+        await reconfigureServer({ ...pagesConfig(), routeAllowList: ['classes/AllowedClass'] });
+        const response = await request({
+          url: 'http://localhost:8378/1/apps/test/verify_email?token=invalidToken',
+          followRedirects: false,
+        });
+        expect(response.status).toBe(200);
+        expect(response.text).toContain('Invalid verification link!');
+      });
+
+      it('completes email verification from the emailed link when routeAllowList is empty array', async () => {
+        const config = { ...pagesConfig(), routeAllowList: [] };
+        await reconfigureServer(config);
+        const sendVerificationEmail = spyOn(
+          config.emailAdapter,
+          'sendVerificationEmail'
+        ).and.callThrough();
+        const user = new Parse.User();
+        user.setUsername('exampleUsername');
+        user.setPassword('examplePassword');
+        user.set('email', 'user@example.com');
+        await user.signUp(null, { useMasterKey: true });
+        await jasmine.timeout();
+        const link = sendVerificationEmail.calls.all()[0].args[0].link;
+        const response = await request({ url: link, followRedirects: false });
+        expect(response.status).toBe(200);
+        expect(response.text).toContain('Email verified!');
+        const verifiedUser = await new Parse.Query(Parse.User)
+          .equalTo('username', 'exampleUsername')
+          .first({ useMasterKey: true });
+        expect(verifiedUser.get('emailVerified')).toBe(true);
+      });
+    });
+
     describe('batch sub-requests', () => {
       // routeAllowList must be enforced per batch sub-request. The outer
       // enforceRouteAllowList middleware runs only on the outer /batch URL,

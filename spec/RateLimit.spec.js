@@ -343,6 +343,192 @@ describe('rate limit', () => {
     await Parse.Cloud.run('test2');
   });
 
+  describe('internal request exemption', () => {
+    const middlewares = require('../lib/middlewares');
+    const loginUrl = 'http://localhost:8378/1/login';
+    const loginBody = JSON.stringify({ username: 'someone', password: 'wrong' });
+    const forwardedHeaders = { ...headers, 'X-Forwarded-For': '127.0.0.1' };
+    const loginRateLimit = {
+      requestPath: '/login',
+      requestTimeWindow: 10000,
+      requestCount: 1,
+      errorResponseMessage: 'Too many requests',
+    };
+    const makeFakeReq = ({ remoteAddress, forwardedFor }) => {
+      const fakeReq = {
+        originalUrl: 'http://example.com/parse/login',
+        url: 'http://example.com/login',
+        path: '/login',
+        method: 'POST',
+        ip: '127.0.0.1',
+        socket: { remoteAddress },
+        body: { _ApplicationId: 'test' },
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        get: key => fakeReq.headers[key],
+      };
+      if (forwardedFor !== undefined) {
+        fakeReq.headers['x-forwarded-for'] = forwardedFor;
+      }
+      return fakeReq;
+    };
+    const runThroughRateLimiter = fakeReq =>
+      new Promise(resolve => {
+        const fakeRes = jasmine.createSpyObj('fakeRes', ['end', 'status', 'setHeader']);
+        fakeRes.json = jasmine.createSpy('json').and.callFake(() => resolve('rejected'));
+        middlewares.handleParseHeaders(fakeReq, fakeRes, () => resolve('next'));
+      });
+
+    it('does not exempt a request that presents X-Forwarded-For 127.0.0.1 when trustProxy is true', async () => {
+      await reconfigureServer({ trustProxy: true, rateLimit: [loginRateLimit] });
+      await request({ method: 'POST', headers: forwardedHeaders, url: loginUrl, body: loginBody }).catch(
+        e => e
+      );
+      const response = await request({
+        method: 'POST',
+        headers: forwardedHeaders,
+        url: loginUrl,
+        body: loginBody,
+      }).catch(e => e);
+      expect(response.status).toBe(429);
+      expect(response.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many requests',
+      });
+    });
+
+    it('does not exempt a global zone rate limit for a request that presents X-Forwarded-For 127.0.0.1 when trustProxy is true', async () => {
+      await reconfigureServer({
+        trustProxy: true,
+        rateLimit: [
+          {
+            requestPath: '/classes/*path',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            errorResponseMessage: 'Too many requests',
+            zone: Parse.Server.RateLimitZone.global,
+          },
+        ],
+      });
+      const url = 'http://localhost:8378/1/classes/MyObject';
+      const body = JSON.stringify({ key: 'value' });
+      await request({ method: 'POST', headers: forwardedHeaders, url, body });
+      const response = await request({ method: 'POST', headers: forwardedHeaders, url, body }).catch(
+        e => e
+      );
+      expect(response.status).toBe(429);
+      expect(response.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many requests',
+      });
+    });
+
+    it('does not exempt batch sub-requests that present X-Forwarded-For 127.0.0.1 when trustProxy is true', async () => {
+      await reconfigureServer({
+        trustProxy: true,
+        rateLimit: [
+          {
+            requestPath: '/classes/*path',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            errorResponseMessage: 'Too many requests',
+          },
+        ],
+      });
+      const response = await request({
+        method: 'POST',
+        headers: forwardedHeaders,
+        url: 'http://localhost:8378/1/batch',
+        body: JSON.stringify({
+          requests: [
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value1' } },
+            { method: 'POST', path: '/1/classes/MyObject', body: { key: 'value2' } },
+          ],
+        }),
+      }).catch(e => e);
+      expect(response.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many requests',
+      });
+    });
+
+    it('does not exempt a request whose resolved ip is 127.0.0.1 but whose socket peer is remote', async () => {
+      await reconfigureServer({ rateLimit: [loginRateLimit] });
+      const first = await runThroughRateLimiter(
+        makeFakeReq({ remoteAddress: '203.0.113.5', forwardedFor: '127.0.0.1' })
+      );
+      expect(first).toBe('next');
+      const second = await runThroughRateLimiter(
+        makeFakeReq({ remoteAddress: '203.0.113.5', forwardedFor: '127.0.0.1' })
+      );
+      expect(second).toBe('rejected');
+    });
+
+    it('does not exempt a request that presents an empty X-Forwarded-For header when trustProxy is true', async () => {
+      await reconfigureServer({ trustProxy: true, rateLimit: [loginRateLimit] });
+      const emptyForwardedHeaders = { ...headers, 'X-Forwarded-For': '' };
+      await request({
+        method: 'POST',
+        headers: emptyForwardedHeaders,
+        url: loginUrl,
+        body: loginBody,
+      }).catch(e => e);
+      const response = await request({
+        method: 'POST',
+        headers: emptyForwardedHeaders,
+        url: loginUrl,
+        body: loginBody,
+      }).catch(e => e);
+      expect(response.status).toBe(429);
+      expect(response.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many requests',
+      });
+    });
+
+    it('does not exempt a request that arrives over loopback with an empty X-Forwarded-For header', async () => {
+      await reconfigureServer({ rateLimit: [loginRateLimit] });
+      const first = await runThroughRateLimiter(
+        makeFakeReq({ remoteAddress: '127.0.0.1', forwardedFor: '' })
+      );
+      expect(first).toBe('next');
+      const second = await runThroughRateLimiter(
+        makeFakeReq({ remoteAddress: '127.0.0.1', forwardedFor: '' })
+      );
+      expect(second).toBe('rejected');
+    });
+
+    it('does not exempt a request that arrives over loopback with an X-Forwarded-For header', async () => {
+      await reconfigureServer({ rateLimit: [loginRateLimit] });
+      const first = await runThroughRateLimiter(
+        makeFakeReq({ remoteAddress: '127.0.0.1', forwardedFor: '203.0.113.5' })
+      );
+      expect(first).toBe('next');
+      const second = await runThroughRateLimiter(
+        makeFakeReq({ remoteAddress: '127.0.0.1', forwardedFor: '203.0.113.5' })
+      );
+      expect(second).toBe('rejected');
+    });
+
+    it('exempts a request that arrives over loopback without an X-Forwarded-For header when includeInternalRequests is false', async () => {
+      await reconfigureServer({ rateLimit: [loginRateLimit] });
+      const first = await runThroughRateLimiter(makeFakeReq({ remoteAddress: '127.0.0.1' }));
+      expect(first).toBe('next');
+      const second = await runThroughRateLimiter(makeFakeReq({ remoteAddress: '127.0.0.1' }));
+      expect(second).toBe('next');
+    });
+
+    it('does not exempt a request that arrives over loopback without an X-Forwarded-For header when includeInternalRequests is true', async () => {
+      await reconfigureServer({ rateLimit: [{ ...loginRateLimit, includeInternalRequests: true }] });
+      const first = await runThroughRateLimiter(makeFakeReq({ remoteAddress: '127.0.0.1' }));
+      expect(first).toBe('next');
+      const second = await runThroughRateLimiter(makeFakeReq({ remoteAddress: '127.0.0.1' }));
+      expect(second).toBe('rejected');
+    });
+  });
+
   describe('zone', () => {
     const middlewares = require('../lib/middlewares');
     it('can use global zone', async () => {
