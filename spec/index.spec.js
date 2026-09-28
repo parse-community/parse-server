@@ -639,23 +639,36 @@ describe('server', () => {
   });
 
   it('should reload masterKey if ttl is set and expired', async () => {
-    const masterKeySpy = jasmine.createSpy()
-      .and.returnValues(Promise.resolve('firstMasterKey'), Promise.resolve('secondMasterKey'));
+    let masterKeyCount = 0;
+    const masterKeySpy = jasmine
+      .createSpy()
+      .and.callFake(() => Promise.resolve(`masterKey${++masterKeyCount}`));
+    const masterKeyTtl = 1000;
+    const before = Date.now();
 
     await reconfigureServer({
       masterKey: masterKeySpy,
-      masterKeyTtl: 1 / 1000, // TTL is set to 1ms
+      masterKeyTtl,
     });
 
     await new Parse.Object('TestObject').save();
+    const after = Date.now();
 
-    await new Promise(resolve => setTimeout(resolve, 10));
+    const config = Config.get(Parse.applicationId);
+    expect(masterKeySpy).toHaveBeenCalledTimes(1);
+    expect(config.masterKeyCache.masterKey).toEqual('masterKey1');
+    const expiresAt = config.masterKeyCache.expiresAt.getTime();
+    expect(expiresAt).toBeGreaterThanOrEqual(before + masterKeyTtl * 1000);
+    expect(expiresAt).toBeLessThanOrEqual(after + masterKeyTtl * 1000);
+
+    // Expire the cached master key; a short TTL would make the test depend on
+    // request timing, as a request looks up the master key more than once
+    config.masterKeyCache.expiresAt = new Date(0);
 
     await new Parse.Object('TestObject').save();
 
-    const config = Config.get(Parse.applicationId);
     expect(masterKeySpy).toHaveBeenCalledTimes(2);
-    expect(config.masterKeyCache.masterKey).toEqual('secondMasterKey');
+    expect(Config.get(Parse.applicationId).masterKeyCache.masterKey).toEqual('masterKey2');
   });
 
 
