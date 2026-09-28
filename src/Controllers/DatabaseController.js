@@ -1925,6 +1925,9 @@ class DatabaseController {
   }
 
   createTransactionalSession() {
+    if (this._transactionalSession) {
+      return Promise.reject(new Error('There is already an active transactional session'));
+    }
     return this.adapter.createTransactionalSession().then(transactionalSession => {
       this._transactionalSession = transactionalSession;
     });
