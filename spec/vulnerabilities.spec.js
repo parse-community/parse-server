@@ -6966,4 +6966,131 @@ describe('Vulnerabilities', () => {
       }
     });
   });
+
+  describe('(GHSA-jhh9-hrgh-c9gv) Transactional batch request can roll back or block writes of other clients', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const post = (path, body) =>
+      request({
+        method: 'POST',
+        url: `http://localhost:8378/1${path}`,
+        headers,
+        body,
+      });
+    const get = path =>
+      request({
+        url: `http://localhost:8378/1${path}`,
+        headers,
+      });
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+    const expectSeparateDatabaseControllers = () => {
+      expect(Config.get('test').database).not.toBe(Config.get('test').database);
+    };
+
+    it('does not share the database controller after the master key is loaded from a function', async () => {
+      await reconfigureServer({ masterKey: () => 'test' });
+      await post('/classes/TestObject', { key: 'value' });
+      expect(Config.get('test').masterKeyCache.masterKey).toBe('test');
+      expectSeparateDatabaseControllers();
+    });
+
+    it('does not share the database controller after the master key is reloaded', async () => {
+      await reconfigureServer({ masterKey: () => 'test', masterKeyTtl: 1000 });
+      await post('/classes/TestObject', { key: 'value' });
+      Config.get('test').masterKeyCache.expiresAt = new Date(0);
+      await post('/classes/TestObject', { key: 'value' });
+      expect(Config.get('test').masterKeyCache.expiresAt.getTime()).toBeGreaterThan(Date.now());
+      expectSeparateDatabaseControllers();
+    });
+
+    it('does not share the database controller after a Cloud Code rate limit is registered', async () => {
+      Parse.Cloud.define('rateLimitedFunction', () => 'ok', {
+        rateLimit: { requestTimeWindow: 10000, requestCount: 1 },
+      });
+      expectSeparateDatabaseControllers();
+    });
+
+    it('does not share the database controller after the server config is set via Parse.Server', async () => {
+      const config = Parse.Server;
+      config.silent = false;
+      Parse.Server = config;
+      expectSeparateDatabaseControllers();
+    });
+
+    it('rejects a transactional session while another one is active on the same database controller', async () => {
+      const database = Config.get('test').database;
+      spyOn(database.adapter, 'createTransactionalSession').and.resolveTo({});
+      await database.createTransactionalSession();
+      await expectAsync(database.createTransactionalSession()).toBeRejectedWithError(
+        'There is already an active transactional session'
+      );
+      expect(database.adapter.createTransactionalSession).toHaveBeenCalledTimes(1);
+    });
+
+    if (
+      process.env.MONGODB_TOPOLOGY === 'replicaset' ||
+      process.env.PARSE_SERVER_TEST_DB === 'postgres'
+    ) {
+      describe('transactions', () => {
+        beforeEach(async () => {
+          await reconfigureServer({ masterKey: () => 'test' });
+          // Transactions only work on existing classes
+          for (const className of ['SlowObject', 'FailingObject', 'OtherObject']) {
+            await post(`/classes/${className}`, { key: 'value' });
+          }
+          Parse.Cloud.beforeSave('SlowObject', () => sleep(500));
+        });
+
+        it('keeps a write of another client that runs during a failing transactional batch', async () => {
+          const batch = post('/batch', {
+            transaction: true,
+            requests: [
+              { method: 'POST', path: '/1/classes/SlowObject', body: { key: 'value' } },
+              { method: 'POST', path: '/1/classes/FailingObject', body: { key: 10 } },
+            ],
+          }).catch(e => e);
+          await sleep(150);
+          const response = await post('/classes/OtherObject', { key: 'other client' });
+          await batch;
+          const object = await get(`/classes/OtherObject/${response.data.objectId}`);
+          expect(object.data.key).toBe('other client');
+        });
+
+        it('completes concurrent transactional batches', async () => {
+          const batch = () =>
+            post('/batch', {
+              transaction: true,
+              requests: [
+                { method: 'POST', path: '/1/classes/SlowObject', body: { key: 'value' } },
+                { method: 'POST', path: '/1/classes/OtherObject', body: { key: 'value' } },
+              ],
+            });
+          const first = batch();
+          await sleep(100);
+          const responses = await Promise.all([first, batch()]);
+          for (const response of responses) {
+            expect(response.data.length).toBe(2);
+            expect(response.data.every(result => result.success)).toBeTrue();
+          }
+          const objects = await get('/classes/OtherObject');
+          expect(objects.data.results.length).toBe(3);
+        });
+
+        it('does not fail writes of other clients after a failing transactional batch', async () => {
+          await post('/batch', {
+            transaction: true,
+            requests: [
+              { method: 'POST', path: '/1/classes/OtherObject', body: { key: 'value' } },
+              { method: 'POST', path: '/1/classes/FailingObject', body: { key: 10 } },
+            ],
+          }).catch(e => e);
+          const response = await post('/classes/OtherObject', { key: 'other client' });
+          expect(response.data.objectId).toBeDefined();
+        });
+      });
+    }
+  });
 });
