@@ -451,6 +451,7 @@ class DatabaseController {
     // multiple schemas, so instead use loadSchema to get a schema.
     this.schemaPromise = null;
     this._transactionalSession = null;
+    this._transactionalSessionPending = false;
     this.options = options;
   }
 
@@ -1925,12 +1926,20 @@ class DatabaseController {
   }
 
   createTransactionalSession() {
-    if (this._transactionalSession) {
+    if (this._transactionalSession || this._transactionalSessionPending) {
       return Promise.reject(new Error('There is already an active transactional session'));
     }
-    return this.adapter.createTransactionalSession().then(transactionalSession => {
-      this._transactionalSession = transactionalSession;
-    });
+    // Reserve the session before it is created, without setting `_transactionalSession`, which
+    // concurrent writes on this controller would otherwise use
+    this._transactionalSessionPending = true;
+    return this.adapter
+      .createTransactionalSession()
+      .then(transactionalSession => {
+        this._transactionalSession = transactionalSession;
+      })
+      .finally(() => {
+        this._transactionalSessionPending = false;
+      });
   }
 
   commitTransactionalSession() {
