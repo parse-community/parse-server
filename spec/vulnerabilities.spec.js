@@ -7892,6 +7892,21 @@ describe('Vulnerabilities', () => {
       await expectAsync(database.createTransactionalSession()).toBeResolved();
     });
 
+    it('allows a transactional session after the creation of a transactional session threw', async () => {
+      const database = Config.get('test').database;
+      let calls = 0;
+      spyOn(database.adapter, 'createTransactionalSession').and.callFake(() => {
+        if (++calls === 1) {
+          throw new Error('creation threw');
+        }
+        return Promise.resolve({});
+      });
+      await expectAsync(database.createTransactionalSession()).toBeRejectedWithError(
+        'creation threw'
+      );
+      await expectAsync(database.createTransactionalSession()).toBeResolved();
+    });
+
     if (
       process.env.MONGODB_TOPOLOGY === 'replicaset' ||
       process.env.PARSE_SERVER_TEST_DB === 'postgres'
@@ -7907,13 +7922,15 @@ describe('Vulnerabilities', () => {
         });
 
         it('keeps a write of another client that runs during a failing transactional batch', async () => {
-          const batch = post('/batch', {
-            transaction: true,
-            requests: [
-              { method: 'POST', path: '/1/classes/SlowObject', body: { key: 'value' } },
-              { method: 'POST', path: '/1/classes/FailingObject', body: { key: 10 } },
-            ],
-          }).catch(e => e);
+          const batch = expectAsync(
+            post('/batch', {
+              transaction: true,
+              requests: [
+                { method: 'POST', path: '/1/classes/SlowObject', body: { key: 'value' } },
+                { method: 'POST', path: '/1/classes/FailingObject', body: { key: 10 } },
+              ],
+            })
+          ).toBeRejected();
           await sleep(150);
           const response = await post('/classes/OtherObject', { key: 'other client' });
           await batch;
@@ -7942,13 +7959,15 @@ describe('Vulnerabilities', () => {
         });
 
         it('does not fail writes of other clients after a failing transactional batch', async () => {
-          await post('/batch', {
-            transaction: true,
-            requests: [
-              { method: 'POST', path: '/1/classes/OtherObject', body: { key: 'value' } },
-              { method: 'POST', path: '/1/classes/FailingObject', body: { key: 10 } },
-            ],
-          }).catch(e => e);
+          await expectAsync(
+            post('/batch', {
+              transaction: true,
+              requests: [
+                { method: 'POST', path: '/1/classes/OtherObject', body: { key: 'value' } },
+                { method: 'POST', path: '/1/classes/FailingObject', body: { key: 10 } },
+              ],
+            })
+          ).toBeRejected();
           const response = await post('/classes/OtherObject', { key: 'other client' });
           expect(response.data.objectId).toBeDefined();
         });
