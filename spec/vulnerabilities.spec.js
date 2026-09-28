@@ -7030,6 +7030,30 @@ describe('Vulnerabilities', () => {
       expect(database.adapter.createTransactionalSession).toHaveBeenCalledTimes(1);
     });
 
+    it('rejects concurrent transactional sessions on the same database controller', async () => {
+      const database = Config.get('test').database;
+      spyOn(database.adapter, 'createTransactionalSession').and.resolveTo({});
+      const results = await Promise.allSettled([
+        database.createTransactionalSession(),
+        database.createTransactionalSession(),
+      ]);
+      expect(results.map(result => result.status)).toEqual(['fulfilled', 'rejected']);
+      expect(results[1].reason.message).toBe('There is already an active transactional session');
+      expect(database.adapter.createTransactionalSession).toHaveBeenCalledTimes(1);
+    });
+
+    it('allows a transactional session after the creation of a transactional session failed', async () => {
+      const database = Config.get('test').database;
+      spyOn(database.adapter, 'createTransactionalSession').and.returnValues(
+        Promise.reject(new Error('creation failed')),
+        Promise.resolve({})
+      );
+      await expectAsync(database.createTransactionalSession()).toBeRejectedWithError(
+        'creation failed'
+      );
+      await expectAsync(database.createTransactionalSession()).toBeResolved();
+    });
+
     if (
       process.env.MONGODB_TOPOLOGY === 'replicaset' ||
       process.env.PARSE_SERVER_TEST_DB === 'postgres'
