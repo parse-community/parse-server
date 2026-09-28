@@ -83,6 +83,11 @@ if (process.env.PARSE_SERVER_DATABASE_ADAPTER) {
 
 const port = 8378;
 const serverURL = `http://localhost:${port}/1`;
+// Set explicitly, because otherwise the Parse JS SDK derives the LiveQuery URL from `Parse.serverURL`
+// when the first default LiveQuery client is created, and keeps it for the whole test run. If that
+// happens while a spec has another Parse Server running, all later default LiveQuery clients connect
+// to that server, even after it has been shut down.
+const liveQueryServerURL = `ws://localhost:${port}/1`;
 let filesAdapter;
 
 on_db(
@@ -228,6 +233,7 @@ beforeAll(async () => {
   await reconfigureServer();
   Parse.initialize('test', 'test', 'test');
   Parse.serverURL = serverURL;
+  Parse.liveQueryServerURL = liveQueryServerURL;
   Parse.User.enableUnsafeCurrentUser();
   Parse.CoreManager.set('REQUEST_ATTEMPT_LIMIT', 1);
 });
@@ -246,6 +252,8 @@ global.afterEachFn = async () => {
 
   Parse.Cloud._removeAllHooks();
   Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient();
+  // Restore the LiveQuery URL in case a spec changed it
+  Parse.liveQueryServerURL = liveQueryServerURL;
   defaults.protectedFields = { _User: { '*': ['email'] } };
 
   const allSchemas = await databaseAdapter.getAllClasses().catch(() => []);
