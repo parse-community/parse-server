@@ -1857,8 +1857,8 @@ class DatabaseController {
     // Reserve the session before it is created, without setting `_transactionalSession`, which
     // concurrent writes on this controller would otherwise use
     this._transactionalSessionPending = true;
-    return this.adapter
-      .createTransactionalSession()
+    return Promise.resolve()
+      .then(() => this.adapter.createTransactionalSession())
       .then(transactionalSession => {
         this._transactionalSession = transactionalSession;
       })
