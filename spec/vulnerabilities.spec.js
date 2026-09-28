@@ -7806,6 +7806,7 @@ describe('Vulnerabilities', () => {
   });
 
   describe('(GHSA-jhh9-hrgh-c9gv) Transactional batch request can roll back or block writes of other clients', () => {
+    const AppCache = require('../lib/cache').AppCache;
     const headers = {
       'X-Parse-Application-Id': 'test',
       'X-Parse-REST-API-Key': 'rest',
@@ -7827,11 +7828,17 @@ describe('Vulnerabilities', () => {
     const expectSeparateDatabaseControllers = () => {
       expect(Config.get('test').database).not.toBe(Config.get('test').database);
     };
+    const expectServerConfigInCache = () => {
+      const cachedConfig = AppCache.get('test');
+      expect(cachedConfig.databaseController).toBeDefined();
+      expect(cachedConfig.database).toBeUndefined();
+    };
 
     it('does not share the database controller after the master key is loaded from a function', async () => {
       await reconfigureServer({ masterKey: () => 'test' });
       await post('/classes/TestObject', { key: 'value' });
       expect(Config.get('test').masterKeyCache.masterKey).toBe('test');
+      expectServerConfigInCache();
       expectSeparateDatabaseControllers();
     });
 
@@ -7841,6 +7848,7 @@ describe('Vulnerabilities', () => {
       Config.get('test').masterKeyCache.expiresAt = new Date(0);
       await post('/classes/TestObject', { key: 'value' });
       expect(Config.get('test').masterKeyCache.expiresAt.getTime()).toBeGreaterThan(Date.now());
+      expectServerConfigInCache();
       expectSeparateDatabaseControllers();
     });
 
@@ -7908,7 +7916,7 @@ describe('Vulnerabilities', () => {
     });
 
     if (
-      process.env.MONGODB_TOPOLOGY === 'replicaset' ||
+      ['replicaset', 'replset'].includes(process.env.MONGODB_TOPOLOGY) ||
       process.env.PARSE_SERVER_TEST_DB === 'postgres'
     ) {
       describe('transactions', () => {
