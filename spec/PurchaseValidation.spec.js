@@ -1,4 +1,31 @@
 const request = require('../lib/request');
+const { https } = require('follow-redirects');
+const { Readable } = require('stream');
+
+// Responds to requests to the App Store with `responseBody` instead of sending them to Apple,
+// and returns the list of requests that were sent.
+function mockAppStore(responseBody) {
+  const requests = [];
+  spyOn(https, 'request').and.callFake((options, callback) => {
+    const chunks = [];
+    return {
+      write: chunk => chunks.push(chunk),
+      on: () => {},
+      end: () => {
+        requests.push({
+          method: options.method,
+          hostname: options.hostname,
+          path: options.path,
+          body: JSON.parse(chunks.join('')),
+        });
+        const response = Readable.from([Buffer.from(JSON.stringify(responseBody))]);
+        response.statusCode = 200;
+        callback(response);
+      },
+    };
+  });
+  return requests;
+}
 
 function createProduct() {
   const file = new Parse.File(
@@ -125,6 +152,7 @@ describe('test validate_receipt endpoint', () => {
   });
 
   it('should fail at appstore validation', async () => {
+    const appStoreRequests = mockAppStore({ status: 21002 });
     const response = await request({
       headers: {
         'X-Parse-Application-Id': 'test',
@@ -141,6 +169,14 @@ describe('test validate_receipt endpoint', () => {
         },
       },
     });
+    expect(appStoreRequests).toEqual([
+      {
+        method: 'POST',
+        hostname: 'buy.itunes.apple.com',
+        path: '/verifyReceipt',
+        body: { 'receipt-data': new Buffer('receipt', 'utf-8').toString('base64') },
+      },
+    ]);
     const body = response.data;
     if (typeof body != 'object') {
       fail('Body is not an object');
