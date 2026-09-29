@@ -818,7 +818,22 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(collection =>
         collection._mongoCollection.createIndex(indexCreationRequest, indexOptions)
       )
-      .catch(err => this.handleError(err));
+      .catch(error => {
+        // MongoDB 8.0 enriches stored index specs with internal fields (e.g. `enableOrderedIndex`)
+        // that Parse Server never sets. Re-issuing an otherwise-identical createIndex on startup
+        // then fails with IndexKeySpecsConflict (86) / IndexOptionsConflict (85) even though a
+        // functionally-equivalent index already exists — which aborts server startup. Treat that
+        // as success (the existing index already serves its purpose), mirroring
+        // ensureAuthDataUniqueness. Logged so a genuine conflict is still visible. (#10431)
+        if (error.code === 85 || error.code === 86) {
+          logger.warn(
+            `Index "${indexName || ''}" on ${className} already exists with a conflicting ` +
+              `specification; keeping the existing index. (code ${error.code})`
+          );
+          return;
+        }
+        return this.handleError(error);
+      });
   }
 
   // Create a unique index. Unique indexes on nullable fields are not allowed. Since we don't
