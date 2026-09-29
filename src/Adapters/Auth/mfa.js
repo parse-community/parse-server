@@ -136,8 +136,10 @@ class MFAAdapter extends AuthAdapter {
         const { token: sendToken, expiry } = await this.sendSMS(mobile);
         auth.mfa.token = sendToken;
         auth.mfa.expiry = expiry;
-        req.object.set('authData', auth);
-        await req.object.save(null, { useMasterKey: true });
+        // Persist only authData. Saving req.object here would re-send the plaintext login
+        // password still dirty on it, re-entering RestWrite as a password change and tripping
+        // the maxPasswordHistory check (#9528).
+        await req.config.database.update('_User', { objectId: req.object.id }, { authData: auth }, {});
         throw 'Please enter the token';
       }
       if (!saved || token !== saved) {
