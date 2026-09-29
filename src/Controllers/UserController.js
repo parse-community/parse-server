@@ -6,6 +6,7 @@ import rest from '../rest';
 import Parse from 'parse/node';
 import AccountLockout from '../AccountLockout';
 import Config from '../Config';
+import logger from '../logger';
 
 var RestQuery = require('../RestQuery');
 var Auth = require('../Auth');
@@ -177,11 +178,16 @@ export class UserController extends AdaptableController {
       link: link,
       user: inflate('_User', fetchedUser),
     };
-    if (this.adapter.sendVerificationEmail) {
-      this.adapter.sendVerificationEmail(options);
-    } else {
-      this.adapter.sendMail(this.defaultVerificationEmail(options));
-    }
+    // Dispatch detached so the request does not block on email delivery, but attach a
+    // catch so a rejected send (e.g. bad SMTP config, throwing apiCallback) is logged
+    // instead of crashing the process with an unhandled rejection (#8496).
+    Promise.resolve()
+      .then(() =>
+        this.adapter.sendVerificationEmail
+          ? this.adapter.sendVerificationEmail(options)
+          : this.adapter.sendMail(this.defaultVerificationEmail(options))
+      )
+      .catch(e => logger.error(`Failed to send verification email: ${e?.message || e}`, { error: e }));
   }
 
   /**
@@ -289,11 +295,15 @@ export class UserController extends AdaptableController {
       user: inflate('_User', user),
     };
 
-    if (this.adapter.sendPasswordResetEmail) {
-      this.adapter.sendPasswordResetEmail(options);
-    } else {
-      this.adapter.sendMail(this.defaultResetPasswordEmail(options));
-    }
+    // Dispatch detached (see sendVerificationEmail) so a rejected send is logged rather
+    // than crashing the process with an unhandled rejection (#8496).
+    Promise.resolve()
+      .then(() =>
+        this.adapter.sendPasswordResetEmail
+          ? this.adapter.sendPasswordResetEmail(options)
+          : this.adapter.sendMail(this.defaultResetPasswordEmail(options))
+      )
+      .catch(e => logger.error(`Failed to send password reset email: ${e?.message || e}`, { error: e }));
 
     return Promise.resolve(user);
   }
