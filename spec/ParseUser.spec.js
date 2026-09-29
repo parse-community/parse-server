@@ -13,6 +13,7 @@ const passwordCrypto = require('../lib/password');
 const Config = require('../lib/Config');
 const cryptoUtils = require('../lib/cryptoUtils');
 const Utils = require('../lib/Utils');
+const { resolvingPromise } = require('../lib/TestUtils');
 
 
 describe('allowExpiredAuthDataToken option', () => {
@@ -3099,10 +3100,12 @@ describe('Parse.User testing', () => {
     await reconfigureServer();
     let emailCalled = false;
     let emailOptions;
+    const sendPromise = resolvingPromise();
     const emailAdapter = {
       sendVerificationEmail: options => {
         emailOptions = options;
         emailCalled = true;
+        sendPromise.resolve();
       },
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve(),
@@ -3147,7 +3150,7 @@ describe('Parse.User testing', () => {
           },
         });
       })
-      .then(() => jasmine.timeout())
+      .then(() => sendPromise)
       .then(() => {
         expect(emailCalled).toBe(true);
         expect(emailOptions).not.toBeUndefined();
@@ -3164,10 +3167,12 @@ describe('Parse.User testing', () => {
   it_id('bf668670-39fa-44d3-a9a9-cad52f36d272')(it)('should not send email when email is not a string', async done => {
     let emailCalled = false;
     let emailOptions;
+    const sendPromise = resolvingPromise();
     const emailAdapter = {
       sendVerificationEmail: options => {
         emailOptions = options;
         emailCalled = true;
+        sendPromise.resolve();
       },
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve(),
@@ -3183,6 +3188,7 @@ describe('Parse.User testing', () => {
     user.set('password', 'zxcv');
     user.set('email', 'asdf@jkl.com');
     await user.signUp();
+    await sendPromise;
     request({
       method: 'POST',
       url: 'http://localhost:8378/1/requestPasswordReset',
