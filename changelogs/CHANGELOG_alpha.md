@@ -1,3 +1,10 @@
+## [9.10.2-alpha.5](https://github.com/parse-community/parse-server/compare/9.10.2-alpha.4...9.10.2-alpha.5) (2026-09-28)
+
+
+### Bug Fixes
+
+* Transactional batch request can roll back or block writes of other clients ([GHSA-jhh9-hrgh-c9gv](https://github.com/parse-community/parse-server/security/advisories/GHSA-jhh9-hrgh-c9gv)) ([#10713](https://github.com/parse-community/parse-server/issues/10713)) ([90b6c9d](https://github.com/parse-community/parse-server/commit/90b6c9d24919803baef4b6da009df3b24d263332)), closes [GHSA-jhh9-hr#c9](https://github.com/GHSA-jhh9-hr/issues/c9) [/github.com/parse-community/parse-server/security/advisories/GHSA-jhh9-hr#c9](https://github.com//github.com/parse-community/parse-server/security/advisories/GHSA-jhh9-hr/issues/c9)
+
 ## [9.10.2-alpha.4](https://github.com/parse-community/parse-server/compare/9.10.2-alpha.3...9.10.2-alpha.4) (2026-09-26)
 
 
