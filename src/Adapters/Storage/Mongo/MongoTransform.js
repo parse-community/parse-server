@@ -577,6 +577,8 @@ const transformInteriorAtom = atom => {
     return DateCoder.JSONToDatabase(atom);
   } else if (BytesCoder.isValidJSON(atom)) {
     return BytesCoder.JSONToDatabase(atom);
+  } else if (Decimal128Coder.isValidJSON(atom)) {
+    return Decimal128Coder.JSONToDatabase(atom);
   } else if (typeof atom === 'object' && atom && atom.$regex !== undefined) {
     return new RegExp(atom.$regex);
   } else {
@@ -634,6 +636,9 @@ function transformTopLevelAtom(atom, field) {
       }
       if (FileCoder.isValidJSON(atom)) {
         return FileCoder.JSONToDatabase(atom);
+      }
+      if (Decimal128Coder.isValidJSON(atom)) {
+        return Decimal128Coder.JSONToDatabase(atom);
       }
       return CannotTransform;
 
@@ -1069,6 +1074,10 @@ const nestedMongoObjectToNestedParseObject = mongoObject => {
         return mongoObject.value;
       }
 
+      if (Decimal128Coder.isValidDatabaseObject(mongoObject)) {
+        return Decimal128Coder.databaseToJSON(mongoObject);
+      }
+
       if (BytesCoder.isValidDatabaseObject(mongoObject)) {
         return BytesCoder.databaseToJSON(mongoObject);
       }
@@ -1130,6 +1139,10 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
 
       if (mongoObject instanceof mongodb.Double) {
         return mongoObject.value;
+      }
+
+      if (Decimal128Coder.isValidDatabaseObject(mongoObject)) {
+        return Decimal128Coder.databaseToJSON(mongoObject);
       }
 
       if (BytesCoder.isValidDatabaseObject(mongoObject)) {
@@ -1267,6 +1280,14 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
                 BytesCoder.isValidDatabaseObject(value)
               ) {
                 restObject[key] = BytesCoder.databaseToJSON(value);
+                break;
+              }
+              if (
+                schema.fields[key] &&
+                schema.fields[key].type === 'Decimal128' &&
+                Decimal128Coder.isValidDatabaseObject(value)
+              ) {
+                restObject[key] = Decimal128Coder.databaseToJSON(value);
                 break;
               }
             }
@@ -1442,6 +1463,64 @@ var FileCoder = {
 
   isValidJSON(value) {
     return typeof value === 'object' && value !== null && value.__type === 'File';
+  },
+};
+
+var Decimal128Coder = {
+  databaseToJSON(object) {
+    if (object instanceof mongodb.Decimal128) {
+      return {
+        __type: 'Decimal128',
+        value: object.toString(),
+      };
+    }
+    // Handle deserialized Decimal128 objects (e.g. across BSON boundaries)
+    const byteArray = new Uint8Array(16);
+    for (let i = 0; i < 16; i++) {
+      byteArray[i] = object.bytes[i];
+    }
+    const reconstructed = new mongodb.Decimal128(Buffer.from(byteArray));
+    return {
+      __type: 'Decimal128',
+      value: reconstructed.toString(),
+    };
+  },
+
+  isValidDatabaseObject(object) {
+    if (object instanceof mongodb.Decimal128) {
+      return true;
+    }
+    // Handle Decimal128 objects that have been serialized/deserialized
+    // across BSON boundaries and lost their prototype
+    if (
+      object &&
+      typeof object === 'object' &&
+      object.bytes &&
+      typeof object.bytes === 'object' &&
+      Object.keys(object).length === 1
+    ) {
+      const keys = Object.keys(object.bytes);
+      if (keys.length === 16 && keys[0] === '0' && keys[15] === '15') {
+        return true;
+      }
+    }
+    return false;
+  },
+
+  JSONToDatabase(json) {
+    if (typeof json.value !== 'string') {
+      throw new Parse.Error(Parse.Error.INVALID_JSON, 'Decimal128 value must be a string');
+    }
+    return mongodb.Decimal128.fromString(json.value);
+  },
+
+  isValidJSON(value) {
+    return (
+      typeof value === 'object' &&
+      value !== null &&
+      value.__type === 'Decimal128' &&
+      typeof value.value === 'string'
+    );
   },
 };
 
