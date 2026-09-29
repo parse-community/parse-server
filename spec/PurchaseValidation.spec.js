@@ -2,8 +2,7 @@ const request = require('../lib/request');
 const { https } = require('follow-redirects');
 const { Readable } = require('stream');
 
-// Responds to requests to the App Store with `responseBody` instead of sending them to Apple,
-// and returns the list of requests that were sent.
+// Mocks the App Store response; returns the requests sent to it.
 function mockAppStore(responseBody) {
   const requests = [];
   spyOn(https, 'request').and.callFake((options, callback) => {
