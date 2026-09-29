@@ -2,6 +2,7 @@
 
 var Parse = require('parse/node').Parse,
   triggers = require('../triggers');
+const { inflateObject } = require('../cloud-code/ObjectAdapter');
 
 import PromiseRouter from '../PromiseRouter';
 import { promiseEnforceMasterKeyAccess, promiseEnsureIdempotency } from '../middlewares';
@@ -43,7 +44,7 @@ function parseObject(obj, config) {
     }
     return Parse.File.fromJSON(obj);
   } else if (obj && obj.__type == 'Pointer') {
-    return Parse.Object.fromJSON({
+    return inflateObject({
       __type: 'Pointer',
       className: obj.className,
       objectId: obj.objectId,

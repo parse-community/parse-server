@@ -162,7 +162,7 @@ export class UserController extends AdaptableController {
     if (typeof shouldSendEmail === 'function') {
       const response = await Promise.resolve(
         this.config.sendUserEmailVerification({
-          user: Parse.Object.fromJSON({ className: '_User', ...fetchedUser }),
+          user: inflate({ className: '_User', ...fetchedUser }),
           master: req.auth?.isMaster,
         })
       );
@@ -205,7 +205,7 @@ export class UserController extends AdaptableController {
       return Promise.resolve(true);
     }
     const shouldSend = await this.setEmailVerifyToken(user, {
-      object: Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
+      object: inflate(Object.assign({ className: '_User' }, user)),
       master,
       installationId,
       ip,

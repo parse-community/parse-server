@@ -1,5 +1,6 @@
 import ClassesRouter from './ClassesRouter';
 import Parse from 'parse/node';
+import { inflateObject } from '../cloud-code/ObjectAdapter';
 import rest from '../rest';
 import Auth from '../Auth';
 import RestWrite from '../RestWrite';
@@ -41,7 +42,7 @@ export class SessionsRouter extends ClassesRouter {
         : new Auth.Auth({
           config: req.config,
           isMaster: false,
-          user: Parse.Object.fromJSON({ className: '_User', objectId: userId }),
+          user: inflateObject({ className: '_User', objectId: userId }),
           installationId: req.info.installationId,
         });
     const response = await rest.get(
@@ -92,7 +93,7 @@ export class SessionsRouter extends ClassesRouter {
         : new Auth.Auth({
           config,
           isMaster: false,
-          user: Parse.Object.fromJSON({ className: '_User', objectId: user.id }),
+          user: inflateObject({ className: '_User', objectId: user.id }),
           installationId: req.auth.installationId,
         });
     const response = await rest.find(
