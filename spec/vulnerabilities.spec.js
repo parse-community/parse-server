@@ -3154,6 +3154,46 @@ describe('Vulnerabilities', () => {
       expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
     });
 
+    it('allows login with authData when public create CLP is disabled', async () => {
+      const authData = { id: '12345', access_token: '12345' };
+      const user = await Parse.User.logInWith('myoauth', { authData });
+      await Parse.User.logOut();
+
+      await updateCLP({
+        get: { '*': true },
+        find: { '*': true },
+        create: {},
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+      });
+
+      const loggedIn = await Parse.User.logInWith('myoauth', { authData });
+      expect(loggedIn.id).toBe(user.id);
+      expect(loggedIn.getSessionToken()).toBeDefined();
+    });
+
+    it('does not allow signup with authData when public create CLP is disabled', async () => {
+      const user = new Parse.User();
+      user.setUsername('existingUser');
+      user.setPassword('password123');
+      await user.signUp();
+      await Parse.User.logOut();
+
+      await updateCLP({
+        get: { '*': true },
+        find: { '*': true },
+        create: {},
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+      });
+
+      await expectAsync(
+        Parse.User.logInWith('myoauth', { authData: { id: '12345', access_token: '12345' } })
+      ).toBeRejectedWith(jasmine.objectContaining({ code: Parse.Error.OPERATION_FORBIDDEN }));
+    });
+
     it('still returns username taken error when public create CLP is enabled', async () => {
       const user = new Parse.User();
       user.setUsername('existingUser');

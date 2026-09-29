@@ -789,7 +789,9 @@ RestWrite.prototype.checkRestrictedFields = async function () {
 // create is disabled on _User, because transformUser checks uniqueness
 // before the CLP is enforced in runDatabaseOperation.
 RestWrite.prototype.validateCreatePermission = async function () {
-  if (this.query || this.auth.isMaster || this.auth.isMaintenance) {
+  // A login with authData has already matched an existing user and set the response;
+  // it creates no object, so the create permission does not apply.
+  if (this.query || this.response || this.auth.isMaster || this.auth.isMaintenance) {
     return;
   }
   if (!this.validSchemaController) {
