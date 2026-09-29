@@ -149,6 +149,15 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     await expectAsync(adapter.getClass('UnknownClass')).toBeRejectedWith(undefined);
   });
 
+  it('findOneAndUpdate rethrows errors other than unique violation errors', async () => {
+    await dropTable(adapter._client, 'MissingClass');
+    const schema = { fields: { foo: { type: 'String' } } };
+    // 42P01: relation does not exist
+    await expectAsync(
+      adapter.findOneAndUpdate('MissingClass', schema, {}, { foo: 'bar' })
+    ).toBeRejectedWith(jasmine.objectContaining({ code: '42P01' }));
+  });
+
   it('$relativeTime should error on $eq', async () => {
     const tableName = '_User';
     const schema = {

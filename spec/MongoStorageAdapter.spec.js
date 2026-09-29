@@ -398,6 +398,18 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       });
   });
 
+  it('findOneAndUpdate rethrows errors other than duplicate key errors', async () => {
+    const adapter = new MongoStorageAdapter({ uri: databaseURI });
+    const schema = { fields: { foo: { type: 'String' } } };
+    const error = new Error('Some database error');
+    // Any code other than the duplicate key error code 11000
+    error.code = 2;
+    spyOn(Collection.prototype, 'findOneAndUpdate').and.rejectWith(error);
+    await expectAsync(
+      adapter.findOneAndUpdate('MyClass', schema, {}, { foo: 'bar' })
+    ).toBeRejectedWith(jasmine.is(error));
+  });
+
   it('handleShutdown, close connection', async () => {
     const adapter = new MongoStorageAdapter({ uri: databaseURI });
 
