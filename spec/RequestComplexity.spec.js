@@ -3,6 +3,7 @@
 const Config = require('../lib/Config');
 const auth = require('../lib/Auth');
 const rest = require('../lib/rest');
+const request = require('../lib/request');
 
 describe('request complexity', () => {
   function buildNestedInQuery(depth, className = '_User') {
@@ -531,6 +532,32 @@ describe('request complexity', () => {
       ).toBeRejected();
       expect(Date.now() - start).toBeLessThan(5000);
     }, 60000);
+
+    for (const queryDepth of [1, -1]) {
+      it(`should reject deeply nested field-level operators without affecting subsequent requests (queryDepth: ${queryDepth})`, async () => {
+        await reconfigureServer({
+          requestComplexity: { queryDepth },
+        });
+        const find = where =>
+          request({
+            method: 'POST',
+            url: `${Parse.serverURL}/classes/_User`,
+            headers: {
+              'X-Parse-Application-Id': Parse.applicationId,
+              'X-Parse-REST-API-Key': 'rest',
+              'Content-Type': 'application/json',
+            },
+            body: { _method: 'GET', where },
+          });
+        let where = { username: 'test' };
+        for (let i = 0; i < 2500; i++) {
+          where = { field: { $elemMatch: where } };
+        }
+        await expectAsync(find(where)).toBeRejected();
+        const response = await find({});
+        expect(response.status).toBe(200);
+      });
+    }
   });
 
   describe('include limits', () => {
