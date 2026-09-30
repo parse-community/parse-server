@@ -1138,6 +1138,7 @@ describe('keycloak auth adapter', () => {
 describe('apple signin auth adapter', () => {
   const apple = require('../lib/Adapters/Auth/apple');
   const jwt = require('jsonwebtoken');
+  const { SigningKeyNotFoundError } = require('jwks-rsa');
   const authUtils = require('../lib/Adapters/Auth/utils');
 
   it('(using client id as string) should throw error with missing id_token', async () => {
@@ -1174,6 +1175,9 @@ describe('apple signin auth adapter', () => {
     const fakeDecodedToken = { header: { kid: '789', alg: 'RS256' } };
     try {
       spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
+      spyOn(authUtils, 'getSigningKey').and.rejectWith(
+        new SigningKeyNotFoundError(`Unable to find a signing key that matches '789'`)
+      );
 
       await apple.validateAuthData(
         { id: 'the_user_id', token: 'the_token' },
@@ -1502,6 +1506,7 @@ describe('phant auth adapter', () => {
 describe('facebook limited auth adapter', () => {
   const facebook = require('../lib/Adapters/Auth/facebook');
   const jwt = require('jsonwebtoken');
+  const { SigningKeyNotFoundError } = require('jwks-rsa');
   const authUtils = require('../lib/Adapters/Auth/utils');
 
   // TODO: figure out a way to run this test alongside facebook classic tests
@@ -1532,6 +1537,9 @@ describe('facebook limited auth adapter', () => {
     };
     try {
       spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
+      spyOn(authUtils, 'getSigningKey').and.rejectWith(
+        new SigningKeyNotFoundError(`Unable to find a signing key that matches '789'`)
+      );
 
       await facebook.validateAuthData(
         { id: 'the_user_id', token: 'the_token' },

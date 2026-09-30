@@ -2875,20 +2875,32 @@ describe('Vulnerabilities', () => {
   });
 
   describe('(GHSA-w54v-hf9p-8856) User enumeration via email verification endpoint', () => {
+    const { resolvingPromise } = require('../lib/TestUtils');
     let sendVerificationEmail;
 
+    // Resolves when the email is sent
+    function verificationEmailSent() {
+      const sendPromise = resolvingPromise();
+      sendVerificationEmail.and.callFake(() => sendPromise.resolve());
+      return sendPromise;
+    }
+
     async function createTestUsers() {
+      let sendPromise = verificationEmailSent();
       const user = new Parse.User();
       user.setUsername('testuser');
       user.setPassword('password123');
       user.set('email', 'unverified@example.com');
       await user.signUp();
+      await sendPromise;
 
+      sendPromise = verificationEmailSent();
       const user2 = new Parse.User();
       user2.setUsername('verifieduser');
       user2.setPassword('password123');
       user2.set('email', 'verified@example.com');
       await user2.signUp();
+      await sendPromise;
       const config = Config.get(Parse.applicationId);
       await config.database.update(
         '_User',
@@ -2944,6 +2956,7 @@ describe('Vulnerabilities', () => {
 
       it('returns success for unverified email', async () => {
         sendVerificationEmail.calls.reset();
+        const sendPromise = verificationEmailSent();
         const response = await request({
           url: 'http://localhost:8378/1/verificationEmailRequest',
           method: 'POST',
@@ -2956,7 +2969,7 @@ describe('Vulnerabilities', () => {
         });
         expect(response.status).toBe(200);
         expect(response.data).toEqual({});
-        await jasmine.timeout();
+        await sendPromise;
         expect(sendVerificationEmail).toHaveBeenCalledTimes(1);
       });
 
@@ -3039,6 +3052,7 @@ describe('Vulnerabilities', () => {
 
       it('sends verification email for unverified email', async () => {
         sendVerificationEmail.calls.reset();
+        const sendPromise = verificationEmailSent();
         await request({
           url: 'http://localhost:8378/1/verificationEmailRequest',
           method: 'POST',
@@ -3049,7 +3063,7 @@ describe('Vulnerabilities', () => {
             'Content-Type': 'application/json',
           },
         });
-        await jasmine.timeout();
+        await sendPromise;
         expect(sendVerificationEmail).toHaveBeenCalledTimes(1);
       });
     });

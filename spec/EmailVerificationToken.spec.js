@@ -544,10 +544,12 @@ describe('Email Verification Token Expiration:', () => {
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => {},
     };
+    let sendPromise = resolvingPromise();
     const sendVerificationEmail = {
       method(req) {
         expect(req.user).toBeDefined();
         expect(req.master).toBeDefined();
+        sendPromise.resolve();
         return false;
       },
     };
@@ -566,8 +568,12 @@ describe('Email Verification Token Expiration:', () => {
     newUser.setPassword('expiringToken');
     newUser.set('email', 'user@example.com');
     await newUser.signUp();
+    await sendPromise;
+    sendPromise = resolvingPromise();
     await Parse.User.requestEmailVerification('user@example.com');
-    await sleep(100);
+    await sendPromise;
+    // Let the server handle the return value
+    await new Promise(resolve => setImmediate(resolve));
     expect(sendSpy).toHaveBeenCalledTimes(2);
     expect(emailSpy).toHaveBeenCalledTimes(0);
   });
@@ -578,6 +584,7 @@ describe('Email Verification Token Expiration:', () => {
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => {},
     };
+    let sendPromise = resolvingPromise();
     const sendVerificationEmail = {
       method(req) {
         expect(req.user).toBeDefined();
@@ -585,6 +592,7 @@ describe('Email Verification Token Expiration:', () => {
         expect(req.user.get('createdAt')).toBeDefined();
         expect(req.user.get('updatedAt')).toBeDefined();
         expect(req.master).toBeDefined();
+        sendPromise.resolve();
         return false;
       },
     };
@@ -601,11 +609,14 @@ describe('Email Verification Token Expiration:', () => {
     user.setUsername('new@example.com');
     user.setEmail('user@example.com');
     await user.save(null, { useMasterKey: true });
+    await sendPromise;
 
     // Update email and username
+    sendPromise = resolvingPromise();
     user.setUsername('new@example.com');
     user.setEmail('new@example.com');
     await user.save(null, { useMasterKey: true });
+    await sendPromise;
   });
 
   it_id('a8c1f820-822f-4a37-9d08-a968cac8369d')(it)('beforeSave options do not change existing behaviour', async () => {
