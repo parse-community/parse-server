@@ -7184,12 +7184,20 @@ describe('Vulnerabilities', () => {
     };
     const errorLogged = message =>
       loggerErrorSpy.calls.allArgs().some(args => args[0] === message);
-    const expectErrorLogged = async (message, reason) => {
+    const expectErrorLogged = async (message, loggedError) => {
       for (let i = 0; i < 100 && !unhandled.length && !errorLogged(message); i++) {
         await sleep(10);
       }
       expect(unhandled).toEqual([]);
-      expect(loggerErrorSpy).toHaveBeenCalledWith(message, reason);
+      expect(loggerErrorSpy).toHaveBeenCalledWith(message, { error: loggedError });
+    };
+    const errorWithRequestData = () => {
+      const e = new Error('mail provider error');
+      e.config = { headers: { Authorization: 'Bearer secret-api-key' } };
+      return e;
+    };
+    const expectRequestDataNotLogged = () => {
+      expect(JSON.stringify(loggerErrorSpy.calls.allArgs())).not.toContain('secret-api-key');
     };
 
     describe('verification email', () => {
@@ -7206,7 +7214,7 @@ describe('Vulnerabilities', () => {
         });
         const res = await signUp();
         expect(res.status).toBe(201);
-        await expectErrorLogged(message, error);
+        await expectErrorLogged(message, error.stack);
       });
 
       it('handles synchronous error of email adapter on sign-up', async () => {
@@ -7222,7 +7230,7 @@ describe('Vulnerabilities', () => {
         });
         const res = await signUp();
         expect(res.status).toBe(201);
-        await expectErrorLogged(message, error);
+        await expectErrorLogged(message, error.stack);
       });
 
       it('handles rejection of email adapter sendMail on sign-up', async () => {
@@ -7234,7 +7242,7 @@ describe('Vulnerabilities', () => {
         });
         const res = await signUp();
         expect(res.status).toBe(201);
-        await expectErrorLogged(message, error);
+        await expectErrorLogged(message, error.stack);
       });
 
       it('handles error of sendUserEmailVerification on sign-up', async () => {
@@ -7251,7 +7259,7 @@ describe('Vulnerabilities', () => {
         });
         const res = await signUp();
         expect(res.status).toBe(201);
-        await expectErrorLogged(message, error);
+        await expectErrorLogged(message, error.stack);
       });
 
       it('handles user deleted before verification email is sent', async () => {
@@ -7278,7 +7286,40 @@ describe('Vulnerabilities', () => {
           headers: { ...headers, 'X-Parse-Master-Key': 'test' },
         });
         userDeleted.resolve();
-        await expectErrorLogged(message, undefined);
+        await expectErrorLogged(message, 'undefined');
+      });
+
+      it('does not log properties of email adapter error', async () => {
+        const adapterError = errorWithRequestData();
+        await reconfigure({
+          verifyUserEmails: true,
+          emailAdapter: {
+            sendVerificationEmail: () => Promise.reject(adapterError),
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => Promise.resolve(),
+          },
+        });
+        await signUp();
+        await expectErrorLogged(message, adapterError.stack);
+        expectRequestDataNotLogged();
+      });
+
+      it('does not log properties of sendUserEmailVerification error', async () => {
+        const callbackError = errorWithRequestData();
+        await reconfigure({
+          verifyUserEmails: true,
+          sendUserEmailVerification: () => {
+            throw callbackError;
+          },
+          emailAdapter: {
+            sendVerificationEmail: () => Promise.resolve(),
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => Promise.resolve(),
+          },
+        });
+        await signUp();
+        await expectErrorLogged(message, callbackError.stack);
+        expectRequestDataNotLogged();
       });
 
       describe('resend', () => {
@@ -7317,7 +7358,7 @@ describe('Vulnerabilities', () => {
           const res = await post('/verificationEmailRequest', { email: 'user@example.com' });
           expect(res.status).toBe(200);
           expect(res.data).toEqual({});
-          await expectErrorLogged(message, error);
+          await expectErrorLogged(message, error.stack);
         });
 
         it('handles rejection of email adapter on resend verification email page', async () => {
@@ -7325,7 +7366,7 @@ describe('Vulnerabilities', () => {
           const res = await resend();
           expect(res.status).toBe(302);
           expect(res.text).toContain('link_send_success.html');
-          await expectErrorLogged(message, error);
+          await expectErrorLogged(message, error.stack);
         });
 
         it('handles rejection of email adapter on resend verification email page with pages router', async () => {
@@ -7333,7 +7374,7 @@ describe('Vulnerabilities', () => {
           const res = await resend();
           expect(res.status).toBe(303);
           expect(res.text).toContain('email_verification_send_success.html');
-          await expectErrorLogged(message, error);
+          await expectErrorLogged(message, error.stack);
         });
       });
     });
@@ -7355,7 +7396,7 @@ describe('Vulnerabilities', () => {
           sendPasswordResetEmail: () => Promise.reject(error),
           sendMail: () => Promise.resolve(),
         });
-        await expectErrorLogged(message, error);
+        await expectErrorLogged(message, error.stack);
       });
 
       it('handles synchronous error of email adapter', async () => {
@@ -7366,14 +7407,25 @@ describe('Vulnerabilities', () => {
           },
           sendMail: () => Promise.resolve(),
         });
-        await expectErrorLogged(message, error);
+        await expectErrorLogged(message, error.stack);
       });
 
       it('handles rejection of email adapter sendMail', async () => {
         await requestPasswordReset({
           sendMail: () => Promise.reject(error),
         });
-        await expectErrorLogged(message, error);
+        await expectErrorLogged(message, error.stack);
+      });
+
+      it('does not log properties of email adapter error', async () => {
+        const adapterError = errorWithRequestData();
+        await requestPasswordReset({
+          sendVerificationEmail: () => Promise.resolve(),
+          sendPasswordResetEmail: () => Promise.reject(adapterError),
+          sendMail: () => Promise.resolve(),
+        });
+        await expectErrorLogged(message, adapterError.stack);
+        expectRequestDataNotLogged();
       });
     });
   });

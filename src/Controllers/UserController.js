@@ -186,7 +186,7 @@ export class UserController extends AdaptableController {
           : this.adapter.sendMail(this.defaultVerificationEmail(options))
       );
     } catch (error) {
-      logger.error('Failed to send verification email', error);
+      logSendEmailError('verification', error);
     }
   }
 
@@ -380,8 +380,15 @@ async function sendEmail(name, send) {
   try {
     await send();
   } catch (error) {
-    logger.error(`Failed to send ${name} email`, error);
+    logSendEmailError(name, error);
   }
+}
+
+// Omits error properties, which may contain credentials or email content
+function logSendEmailError(name, error) {
+  logger.error(`Failed to send ${name} email`, {
+    error: error?.stack || error?.message || String(error),
+  });
 }
 
 function buildEmailLink(destination, token, config) {
