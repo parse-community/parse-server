@@ -249,6 +249,36 @@ describe('batch', () => {
         expect(results.map(result => result.get('key')).sort()).toEqual(['value1', 'value2']);
       });
 
+      it('should not fail a transaction when its requests reach the database out of order', async () => {
+        // The sub-requests of a transactional batch run in parallel on one session; a write that
+        // reaches the database before the one that starts the transaction must not fail with
+        // NoSuchTransaction (251)
+        const objects = [];
+        for (let i = 0; i < 6; i++) {
+          objects.push(new Parse.Object('MyObject', { key: i }));
+        }
+        await Parse.Object.saveAll(objects);
+        for (let round = 0; round < 20; round++) {
+          const response = await request({
+            method: 'POST',
+            headers: headers,
+            url: 'http://localhost:8378/1/batch',
+            body: JSON.stringify({
+              requests: objects.map(object => ({
+                method: 'PUT',
+                path: `/1/classes/MyObject/${object.id}`,
+                body: { round },
+              })),
+              transaction: true,
+            }),
+          });
+          expect(response.data.length).toEqual(objects.length);
+          expect(response.data.every(result => result.success)).toBeTrue();
+        }
+        const results = await new Parse.Query('MyObject').find();
+        expect(results.map(result => result.get('round'))).toEqual(objects.map(() => 19));
+      });
+
       it('should not save anything when one operation fails in a transaction', async () => {
         const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
         await myObject.save({ key: 'stringField' });

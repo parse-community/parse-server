@@ -1272,10 +1272,24 @@ export class MongoStorageAdapter implements StorageAdapter {
       .catch(err => this.handleError(err));
   }
 
-  createTransactionalSession(): Promise<any> {
+  async createTransactionalSession(): Promise<any> {
+    await this.connect();
     const transactionalSection = this.client.startSession();
     transactionalSection.startTransaction();
-    return Promise.resolve(transactionalSection);
+    // The MongoDB driver starts the transaction with the first command sent in the session, but
+    // a transactional batch sends its requests in parallel over different connections; a command
+    // that reaches the database before the one starting the transaction fails with
+    // NoSuchTransaction (251). Start the transaction before the session is handed out, with a
+    // lookup that matches nothing in a collection that always exists.
+    try {
+      await this.database
+        .collection(this._collectionPrefix + MongoSchemaCollectionName)
+        .findOne({ _id: null }, { session: transactionalSection });
+    } catch (error) {
+      await transactionalSection.endSession();
+      return this.handleError(error);
+    }
+    return transactionalSection;
   }
 
   commitTransactionalSession(transactionalSection: any): Promise<void> {
