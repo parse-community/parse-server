@@ -6,6 +6,7 @@ import rest from '../rest';
 import Parse from 'parse/node';
 import AccountLockout from '../AccountLockout';
 import Config from '../Config';
+import logger from '../logger';
 
 var RestQuery = require('../RestQuery');
 var Auth = require('../Auth');
@@ -150,37 +151,42 @@ export class UserController extends AdaptableController {
     return result.results[0];
   }
 
+  // Never rejects; errors are logged
   async sendVerificationEmail(user, req) {
-    if (!this.shouldVerifyEmails) {
-      return;
-    }
-    const token = encodeURIComponent(user._email_verify_token);
-    // We may need to fetch the user in case of update email; only use the `fetchedUser`
-    // from this point onwards; do not use the `user` as it may not contain all fields.
-    const fetchedUser = await this.getUserIfNeeded(user);
-    let shouldSendEmail = this.config.sendUserEmailVerification;
-    if (typeof shouldSendEmail === 'function') {
-      const response = await Promise.resolve(
-        this.config.sendUserEmailVerification({
-          user: Parse.Object.fromJSON({ className: '_User', ...fetchedUser }),
-          master: req.auth?.isMaster,
-        })
+    try {
+      if (!this.shouldVerifyEmails) {
+        return;
+      }
+      const token = encodeURIComponent(user._email_verify_token);
+      // We may need to fetch the user in case of update email; only use the `fetchedUser`
+      // from this point onwards; do not use the `user` as it may not contain all fields.
+      const fetchedUser = await this.getUserIfNeeded(user);
+      let shouldSendEmail = this.config.sendUserEmailVerification;
+      if (typeof shouldSendEmail === 'function') {
+        const response = await Promise.resolve(
+          this.config.sendUserEmailVerification({
+            user: Parse.Object.fromJSON({ className: '_User', ...fetchedUser }),
+            master: req.auth?.isMaster,
+          })
+        );
+        shouldSendEmail = !!response;
+      }
+      if (!shouldSendEmail) {
+        return;
+      }
+      const link = buildEmailLink(this.config.verifyEmailURL, token, this.config);
+      const options = {
+        appName: this.config.appName,
+        link: link,
+        user: inflate('_User', fetchedUser),
+      };
+      sendEmail('verification', () =>
+        this.adapter.sendVerificationEmail
+          ? this.adapter.sendVerificationEmail(options)
+          : this.adapter.sendMail(this.defaultVerificationEmail(options))
       );
-      shouldSendEmail = !!response;
-    }
-    if (!shouldSendEmail) {
-      return;
-    }
-    const link = buildEmailLink(this.config.verifyEmailURL, token, this.config);
-    const options = {
-      appName: this.config.appName,
-      link: link,
-      user: inflate('_User', fetchedUser),
-    };
-    if (this.adapter.sendVerificationEmail) {
-      this.adapter.sendVerificationEmail(options);
-    } else {
-      this.adapter.sendMail(this.defaultVerificationEmail(options));
+    } catch (error) {
+      logger.error('Failed to send verification email', error);
     }
   }
 
@@ -289,11 +295,11 @@ export class UserController extends AdaptableController {
       user: inflate('_User', user),
     };
 
-    if (this.adapter.sendPasswordResetEmail) {
-      this.adapter.sendPasswordResetEmail(options);
-    } else {
-      this.adapter.sendMail(this.defaultResetPasswordEmail(options));
-    }
+    sendEmail('password reset', () =>
+      this.adapter.sendPasswordResetEmail
+        ? this.adapter.sendPasswordResetEmail(options)
+        : this.adapter.sendMail(this.defaultResetPasswordEmail(options))
+    );
 
     return Promise.resolve(user);
   }
@@ -367,6 +373,15 @@ function updateUserPassword(user, password, config) {
       }
     )
     .then(() => user);
+}
+
+// Never rejects; errors are logged
+async function sendEmail(name, send) {
+  try {
+    await send();
+  } catch (error) {
+    logger.error(`Failed to send ${name} email`, error);
+  }
 }
 
 function buildEmailLink(destination, token, config) {

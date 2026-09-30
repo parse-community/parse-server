@@ -7144,4 +7144,237 @@ describe('Vulnerabilities', () => {
       });
     }
   });
+
+  describe('(GHSA-46jj-qw3p-48fc) Error when sending verification or password reset email', () => {
+    const { resolvingPromise, sleep } = require('../lib/TestUtils');
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const post = (path, body) =>
+      request({
+        method: 'POST',
+        url: `http://localhost:8378/1${path}`,
+        headers,
+        body,
+      });
+    const signUp = () =>
+      post('/users', { username: 'user', password: 'password', email: 'user@example.com' });
+    const error = new Error('mail provider error');
+
+    let unhandled;
+    let loggerErrorSpy;
+    const onUnhandled = reason => unhandled.push(reason);
+    beforeEach(() => {
+      unhandled = [];
+      process.on('unhandledRejection', onUnhandled);
+    });
+    afterEach(() => {
+      process.removeListener('unhandledRejection', onUnhandled);
+    });
+
+    const reconfigure = async options => {
+      await reconfigureServer({
+        appName: 'test',
+        publicServerURL: 'http://localhost:8378/1',
+        ...options,
+      });
+      loggerErrorSpy = spyOn(require('../lib/logger').default, 'error').and.callFake(() => {});
+    };
+    const errorLogged = message =>
+      loggerErrorSpy.calls.allArgs().some(args => args[0] === message);
+    const expectErrorLogged = async (message, reason) => {
+      for (let i = 0; i < 100 && !unhandled.length && !errorLogged(message); i++) {
+        await sleep(10);
+      }
+      expect(unhandled).toEqual([]);
+      expect(loggerErrorSpy).toHaveBeenCalledWith(message, reason);
+    };
+
+    describe('verification email', () => {
+      const message = 'Failed to send verification email';
+
+      it('handles rejection of email adapter on sign-up', async () => {
+        await reconfigure({
+          verifyUserEmails: true,
+          emailAdapter: {
+            sendVerificationEmail: () => Promise.reject(error),
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => Promise.resolve(),
+          },
+        });
+        const res = await signUp();
+        expect(res.status).toBe(201);
+        await expectErrorLogged(message, error);
+      });
+
+      it('handles synchronous error of email adapter on sign-up', async () => {
+        await reconfigure({
+          verifyUserEmails: true,
+          emailAdapter: {
+            sendVerificationEmail: () => {
+              throw error;
+            },
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => Promise.resolve(),
+          },
+        });
+        const res = await signUp();
+        expect(res.status).toBe(201);
+        await expectErrorLogged(message, error);
+      });
+
+      it('handles rejection of email adapter sendMail on sign-up', async () => {
+        await reconfigure({
+          verifyUserEmails: true,
+          emailAdapter: {
+            sendMail: () => Promise.reject(error),
+          },
+        });
+        const res = await signUp();
+        expect(res.status).toBe(201);
+        await expectErrorLogged(message, error);
+      });
+
+      it('handles error of sendUserEmailVerification on sign-up', async () => {
+        await reconfigure({
+          verifyUserEmails: true,
+          sendUserEmailVerification: () => {
+            throw error;
+          },
+          emailAdapter: {
+            sendVerificationEmail: () => Promise.resolve(),
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => Promise.resolve(),
+          },
+        });
+        const res = await signUp();
+        expect(res.status).toBe(201);
+        await expectErrorLogged(message, error);
+      });
+
+      it('handles user deleted before verification email is sent', async () => {
+        await reconfigure({
+          verifyUserEmails: true,
+          emailAdapter: {
+            sendVerificationEmail: () => Promise.resolve(),
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => Promise.resolve(),
+          },
+        });
+        const userController = Config.get('test').userController;
+        const getUserIfNeeded = userController.getUserIfNeeded.bind(userController);
+        const userDeleted = resolvingPromise();
+        spyOn(userController, 'getUserIfNeeded').and.callFake(async user => {
+          await userDeleted;
+          return getUserIfNeeded(user);
+        });
+        const res = await signUp();
+        expect(res.status).toBe(201);
+        await request({
+          method: 'DELETE',
+          url: `http://localhost:8378/1/users/${res.data.objectId}`,
+          headers: { ...headers, 'X-Parse-Master-Key': 'test' },
+        });
+        userDeleted.resolve();
+        await expectErrorLogged(message, undefined);
+      });
+
+      describe('resend', () => {
+        const setUp = async (options = {}) => {
+          const firstSend = resolvingPromise();
+          let sendCount = 0;
+          await reconfigure({
+            verifyUserEmails: true,
+            emailAdapter: {
+              sendVerificationEmail: () => {
+                sendCount++;
+                if (sendCount === 1) {
+                  firstSend.resolve();
+                  return Promise.resolve();
+                }
+                return Promise.reject(error);
+              },
+              sendPasswordResetEmail: () => Promise.resolve(),
+              sendMail: () => Promise.resolve(),
+            },
+            ...options,
+          });
+          await signUp();
+          await firstSend;
+        };
+        const resend = () =>
+          request({
+            method: 'POST',
+            url: 'http://localhost:8378/1/apps/test/resend_verification_email',
+            followRedirects: false,
+            body: { username: 'user' },
+          });
+
+        it('handles rejection of email adapter on verification email request', async () => {
+          await setUp();
+          const res = await post('/verificationEmailRequest', { email: 'user@example.com' });
+          expect(res.status).toBe(200);
+          expect(res.data).toEqual({});
+          await expectErrorLogged(message, error);
+        });
+
+        it('handles rejection of email adapter on resend verification email page', async () => {
+          await setUp();
+          const res = await resend();
+          expect(res.status).toBe(302);
+          expect(res.text).toContain('link_send_success.html');
+          await expectErrorLogged(message, error);
+        });
+
+        it('handles rejection of email adapter on resend verification email page with pages router', async () => {
+          await setUp({ pages: { enableRouter: true } });
+          const res = await resend();
+          expect(res.status).toBe(303);
+          expect(res.text).toContain('email_verification_send_success.html');
+          await expectErrorLogged(message, error);
+        });
+      });
+    });
+
+    describe('password reset email', () => {
+      const message = 'Failed to send password reset email';
+
+      const requestPasswordReset = async emailAdapter => {
+        await reconfigure({ emailAdapter });
+        await signUp();
+        const res = await post('/requestPasswordReset', { email: 'user@example.com' });
+        expect(res.status).toBe(200);
+        expect(res.data).toEqual({});
+      };
+
+      it('handles rejection of email adapter', async () => {
+        await requestPasswordReset({
+          sendVerificationEmail: () => Promise.resolve(),
+          sendPasswordResetEmail: () => Promise.reject(error),
+          sendMail: () => Promise.resolve(),
+        });
+        await expectErrorLogged(message, error);
+      });
+
+      it('handles synchronous error of email adapter', async () => {
+        await requestPasswordReset({
+          sendVerificationEmail: () => Promise.resolve(),
+          sendPasswordResetEmail: () => {
+            throw error;
+          },
+          sendMail: () => Promise.resolve(),
+        });
+        await expectErrorLogged(message, error);
+      });
+
+      it('handles rejection of email adapter sendMail', async () => {
+        await requestPasswordReset({
+          sendMail: () => Promise.reject(error),
+        });
+        await expectErrorLogged(message, error);
+      });
+    });
+  });
 });
