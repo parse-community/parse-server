@@ -553,7 +553,9 @@ describe('request complexity', () => {
         for (let i = 0; i < 2500; i++) {
           where = { field: { $elemMatch: where } };
         }
-        await expectAsync(find(where)).toBeRejected();
+        await expectAsync(find(where)).toBeRejectedWith(
+          jasmine.objectContaining({ status: jasmine.any(Number) })
+        );
         const response = await find({});
         expect(response.status).toBe(200);
       });
