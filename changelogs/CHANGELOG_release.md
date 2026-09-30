@@ -1,3 +1,10 @@
+## [8.6.97](https://github.com/parse-community/parse-server/compare/8.6.96...8.6.97) (2026-09-30)
+
+
+### Bug Fixes
+
+* Server crash via unhandled error when sending verification or password reset email ([GHSA-46jj-qw3p-48fc](https://github.com/parse-community/parse-server/security/advisories/GHSA-46jj-qw3p-48fc)) ([#10731](https://github.com/parse-community/parse-server/issues/10731)) ([090ff7f](https://github.com/parse-community/parse-server/commit/090ff7fd3e045720cb16004cf7c1915cc65ed54a))
+
 ## [8.6.96](https://github.com/parse-community/parse-server/compare/8.6.95...8.6.96) (2026-09-28)
 
 
