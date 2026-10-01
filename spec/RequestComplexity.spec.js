@@ -538,7 +538,7 @@ describe('request complexity', () => {
         await reconfigureServer({
           requestComplexity: { queryDepth },
         });
-        const find = where =>
+        const find = whereJson =>
           request({
             method: 'POST',
             url: `${Parse.serverURL}/classes/_User`,
@@ -547,16 +547,16 @@ describe('request complexity', () => {
               'X-Parse-REST-API-Key': 'rest',
               'Content-Type': 'application/json',
             },
-            body: { _method: 'GET', where },
+            body: `{"_method":"GET","where":${whereJson}}`,
           });
-        let where = { username: 'test' };
-        for (let i = 0; i < 2500; i++) {
-          where = { field: { $elemMatch: where } };
-        }
+        // Raw JSON, as JSON.stringify may exceed the client's call stack
+        const depth = 2500;
+        const where =
+          '{"field":{"$elemMatch":'.repeat(depth) + '{"username":"test"}' + '}}'.repeat(depth);
         await expectAsync(find(where)).toBeRejectedWith(
           jasmine.objectContaining({ status: jasmine.any(Number) })
         );
-        const response = await find({});
+        const response = await find('{}');
         expect(response.status).toBe(200);
       });
     }
