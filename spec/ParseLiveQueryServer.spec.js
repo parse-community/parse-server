@@ -336,6 +336,36 @@ describe('ParseLiveQueryServer', function () {
     expect(parseLiveQueryServer.subscriptions.size).toBe(0);
   });
 
+  it('rejects deeply nested field-level operators on subscribe with an error to the client', async () => {
+    await reconfigureServer({ requestComplexity: { queryDepth: 1 } });
+    const parseLiveQueryServer = new ParseLiveQueryServer({});
+    const clientId = 1;
+    addMockClient(parseLiveQueryServer, clientId);
+    const parseWebSocket = { clientId };
+    let where = { name: 'x' };
+    for (let i = 0; i < 10000; i++) {
+      where = { tags: { $elemMatch: where } };
+    }
+    const request = {
+      query: { className: 'test', where, keys: ['x'] },
+      requestId: 5,
+      sessionToken: 'sessionToken',
+    };
+    await expectAsync(
+      parseLiveQueryServer._handleSubscribe(parseWebSocket, request)
+    ).toBeResolved();
+
+    const Client = require('../lib/LiveQuery/Client').Client;
+    expect(Client.pushError).toHaveBeenCalledWith(
+      jasmine.anything(),
+      jasmine.anything(),
+      jasmine.any(String),
+      false,
+      5
+    );
+    expect(parseLiveQueryServer.subscriptions.size).toBe(0);
+  });
+
   it('rejects a non-array value for a logical operator on subscribe', async () => {
     await reconfigureServer({ requestComplexity: { queryDepth: 3 } });
     const parseLiveQueryServer = new ParseLiveQueryServer({});
