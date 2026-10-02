@@ -128,14 +128,14 @@ RestWrite.prototype.execute = function () {
       return this.deleteEmailResetTokenIfNeeded();
     })
     .then(() => {
+      return this.validateWritePermission();
+    })
+    .then(() => {
       return this.validateSchema();
     })
     .then(schemaController => {
       this.validSchemaController = schemaController;
       return this.setRequiredFieldsIfNeeded();
-    })
-    .then(() => {
-      return this.validateCreatePermission();
     })
     .then(() => {
       return this.transformUser();
@@ -784,21 +784,16 @@ RestWrite.prototype.checkRestrictedFields = async function () {
   }
 };
 
-// Validates the create class-level permission before transformUser runs.
-// This prevents user enumeration (username/email existence) when public
-// create is disabled on _User, because transformUser checks uniqueness
-// before the CLP is enforced in runDatabaseOperation.
-RestWrite.prototype.validateCreatePermission = async function () {
-  if (this.query || this.auth.isMaster || this.auth.isMaintenance) {
+// Validates the create or update class-level permission before schema validation
+RestWrite.prototype.validateWritePermission = async function () {
+  if (this.auth.isMaster || this.auth.isMaintenance) {
     return;
   }
-  if (!this.validSchemaController) {
-    return;
-  }
-  await this.validSchemaController.validatePermission(
+  const schemaController = await this.config.database.loadSchema();
+  await schemaController.validatePermission(
     this.className,
     this.runOptions.acl || [],
-    'create'
+    this.query ? 'update' : 'create'
   );
 };
 
