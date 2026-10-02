@@ -1,3 +1,10 @@
+## [9.10.2-alpha.9](https://github.com/parse-community/parse-server/compare/9.10.2-alpha.8...9.10.2-alpha.9) (2026-10-02)
+
+
+### Bug Fixes
+
+* Create and update class-level permissions not enforced before schema validation ([#10739](https://github.com/parse-community/parse-server/issues/10739)) ([27a15e1](https://github.com/parse-community/parse-server/commit/27a15e1d79e12f0b0ca302a5205e76584cc9f8d9))
+
 ## [9.10.2-alpha.8](https://github.com/parse-community/parse-server/compare/9.10.2-alpha.7...9.10.2-alpha.8) (2026-10-02)
 
 
