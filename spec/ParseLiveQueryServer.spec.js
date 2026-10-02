@@ -1988,6 +1988,31 @@ describe('ParseLiveQueryServer', function () {
     });
   });
 
+  it('applies protectedFields when the app config cannot be resolved', async () => {
+    const parseLiveQueryServer = new ParseLiveQueryServer({});
+    // `Config.get` returns undefined for a standalone LiveQuery server.
+    parseLiveQueryServer.config.appId = 'unknownAppId';
+    const client = {
+      hasMasterKey: false,
+      getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue(undefined),
+    };
+    const res = {
+      object: { className: testClassName, objectId: 'objectId', secret: 'secret', note: 'note' },
+    };
+
+    await parseLiveQueryServer._filterSensitiveData(
+      { protectedFields: { '*': ['secret'] } },
+      res,
+      client,
+      1,
+      'find',
+      {}
+    );
+
+    expect(res.object.secret).toBeUndefined();
+    expect(res.object.note).toBe('note');
+  });
+
   it('can validate key when valid key is provided', function () {
     const parseLiveQueryServer = new ParseLiveQueryServer(
       {},

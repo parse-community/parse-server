@@ -1316,6 +1316,67 @@ describe('ParseLiveQuery', function () {
     ]);
   });
 
+  describe('protectedFieldsOwnerExempt', () => {
+    async function signUpOwner(protectedFieldsOwnerExempt) {
+      await reconfigureServer({
+        liveQuery: { classNames: ['_User'] },
+        startLiveQueryServer: true,
+        protectedFields: { _User: { '*': ['phone'] } },
+        protectedFieldsOwnerExempt,
+      });
+      const owner = new Parse.User();
+      owner.setUsername('owner');
+      owner.setPassword('password');
+      owner.set('phone', '555-1234');
+      owner.set('note', 'initial');
+      await owner.signUp();
+      return owner;
+    }
+
+    async function receiveUpdate(query, owner) {
+      const subscription = await query.subscribe(owner.getSessionToken());
+      const [event] = await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', (object, original) => resolve({ object, original }));
+        }),
+        owner.save({ note: 'changed' }, { useMasterKey: true }),
+      ]);
+      return event;
+    }
+
+    it('strips protected fields from the owner subscribed by objectId when protectedFieldsOwnerExempt is false', async () => {
+      const owner = await signUpOwner(false);
+      const restUser = await new Parse.Query(Parse.User).get(owner.id, {
+        sessionToken: owner.getSessionToken(),
+      });
+      expect(restUser.get('phone')).toBeUndefined();
+
+      const query = new Parse.Query(Parse.User).equalTo('objectId', owner.id);
+      const { object, original } = await receiveUpdate(query, owner);
+      expect(object.get('note')).toBe('changed');
+      expect(object.get('phone')).toBeUndefined();
+      expect(original.get('phone')).toBeUndefined();
+    });
+
+    it('strips protected fields from the owner subscribed by another field when protectedFieldsOwnerExempt is false', async () => {
+      const owner = await signUpOwner(false);
+      const query = new Parse.Query(Parse.User).equalTo('username', 'owner');
+      const { object, original } = await receiveUpdate(query, owner);
+      expect(object.get('note')).toBe('changed');
+      expect(object.get('phone')).toBeUndefined();
+      expect(original.get('phone')).toBeUndefined();
+    });
+
+    it('delivers protected fields to the owner when protectedFieldsOwnerExempt is true', async () => {
+      const owner = await signUpOwner(true);
+      const query = new Parse.Query(Parse.User).equalTo('objectId', owner.id);
+      const { object, original } = await receiveUpdate(query, owner);
+      expect(object.get('note')).toBe('changed');
+      expect(object.get('phone')).toBe('555-1234');
+      expect(original.get('phone')).toBe('555-1234');
+    });
+  });
+
   it('can subscribe to query and return object with withinKilometers with last parameter on update', async done => {
     await reconfigureServer({
       liveQuery: {
