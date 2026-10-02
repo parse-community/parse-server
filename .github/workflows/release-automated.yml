@@ -87,11 +87,6 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js
@@ -112,12 +107,34 @@ jobs:
           ./release_docs.sh
         env:
           SOURCE_TAG: ${{ needs.release.outputs.current_tag }}
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v4
+      - name: Upload docs
+        uses: actions/upload-artifact@v4
         with:
-          path: ./docs
+          name: docs
+          path: docs
+          retention-days: 1
+
+  docs-deploy:
+    needs: [release, docs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+      - name: Download docs
+        uses: actions/download-artifact@v4
+        with:
+          name: docs
       - name: Deploy to GitHub Pages
-        id: deploy
-        uses: actions/deploy-pages@v4
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "deploy: $SOURCE_TAG"
+          git push origin HEAD:gh-pages
+        env:
+          SOURCE_TAG: ${{ needs.release.outputs.current_tag }}
