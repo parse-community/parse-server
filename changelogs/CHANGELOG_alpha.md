@@ -1,3 +1,10 @@
+## [9.10.2-alpha.7](https://github.com/parse-community/parse-server/compare/9.10.2-alpha.6...9.10.2-alpha.7) (2026-10-02)
+
+
+### Bug Fixes
+
+* LiveQuery ignores Parse Server option `protectedFieldsOwnerExempt` ([#10737](https://github.com/parse-community/parse-server/issues/10737)) ([8d2dd8c](https://github.com/parse-community/parse-server/commit/8d2dd8c76f9fdb1293f07f87cd4aaa5a310e2669))
+
 ## [9.10.2-alpha.6](https://github.com/parse-community/parse-server/compare/9.10.2-alpha.5...9.10.2-alpha.6) (2026-09-30)
 
 
