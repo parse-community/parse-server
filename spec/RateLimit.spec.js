@@ -1814,6 +1814,89 @@ describe('rate limit', () => {
     });
   });
 
+  describe('GraphQL', () => {
+    const graphQLRateLimit = {
+      requestPath: '/graphql',
+      requestTimeWindow: 10000,
+      requestCount: 1,
+      errorResponseMessage: 'Too many requests',
+      includeInternalRequests: true,
+    };
+    const tooManyRequests = { code: Parse.Error.CONNECTION_FAILED, error: 'Too many requests' };
+    const gqlRequest = (path = '/graphql') =>
+      request({
+        method: 'POST',
+        headers,
+        url: `http://localhost:8378${path}`,
+        body: JSON.stringify({ query: '{ health }' }),
+      }).catch(e => e);
+
+    it('limits the GraphQL endpoint via a requestPath set to graphQLPath', async () => {
+      await reconfigureServer({ mountGraphQL: true, rateLimit: [graphQLRateLimit] });
+      const res1 = await gqlRequest();
+      expect(res1.data).toEqual({ data: { health: true } });
+      const res2 = await gqlRequest();
+      expect(res2.data).toEqual(tooManyRequests);
+    });
+
+    it('limits the GraphQL endpoint via a requestPath set to a custom graphQLPath', async () => {
+      await reconfigureServer({
+        mountGraphQL: true,
+        graphQLPath: '/custom/graphql',
+        rateLimit: [{ ...graphQLRateLimit, requestPath: '/custom/graphql' }],
+      });
+      const res1 = await gqlRequest('/custom/graphql');
+      expect(res1.data).toEqual({ data: { health: true } });
+      const res2 = await gqlRequest('/custom/graphql');
+      expect(res2.data).toEqual(tooManyRequests);
+    });
+
+    it('limits URL variants of the GraphQL endpoint in the same window', async () => {
+      await reconfigureServer({ mountGraphQL: true, rateLimit: [graphQLRateLimit] });
+      const res1 = await gqlRequest('/graphql/x');
+      expect(res1.data).toEqual({ data: { health: true } });
+      for (const path of ['/graphql', '/graphql/', '/GRAPHQL']) {
+        const res = await gqlRequest(path);
+        expect(res.data).toEqual(tooManyRequests);
+      }
+    });
+
+    it('limits the GraphQL endpoint via a wildcard requestPath', async () => {
+      await reconfigureServer({
+        mountGraphQL: true,
+        rateLimit: [{ ...graphQLRateLimit, requestPath: '*path' }],
+      });
+      const res1 = await gqlRequest();
+      expect(res1.data).toEqual({ data: { health: true } });
+      const res2 = await gqlRequest();
+      expect(res2.data).toEqual(tooManyRequests);
+    });
+
+    it('does not apply a REST route rate limit to the GraphQL endpoint', async () => {
+      await reconfigureServer({
+        mountGraphQL: true,
+        rateLimit: [{ ...graphQLRateLimit, requestPath: '/functions/*path' }],
+      });
+      for (let i = 0; i < 3; i++) {
+        const res = await gqlRequest();
+        expect(res.data).toEqual({ data: { health: true } });
+      }
+    });
+
+    it('does not apply a GraphQL endpoint rate limit to REST routes', async () => {
+      Parse.Cloud.define('test', () => 'Abc');
+      await reconfigureServer({ mountGraphQL: true, rateLimit: [graphQLRateLimit] });
+      for (let i = 0; i < 3; i++) {
+        const res = await request({
+          method: 'POST',
+          headers,
+          url: 'http://localhost:8378/1/functions/test',
+        }).catch(e => e);
+        expect(res.data).toEqual({ result: 'Abc' });
+      }
+    });
+  });
+
   describe_only(() => {
     return process.env.PARSE_SERVER_TEST_CACHE === 'redis';
   })('with RedisCache', function () {
