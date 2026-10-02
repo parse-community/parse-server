@@ -290,6 +290,10 @@ export interface ParseServerOptions {
   customPages: ?CustomPagesOptions;
   /* Configuration for LiveQuery on this Parse Server, for example `{ classNames: ['MyClass'] }`. `classNames` lists the classes that publish create/update/delete events to subscribers; without it no events are pushed, even while a LiveQuery server is running. Combine with `startLiveQueryServer` to run a LiveQuery server. */
   liveQuery: ?LiveQueryOptions;
+  /* Whether LiveQuery includes the subscriber's roles when evaluating Class Level Permissions (CLP). If `true`, a CLP that grants `find` or `get` to `role:<RoleName>` applies to LiveQuery subscriptions for members of that role, the same way it already applies to the equivalent REST query. If `false` (default), roles are not resolved for CLP and such a subscription is rejected even for legitimate role members, so LiveQuery is more restrictive than REST for the same CLP. This option does not affect object ACLs, whose `role:` entries LiveQuery already honors regardless of this setting. Defaults to `false`.
+  :ENV: PARSE_SERVER_ENABLE_LIVE_QUERY_CLASS_LEVEL_PERMISSION_ROLES
+  :DEFAULT: false */
+  enableLiveQueryClassLevelPermissionRoles: ?boolean;
   /* Session duration, in seconds, defaults to 1 year
   :DEFAULT: 31536000 */
   sessionLength: ?number;
@@ -373,7 +377,7 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_GRAPHQL_PATH
   :DEFAULT: /graphql */
   graphQLPath: ?string;
-  /* Enable public introspection for the GraphQL endpoint, defaults to false
+  /* Enable public introspection for the GraphQL endpoint, defaults to false.<br><br>ℹ️ Disabling public introspection does not hide whether a class or field exists. A GraphQL operation is validated against the complete schema before any class-level permission is checked, so a client can confirm a guessed class or field name by sending an operation that references it. To hide a class from the GraphQL API, exclude it with the `enabledForClasses` or `disabledForClasses` setting of the GraphQL config.
   :ENV: PARSE_SERVER_GRAPHQL_PUBLIC_INTROSPECTION
   :DEFAULT: false */
   graphQLPublicIntrospection: ?boolean;

@@ -19,6 +19,10 @@ const SERVER_URL = 'http://localhost:1337/parse';
 const APP_ID = 'benchmark-app-id';
 const MASTER_KEY = 'benchmark-master-key';
 const ITERATIONS = process.env.BENCHMARK_ITERATIONS ? parseInt(process.env.BENCHMARK_ITERATIONS, 10) : undefined;
+// Factor applied to the iterations of each benchmark, e.g. to measure a benchmark several times
+const ITERATIONS_FACTOR = process.env.BENCHMARK_ITERATIONS_FACTOR ? parseFloat(process.env.BENCHMARK_ITERATIONS_FACTOR) : 1;
+// JSON array of benchmark names to run; runs all benchmarks if not set
+const NAMES = process.env.BENCHMARK_NAMES ? JSON.parse(process.env.BENCHMARK_NAMES) : undefined;
 const LOG_ITERATIONS = false;
 
 // Parse Server instance
@@ -115,8 +119,8 @@ function resetParseServer() {
  * this benchmark.
  */
 async function measureOperation({ name, operation, iterations, skipWarmup = false, dbLatency }) {
-  // Override iterations if global ITERATIONS is set
-  iterations = ITERATIONS || iterations;
+  // Use global ITERATIONS if set, otherwise apply ITERATIONS_FACTOR
+  iterations = ITERATIONS || Math.ceil(iterations * ITERATIONS_FACTOR);
 
   // Determine warmup count (20% of iterations)
   const warmupCount = skipWarmup ? 0 : Math.floor(iterations * 0.2);
@@ -214,8 +218,8 @@ async function measureOperation({ name, operation, iterations, skipWarmup = fals
 async function measureMemoryOperation({ name, operation, iterations, skipWarmup = false }) {
   const { PerformanceObserver } = require('node:perf_hooks');
 
-  // Override iterations if global ITERATIONS is set
-  iterations = ITERATIONS || iterations;
+  // Use global ITERATIONS if set, otherwise apply ITERATIONS_FACTOR
+  iterations = ITERATIONS || Math.ceil(iterations * ITERATIONS_FACTOR);
 
   // Determine warmup count (20% of iterations)
   const warmupCount = skipWarmup ? 0 : Math.floor(iterations * 0.2);
@@ -901,12 +905,13 @@ async function runBenchmarks() {
       { name: 'Query $regex', fn: benchmarkQueryRegex },
       { name: 'LiveQuery $regex', fn: benchmarkLiveQueryRegex },
     ];
+    const selectedBenchmarks = NAMES ? benchmarks.filter(benchmark => NAMES.includes(benchmark.name)) : benchmarks;
 
     // Run each benchmark with database cleanup
     const suiteStart = performance.now();
-    for (let idx = 0; idx < benchmarks.length; idx++) {
-      const benchmark = benchmarks[idx];
-      const label = `[${idx + 1}/${benchmarks.length}] ${benchmark.name}`;
+    for (let idx = 0; idx < selectedBenchmarks.length; idx++) {
+      const benchmark = selectedBenchmarks[idx];
+      const label = `[${idx + 1}/${selectedBenchmarks.length}] ${benchmark.name}`;
       logGroup(label);
       try {
         logInfo('Resetting database...');

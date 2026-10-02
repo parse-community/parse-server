@@ -2,6 +2,7 @@
 const request = require('../lib/request');
 const parseServerPackage = require('../package.json');
 const MockEmailAdapterWithOptions = require('./support/MockEmailAdapterWithOptions');
+const { resolvingPromise } = require('../lib/TestUtils');
 const ParseServer = require('../lib/index');
 const Config = require('../lib/Config');
 const express = require('express');
@@ -639,23 +640,36 @@ describe('server', () => {
   });
 
   it('should reload masterKey if ttl is set and expired', async () => {
-    const masterKeySpy = jasmine.createSpy()
-      .and.returnValues(Promise.resolve('firstMasterKey'), Promise.resolve('secondMasterKey'));
+    let masterKeyCount = 0;
+    const masterKeySpy = jasmine
+      .createSpy()
+      .and.callFake(() => Promise.resolve(`masterKey${++masterKeyCount}`));
+    const masterKeyTtl = 1000;
+    const before = Date.now();
 
     await reconfigureServer({
       masterKey: masterKeySpy,
-      masterKeyTtl: 1 / 1000, // TTL is set to 1ms
+      masterKeyTtl,
     });
 
     await new Parse.Object('TestObject').save();
+    const after = Date.now();
 
-    await new Promise(resolve => setTimeout(resolve, 10));
+    const config = Config.get(Parse.applicationId);
+    expect(masterKeySpy).toHaveBeenCalledTimes(1);
+    expect(config.masterKeyCache.masterKey).toEqual('masterKey1');
+    const expiresAt = config.masterKeyCache.expiresAt.getTime();
+    expect(expiresAt).toBeGreaterThanOrEqual(before + masterKeyTtl * 1000);
+    expect(expiresAt).toBeLessThanOrEqual(after + masterKeyTtl * 1000);
+
+    // Expire the cached master key; a short TTL would make the test depend on
+    // request timing, as a request looks up the master key more than once
+    config.masterKeyCache.expiresAt = new Date(0);
 
     await new Parse.Object('TestObject').save();
 
-    const config = Config.get(Parse.applicationId);
     expect(masterKeySpy).toHaveBeenCalledTimes(2);
-    expect(config.masterKeyCache.masterKey).toEqual('secondMasterKey');
+    expect(Config.get(Parse.applicationId).masterKeyCache.masterKey).toEqual('masterKey2');
   });
 
 
@@ -812,10 +826,12 @@ describe('server', () => {
     it('executes publicServerURL function on every verification email', async () => {
       let counter = 0;
       const emailCalls = [];
+      let sendPromise;
 
       const emailAdapter = MockEmailAdapterWithOptions({
         sendVerificationEmail: ({ link }) => {
           emailCalls.push(link);
+          sendPromise.resolve();
           return Promise.resolve();
         },
       });
@@ -836,8 +852,9 @@ describe('server', () => {
       user1.setUsername('user1');
       user1.setPassword('pass1');
       user1.setEmail('user1@example.com');
+      sendPromise = resolvingPromise();
       await user1.signUp();
-      await jasmine.timeout();
+      await sendPromise;
       expect(emailCalls.length).toEqual(1);
       expect(emailCalls[0]).toContain(`https://example.com/${counterBefore1 + 1}`);
 
@@ -847,8 +864,9 @@ describe('server', () => {
       user2.setUsername('user2');
       user2.setPassword('pass2');
       user2.setEmail('user2@example.com');
+      sendPromise = resolvingPromise();
       await user2.signUp();
-      await jasmine.timeout();
+      await sendPromise;
       expect(emailCalls.length).toEqual(2);
       expect(emailCalls[1]).toContain(`https://example.com/${counterBefore2 + 1}`);
       expect(counterBefore2).toBeGreaterThan(counterBefore1);

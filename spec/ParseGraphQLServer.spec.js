@@ -761,6 +761,99 @@ describe('ParseGraphQLServer', () => {
           expect(introspection.data).toBeDefined();
         });
 
+        it('should have public introspection enabled if enabled via the Parse Server option', async () => {
+          const parseServer = await reconfigureServer({ graphQLPublicIntrospection: true });
+          await createGQLFromParseServer(parseServer);
+
+          const introspection = await apolloClient.query({
+            query: gql`
+              query Introspection {
+                __schema {
+                  types {
+                    name
+                  }
+                }
+              }
+            `,
+          });
+          expect(introspection.data.__schema).toBeDefined();
+        });
+
+        it('should keep "Did you mean" suggestions when public introspection is enabled via the Parse Server option', async () => {
+          const parseServer = await reconfigureServer({ graphQLPublicIntrospection: true });
+          await createGQLFromParseServer(parseServer);
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Typo {
+                  healt
+                }
+              `,
+            });
+            fail('should have thrown a validation error');
+          } catch (e) {
+            const message = e.networkError.result.errors[0].message;
+            expect(message).toContain('Cannot query field "healt"');
+            expect(message).toMatch(/Did you mean/);
+            expect(message).toContain('health');
+          }
+        });
+
+        it('should prefer the GraphQL server option over the Parse Server option for public introspection', async () => {
+          const parseServer = await reconfigureServer({ graphQLPublicIntrospection: true });
+          await createGQLFromParseServer(parseServer, { graphQLPublicIntrospection: false });
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query Introspection {
+                  __schema {
+                    types {
+                      name
+                    }
+                  }
+                }
+              `,
+            });
+            fail('should have thrown an error');
+          } catch (e) {
+            expect(e.message).toEqual('Response not successful: Received status code 403');
+            expect(e.networkError.result.errors[0].message).toEqual('Introspection is not allowed');
+          }
+        });
+
+        describe('mounted via Parse Server option mountGraphQL', () => {
+          const introspectionRequest = async () => {
+            const res = await fetch('http://localhost:8378/graphql', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Parse-Application-Id': 'test',
+                'X-Parse-Javascript-Key': 'test',
+              },
+              body: JSON.stringify({ query: '{ __schema { types { name } } }' }),
+            });
+            return { status: res.status, body: JSON.parse(await res.text()) };
+          };
+
+          it('should have public introspection disabled by default without master key', async () => {
+            await reconfigureServer({ mountGraphQL: true });
+            const response = await introspectionRequest();
+            expect(response.status).toEqual(403);
+            expect(response.body.data).toBeUndefined();
+            expect(response.body.errors[0].message).toEqual('Introspection is not allowed');
+          });
+
+          it('should have public introspection enabled if enabled', async () => {
+            await reconfigureServer({ mountGraphQL: true, graphQLPublicIntrospection: true });
+            const response = await introspectionRequest();
+            expect(response.status).toEqual(200);
+            expect(response.body.errors).toBeUndefined();
+            expect(response.body.data.__schema).toBeDefined();
+          });
+        });
+
         it('should block __type introspection without master key', async () => {
           try {
             await apolloClient.query({

@@ -2875,20 +2875,32 @@ describe('Vulnerabilities', () => {
   });
 
   describe('(GHSA-w54v-hf9p-8856) User enumeration via email verification endpoint', () => {
+    const { resolvingPromise } = require('../lib/TestUtils');
     let sendVerificationEmail;
 
+    // Resolves when the email is sent
+    function verificationEmailSent() {
+      const sendPromise = resolvingPromise();
+      sendVerificationEmail.and.callFake(() => sendPromise.resolve());
+      return sendPromise;
+    }
+
     async function createTestUsers() {
+      let sendPromise = verificationEmailSent();
       const user = new Parse.User();
       user.setUsername('testuser');
       user.setPassword('password123');
       user.set('email', 'unverified@example.com');
       await user.signUp();
+      await sendPromise;
 
+      sendPromise = verificationEmailSent();
       const user2 = new Parse.User();
       user2.setUsername('verifieduser');
       user2.setPassword('password123');
       user2.set('email', 'verified@example.com');
       await user2.signUp();
+      await sendPromise;
       const config = Config.get(Parse.applicationId);
       await config.database.update(
         '_User',
@@ -2944,6 +2956,7 @@ describe('Vulnerabilities', () => {
 
       it('returns success for unverified email', async () => {
         sendVerificationEmail.calls.reset();
+        const sendPromise = verificationEmailSent();
         const response = await request({
           url: 'http://localhost:8378/1/verificationEmailRequest',
           method: 'POST',
@@ -2956,7 +2969,7 @@ describe('Vulnerabilities', () => {
         });
         expect(response.status).toBe(200);
         expect(response.data).toEqual({});
-        await jasmine.timeout();
+        await sendPromise;
         expect(sendVerificationEmail).toHaveBeenCalledTimes(1);
       });
 
@@ -3039,6 +3052,7 @@ describe('Vulnerabilities', () => {
 
       it('sends verification email for unverified email', async () => {
         sendVerificationEmail.calls.reset();
+        const sendPromise = verificationEmailSent();
         await request({
           url: 'http://localhost:8378/1/verificationEmailRequest',
           method: 'POST',
@@ -3049,7 +3063,7 @@ describe('Vulnerabilities', () => {
             'Content-Type': 'application/json',
           },
         });
-        await jasmine.timeout();
+        await sendPromise;
         expect(sendVerificationEmail).toHaveBeenCalledTimes(1);
       });
     });
@@ -7566,6 +7580,692 @@ describe('Vulnerabilities', () => {
 
         expect(response.status).toBe(200);
         expect(global.fetch.calls.count()).toBe(2);
+      });
+    });
+  });
+
+  describe('(GHSA-gpr6-gr9g-pfw6) Save with a file pointer without URL', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const file = { __type: 'File', name: 'x.jpg' };
+
+    let unhandled;
+    const onUnhandled = reason => unhandled.push(reason);
+    beforeEach(() => {
+      unhandled = [];
+      process.on('unhandledRejection', onUnhandled);
+    });
+    afterEach(() => {
+      process.removeListener('unhandledRejection', onUnhandled);
+    });
+
+    const post = (className, body) =>
+      request({
+        method: 'POST',
+        url: `http://localhost:8378/1/classes/${className}`,
+        headers,
+        body,
+      });
+
+    it('provides file URL to beforeSave trigger', async () => {
+      let url;
+      Parse.Cloud.beforeSave('Item', req => {
+        url = req.object.get('file').url();
+      });
+      const res = await post('Item', { file });
+      expect(res.status).toBe(201);
+      expect(url).toBe('http://localhost:8378/1/files/test/x.jpg');
+      const obj = await new Parse.Query('Item').get(res.data.objectId);
+      expect(obj.get('file').name()).toBe('x.jpg');
+    });
+
+    it('provides file URL to beforeSave trigger for nested file', async () => {
+      let urls;
+      Parse.Cloud.beforeSave('Item', req => {
+        urls = [req.object.get('nested').file.url(), req.object.get('list')[0].url()];
+      });
+      const res = await post('Item', { nested: { file }, list: [file] });
+      expect(res.status).toBe(201);
+      expect(urls).toEqual([
+        'http://localhost:8378/1/files/test/x.jpg',
+        'http://localhost:8378/1/files/test/x.jpg',
+      ]);
+      const obj = await new Parse.Query('Item').get(res.data.objectId);
+      expect(obj.get('nested').file.name()).toBe('x.jpg');
+      expect(obj.get('list')[0].name()).toBe('x.jpg');
+    });
+
+    it('provides file URL to afterSave trigger for file pointer set in beforeSave trigger', async () => {
+      Parse.Cloud.beforeSave('Item', req => {
+        req.object.set('raw', { __type: 'File', name: 'y.jpg' });
+      });
+      let url;
+      Parse.Cloud.afterSave('Item', req => {
+        url = req.object.get('raw').url();
+      });
+      const res = await post('Item', {});
+      expect(res.status).toBe(201);
+      expect(url).toBe('http://localhost:8378/1/files/test/y.jpg');
+      await new Promise(resolve => setTimeout(resolve, 100));
+      expect(unhandled).toEqual([]);
+    });
+
+    it('provides file URL to afterSave trigger', async () => {
+      let url;
+      Parse.Cloud.afterSave('Item', req => {
+        url = req.object.get('file').url();
+      });
+      const res = await post('Item', { file });
+      expect(res.status).toBe(201);
+      expect(url).toBe('http://localhost:8378/1/files/test/x.jpg');
+      await new Promise(resolve => setTimeout(resolve, 100));
+      expect(unhandled).toEqual([]);
+    });
+
+    it('provides file URL to beforeSave trigger on update with array operation', async () => {
+      const res = await post('Item', {});
+      let url;
+      Parse.Cloud.beforeSave('Item', req => {
+        url = req.object.get('list')[0].url();
+      });
+      const update = await request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/classes/Item/${res.data.objectId}`,
+        headers,
+        body: { list: { __op: 'Add', objects: [file] } },
+      });
+      expect(update.status).toBe(200);
+      expect(url).toBe('http://localhost:8378/1/files/test/x.jpg');
+    });
+
+    it('provides file URL to beforeSave trigger on user sign-up', async () => {
+      let url;
+      Parse.Cloud.beforeSave(Parse.User, req => {
+        url = req.object.get('file').url();
+      });
+      const res = await post('_User', { username: 'u', password: 'p', file });
+      expect(res.status).toBe(201);
+      expect(url).toBe('http://localhost:8378/1/files/test/x.jpg');
+    });
+
+    for (const invalid of [{ __type: 'File' }, { __type: 'File', name: 5 }]) {
+      it(`rejects invalid file pointer ${JSON.stringify(invalid)}`, async () => {
+        Parse.Cloud.beforeSave('Item', () => {});
+        for (const body of [{ file: invalid }, { list: [invalid] }, { nested: { invalid } }]) {
+          const res = await post('Item', body).catch(e => e);
+          expect(res.status).toBe(400);
+          expect(res.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+        }
+        await new Promise(resolve => setTimeout(resolve, 100));
+        expect(unhandled).toEqual([]);
+      });
+    }
+
+    describe('stored in array without URL', () => {
+      let objectId;
+      beforeEach(async () => {
+        const res = await post('Item', { list: [file], nested: { file } });
+        objectId = res.data.objectId;
+      });
+
+      const expectUrls = object => {
+        expect(object.get('list')[0].url()).toBe('http://localhost:8378/1/files/test/x.jpg');
+        expect(object.get('nested').file.url()).toBe('http://localhost:8378/1/files/test/x.jpg');
+      };
+
+      it('provides file URL to beforeSave trigger on update', async () => {
+        let original;
+        Parse.Cloud.beforeSave('Item', req => {
+          original = req.original;
+          expectUrls(req.object);
+        });
+        const res = await request({
+          method: 'PUT',
+          url: `http://localhost:8378/1/classes/Item/${objectId}`,
+          headers,
+          body: { foo: 'bar' },
+        });
+        expect(res.status).toBe(200);
+        expectUrls(original);
+      });
+
+      it('provides file URL to afterSave trigger on update', async () => {
+        let object;
+        Parse.Cloud.afterSave('Item', req => {
+          object = req.object;
+        });
+        const res = await request({
+          method: 'PUT',
+          url: `http://localhost:8378/1/classes/Item/${objectId}`,
+          headers,
+          body: { foo: 'bar' },
+        });
+        expect(res.status).toBe(200);
+        expectUrls(object);
+        await new Promise(resolve => setTimeout(resolve, 100));
+        expect(unhandled).toEqual([]);
+      });
+
+      it('provides file URL to afterFind trigger', async () => {
+        let object;
+        Parse.Cloud.afterFind('Item', req => {
+          object = req.objects[0];
+        });
+        const res = await request({
+          url: `http://localhost:8378/1/classes/Item/${objectId}`,
+          headers,
+        });
+        expect(res.status).toBe(200);
+        expectUrls(object);
+        expect(res.data.list[0].url).toBe('http://localhost:8378/1/files/test/x.jpg');
+      });
+
+      it('provides file URL to beforeDelete and afterDelete triggers', async () => {
+        const objects = [];
+        Parse.Cloud.beforeDelete('Item', req => {
+          objects.push(req.object);
+        });
+        Parse.Cloud.afterDelete('Item', req => {
+          objects.push(req.object);
+        });
+        const res = await request({
+          method: 'DELETE',
+          url: `http://localhost:8378/1/classes/Item/${objectId}`,
+          headers,
+        });
+        expect(res.status).toBe(200);
+        expect(objects.length).toBe(2);
+        objects.forEach(expectUrls);
+      });
+    });
+
+    it('does not cause unhandled rejection on LiveQuery publish', async () => {
+      await reconfigureServer({
+        liveQuery: { classNames: ['Chat'] },
+        startLiveQueryServer: true,
+      });
+      const res = await post('Chat', { file });
+      expect(res.status).toBe(201);
+      await new Promise(resolve => setTimeout(resolve, 200));
+      expect(unhandled).toEqual([]);
+    });
+
+    it('publishes LiveQuery update for object with stored file without URL', async () => {
+      Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+      await reconfigureServer({
+        liveQuery: { classNames: ['Chat'] },
+        startLiveQueryServer: true,
+      });
+      const res = await post('Chat', { list: [file] });
+      const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+      try {
+        const subscription = await new Parse.Query('Chat').subscribe();
+        const updated = new Promise(resolve => subscription.on('update', resolve));
+        await request({
+          method: 'PUT',
+          url: `http://localhost:8378/1/classes/Chat/${res.data.objectId}`,
+          headers,
+          body: { foo: 'bar' },
+        });
+        const object = await updated;
+        expect(object.get('list')[0].url()).toBe('http://localhost:8378/1/files/test/x.jpg');
+        expect(unhandled).toEqual([]);
+      } finally {
+        await client.close();
+      }
+    });
+  });
+
+  describe('(GHSA-jhh9-hrgh-c9gv) Transactional batch request can roll back or block writes of other clients', () => {
+    const AppCache = require('../lib/cache').AppCache;
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const post = (path, body) =>
+      request({
+        method: 'POST',
+        url: `http://localhost:8378/1${path}`,
+        headers,
+        body,
+      });
+    const get = path =>
+      request({
+        url: `http://localhost:8378/1${path}`,
+        headers,
+      });
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+    const expectSeparateDatabaseControllers = () => {
+      expect(Config.get('test').database).not.toBe(Config.get('test').database);
+    };
+    const expectServerConfigInCache = () => {
+      const cachedConfig = AppCache.get('test');
+      expect(cachedConfig.databaseController).toBeDefined();
+      expect(cachedConfig.database).toBeUndefined();
+    };
+
+    it('does not share the database controller after the master key is loaded from a function', async () => {
+      await reconfigureServer({ masterKey: () => 'test' });
+      await post('/classes/TestObject', { key: 'value' });
+      expect(Config.get('test').masterKeyCache.masterKey).toBe('test');
+      expectServerConfigInCache();
+      expectSeparateDatabaseControllers();
+    });
+
+    it('does not share the database controller after the master key is reloaded', async () => {
+      await reconfigureServer({ masterKey: () => 'test', masterKeyTtl: 1000 });
+      await post('/classes/TestObject', { key: 'value' });
+      Config.get('test').masterKeyCache.expiresAt = new Date(0);
+      await post('/classes/TestObject', { key: 'value' });
+      expect(Config.get('test').masterKeyCache.expiresAt.getTime()).toBeGreaterThan(Date.now());
+      expectServerConfigInCache();
+      expectSeparateDatabaseControllers();
+    });
+
+    it('does not share the database controller after a Cloud Code rate limit is registered', async () => {
+      Parse.Cloud.define('rateLimitedFunction', () => 'ok', {
+        rateLimit: { requestTimeWindow: 10000, requestCount: 1 },
+      });
+      expectSeparateDatabaseControllers();
+    });
+
+    it('does not share the database controller after the server config is set via Parse.Server', async () => {
+      const config = Parse.Server;
+      config.silent = false;
+      Parse.Server = config;
+      expectSeparateDatabaseControllers();
+    });
+
+    it('rejects a transactional session while another one is active on the same database controller', async () => {
+      const database = Config.get('test').database;
+      spyOn(database.adapter, 'createTransactionalSession').and.resolveTo({});
+      await database.createTransactionalSession();
+      await expectAsync(database.createTransactionalSession()).toBeRejectedWithError(
+        'There is already an active transactional session'
+      );
+      expect(database.adapter.createTransactionalSession).toHaveBeenCalledTimes(1);
+    });
+
+    it('rejects concurrent transactional sessions on the same database controller', async () => {
+      const database = Config.get('test').database;
+      spyOn(database.adapter, 'createTransactionalSession').and.resolveTo({});
+      const results = await Promise.allSettled([
+        database.createTransactionalSession(),
+        database.createTransactionalSession(),
+      ]);
+      expect(results.map(result => result.status)).toEqual(['fulfilled', 'rejected']);
+      expect(results[1].reason.message).toBe('There is already an active transactional session');
+      expect(database.adapter.createTransactionalSession).toHaveBeenCalledTimes(1);
+    });
+
+    it('allows a transactional session after the creation of a transactional session failed', async () => {
+      const database = Config.get('test').database;
+      spyOn(database.adapter, 'createTransactionalSession').and.returnValues(
+        Promise.reject(new Error('creation failed')),
+        Promise.resolve({})
+      );
+      await expectAsync(database.createTransactionalSession()).toBeRejectedWithError(
+        'creation failed'
+      );
+      await expectAsync(database.createTransactionalSession()).toBeResolved();
+    });
+
+    it('allows a transactional session after the creation of a transactional session threw', async () => {
+      const database = Config.get('test').database;
+      let calls = 0;
+      spyOn(database.adapter, 'createTransactionalSession').and.callFake(() => {
+        if (++calls === 1) {
+          throw new Error('creation threw');
+        }
+        return Promise.resolve({});
+      });
+      await expectAsync(database.createTransactionalSession()).toBeRejectedWithError(
+        'creation threw'
+      );
+      await expectAsync(database.createTransactionalSession()).toBeResolved();
+    });
+
+    if (
+      ['replicaset', 'replset'].includes(process.env.MONGODB_TOPOLOGY) ||
+      process.env.PARSE_SERVER_TEST_DB === 'postgres'
+    ) {
+      describe('transactions', () => {
+        beforeEach(async () => {
+          await reconfigureServer({ masterKey: () => 'test' });
+          // Transactions only work on existing classes
+          for (const className of ['SlowObject', 'FailingObject', 'OtherObject']) {
+            await post(`/classes/${className}`, { key: 'value' });
+          }
+          Parse.Cloud.beforeSave('SlowObject', () => sleep(500));
+        });
+
+        it('keeps a write of another client that runs during a failing transactional batch', async () => {
+          const batch = expectAsync(
+            post('/batch', {
+              transaction: true,
+              requests: [
+                { method: 'POST', path: '/1/classes/SlowObject', body: { key: 'value' } },
+                { method: 'POST', path: '/1/classes/FailingObject', body: { key: 10 } },
+              ],
+            })
+          ).toBeRejected();
+          await sleep(150);
+          const response = await post('/classes/OtherObject', { key: 'other client' });
+          await batch;
+          const object = await get(`/classes/OtherObject/${response.data.objectId}`);
+          expect(object.data.key).toBe('other client');
+        });
+
+        it('completes concurrent transactional batches', async () => {
+          const batch = () =>
+            post('/batch', {
+              transaction: true,
+              requests: [
+                { method: 'POST', path: '/1/classes/SlowObject', body: { key: 'value' } },
+                { method: 'POST', path: '/1/classes/OtherObject', body: { key: 'value' } },
+              ],
+            });
+          const first = batch();
+          await sleep(100);
+          const responses = await Promise.all([first, batch()]);
+          for (const response of responses) {
+            expect(response.data.length).toBe(2);
+            expect(response.data.every(result => result.success)).toBeTrue();
+          }
+          const objects = await get('/classes/OtherObject');
+          expect(objects.data.results.length).toBe(3);
+        });
+
+        it('does not fail writes of other clients after a failing transactional batch', async () => {
+          await expectAsync(
+            post('/batch', {
+              transaction: true,
+              requests: [
+                { method: 'POST', path: '/1/classes/OtherObject', body: { key: 'value' } },
+                { method: 'POST', path: '/1/classes/FailingObject', body: { key: 10 } },
+              ],
+            })
+          ).toBeRejected();
+          const response = await post('/classes/OtherObject', { key: 'other client' });
+          expect(response.data.objectId).toBeDefined();
+        });
+      });
+    }
+  });
+
+  describe('(GHSA-46jj-qw3p-48fc) Error when sending verification or password reset email', () => {
+    const { resolvingPromise, sleep } = require('../lib/TestUtils');
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const post = (path, body) =>
+      request({
+        method: 'POST',
+        url: `http://localhost:8378/1${path}`,
+        headers,
+        body,
+      });
+    const signUp = () =>
+      post('/users', { username: 'user', password: 'password', email: 'user@example.com' });
+    const error = new Error('mail provider error');
+
+    let unhandled;
+    let loggerErrorSpy;
+    const onUnhandled = reason => unhandled.push(reason);
+    beforeEach(() => {
+      unhandled = [];
+      process.on('unhandledRejection', onUnhandled);
+    });
+    afterEach(() => {
+      process.removeListener('unhandledRejection', onUnhandled);
+    });
+
+    const reconfigure = async options => {
+      await reconfigureServer({
+        appName: 'test',
+        publicServerURL: 'http://localhost:8378/1',
+        ...options,
+      });
+      loggerErrorSpy = spyOn(require('../lib/logger').default, 'error').and.callFake(() => {});
+    };
+    const errorLogged = message =>
+      loggerErrorSpy.calls.allArgs().some(args => args[0] === message);
+    const expectErrorLogged = async (message, loggedError) => {
+      for (let i = 0; i < 100 && !unhandled.length && !errorLogged(message); i++) {
+        await sleep(10);
+      }
+      expect(unhandled).toEqual([]);
+      expect(loggerErrorSpy).toHaveBeenCalledWith(message, { error: loggedError });
+    };
+    const errorWithRequestData = () => {
+      const e = new Error('mail provider error');
+      e.config = { headers: { Authorization: 'Bearer secret-api-key' } };
+      return e;
+    };
+    const expectRequestDataNotLogged = () => {
+      expect(JSON.stringify(loggerErrorSpy.calls.allArgs())).not.toContain('secret-api-key');
+    };
+
+    describe('verification email', () => {
+      const message = 'Failed to send verification email';
+
+      it('handles rejection of email adapter on sign-up', async () => {
+        await reconfigure({
+          verifyUserEmails: true,
+          emailAdapter: {
+            sendVerificationEmail: () => Promise.reject(error),
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => Promise.resolve(),
+          },
+        });
+        const res = await signUp();
+        expect(res.status).toBe(201);
+        await expectErrorLogged(message, error.stack);
+      });
+
+      it('handles synchronous error of email adapter on sign-up', async () => {
+        await reconfigure({
+          verifyUserEmails: true,
+          emailAdapter: {
+            sendVerificationEmail: () => {
+              throw error;
+            },
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => Promise.resolve(),
+          },
+        });
+        const res = await signUp();
+        expect(res.status).toBe(201);
+        await expectErrorLogged(message, error.stack);
+      });
+
+      it('handles rejection of email adapter sendMail on sign-up', async () => {
+        await reconfigure({
+          verifyUserEmails: true,
+          emailAdapter: {
+            sendMail: () => Promise.reject(error),
+          },
+        });
+        const res = await signUp();
+        expect(res.status).toBe(201);
+        await expectErrorLogged(message, error.stack);
+      });
+
+      it('handles error of sendUserEmailVerification on sign-up', async () => {
+        await reconfigure({
+          verifyUserEmails: true,
+          sendUserEmailVerification: () => {
+            throw error;
+          },
+          emailAdapter: {
+            sendVerificationEmail: () => Promise.resolve(),
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => Promise.resolve(),
+          },
+        });
+        const res = await signUp();
+        expect(res.status).toBe(201);
+        await expectErrorLogged(message, error.stack);
+      });
+
+      it('handles user deleted before verification email is sent', async () => {
+        await reconfigure({
+          verifyUserEmails: true,
+          emailAdapter: {
+            sendVerificationEmail: () => Promise.resolve(),
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => Promise.resolve(),
+          },
+        });
+        const userController = Config.get('test').userController;
+        const getUserIfNeeded = userController.getUserIfNeeded.bind(userController);
+        const userDeleted = resolvingPromise();
+        spyOn(userController, 'getUserIfNeeded').and.callFake(async user => {
+          await userDeleted;
+          return getUserIfNeeded(user);
+        });
+        const res = await signUp();
+        expect(res.status).toBe(201);
+        await request({
+          method: 'DELETE',
+          url: `http://localhost:8378/1/users/${res.data.objectId}`,
+          headers: { ...headers, 'X-Parse-Master-Key': 'test' },
+        });
+        userDeleted.resolve();
+        await expectErrorLogged(message, 'undefined');
+      });
+
+      it('does not log properties of email adapter error', async () => {
+        const adapterError = errorWithRequestData();
+        await reconfigure({
+          verifyUserEmails: true,
+          emailAdapter: {
+            sendVerificationEmail: () => Promise.reject(adapterError),
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => Promise.resolve(),
+          },
+        });
+        await signUp();
+        await expectErrorLogged(message, adapterError.stack);
+        expectRequestDataNotLogged();
+      });
+
+      it('does not log properties of sendUserEmailVerification error', async () => {
+        const callbackError = errorWithRequestData();
+        await reconfigure({
+          verifyUserEmails: true,
+          sendUserEmailVerification: () => {
+            throw callbackError;
+          },
+          emailAdapter: {
+            sendVerificationEmail: () => Promise.resolve(),
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => Promise.resolve(),
+          },
+        });
+        await signUp();
+        await expectErrorLogged(message, callbackError.stack);
+        expectRequestDataNotLogged();
+      });
+
+      describe('resend', () => {
+        let firstSend;
+        beforeEach(async () => {
+          firstSend = resolvingPromise();
+          let sendCount = 0;
+          await reconfigure({
+            verifyUserEmails: true,
+            emailAdapter: {
+              sendVerificationEmail: () => {
+                sendCount++;
+                if (sendCount === 1) {
+                  firstSend.resolve();
+                  return Promise.resolve();
+                }
+                return Promise.reject(error);
+              },
+              sendPasswordResetEmail: () => Promise.resolve(),
+              sendMail: () => Promise.resolve(),
+            },
+          });
+          await signUp();
+          await firstSend;
+        });
+
+        it('handles rejection of email adapter on verification email request', async () => {
+          const res = await post('/verificationEmailRequest', { email: 'user@example.com' });
+          expect(res.status).toBe(200);
+          expect(res.data).toEqual({});
+          await expectErrorLogged(message, error.stack);
+        });
+
+        it('handles rejection of email adapter on resend verification email page', async () => {
+          const res = await request({
+            method: 'POST',
+            url: 'http://localhost:8378/1/apps/test/resend_verification_email',
+            followRedirects: false,
+            body: { username: 'user' },
+          });
+          expect(res.status).toBe(303);
+          expect(res.text).toContain('email_verification_send_success.html');
+          await expectErrorLogged(message, error.stack);
+        });
+      });
+    });
+
+    describe('password reset email', () => {
+      const message = 'Failed to send password reset email';
+
+      const requestPasswordReset = async emailAdapter => {
+        await reconfigure({ emailAdapter });
+        await signUp();
+        const res = await post('/requestPasswordReset', { email: 'user@example.com' });
+        expect(res.status).toBe(200);
+        expect(res.data).toEqual({});
+      };
+
+      it('handles rejection of email adapter', async () => {
+        await requestPasswordReset({
+          sendVerificationEmail: () => Promise.resolve(),
+          sendPasswordResetEmail: () => Promise.reject(error),
+          sendMail: () => Promise.resolve(),
+        });
+        await expectErrorLogged(message, error.stack);
+      });
+
+      it('handles synchronous error of email adapter', async () => {
+        await requestPasswordReset({
+          sendVerificationEmail: () => Promise.resolve(),
+          sendPasswordResetEmail: () => {
+            throw error;
+          },
+          sendMail: () => Promise.resolve(),
+        });
+        await expectErrorLogged(message, error.stack);
+      });
+
+      it('handles rejection of email adapter sendMail', async () => {
+        await requestPasswordReset({
+          sendMail: () => Promise.reject(error),
+        });
+        await expectErrorLogged(message, error.stack);
+      });
+
+      it('does not log properties of email adapter error', async () => {
+        const adapterError = errorWithRequestData();
+        await requestPasswordReset({
+          sendVerificationEmail: () => Promise.resolve(),
+          sendPasswordResetEmail: () => Promise.reject(adapterError),
+          sendMail: () => Promise.resolve(),
+        });
+        await expectErrorLogged(message, adapterError.stack);
+        expectRequestDataNotLogged();
       });
     });
   });
