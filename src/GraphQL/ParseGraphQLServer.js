@@ -412,6 +412,11 @@ class ParseGraphQLServer {
       requiredParameter('You must provide an Express.js app instance!');
     }
     app.use(this.config.graphQLPath, allowCrossDomain(this.parseServer.config.appId));
+    app.use(this.config.graphQLPath, (req, _res, next) => {
+      // Rate limit path for any URL variant of the endpoint
+      req._graphQLPath = this.config.graphQLPath;
+      next();
+    });
     app.use(this.config.graphQLPath, handleParseHeaders);
     app.use(this.config.graphQLPath, handleParseSession);
     this.applyRequestContextMiddleware(app, this.parseServer.config);
