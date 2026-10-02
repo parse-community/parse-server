@@ -1,3 +1,10 @@
+## [9.10.2-alpha.8](https://github.com/parse-community/parse-server/compare/9.10.2-alpha.7...9.10.2-alpha.8) (2026-10-02)
+
+
+### Bug Fixes
+
+* Rate limit with option `requestPath` set to GraphQL endpoint path has no effect ([#10738](https://github.com/parse-community/parse-server/issues/10738)) ([c23825e](https://github.com/parse-community/parse-server/commit/c23825eb441bee57bf4ac714ada11fbcb501f919))
+
 ## [9.10.2-alpha.7](https://github.com/parse-community/parse-server/compare/9.10.2-alpha.6...9.10.2-alpha.7) (2026-10-02)
 
 
