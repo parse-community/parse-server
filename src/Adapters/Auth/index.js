@@ -1,6 +1,7 @@
 import loadAdapter from '../AdapterLoader';
 import Parse from 'parse/node';
 import AuthAdapter from './AuthAdapter';
+import { logger } from '../../logger';
 
 const apple = require('./apple');
 const digits = require('./twitter'); // digits tokens are validated by twitter
@@ -228,7 +229,20 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
     const adapters = Object.keys(authData);
     await Promise.all(
       adapters.map(async provider => {
-        const authAdapter = getValidatorForProvider(provider);
+        let authAdapter;
+        try {
+          authAdapter = getValidatorForProvider(provider);
+        } catch (e) {
+          // The adapter could not be resolved — typically a built-in code-auth provider such as
+          // `line`/`instagram` that was removed from config while a _User still carries stale
+          // `_auth_data_<provider>` (loadAuthAdapter throws from validateOptions when a built-in
+          // adapter has no options). Skip afterFind for this provider instead of failing the
+          // whole _User fetch, but log so a genuine adapter error is not silently swallowed. (#10526)
+          logger.warn(
+            `Skipping afterFind auth adapter for provider "${provider}": ${e.message || e}`
+          );
+          return;
+        }
         if (!authAdapter) {
           return;
         }
