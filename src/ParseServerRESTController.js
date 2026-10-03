@@ -2,6 +2,20 @@ const Config = require('./Config');
 const Auth = require('./Auth');
 import RESTController from 'parse/lib/node/RESTController';
 const Parse = require('parse/node');
+import os from 'os';
+
+let loopbackAddress;
+function getLoopbackAddress() {
+  if (loopbackAddress) {
+    return loopbackAddress;
+  }
+  const interfaces = os.networkInterfaces();
+  const hasIPv6Loopback = Object.values(interfaces).some(addresses =>
+    addresses?.some(iface => iface.internal && (iface.family === 'IPv6' || iface.family === 6))
+  );
+  loopbackAddress = hasIPv6Loopback ? '::1' : '127.0.0.1';
+  return loopbackAddress;
+}
 
 function getSessionToken(options) {
   if (options && typeof options.sessionToken === 'string') {
@@ -37,6 +51,7 @@ function ParseServerRESTController(applicationId, router) {
     if (!config) {
       config = Config.get(applicationId);
     }
+    config.ip = config.ip || getLoopbackAddress();
     const serverURL = new URL(config.serverURL);
     if (path.indexOf(serverURL.pathname) === 0) {
       path = path.slice(serverURL.pathname.length, path.length);
