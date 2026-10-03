@@ -28,10 +28,16 @@ class ParseCloudCodePublisher {
     this._onCloudCodeMessage(Parse.applicationId + 'afterDelete', request);
   }
 
-  onClearCachedRoles(user: Parse.Object) {
+  onClearCachedRoles(user: ?Parse.Object) {
+    // A role write or delete changes the effective role closure of every member
+    // of that role and of any role inheriting from it, not just the acting
+    // user, and a master key request has no acting user at all. `clearAll` asks
+    // subscribers to drop every cached auth. `userId` is still sent when it is
+    // known so that a LiveQuery server running an older version, which only
+    // understands the targeted form, keeps behaving as it does today.
     this.parsePublisher.publish(
       Parse.applicationId + 'clearCache',
-      JSON.stringify({ userId: user.id })
+      JSON.stringify({ userId: user?.id, clearAll: true })
     );
   }
 
