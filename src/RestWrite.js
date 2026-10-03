@@ -770,6 +770,19 @@ RestWrite.prototype.checkRestrictedFields = async function () {
   }
 };
 
+// Validates the create or update class-level permission before schema validation
+RestWrite.prototype.validateWritePermission = async function () {
+  if (this.auth.isMaster || this.auth.isMaintenance) {
+    return;
+  }
+  const schemaController = await this.config.database.loadSchema();
+  await schemaController.validatePermission(
+    this.className,
+    this.runOptions.acl || [],
+    this.query ? 'update' : 'create'
+  );
+};
+
 // The non-third-party parts of User transformation
 RestWrite.prototype.transformUser = async function () {
   var promise = Promise.resolve();
@@ -1264,7 +1277,9 @@ RestWrite.prototype.handleSession = function () {
       additionalSessionData,
     });
 
-    return createSession().then(results => {
+    // Enforce the caller's class-level permissions and schema before the master write
+    const validated = this.validateWritePermission().then(() => this.validateSchema());
+    return validated.then(() => createSession()).then(results => {
       if (!results.response) {
         throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Error creating session.');
       }
