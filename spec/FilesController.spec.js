@@ -5,6 +5,11 @@ const GridFSBucketAdapter = require('../lib/Adapters/Files/GridFSBucketAdapter')
   .GridFSBucketAdapter;
 const Config = require('../lib/Config');
 const FilesController = require('../lib/Controllers/FilesController').default;
+const {
+  normalizeFilename,
+  validateFilename,
+  validateFilepath,
+} = require('../lib/Adapters/Files/FilesAdapter');
 const databaseURI = 'mongodb://localhost:27017/parse';
 
 const mockAdapter = {
@@ -151,7 +156,7 @@ describe('FilesController', () => {
       return 'Bad file! No biscuit!';
     };
     const filesController = new FilesController(mockAdapter);
-    const error = filesController.validateFilename();
+    const error = filesController.validateFilename('test.txt');
     expect(typeof error).toBe('object');
     expect(error.message.indexOf('biscuit')).toBe(13);
     expect(error.code).toBe(Parse.Error.INVALID_FILE_NAME);
@@ -217,5 +222,123 @@ describe('FilesController', () => {
     const fileName = 'foo/randomFileName.pdf';
     expect(gridFSAdapter.validateFilename(fileName)).not.toBe(null);
     done();
+  });
+
+  it('should allow accented characters in file names', done => {
+    const gridFSAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
+    const fileName = 'café.txt';
+    expect(gridFSAdapter.validateFilename(fileName)).toBe(null);
+    done();
+  });
+
+  it('rejects non-string filenames without throwing', () => {
+    for (const bad of [null, undefined, 42, {}, '']) {
+      const error = validateFilename(bad);
+      expect(error).not.toBeNull();
+      expect(error.code).toBe(Parse.Error.INVALID_FILE_NAME);
+      expect(error.message).toMatch(/string/i);
+    }
+  });
+
+  describe('validateFilepath', () => {
+    const expectRejected = (filepath, messagePart) => {
+      const error = validateFilepath(filepath);
+      expect(error).not.toBeNull();
+      expect(error.code).toBe(Parse.Error.INVALID_FILE_NAME);
+      if (messagePart) {
+        expect(error.message).toContain(messagePart);
+      }
+    };
+
+    it('accepts valid single- and multi-segment paths', () => {
+      for (const valid of [
+        'file.txt',
+        'docs/file.txt',
+        'docs/caf\u00e9.txt',
+        'docs/cafe\u0301.txt',
+        'a..b.txt',
+        'docs/a..b.txt',
+        'docs/metadata/file.txt',
+      ]) {
+        expect(validateFilepath(valid)).toBeNull();
+      }
+    });
+
+    it('rejects non-string filepaths without throwing', () => {
+      for (const bad of [null, undefined, 42, {}, '']) {
+        expectRejected(bad, 'string');
+      }
+    });
+
+    it('rejects path traversal segments', () => {
+      for (const bad of ['..', 'foo/../bar', '../bar', 'foo/..']) {
+        expectRejected(bad, '..');
+      }
+    });
+
+    it('rejects leading or trailing slashes', () => {
+      for (const bad of ['/foo', 'foo/', '/foo/bar', 'foo/bar/']) {
+        expectRejected(bad, 'start or end');
+      }
+    });
+
+    it('rejects consecutive slashes', () => {
+      expectRejected('foo//bar', 'consecutive slashes');
+    });
+
+    it('rejects reserved first segments only', () => {
+      expectRejected('metadata', 'reserved segment');
+      expectRejected('metadata/evil.txt', 'reserved segment');
+      expect(validateFilepath('docs/metadata/evil.txt')).toBeNull();
+    });
+
+    it('rejects invalid nested filename segments', () => {
+      expectRejected('docs/bad?.txt', 'invalid characters');
+      expectRejected(`docs/_${'a'.repeat(128)}`, 'too long');
+      expectRejected('docs/..', '..');
+    });
+  });
+
+  it('rejects non-string filenames from FilesController without throwing', () => {
+    const filesController = new FilesController(mockAdapter);
+    const error = filesController.validateFilename();
+    expect(typeof error).toBe('object');
+    expect(error.code).toBe(Parse.Error.INVALID_FILE_NAME);
+    expect(error.message).toMatch(/string/i);
+  });
+
+  it('accepts NFC and NFD accented filenames after normalization', () => {
+    expect(validateFilename('caf\u00e9.txt')).toBeNull();
+    expect(validateFilename('cafe\u0301.txt')).toBeNull();
+  });
+
+  it('rejects path traversal filenames and non-decimal number characters', () => {
+    const dotDotError = validateFilename('..');
+    expect(dotDotError).not.toBeNull();
+    expect(dotDotError.message).toBe('Filename must not be "..".');
+
+    for (const bad of ['\u2160.txt', '\u00bd.txt']) {
+      const error = validateFilename(bad);
+      expect(error).not.toBeNull();
+      expect(error.message).toContain('invalid characters');
+    }
+    expect(validateFilename('123.txt')).toBeNull();
+  });
+
+
+  it('returns non-string filenames unchanged from normalizeFilename', () => {
+    expect(normalizeFilename(null)).toBeNull();
+    expect(normalizeFilename(undefined)).toBeUndefined();
+    expect(normalizeFilename(42)).toBe(42);
+  });
+
+  it('rejects invalid filename segments', () => {
+    const tooLongError = validateFilename(`_${'a'.repeat(128)}`);
+    expect(tooLongError).not.toBeNull();
+    expect(tooLongError.message).toContain('too long');
+
+    const invalidCharsError = validateFilename('bad?.txt');
+    expect(invalidCharsError).not.toBeNull();
+    expect(invalidCharsError.message).toContain('invalid characters');
   });
 });

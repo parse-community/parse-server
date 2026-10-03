@@ -1,6 +1,7 @@
 const { GraphQLObjectType } = require('graphql');
 const defaultLogger = require('../lib/logger').default;
 const { ParseGraphQLSchema } = require('../lib/GraphQL/ParseGraphQLSchema');
+const graphqlUploadHelper = require('../lib/GraphQL/helpers/graphqlUpload');
 
 describe('ParseGraphQLSchema', () => {
   let parseServer;
@@ -52,6 +53,19 @@ describe('ParseGraphQLSchema', () => {
       const graphQLSchema = await parseGraphQLSchema.load();
       const updatedGraphQLSchema = await parseGraphQLSchema.load();
       expect(graphQLSchema).toBe(updatedGraphQLSchema);
+    });
+
+    it('should load the Upload GraphQL type only once when load is called in parallel', async () => {
+      const getGraphQLUploadSpy = spyOn(graphqlUploadHelper, 'getGraphQLUpload').and.callThrough();
+      const loadSpy = spyOn(parseGraphQLSchema, '_load').and.callThrough();
+
+      await Promise.all(Array.from({ length: 100 }, () => parseGraphQLSchema.load()));
+
+      expect(loadSpy.calls.count()).toBe(1);
+      expect(getGraphQLUploadSpy.calls.count()).toBe(1);
+      expect(
+        parseGraphQLSchema.graphQLTypes.filter(type => type.name === 'Upload').length
+      ).toBe(1);
     });
 
     it('should load a brand new GraphQL Schema if Parse Schema changes', async () => {
