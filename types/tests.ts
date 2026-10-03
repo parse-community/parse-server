@@ -36,6 +36,21 @@ async function server() {
 
   // $ExpectType ParseServer
   await parseServer2.start();
+
+  // passwordPolicy.validatorCallback accepts (password: string) => boolean
+  // $ExpectType ParseServer
+  await ParseServer.startApp({
+    passwordPolicy: {
+      validatorCallback: (password: string): boolean => password !== 'badpw',
+    },
+  });
+
+  await ParseServer.startApp({
+    passwordPolicy: {
+      // $ExpectError
+      validatorCallback: (password: string): string => password,
+    },
+  });
 }
 
 function exports() {
