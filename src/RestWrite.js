@@ -1330,20 +1330,18 @@ RestWrite.prototype.handleSession = function () {
     });
 
     // Enforce the caller's class-level permissions and schema before the master write
-    return this.validateWritePermission()
-      .then(() => this.validateSchema())
-      .then(() => createSession())
-      .then(results => {
-        if (!results.response) {
-          throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Error creating session.');
-        }
-        sessionData['objectId'] = results.response['objectId'];
-        this.response = {
-          status: 201,
-          location: results.location,
-          response: sessionData,
-        };
-      });
+    const validated = this.validateWritePermission().then(() => this.validateSchema());
+    return validated.then(() => createSession()).then(results => {
+      if (!results.response) {
+        throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Error creating session.');
+      }
+      sessionData['objectId'] = results.response['objectId'];
+      this.response = {
+        status: 201,
+        location: results.location,
+        response: sessionData,
+      };
+    });
   }
 };
 
