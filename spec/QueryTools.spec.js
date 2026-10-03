@@ -777,6 +777,28 @@ describe('matchesQuery', function () {
     expect(matchesQuery(message, q)).toBe(false);
   });
 
+  it('does not match or crash when a pointer field is null (#7929)', () => {
+    // Parse Dashboard stores a cleared pointer as null rather than unsetting it.
+    const message = {
+      id: new Id('Message', 'O1'),
+      profile: null,
+    };
+    const q = new Parse.Query('Message');
+    q.equalTo('profile', Parse.Object.fromJSON({ className: 'Profile', objectId: 'abc' }));
+    expect(matchesQuery(message, q)).toBe(false);
+  });
+
+  it('does not match or crash when a typed field is null (#7929)', () => {
+    // Same null-field scenario against a non-pointer typed constraint (goes through equalObjects).
+    const obj = {
+      id: new Id('Person', 'O1'),
+      birthday: null,
+    };
+    const q = new Parse.Query('Person');
+    q.equalTo('birthday', new Date(1990, 1));
+    expect(matchesQuery(obj, q)).toBe(false);
+  });
+
   it('should support containedIn with array of pointers', () => {
     const message = {
       id: new Id('Message', 'O2'),
