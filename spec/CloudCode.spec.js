@@ -153,6 +153,27 @@ describe('Cloud Code', () => {
     );
   });
 
+  it('does not hang when a beforeSave object has a malformed pointer (#7490)', async () => {
+    Parse.Cloud.beforeSave('Stuff', () => {});
+
+    // A pointer with an empty objectId cannot be serialised, which used to throw
+    // inside the trigger response handler and leave the request hanging forever.
+    // The SDK rejects such a pointer client-side, so send it as a raw REST body.
+    const response = await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/Stuff',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ Owner: { __type: 'Pointer', className: '_User', objectId: '' } }),
+    }).catch(e => e);
+
+    expect(response.status).toBe(400);
+    expect(response.data.code).toBe(Parse.Error.SCRIPT_FAILED);
+  });
+
   it('returns an error', done => {
     Parse.Cloud.define('cloudCodeWithError', () => {
       /* eslint-disable no-undef */
