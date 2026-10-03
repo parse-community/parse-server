@@ -35,6 +35,26 @@ describe('Deprecator', () => {
     expect(logSpy).not.toHaveBeenCalled();
   });
 
+  it('does not log deprecation for new default if logLevels.deprecation is silent', async () => {
+    deprecations = [{ optionKey: 'exampleKey', changeNewDefault: 'exampleNewDefault' }];
+
+    spyOn(Deprecator, '_getDeprecations').and.callFake(() => deprecations);
+    const logger = require('../lib/logger').logger;
+    const logSpy = spyOn(logger, 'warn').and.callFake(() => {});
+    await reconfigureServer({ logLevels: { deprecation: 'silent' } });
+    expect(logSpy).not.toHaveBeenCalled();
+  });
+
+  it('does not log deprecation for new default if logLevels.deprecation_exampleKey is silent', async () => {
+    deprecations = [{ optionKey: 'exampleKey', changeNewDefault: 'exampleNewDefault' }];
+
+    spyOn(Deprecator, '_getDeprecations').and.callFake(() => deprecations);
+    const logger = require('../lib/logger').logger;
+    const logSpy = spyOn(logger, 'warn').and.callFake(() => {});
+    await reconfigureServer({ logLevels: { deprecation_exampleKey: 'silent' } });
+    expect(logSpy).not.toHaveBeenCalled();
+  });
+
   it('logs runtime deprecation', async () => {
     const logger = require('../lib/logger').logger;
     const logSpy = spyOn(logger, 'warn').and.callFake(() => {});
