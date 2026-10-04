@@ -1329,7 +1329,9 @@ RestWrite.prototype.handleSession = function () {
       additionalSessionData,
     });
 
-    return createSession().then(results => {
+    // Enforce the caller's class-level permissions and schema before the master write
+    const validated = this.validateWritePermission().then(() => this.validateSchema());
+    return validated.then(() => createSession()).then(results => {
       if (!results.response) {
         throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Error creating session.');
       }
