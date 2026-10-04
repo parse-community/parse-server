@@ -1,3 +1,10 @@
+## [9.10.3-alpha.2](https://github.com/parse-community/parse-server/compare/9.10.3-alpha.1...9.10.3-alpha.2) (2026-10-04)
+
+
+### Bug Fixes
+
+* User update runs checks against the target account before authorization ([GHSA-p49q-9w65-f9p7](https://github.com/parse-community/parse-server/security/advisories/GHSA-p49q-9w65-f9p7)) ([#10746](https://github.com/parse-community/parse-server/issues/10746)) ([643b918](https://github.com/parse-community/parse-server/commit/643b9181c38ac92592fe895d0e2304090d95eb7e))
+
 ## [9.10.3-alpha.1](https://github.com/parse-community/parse-server/compare/9.10.2...9.10.3-alpha.1) (2026-10-04)
 
 
