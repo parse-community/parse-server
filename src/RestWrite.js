@@ -110,6 +110,9 @@ RestWrite.prototype.execute = function () {
       return this.handleSession();
     })
     .then(() => {
+      return this.authorizeUserUpdate();
+    })
+    .then(() => {
       return this.validateAuthData();
     })
     .then(() => {
@@ -129,9 +132,6 @@ RestWrite.prototype.execute = function () {
     })
     .then(() => {
       return this.validateWritePermission();
-    })
-    .then(() => {
-      return this.authorizeUserUpdate();
     })
     .then(() => {
       return this.validateSchema();
@@ -800,9 +800,7 @@ RestWrite.prototype.validateWritePermission = async function () {
   );
 };
 
-// Authorizes a _User update before any password-policy lookup can read the
-// target account. Password-policy checks in transformUser load the target and
-// reflect its stored data in the response, so authorization must happen first.
+// Authorize a _User update before any step reads the target account
 RestWrite.prototype.authorizeUserUpdate = async function () {
   if (this.className !== '_User' || !this.query) {
     return;
@@ -810,7 +808,6 @@ RestWrite.prototype.authorizeUserUpdate = async function () {
   if (this.auth.isMaster || this.auth.isMaintenance) {
     return;
   }
-  // Reject callers without a session before the password-policy lookups run
   if (this.auth.isUnauthenticated()) {
     throw createSanitizedError(
       Parse.Error.SESSION_MISSING,
@@ -818,20 +815,19 @@ RestWrite.prototype.authorizeUserUpdate = async function () {
       this.config
     );
   }
-  // Only a password policy reads the target before the write authorizes it, so
-  // only then verify write access to the target object up front. The check
-  // reuses the write-path ACL enforcement (validateOnly) and throws
-  // OBJECT_NOT_FOUND when the caller cannot write the target.
-  if (this.config.passwordPolicy) {
-    await this.config.database.update(
-      this.className,
-      { objectId: this.query.objectId },
-      {},
-      this.runOptions,
-      false,
-      true
-    );
+  // Body objectId must not retarget the update
+  if (this.data.objectId !== undefined && this.data.objectId !== this.query.objectId) {
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
   }
+  // Write access check via the write-path ACL enforcement
+  await this.config.database.update(
+    this.className,
+    { objectId: this.query.objectId },
+    {},
+    this.runOptions,
+    false,
+    true
+  );
 };
 
 // The non-third-party parts of User transformation

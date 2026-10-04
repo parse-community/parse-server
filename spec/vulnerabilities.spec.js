@@ -3189,7 +3189,7 @@ describe('Vulnerabilities', () => {
     });
   });
 
-  describe('(GHSA-p49q-9w65-f9p7) User update runs password policy checks before authorization', () => {
+  describe('(GHSA-p49q-9w65-f9p7) User update runs checks against the target account before authorization', () => {
     const restHeaders = extra => ({
       'X-Parse-Application-Id': Parse.applicationId,
       'X-Parse-REST-API-Key': 'rest',
@@ -3263,7 +3263,8 @@ describe('Vulnerabilities', () => {
           { objectId: victim.id, password: 'WrongGuess999' },
           auth
         );
-        expect((match.data && match.data.error) || '').not.toContain('should not be the same');
+        expect(match.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(wrong.data.code).toBe(Parse.Error.SESSION_MISSING);
         expect(signature(match)).toBe(signature(wrong));
       });
 
@@ -3297,6 +3298,91 @@ describe('Vulnerabilities', () => {
         const repeat = await updateUser(target.id, { password: 'TargetPass123' }, master);
         expect(repeat.data.code).toBe(Parse.Error.VALIDATION_ERROR);
         const fresh = await updateUser(target.id, { password: 'FreshPass456' }, master);
+        expect(fresh.status).toBe(200);
+      });
+
+      it('still enforces the password history for the maintenance key', async () => {
+        const target = await createUser('targetHistory', 'TargetPass123');
+        const maintenance = { 'X-Parse-Maintenance-Key': 'testing' };
+        const repeat = await updateUser(target.id, { password: 'TargetPass123' }, maintenance);
+        expect(repeat.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+        const fresh = await updateUser(target.id, { password: 'FreshPass456' }, maintenance);
+        expect(fresh.status).toBe(200);
+      });
+
+      it('answers a nonexistent target with OBJECT_NOT_FOUND for the master and maintenance keys', async () => {
+        for (const headers of [
+          { 'X-Parse-Master-Key': Parse.masterKey },
+          { 'X-Parse-Maintenance-Key': 'testing' },
+        ]) {
+          const response = await updateUser('doesNotExist0', { password: 'Anything123' }, headers);
+          expect(response.status).not.toBe(500);
+          expect(response.data.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+        }
+      });
+
+      it('answers a user deleted during the update with OBJECT_NOT_FOUND', async () => {
+        const DatabaseController = require('../lib/Controllers/DatabaseController');
+        const target = await createUser('targetHistory', 'TargetPass123');
+        const find = DatabaseController.prototype.find;
+        let historyReads = 0;
+        // Simulate the user being deleted between the history check and the history save
+        spyOn(DatabaseController.prototype, 'find').and.callFake(function (className, query, options, ...rest) {
+          if (className === '_User' && options?.keys?.includes('_password_history')) {
+            historyReads++;
+            if (historyReads === 2) {
+              return Promise.resolve([]);
+            }
+          }
+          return find.call(this, className, query, options, ...rest);
+        });
+        const response = await updateUser(
+          target.id,
+          { password: 'FreshPass456' },
+          { 'X-Parse-Master-Key': Parse.masterKey }
+        );
+        expect(historyReads).toBe(2);
+        expect(response.status).not.toBe(500);
+        expect(response.data.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      });
+
+      it('lets a user with write access through the ACL change the password', async () => {
+        const target = await createUser('targetHistory', 'TargetPass123');
+        const writer = await createUser('writerHistory', 'WriterPass123');
+        const acl = new Parse.ACL();
+        acl.setReadAccess(target.id, true);
+        acl.setWriteAccess(target.id, true);
+        acl.setReadAccess(writer.id, true);
+        acl.setWriteAccess(writer.id, true);
+        const targetUser = Parse.User.createWithoutData(target.id);
+        targetUser.setACL(acl);
+        await targetUser.save(null, { useMasterKey: true });
+        const auth = { 'X-Parse-Session-Token': writer.sessionToken };
+        const repeat = await updateUser(target.id, { password: 'TargetPass123' }, auth);
+        expect(repeat.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+        expect(repeat.data.error).toContain('should not be the same');
+        const fresh = await updateUser(target.id, { password: 'FreshPass456' }, auth);
+        expect(fresh.status).toBe(200);
+      });
+
+      it('lets a user with write access through a role change the password', async () => {
+        const target = await createUser('targetHistory', 'TargetPass123');
+        const writer = await createUser('writerHistory', 'WriterPass123');
+        const role = new Parse.Role('userAdmins', new Parse.ACL());
+        role.getUsers().add(Parse.User.createWithoutData(writer.id));
+        await role.save(null, { useMasterKey: true });
+        const acl = new Parse.ACL();
+        acl.setReadAccess(target.id, true);
+        acl.setWriteAccess(target.id, true);
+        acl.setRoleReadAccess('userAdmins', true);
+        acl.setRoleWriteAccess('userAdmins', true);
+        const targetUser = Parse.User.createWithoutData(target.id);
+        targetUser.setACL(acl);
+        await targetUser.save(null, { useMasterKey: true });
+        const auth = { 'X-Parse-Session-Token': writer.sessionToken };
+        const repeat = await updateUser(target.id, { password: 'TargetPass123' }, auth);
+        expect(repeat.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+        const fresh = await updateUser(target.id, { password: 'FreshPass456' }, auth);
         expect(fresh.status).toBe(200);
       });
     });
@@ -3334,6 +3420,16 @@ describe('Vulnerabilities', () => {
         expect(response.data.code).toBe(Parse.Error.SESSION_MISSING);
       });
 
+      it('answers a nonexistent target with OBJECT_NOT_FOUND for the master key', async () => {
+        const response = await updateUser(
+          'doesNotExist0',
+          { password: 'Anything123' },
+          { 'X-Parse-Master-Key': Parse.masterKey }
+        );
+        expect(response.status).not.toBe(500);
+        expect(response.data.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      });
+
       it('still rejects a password containing the username for the owner', async () => {
         const owner = await createUser('ownername', 'OwnerPass123');
         const auth = { 'X-Parse-Session-Token': owner.sessionToken };
@@ -3351,10 +3447,86 @@ describe('Vulnerabilities', () => {
       });
 
       it('rejects an unauthenticated user update before the username uniqueness check', async () => {
+        await createUser('takenName', 'OtherPass123');
         const victim = await createUser('plainVictim', 'VictimSecret123');
-        const response = await updateUser(victim.id, { username: 'plainVictim' });
+        const response = await updateUser(victim.id, { username: 'takenName' });
         expect(response.data.code).toBe(Parse.Error.SESSION_MISSING);
-        expect(response.data.code).not.toBe(Parse.Error.USERNAME_TAKEN);
+      });
+
+      it('authenticated cross-user update does not reveal whether a username is taken', async () => {
+        await createUser('takenName', 'OtherPass123');
+        const victim = await createUser('plainVictim', 'VictimSecret123');
+        const attacker = await createUser('plainAttacker', 'AttackerPass123');
+        const auth = { 'X-Parse-Session-Token': attacker.sessionToken };
+        const taken = await updateUser(victim.id, { username: 'takenName' }, auth);
+        const free = await updateUser(victim.id, { username: 'freeName' }, auth);
+        expect(taken.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(free.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(signature(taken)).toBe(signature(free));
+      });
+
+      it('authenticated cross-user update does not reveal whether an email is taken', async () => {
+        const other = new Parse.User();
+        other.set({ username: 'emailOwner', password: 'OtherPass123', email: 'taken@example.com' });
+        await other.signUp();
+        const victim = await createUser('plainVictim', 'VictimSecret123');
+        const attacker = await createUser('plainAttacker', 'AttackerPass123');
+        const auth = { 'X-Parse-Session-Token': attacker.sessionToken };
+        const taken = await updateUser(victim.id, { email: 'taken@example.com' }, auth);
+        const free = await updateUser(victim.id, { email: 'free@example.com' }, auth);
+        expect(taken.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(free.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(signature(taken)).toBe(signature(free));
+      });
+
+      it('rejects a body objectId that addresses another user', async () => {
+        const other = await createUser('plainOther', 'OtherPass123');
+        const owner = await createUser('plainOwner', 'OwnerPass123');
+        const response = await updateUser(
+          owner.id,
+          { objectId: other.id, nickname: 'me' },
+          { 'X-Parse-Session-Token': owner.sessionToken }
+        );
+        expect(response.data.code).toBe(Parse.Error.SESSION_MISSING);
+      });
+
+      it('rejects a cross-user update carrying authData before reading the target authData', async () => {
+        const Auth = require('../lib/Auth');
+        const victim = await createUser('plainVictim', 'VictimSecret123');
+        const attacker = await createUser('plainAttacker', 'AttackerPass123');
+        const spy = spyOn(Auth, 'findUsersWithAuthData').and.callThrough();
+        const body = { authData: { anonymous: { id: '00000000-0000-4000-8000-000000000000' } } };
+        const unauthenticated = await updateUser(victim.id, body);
+        const authenticated = await updateUser(victim.id, body, {
+          'X-Parse-Session-Token': attacker.sessionToken,
+        });
+        expect(unauthenticated.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(authenticated.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(spy).not.toHaveBeenCalled();
+      });
+
+      it('runs the _User beforeSave trigger only for an authorized update', async () => {
+        let calls = 0;
+        Parse.Cloud.beforeSave(Parse.User, () => {
+          calls++;
+        });
+        const victim = await createUser('plainVictim', 'VictimSecret123');
+        const attacker = await createUser('plainAttacker', 'AttackerPass123');
+        calls = 0;
+        const denied = await updateUser(
+          victim.id,
+          { nickname: 'x' },
+          { 'X-Parse-Session-Token': attacker.sessionToken }
+        );
+        expect(denied.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(calls).toBe(0);
+        const allowed = await updateUser(
+          victim.id,
+          { nickname: 'x' },
+          { 'X-Parse-Session-Token': victim.sessionToken }
+        );
+        expect(allowed.status).toBe(200);
+        expect(calls).toBe(1);
       });
 
       it('still lets the owner update the own record', async () => {
