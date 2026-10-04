@@ -1,3 +1,10 @@
+## [8.6.98](https://github.com/parse-community/parse-server/compare/8.6.97...8.6.98) (2026-10-04)
+
+
+### Bug Fixes
+
+* Session creation endpoint bypasses create and addField class-level permissions ([GHSA-gj37-5hg5-p729](https://github.com/parse-community/parse-server/security/advisories/GHSA-gj37-5hg5-p729)) ([#10745](https://github.com/parse-community/parse-server/issues/10745)) ([019b4a4](https://github.com/parse-community/parse-server/commit/019b4a4a446136ff3d9d8c9e82126b2fbf5e03e9))
+
 ## [8.6.97](https://github.com/parse-community/parse-server/compare/8.6.96...8.6.97) (2026-09-30)
 
 
