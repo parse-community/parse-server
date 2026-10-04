@@ -819,6 +819,10 @@ RestWrite.prototype.authorizeUserUpdate = async function () {
   if (this.data.objectId !== undefined && this.data.objectId !== this.query.objectId) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
   }
+  // Owner update reads only own data; the write stays ACL-checked
+  if (this.auth.user.id === this.query.objectId) {
+    return;
+  }
   // Write access check via the write-path ACL enforcement
   await this.config.database.update(
     this.className,

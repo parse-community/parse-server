@@ -3529,6 +3529,22 @@ describe('Vulnerabilities', () => {
         expect(calls).toBe(1);
       });
 
+      it('does not add a write-access read when the owner updates the own record', async () => {
+        const DatabaseController = require('../lib/Controllers/DatabaseController');
+        const owner = await createUser('plainOwner', 'OwnerPass123');
+        const spy = spyOn(DatabaseController.prototype, 'update').and.callThrough();
+        const response = await updateUser(
+          owner.id,
+          { nickname: 'me' },
+          { 'X-Parse-Session-Token': owner.sessionToken }
+        );
+        expect(response.status).toBe(200);
+        const validateOnlyCalls = spy.calls
+          .allArgs()
+          .filter(args => args[0] === '_User' && args[5] === true);
+        expect(validateOnlyCalls.length).toBe(0);
+      });
+
       it('still lets the owner update the own record', async () => {
         const owner = await createUser('plainOwner', 'OwnerPass123');
         const response = await updateUser(
