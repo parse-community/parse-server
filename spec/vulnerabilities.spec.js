@@ -7429,4 +7429,197 @@ describe('Vulnerabilities', () => {
       });
     });
   });
+
+  describe('(GHSA-gj37-5hg5-p729) Session creation bypasses _Session create and addField class-level permissions', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const masterHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Master-Key': 'test',
+      'Content-Type': 'application/json',
+    };
+    const publicCLP = {
+      find: { '*': true },
+      count: { '*': true },
+      get: { '*': true },
+      create: { '*': true },
+      update: { '*': true },
+      delete: { '*': true },
+      addField: { '*': true },
+      protectedFields: { '*': [] },
+    };
+    const setSessionCLP = permissions =>
+      request({
+        method: 'PUT',
+        url: 'http://localhost:8378/1/schemas/_Session',
+        headers: masterHeaders,
+        body: { classLevelPermissions: { ...publicCLP, ...permissions } },
+      });
+    const createSession = (sessionToken, body = {}, path = '/sessions') =>
+      request({
+        method: 'POST',
+        url: `http://localhost:8378/1${path}`,
+        headers: { ...headers, 'X-Parse-Session-Token': sessionToken },
+        body,
+      }).catch(e => e);
+    const countSessions = user =>
+      new Parse.Query('_Session').equalTo('user', user).count({ useMasterKey: true });
+    const getSessionFields = async () => {
+      const response = await request({
+        url: 'http://localhost:8378/1/schemas/_Session',
+        headers: masterHeaders,
+      });
+      return Object.keys(response.data.fields);
+    };
+
+    describe('create', () => {
+      it('rejects POST /sessions without creating a session', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        await setSessionCLP({ create: {} });
+        const count = await countSessions(user);
+        const response = await createSession(user.getSessionToken());
+        expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        expect(await countSessions(user)).toBe(count);
+      });
+
+      it('rejects POST /classes/_Session without creating a session', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        await setSessionCLP({ create: {} });
+        const count = await countSessions(user);
+        const response = await createSession(user.getSessionToken(), {}, '/classes/_Session');
+        expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        expect(await countSessions(user)).toBe(count);
+      });
+
+      it('rejects session creation in a batch request without creating a session', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        await setSessionCLP({ create: {} });
+        const count = await countSessions(user);
+        const response = await createSession(user.getSessionToken(), {
+          requests: [{ method: 'POST', path: '/1/sessions', body: {} }],
+        }, '/batch');
+        expect(response.data[0].error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        expect(await countSessions(user)).toBe(count);
+      });
+
+      it('rejects a user outside the role permitted to create sessions', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        const role = new Parse.Role('SessionProvisioner', new Parse.ACL());
+        await role.save(null, { useMasterKey: true });
+        await setSessionCLP({ create: { 'role:SessionProvisioner': true } });
+        const count = await countSessions(user);
+        const response = await createSession(user.getSessionToken());
+        expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        expect(await countSessions(user)).toBe(count);
+      });
+
+      it('allows a user in the role permitted to create sessions', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        const role = new Parse.Role('SessionProvisioner', new Parse.ACL());
+        role.getUsers().add(user);
+        await role.save(null, { useMasterKey: true });
+        await setSessionCLP({ create: { 'role:SessionProvisioner': true } });
+        const count = await countSessions(user);
+        const response = await createSession(user.getSessionToken());
+        expect(response.status).toBe(201);
+        expect(response.data.sessionToken).toMatch(/^r:/);
+        expect(await countSessions(user)).toBe(count + 1);
+      });
+
+      it('allows an authenticated user when create requires authentication', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        await setSessionCLP({ create: { requiresAuthentication: true } });
+        const response = await createSession(user.getSessionToken());
+        expect(response.status).toBe(201);
+        expect(response.data.sessionToken).toMatch(/^r:/);
+      });
+
+      it('allows the master key to create a session', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        await setSessionCLP({ create: {}, addField: {} });
+        const count = await countSessions(user);
+        const response = await request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/classes/_Session',
+          headers: masterHeaders,
+          body: {
+            user: { __type: 'Pointer', className: '_User', objectId: user.id },
+            sessionToken: 'r:master-created',
+          },
+        });
+        expect(response.status).toBe(201);
+        expect(await countSessions(user)).toBe(count + 1);
+      });
+
+      it('creates sessions on signup and login', async () => {
+        await Parse.User.signUp('existing', 'password');
+        await setSessionCLP({ create: {}, addField: {} });
+        const user = await Parse.User.signUp('user', 'password');
+        expect(user.getSessionToken()).toMatch(/^r:/);
+        const loggedIn = await Parse.User.logIn('user', 'password');
+        expect(loggedIn.getSessionToken()).toMatch(/^r:/);
+        expect(loggedIn.getSessionToken()).not.toBe(user.getSessionToken());
+      });
+    });
+
+    describe('addField', () => {
+      it('rejects a new field without adding it to the schema', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        await setSessionCLP({ addField: {} });
+        const count = await countSessions(user);
+        const response = await createSession(user.getSessionToken(), { newField: 'value' });
+        expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        expect(await getSessionFields()).not.toContain('newField');
+        expect(await countSessions(user)).toBe(count);
+      });
+
+      it('does not add a new field to the schema when create is not permitted', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        await setSessionCLP({ create: {} });
+        const response = await createSession(user.getSessionToken(), { newField: 'value' });
+        expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        expect(await getSessionFields()).not.toContain('newField');
+      });
+
+      it('allows existing fields', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        await request({
+          method: 'PUT',
+          url: 'http://localhost:8378/1/schemas/_Session',
+          headers: masterHeaders,
+          body: { fields: { deviceName: { type: 'String' } } },
+        });
+        await setSessionCLP({ addField: {} });
+        const response = await createSession(user.getSessionToken(), {
+          deviceName: 'device',
+          installationId: 'installation',
+        });
+        expect(response.status).toBe(201);
+        const session = await new Parse.Query('_Session').get(response.data.objectId, {
+          useMasterKey: true,
+        });
+        expect(session.get('deviceName')).toBe('device');
+        expect(session.get('installationId')).toBe('installation');
+      });
+
+      it('allows a new field when addField is permitted', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        await setSessionCLP({});
+        const response = await createSession(user.getSessionToken(), { newField: 'value' });
+        expect(response.status).toBe(201);
+        expect(await getSessionFields()).toContain('newField');
+      });
+    });
+
+    it('does not create a session when the request body fails schema validation', async () => {
+      const user = await Parse.User.signUp('user', 'password');
+      const count = await countSessions(user);
+      const response = await createSession(user.getSessionToken(), { expiresAt: 'invalid' });
+      expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect(await countSessions(user)).toBe(count);
+    });
+  });
 });
