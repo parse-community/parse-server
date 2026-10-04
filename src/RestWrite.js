@@ -131,6 +131,9 @@ RestWrite.prototype.execute = function () {
       return this.validateWritePermission();
     })
     .then(() => {
+      return this.authorizeUserUpdate();
+    })
+    .then(() => {
       return this.validateSchema();
     })
     .then(schemaController => {
@@ -797,6 +800,40 @@ RestWrite.prototype.validateWritePermission = async function () {
   );
 };
 
+// Authorizes a _User update before any password-policy lookup can read the
+// target account. Password-policy checks in transformUser load the target and
+// reflect its stored data in the response, so authorization must happen first.
+RestWrite.prototype.authorizeUserUpdate = async function () {
+  if (this.className !== '_User' || !this.query) {
+    return;
+  }
+  if (this.auth.isMaster || this.auth.isMaintenance) {
+    return;
+  }
+  // Reject callers without a session before the password-policy lookups run
+  if (this.auth.isUnauthenticated()) {
+    throw createSanitizedError(
+      Parse.Error.SESSION_MISSING,
+      `Cannot modify user ${this.query.objectId}.`,
+      this.config
+    );
+  }
+  // Only a password policy reads the target before the write authorizes it, so
+  // only then verify write access to the target object up front. The check
+  // reuses the write-path ACL enforcement (validateOnly) and throws
+  // OBJECT_NOT_FOUND when the caller cannot write the target.
+  if (this.config.passwordPolicy) {
+    await this.config.database.update(
+      this.className,
+      { objectId: this.query.objectId },
+      {},
+      this.runOptions,
+      false,
+      true
+    );
+  }
+};
+
 // The non-third-party parts of User transformation
 RestWrite.prototype.transformUser = async function () {
   var promise = Promise.resolve();
@@ -1021,11 +1058,11 @@ RestWrite.prototype._validatePasswordRequirements = function () {
       // username is not passed during password reset
       if (this.data.password.indexOf(this.data.username) >= 0)
       { return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, containsUsernameError)); }
-    } else {
-      // retrieve the User object using objectId during password reset
-      return this.config.database.find('_User', { objectId: this.objectId() }).then(results => {
+    } else if (this.query) {
+      // retrieve the User object using the URL object ID during password reset
+      return this.config.database.find('_User', { objectId: this.query.objectId }).then(results => {
         if (results.length != 1) {
-          throw undefined;
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
         }
         if (this.data.password.indexOf(results[0].username) >= 0)
         { return Promise.reject(
@@ -1044,13 +1081,13 @@ RestWrite.prototype._validatePasswordHistory = function () {
     return this.config.database
       .find(
         '_User',
-        { objectId: this.objectId() },
+        { objectId: this.query.objectId },
         { keys: ['_password_history', '_hashed_password'] },
         Auth.maintenance(this.config)
       )
       .then(results => {
         if (results.length != 1) {
-          throw undefined;
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
         }
         const user = results[0];
         let oldPasswords = [];
@@ -1720,13 +1757,13 @@ RestWrite.prototype.runDatabaseOperation = function () {
       defer = this.config.database
         .find(
           '_User',
-          { objectId: this.objectId() },
+          { objectId: this.query.objectId },
           { keys: ['_password_history', '_hashed_password'] },
           Auth.maintenance(this.config)
         )
         .then(results => {
           if (results.length != 1) {
-            throw undefined;
+            throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
           }
           const user = results[0];
           let oldPasswords = [];

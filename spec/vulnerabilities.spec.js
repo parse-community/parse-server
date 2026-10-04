@@ -3189,6 +3189,186 @@ describe('Vulnerabilities', () => {
     });
   });
 
+  describe('(GHSA-p49q-9w65-f9p7) User update runs password policy checks before authorization', () => {
+    const restHeaders = extra => ({
+      'X-Parse-Application-Id': Parse.applicationId,
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+      ...extra,
+    });
+
+    // Resolves with the HTTP response for both success and error so callers can compare them
+    const updateUser = (objectId, body, extraHeaders = {}) =>
+      request({
+        url: `http://localhost:8378/1/users/${objectId}`,
+        method: 'PUT',
+        body,
+        headers: restHeaders(extraHeaders),
+      }).then(
+        response => response,
+        error => error
+      );
+
+    // Signs up a user and returns its id and a live session token (no logout, which would revoke it)
+    const createUser = async (username, password) => {
+      const user = new Parse.User();
+      user.setUsername(username);
+      user.setPassword(password);
+      await user.signUp();
+      return { id: user.id, sessionToken: user.getSessionToken() };
+    };
+
+    // Comparable response signature: an oracle exists if two guesses answer differently
+    const signature = response => `${response.status}:${response.data && response.data.code}`;
+
+    describe('maxPasswordHistory', () => {
+      beforeEach(async () => {
+        await reconfigureServer({ passwordPolicy: { maxPasswordHistory: 3 } });
+      });
+
+      it('unauthenticated update does not reveal whether a guessed password matches the target', async () => {
+        const victim = await createUser('victimHistory', 'VictimSecret123');
+        const match = await updateUser(victim.id, { password: 'VictimSecret123' });
+        const wrong = await updateUser(victim.id, { password: 'WrongGuess999' });
+        expect(match.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(wrong.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(match.data.error).not.toContain('should not be the same');
+        expect(signature(match)).toBe(signature(wrong));
+      });
+
+      it('authenticated cross-user update does not reveal whether a guessed password matches the target', async () => {
+        const victim = await createUser('victimHistory', 'VictimSecret123');
+        const attacker = await createUser('attackerHistory', 'AttackerPass123');
+        const auth = { 'X-Parse-Session-Token': attacker.sessionToken };
+        const match = await updateUser(victim.id, { password: 'VictimSecret123' }, auth);
+        const wrong = await updateUser(victim.id, { password: 'WrongGuess999' }, auth);
+        expect(match.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(wrong.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(match.data.error).not.toContain('should not be the same');
+        expect(signature(match)).toBe(signature(wrong));
+      });
+
+      it('authenticated update cannot retarget the check to another user via a body objectId', async () => {
+        const victim = await createUser('victimHistory', 'VictimSecret123');
+        const attacker = await createUser('attackerHistory', 'AttackerPass123');
+        const auth = { 'X-Parse-Session-Token': attacker.sessionToken };
+        // The URL addresses the attacker's own record; the body objectId points at the victim
+        const match = await updateUser(
+          attacker.id,
+          { objectId: victim.id, password: 'VictimSecret123' },
+          auth
+        );
+        const wrong = await updateUser(
+          attacker.id,
+          { objectId: victim.id, password: 'WrongGuess999' },
+          auth
+        );
+        expect((match.data && match.data.error) || '').not.toContain('should not be the same');
+        expect(signature(match)).toBe(signature(wrong));
+      });
+
+      it('does not answer a nonexistent target with an internal server error', async () => {
+        const unauthenticated = await updateUser('doesNotExist0', { password: 'Anything123' });
+        expect(unauthenticated.status).not.toBe(500);
+        expect(unauthenticated.data.code).toBe(Parse.Error.SESSION_MISSING);
+        const attacker = await createUser('attackerHistory', 'AttackerPass123');
+        const authenticated = await updateUser(
+          'doesNotExist0',
+          { password: 'Anything123' },
+          { 'X-Parse-Session-Token': attacker.sessionToken }
+        );
+        expect(authenticated.status).not.toBe(500);
+        expect(authenticated.data.code).toBe(Parse.Error.SESSION_MISSING);
+      });
+
+      it('still enforces the password history for the owner', async () => {
+        const owner = await createUser('ownerHistory', 'OwnerPass123');
+        const auth = { 'X-Parse-Session-Token': owner.sessionToken };
+        const repeat = await updateUser(owner.id, { password: 'OwnerPass123' }, auth);
+        expect(repeat.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+        expect(repeat.data.error).toContain('should not be the same');
+        const fresh = await updateUser(owner.id, { password: 'FreshPass456' }, auth);
+        expect(fresh.status).toBe(200);
+      });
+
+      it('still enforces the password history for the master key', async () => {
+        const target = await createUser('targetHistory', 'TargetPass123');
+        const master = { 'X-Parse-Master-Key': Parse.masterKey };
+        const repeat = await updateUser(target.id, { password: 'TargetPass123' }, master);
+        expect(repeat.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+        const fresh = await updateUser(target.id, { password: 'FreshPass456' }, master);
+        expect(fresh.status).toBe(200);
+      });
+    });
+
+    describe('doNotAllowUsername', () => {
+      beforeEach(async () => {
+        await reconfigureServer({ passwordPolicy: { doNotAllowUsername: true } });
+      });
+
+      it('unauthenticated update does not reveal the target username', async () => {
+        const victim = await createUser('hiddenname', 'VictimSecret123');
+        const contains = await updateUser(victim.id, { password: 'xhiddennamex9' });
+        const free = await updateUser(victim.id, { password: 'nothinghere9' });
+        expect(contains.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(free.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(contains.data.error).not.toContain('cannot contain your username');
+        expect(signature(contains)).toBe(signature(free));
+      });
+
+      it('authenticated cross-user update does not reveal the target username', async () => {
+        const victim = await createUser('hiddenname', 'VictimSecret123');
+        const attacker = await createUser('attackerName', 'AttackerPass123');
+        const auth = { 'X-Parse-Session-Token': attacker.sessionToken };
+        const contains = await updateUser(victim.id, { password: 'xhiddennamex9' }, auth);
+        const free = await updateUser(victim.id, { password: 'nothinghere9' }, auth);
+        expect(contains.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(free.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(contains.data.error).not.toContain('cannot contain your username');
+        expect(signature(contains)).toBe(signature(free));
+      });
+
+      it('does not answer a nonexistent target with an internal server error', async () => {
+        const response = await updateUser('doesNotExist0', { password: 'Anything123' });
+        expect(response.status).not.toBe(500);
+        expect(response.data.code).toBe(Parse.Error.SESSION_MISSING);
+      });
+
+      it('still rejects a password containing the username for the owner', async () => {
+        const owner = await createUser('ownername', 'OwnerPass123');
+        const auth = { 'X-Parse-Session-Token': owner.sessionToken };
+        const contains = await updateUser(owner.id, { password: 'xownernamex9' }, auth);
+        expect(contains.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+        expect(contains.data.error).toContain('cannot contain your username');
+        const free = await updateUser(owner.id, { password: 'FreshPass456' }, auth);
+        expect(free.status).toBe(200);
+      });
+    });
+
+    describe('without a password policy', () => {
+      beforeEach(async () => {
+        await reconfigureServer();
+      });
+
+      it('rejects an unauthenticated user update before the username uniqueness check', async () => {
+        const victim = await createUser('plainVictim', 'VictimSecret123');
+        const response = await updateUser(victim.id, { username: 'plainVictim' });
+        expect(response.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(response.data.code).not.toBe(Parse.Error.USERNAME_TAKEN);
+      });
+
+      it('still lets the owner update the own record', async () => {
+        const owner = await createUser('plainOwner', 'OwnerPass123');
+        const response = await updateUser(
+          owner.id,
+          { nickname: 'me' },
+          { 'X-Parse-Session-Token': owner.sessionToken }
+        );
+        expect(response.status).toBe(200);
+      });
+    });
+  });
+
   describe('(GHSA-c442-97qw-j6c6) SQL Injection via $regex query operator field name in PostgreSQL adapter', () => {
     const headers = {
       'Content-Type': 'application/json',
