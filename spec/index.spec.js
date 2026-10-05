@@ -2,6 +2,7 @@
 const request = require('../lib/request');
 const parseServerPackage = require('../package.json');
 const MockEmailAdapterWithOptions = require('./support/MockEmailAdapterWithOptions');
+const { resolvingPromise } = require('../lib/TestUtils');
 const ParseServer = require('../lib/index');
 const Config = require('../lib/Config');
 const express = require('express');
@@ -825,10 +826,12 @@ describe('server', () => {
     it('executes publicServerURL function on every verification email', async () => {
       let counter = 0;
       const emailCalls = [];
+      let sendPromise;
 
       const emailAdapter = MockEmailAdapterWithOptions({
         sendVerificationEmail: ({ link }) => {
           emailCalls.push(link);
+          sendPromise.resolve();
           return Promise.resolve();
         },
       });
@@ -849,8 +852,9 @@ describe('server', () => {
       user1.setUsername('user1');
       user1.setPassword('pass1');
       user1.setEmail('user1@example.com');
+      sendPromise = resolvingPromise();
       await user1.signUp();
-      await jasmine.timeout();
+      await sendPromise;
       expect(emailCalls.length).toEqual(1);
       expect(emailCalls[0]).toContain(`https://example.com/${counterBefore1 + 1}`);
 
@@ -860,8 +864,9 @@ describe('server', () => {
       user2.setUsername('user2');
       user2.setPassword('pass2');
       user2.setEmail('user2@example.com');
+      sendPromise = resolvingPromise();
       await user2.signUp();
-      await jasmine.timeout();
+      await sendPromise;
       expect(emailCalls.length).toEqual(2);
       expect(emailCalls[1]).toContain(`https://example.com/${counterBefore2 + 1}`);
       expect(counterBefore2).toBeGreaterThan(counterBefore1);

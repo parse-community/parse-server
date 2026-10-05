@@ -294,7 +294,7 @@ const handleRateLimit = async (req, res, next) => {
     await Promise.all(
       rateLimits.map(async limit => {
         const pathExp = limit.path.regexp || limit.path;
-        if (pathExp.test(req.path)) {
+        if (pathExp.test(req.path) || (req._graphQLPath && pathExp.test(req._graphQLPath))) {
           await limit.handler(req, res, err => {
             if (err) {
               if (err.code === Parse.Error.CONNECTION_FAILED) {

@@ -336,6 +336,36 @@ describe('ParseLiveQueryServer', function () {
     expect(parseLiveQueryServer.subscriptions.size).toBe(0);
   });
 
+  it('rejects deeply nested field-level operators on subscribe with an error to the client', async () => {
+    await reconfigureServer({ requestComplexity: { queryDepth: 1 } });
+    const parseLiveQueryServer = new ParseLiveQueryServer({});
+    const clientId = 1;
+    addMockClient(parseLiveQueryServer, clientId);
+    const parseWebSocket = { clientId };
+    let where = { name: 'x' };
+    for (let i = 0; i < 10000; i++) {
+      where = { tags: { $elemMatch: where } };
+    }
+    const request = {
+      query: { className: 'test', where, keys: ['x'] },
+      requestId: 5,
+      sessionToken: 'sessionToken',
+    };
+    await expectAsync(
+      parseLiveQueryServer._handleSubscribe(parseWebSocket, request)
+    ).toBeResolved();
+
+    const Client = require('../lib/LiveQuery/Client').Client;
+    expect(Client.pushError).toHaveBeenCalledWith(
+      jasmine.anything(),
+      jasmine.anything(),
+      jasmine.any(String),
+      false,
+      5
+    );
+    expect(parseLiveQueryServer.subscriptions.size).toBe(0);
+  });
+
   it('rejects a non-array value for a logical operator on subscribe', async () => {
     await reconfigureServer({ requestComplexity: { queryDepth: 3 } });
     const parseLiveQueryServer = new ParseLiveQueryServer({});
@@ -1956,6 +1986,31 @@ describe('ParseLiveQueryServer', function () {
       ).toBeResolvedTo(['role:liveQueryRead']);
       expect(getUserRoles).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it('applies protectedFields when the app config cannot be resolved', async () => {
+    const parseLiveQueryServer = new ParseLiveQueryServer({});
+    // `Config.get` returns undefined for a standalone LiveQuery server.
+    parseLiveQueryServer.config.appId = 'unknownAppId';
+    const client = {
+      hasMasterKey: false,
+      getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue(undefined),
+    };
+    const res = {
+      object: { className: testClassName, objectId: 'objectId', secret: 'secret', note: 'note' },
+    };
+
+    await parseLiveQueryServer._filterSensitiveData(
+      { protectedFields: { '*': ['secret'] } },
+      res,
+      client,
+      1,
+      'find',
+      {}
+    );
+
+    expect(res.object.secret).toBeUndefined();
+    expect(res.object.note).toBe('note');
   });
 
   it('can validate key when valid key is provided', function () {

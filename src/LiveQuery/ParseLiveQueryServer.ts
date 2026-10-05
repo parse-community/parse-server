@@ -893,6 +893,8 @@ class ParseLiveQueryServer {
     // so the helper can reach it. (`addProtectedFields` above needs no wrapper --
     // it already falls back to treating its argument as the permissions object.)
     const schema = { getClassLevelPermissions: () => classLevelPermissions };
+    // Parse Server options, not LiveQuery options
+    const appConfig = client.hasMasterKey ? undefined : Config.get(this.config.appId);
     const filter = obj => {
       if (!obj) {
         return;
@@ -901,7 +903,9 @@ class ParseLiveQueryServer {
       if (client.hasMasterKey) {
         protectedFields = [];
       } else if (!Array.isArray(protectedFields)) {
-        protectedFields = getDatabaseController(this.config).addProtectedFields(
+        // Standalone server has no app config
+        const database = appConfig?.database || getDatabaseController(this.config);
+        protectedFields = database.addProtectedFields(
           classLevelPermissions,
           res.object.className,
           query,
@@ -919,7 +923,7 @@ class ParseLiveQueryServer {
         res.object.className,
         protectedFields,
         obj,
-        this.config.protectedFieldsOwnerExempt
+        appConfig?.protectedFieldsOwnerExempt
       );
     };
     res.object = filter(res.object);
