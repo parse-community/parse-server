@@ -1,3 +1,12 @@
+## [9.10.3](https://github.com/parse-community/parse-server/compare/9.10.2...9.10.3) (2026-10-05)
+
+
+### Bug Fixes
+
+* Session creation endpoint bypasses create and addField class-level permissions ([GHSA-gj37-5hg5-p729](https://github.com/parse-community/parse-server/security/advisories/GHSA-gj37-5hg5-p729)) ([#10744](https://github.com/parse-community/parse-server/issues/10744)) ([ef08e80](https://github.com/parse-community/parse-server/commit/ef08e80f25e144174eefc2001743ef79f2fafb1e))
+* User update accepts an empty username or password ([#10752](https://github.com/parse-community/parse-server/issues/10752)) ([99444cf](https://github.com/parse-community/parse-server/commit/99444cfedd46c7f002109b10c7e9131256c7bb51))
+* User update runs checks against the target account before authorization ([GHSA-p49q-9w65-f9p7](https://github.com/parse-community/parse-server/security/advisories/GHSA-p49q-9w65-f9p7)) ([#10746](https://github.com/parse-community/parse-server/issues/10746)) ([643b918](https://github.com/parse-community/parse-server/commit/643b9181c38ac92592fe895d0e2304090d95eb7e))
+
 ## [9.10.2](https://github.com/parse-community/parse-server/compare/9.10.1...9.10.2) (2026-10-02)
 
 
