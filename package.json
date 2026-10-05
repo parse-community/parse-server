@@ -122,6 +122,7 @@
     "watch:ts": "tsc --watch",
     "test:mongodb:7.0.16": "MONGODB_VERSION=7.0.16 npm run test",
     "test:mongodb:8.0.4": "MONGODB_VERSION=8.0.4 npm run test",
+    "test:mongodb:9.0.2": "MONGODB_VERSION=9.0.2 npm run test",
     "test:postgres:testonly": "cross-env PARSE_SERVER_TEST_DB=postgres PARSE_SERVER_TEST_DATABASE_URI=postgres://postgres:password@localhost:5432/parse_server_postgres_adapter_test_database npm run testonly",
     "testonly": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=8.0.4} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} TESTING=1 jasmine",
     "test": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=8.0.4} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} mongodb-runner exec -t ${MONGODB_TOPOLOGY} --version ${MONGODB_VERSION} -- --port 27017 -- npm run testonly",
