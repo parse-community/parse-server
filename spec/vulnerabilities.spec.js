@@ -2875,20 +2875,32 @@ describe('Vulnerabilities', () => {
   });
 
   describe('(GHSA-w54v-hf9p-8856) User enumeration via email verification endpoint', () => {
+    const { resolvingPromise } = require('../lib/TestUtils');
     let sendVerificationEmail;
 
+    // Resolves when the email is sent
+    function verificationEmailSent() {
+      const sendPromise = resolvingPromise();
+      sendVerificationEmail.and.callFake(() => sendPromise.resolve());
+      return sendPromise;
+    }
+
     async function createTestUsers() {
+      let sendPromise = verificationEmailSent();
       const user = new Parse.User();
       user.setUsername('testuser');
       user.setPassword('password123');
       user.set('email', 'unverified@example.com');
       await user.signUp();
+      await sendPromise;
 
+      sendPromise = verificationEmailSent();
       const user2 = new Parse.User();
       user2.setUsername('verifieduser');
       user2.setPassword('password123');
       user2.set('email', 'verified@example.com');
       await user2.signUp();
+      await sendPromise;
       const config = Config.get(Parse.applicationId);
       await config.database.update(
         '_User',
@@ -2944,6 +2956,7 @@ describe('Vulnerabilities', () => {
 
       it('returns success for unverified email', async () => {
         sendVerificationEmail.calls.reset();
+        const sendPromise = verificationEmailSent();
         const response = await request({
           url: 'http://localhost:8378/1/verificationEmailRequest',
           method: 'POST',
@@ -2956,7 +2969,7 @@ describe('Vulnerabilities', () => {
         });
         expect(response.status).toBe(200);
         expect(response.data).toEqual({});
-        await jasmine.timeout();
+        await sendPromise;
         expect(sendVerificationEmail).toHaveBeenCalledTimes(1);
       });
 
@@ -3039,6 +3052,7 @@ describe('Vulnerabilities', () => {
 
       it('sends verification email for unverified email', async () => {
         sendVerificationEmail.calls.reset();
+        const sendPromise = verificationEmailSent();
         await request({
           url: 'http://localhost:8378/1/verificationEmailRequest',
           method: 'POST',
@@ -3049,7 +3063,7 @@ describe('Vulnerabilities', () => {
             'Content-Type': 'application/json',
           },
         });
-        await jasmine.timeout();
+        await sendPromise;
         expect(sendVerificationEmail).toHaveBeenCalledTimes(1);
       });
     });
@@ -3172,6 +3186,374 @@ describe('Vulnerabilities', () => {
         },
       }).catch(e => e);
       expect(response.data.code).toBe(Parse.Error.USERNAME_TAKEN);
+    });
+  });
+
+  describe('(GHSA-p49q-9w65-f9p7) User update runs checks against the target account before authorization', () => {
+    const restHeaders = extra => ({
+      'X-Parse-Application-Id': Parse.applicationId,
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+      ...extra,
+    });
+
+    // Resolves with the HTTP response for both success and error so callers can compare them
+    const updateUser = (objectId, body, extraHeaders = {}) =>
+      request({
+        url: `http://localhost:8378/1/users/${objectId}`,
+        method: 'PUT',
+        body,
+        headers: restHeaders(extraHeaders),
+      }).then(
+        response => response,
+        error => error
+      );
+
+    // Signs up a user and returns its id and a live session token (no logout, which would revoke it)
+    const createUser = async (username, password) => {
+      const user = new Parse.User();
+      user.setUsername(username);
+      user.setPassword(password);
+      await user.signUp();
+      return { id: user.id, sessionToken: user.getSessionToken() };
+    };
+
+    // Comparable response signature: an oracle exists if two guesses answer differently
+    const signature = response => `${response.status}:${response.data && response.data.code}`;
+
+    describe('maxPasswordHistory', () => {
+      beforeEach(async () => {
+        await reconfigureServer({ passwordPolicy: { maxPasswordHistory: 3 } });
+      });
+
+      it('unauthenticated update does not reveal whether a guessed password matches the target', async () => {
+        const victim = await createUser('victimHistory', 'VictimSecret123');
+        const match = await updateUser(victim.id, { password: 'VictimSecret123' });
+        const wrong = await updateUser(victim.id, { password: 'WrongGuess999' });
+        expect(match.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(wrong.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(match.data.error).not.toContain('should not be the same');
+        expect(signature(match)).toBe(signature(wrong));
+      });
+
+      it('authenticated cross-user update does not reveal whether a guessed password matches the target', async () => {
+        const victim = await createUser('victimHistory', 'VictimSecret123');
+        const attacker = await createUser('attackerHistory', 'AttackerPass123');
+        const auth = { 'X-Parse-Session-Token': attacker.sessionToken };
+        const match = await updateUser(victim.id, { password: 'VictimSecret123' }, auth);
+        const wrong = await updateUser(victim.id, { password: 'WrongGuess999' }, auth);
+        expect(match.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(wrong.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(match.data.error).not.toContain('should not be the same');
+        expect(signature(match)).toBe(signature(wrong));
+      });
+
+      it('authenticated update cannot retarget the check to another user via a body objectId', async () => {
+        const victim = await createUser('victimHistory', 'VictimSecret123');
+        const attacker = await createUser('attackerHistory', 'AttackerPass123');
+        const auth = { 'X-Parse-Session-Token': attacker.sessionToken };
+        // The URL addresses the attacker's own record; the body objectId points at the victim
+        const match = await updateUser(
+          attacker.id,
+          { objectId: victim.id, password: 'VictimSecret123' },
+          auth
+        );
+        const wrong = await updateUser(
+          attacker.id,
+          { objectId: victim.id, password: 'WrongGuess999' },
+          auth
+        );
+        expect(match.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(wrong.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(signature(match)).toBe(signature(wrong));
+      });
+
+      it('does not answer a nonexistent target with an internal server error', async () => {
+        const unauthenticated = await updateUser('doesNotExist0', { password: 'Anything123' });
+        expect(unauthenticated.status).not.toBe(500);
+        expect(unauthenticated.data.code).toBe(Parse.Error.SESSION_MISSING);
+        const attacker = await createUser('attackerHistory', 'AttackerPass123');
+        const authenticated = await updateUser(
+          'doesNotExist0',
+          { password: 'Anything123' },
+          { 'X-Parse-Session-Token': attacker.sessionToken }
+        );
+        expect(authenticated.status).not.toBe(500);
+        expect(authenticated.data.code).toBe(Parse.Error.SESSION_MISSING);
+      });
+
+      it('still enforces the password history for the owner', async () => {
+        const owner = await createUser('ownerHistory', 'OwnerPass123');
+        const auth = { 'X-Parse-Session-Token': owner.sessionToken };
+        const repeat = await updateUser(owner.id, { password: 'OwnerPass123' }, auth);
+        expect(repeat.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+        expect(repeat.data.error).toContain('should not be the same');
+        const fresh = await updateUser(owner.id, { password: 'FreshPass456' }, auth);
+        expect(fresh.status).toBe(200);
+      });
+
+      it('still enforces the password history for the master key', async () => {
+        const target = await createUser('targetHistory', 'TargetPass123');
+        const master = { 'X-Parse-Master-Key': Parse.masterKey };
+        const repeat = await updateUser(target.id, { password: 'TargetPass123' }, master);
+        expect(repeat.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+        const fresh = await updateUser(target.id, { password: 'FreshPass456' }, master);
+        expect(fresh.status).toBe(200);
+      });
+
+      it('still enforces the password history for the maintenance key', async () => {
+        const target = await createUser('targetHistory', 'TargetPass123');
+        const maintenance = { 'X-Parse-Maintenance-Key': 'testing' };
+        const repeat = await updateUser(target.id, { password: 'TargetPass123' }, maintenance);
+        expect(repeat.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+        const fresh = await updateUser(target.id, { password: 'FreshPass456' }, maintenance);
+        expect(fresh.status).toBe(200);
+      });
+
+      it('answers a nonexistent target with OBJECT_NOT_FOUND for the master and maintenance keys', async () => {
+        for (const headers of [
+          { 'X-Parse-Master-Key': Parse.masterKey },
+          { 'X-Parse-Maintenance-Key': 'testing' },
+        ]) {
+          const response = await updateUser('doesNotExist0', { password: 'Anything123' }, headers);
+          expect(response.status).not.toBe(500);
+          expect(response.data.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+        }
+      });
+
+      it('answers a user deleted during the update with OBJECT_NOT_FOUND', async () => {
+        const DatabaseController = require('../lib/Controllers/DatabaseController');
+        const target = await createUser('targetHistory', 'TargetPass123');
+        const find = DatabaseController.prototype.find;
+        let historyReads = 0;
+        // Simulate the user being deleted between the history check and the history save
+        spyOn(DatabaseController.prototype, 'find').and.callFake(function (className, query, options, ...rest) {
+          if (className === '_User' && options?.keys?.includes('_password_history')) {
+            historyReads++;
+            if (historyReads === 2) {
+              return Promise.resolve([]);
+            }
+          }
+          return find.call(this, className, query, options, ...rest);
+        });
+        const response = await updateUser(
+          target.id,
+          { password: 'FreshPass456' },
+          { 'X-Parse-Master-Key': Parse.masterKey }
+        );
+        expect(historyReads).toBe(2);
+        expect(response.status).not.toBe(500);
+        expect(response.data.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      });
+
+      it('lets a user with write access through the ACL change the password', async () => {
+        const target = await createUser('targetHistory', 'TargetPass123');
+        const writer = await createUser('writerHistory', 'WriterPass123');
+        const acl = new Parse.ACL();
+        acl.setReadAccess(target.id, true);
+        acl.setWriteAccess(target.id, true);
+        acl.setReadAccess(writer.id, true);
+        acl.setWriteAccess(writer.id, true);
+        const targetUser = Parse.User.createWithoutData(target.id);
+        targetUser.setACL(acl);
+        await targetUser.save(null, { useMasterKey: true });
+        const auth = { 'X-Parse-Session-Token': writer.sessionToken };
+        const repeat = await updateUser(target.id, { password: 'TargetPass123' }, auth);
+        expect(repeat.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+        expect(repeat.data.error).toContain('should not be the same');
+        const fresh = await updateUser(target.id, { password: 'FreshPass456' }, auth);
+        expect(fresh.status).toBe(200);
+      });
+
+      it('lets a user with write access through a role change the password', async () => {
+        const target = await createUser('targetHistory', 'TargetPass123');
+        const writer = await createUser('writerHistory', 'WriterPass123');
+        const role = new Parse.Role('userAdmins', new Parse.ACL());
+        role.getUsers().add(Parse.User.createWithoutData(writer.id));
+        await role.save(null, { useMasterKey: true });
+        const acl = new Parse.ACL();
+        acl.setReadAccess(target.id, true);
+        acl.setWriteAccess(target.id, true);
+        acl.setRoleReadAccess('userAdmins', true);
+        acl.setRoleWriteAccess('userAdmins', true);
+        const targetUser = Parse.User.createWithoutData(target.id);
+        targetUser.setACL(acl);
+        await targetUser.save(null, { useMasterKey: true });
+        const auth = { 'X-Parse-Session-Token': writer.sessionToken };
+        const repeat = await updateUser(target.id, { password: 'TargetPass123' }, auth);
+        expect(repeat.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+        const fresh = await updateUser(target.id, { password: 'FreshPass456' }, auth);
+        expect(fresh.status).toBe(200);
+      });
+    });
+
+    describe('doNotAllowUsername', () => {
+      beforeEach(async () => {
+        await reconfigureServer({ passwordPolicy: { doNotAllowUsername: true } });
+      });
+
+      it('unauthenticated update does not reveal the target username', async () => {
+        const victim = await createUser('hiddenname', 'VictimSecret123');
+        const contains = await updateUser(victim.id, { password: 'xhiddennamex9' });
+        const free = await updateUser(victim.id, { password: 'nothinghere9' });
+        expect(contains.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(free.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(contains.data.error).not.toContain('cannot contain your username');
+        expect(signature(contains)).toBe(signature(free));
+      });
+
+      it('authenticated cross-user update does not reveal the target username', async () => {
+        const victim = await createUser('hiddenname', 'VictimSecret123');
+        const attacker = await createUser('attackerName', 'AttackerPass123');
+        const auth = { 'X-Parse-Session-Token': attacker.sessionToken };
+        const contains = await updateUser(victim.id, { password: 'xhiddennamex9' }, auth);
+        const free = await updateUser(victim.id, { password: 'nothinghere9' }, auth);
+        expect(contains.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(free.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(contains.data.error).not.toContain('cannot contain your username');
+        expect(signature(contains)).toBe(signature(free));
+      });
+
+      it('does not answer a nonexistent target with an internal server error', async () => {
+        const response = await updateUser('doesNotExist0', { password: 'Anything123' });
+        expect(response.status).not.toBe(500);
+        expect(response.data.code).toBe(Parse.Error.SESSION_MISSING);
+      });
+
+      it('answers a nonexistent target with OBJECT_NOT_FOUND for the master key', async () => {
+        const response = await updateUser(
+          'doesNotExist0',
+          { password: 'Anything123' },
+          { 'X-Parse-Master-Key': Parse.masterKey }
+        );
+        expect(response.status).not.toBe(500);
+        expect(response.data.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      });
+
+      it('still rejects a password containing the username for the owner', async () => {
+        const owner = await createUser('ownername', 'OwnerPass123');
+        const auth = { 'X-Parse-Session-Token': owner.sessionToken };
+        const contains = await updateUser(owner.id, { password: 'xownernamex9' }, auth);
+        expect(contains.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+        expect(contains.data.error).toContain('cannot contain your username');
+        const free = await updateUser(owner.id, { password: 'FreshPass456' }, auth);
+        expect(free.status).toBe(200);
+      });
+    });
+
+    describe('without a password policy', () => {
+      beforeEach(async () => {
+        await reconfigureServer();
+      });
+
+      it('rejects an unauthenticated user update before the username uniqueness check', async () => {
+        await createUser('takenName', 'OtherPass123');
+        const victim = await createUser('plainVictim', 'VictimSecret123');
+        const response = await updateUser(victim.id, { username: 'takenName' });
+        expect(response.data.code).toBe(Parse.Error.SESSION_MISSING);
+      });
+
+      it('authenticated cross-user update does not reveal whether a username is taken', async () => {
+        await createUser('takenName', 'OtherPass123');
+        const victim = await createUser('plainVictim', 'VictimSecret123');
+        const attacker = await createUser('plainAttacker', 'AttackerPass123');
+        const auth = { 'X-Parse-Session-Token': attacker.sessionToken };
+        const taken = await updateUser(victim.id, { username: 'takenName' }, auth);
+        const free = await updateUser(victim.id, { username: 'freeName' }, auth);
+        expect(taken.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(free.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(signature(taken)).toBe(signature(free));
+      });
+
+      it('authenticated cross-user update does not reveal whether an email is taken', async () => {
+        const other = new Parse.User();
+        other.set({ username: 'emailOwner', password: 'OtherPass123', email: 'taken@example.com' });
+        await other.signUp();
+        const victim = await createUser('plainVictim', 'VictimSecret123');
+        const attacker = await createUser('plainAttacker', 'AttackerPass123');
+        const auth = { 'X-Parse-Session-Token': attacker.sessionToken };
+        const taken = await updateUser(victim.id, { email: 'taken@example.com' }, auth);
+        const free = await updateUser(victim.id, { email: 'free@example.com' }, auth);
+        expect(taken.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(free.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(signature(taken)).toBe(signature(free));
+      });
+
+      it('rejects a body objectId that addresses another user', async () => {
+        const other = await createUser('plainOther', 'OtherPass123');
+        const owner = await createUser('plainOwner', 'OwnerPass123');
+        const response = await updateUser(
+          owner.id,
+          { objectId: other.id, nickname: 'me' },
+          { 'X-Parse-Session-Token': owner.sessionToken }
+        );
+        expect(response.data.code).toBe(Parse.Error.SESSION_MISSING);
+      });
+
+      it('rejects a cross-user update carrying authData before reading the target authData', async () => {
+        const Auth = require('../lib/Auth');
+        const victim = await createUser('plainVictim', 'VictimSecret123');
+        const attacker = await createUser('plainAttacker', 'AttackerPass123');
+        const spy = spyOn(Auth, 'findUsersWithAuthData').and.callThrough();
+        const body = { authData: { anonymous: { id: '00000000-0000-4000-8000-000000000000' } } };
+        const unauthenticated = await updateUser(victim.id, body);
+        const authenticated = await updateUser(victim.id, body, {
+          'X-Parse-Session-Token': attacker.sessionToken,
+        });
+        expect(unauthenticated.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(authenticated.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(spy).not.toHaveBeenCalled();
+      });
+
+      it('runs the _User beforeSave trigger only for an authorized update', async () => {
+        let calls = 0;
+        Parse.Cloud.beforeSave(Parse.User, () => {
+          calls++;
+        });
+        const victim = await createUser('plainVictim', 'VictimSecret123');
+        const attacker = await createUser('plainAttacker', 'AttackerPass123');
+        calls = 0;
+        const denied = await updateUser(
+          victim.id,
+          { nickname: 'x' },
+          { 'X-Parse-Session-Token': attacker.sessionToken }
+        );
+        expect(denied.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(calls).toBe(0);
+        const allowed = await updateUser(
+          victim.id,
+          { nickname: 'x' },
+          { 'X-Parse-Session-Token': victim.sessionToken }
+        );
+        expect(allowed.status).toBe(200);
+        expect(calls).toBe(1);
+      });
+
+      it('does not add a write-access read when the owner updates the own record', async () => {
+        const DatabaseController = require('../lib/Controllers/DatabaseController');
+        const owner = await createUser('plainOwner', 'OwnerPass123');
+        const spy = spyOn(DatabaseController.prototype, 'update').and.callThrough();
+        const response = await updateUser(
+          owner.id,
+          { nickname: 'me' },
+          { 'X-Parse-Session-Token': owner.sessionToken }
+        );
+        expect(response.status).toBe(200);
+        const validateOnlyCalls = spy.calls
+          .allArgs()
+          .filter(args => args[0] === '_User' && args[5] === true);
+        expect(validateOnlyCalls.length).toBe(0);
+      });
+
+      it('still lets the owner update the own record', async () => {
+        const owner = await createUser('plainOwner', 'OwnerPass123');
+        const response = await updateUser(
+          owner.id,
+          { nickname: 'me' },
+          { 'X-Parse-Session-Token': owner.sessionToken }
+        );
+        expect(response.status).toBe(200);
+      });
     });
   });
 
@@ -7981,5 +8363,471 @@ describe('Vulnerabilities', () => {
         });
       });
     }
+  });
+
+  describe('(GHSA-46jj-qw3p-48fc) Error when sending verification or password reset email', () => {
+    const { resolvingPromise, sleep } = require('../lib/TestUtils');
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const post = (path, body) =>
+      request({
+        method: 'POST',
+        url: `http://localhost:8378/1${path}`,
+        headers,
+        body,
+      });
+    const signUp = () =>
+      post('/users', { username: 'user', password: 'password', email: 'user@example.com' });
+    const error = new Error('mail provider error');
+
+    let unhandled;
+    let loggerErrorSpy;
+    const onUnhandled = reason => unhandled.push(reason);
+    beforeEach(() => {
+      unhandled = [];
+      process.on('unhandledRejection', onUnhandled);
+    });
+    afterEach(() => {
+      process.removeListener('unhandledRejection', onUnhandled);
+    });
+
+    const reconfigure = async options => {
+      await reconfigureServer({
+        appName: 'test',
+        publicServerURL: 'http://localhost:8378/1',
+        ...options,
+      });
+      loggerErrorSpy = spyOn(require('../lib/logger').default, 'error').and.callFake(() => {});
+    };
+    const errorLogged = message =>
+      loggerErrorSpy.calls.allArgs().some(args => args[0] === message);
+    const expectErrorLogged = async (message, loggedError) => {
+      for (let i = 0; i < 100 && !unhandled.length && !errorLogged(message); i++) {
+        await sleep(10);
+      }
+      expect(unhandled).toEqual([]);
+      expect(loggerErrorSpy).toHaveBeenCalledWith(message, { error: loggedError });
+    };
+    const errorWithRequestData = () => {
+      const e = new Error('mail provider error');
+      e.config = { headers: { Authorization: 'Bearer secret-api-key' } };
+      return e;
+    };
+    const expectRequestDataNotLogged = () => {
+      expect(JSON.stringify(loggerErrorSpy.calls.allArgs())).not.toContain('secret-api-key');
+    };
+
+    describe('verification email', () => {
+      const message = 'Failed to send verification email';
+
+      it('handles rejection of email adapter on sign-up', async () => {
+        await reconfigure({
+          verifyUserEmails: true,
+          emailAdapter: {
+            sendVerificationEmail: () => Promise.reject(error),
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => Promise.resolve(),
+          },
+        });
+        const res = await signUp();
+        expect(res.status).toBe(201);
+        await expectErrorLogged(message, error.stack);
+      });
+
+      it('handles synchronous error of email adapter on sign-up', async () => {
+        await reconfigure({
+          verifyUserEmails: true,
+          emailAdapter: {
+            sendVerificationEmail: () => {
+              throw error;
+            },
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => Promise.resolve(),
+          },
+        });
+        const res = await signUp();
+        expect(res.status).toBe(201);
+        await expectErrorLogged(message, error.stack);
+      });
+
+      it('handles rejection of email adapter sendMail on sign-up', async () => {
+        await reconfigure({
+          verifyUserEmails: true,
+          emailAdapter: {
+            sendMail: () => Promise.reject(error),
+          },
+        });
+        const res = await signUp();
+        expect(res.status).toBe(201);
+        await expectErrorLogged(message, error.stack);
+      });
+
+      it('handles error of sendUserEmailVerification on sign-up', async () => {
+        await reconfigure({
+          verifyUserEmails: true,
+          sendUserEmailVerification: () => {
+            throw error;
+          },
+          emailAdapter: {
+            sendVerificationEmail: () => Promise.resolve(),
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => Promise.resolve(),
+          },
+        });
+        const res = await signUp();
+        expect(res.status).toBe(201);
+        await expectErrorLogged(message, error.stack);
+      });
+
+      it('handles user deleted before verification email is sent', async () => {
+        await reconfigure({
+          verifyUserEmails: true,
+          emailAdapter: {
+            sendVerificationEmail: () => Promise.resolve(),
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => Promise.resolve(),
+          },
+        });
+        const userController = Config.get('test').userController;
+        const getUserIfNeeded = userController.getUserIfNeeded.bind(userController);
+        const userDeleted = resolvingPromise();
+        spyOn(userController, 'getUserIfNeeded').and.callFake(async user => {
+          await userDeleted;
+          return getUserIfNeeded(user);
+        });
+        const res = await signUp();
+        expect(res.status).toBe(201);
+        await request({
+          method: 'DELETE',
+          url: `http://localhost:8378/1/users/${res.data.objectId}`,
+          headers: { ...headers, 'X-Parse-Master-Key': 'test' },
+        });
+        userDeleted.resolve();
+        await expectErrorLogged(message, 'undefined');
+      });
+
+      it('does not log properties of email adapter error', async () => {
+        const adapterError = errorWithRequestData();
+        await reconfigure({
+          verifyUserEmails: true,
+          emailAdapter: {
+            sendVerificationEmail: () => Promise.reject(adapterError),
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => Promise.resolve(),
+          },
+        });
+        await signUp();
+        await expectErrorLogged(message, adapterError.stack);
+        expectRequestDataNotLogged();
+      });
+
+      it('does not log properties of sendUserEmailVerification error', async () => {
+        const callbackError = errorWithRequestData();
+        await reconfigure({
+          verifyUserEmails: true,
+          sendUserEmailVerification: () => {
+            throw callbackError;
+          },
+          emailAdapter: {
+            sendVerificationEmail: () => Promise.resolve(),
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => Promise.resolve(),
+          },
+        });
+        await signUp();
+        await expectErrorLogged(message, callbackError.stack);
+        expectRequestDataNotLogged();
+      });
+
+      describe('resend', () => {
+        let firstSend;
+        beforeEach(async () => {
+          firstSend = resolvingPromise();
+          let sendCount = 0;
+          await reconfigure({
+            verifyUserEmails: true,
+            emailAdapter: {
+              sendVerificationEmail: () => {
+                sendCount++;
+                if (sendCount === 1) {
+                  firstSend.resolve();
+                  return Promise.resolve();
+                }
+                return Promise.reject(error);
+              },
+              sendPasswordResetEmail: () => Promise.resolve(),
+              sendMail: () => Promise.resolve(),
+            },
+          });
+          await signUp();
+          await firstSend;
+        });
+
+        it('handles rejection of email adapter on verification email request', async () => {
+          const res = await post('/verificationEmailRequest', { email: 'user@example.com' });
+          expect(res.status).toBe(200);
+          expect(res.data).toEqual({});
+          await expectErrorLogged(message, error.stack);
+        });
+
+        it('handles rejection of email adapter on resend verification email page', async () => {
+          const res = await request({
+            method: 'POST',
+            url: 'http://localhost:8378/1/apps/test/resend_verification_email',
+            followRedirects: false,
+            body: { username: 'user' },
+          });
+          expect(res.status).toBe(303);
+          expect(res.text).toContain('email_verification_send_success.html');
+          await expectErrorLogged(message, error.stack);
+        });
+      });
+    });
+
+    describe('password reset email', () => {
+      const message = 'Failed to send password reset email';
+
+      const requestPasswordReset = async emailAdapter => {
+        await reconfigure({ emailAdapter });
+        await signUp();
+        const res = await post('/requestPasswordReset', { email: 'user@example.com' });
+        expect(res.status).toBe(200);
+        expect(res.data).toEqual({});
+      };
+
+      it('handles rejection of email adapter', async () => {
+        await requestPasswordReset({
+          sendVerificationEmail: () => Promise.resolve(),
+          sendPasswordResetEmail: () => Promise.reject(error),
+          sendMail: () => Promise.resolve(),
+        });
+        await expectErrorLogged(message, error.stack);
+      });
+
+      it('handles synchronous error of email adapter', async () => {
+        await requestPasswordReset({
+          sendVerificationEmail: () => Promise.resolve(),
+          sendPasswordResetEmail: () => {
+            throw error;
+          },
+          sendMail: () => Promise.resolve(),
+        });
+        await expectErrorLogged(message, error.stack);
+      });
+
+      it('handles rejection of email adapter sendMail', async () => {
+        await requestPasswordReset({
+          sendMail: () => Promise.reject(error),
+        });
+        await expectErrorLogged(message, error.stack);
+      });
+
+      it('does not log properties of email adapter error', async () => {
+        const adapterError = errorWithRequestData();
+        await requestPasswordReset({
+          sendVerificationEmail: () => Promise.resolve(),
+          sendPasswordResetEmail: () => Promise.reject(adapterError),
+          sendMail: () => Promise.resolve(),
+        });
+        await expectErrorLogged(message, adapterError.stack);
+        expectRequestDataNotLogged();
+      });
+    });
+  });
+
+  describe('(GHSA-gj37-5hg5-p729) Session creation bypasses _Session create and addField class-level permissions', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const masterHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Master-Key': 'test',
+      'Content-Type': 'application/json',
+    };
+    const publicCLP = {
+      find: { '*': true },
+      count: { '*': true },
+      get: { '*': true },
+      create: { '*': true },
+      update: { '*': true },
+      delete: { '*': true },
+      addField: { '*': true },
+      protectedFields: { '*': [] },
+    };
+    const setSessionCLP = permissions =>
+      request({
+        method: 'PUT',
+        url: 'http://localhost:8378/1/schemas/_Session',
+        headers: masterHeaders,
+        body: { classLevelPermissions: { ...publicCLP, ...permissions } },
+      });
+    const createSession = (sessionToken, body = {}, path = '/sessions') =>
+      request({
+        method: 'POST',
+        url: `http://localhost:8378/1${path}`,
+        headers: { ...headers, 'X-Parse-Session-Token': sessionToken },
+        body,
+      }).catch(e => e);
+    const countSessions = user =>
+      new Parse.Query('_Session').equalTo('user', user).count({ useMasterKey: true });
+    const getSessionFields = async () => {
+      const response = await request({
+        url: 'http://localhost:8378/1/schemas/_Session',
+        headers: masterHeaders,
+      });
+      return Object.keys(response.data.fields);
+    };
+
+    describe('create', () => {
+      it('rejects POST /sessions without creating a session', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        await setSessionCLP({ create: {} });
+        const count = await countSessions(user);
+        const response = await createSession(user.getSessionToken());
+        expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        expect(await countSessions(user)).toBe(count);
+      });
+
+      it('rejects POST /classes/_Session without creating a session', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        await setSessionCLP({ create: {} });
+        const count = await countSessions(user);
+        const response = await createSession(user.getSessionToken(), {}, '/classes/_Session');
+        expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        expect(await countSessions(user)).toBe(count);
+      });
+
+      it('rejects session creation in a batch request without creating a session', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        await setSessionCLP({ create: {} });
+        const count = await countSessions(user);
+        const response = await createSession(user.getSessionToken(), {
+          requests: [{ method: 'POST', path: '/1/sessions', body: {} }],
+        }, '/batch');
+        expect(response.data[0].error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        expect(await countSessions(user)).toBe(count);
+      });
+
+      it('rejects a user outside the role permitted to create sessions', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        const role = new Parse.Role('SessionProvisioner', new Parse.ACL());
+        await role.save(null, { useMasterKey: true });
+        await setSessionCLP({ create: { 'role:SessionProvisioner': true } });
+        const count = await countSessions(user);
+        const response = await createSession(user.getSessionToken());
+        expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        expect(await countSessions(user)).toBe(count);
+      });
+
+      it('allows a user in the role permitted to create sessions', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        const role = new Parse.Role('SessionProvisioner', new Parse.ACL());
+        role.getUsers().add(user);
+        await role.save(null, { useMasterKey: true });
+        await setSessionCLP({ create: { 'role:SessionProvisioner': true } });
+        const count = await countSessions(user);
+        const response = await createSession(user.getSessionToken());
+        expect(response.status).toBe(201);
+        expect(response.data.sessionToken).toMatch(/^r:/);
+        expect(await countSessions(user)).toBe(count + 1);
+      });
+
+      it('allows an authenticated user when create requires authentication', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        await setSessionCLP({ create: { requiresAuthentication: true } });
+        const response = await createSession(user.getSessionToken());
+        expect(response.status).toBe(201);
+        expect(response.data.sessionToken).toMatch(/^r:/);
+      });
+
+      it('allows the master key to create a session', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        await setSessionCLP({ create: {}, addField: {} });
+        const count = await countSessions(user);
+        const response = await request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/classes/_Session',
+          headers: masterHeaders,
+          body: {
+            user: { __type: 'Pointer', className: '_User', objectId: user.id },
+            sessionToken: 'r:master-created',
+          },
+        });
+        expect(response.status).toBe(201);
+        expect(await countSessions(user)).toBe(count + 1);
+      });
+
+      it('creates sessions on signup and login', async () => {
+        await Parse.User.signUp('existing', 'password');
+        await setSessionCLP({ create: {}, addField: {} });
+        const user = await Parse.User.signUp('user', 'password');
+        expect(user.getSessionToken()).toMatch(/^r:/);
+        const loggedIn = await Parse.User.logIn('user', 'password');
+        expect(loggedIn.getSessionToken()).toMatch(/^r:/);
+        expect(loggedIn.getSessionToken()).not.toBe(user.getSessionToken());
+      });
+    });
+
+    describe('addField', () => {
+      it('rejects a new field without adding it to the schema', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        await setSessionCLP({ addField: {} });
+        const count = await countSessions(user);
+        const response = await createSession(user.getSessionToken(), { newField: 'value' });
+        expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        expect(await getSessionFields()).not.toContain('newField');
+        expect(await countSessions(user)).toBe(count);
+      });
+
+      it('does not add a new field to the schema when create is not permitted', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        await setSessionCLP({ create: {} });
+        const response = await createSession(user.getSessionToken(), { newField: 'value' });
+        expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        expect(await getSessionFields()).not.toContain('newField');
+      });
+
+      it('allows existing fields', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        await request({
+          method: 'PUT',
+          url: 'http://localhost:8378/1/schemas/_Session',
+          headers: masterHeaders,
+          body: { fields: { deviceName: { type: 'String' } } },
+        });
+        await setSessionCLP({ addField: {} });
+        const response = await createSession(user.getSessionToken(), {
+          deviceName: 'device',
+          installationId: 'installation',
+        });
+        expect(response.status).toBe(201);
+        const session = await new Parse.Query('_Session').get(response.data.objectId, {
+          useMasterKey: true,
+        });
+        expect(session.get('deviceName')).toBe('device');
+        expect(session.get('installationId')).toBe('installation');
+      });
+
+      it('allows a new field when addField is permitted', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        await setSessionCLP({});
+        const response = await createSession(user.getSessionToken(), { newField: 'value' });
+        expect(response.status).toBe(201);
+        expect(await getSessionFields()).toContain('newField');
+      });
+    });
+
+    it('does not create a session when the request body fails schema validation', async () => {
+      const user = await Parse.User.signUp('user', 'password');
+      const count = await countSessions(user);
+      const response = await createSession(user.getSessionToken(), { expiresAt: 'invalid' });
+      expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect(await countSessions(user)).toBe(count);
+    });
   });
 });

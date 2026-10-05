@@ -13,6 +13,7 @@ const passwordCrypto = require('../lib/password');
 const Config = require('../lib/Config');
 const cryptoUtils = require('../lib/cryptoUtils');
 const Utils = require('../lib/Utils');
+const { resolvingPromise } = require('../lib/TestUtils');
 
 
 describe('allowExpiredAuthDataToken option', () => {
@@ -718,6 +719,254 @@ describe('Parse.User testing', () => {
       expect(e.code).toBe(Parse.Error.SESSION_MISSING);
       done();
     }
+  });
+
+  describe('update without session', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    let otherUser;
+    let otherUserSessionToken;
+
+    beforeEach(async () => {
+      await Parse.User.signUp('existingUser', 'password', { email: 'existing@example.com' });
+      otherUser = await Parse.User.signUp('otherUser', 'password');
+      otherUserSessionToken = otherUser.getSessionToken();
+    });
+
+    const update = (path, body, extraHeaders = {}) =>
+      request({
+        method: 'PUT',
+        url: `${Parse.serverURL}${path}`,
+        headers: { ...headers, ...extraHeaders },
+        body,
+      }).then(
+        response => response.data,
+        e => e.data
+      );
+
+    it('does not reveal whether a username is taken', async () => {
+      for (const path of [
+        `/users/${otherUser.id}`,
+        `/classes/_User/${otherUser.id}`,
+        '/users/nonexistent',
+      ]) {
+        const response = await update(path, { username: 'existingUser' });
+        expect(response.code).withContext(path).toBe(Parse.Error.SESSION_MISSING);
+      }
+    });
+
+    it('does not reveal whether an email is taken', async () => {
+      for (const path of [
+        `/users/${otherUser.id}`,
+        `/classes/_User/${otherUser.id}`,
+        '/users/nonexistent',
+      ]) {
+        const response = await update(path, { email: 'existing@example.com' });
+        expect(response.code).withContext(path).toBe(Parse.Error.SESSION_MISSING);
+      }
+    });
+
+    it('does not reveal whether a username is taken in a batch request', async () => {
+      const response = await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/batch`,
+        headers,
+        body: {
+          requests: [
+            {
+              method: 'PUT',
+              path: `/1/users/${otherUser.id}`,
+              body: { username: 'existingUser' },
+            },
+          ],
+        },
+      });
+      expect(response.data[0].error.code).toBe(Parse.Error.SESSION_MISSING);
+    });
+
+    it('does not add a new field to the schema', async () => {
+      const response = await update(`/users/${otherUser.id}`, { unauthenticatedField: 'value' });
+      expect(response.code).toBe(Parse.Error.SESSION_MISSING);
+      const schema = await new Parse.Schema('_User').get();
+      expect(schema.fields.unauthenticatedField).toBeUndefined();
+    });
+
+    it('reveals a taken username to an authenticated user updating their own account', async () => {
+      const response = await update(
+        `/users/${otherUser.id}`,
+        { username: 'existingUser' },
+        { 'X-Parse-Session-Token': otherUserSessionToken }
+      );
+      expect(response.code).toBe(Parse.Error.USERNAME_TAKEN);
+    });
+
+    it('reveals a taken username to master and maintenance key updates', async () => {
+      for (const keyHeader of [
+        { 'X-Parse-Master-Key': 'test' },
+        { 'X-Parse-Maintenance-Key': 'testing' },
+      ]) {
+        const response = await update(
+          `/users/${otherUser.id}`,
+          { username: 'existingUser' },
+          keyHeader
+        );
+        expect(response.code).withContext(Object.keys(keyHeader)[0]).toBe(
+          Parse.Error.USERNAME_TAKEN
+        );
+      }
+    });
+  });
+
+  describe('empty username and password', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    let user;
+
+    beforeEach(async () => {
+      user = await Parse.User.signUp('user1', 'password');
+    });
+
+    const send = (method, path, body, extraHeaders = {}) =>
+      request({
+        method,
+        url: `${Parse.serverURL}${path}`,
+        headers: { ...headers, ...extraHeaders },
+        body,
+      }).then(
+        response => response.data,
+        e => e.data
+      );
+
+    const expectUserUnchanged = async () => {
+      const stored = await new Parse.Query(Parse.User).get(user.id, { useMasterKey: true });
+      expect(stored.getUsername()).toBe('user1');
+      await expectAsync(Parse.User.logIn('user1', 'password')).toBeResolved();
+    };
+
+    it('rejects an update with an empty username', async () => {
+      for (const path of [`/users/${user.id}`, `/classes/_User/${user.id}`]) {
+        const response = await send(
+          'PUT',
+          path,
+          { username: '' },
+          { 'X-Parse-Session-Token': user.getSessionToken() }
+        );
+        expect(response.code).withContext(path).toBe(Parse.Error.USERNAME_MISSING);
+        expect(response.error).withContext(path).toBe('bad or missing username');
+      }
+      await expectUserUnchanged();
+    });
+
+    it('rejects an update with an empty password', async () => {
+      for (const path of [`/users/${user.id}`, `/classes/_User/${user.id}`]) {
+        const response = await send(
+          'PUT',
+          path,
+          { password: '' },
+          { 'X-Parse-Session-Token': user.getSessionToken() }
+        );
+        expect(response.code).withContext(path).toBe(Parse.Error.PASSWORD_MISSING);
+        expect(response.error).withContext(path).toBe('password is required');
+      }
+      await expectUserUnchanged();
+    });
+
+    it('rejects an update that removes or sets a non-string username or password', async () => {
+      for (const value of [null, { __op: 'Delete' }, 123]) {
+        const usernameResponse = await send(
+          'PUT',
+          `/users/${user.id}`,
+          { username: value },
+          { 'X-Parse-Session-Token': user.getSessionToken() }
+        );
+        expect(usernameResponse.code)
+          .withContext(JSON.stringify(value))
+          .toBe(Parse.Error.USERNAME_MISSING);
+        const passwordResponse = await send(
+          'PUT',
+          `/users/${user.id}`,
+          { password: value },
+          { 'X-Parse-Session-Token': user.getSessionToken() }
+        );
+        expect(passwordResponse.code)
+          .withContext(JSON.stringify(value))
+          .toBe(Parse.Error.PASSWORD_MISSING);
+      }
+      await expectUserUnchanged();
+    });
+
+    it('rejects an empty username or password with master and maintenance key', async () => {
+      for (const keyHeader of [
+        { 'X-Parse-Master-Key': 'test' },
+        { 'X-Parse-Maintenance-Key': 'testing' },
+      ]) {
+        const usernameResponse = await send('PUT', `/users/${user.id}`, { username: '' }, keyHeader);
+        expect(usernameResponse.code)
+          .withContext(Object.keys(keyHeader)[0])
+          .toBe(Parse.Error.USERNAME_MISSING);
+        const passwordResponse = await send('PUT', `/users/${user.id}`, { password: '' }, keyHeader);
+        expect(passwordResponse.code)
+          .withContext(Object.keys(keyHeader)[0])
+          .toBe(Parse.Error.PASSWORD_MISSING);
+      }
+      await expectUserUnchanged();
+    });
+
+    it('rejects an anonymous user update with an empty username and password', async () => {
+      const anonymousUser = await Parse.AnonymousUtils.logIn();
+      const response = await send(
+        'PUT',
+        `/users/${anonymousUser.id}`,
+        { username: '', password: '', authData: { anonymous: null } },
+        { 'X-Parse-Session-Token': anonymousUser.getSessionToken() }
+      );
+      expect(response.code).toBe(Parse.Error.USERNAME_MISSING);
+      const stored = await new Parse.Query(Parse.User).get(anonymousUser.id, {
+        useMasterKey: true,
+      });
+      expect(stored.getUsername()).toBe(anonymousUser.getUsername());
+      expect(stored.get('authData')?.anonymous).toBeDefined();
+    });
+
+    it('allows an anonymous user to set a username and password', async () => {
+      const anonymousUser = await Parse.AnonymousUtils.logIn();
+      const response = await send(
+        'PUT',
+        `/users/${anonymousUser.id}`,
+        { username: 'user2', password: 'password2', authData: { anonymous: null } },
+        { 'X-Parse-Session-Token': anonymousUser.getSessionToken() }
+      );
+      expect(response.code).toBeUndefined();
+      const loggedIn = await Parse.User.logIn('user2', 'password2');
+      expect(loggedIn.id).toBe(anonymousUser.id);
+    });
+
+    it('rejects an empty password on signup with authData', async () => {
+      for (const password of ['', null, { __op: 'Delete' }]) {
+        const response = await send('POST', '/users', {
+          authData: { anonymous: { id: cryptoUtils.randomHexString(16) } },
+          password,
+        });
+        expect(response.code)
+          .withContext(JSON.stringify(password))
+          .toBe(Parse.Error.PASSWORD_MISSING);
+      }
+    });
+
+    it('assigns a random username on signup with authData and an empty username', async () => {
+      const response = await send('POST', '/users', {
+        authData: { anonymous: { id: cryptoUtils.randomHexString(16) } },
+        username: '',
+      });
+      expect(response.objectId).toBeDefined();
+      expect(response.username.length).toBe(25);
+    });
   });
 
   it('never locks himself up', async () => {
@@ -3099,10 +3348,12 @@ describe('Parse.User testing', () => {
     await reconfigureServer();
     let emailCalled = false;
     let emailOptions;
+    const sendPromise = resolvingPromise();
     const emailAdapter = {
       sendVerificationEmail: options => {
         emailOptions = options;
         emailCalled = true;
+        sendPromise.resolve();
       },
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve(),
@@ -3147,7 +3398,7 @@ describe('Parse.User testing', () => {
           },
         });
       })
-      .then(() => jasmine.timeout())
+      .then(() => sendPromise)
       .then(() => {
         expect(emailCalled).toBe(true);
         expect(emailOptions).not.toBeUndefined();
@@ -3164,10 +3415,12 @@ describe('Parse.User testing', () => {
   it_id('bf668670-39fa-44d3-a9a9-cad52f36d272')(it)('should not send email when email is not a string', async done => {
     let emailCalled = false;
     let emailOptions;
+    const sendPromise = resolvingPromise();
     const emailAdapter = {
       sendVerificationEmail: options => {
         emailOptions = options;
         emailCalled = true;
+        sendPromise.resolve();
       },
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve(),
@@ -3183,6 +3436,7 @@ describe('Parse.User testing', () => {
     user.set('password', 'zxcv');
     user.set('email', 'asdf@jkl.com');
     await user.signUp();
+    await sendPromise;
     request({
       method: 'POST',
       url: 'http://localhost:8378/1/requestPasswordReset',

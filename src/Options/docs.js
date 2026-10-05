@@ -59,7 +59,7 @@
  * @property {Adapter<FilesAdapter>} filesAdapter Adapter module for the files sub-system
  * @property {FileUploadOptions} fileUpload Options for file uploads
  * @property {String} graphQLPath The mount path for the GraphQL endpoint<br><br>⚠️ File upload inside the GraphQL mutation system requires Parse Server to be able to call itself by making requests to the URL set in `serverURL`.<br><br>Defaults is `/graphql`.
- * @property {Boolean} graphQLPublicIntrospection Enable public introspection for the GraphQL endpoint, defaults to false
+ * @property {Boolean} graphQLPublicIntrospection Enable public introspection for the GraphQL endpoint, defaults to false.<br><br>ℹ️ Disabling public introspection does not hide whether a class or field exists. A GraphQL operation is validated against the complete schema before any class-level permission is checked, so a client can confirm a guessed class or field name by sending an operation that references it. To hide a class from the GraphQL API, exclude it with the `enabledForClasses` or `disabledForClasses` setting of the GraphQL config.
  * @property {String} graphQLSchema Full path to your GraphQL custom schema.graphql file
  * @property {String} host The host to serve ParseServer on, defaults to 0.0.0.0
  * @property {IdempotencyOptions} idempotencyOptions Options for request idempotency to deduplicate identical requests that may be caused by network issues. Caution, this is an experimental feature that may not be appropriate for production.

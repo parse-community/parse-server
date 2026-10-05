@@ -314,7 +314,7 @@ module.exports.ParseServerOptions = {
   },
   graphQLPublicIntrospection: {
     env: 'PARSE_SERVER_GRAPHQL_PUBLIC_INTROSPECTION',
-    help: 'Enable public introspection for the GraphQL endpoint, defaults to false',
+    help: 'Enable public introspection for the GraphQL endpoint, defaults to false.<br><br>\u2139\uFE0F Disabling public introspection does not hide whether a class or field exists. A GraphQL operation is validated against the complete schema before any class-level permission is checked, so a client can confirm a guessed class or field name by sending an operation that references it. To hide a class from the GraphQL API, exclude it with the `enabledForClasses` or `disabledForClasses` setting of the GraphQL config.',
     action: parsers.booleanParser,
     default: false,
   },

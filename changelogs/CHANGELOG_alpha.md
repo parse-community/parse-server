@@ -1,3 +1,52 @@
+## [9.10.3-alpha.3](https://github.com/parse-community/parse-server/compare/9.10.3-alpha.2...9.10.3-alpha.3) (2026-10-05)
+
+
+### Bug Fixes
+
+* User update accepts an empty username or password ([#10752](https://github.com/parse-community/parse-server/issues/10752)) ([99444cf](https://github.com/parse-community/parse-server/commit/99444cfedd46c7f002109b10c7e9131256c7bb51))
+
+## [9.10.3-alpha.2](https://github.com/parse-community/parse-server/compare/9.10.3-alpha.1...9.10.3-alpha.2) (2026-10-04)
+
+
+### Bug Fixes
+
+* User update runs checks against the target account before authorization ([GHSA-p49q-9w65-f9p7](https://github.com/parse-community/parse-server/security/advisories/GHSA-p49q-9w65-f9p7)) ([#10746](https://github.com/parse-community/parse-server/issues/10746)) ([643b918](https://github.com/parse-community/parse-server/commit/643b9181c38ac92592fe895d0e2304090d95eb7e))
+
+## [9.10.3-alpha.1](https://github.com/parse-community/parse-server/compare/9.10.2...9.10.3-alpha.1) (2026-10-04)
+
+
+### Bug Fixes
+
+* Session creation endpoint bypasses create and addField class-level permissions ([GHSA-gj37-5hg5-p729](https://github.com/parse-community/parse-server/security/advisories/GHSA-gj37-5hg5-p729)) ([#10744](https://github.com/parse-community/parse-server/issues/10744)) ([ef08e80](https://github.com/parse-community/parse-server/commit/ef08e80f25e144174eefc2001743ef79f2fafb1e))
+
+## [9.10.2-alpha.9](https://github.com/parse-community/parse-server/compare/9.10.2-alpha.8...9.10.2-alpha.9) (2026-10-02)
+
+
+### Bug Fixes
+
+* Create and update class-level permissions not enforced before schema validation ([#10739](https://github.com/parse-community/parse-server/issues/10739)) ([27a15e1](https://github.com/parse-community/parse-server/commit/27a15e1d79e12f0b0ca302a5205e76584cc9f8d9))
+
+## [9.10.2-alpha.8](https://github.com/parse-community/parse-server/compare/9.10.2-alpha.7...9.10.2-alpha.8) (2026-10-02)
+
+
+### Bug Fixes
+
+* Rate limit with option `requestPath` set to GraphQL endpoint path has no effect ([#10738](https://github.com/parse-community/parse-server/issues/10738)) ([c23825e](https://github.com/parse-community/parse-server/commit/c23825eb441bee57bf4ac714ada11fbcb501f919))
+
+## [9.10.2-alpha.7](https://github.com/parse-community/parse-server/compare/9.10.2-alpha.6...9.10.2-alpha.7) (2026-10-02)
+
+
+### Bug Fixes
+
+* LiveQuery ignores Parse Server option `protectedFieldsOwnerExempt` ([#10737](https://github.com/parse-community/parse-server/issues/10737)) ([8d2dd8c](https://github.com/parse-community/parse-server/commit/8d2dd8c76f9fdb1293f07f87cd4aaa5a310e2669))
+
+## [9.10.2-alpha.6](https://github.com/parse-community/parse-server/compare/9.10.2-alpha.5...9.10.2-alpha.6) (2026-09-30)
+
+
+### Bug Fixes
+
+* Server crash via unhandled error when sending verification or password reset email (([GHSA-46jj-qw3p-48fc](https://github.com/parse-community/parse-server/security/advisories/GHSA-46jj-qw3p-48fc))) ([#10730](https://github.com/parse-community/parse-server/issues/10730)) ([0893540](https://github.com/parse-community/parse-server/commit/0893540f41d6a4fca484e253a317ab99399e7e14))
+
 ## [9.10.2-alpha.5](https://github.com/parse-community/parse-server/compare/9.10.2-alpha.4...9.10.2-alpha.5) (2026-09-28)
 
 

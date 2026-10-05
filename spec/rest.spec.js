@@ -1092,6 +1092,132 @@ describe('rest update', () => {
   });
 });
 
+describe('rest write class-level permissions', () => {
+  const headers = {
+    'Content-Type': 'application/json',
+    'X-Parse-Application-Id': 'test',
+    'X-Parse-REST-API-Key': 'rest',
+  };
+  const lockedCLP = {
+    get: {},
+    find: {},
+    count: {},
+    create: {},
+    update: {},
+    delete: {},
+    addField: {},
+    protectedFields: {},
+  };
+  let objectId;
+
+  async function setCLP(permissions) {
+    const schema = new Parse.Schema('LockedClass');
+    schema.setCLP(permissions);
+    await schema.update();
+  }
+
+  async function signUpWriter() {
+    const user = await Parse.User.signUp('writer', 'password');
+    const role = new Parse.Role('Writer', new Parse.ACL());
+    role.getUsers().add(user);
+    await role.save(null, { useMasterKey: true });
+    return user;
+  }
+
+  function create(body, extraHeaders = {}) {
+    return request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/LockedClass',
+      headers: { ...headers, ...extraHeaders },
+      body,
+    }).catch(e => e);
+  }
+
+  function update(body, extraHeaders = {}) {
+    return request({
+      method: 'PUT',
+      url: `http://localhost:8378/1/classes/LockedClass/${objectId}`,
+      headers: { ...headers, ...extraHeaders },
+      body,
+    }).catch(e => e);
+  }
+
+  beforeEach(async () => {
+    const target = new Parse.Object('PrivateTarget');
+    await target.save(null, { useMasterKey: true });
+    const object = new Parse.Object('LockedClass');
+    object.set('owner', target);
+    await object.save(null, { useMasterKey: true });
+    objectId = object.id;
+  });
+
+  it('rejects create without create permission before validating field types', async () => {
+    await setCLP(lockedCLP);
+    const response = await create({ owner: 1 });
+    expect(response.data).toEqual({
+      code: Parse.Error.OPERATION_FORBIDDEN,
+      error: 'Permission denied',
+    });
+  });
+
+  it('rejects update without update permission before validating field types', async () => {
+    await setCLP(lockedCLP);
+    const response = await update({ owner: 1 });
+    expect(response.data).toEqual({
+      code: Parse.Error.OPERATION_FORBIDDEN,
+      error: 'Permission denied',
+    });
+  });
+
+  it('does not add a field to the schema on create without create permission', async () => {
+    await setCLP({ ...lockedCLP, addField: { '*': true } });
+    const response = await create({ newField: 'value' });
+    expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+    const schema = await new Parse.Schema('LockedClass').get();
+    expect(schema.fields.newField).toBeUndefined();
+  });
+
+  it('does not add a field to the schema on update without update permission', async () => {
+    await setCLP({ ...lockedCLP, addField: { '*': true } });
+    const response = await update({ newField: 'value' });
+    expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+    const schema = await new Parse.Schema('LockedClass').get();
+    expect(schema.fields.newField).toBeUndefined();
+  });
+
+  it('creates with master key without create permission', async () => {
+    await setCLP(lockedCLP);
+    const response = await create({ count: 1 }, { 'X-Parse-Master-Key': 'test' });
+    expect(response.status).toBe(201);
+  });
+
+  it('updates with master key without update permission', async () => {
+    await setCLP(lockedCLP);
+    const response = await update({ count: 1 }, { 'X-Parse-Master-Key': 'test' });
+    expect(response.status).toBe(200);
+  });
+
+  it('validates field types on create with create permission through a role', async () => {
+    const user = await signUpWriter();
+    await setCLP({ ...lockedCLP, create: { 'role:Writer': true } });
+    const response = await create(
+      { owner: 1 },
+      { 'X-Parse-Session-Token': user.getSessionToken() }
+    );
+    expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+  });
+
+  it('validates field types on update with update permission through a role', async () => {
+    const user = await signUpWriter();
+    await setCLP({ ...lockedCLP, update: { 'role:Writer': true } });
+    const response = await update(
+      { owner: 1 },
+      { 'X-Parse-Session-Token': user.getSessionToken() }
+    );
+    expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+  });
+});
+
 describe('_Join table security', () => {
   let config;
 
