@@ -110,6 +110,9 @@ RestWrite.prototype.execute = function () {
       return this.handleSession();
     })
     .then(() => {
+      return this.authorizeUserUpdate();
+    })
+    .then(() => {
       return this.validateAuthData();
     })
     .then(() => {
@@ -522,13 +525,16 @@ RestWrite.prototype.validateAuthData = function () {
       return providerData && typeof providerData === 'object' && Object.keys(providerData).length;
     });
 
-  if (!this.query && !hasAuthData) {
-    if (typeof this.data.username !== 'string' || _.isEmpty(this.data.username)) {
-      throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'bad or missing username');
-    }
-    if (typeof this.data.password !== 'string' || _.isEmpty(this.data.password)) {
-      throw new Parse.Error(Parse.Error.PASSWORD_MISSING, 'password is required');
-    }
+  const requiresCredentials = !this.query && !hasAuthData;
+  const isMissing = value => typeof value !== 'string' || _.isEmpty(value);
+  // An empty username on create with authData is replaced by a random one
+  const checkUsername = requiresCredentials || (this.query && this.data.username !== undefined);
+  const checkPassword = requiresCredentials || this.data.password !== undefined;
+  if (checkUsername && isMissing(this.data.username)) {
+    throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'bad or missing username');
+  }
+  if (checkPassword && isMissing(this.data.password)) {
+    throw new Parse.Error(Parse.Error.PASSWORD_MISSING, 'password is required');
   }
 
   if (!Object.prototype.hasOwnProperty.call(this.data, 'authData')) {
@@ -797,6 +803,40 @@ RestWrite.prototype.validateWritePermission = async function () {
   );
 };
 
+// Authorize a _User update before any step reads the target account
+RestWrite.prototype.authorizeUserUpdate = async function () {
+  if (this.className !== '_User' || !this.query) {
+    return;
+  }
+  if (this.auth.isMaster || this.auth.isMaintenance) {
+    return;
+  }
+  if (this.auth.isUnauthenticated()) {
+    throw createSanitizedError(
+      Parse.Error.SESSION_MISSING,
+      `Cannot modify user ${this.query.objectId}.`,
+      this.config
+    );
+  }
+  // Body objectId must not retarget the update
+  if (this.data.objectId !== undefined && this.data.objectId !== this.query.objectId) {
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+  }
+  // Owner update reads only own data; the write stays ACL-checked
+  if (this.auth.user.id === this.query.objectId) {
+    return;
+  }
+  // Write access check via the write-path ACL enforcement
+  await this.config.database.update(
+    this.className,
+    { objectId: this.query.objectId },
+    {},
+    this.runOptions,
+    false,
+    true
+  );
+};
+
 // The non-third-party parts of User transformation
 RestWrite.prototype.transformUser = async function () {
   var promise = Promise.resolve();
@@ -1021,11 +1061,11 @@ RestWrite.prototype._validatePasswordRequirements = function () {
       // username is not passed during password reset
       if (this.data.password.indexOf(this.data.username) >= 0)
       { return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, containsUsernameError)); }
-    } else {
-      // retrieve the User object using objectId during password reset
-      return this.config.database.find('_User', { objectId: this.objectId() }).then(results => {
+    } else if (this.query) {
+      // retrieve the User object using the URL object ID during password reset
+      return this.config.database.find('_User', { objectId: this.query.objectId }).then(results => {
         if (results.length != 1) {
-          throw undefined;
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
         }
         if (this.data.password.indexOf(results[0].username) >= 0)
         { return Promise.reject(
@@ -1044,13 +1084,13 @@ RestWrite.prototype._validatePasswordHistory = function () {
     return this.config.database
       .find(
         '_User',
-        { objectId: this.objectId() },
+        { objectId: this.query.objectId },
         { keys: ['_password_history', '_hashed_password'] },
         Auth.maintenance(this.config)
       )
       .then(results => {
         if (results.length != 1) {
-          throw undefined;
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
         }
         const user = results[0];
         let oldPasswords = [];
@@ -1329,7 +1369,9 @@ RestWrite.prototype.handleSession = function () {
       additionalSessionData,
     });
 
-    return createSession().then(results => {
+    // Enforce the caller's class-level permissions and schema before the master write
+    const validated = this.validateWritePermission().then(() => this.validateSchema());
+    return validated.then(() => createSession()).then(results => {
       if (!results.response) {
         throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Error creating session.');
       }
@@ -1718,13 +1760,13 @@ RestWrite.prototype.runDatabaseOperation = function () {
       defer = this.config.database
         .find(
           '_User',
-          { objectId: this.objectId() },
+          { objectId: this.query.objectId },
           { keys: ['_password_history', '_hashed_password'] },
           Auth.maintenance(this.config)
         )
         .then(results => {
           if (results.length != 1) {
-            throw undefined;
+            throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
           }
           const user = results[0];
           let oldPasswords = [];
