@@ -1,3 +1,10 @@
+## [9.10.3-alpha.3](https://github.com/parse-community/parse-server/compare/9.10.3-alpha.2...9.10.3-alpha.3) (2026-10-05)
+
+
+### Bug Fixes
+
+* User update accepts an empty username or password ([#10752](https://github.com/parse-community/parse-server/issues/10752)) ([99444cf](https://github.com/parse-community/parse-server/commit/99444cfedd46c7f002109b10c7e9131256c7bb51))
+
 ## [9.10.3-alpha.2](https://github.com/parse-community/parse-server/compare/9.10.3-alpha.1...9.10.3-alpha.2) (2026-10-04)
 
 
