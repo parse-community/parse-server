@@ -721,6 +721,105 @@ describe('Parse.User testing', () => {
     }
   });
 
+  describe('update without session', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    let otherUser;
+    let otherUserSessionToken;
+
+    beforeEach(async () => {
+      await Parse.User.signUp('existingUser', 'password', { email: 'existing@example.com' });
+      otherUser = await Parse.User.signUp('otherUser', 'password');
+      otherUserSessionToken = otherUser.getSessionToken();
+    });
+
+    const update = (path, body, extraHeaders = {}) =>
+      request({
+        method: 'PUT',
+        url: `${Parse.serverURL}${path}`,
+        headers: { ...headers, ...extraHeaders },
+        body,
+      }).then(
+        response => response.data,
+        e => e.data
+      );
+
+    it('does not reveal whether a username is taken', async () => {
+      for (const path of [
+        `/users/${otherUser.id}`,
+        `/classes/_User/${otherUser.id}`,
+        '/users/nonexistent',
+      ]) {
+        const response = await update(path, { username: 'existingUser' });
+        expect(response.code).withContext(path).toBe(Parse.Error.SESSION_MISSING);
+      }
+    });
+
+    it('does not reveal whether an email is taken', async () => {
+      for (const path of [
+        `/users/${otherUser.id}`,
+        `/classes/_User/${otherUser.id}`,
+        '/users/nonexistent',
+      ]) {
+        const response = await update(path, { email: 'existing@example.com' });
+        expect(response.code).withContext(path).toBe(Parse.Error.SESSION_MISSING);
+      }
+    });
+
+    it('does not reveal whether a username is taken in a batch request', async () => {
+      const response = await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/batch`,
+        headers,
+        body: {
+          requests: [
+            {
+              method: 'PUT',
+              path: `/1/users/${otherUser.id}`,
+              body: { username: 'existingUser' },
+            },
+          ],
+        },
+      });
+      expect(response.data[0].error.code).toBe(Parse.Error.SESSION_MISSING);
+    });
+
+    it('does not add a new field to the schema', async () => {
+      const response = await update(`/users/${otherUser.id}`, { unauthenticatedField: 'value' });
+      expect(response.code).toBe(Parse.Error.SESSION_MISSING);
+      const schema = await new Parse.Schema('_User').get();
+      expect(schema.fields.unauthenticatedField).toBeUndefined();
+    });
+
+    it('reveals a taken username to an authenticated user updating their own account', async () => {
+      const response = await update(
+        `/users/${otherUser.id}`,
+        { username: 'existingUser' },
+        { 'X-Parse-Session-Token': otherUserSessionToken }
+      );
+      expect(response.code).toBe(Parse.Error.USERNAME_TAKEN);
+    });
+
+    it('reveals a taken username to master and maintenance key updates', async () => {
+      for (const keyHeader of [
+        { 'X-Parse-Master-Key': 'test' },
+        { 'X-Parse-Maintenance-Key': 'testing' },
+      ]) {
+        const response = await update(
+          `/users/${otherUser.id}`,
+          { username: 'existingUser' },
+          keyHeader
+        );
+        expect(response.code).withContext(Object.keys(keyHeader)[0]).toBe(
+          Parse.Error.USERNAME_TAKEN
+        );
+      }
+    });
+  });
+
   it('never locks himself up', async () => {
     const user = new Parse.User();
     await user.signUp({
