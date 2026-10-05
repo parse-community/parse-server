@@ -151,7 +151,7 @@ Parse Server is continuously tested with the most recent releases of MongoDB to 
 | MongoDB 6 | 6.0.19          | July 2025   | <= 8.x (2025)        |
 | MongoDB 7 | 7.0.16          | August 2026 | <= 9.x (2026)        |
 | MongoDB 8 | 8.0.4           | TDB         | <= 10.x (2027)       |
-| MongoDB 9 | 9.0.2           | TBD         | TBD                  |
+| MongoDB 9 | 9.0.2           | TBD         | <= 11.x (2028)       |
 
 #### PostgreSQL
 
