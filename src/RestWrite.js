@@ -525,13 +525,16 @@ RestWrite.prototype.validateAuthData = function () {
       return providerData && typeof providerData === 'object' && Object.keys(providerData).length;
     });
 
-  if (!this.query && !hasAuthData) {
-    if (typeof this.data.username !== 'string' || _.isEmpty(this.data.username)) {
-      throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'bad or missing username');
-    }
-    if (typeof this.data.password !== 'string' || _.isEmpty(this.data.password)) {
-      throw new Parse.Error(Parse.Error.PASSWORD_MISSING, 'password is required');
-    }
+  const requiresCredentials = !this.query && !hasAuthData;
+  const isMissing = value => typeof value !== 'string' || _.isEmpty(value);
+  // An empty username on create with authData is replaced by a random one
+  const checkUsername = requiresCredentials || (this.query && this.data.username !== undefined);
+  const checkPassword = requiresCredentials || this.data.password !== undefined;
+  if (checkUsername && isMissing(this.data.username)) {
+    throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'bad or missing username');
+  }
+  if (checkPassword && isMissing(this.data.password)) {
+    throw new Parse.Error(Parse.Error.PASSWORD_MISSING, 'password is required');
   }
 
   if (!Object.prototype.hasOwnProperty.call(this.data, 'authData')) {
