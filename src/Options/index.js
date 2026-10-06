@@ -321,7 +321,7 @@ export interface ParseServerOptions {
   <br><br>
   If set to `false` then Parse requests within the same Node.js environment as Parse Server are executed as HTTP requests sent to Parse Server via the `serverURL`. For example, a `Parse.Query` in Cloud Code is calling Parse Server via a HTTP request. The server is essentially making a HTTP request to itself, unnecessarily using network resources such as network ports.
   <br><br>
-  Setting the environment variable `PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS` to `1` routes requests directly regardless of this option, so `false` only takes effect if that environment variable is unset.
+  Setting the environment variable `PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS` to `1` routes requests directly regardless of this option, so `false` only takes effect if that environment variable is not set to `1`.
   <br><br>
   ⚠️ Because this is enabled by default, in environments where multiple Parse Server instances run behind a load balancer and Parse requests within the current Node.js environment should be routed via the load balancer and distributed as HTTP requests among all instances via the `serverURL`, this has to be explicitly set to `false`.
   :DEFAULT: true */
