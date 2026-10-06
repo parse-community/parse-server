@@ -602,6 +602,35 @@ describe('Installations', () => {
       });
   });
 
+  it('update fails to clear installationId via empty string', done => {
+    const installId = '12345678-abcd-abcd-abcd-123456789abc';
+    const input = {
+      installationId: installId,
+      deviceType: 'ios',
+    };
+    rest
+      .create(config, auth.nobody(config), '_Installation', input)
+      .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
+      .then(results => {
+        expect(results.length).toEqual(1);
+        return rest.update(
+          config,
+          auth.nobody(config),
+          '_Installation',
+          { objectId: results[0].objectId },
+          { installationId: '' }
+        );
+      })
+      .then(() => {
+        fail('Updating the installation should have failed.');
+        done();
+      })
+      .catch(error => {
+        expect(error.code).toEqual(136);
+        done();
+      });
+  });
+
   it('create fails when installationId is the Delete op (no real ID provided)', done => {
     const input = {
       installationId: { __op: 'Delete' },
