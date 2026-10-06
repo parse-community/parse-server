@@ -1397,13 +1397,14 @@ RestWrite.prototype.handleInstallation = function () {
 
   // installationId is the row's primary identity (used by the SDK auth
   // header to bind a client request to its row). Reject any attempt to
-  // clear it via null or { __op: 'Delete' } before the lookup logic
+  // clear it via null, '' or { __op: 'Delete' } before the lookup logic
   // below runs — { __op: 'Delete' } would otherwise crash on
   // `.toLowerCase()` (TypeError → 500) and null would silently orphan
   // the row. Mirrors the existing 136 guard against changing
   // installationId from one value to another.
   const clearingInstallationId =
     this.data.installationId === null ||
+    this.data.installationId === '' ||
     (typeof this.data.installationId === 'object' &&
       this.data.installationId !== null &&
       this.data.installationId.__op === 'Delete');
