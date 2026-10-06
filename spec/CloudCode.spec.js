@@ -2345,6 +2345,27 @@ describe('cloud functions', () => {
 });
 
 describe('beforeSave hooks', () => {
+  it('should reject with the trigger error when the object cannot be serialized for logging', async () => {
+    Parse.Cloud.beforeSave('MyObject', req => {
+      const circular = {};
+      circular.self = circular;
+      req.object.set('circular', circular);
+      throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'blocked');
+    });
+    await expectAsync(new Parse.Object('MyObject').save()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.SCRIPT_FAILED, 'blocked')
+    );
+  });
+
+  it('should settle when a successful trigger leaves an object that cannot be serialized', async () => {
+    Parse.Cloud.beforeSave('MyObject', req => {
+      const circular = {};
+      circular.self = circular;
+      req.object.set('circular', circular);
+    });
+    await expectAsync(new Parse.Object('MyObject').save()).toBeRejected();
+  });
+
   it('should have request headers', done => {
     Parse.Cloud.beforeSave('MyObject', req => {
       expect(req.headers).toBeDefined();

@@ -463,6 +463,16 @@ function logTriggerSuccessBeforeHook(triggerType, className, input, result, auth
   );
 }
 
+// Logging must not prevent a trigger promise from settling, e.g. when the
+// object cannot be serialized because a trigger set a circular attribute.
+function logSafely(log) {
+  try {
+    log();
+  } catch (e) {
+    logger.error('Failed to log trigger result', { error: e });
+  }
+}
+
 function logTriggerErrorBeforeHook(triggerType, className, input, auth, error, logLevel) {
   if (logLevel === 'silent') {
     return;
@@ -959,15 +969,17 @@ export function maybeRunTrigger(
     var { success, error } = getResponseObject(
       request,
       object => {
-        logTriggerSuccessBeforeHook(
-          triggerType,
-          parseObject.className,
-          parseObject.toJSON(),
-          object,
-          auth,
-          triggerType.startsWith('after')
-            ? config.logLevels.triggerAfter
-            : config.logLevels.triggerBeforeSuccess
+        logSafely(() =>
+          logTriggerSuccessBeforeHook(
+            triggerType,
+            parseObject.className,
+            parseObject.toJSON(),
+            object,
+            auth,
+            triggerType.startsWith('after')
+              ? config.logLevels.triggerAfter
+              : config.logLevels.triggerBeforeSuccess
+          )
         );
         if (
           triggerType === Types.beforeSave ||
@@ -980,13 +992,15 @@ export function maybeRunTrigger(
         resolve(object);
       },
       error => {
-        logTriggerErrorBeforeHook(
-          triggerType,
-          parseObject.className,
-          parseObject.toJSON(),
-          auth,
-          error,
-          config.logLevels.triggerBeforeError
+        logSafely(() =>
+          logTriggerErrorBeforeHook(
+            triggerType,
+            parseObject.className,
+            parseObject.toJSON(),
+            auth,
+            error,
+            config.logLevels.triggerBeforeError
+          )
         );
         reject(error);
       }
