@@ -379,6 +379,14 @@ export function getResponseObject(request, resolve, reject) {
         if (!response) {
           response = request.objects;
         }
+        if (!Array.isArray(response)) {
+          return reject(
+            new Parse.Error(
+              Parse.Error.SCRIPT_FAILED,
+              'afterFind trigger must return an array of objects.'
+            )
+          );
+        }
         response = response.map(object => {
           return toJSONwithObjects(object);
         });
@@ -553,7 +561,8 @@ export function maybeRunAfterFindTrigger(
         }
         return responseFromTrigger;
       })
-      .then(success, error);
+      .then(success, error)
+      .catch(error);
   }).then(resultsAsJSON => {
     logTriggerAfterHook(
       triggerType,
@@ -1026,7 +1035,8 @@ export function maybeRunTrigger(
 
         return promise;
       })
-      .then(success, error);
+      .then(success, error)
+      .catch(error);
   });
 }
 
