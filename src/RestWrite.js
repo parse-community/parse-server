@@ -792,7 +792,9 @@ RestWrite.prototype.checkRestrictedFields = async function () {
 
 // Validates the create or update class-level permission before schema validation
 RestWrite.prototype.validateWritePermission = async function () {
-  if (this.auth.isMaster || this.auth.isMaintenance) {
+  // A login with authData has already matched an existing user and set the response;
+  // it creates no object, so the create permission does not apply.
+  if (this.response || this.auth.isMaster || this.auth.isMaintenance) {
     return;
   }
   const schemaController = await this.config.database.loadSchema();
