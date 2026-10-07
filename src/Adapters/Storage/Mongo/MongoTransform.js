@@ -224,6 +224,14 @@ const valueAsDate = value => {
   return false;
 };
 
+// Same output as `Parse._encode(date)`.
+const encodeDate = date => {
+  if (isNaN(date)) {
+    throw new Error('Tried to encode an invalid date.');
+  }
+  return { __type: 'Date', iso: Utils.toISOString(date) };
+};
+
 function transformQueryKeyValue(className, key, value, schema, count = false) {
   switch (key) {
     case 'createdAt':
@@ -1058,7 +1066,7 @@ const nestedMongoObjectToNestedParseObject = mongoObject => {
       }
 
       if (Utils.isDate(mongoObject)) {
-        return Parse._encode(mongoObject);
+        return encodeDate(mongoObject);
       }
 
       if (mongoObject instanceof mongodb.Long) {
@@ -1121,7 +1129,7 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
       }
 
       if (Utils.isDate(mongoObject)) {
-        return Parse._encode(mongoObject);
+        return encodeDate(mongoObject);
       }
 
       if (mongoObject instanceof mongodb.Long) {
@@ -1171,19 +1179,19 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
             break;
           case 'updatedAt':
           case '_updated_at':
-            restObject['updatedAt'] = Parse._encode(new Date(mongoObject[key])).iso;
+            restObject['updatedAt'] = encodeDate(new Date(mongoObject[key])).iso;
             break;
           case 'createdAt':
           case '_created_at':
-            restObject['createdAt'] = Parse._encode(new Date(mongoObject[key])).iso;
+            restObject['createdAt'] = encodeDate(new Date(mongoObject[key])).iso;
             break;
           case 'expiresAt':
           case '_expiresAt':
-            restObject['expiresAt'] = Parse._encode(new Date(mongoObject[key]));
+            restObject['expiresAt'] = encodeDate(new Date(mongoObject[key]));
             break;
           case 'lastUsed':
           case '_last_used':
-            restObject['lastUsed'] = Parse._encode(new Date(mongoObject[key])).iso;
+            restObject['lastUsed'] = encodeDate(new Date(mongoObject[key])).iso;
             break;
           case 'timesUsed':
           case 'times_used':
