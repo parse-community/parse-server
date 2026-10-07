@@ -766,4 +766,12 @@ describe('ParseServerRESTController', () => {
     const result = await Parse.Push.getPushStatus(pushStatusId);
     expect(result.id).toBe(pushStatusId);
   });
+
+  it('handles an object ID without alphanumeric characters', async () => {
+    await reconfigureServer({ allowCustomObjectId: true });
+    await RESTController.request('POST', '/classes/TestObject', { objectId: '-', key: 'value' });
+    const res = await RESTController.request('GET', '/classes/TestObject/-');
+    expect(res.objectId).toBe('-');
+    expect(res.key).toBe('value');
+  });
 });
