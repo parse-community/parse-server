@@ -1,3 +1,27 @@
+## [9.10.3](https://github.com/parse-community/parse-server/compare/9.10.2...9.10.3) (2026-10-05)
+
+
+### Bug Fixes
+
+* Session creation endpoint bypasses create and addField class-level permissions ([GHSA-gj37-5hg5-p729](https://github.com/parse-community/parse-server/security/advisories/GHSA-gj37-5hg5-p729)) ([#10744](https://github.com/parse-community/parse-server/issues/10744)) ([ef08e80](https://github.com/parse-community/parse-server/commit/ef08e80f25e144174eefc2001743ef79f2fafb1e))
+* User update accepts an empty username or password ([#10752](https://github.com/parse-community/parse-server/issues/10752)) ([99444cf](https://github.com/parse-community/parse-server/commit/99444cfedd46c7f002109b10c7e9131256c7bb51))
+* User update runs checks against the target account before authorization ([GHSA-p49q-9w65-f9p7](https://github.com/parse-community/parse-server/security/advisories/GHSA-p49q-9w65-f9p7)) ([#10746](https://github.com/parse-community/parse-server/issues/10746)) ([643b918](https://github.com/parse-community/parse-server/commit/643b9181c38ac92592fe895d0e2304090d95eb7e))
+
+## [9.10.2](https://github.com/parse-community/parse-server/compare/9.10.1...9.10.2) (2026-10-02)
+
+
+### Bug Fixes
+
+* Create and update class-level permissions not enforced before schema validation ([#10739](https://github.com/parse-community/parse-server/issues/10739)) ([27a15e1](https://github.com/parse-community/parse-server/commit/27a15e1d79e12f0b0ca302a5205e76584cc9f8d9))
+* LiveQuery evaluates class-level permissions against an incomplete caller identity ([#10675](https://github.com/parse-community/parse-server/issues/10675)) ([6bf4bd9](https://github.com/parse-community/parse-server/commit/6bf4bd927962571b88b9326a420e52284ddb26cb))
+* LiveQuery ignores Parse Server option `protectedFieldsOwnerExempt` ([#10737](https://github.com/parse-community/parse-server/issues/10737)) ([8d2dd8c](https://github.com/parse-community/parse-server/commit/8d2dd8c76f9fdb1293f07f87cd4aaa5a310e2669))
+* LiveQuery ignores userField protectedFields groups and over-redacts fields the REST path returns ([#10690](https://github.com/parse-community/parse-server/issues/10690)) ([e8b3c92](https://github.com/parse-community/parse-server/commit/e8b3c9290e94b3eff21e6db2b182175a371a7667))
+* Parse Server option `graphQLPublicIntrospection` has no effect ([#10696](https://github.com/parse-community/parse-server/issues/10696)) ([1ce39d4](https://github.com/parse-community/parse-server/commit/1ce39d427f2b2a348b33acef9a666cecefd084ce))
+* Rate limit with option `requestPath` set to GraphQL endpoint path has no effect ([#10738](https://github.com/parse-community/parse-server/issues/10738)) ([c23825e](https://github.com/parse-community/parse-server/commit/c23825eb441bee57bf4ac714ada11fbcb501f919))
+* Server crash via file pointer without URL in an object write ([GHSA-gpr6-gr9g-pfw6](https://github.com/parse-community/parse-server/security/advisories/GHSA-gpr6-gr9g-pfw6)) ([#10694](https://github.com/parse-community/parse-server/issues/10694)) ([d77cd86](https://github.com/parse-community/parse-server/commit/d77cd86a31fdf84a2c61394d98788b33461fddc4))
+* Server crash via unhandled error when sending verification or password reset email (([GHSA-46jj-qw3p-48fc](https://github.com/parse-community/parse-server/security/advisories/GHSA-46jj-qw3p-48fc))) ([#10730](https://github.com/parse-community/parse-server/issues/10730)) ([0893540](https://github.com/parse-community/parse-server/commit/0893540f41d6a4fca484e253a317ab99399e7e14))
+* Transactional batch request can roll back or block writes of other clients ([GHSA-jhh9-hrgh-c9gv](https://github.com/parse-community/parse-server/security/advisories/GHSA-jhh9-hrgh-c9gv)) ([#10713](https://github.com/parse-community/parse-server/issues/10713)) ([90b6c9d](https://github.com/parse-community/parse-server/commit/90b6c9d24919803baef4b6da009df3b24d263332)), closes [GHSA-jhh9-hr#c9](https://github.com/GHSA-jhh9-hr/issues/c9) [/github.com/parse-community/parse-server/security/advisories/GHSA-jhh9-hr#c9](https://github.com//github.com/parse-community/parse-server/security/advisories/GHSA-jhh9-hr/issues/c9)
+
 ## [9.10.1](https://github.com/parse-community/parse-server/compare/9.10.0...9.10.1) (2026-09-24)
 
 
