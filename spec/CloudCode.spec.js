@@ -3928,6 +3928,7 @@ describe('afterLogin hook', () => {
       url: 'http://localhost:8378/1/classes/TestObject',
       method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
         'X-Parse-Cloud-Context': '{"a":"a"}',
