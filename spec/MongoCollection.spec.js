@@ -74,7 +74,7 @@ describe_only_db('mongo')('MongoCollection', () => {
       expect(hasGeoIndex).toBe(true);
     });
 
-    it_only_mongodb_version('>=8.3 <9')('MongoDB 8.3 to 8.x reports the geoNear "no index" error without the field name', async () => {
+    it_only_mongodb_version('>=8.3 <9')('MongoDB >=8.3 <9 reports the geoNear "no index" error without the field name', async () => {
       let error;
       try {
         await rawCollection.find(geoQuery).toArray();
