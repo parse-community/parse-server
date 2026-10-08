@@ -1,3 +1,17 @@
+## [9.10.4-alpha.2](https://github.com/parse-community/parse-server/compare/9.10.4-alpha.1...9.10.4-alpha.2) (2026-10-07)
+
+
+### Bug Fixes
+
+* Batch and direct access requests fail for object IDs without alphanumeric characters or class names without letters ([#10761](https://github.com/parse-community/parse-server/issues/10761)) ([c8d5ebb](https://github.com/parse-community/parse-server/commit/c8d5ebb163ac9ec7040990fce2a4bdbc49048b9e))
+
+## [9.10.4-alpha.1](https://github.com/parse-community/parse-server/compare/9.10.3...9.10.4-alpha.1) (2026-10-07)
+
+
+### Bug Fixes
+
+* GraphQL API fails when a class name or mutation alias collides with a built-in name ([#10757](https://github.com/parse-community/parse-server/issues/10757)) ([866e82b](https://github.com/parse-community/parse-server/commit/866e82b98a57398fefb2a72c4f7c92196dce66a8))
+
 ## [9.10.3-alpha.3](https://github.com/parse-community/parse-server/compare/9.10.3-alpha.2...9.10.3-alpha.3) (2026-10-05)
 
 

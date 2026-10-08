@@ -11,20 +11,6 @@ import log from './logger';
 import { inspect } from 'util';
 const Layer = require('router/lib/layer');
 
-function validateParameter(key, value) {
-  if (key == 'className') {
-    if (value.match(/_?[A-Za-z][A-Za-z_0-9]*/)) {
-      return value;
-    }
-  } else if (key == 'objectId') {
-    if (value.match(/[A-Za-z0-9]+/)) {
-      return value;
-    }
-  } else {
-    return value;
-  }
-}
-
 export default class PromiseRouter {
   // Each entry should be an object with:
   // path: the path to route, in express format
@@ -95,11 +81,7 @@ export default class PromiseRouter {
       const layer = route.layer || new Layer(route.path, null, route.handler);
       const match = layer.match(path);
       if (match) {
-        const params = layer.params;
-        Object.keys(params).forEach(key => {
-          params[key] = validateParameter(key, params[key]);
-        });
-        return { params: params, handler: route.handler };
+        return { params: layer.params, handler: route.handler };
       }
     }
   }
