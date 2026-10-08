@@ -1,3 +1,10 @@
+## [8.6.101](https://github.com/parse-community/parse-server/compare/8.6.100...8.6.101) (2026-10-08)
+
+
+### Bug Fixes
+
+* Unauthenticated deletion of class schemas removes class-level permissions on MongoDB ([GHSA-qmg9-m772-5rm7](https://github.com/parse-community/parse-server/security/advisories/GHSA-qmg9-m772-5rm7)) ([#10768](https://github.com/parse-community/parse-server/issues/10768)) ([2f3e236](https://github.com/parse-community/parse-server/commit/2f3e2360589292e5a7e30f9964ddf828c532a19f))
+
 ## [8.6.100](https://github.com/parse-community/parse-server/compare/8.6.99...8.6.100) (2026-10-08)
 
 
