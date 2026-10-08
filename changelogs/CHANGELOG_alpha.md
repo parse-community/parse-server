@@ -1,3 +1,10 @@
+## [9.10.4-alpha.3](https://github.com/parse-community/parse-server/compare/9.10.4-alpha.2...9.10.4-alpha.3) (2026-10-08)
+
+
+### Bug Fixes
+
+* Object write with a reserved field name can make reads fail on MongoDB ([GHSA-gwrq-q25v-g8mr](https://github.com/parse-community/parse-server/security/advisories/GHSA-gwrq-q25v-g8mr)) ([#10763](https://github.com/parse-community/parse-server/issues/10763)) ([d90b841](https://github.com/parse-community/parse-server/commit/d90b8414f2fb6dfef0e777e86e9558df6851b14c))
+
 ## [9.10.4-alpha.2](https://github.com/parse-community/parse-server/compare/9.10.4-alpha.1...9.10.4-alpha.2) (2026-10-07)
 
 
