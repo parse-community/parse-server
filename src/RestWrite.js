@@ -98,6 +98,9 @@ function RestWrite(config, auth, className, query, data, originalData, context, 
 RestWrite.prototype.execute = function () {
   return Promise.resolve()
     .then(() => {
+      return this.checkInternalFields();
+    })
+    .then(() => {
       return this.getUserAndRoleACL();
     })
     .then(() => {
@@ -755,6 +758,18 @@ RestWrite.prototype.handleAuthData = async function (authData) {
         // concurrent single-use token consumers cannot both succeed.
         applyAuthDataOptimisticLock(this.query, originalAuthData, this.data.authData);
       }
+    }
+  }
+};
+
+// Rejects internal fields in client-supplied data
+RestWrite.prototype.checkInternalFields = function () {
+  if (this.auth.isMaster || this.auth.isMaintenance) {
+    return;
+  }
+  for (const fieldName in this.data) {
+    if (fieldName.charAt(0) === '_') {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
     }
   }
 };

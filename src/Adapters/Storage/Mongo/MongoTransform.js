@@ -1234,7 +1234,9 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
               restObject[newKey] = transformPointerString(schema, newKey, mongoObject[key]);
               break;
             } else if (key[0] == '_' && key != '__type') {
-              throw 'bad key in untransform: ' + key;
+              // Unrecognized reserved key: drop it instead of failing the read
+              log.warn('transform.js', 'Found an unexpected reserved key, dropping it.', className, key);
+              break;
             } else {
               var value = mongoObject[key];
               if (
