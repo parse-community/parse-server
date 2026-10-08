@@ -1382,13 +1382,17 @@ describe('rest write internal fields', () => {
     // A reserved field name can reach the database through a trusted write or a
     // pre-fix client write; reading it must not crash the response.
     const masterHeaders = { ...headers, 'X-Parse-Master-Key': 'test' };
-    const created = await write('POST', '/classes/Poisoned', { a: 1, _x: null }, masterHeaders);
+    const created = await write('POST', '/classes/Poisoned', { a: 1, _x: null, b: 2 }, masterHeaders);
     expect(created.status).toBe(201);
     const objectId = created.data.objectId;
     const get = await write('GET', `/classes/Poisoned/${objectId}`);
     expect(get.status).toBe(200);
     expect(get.data.a).toBe(1);
     expect(get.data._x).toBeUndefined();
+    // Fields stored after the dropped key are still returned
+    expect(get.data.b).toBe(2);
+    expect(get.data.createdAt).toBeDefined();
+    expect(get.data.updatedAt).toBeDefined();
     const find = await write('GET', '/classes/Poisoned');
     expect(find.status).toBe(200);
     expect(find.data.results.length).toBe(1);
