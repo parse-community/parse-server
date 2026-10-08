@@ -1218,6 +1218,202 @@ describe('rest write class-level permissions', () => {
   });
 });
 
+describe('rest write internal fields', () => {
+  const headers = {
+    'Content-Type': 'application/json',
+    'X-Parse-Application-Id': 'test',
+    'X-Parse-REST-API-Key': 'rest',
+  };
+  const internalUserFields = [
+    '_hashed_password',
+    '_email_verify_token',
+    '_email_verify_token_expires_at',
+    '_perishable_token',
+    '_perishable_token_expires_at',
+    '_failed_login_count',
+    '_account_lockout_expires_at',
+    '_password_changed_at',
+    '_password_history',
+    '_rperm',
+    '_wperm',
+  ];
+
+  function write(method, path, body, extraHeaders = {}) {
+    return request({
+      method,
+      url: `http://localhost:8378/1${path}`,
+      headers: { ...headers, ...extraHeaders },
+      body,
+    }).catch(e => e);
+  }
+
+  function expectInvalidFieldName(response, fieldName) {
+    expect(response.status).toBe(400);
+    expect(response.data).toEqual({
+      code: Parse.Error.INVALID_KEY_NAME,
+      error: `Invalid field name: ${fieldName}.`,
+    });
+  }
+
+  it('rejects deleting or nulling internal fields on an own user', async () => {
+    const user = await Parse.User.signUp('user', 'password');
+    const sessionHeaders = { 'X-Parse-Session-Token': user.getSessionToken() };
+    for (const fieldName of internalUserFields) {
+      for (const value of [{ __op: 'Delete' }, null]) {
+        const response = await write(
+          'PUT',
+          `/users/${user.id}`,
+          { [fieldName]: value },
+          sessionHeaders
+        );
+        expectInvalidFieldName(response, fieldName);
+      }
+    }
+    await expectAsync(Parse.User.logIn('user', 'password')).toBeResolved();
+  });
+
+  it('rejects clearing the account lockout of an own user', async () => {
+    await reconfigureServer({ accountLockout: { duration: 5, threshold: 1 } });
+    const user = await Parse.User.signUp('user', 'password');
+    await expectAsync(Parse.User.logIn('user', 'wrong')).toBeRejected();
+    const response = await write(
+      'PUT',
+      `/users/${user.id}`,
+      { _account_lockout_expires_at: { __op: 'Delete' }, _failed_login_count: null },
+      { 'X-Parse-Session-Token': user.getSessionToken() }
+    );
+    expectInvalidFieldName(response, '_account_lockout_expires_at');
+    await expectAsync(Parse.User.logIn('user', 'password')).toBeRejectedWith(
+      new Parse.Error(
+        Parse.Error.OBJECT_NOT_FOUND,
+        'Your account is locked due to multiple failed login attempts. Please try again after 5 minute(s)'
+      )
+    );
+  });
+
+  it('rejects deleting the password history of an own user', async () => {
+    await reconfigureServer({ passwordPolicy: { maxPasswordHistory: 2 } });
+    const user = await Parse.User.signUp('user', 'password1');
+    user.setPassword('password2');
+    await user.save(null, { sessionToken: user.getSessionToken() });
+    const sessionHeaders = { 'X-Parse-Session-Token': user.getSessionToken() };
+    const response = await write(
+      'PUT',
+      `/users/${user.id}`,
+      { _password_history: { __op: 'Delete' } },
+      sessionHeaders
+    );
+    expectInvalidFieldName(response, '_password_history');
+    const reuse = await write('PUT', `/users/${user.id}`, { password: 'password1' }, sessionHeaders);
+    expect(reuse.data).toEqual({
+      code: Parse.Error.VALIDATION_ERROR,
+      error: 'New password should not be the same as last 2 passwords.',
+    });
+  });
+
+  it('rejects deleting the ACL fields of an object', async () => {
+    const user = await Parse.User.signUp('user', 'password');
+    const obj = new Parse.Object('TestObject');
+    obj.setACL(new Parse.ACL(user));
+    await obj.save(null, { sessionToken: user.getSessionToken() });
+    const response = await write(
+      'PUT',
+      `/classes/TestObject/${obj.id}`,
+      { _rperm: { __op: 'Delete' }, _wperm: null },
+      { 'X-Parse-Session-Token': user.getSessionToken() }
+    );
+    expectInvalidFieldName(response, '_rperm');
+    const read = await write('GET', `/classes/TestObject/${obj.id}`);
+    expect(read.data.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+  });
+
+  it('rejects internal fields on a class with a beforeSave trigger', async () => {
+    Parse.Cloud.beforeSave('TestObject', () => {});
+    const obj = await new Parse.Object('TestObject').save();
+    const response = await write('PUT', `/classes/TestObject/${obj.id}`, {
+      _rperm: { __op: 'Delete' },
+    });
+    expectInvalidFieldName(response, '_rperm');
+  });
+
+  it('rejects internal fields when creating an object', async () => {
+    const response = await write('POST', '/classes/TestObject', { _wperm: null });
+    expectInvalidFieldName(response, '_wperm');
+  });
+
+  it('rejects internal fields when creating a session', async () => {
+    const user = await Parse.User.signUp('user', 'password');
+    const response = await write(
+      'POST',
+      '/sessions',
+      { _wperm: null },
+      { 'X-Parse-Session-Token': user.getSessionToken() }
+    );
+    expectInvalidFieldName(response, '_wperm');
+  });
+
+  it('rejects internal fields in a batch request', async () => {
+    const user = await Parse.User.signUp('user', 'password');
+    const response = await write(
+      'POST',
+      '/batch',
+      {
+        requests: [
+          {
+            method: 'PUT',
+            path: `/1/users/${user.id}`,
+            body: { _password_changed_at: { __op: 'Delete' } },
+          },
+        ],
+      },
+      { 'X-Parse-Session-Token': user.getSessionToken() }
+    );
+    expect(response.data).toEqual([
+      {
+        error: {
+          code: Parse.Error.INVALID_KEY_NAME,
+          error: 'Invalid field name: _password_changed_at.',
+        },
+      },
+    ]);
+  });
+
+  it_only_db('mongo')('reads an object with a stored reserved field name without failing', async () => {
+    // A reserved field name can reach the database through a trusted write or a
+    // pre-fix client write; reading it must not crash the response.
+    const masterHeaders = { ...headers, 'X-Parse-Master-Key': 'test' };
+    const created = await write('POST', '/classes/Poisoned', { a: 1, _x: null }, masterHeaders);
+    expect(created.status).toBe(201);
+    const objectId = created.data.objectId;
+    const get = await write('GET', `/classes/Poisoned/${objectId}`);
+    expect(get.status).toBe(200);
+    expect(get.data.a).toBe(1);
+    expect(get.data._x).toBeUndefined();
+    const find = await write('GET', '/classes/Poisoned');
+    expect(find.status).toBe(200);
+    expect(find.data.results.length).toBe(1);
+  });
+
+  it('allows deleting internal fields with the master key or maintenance key', async () => {
+    await reconfigureServer({ accountLockout: { duration: 5, threshold: 1 } });
+    const user = await Parse.User.signUp('user', 'password');
+    for (const keyHeaders of [
+      { 'X-Parse-Master-Key': 'test' },
+      { 'X-Parse-Maintenance-Key': 'testing' },
+    ]) {
+      await expectAsync(Parse.User.logIn('user', 'wrong')).toBeRejected();
+      const response = await write(
+        'PUT',
+        `/users/${user.id}`,
+        { _account_lockout_expires_at: { __op: 'Delete' }, _failed_login_count: { __op: 'Delete' } },
+        keyHeaders
+      );
+      expect(response.status).toBe(200);
+      await expectAsync(Parse.User.logIn('user', 'password')).toBeResolved();
+    }
+  });
+});
+
 describe('_Join table security', () => {
   let config;
 
