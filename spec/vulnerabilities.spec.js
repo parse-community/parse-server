@@ -8830,4 +8830,95 @@ describe('Vulnerabilities', () => {
       expect(await countSessions(user)).toBe(count);
     });
   });
+
+  describe('(GHSA-qmg9-m772-5rm7) Client can delete class schema documents via the internal _SCHEMA collection', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const masterHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Master-Key': 'test',
+      'Content-Type': 'application/json',
+    };
+    const lockedCLP = {
+      find: {},
+      count: {},
+      get: {},
+      create: {},
+      update: {},
+      delete: {},
+      addField: {},
+      protectedFields: {},
+    };
+    const send = (method, path, extraHeaders = {}, body) =>
+      request({
+        method,
+        url: `http://localhost:8378/1${path}`,
+        headers: { ...headers, ...extraHeaders },
+        body,
+      }).catch(e => e);
+    const createLockedClass = async () => {
+      const schema = new Parse.Schema('Secret');
+      schema.addString('data');
+      schema.setCLP(lockedCLP);
+      await schema.save();
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/classes/Secret',
+        headers: masterHeaders,
+        body: { data: 'secret' },
+      });
+    };
+    const expectSchemaIntact = async () => {
+      const schemaController = await Config.get('test').database.loadSchema({ clearCache: true });
+      expect(await schemaController.hasClass('Secret')).toBe(true);
+      expect(schemaController.getClassLevelPermissions('Secret').find).toEqual({});
+    };
+
+    for (const allowClientClassCreation of [false, true]) {
+      describe(`with allowClientClassCreation ${allowClientClassCreation}`, () => {
+        beforeEach(async () => {
+          await reconfigureServer({ allowClientClassCreation });
+          await createLockedClass();
+        });
+
+        it('rejects DELETE /classes/_SCHEMA/:className without the master key', async () => {
+          const response = await send('DELETE', '/classes/_SCHEMA/Secret');
+          expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+          await expectSchemaIntact();
+          const find = await send('GET', '/classes/Secret');
+          expect(find.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        });
+
+        it('rejects DELETE /classes/_SCHEMA/:className with a user session', async () => {
+          const user = await Parse.User.signUp('user', 'password');
+          const response = await send('DELETE', '/classes/_SCHEMA/Secret', {
+            'X-Parse-Session-Token': user.getSessionToken(),
+          });
+          expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+          await expectSchemaIntact();
+        });
+
+        it('rejects find, get, create and update on _SCHEMA without the master key', async () => {
+          const responses = await Promise.all([
+            send('GET', '/classes/_SCHEMA'),
+            send('GET', '/classes/_SCHEMA/Secret'),
+            send('POST', '/classes/_SCHEMA', {}, { foo: 'bar' }),
+            send('PUT', '/classes/_SCHEMA/Secret', {}, { foo: 'bar' }),
+          ]);
+          for (const response of responses) {
+            expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+          }
+          await expectSchemaIntact();
+        });
+
+        it('rejects DELETE on a class name that is not a valid class name', async () => {
+          const response = await send('DELETE', '/classes/_Internal/abc');
+          expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        });
+      });
+    }
+  });
 });
