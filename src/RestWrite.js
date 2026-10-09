@@ -302,6 +302,15 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
     return Promise.resolve();
   }
 
+  // The object to update is only known once it has been atomically updated, so there is
+  // no object to run the trigger on; rejecting ensures the trigger cannot be bypassed.
+  if (this.runOptions.returnOriginal) {
+    throw new Parse.Error(
+      Parse.Error.OPERATION_FORBIDDEN,
+      `Cannot find and update objects of class ${this.className} because it has a beforeSave trigger.`
+    );
+  }
+
   const { originalObject, updatedObject } = this.buildParseObjects();
   const identifier = updatedObject._getStateIdentifier();
   const stateController = Parse.CoreManager.getObjectStateController();
@@ -1820,7 +1829,20 @@ RestWrite.prototype.runDatabaseOperation = function () {
           this._throwIfAuthDataDuplicate(error);
           throw error;
         })
-        .then(response => {
+        .then(async response => {
+          if (this.runOptions.returnOriginal) {
+            // The query matched an object that is only known now; from here on, this
+            // operation continues as a regular update of that object.
+            this.query = { objectId: response.objectId };
+            this.originalData = response;
+            // The database returned the object as it was right before the atomic update, so
+            // applying the update operations to it yields the results of the operations.
+            const { updatedObject } = this.buildParseObjects();
+            response = await this.config.database._sanitizeDatabaseResult(
+              this.data,
+              Parse._encode(updatedObject.attributes)
+            );
+          }
           response.updatedAt = this.updatedAt;
           this._updateResponseWithData(response, this.data);
           this.response = { response };

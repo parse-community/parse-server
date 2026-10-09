@@ -278,13 +278,7 @@ function _UnsafeRestQuery(
 _UnsafeRestQuery.prototype.execute = function (executeOptions) {
   return Promise.resolve()
     .then(() => {
-      return this.validateQueryDepth();
-    })
-    .then(() => {
-      return this.buildRestWhere();
-    })
-    .then(() => {
-      return this.denyProtectedFields();
+      return this.buildValidatedRestWhere();
     })
     .then(() => {
       return this.handleIncludeAll();
@@ -385,6 +379,20 @@ _UnsafeRestQuery.prototype.validateQueryDepth = function () {
     }
   };
   checkDepth(this.restWhere, 0);
+};
+
+// Builds the where clause and validates it against the query depth limit and protected fields.
+_UnsafeRestQuery.prototype.buildValidatedRestWhere = function () {
+  return Promise.resolve()
+    .then(() => {
+      return this.validateQueryDepth();
+    })
+    .then(() => {
+      return this.buildRestWhere();
+    })
+    .then(() => {
+      return this.denyProtectedFields();
+    });
 };
 
 _UnsafeRestQuery.prototype.buildRestWhere = function () {

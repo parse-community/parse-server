@@ -27,7 +27,12 @@ export type UpdateQueryOptions = {
   upsert?: boolean,
 };
 
-export type FullQueryOptions = QueryOptions & UpdateQueryOptions;
+export type FindOneAndUpdateOptions = {
+  sort?: { [string]: number },
+  returnOriginal?: boolean,
+};
+
+export type FullQueryOptions = QueryOptions & UpdateQueryOptions & FindOneAndUpdateOptions;
 
 export type UpdateManyResult = {
   matchedCount?: number,
@@ -79,7 +84,8 @@ export interface StorageAdapter {
     schema: SchemaType,
     query: QueryType,
     update: any,
-    transactionalSession: ?any
+    transactionalSession: ?any,
+    options?: FindOneAndUpdateOptions
   ): Promise<any>;
   upsertOneObject(
     className: string,

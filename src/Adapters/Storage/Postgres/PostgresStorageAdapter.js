@@ -8,7 +8,12 @@ import _ from 'lodash';
 import { randomUUID } from 'crypto';
 import sql from './sql';
 import { StorageAdapter } from '../StorageAdapter';
-import type { SchemaType, QueryType, QueryOptions } from '../StorageAdapter';
+import type {
+  FindOneAndUpdateOptions,
+  SchemaType,
+  QueryType,
+  QueryOptions,
+} from '../StorageAdapter';
 const Utils = require('../../../Utils');
 
 const PostgresRelationDoesNotExistError = '42P01';
@@ -293,6 +298,23 @@ interface WhereClause {
   values: Array<any>;
   sorts: Array<any>;
 }
+
+const buildSortPattern = (sort: ?{ [string]: number }): string => {
+  if (!sort || Object.keys(sort).length === 0) {
+    return '';
+  }
+  const sorting = Object.keys(sort)
+    .map(key => {
+      const transformKey = transformDotFieldToComponents(key).join('->');
+      // Using $idx pattern gives:  non-integer constant in ORDER BY
+      if (sort[key] === 1) {
+        return `${transformKey} ASC`;
+      }
+      return `${transformKey} DESC`;
+    })
+    .join();
+  return `ORDER BY ${sorting}`;
+};
 
 const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClause => {
   const patterns = [];
@@ -1582,18 +1604,27 @@ export class PostgresStorageAdapter implements StorageAdapter {
     }
     return promise;
   }
-  // Return value not currently well specified.
+  // Atomically finds and updates an object based on query.
+  // If several objects match, `sort` determines which one is updated.
+  // Returns the object as it was after the update, or before if `returnOriginal` is set.
   async findOneAndUpdate(
     className: string,
     schema: SchemaType,
     query: QueryType,
     update: any,
-    transactionalSession: ?any
+    transactionalSession: ?any,
+    options: FindOneAndUpdateOptions = {}
   ): Promise<any> {
     debug('findOneAndUpdate');
-    return this.updateObjectsByQuery(className, schema, query, update, transactionalSession).then(
-      val => val[0]
+    const [object] = await this._updateObjects(
+      className,
+      schema,
+      query,
+      update,
+      transactionalSession,
+      options
     );
+    return object && this.postgresObjectToParseObject(className, object, toPostgresSchema(schema));
   }
 
   // Apply the update to all objects that match the given Parse Query.
@@ -1605,6 +1636,20 @@ export class PostgresStorageAdapter implements StorageAdapter {
     transactionalSession: ?any
   ): Promise<[any]> {
     debug('updateObjectsByQuery');
+    return this._updateObjects(className, schema, query, update, transactionalSession);
+  }
+
+  // Applies the update to all objects that match the query, or only to the first one if
+  // `findOne` is set. The first object is locked before the update, so concurrent calls
+  // never update the same object based on a stale match.
+  async _updateObjects(
+    className: string,
+    schema: SchemaType,
+    query: QueryType,
+    update: any,
+    transactionalSession: ?any,
+    findOne: ?FindOneAndUpdateOptions
+  ): Promise<[any]> {
     const updatePatterns = [];
     const values = [className];
     let index = 2;
@@ -1861,7 +1906,11 @@ export class PostgresStorageAdapter implements StorageAdapter {
     values.push(...where.values);
 
     const whereClause = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
-    const qs = `UPDATE $1:name SET ${updatePatterns.join()} ${whereClause} RETURNING *`;
+    const qs = findOne
+      ? `WITH original AS (SELECT * FROM $1:name ${whereClause} ${buildSortPattern(findOne.sort)} LIMIT 1 FOR UPDATE), ` +
+        `updated AS (UPDATE $1:name SET ${updatePatterns.join()} WHERE "objectId" IN (SELECT "objectId" FROM original) RETURNING *) ` +
+        `SELECT * FROM ${findOne.returnOriginal ? 'original' : 'updated'}`
+      : `UPDATE $1:name SET ${updatePatterns.join()} ${whereClause} RETURNING *`;
     const promise = (transactionalSession ? transactionalSession.t : this._client)
       .any(qs, values)
       .catch(error => {
@@ -1938,21 +1987,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       values.push(skip);
     }
 
-    let sortPattern = '';
-    if (sort) {
-      const sortCopy: any = sort;
-      const sorting = Object.keys(sort)
-        .map(key => {
-          const transformKey = transformDotFieldToComponents(key).join('->');
-          // Using $idx pattern gives:  non-integer constant in ORDER BY
-          if (sortCopy[key] === 1) {
-            return `${transformKey} ASC`;
-          }
-          return `${transformKey} DESC`;
-        })
-        .join();
-      sortPattern = sort !== undefined && Object.keys(sort).length > 0 ? `ORDER BY ${sorting}` : '';
-    }
+    let sortPattern = buildSortPattern(sort);
     if (where.sorts && Object.keys((where.sorts: any)).length > 0) {
       sortPattern = `ORDER BY ${where.sorts.join()}`;
     }
