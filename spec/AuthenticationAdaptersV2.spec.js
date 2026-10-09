@@ -381,6 +381,72 @@ describe('Auth Adapter features', () => {
     expect(user.getSessionToken()).toBeDefined();
   });
 
+  it('should trigger validateLogin on login with master key', async () => {
+    spyOn(modernAdapter, 'validateSetUp').and.resolveTo({});
+    spyOn(modernAdapter, 'validateUpdate').and.resolveTo({});
+    spyOn(modernAdapter, 'validateLogin').and.resolveTo({});
+
+    await reconfigureServer({ auth: { modernAdapter } });
+    const user = new Parse.User();
+    await user.save({
+      username: 'username',
+      password: 'password',
+      authData: { modernAdapter: { id: 'modernAdapter' } },
+    });
+    expect(modernAdapter.validateSetUp).toHaveBeenCalledTimes(1);
+
+    const masterKeyHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Master-Key': 'test',
+      'Content-Type': 'application/json',
+    };
+    await request({
+      headers: masterKeyHeaders,
+      method: 'POST',
+      url: 'http://localhost:8378/1/login',
+      body: JSON.stringify({
+        username: 'username',
+        password: 'password',
+        authData: { modernAdapter: { id: 'modernAdapter' } },
+      }),
+    });
+    await request({
+      headers: masterKeyHeaders,
+      method: 'POST',
+      url: 'http://localhost:8378/1/users',
+      body: JSON.stringify({
+        authData: { modernAdapter: { id: 'modernAdapter', token: 'token' } },
+      }),
+    });
+
+    expect(modernAdapter.validateUpdate).toHaveBeenCalledTimes(0);
+    expect(modernAdapter.validateLogin).toHaveBeenCalledTimes(2);
+    for (const call of modernAdapter.validateLogin.calls.allArgs()) {
+      expect(call[2].master).toBe(true);
+      expect(call[2].user).toBeUndefined();
+    }
+  });
+
+  it('should validate unchanged authData on authData login with master key', async () => {
+    spyOn(baseAdapter, 'validateAuthData').and.resolveTo({});
+    await reconfigureServer({ auth: { baseAdapter } });
+    const user = new Parse.User();
+    await user.save({ authData: { baseAdapter: { id: 'baseAdapter' } } });
+    expect(baseAdapter.validateAuthData).toHaveBeenCalledTimes(1);
+
+    await request({
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+        'Content-Type': 'application/json',
+      },
+      method: 'POST',
+      url: 'http://localhost:8378/1/users',
+      body: JSON.stringify({ authData: { baseAdapter: { id: 'baseAdapter' } } }),
+    });
+    expect(baseAdapter.validateAuthData).toHaveBeenCalledTimes(2);
+  });
+
   it('should strip out authData if required', async () => {
     const spy = spyOn(modernAdapter3, 'validateOptions').and.callThrough();
     const afterSpy = spyOn(modernAdapter3, 'afterFind').and.callThrough();
