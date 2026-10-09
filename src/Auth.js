@@ -424,6 +424,11 @@ const findUsersWithAuthData = async (config, authData, beforeFind) => {
     providers.map(async provider => {
       const providerAuthData = authData[provider];
 
+      // Skip providers being unlinked (null value)
+      if (providerAuthData === null) {
+        return null;
+      }
+
       const validatorConfig = config.authDataManager.getValidatorForProvider(provider);
       // Skip database query for unconfigured providers to avoid unindexed collection scans;
       // the provider will be rejected later in handleAuthDataValidation with UNSUPPORTED_SERVICE
