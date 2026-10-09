@@ -89,6 +89,33 @@ function addReadACL(query, acl) {
   return newQuery;
 }
 
+// Validates the sort fields and removes those that don't exist in the schema. This mutates sort.
+function sanitizeSort(className, sort, schema) {
+  // Parse.com treats queries on _created_at and _updated_at as if they were queries on createdAt and updatedAt,
+  // so duplicate that behavior here. If both are specified, the correct behavior to match Parse.com is to
+  // use the one that appears first in the sort list.
+  if (sort._created_at) {
+    sort.createdAt = sort._created_at;
+    delete sort._created_at;
+  }
+  if (sort._updated_at) {
+    sort.updatedAt = sort._updated_at;
+    delete sort._updated_at;
+  }
+  Object.keys(sort).forEach(fieldName => {
+    if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Cannot sort by ${fieldName}`);
+    }
+    const rootFieldName = getRootFieldName(fieldName);
+    if (!SchemaController.fieldNameIsValid(rootFieldName, className)) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
+    }
+    if (!schema.fields[fieldName.split('.')[0]] && fieldName !== 'score') {
+      delete sort[fieldName];
+    }
+  });
+}
+
 // Transforms a REST API formatted ACL object to our two-field mongo format.
 const transformObjectACL = ({ ACL, ...result }) => {
   if (!ACL) {
@@ -543,12 +570,16 @@ class DatabaseController {
    * @param {boolean} [options.many=false] When true, updates all matching documents
    *   and returns `{ matchedCount, modifiedCount }` where values are numbers if the
    *   storage adapter supports `UpdateManyResult`, or `undefined` otherwise.
+   * @param {Object} [options.sort] When several documents match, the sort order determines
+   *   which one is updated.
+   * @param {boolean} [options.returnOriginal=false] When true, returns the complete document as
+   *   it was before the update. As this reads the document, it requires read permission.
    */
   update(
     className: string,
     query: any,
     update: any,
-    { acl, many, upsert, addsField }: FullQueryOptions = {},
+    { acl, many, upsert, addsField, sort, returnOriginal }: FullQueryOptions = {},
     skipSanitization: boolean = false,
     validateOnly: boolean = false,
     validSchemaController: SchemaController.SchemaController
@@ -578,6 +609,11 @@ class DatabaseController {
         : schemaController.validatePermission(className, aclGroup, 'update')
       )
         .then(() => {
+          if (returnOriginal && !isMaster) {
+            return schemaController.validatePermission(className, aclGroup, 'find');
+          }
+        })
+        .then(() => {
           relationUpdates = this.collectRelationUpdates(className, originalQuery.objectId, update);
           if (!isMaster) {
             query = this.addPointerPermissions(
@@ -587,6 +623,16 @@ class DatabaseController {
               query,
               aclGroup
             );
+
+            if (returnOriginal && query) {
+              query = this.addPointerPermissions(
+                schemaController,
+                className,
+                'find',
+                query,
+                aclGroup
+              );
+            }
 
             if (addsField) {
               query = {
@@ -608,6 +654,9 @@ class DatabaseController {
           }
           if (acl) {
             query = addWriteACL(query, acl);
+            if (returnOriginal) {
+              query = addReadACL(query, acl);
+            }
           }
           validateQuery(query, isMaster, false, true, this.options);
           return schemaController
@@ -621,6 +670,9 @@ class DatabaseController {
               throw error;
             })
             .then(schema => {
+              if (sort) {
+                sanitizeSort(className, sort, schema);
+              }
               Object.keys(update).forEach(fieldName => {
                 if (fieldName.match(/^authData\./)) {
                   throw new Parse.Error(
@@ -687,7 +739,8 @@ class DatabaseController {
                   schema,
                   query,
                   update,
-                  this._transactionalSession
+                  this._transactionalSession,
+                  { sort, returnOriginal }
                 );
               }
             });
@@ -701,7 +754,7 @@ class DatabaseController {
           }
           return this.handleRelationUpdates(
             className,
-            originalQuery.objectId,
+            originalQuery.objectId || result.objectId,
             update,
             relationUpdates
           ).then(() => {
@@ -709,6 +762,9 @@ class DatabaseController {
           });
         })
         .then(result => {
+          if (returnOriginal) {
+            return untransformObjectACL(result);
+          }
           if (skipSanitization) {
             return Promise.resolve(result);
           }
@@ -1432,17 +1488,7 @@ class DatabaseController {
           throw error;
         })
         .then(schema => {
-          // Parse.com treats queries on _created_at and _updated_at as if they were queries on createdAt and updatedAt,
-          // so duplicate that behavior here. If both are specified, the correct behavior to match Parse.com is to
-          // use the one that appears first in the sort list.
-          if (sort._created_at) {
-            sort.createdAt = sort._created_at;
-            delete sort._created_at;
-          }
-          if (sort._updated_at) {
-            sort.updatedAt = sort._updated_at;
-            delete sort._updated_at;
-          }
+          sanitizeSort(className, sort, schema);
           const queryOptions = {
             skip,
             limit,
@@ -1454,21 +1500,6 @@ class DatabaseController {
             explain,
             comment,
           };
-          Object.keys(sort).forEach(fieldName => {
-            if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
-              throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Cannot sort by ${fieldName}`);
-            }
-            const rootFieldName = getRootFieldName(fieldName);
-            if (!SchemaController.fieldNameIsValid(rootFieldName, className)) {
-              throw new Parse.Error(
-                Parse.Error.INVALID_KEY_NAME,
-                `Invalid field name: ${fieldName}.`
-              );
-            }
-            if (!schema.fields[fieldName.split('.')[0]] && fieldName !== 'score') {
-              delete sort[fieldName];
-            }
-          });
           return (isMaster
             ? Promise.resolve()
             : schemaController.validatePermission(className, aclGroup, op)

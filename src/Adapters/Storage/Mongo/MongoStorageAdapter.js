@@ -1,6 +1,12 @@
 // @flow
 import { format as formatUrl, parse as parseUrl } from '../../../vendor/mongodbUrl';
-import type { QueryOptions, QueryType, SchemaType, StorageClass } from '../StorageAdapter';
+import type {
+  FindOneAndUpdateOptions,
+  QueryOptions,
+  QueryType,
+  SchemaType,
+  StorageClass,
+} from '../StorageAdapter';
 import { StorageAdapter } from '../StorageAdapter';
 import Utils from '../../../Utils';
 import MongoCollection from './MongoCollection';
@@ -644,21 +650,27 @@ export class MongoStorageAdapter implements StorageAdapter {
   }
 
   // Atomically finds and updates an object based on query.
-  // Return value not currently well specified.
+  // If several objects match, `sort` determines which one is updated.
+  // Returns the object as it was after the update, or before if `returnOriginal` is set.
   findOneAndUpdate(
     className: string,
     schema: SchemaType,
     query: QueryType,
     update: any,
-    transactionalSession: ?any
+    transactionalSession: ?any,
+    { sort, returnOriginal }: FindOneAndUpdateOptions = {}
   ) {
     schema = convertParseSchemaToMongoSchema(schema);
     const mongoUpdate = transformUpdate(className, update, schema);
     const mongoWhere = transformWhere(className, query, schema);
+    const mongoSort = _.mapKeys(sort, (value, fieldName) =>
+      transformKey(className, fieldName, schema)
+    );
     return this._adaptiveCollection(className)
       .then(collection =>
         collection._mongoCollection.findOneAndUpdate(mongoWhere, mongoUpdate, {
-          returnDocument: 'after',
+          returnDocument: returnOriginal ? 'before' : 'after',
+          sort: mongoSort,
           session: transactionalSession || undefined,
         })
       )

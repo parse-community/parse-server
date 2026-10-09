@@ -317,6 +317,53 @@ function update(config, auth, className, restWhere, restObject, context) {
     });
 }
 
+// Atomically updates the first object that matches the query, and returns a promise for
+// a find response with the updated object, or with no object if none matched.
+// The order option determines which object is updated if several match.
+async function findOneAndUpdate(config, auth, className, restWhere, restObject, restOptions, context) {
+  enforceRoleSecurity('update', className, auth, config);
+  if (className.startsWith('_')) {
+    throw createSanitizedError(
+      Parse.Error.OPERATION_FORBIDDEN,
+      `Cannot find and update objects of system class ${className}.`,
+      config
+    );
+  }
+  const { order, ...readOptions } = restOptions;
+  const query = await RestQuery({
+    method: RestQuery.Method.find,
+    config,
+    auth,
+    className,
+    restWhere,
+    restOptions: order === undefined ? {} : { order },
+    runAfterFind: false,
+    context,
+  });
+  await query.buildValidatedRestWhere();
+  const write = new RestWrite(
+    config,
+    auth,
+    className,
+    query.restWhere,
+    restObject,
+    null,
+    context,
+    'update'
+  );
+  write.runOptions.sort = query.findOptions.sort;
+  write.runOptions.returnOriginal = true;
+  try {
+    await write.execute();
+  } catch (error) {
+    if (error.code === Parse.Error.OBJECT_NOT_FOUND) {
+      return { results: [] };
+    }
+    throw error;
+  }
+  return get(config, auth, className, write.query.objectId, readOptions, context);
+}
+
 function handleSessionMissingError(error, className, auth, config) {
   // If we're trying to update a user without / with bad session token
   if (
@@ -334,6 +381,7 @@ module.exports = {
   create,
   del,
   find,
+  findOneAndUpdate,
   get,
   update,
 };

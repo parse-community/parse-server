@@ -137,6 +137,36 @@ export class ClassesRouter extends PromiseRouter {
     );
   }
 
+  handleFindOneAndUpdate(req) {
+    const { where = {}, update, ...body } = req.body || {};
+    const options = {};
+    for (const key of Object.keys(body)) {
+      if (!['order', 'keys', 'excludeKeys', 'include'].includes(key)) {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid parameter for query: ${key}`);
+      }
+      options[key] = String(body[key]);
+    }
+    if (typeof where !== 'object' || where === null || Array.isArray(where)) {
+      throw new Parse.Error(Parse.Error.INVALID_JSON, 'where parameter must be an object');
+    }
+    if (typeof update !== 'object' || update === null || Array.isArray(update)) {
+      throw new Parse.Error(Parse.Error.INVALID_JSON, 'update parameter must be an object');
+    }
+    return rest
+      .findOneAndUpdate(
+        req.config,
+        req.auth,
+        this.className(req),
+        where,
+        update,
+        options,
+        req.info.context
+      )
+      .then(response => {
+        return { response };
+      });
+  }
+
   handleDelete(req) {
     return rest
       .del(req.config, req.auth, this.className(req), req.params.objectId, req.info.context)
@@ -239,6 +269,9 @@ export class ClassesRouter extends PromiseRouter {
     });
     this.route('POST', '/classes/:className', promiseEnsureIdempotency, req => {
       return this.handleCreate(req);
+    });
+    this.route('PUT', '/classes/:className', promiseEnsureIdempotency, req => {
+      return this.handleFindOneAndUpdate(req);
     });
     this.route('PUT', '/classes/:className/:objectId', promiseEnsureIdempotency, req => {
       return this.handleUpdate(req);
