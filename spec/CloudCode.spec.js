@@ -3919,32 +3919,38 @@ describe('afterLogin hook', () => {
     done();
   });
 
-  it('context options should override _context object property when saving a new object', async () => {
-    Parse.Cloud.beforeSave('TestObject', req => {
-      expect(req.context.a).toEqual('a');
-      expect(req.context.hello).not.toBeDefined();
-      expect(req._context).not.toBeDefined();
-      expect(req.object._context).not.toBeDefined();
-      expect(req.object.context).not.toBeDefined();
-    });
-    Parse.Cloud.afterSave('TestObject', req => {
-      expect(req.context.a).toEqual('a');
-      expect(req.context.hello).not.toBeDefined();
-      expect(req._context).not.toBeDefined();
-      expect(req.object._context).not.toBeDefined();
-      expect(req.object.context).not.toBeDefined();
-    });
-    await request({
+  it('rejects a _context object property when saving a new object with header authentication', async () => {
+    const beforeSave = jasmine.createSpy('beforeSave');
+    const afterSave = jasmine.createSpy('afterSave');
+    Parse.Cloud.beforeSave('TestObject', beforeSave);
+    Parse.Cloud.afterSave('TestObject', afterSave);
+    const response = await request({
       url: 'http://localhost:8378/1/classes/TestObject',
       method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
         'X-Parse-Cloud-Context': '{"a":"a"}',
       },
       body: JSON.stringify({ _context: { hello: 'world' } }),
+    }).catch(e => e);
+    expect(response.data).toEqual({
+      code: Parse.Error.INVALID_KEY_NAME,
+      error: 'Invalid field name: _context.',
     });
+    expect(beforeSave).not.toHaveBeenCalled();
+    expect(afterSave).not.toHaveBeenCalled();
+  });
 
+  it('treats a null save context as no context', async () => {
+    const contexts = [];
+    Parse.Cloud.beforeSave('TestObject', req => {
+      contexts.push(req.context);
+    });
+    const obj = await new Parse.Object('TestObject').save({ foo: 'bar' }, { context: null });
+    await obj.save({ foo: 'baz' }, { context: null });
+    expect(contexts).toEqual([{}, {}]);
   });
 
   it('should have access to context when saving a new object', async () => {
