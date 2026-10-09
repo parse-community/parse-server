@@ -1,3 +1,10 @@
+## [9.10.5-alpha.1](https://github.com/parse-community/parse-server/compare/9.10.4...9.10.5-alpha.1) (2026-10-09)
+
+
+### Bug Fixes
+
+* Login with master key overwrites stored MFA settings of user ([#10771](https://github.com/parse-community/parse-server/issues/10771)) ([28bb53b](https://github.com/parse-community/parse-server/commit/28bb53b7c18a349362a522c62a24775c7e9b27a6))
+
 ## [9.10.4-alpha.4](https://github.com/parse-community/parse-server/compare/9.10.4-alpha.3...9.10.4-alpha.4) (2026-10-08)
 
 
