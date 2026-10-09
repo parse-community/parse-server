@@ -582,7 +582,7 @@ const checkIfUserHasProvidedConfiguredProvidersForLogin = (
 };
 
 // Validate each authData step-by-step and return the provider responses
-const handleAuthDataValidation = async (authData, req, foundUser) => {
+const handleAuthDataValidation = async (authData, req, foundUser, { isLogin = true } = {}) => {
   let user;
   if (foundUser) {
     user = Parse.User.fromJSON({ className: '_User', ...foundUser });
@@ -620,7 +620,9 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
           'This authentication method is unsupported.'
         );
       }
-      let validationResult = await validator(authData[provider], req, user, requestObject);
+      let validationResult = await validator(authData[provider], req, user, requestObject, {
+        isLogin,
+      });
       method = validationResult && validationResult.method;
       requestObject.triggerName = method;
       if (validationResult && validationResult.validator) {

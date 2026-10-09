@@ -74,7 +74,7 @@ const authAdapterPolicies = {
 };
 
 function authDataValidator(provider, adapter, appIds, options) {
-  return async function (authData, req, user, requestObject) {
+  return async function (authData, req, user, requestObject, { isLogin = true } = {}) {
     if (appIds && typeof adapter.validateAppId === 'function') {
       await Promise.resolve(adapter.validateAppId(appIds, authData, options, requestObject));
     }
@@ -101,16 +101,17 @@ function authDataValidator(provider, adapter, appIds, options) {
         'Adapter is not configured. Implement either validateAuthData or all of the following: validateSetUp, validateLogin and validateUpdate'
       );
     }
-    // When masterKey is detected, we should trigger a logged in user
-    const isLoggedIn =
-      (req.auth.user && user && req.auth.user.id === user.id) || (user && req.auth.isMaster);
+    // Update by the user or master key; never on login
+    const isUpdate =
+      !isLogin &&
+      ((req.auth.user && user && req.auth.user.id === user.id) || (user && req.auth.isMaster));
     let hasAuthDataConfigured = false;
 
     if (user && user.get('authData') && user.get('authData')[provider]) {
       hasAuthDataConfigured = true;
     }
 
-    if (isLoggedIn) {
+    if (isUpdate) {
       // User is updating their authData
       if (hasAuthDataConfigured) {
         return {
@@ -125,7 +126,7 @@ function authDataValidator(provider, adapter, appIds, options) {
       };
     }
 
-    // Not logged in and authData is configured on the user
+    // Not an update and authData is configured on the user
     if (hasAuthDataConfigured) {
       return {
         method: 'validateLogin',
@@ -133,7 +134,7 @@ function authDataValidator(provider, adapter, appIds, options) {
       };
     }
 
-    // User not logged in and the provider is not set up, for example when a new user
+    // Not an update and the provider is not set up, for example when a new user
     // signs up or an existing user uses a new auth provider
     return {
       method: 'validateSetUp',
