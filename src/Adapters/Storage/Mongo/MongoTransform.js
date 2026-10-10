@@ -1179,11 +1179,14 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
             break;
           case 'expiresAt':
           case '_expiresAt':
-            restObject['expiresAt'] = Parse._encode(new Date(mongoObject[key]));
+            // A cleared date is stored as null; keep it null instead of coercing to epoch (#7576)
+            restObject['expiresAt'] =
+              mongoObject[key] === null ? null : Parse._encode(new Date(mongoObject[key]));
             break;
           case 'lastUsed':
           case '_last_used':
-            restObject['lastUsed'] = Parse._encode(new Date(mongoObject[key])).iso;
+            restObject['lastUsed'] =
+              mongoObject[key] === null ? null : Parse._encode(new Date(mongoObject[key])).iso;
             break;
           case 'timesUsed':
           case 'times_used':
