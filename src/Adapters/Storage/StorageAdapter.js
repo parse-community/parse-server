@@ -35,7 +35,6 @@ export type UpdateManyResult = {
 };
 
 export interface StorageAdapter {
-  canSortOnJoinTables: boolean;
   schemaCacheTtl: ?number;
   enableSchemaHooks: boolean;
 

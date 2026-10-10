@@ -49,6 +49,7 @@ export const ParseServerDatabaseOptions = [
   'batchSize',
   'clientMetadata',
   'createIndexAuthDataUniqueness',
+  'createIndexJoinTables',
   'createIndexRoleName',
   'createIndexUserEmail',
   'createIndexUserEmailCaseInsensitive',
