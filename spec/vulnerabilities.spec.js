@@ -3784,7 +3784,6 @@ describe('Vulnerabilities', () => {
           '_account_lockout_expires_at',
           '_password_changed_at',
           '_password_history',
-          '_tombstone',
           '_session_token',
         ];
 
