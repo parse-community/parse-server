@@ -379,6 +379,14 @@ export function getResponseObject(request, resolve, reject) {
         if (!response) {
           response = request.objects;
         }
+        if (!Array.isArray(response)) {
+          return reject(
+            new Parse.Error(
+              Parse.Error.SCRIPT_FAILED,
+              'afterFind trigger must return an array of objects.'
+            )
+          );
+        }
         response = response.map(object => {
           return toJSONwithObjects(object);
         });
@@ -453,6 +461,16 @@ function logTriggerSuccessBeforeHook(triggerType, className, input, result, auth
       user: userIdForLog(auth),
     }
   );
+}
+
+// Logging must not prevent a trigger promise from settling, e.g. when the
+// object cannot be serialized because a trigger set a circular attribute.
+function logSafely(log) {
+  try {
+    log();
+  } catch (e) {
+    logger.error('Failed to log trigger result', { error: e });
+  }
 }
 
 function logTriggerErrorBeforeHook(triggerType, className, input, auth, error, logLevel) {
@@ -553,7 +571,8 @@ export function maybeRunAfterFindTrigger(
         }
         return responseFromTrigger;
       })
-      .then(success, error);
+      .then(success, error)
+      .catch(error);
   }).then(resultsAsJSON => {
     logTriggerAfterHook(
       triggerType,
@@ -950,15 +969,17 @@ export function maybeRunTrigger(
     var { success, error } = getResponseObject(
       request,
       object => {
-        logTriggerSuccessBeforeHook(
-          triggerType,
-          parseObject.className,
-          parseObject.toJSON(),
-          object,
-          auth,
-          triggerType.startsWith('after')
-            ? config.logLevels.triggerAfter
-            : config.logLevels.triggerBeforeSuccess
+        logSafely(() =>
+          logTriggerSuccessBeforeHook(
+            triggerType,
+            parseObject.className,
+            parseObject.toJSON(),
+            object,
+            auth,
+            triggerType.startsWith('after')
+              ? config.logLevels.triggerAfter
+              : config.logLevels.triggerBeforeSuccess
+          )
         );
         if (
           triggerType === Types.beforeSave ||
@@ -971,13 +992,15 @@ export function maybeRunTrigger(
         resolve(object);
       },
       error => {
-        logTriggerErrorBeforeHook(
-          triggerType,
-          parseObject.className,
-          parseObject.toJSON(),
-          auth,
-          error,
-          config.logLevels.triggerBeforeError
+        logSafely(() =>
+          logTriggerErrorBeforeHook(
+            triggerType,
+            parseObject.className,
+            parseObject.toJSON(),
+            auth,
+            error,
+            config.logLevels.triggerBeforeError
+          )
         );
         reject(error);
       }
@@ -1026,7 +1049,8 @@ export function maybeRunTrigger(
 
         return promise;
       })
-      .then(success, error);
+      .then(success, error)
+      .catch(error);
   });
 }
 
