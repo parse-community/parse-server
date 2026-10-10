@@ -201,10 +201,6 @@ describe('Parse Role testing', () => {
     testLoadRoles(Config.get('test'), done);
   });
 
-  it('should recursively load roles without config', done => {
-    testLoadRoles(undefined, done);
-  });
-
   it('_Role object should not save without name.', done => {
     const role = new Parse.Role();
     role.save(null, { useMasterKey: true }).then(

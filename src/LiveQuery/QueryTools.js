@@ -3,6 +3,7 @@ var Id = require('./Id');
 var Parse = require('parse/node');
 var vm = require('vm');
 var logger = require('../logger').default;
+const { isQuery } = require('../cloud-code/QueryAdapter');
 
 var regexTimeout = 0;
 // IMPORTANT: vmContext is shared across all calls for performance (vm.createContext() is expensive).
@@ -97,7 +98,7 @@ function stringify(object): string {
  * skip, and limit.
  */
 function queryHash(query) {
-  if (query instanceof Parse.Query) {
+  if (isQuery(query)) {
     query = {
       className: query.className,
       where: query._where,
@@ -169,7 +170,7 @@ function contains(haystack: Array, needle: any): boolean {
  * queries, we can avoid building a full-blown query tool.
  */
 function matchesQuery(object: any, query: any): boolean {
-  if (query instanceof Parse.Query) {
+  if (isQuery(query)) {
     var className = object.id instanceof Id ? object.id.className : object.className;
     if (className !== query.className) {
       return false;
