@@ -208,7 +208,7 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_ENABLE_INSECURE_AUTH_ADAPTERS
   :DEFAULT: false */
   enableInsecureAuthAdapters: ?boolean;
-  /* Max file size for uploads, defaults to 20mb
+  /* The maximum size of the HTTP request body for file uploads, for example `20mb`. This limits the request body size, not the file size: the encoded upload is larger than the file itself, so set this higher than your largest intended file to allow for encoding overhead. Files sent as base64 (for example via the JavaScript SDK) inflate the payload by roughly 33%, and multipart uploads add boundary and header overhead. Defaults to `20mb`.
   :DEFAULT: 20mb */
   maxUploadSize: ?string;
   /* Set to `true` to require users to verify their email address to complete the sign-up process. Supports a function with a return value of `true` or `false` for conditional verification. The function receives a request object that includes `createdWith` to indicate whether the invocation is for `signup` or `login` and the used auth provider.
