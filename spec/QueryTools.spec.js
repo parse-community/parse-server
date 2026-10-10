@@ -85,6 +85,36 @@ describe('queryHash', function () {
 
     expect(queryHash(q1)).not.toBe(queryHash(q2));
   });
+
+  it('distinguishes queries that differ only in a key beside $or', function () {
+    const or = [{ a: 1 }, { b: 2 }];
+    const withA = queryHash({ className: 'Item', where: { $or: or, owner: 'A' } });
+    const withB = queryHash({ className: 'Item', where: { $or: or, owner: 'B' } });
+    expect(withA).not.toBe(withB);
+  });
+
+  it('distinguishes a query carrying a key beside $or from the bare $or query', function () {
+    const or = [{ a: 1 }, { b: 2 }];
+    const bare = queryHash({ className: 'Item', where: { $or: or } });
+    const withKey = queryHash({ className: 'Item', where: { $or: or, owner: 'A' } });
+    expect(bare).not.toBe(withKey);
+  });
+
+  it('distinguishes a server-added pointer constraint beside $or', function () {
+    // Mirrors the _Session subscription, where the server adds a `user` pointer
+    // next to the client's `$or`. Two users must not share a subscription hash.
+    const or = [{ a: 1 }, { b: 2 }];
+    const ptr = id => ({ __type: 'Pointer', className: '_User', objectId: id });
+    const userA = queryHash({ className: '_Session', where: { $or: or, user: ptr('A') } });
+    const userB = queryHash({ className: '_Session', where: { $or: or, user: ptr('B') } });
+    expect(userA).not.toBe(userB);
+  });
+
+  it('distinguishes array values whose element order differs', function () {
+    const forward = queryHash({ className: 'Item', where: { tags: [1, 2, 3] } });
+    const reversed = queryHash({ className: 'Item', where: { tags: [3, 2, 1] } });
+    expect(forward).not.toBe(reversed);
+  });
 });
 
 describe('matchesQuery', function () {
