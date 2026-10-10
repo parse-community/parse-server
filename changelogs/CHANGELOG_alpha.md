@@ -1,3 +1,10 @@
+## [9.10.5-alpha.3](https://github.com/parse-community/parse-server/compare/9.10.5-alpha.2...9.10.5-alpha.3) (2026-10-10)
+
+
+### Bug Fixes
+
+* Malformed query operators `$or`, `$and`, `$nor`, `$options` cause internal server error ([#10775](https://github.com/parse-community/parse-server/issues/10775)) ([c56ccdf](https://github.com/parse-community/parse-server/commit/c56ccdfdc6799201be2b9b82b96ef8854b817676))
+
 ## [9.10.5-alpha.2](https://github.com/parse-community/parse-server/compare/9.10.5-alpha.1...9.10.5-alpha.2) (2026-10-10)
 
 
