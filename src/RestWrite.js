@@ -1412,6 +1412,33 @@ RestWrite.prototype.handleInstallation = function () {
     return;
   }
 
+  // installationId is the row's primary identity (used by the SDK auth
+  // header to bind a client request to its row). Reject any attempt to
+  // clear it via null, '' or { __op: 'Delete' } before the lookup logic
+  // below runs — { __op: 'Delete' } would otherwise crash on
+  // `.toLowerCase()` (TypeError → 500) and null would silently orphan
+  // the row. Mirrors the existing 136 guard against changing
+  // installationId from one value to another.
+  const clearingInstallationId =
+    this.data.installationId === null ||
+    this.data.installationId === '' ||
+    (typeof this.data.installationId === 'object' &&
+      this.data.installationId !== null &&
+      this.data.installationId.__op === 'Delete');
+  if (clearingInstallationId) {
+    if (this.query) {
+      throw new Parse.Error(
+        136,
+        'installationId may not be changed or cleared in this operation'
+      );
+    }
+    // Create path: drop the invalid value so the existing "must specify
+    // ID" guard below can run. If no alternative ID (deviceToken,
+    // auth.installationId) is supplied the create is rejected with
+    // error 135; otherwise the create proceeds with the remaining ID.
+    delete this.data.installationId;
+  }
+
   // The deduplication below embeds these client-supplied values directly into database
   // queries that delete or update rows with master privileges, and it runs before
   // `validateSchema`, so their types must be enforced here: a non-string value would
