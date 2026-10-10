@@ -1,3 +1,10 @@
+## [9.10.5-alpha.2](https://github.com/parse-community/parse-server/compare/9.10.5-alpha.1...9.10.5-alpha.2) (2026-10-10)
+
+
+### Bug Fixes
+
+* Custom auth adapters that extend the AuthAdapter class accept any authData ([GHSA-rq3w-5c6f-p7wr](https://github.com/parse-community/parse-server/security/advisories/GHSA-rq3w-5c6f-p7wr)) ([#10773](https://github.com/parse-community/parse-server/issues/10773)) ([bee4082](https://github.com/parse-community/parse-server/commit/bee4082407da2d459c3a44808b150f0c242292e7))
+
 ## [9.10.5-alpha.1](https://github.com/parse-community/parse-server/compare/9.10.4...9.10.5-alpha.1) (2026-10-09)
 
 
