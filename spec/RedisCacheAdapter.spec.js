@@ -37,6 +37,42 @@ describe_only(() => {
     await cacheNaN.clear();
   });
 
+  it('should only clear the given prefix', async () => {
+    const scoped = new RedisCacheAdapter(null, 5000);
+    await scoped.connect();
+
+    await scoped.put('myAppId:role:someUser', VALUE);
+    await scoped.put('myAppId:user:someToken', VALUE);
+    await scoped.put('otherAppId:role:someUser', VALUE);
+    // A key owned by an unrelated consumer of the same Redis database.
+    await scoped.put('queue:default', VALUE);
+
+    await scoped.clear('myAppId:role');
+
+    expect(await scoped.get('myAppId:role:someUser')).toEqual(null);
+    expect(await scoped.get('myAppId:user:someToken')).toEqual(VALUE);
+    expect(await scoped.get('otherAppId:role:someUser')).toEqual(VALUE);
+    expect(await scoped.get('queue:default')).toEqual(VALUE);
+
+    await scoped.clear();
+    expect(await scoped.get('queue:default')).toEqual(null);
+  });
+
+  it('should not treat glob characters in the prefix as wildcards', async () => {
+    const scoped = new RedisCacheAdapter(null, 5000);
+    await scoped.connect();
+
+    await scoped.put('a*:someKey', VALUE);
+    await scoped.put('ab:someKey', VALUE);
+
+    await scoped.clear('a*');
+
+    expect(await scoped.get('a*:someKey')).toEqual(null);
+    expect(await scoped.get('ab:someKey')).toEqual(VALUE);
+
+    await scoped.clear();
+  });
+
   it('should expire after ttl', done => {
     cache
       .put(KEY, VALUE)
