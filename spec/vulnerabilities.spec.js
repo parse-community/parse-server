@@ -9509,7 +9509,7 @@ describe('Vulnerabilities', () => {
     it('does not persist extra login body fields when requesting an SMS code', async () => {
       const { user, sessionToken } = await enrollSmsMfa();
 
-      // emailVerified is master-only: a non-master client write is rejected.
+      // emailVerified is master-only.
       const rejected = await request({
         method: 'PUT',
         url: `${Parse.serverURL}/users/${user.id}`,
@@ -9519,7 +9519,7 @@ describe('Vulnerabilities', () => {
       expect(rejected.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
 
       const spy = spyOn(mfa, 'sendSMS').and.callThrough();
-      // The login code request smuggles the master-only field in its body.
+      // Smuggle the field in the code request body.
       const res = await request({
         method: 'POST',
         url: `${Parse.serverURL}/login`,
@@ -9534,7 +9534,7 @@ describe('Vulnerabilities', () => {
       expect(res).toEqual({ code: Parse.Error.SCRIPT_FAILED, error: 'Please enter the token' });
       expect(spy).toHaveBeenCalled();
 
-      // The smuggled field must not be persisted with master privileges.
+      // Must not be persisted.
       await user.fetch({ useMasterKey: true });
       expect(user.get('emailVerified')).not.toBe(true);
     });
@@ -9556,7 +9556,7 @@ describe('Vulnerabilities', () => {
         }),
       }).catch(e => e.data);
       expect(res).toEqual({ code: Parse.Error.SCRIPT_FAILED, error: 'Please enter the token' });
-      // The internal authData persist must still run _User beforeSave enforcement.
+      // beforeSave must still run on the internal persist.
       expect(beforeSaveCalls).toBeGreaterThan(0);
     });
 
