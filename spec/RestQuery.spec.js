@@ -589,6 +589,33 @@ describe('RestQuery.each', () => {
     expect(resultsTwo.length).toBe(1);
   });
 
+  it('should not throw when a relation query constraint contains null', async () => {
+    const objectA = new Parse.Object('Letter', { value: 'A' });
+    const object1 = new Parse.Object('Number', { value: '1' });
+    await object1.save();
+    objectA.relation('numbers').add(object1);
+    await objectA.save();
+
+    const config = Config.get('test');
+
+    for (const [restWhere, expectedCount] of [
+      [{ numbers: { $in: [null] } }, 0],
+      [{ numbers: { $nin: [null] } }, 1],
+      [{ numbers: { $ne: null, $in: [] } }, 0],
+    ]) {
+      const query = await RestQuery({
+        method: RestQuery.Method.find,
+        config,
+        auth: auth.master(config),
+        className: 'Letter',
+        restWhere,
+      });
+      const results = [];
+      await query.each(result => results.push(result));
+      expect(results.length).toBe(expectedCount);
+    }
+  });
+
   it('test afterSave response object is return', done => {
     Parse.Cloud.beforeSave('TestObject2', function (req) {
       req.object.set('tobeaddbefore', true);
