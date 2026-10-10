@@ -136,8 +136,9 @@ class MFAAdapter extends AuthAdapter {
         const { token: sendToken, expiry } = await this.sendSMS(mobile);
         auth.mfa.token = sendToken;
         auth.mfa.expiry = expiry;
-        req.object.set('authData', auth);
-        await req.object.save(null, { useMasterKey: true });
+        // Persist only authData. Saving req.object would write any other login-request
+        // body fields with master privileges, bypassing client-write restrictions.
+        await req.config.database.update('_User', { objectId: req.object.id }, { authData: auth });
         throw 'Please enter the token';
       }
       if (!saved || token !== saved) {
