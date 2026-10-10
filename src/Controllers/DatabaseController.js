@@ -109,6 +109,54 @@ const transformObjectACL = ({ ACL, ...result }) => {
   return result;
 };
 
+// Error for a logical operator value that is not a non-empty array
+const logicalOperatorError = (op: string, value: any) => {
+  const message =
+    Array.isArray(value) || op === '$nor'
+      ? `Bad ${op} format - use an array of at least 1 value.`
+      : `Bad ${op} format - use an array value.`;
+  return new Parse.Error(Parse.Error.INVALID_QUERY, message);
+};
+
+// Validates the format of logical operators and $options before the query is processed
+const validateQueryFormat = (query: any): void => {
+  if (!Utils.isObject(query)) {
+    return;
+  }
+  for (const op of queryOperators) {
+    const subQueries = query[op];
+    if (subQueries === undefined) {
+      continue;
+    }
+    if (!Array.isArray(subQueries) || subQueries.length === 0) {
+      throw logicalOperatorError(op, subQueries);
+    }
+    for (const subQuery of subQueries) {
+      // Unconstrained query sent as empty array by some SDKs
+      if (Array.isArray(subQuery) && subQuery.length === 0) {
+        continue;
+      }
+      if (!Utils.isObject(subQuery) || Array.isArray(subQuery)) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_QUERY,
+          `Bad ${op} format - use an array of objects.`
+        );
+      }
+      validateQueryFormat(subQuery);
+    }
+  }
+  for (const key of Object.keys(query)) {
+    const constraint = query[key];
+    if (
+      Utils.isObject(constraint) &&
+      constraint.$options !== undefined &&
+      constraint.$regex === undefined
+    ) {
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, '$options requires $regex');
+    }
+  }
+};
+
 const validateQuery = (
   query: any,
   isMaster: boolean,
@@ -131,31 +179,16 @@ const validateQuery = (
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
   }
 
-  if (query.$or) {
-    if (Array.isArray(query.$or)) {
-      query.$or.forEach(value => validateQuery(value, isMaster, isMaintenance, update, options, _depth + 1));
-    } else {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $or format - use an array value.');
+  for (const op of queryOperators) {
+    if (query[op] === undefined) {
+      continue;
     }
-  }
-
-  if (query.$and) {
-    if (Array.isArray(query.$and)) {
-      query.$and.forEach(value => validateQuery(value, isMaster, isMaintenance, update, options, _depth + 1));
-    } else {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $and format - use an array value.');
+    if (!Array.isArray(query[op]) || query[op].length === 0) {
+      throw logicalOperatorError(op, query[op]);
     }
-  }
-
-  if (query.$nor) {
-    if (Array.isArray(query.$nor) && query.$nor.length > 0) {
-      query.$nor.forEach(value => validateQuery(value, isMaster, isMaintenance, update, options, _depth + 1));
-    } else {
-      throw new Parse.Error(
-        Parse.Error.INVALID_QUERY,
-        'Bad $nor format - use an array of at least 1 value.'
-      );
-    }
+    query[op].forEach(value =>
+      validateQuery(value, isMaster, isMaintenance, update, options, _depth + 1)
+    );
   }
 
   Object.keys(query).forEach(key => {
@@ -2170,9 +2203,13 @@ class DatabaseController {
 
   static _validateQuery: (any, boolean, boolean, boolean) => void;
   static filterSensitiveData: (boolean, boolean, any[], any, any, any, string, any[], any, ?boolean) => void;
+  static validateQueryFormat: any => void;
+  static logicalOperatorError: (string, any) => any;
 }
 
 module.exports = DatabaseController;
 // Expose validateQuery for tests
 module.exports._validateQuery = validateQuery;
 module.exports.filterSensitiveData = filterSensitiveData;
+module.exports.validateQueryFormat = validateQueryFormat;
+module.exports.logicalOperatorError = logicalOperatorError;

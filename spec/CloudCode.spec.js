@@ -2673,6 +2673,18 @@ describe('beforeFind hooks', () => {
     });
   });
 
+  it('should reject malformed query set by beforeFind trigger', async () => {
+    Parse.Cloud.beforeFind('MyObject', req => {
+      req.query.withJSON({ where: { $or: [null] } });
+    });
+    await expectAsync(new Parse.Query('MyObject').find()).toBeRejectedWith(
+      jasmine.objectContaining({
+        code: Parse.Error.INVALID_QUERY,
+        message: 'Bad $or format - use an array of objects.',
+      })
+    );
+  });
+
   it('should have object found with nested relational data query', async () => {
     const obj1 = Parse.Object.extend('TestObject');
     const obj2 = Parse.Object.extend('TestObject2');
