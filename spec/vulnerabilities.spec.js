@@ -9539,6 +9539,27 @@ describe('Vulnerabilities', () => {
       expect(user.get('emailVerified')).not.toBe(true);
     });
 
+    it('runs the _User beforeSave trigger when persisting the requested SMS code', async () => {
+      await enrollSmsMfa();
+      let beforeSaveCalls = 0;
+      Parse.Cloud.beforeSave('_User', () => {
+        beforeSaveCalls++;
+      });
+      const res = await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/login`,
+        headers,
+        body: JSON.stringify({
+          username: 'victim',
+          password: 'password',
+          authData: { mfa: { token: 'request' } },
+        }),
+      }).catch(e => e.data);
+      expect(res).toEqual({ code: Parse.Error.SCRIPT_FAILED, error: 'Please enter the token' });
+      // The internal authData persist must still run _User beforeSave enforcement.
+      expect(beforeSaveCalls).toBeGreaterThan(0);
+    });
+
     it('still completes SMS MFA login end-to-end after requesting a code', async () => {
       const { user } = await enrollSmsMfa();
       await request({
