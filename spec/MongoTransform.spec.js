@@ -173,6 +173,49 @@ describe('parseObjectToMongoObjectForCreate', () => {
     done();
   });
 
+  it('encodes dates the same as Parse._encode', () => {
+    const date = new Date('2017-01-18T01:02:03.456Z');
+    const input = {
+      _created_at: date,
+      _updated_at: date,
+      _last_used: date,
+      expiresAt: date,
+      ts: date,
+      nested: { ts: date, list: [date] },
+    };
+    const output = transform.mongoObjectToParseObject(null, input, {
+      fields: { ts: { type: 'Date' }, nested: { type: 'Object' } },
+    });
+    const encoded = Parse._encode(date);
+    expect(output.createdAt).toEqual(encoded.iso);
+    expect(output.updatedAt).toEqual(encoded.iso);
+    expect(output.lastUsed).toEqual(encoded.iso);
+    expect(output.expiresAt).toEqual(encoded);
+    expect(output.ts).toEqual(encoded);
+    expect(output.nested).toEqual({ ts: encoded, list: [encoded] });
+    // A date on its own, as returned by `distinct` on a Date field.
+    expect(transform.mongoObjectToParseObject(null, date, { fields: {} })).toEqual(encoded);
+  });
+
+  it('throws the same error as Parse._encode for an invalid date', () => {
+    const date = new Date('invalid');
+    const sdkError = (() => {
+      try {
+        Parse._encode(date);
+      } catch (e) {
+        return e;
+      }
+    })();
+    expect(sdkError).toEqual(new Error('Tried to encode an invalid date.'));
+    for (const input of [{ _created_at: date }, { ts: date }, { nested: { ts: date } }]) {
+      expect(() =>
+        transform.mongoObjectToParseObject(null, input, {
+          fields: { ts: { type: 'Date' }, nested: { type: 'Object' } },
+        })
+      ).toThrow(sdkError);
+    }
+  });
+
   it('pointer', done => {
     const input = { _p_userPointer: '_User$123' };
     const output = transform.mongoObjectToParseObject(null, input, {

@@ -2052,39 +2052,39 @@ export class PostgresStorageAdapter implements StorageAdapter {
     });
     //TODO: remove this reliance on the mongo format. DB adapter shouldn't know there is a difference between created at and any other date field.
     if (object.createdAt) {
-      object.createdAt = object.createdAt.toISOString();
+      object.createdAt = Utils.toISOString(object.createdAt);
     }
     if (object.updatedAt) {
-      object.updatedAt = object.updatedAt.toISOString();
+      object.updatedAt = Utils.toISOString(object.updatedAt);
     }
     if (object.expiresAt) {
       object.expiresAt = {
         __type: 'Date',
-        iso: object.expiresAt.toISOString(),
+        iso: Utils.toISOString(object.expiresAt),
       };
     }
     if (object._email_verify_token_expires_at) {
       object._email_verify_token_expires_at = {
         __type: 'Date',
-        iso: object._email_verify_token_expires_at.toISOString(),
+        iso: Utils.toISOString(object._email_verify_token_expires_at),
       };
     }
     if (object._account_lockout_expires_at) {
       object._account_lockout_expires_at = {
         __type: 'Date',
-        iso: object._account_lockout_expires_at.toISOString(),
+        iso: Utils.toISOString(object._account_lockout_expires_at),
       };
     }
     if (object._perishable_token_expires_at) {
       object._perishable_token_expires_at = {
         __type: 'Date',
-        iso: object._perishable_token_expires_at.toISOString(),
+        iso: Utils.toISOString(object._perishable_token_expires_at),
       };
     }
     if (object._password_changed_at) {
       object._password_changed_at = {
         __type: 'Date',
-        iso: object._password_changed_at.toISOString(),
+        iso: Utils.toISOString(object._password_changed_at),
       };
     }
 
@@ -2095,7 +2095,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       if (Utils.isDate(object[fieldName])) {
         object[fieldName] = {
           __type: 'Date',
-          iso: object[fieldName].toISOString(),
+          iso: Utils.toISOString(object[fieldName]),
         };
       }
     }

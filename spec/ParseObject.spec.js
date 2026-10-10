@@ -12,6 +12,8 @@
 // single-instance mode and we don't want these tests to run in
 // single-instance mode.
 
+const request = require('../lib/request');
+
 describe('Parse.Object testing', () => {
   it('create', function (done) {
     create({ test: 'test' }, function (model) {
@@ -272,6 +274,37 @@ describe('Parse.Object testing', () => {
     }
     ok(false, 'Saving an invalid date should throw');
     done();
+  });
+
+  describe('returns dates in ISO format', () => {
+    const expectDatesReturned = async dates => {
+      const obj = new Parse.Object('TestObject');
+      for (const [key, iso] of Object.entries(dates)) {
+        obj.set(key, new Date(iso));
+      }
+      await obj.save();
+      const headers = { 'X-Parse-Application-Id': 'test', 'X-Parse-REST-API-Key': 'rest' };
+      const { data: fetched } = await request({ url: `${Parse.serverURL}/classes/TestObject/${obj.id}`, headers });
+      const { data: found } = await request({ url: `${Parse.serverURL}/classes/TestObject`, headers });
+      for (const result of [fetched, found.results[0]]) {
+        for (const [key, iso] of Object.entries(dates)) {
+          expect(result[key]).toEqual({ __type: 'Date', iso });
+        }
+        expect(result.createdAt).toBe(obj.createdAt.toISOString());
+      }
+    };
+
+    it('for years up to 9999', async () => {
+      await expectDatesReturned({
+        early: '0999-12-31T23:59:59.999Z',
+        current: '2024-02-29T01:02:03.456Z',
+      });
+    });
+
+    // Postgres rejects the extended year format when saving, so later dates cannot be stored there.
+    it_exclude_dbs(['postgres'])('for years after 9999', async () => {
+      await expectDatesReturned({ late: '+010000-01-01T00:00:00.000Z' });
+    });
   });
 
   it('can set authData when not user class', async () => {
