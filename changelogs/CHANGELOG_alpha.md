@@ -1,3 +1,10 @@
+## [9.10.5-alpha.4](https://github.com/parse-community/parse-server/compare/9.10.5-alpha.3...9.10.5-alpha.4) (2026-10-10)
+
+
+### Bug Fixes
+
+* LiveQuery subscriptions using a `$or` query can receive another user's events, including session tokens ([GHSA-349r-988w-x3jp](https://github.com/parse-community/parse-server/security/advisories/GHSA-349r-988w-x3jp)) ([#10776](https://github.com/parse-community/parse-server/issues/10776)) ([a7821c6](https://github.com/parse-community/parse-server/commit/a7821c6aebb4470c3d1e04e60295b02e7b365667))
+
 ## [9.10.5-alpha.3](https://github.com/parse-community/parse-server/compare/9.10.5-alpha.2...9.10.5-alpha.3) (2026-10-10)
 
 
