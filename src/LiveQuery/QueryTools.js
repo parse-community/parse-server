@@ -47,47 +47,44 @@ function safeRegexTest(pattern, flags, input) {
  * and quickly determine if a query has changed.
  */
 
-/**
- * Convert $or queries into an array of where conditions
- */
-function flattenOrQueries(where) {
-  if (!Object.prototype.hasOwnProperty.call(where, '$or')) {
-    return where;
-  }
-  var accum = [];
-  for (var i = 0; i < where.$or.length; i++) {
-    accum = accum.concat(where.$or[i]);
-  }
-  return accum;
-}
+// Operators whose array argument is a set, so element order carries no meaning.
+// Their elements are sorted before hashing; every other array is hashed in order.
+var ORDER_INSENSITIVE_OPERATORS = ['$or', '$and', '$nor', '$in', '$nin', '$all', '$containedBy'];
 
 /**
- * Deterministically turns an object into a string. Disregards ordering
+ * Canonically serializes a query `where` into an unambiguous string. Object keys
+ * are sorted so key order never affects the result, and the elements of a set
+ * operator (see ORDER_INSENSITIVE_OPERATORS) are sorted so their order does not
+ * either; all other array order is preserved. Keys and values are JSON-encoded,
+ * so every key, the whole structure, and each value type is represented
+ * distinctly. Unlike the former flatten-and-list approach, this keeps every key
+ * next to `$or` (including the server-added `_Session` `user` pointer and
+ * `beforeSubscribe` constraints), so queries that differ only in those keys hash
+ * differently.
  */
-function stringify(object): string {
-  if (typeof object !== 'object' || object === null) {
-    if (typeof object === 'string') {
-      return '"' + object.replace(/\|/g, '%|') + '"';
+function canonicalize(value, orderInsensitive) {
+  if (Array.isArray(value)) {
+    var items = value.map(function (item) {
+      return canonicalize(item, false);
+    });
+    if (orderInsensitive) {
+      items.sort();
     }
-    return object + '';
+    return '[' + items.join(',') + ']';
   }
-  if (Array.isArray(object)) {
-    var copy = object.map(stringify);
-    copy.sort();
-    return '[' + copy.join(',') + ']';
+  if (value !== null && typeof value === 'object') {
+    var keys = Object.keys(value).sort();
+    var sections = keys.map(function (key) {
+      return JSON.stringify(key) + ':' + canonicalize(value[key], ORDER_INSENSITIVE_OPERATORS.indexOf(key) > -1);
+    });
+    return '{' + sections.join(',') + '}';
   }
-  var sections = [];
-  var keys = Object.keys(object);
-  keys.sort();
-  for (var k = 0; k < keys.length; k++) {
-    sections.push(stringify(keys[k]) + ':' + stringify(object[keys[k]]));
-  }
-  return '{' + sections.join(',') + '}';
+  return JSON.stringify(value);
 }
 
 /**
- * Generate a hash from a query, with unique fields for columns, values, order,
- * skip, and limit.
+ * Generate a deterministic hash from a query's class name and `where` clause.
+ * Any two queries with equivalent constraints produce the same hash.
  */
 function queryHash(query) {
   if (query instanceof Parse.Query) {
@@ -96,35 +93,7 @@ function queryHash(query) {
       where: query._where,
     };
   }
-  var where = flattenOrQueries(query.where || {});
-  var columns = [];
-  var values = [];
-  var i;
-  if (Array.isArray(where)) {
-    var uniqueColumns = {};
-    for (i = 0; i < where.length; i++) {
-      var subValues = {};
-      var keys = Object.keys(where[i]);
-      keys.sort();
-      for (var j = 0; j < keys.length; j++) {
-        subValues[keys[j]] = where[i][keys[j]];
-        uniqueColumns[keys[j]] = true;
-      }
-      values.push(subValues);
-    }
-    columns = Object.keys(uniqueColumns);
-    columns.sort();
-  } else {
-    columns = Object.keys(where);
-    columns.sort();
-    for (i = 0; i < columns.length; i++) {
-      values.push(where[columns[i]]);
-    }
-  }
-
-  var sections = [columns.join(','), stringify(values)];
-
-  return query.className + ':' + sections.join('|');
+  return query.className + ':' + canonicalize(query.where || {}, false);
 }
 
 /**
