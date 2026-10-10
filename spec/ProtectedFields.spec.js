@@ -1836,6 +1836,68 @@ describe('ProtectedFields', function () {
       });
       await expectAsync(restQuery.denyProtectedFields()).toBeResolved();
     });
+
+    it('should reject array-like logical operator value with descriptive error', async function () {
+      for (const op of ['$or', '$and', '$nor']) {
+        const query = new Parse.Query(Parse.User);
+        query.withJSON({ where: { [op]: { 0: { email: testEmail }, length: 1 } } });
+        await expectAsync(query.find())
+          .withContext(op)
+          .toBeRejectedWith(
+            jasmine.objectContaining({
+              code: Parse.Error.INVALID_QUERY,
+              message:
+                op === '$nor'
+                  ? 'Bad $nor format - use an array of at least 1 value.'
+                  : `Bad ${op} format - use an array value.`,
+            })
+          );
+      }
+    });
+
+    it('should reject array-like logical operator value in denyProtectedFields with descriptive error', async function () {
+      const authModule = require('../lib/Auth');
+      const RestQuery = require('../lib/RestQuery');
+      const config = Config.get(Parse.applicationId);
+      for (const op of ['$or', '$and', '$nor']) {
+        const restQuery = await RestQuery({
+          method: RestQuery.Method.find,
+          config,
+          auth: authModule.nobody(config),
+          className: '_User',
+          restWhere: { [op]: { 0: { username: 'test' }, length: 1 } },
+        });
+        await expectAsync(restQuery.denyProtectedFields())
+          .withContext(op)
+          .toBeRejectedWith(
+            jasmine.objectContaining({
+              code: Parse.Error.INVALID_QUERY,
+              message:
+                op === '$nor'
+                  ? 'Bad $nor format - use an array of at least 1 value.'
+                  : `Bad ${op} format - use an array value.`,
+            })
+          );
+      }
+    });
+
+    it('should reject malformed query on protected field with format error', async function () {
+      for (const [where, message] of [
+        [{ $or: [{ email: testEmail }, null] }, 'Bad $or format - use an array of objects.'],
+        [{ email: { $options: 'i' } }, '$options requires $regex'],
+      ]) {
+        const query = new Parse.Query(Parse.User);
+        query.withJSON({ where });
+        await expectAsync(query.find())
+          .withContext(JSON.stringify(where))
+          .toBeRejectedWith(jasmine.objectContaining({ code: Parse.Error.INVALID_QUERY, message }));
+      }
+      const query = new Parse.Query(Parse.User);
+      query.withJSON({ where: { email: { $regex: '^victim', $options: 'i' } } });
+      await expectAsync(query.find()).toBeRejectedWith(
+        jasmine.objectContaining({ code: Parse.Error.OPERATION_FORBIDDEN })
+      );
+    });
   });
 
   describe('protectedFieldsOwnerExempt', function () {

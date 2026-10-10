@@ -2,6 +2,7 @@
 // operation, encoded in the REST API format.
 
 var SchemaController = require('./Controllers/SchemaController');
+const DatabaseController = require('./Controllers/DatabaseController');
 var Parse = require('parse/node').Parse;
 var logger = require('./logger').default;
 const triggers = require('./triggers');
@@ -387,8 +388,16 @@ _UnsafeRestQuery.prototype.validateQueryDepth = function () {
   checkDepth(this.restWhere, 0);
 };
 
+// Validates the format of the where clause before it is processed
+_UnsafeRestQuery.prototype.validateQueryFormat = function () {
+  DatabaseController.validateQueryFormat(this.restWhere);
+};
+
 _UnsafeRestQuery.prototype.buildRestWhere = function () {
   return Promise.resolve()
+    .then(() => {
+      return this.validateQueryFormat();
+    })
     .then(() => {
       return this.getUserAndRoleACL();
     })
@@ -955,11 +964,7 @@ _UnsafeRestQuery.prototype.denyProtectedFields = async function () {
     }
     for (const op of ['$or', '$and', '$nor']) {
       if (where[op] !== undefined && !Array.isArray(where[op])) {
-        throw createSanitizedError(
-          Parse.Error.INVALID_QUERY,
-          `${op} must be an array`,
-          this.config
-        );
+        throw DatabaseController.logicalOperatorError(op, where[op]);
       }
       if (Array.isArray(where[op])) {
         where[op].forEach(subQuery => checkWhere(subQuery));
