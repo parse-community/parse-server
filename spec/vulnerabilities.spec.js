@@ -8921,4 +8921,408 @@ describe('Vulnerabilities', () => {
       });
     }
   });
+
+  describe('(GHSA-rq3w-5c6f-p7wr) Custom auth adapters that extend the exported AuthAdapter class accept any authData', () => {
+    const { AuthAdapter } = require('../lib/index');
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+    const send = (method, path, body, sessionToken) =>
+      request({
+        method,
+        url: `http://localhost:8378/1${path}`,
+        headers: sessionToken ? { ...headers, 'X-Parse-Session-Token': sessionToken } : headers,
+        body: JSON.stringify(body),
+      }).catch(e => e);
+    const validToken = 'valid-token';
+    const checkToken = authData => {
+      if (authData?.token !== validToken) {
+        throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Invalid token.');
+      }
+    };
+
+    // V2 adapter
+    class TokenAdapter extends AuthAdapter {
+      validateSetUp(authData) {
+        checkToken(authData);
+      }
+      validateLogin(authData) {
+        checkToken(authData);
+      }
+      validateUpdate(authData) {
+        checkToken(authData);
+      }
+    }
+
+    it('rejects login with invalid authData for a user linked to the provider', async () => {
+      await reconfigureServer({ auth: { tokenAuth: new TokenAdapter() } });
+      const signUp = await send('POST', '/users', {
+        authData: { tokenAuth: { id: 'victim', token: validToken } },
+      });
+      expect(signUp.data.sessionToken).toBeDefined();
+
+      const login = await send('POST', '/users', {
+        authData: { tokenAuth: { id: 'victim', token: 'invalid' } },
+      });
+      expect(login.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(login.data.error).toBe('Invalid token.');
+      expect(login.data.sessionToken).toBeUndefined();
+    });
+
+    it('rejects signup with invalid authData', async () => {
+      await reconfigureServer({ auth: { tokenAuth: new TokenAdapter() } });
+      const signUp = await send('POST', '/users', {
+        authData: { tokenAuth: { id: 'new-user', token: 'invalid' } },
+      });
+      expect(signUp.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(signUp.data.error).toBe('Invalid token.');
+      const users = await new Parse.Query(Parse.User).find({ useMasterKey: true });
+      expect(users.length).toBe(0);
+    });
+
+    it('rejects linking invalid authData to a logged-in user', async () => {
+      await reconfigureServer({ auth: { tokenAuth: new TokenAdapter() } });
+      const user = await Parse.User.signUp('user', 'password');
+      const link = await send(
+        'PUT',
+        `/users/${user.id}`,
+        { authData: { tokenAuth: { id: 'claimed', token: 'invalid' } } },
+        user.getSessionToken()
+      );
+      expect(link.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(link.data.error).toBe('Invalid token.');
+      await user.fetch({ useMasterKey: true });
+      expect(user.get('authData')).toBeUndefined();
+    });
+
+    it('rejects updating a linked provider with invalid authData', async () => {
+      await reconfigureServer({ auth: { tokenAuth: new TokenAdapter() } });
+      const signUp = await send('POST', '/users', {
+        authData: { tokenAuth: { id: 'user-id', token: validToken } },
+      });
+      expect(signUp.data.sessionToken).toBeDefined();
+
+      const update = await send(
+        'PUT',
+        `/users/${signUp.data.objectId}`,
+        { authData: { tokenAuth: { id: 'user-id', token: 'invalid' } } },
+        signUp.data.sessionToken
+      );
+      expect(update.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(update.data.error).toBe('Invalid token.');
+    });
+
+    it('rejects password login with invalid authData for an additional-policy provider', async () => {
+      class SecondFactorAdapter extends TokenAdapter {
+        constructor() {
+          super();
+          this.policy = 'additional';
+        }
+      }
+      await reconfigureServer({ auth: { secondFactor: new SecondFactorAdapter() } });
+      const user = await Parse.User.signUp('user', 'password');
+      const link = await send(
+        'PUT',
+        `/users/${user.id}`,
+        { authData: { secondFactor: { token: validToken } } },
+        user.getSessionToken()
+      );
+      expect(link.data.code).toBeUndefined();
+
+      const login = await send('POST', '/login', {
+        username: 'user',
+        password: 'password',
+        authData: { secondFactor: { token: 'invalid' } },
+      });
+      expect(login.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(login.data.error).toBe('Invalid token.');
+      expect(login.data.sessionToken).toBeUndefined();
+    });
+
+    it('rejects invalid authData for a subclass configured under a built-in provider name', async () => {
+      // Built-in adapter that accepts any authData
+      await reconfigureServer({ auth: { anonymous: new TokenAdapter() } });
+      const signUp = await send('POST', '/users', {
+        authData: { anonymous: { id: 'user-id', token: 'invalid' } },
+      });
+      expect(signUp.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(signUp.data.error).toBe('Invalid token.');
+      const users = await new Parse.Query(Parse.User).find({ useMasterKey: true });
+      expect(users.length).toBe(0);
+    });
+
+    it('runs the adapter methods with access to the instance state and helper methods', async () => {
+      class InstanceAdapter extends AuthAdapter {
+        constructor(token) {
+          super();
+          this.token = token;
+          this.idPrefix = 'user-';
+        }
+        check(authData) {
+          if (authData?.token !== this.token || !authData.id?.startsWith(this.idPrefix)) {
+            throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Invalid token.');
+          }
+        }
+        validateSetUp(authData) {
+          this.check(authData);
+        }
+        validateLogin(authData) {
+          this.check(authData);
+        }
+        validateUpdate(authData) {
+          this.check(authData);
+        }
+      }
+      await reconfigureServer({ auth: { instanceAuth: new InstanceAdapter(validToken) } });
+      const signUp = await send('POST', '/users', {
+        authData: { instanceAuth: { id: 'user-1', token: validToken } },
+      });
+      expect(signUp.data.sessionToken).toBeDefined();
+      const login = await send('POST', '/users', {
+        authData: { instanceAuth: { id: 'user-1', token: validToken } },
+      });
+      expect(login.data.objectId).toBe(signUp.data.objectId);
+      expect(login.data.sessionToken).toBeDefined();
+
+      const invalid = await send('POST', '/users', {
+        authData: { instanceAuth: { id: 'user-1', token: 'invalid' } },
+      });
+      expect(invalid.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(invalid.data.error).toBe('Invalid token.');
+    });
+
+    it('keeps beforeFind and skips validateOptions of a built-in adapter for a subclass configured under its name', async () => {
+      await reconfigureServer({ auth: { github: new TokenAdapter() } });
+      const signUp = await send('POST', '/users', {
+        authData: { github: { id: 'user-id', token: validToken } },
+      });
+      expect(signUp.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(signUp.data.error).toBe('GitHub code is required.');
+    });
+
+    it('keeps beforeFind of a built-in adapter for a class instance with its own beforeFind', async () => {
+      class GitHubOptions {
+        constructor() {
+          this.clientId = 'client-id';
+          this.clientSecret = 'client-secret';
+        }
+        beforeFind() {}
+      }
+      await reconfigureServer({ auth: { github: new GitHubOptions() } });
+      const signUp = await send('POST', '/users', {
+        authData: { github: { id: 'user-id' } },
+      });
+      expect(signUp.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(signUp.data.error).toBe('GitHub code is required.');
+      const users = await new Parse.Query(Parse.User).find({ useMasterKey: true });
+      expect(users.length).toBe(0);
+    });
+
+    it('loads a frozen class instance', async () => {
+      class FrozenAdapter extends AuthAdapter {
+        validateAuthData = authData => checkToken(authData);
+      }
+      await reconfigureServer({ auth: { frozenAuth: Object.freeze(new FrozenAdapter()) } });
+      const signUp = await send('POST', '/users', {
+        authData: { frozenAuth: { id: 'user-id', token: validToken } },
+      });
+      expect(signUp.data.sessionToken).toBeDefined();
+
+      const login = await send('POST', '/users', {
+        authData: { frozenAuth: { id: 'user-id', token: 'invalid' } },
+      });
+      expect(login.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(login.data.error).toBe('Invalid token.');
+    });
+
+    it('keeps a method that validateOptions deletes deleted', async () => {
+      class DeletingAdapter extends TokenAdapter {
+        validateOptions() {
+          delete this.validateAuthData;
+        }
+      }
+      await reconfigureServer({ auth: { deletingAuth: new DeletingAdapter() } });
+      const signUp = await send('POST', '/users', {
+        authData: { deletingAuth: { id: 'user-id', token: 'invalid' } },
+      });
+      expect(signUp.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(signUp.data.error).toBe('Invalid token.');
+    });
+
+    it('loads a class instance under a provider name that is an Object.prototype member', async () => {
+      class InstanceAdapter extends TokenAdapter {
+        constructor(token) {
+          super();
+          this.token = token;
+        }
+        validateLogin(authData) {
+          if (authData?.token !== this.token) {
+            throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Invalid token.');
+          }
+        }
+      }
+      await reconfigureServer({ auth: { valueOf: new InstanceAdapter(validToken) } });
+      const signUp = await send('POST', '/users', {
+        authData: { valueOf: { id: 'user-id', token: validToken } },
+      });
+      expect(signUp.data.sessionToken).toBeDefined();
+      const login = await send('POST', '/users', {
+        authData: { valueOf: { id: 'user-id', token: validToken } },
+      });
+      expect(login.data.sessionToken).toBeDefined();
+    });
+
+    it('runs the methods of a class instance that does not extend AuthAdapter with access to its state', async () => {
+      class ClassAdapter {
+        constructor(token) {
+          this.token = token;
+        }
+        validateAuthData(authData) {
+          if (authData?.token !== this.token) {
+            throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Invalid token.');
+          }
+        }
+      }
+      await reconfigureServer({ auth: { classAuth: new ClassAdapter(validToken) } });
+      const signUp = await send('POST', '/users', {
+        authData: { classAuth: { id: 'user-id', token: validToken } },
+      });
+      expect(signUp.data.sessionToken).toBeDefined();
+
+      const login = await send('POST', '/users', {
+        authData: { classAuth: { id: 'user-id', token: 'invalid' } },
+      });
+      expect(login.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(login.data.error).toBe('Invalid token.');
+    });
+
+    it('runs validateAuthData of a subclass that overrides it with access to the instance state', async () => {
+      class LegacyAdapter extends AuthAdapter {
+        constructor(token) {
+          super();
+          this.token = token;
+        }
+        validateAuthData(authData) {
+          if (authData?.token !== this.token) {
+            throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Invalid token.');
+          }
+        }
+      }
+      await reconfigureServer({ auth: { legacyAuth: new LegacyAdapter(validToken) } });
+      const signUp = await send('POST', '/users', {
+        authData: { legacyAuth: { id: 'user-id', token: validToken } },
+      });
+      expect(signUp.data.sessionToken).toBeDefined();
+
+      const login = await send('POST', '/users', {
+        authData: { legacyAuth: { id: 'user-id', token: 'invalid' } },
+      });
+      expect(login.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(login.data.error).toBe('Invalid token.');
+    });
+
+    it('runs beforeFind of a custom adapter', async () => {
+      // Resolves the provider id from a code
+      class CodeAdapter extends AuthAdapter {
+        beforeFind(authData) {
+          if (authData?.code !== 'valid-code') {
+            throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Invalid code.');
+          }
+          authData.id = 'code-user';
+          delete authData.code;
+        }
+        validateSetUp(authData) {
+          return { id: authData.id };
+        }
+        validateLogin(authData) {
+          return { id: authData.id };
+        }
+        validateUpdate(authData) {
+          return { id: authData.id };
+        }
+      }
+      await reconfigureServer({ auth: { codeAuth: new CodeAdapter() } });
+      const signUp = await send('POST', '/users', {
+        authData: { codeAuth: { code: 'valid-code' } },
+      });
+      expect(signUp.data.sessionToken).toBeDefined();
+
+      const login = await send('POST', '/users', {
+        authData: { codeAuth: { id: 'code-user', code: 'invalid' } },
+      });
+      expect(login.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(login.data.error).toBe('Invalid code.');
+      expect(login.data.sessionToken).toBeUndefined();
+    });
+
+    it('rejects authData for a subclass that does not implement all of validateSetUp, validateLogin and validateUpdate', async () => {
+      class PartialAdapter extends AuthAdapter {
+        validateLogin(authData) {
+          checkToken(authData);
+        }
+      }
+      await reconfigureServer({ auth: { partialAuth: new PartialAdapter() } });
+      const signUp = await send('POST', '/users', {
+        authData: { partialAuth: { id: 'user-id', token: validToken } },
+      });
+      expect(signUp.data.code).toBe(Parse.Error.OTHER_CAUSE);
+      expect(signUp.data.error).toContain('Adapter is not configured.');
+      const users = await new Parse.Query(Parse.User).find({ useMasterKey: true });
+      expect(users.length).toBe(0);
+    });
+
+    it('returns the stored authData of the provider to the user', async () => {
+      await reconfigureServer({ auth: { tokenAuth: new TokenAdapter() } });
+      const signUp = await send('POST', '/users', {
+        authData: { tokenAuth: { id: 'user-id', token: validToken } },
+      });
+      const me = await send('GET', '/users/me', undefined, signUp.data.sessionToken);
+      expect(me.data.authData.tokenAuth).toEqual({ id: 'user-id', token: validToken });
+    });
+
+    it('enforces a policy that validateOptions sets', async () => {
+      class SecondFactorAdapter extends TokenAdapter {
+        validateOptions() {
+          this.policy = 'additional';
+        }
+      }
+      await reconfigureServer({ auth: { secondFactor: new SecondFactorAdapter() } });
+      const user = await Parse.User.signUp('user', 'password');
+      const link = await send(
+        'PUT',
+        `/users/${user.id}`,
+        { authData: { secondFactor: { token: validToken } } },
+        user.getSessionToken()
+      );
+      expect(link.data.code).toBeUndefined();
+
+      const login = await send('POST', '/login', { username: 'user', password: 'password' });
+      expect(login.data.code).toBe(Parse.Error.OTHER_CAUSE);
+      expect(login.data.error).toBe('Missing additional authData secondFactor');
+      expect(login.data.sessionToken).toBeUndefined();
+    });
+
+    it('does not modify the configured instance when running validateOptions', async () => {
+      class ScopesAdapter extends TokenAdapter {
+        constructor() {
+          super();
+          this.scopes = 'read,write';
+        }
+        validateOptions() {
+          this.scopes = this.scopes.split(',');
+        }
+      }
+      const adapter = new ScopesAdapter();
+      await reconfigureServer({ auth: { scopesAuth: adapter } });
+      for (let i = 0; i < 2; i++) {
+        const response = await send('POST', '/users', {
+          authData: { scopesAuth: { id: 'user-id', token: validToken } },
+        });
+        expect(response.data.sessionToken).toBeDefined();
+      }
+      expect(adapter.scopes).toBe('read,write');
+    });
+  });
 });
