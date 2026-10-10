@@ -224,7 +224,12 @@ const valueAsDate = value => {
   return false;
 };
 
-// Same output as `Parse._encode(date)`.
+/**
+ * Encodes a date as a Parse `Date` object, with the same output and the same error for an invalid
+ * date as `Parse._encode(date)`, but formatted with the faster `Utils.toISOString`.
+ * @param {Date} date The date to encode.
+ * @returns {Object} The encoded date, e.g. `{ __type: 'Date', iso: '2024-01-31T12:34:56.789Z' }`.
+ */
 const encodeDate = date => {
   if (isNaN(date)) {
     throw new Error('Tried to encode an invalid date.');
