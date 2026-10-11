@@ -8672,4 +8672,118 @@ describe('Vulnerabilities', () => {
       expect(bReceived.map(o => o.get('tenant'))).toEqual(['tenant-b']);
     });
   });
+
+  describe('(GHSA-9rh6-r4ph-367v) SMS MFA login code request persists login body fields with master privileges', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    let code;
+    let mobile;
+    const mfa = {
+      enabled: true,
+      options: ['SMS'],
+      sendSMS(smsCode, number) {
+        code = smsCode;
+        mobile = number;
+      },
+      digits: 6,
+      period: 30,
+    };
+
+    beforeEach(async () => {
+      code = '';
+      mobile = '';
+      await reconfigureServer({ auth: { mfa } });
+    });
+
+    async function enrollSmsMfa() {
+      const user = await Parse.User.signUp('victim', 'password');
+      const sessionToken = user.getSessionToken();
+      await user.save({ authData: { mfa: { mobile: '+11111111111' } } }, { sessionToken });
+      await user.save({ authData: { mfa: { mobile, token: code } } }, { sessionToken });
+      return { user, sessionToken };
+    }
+
+    it('does not persist extra login body fields when requesting an SMS code', async () => {
+      const { user, sessionToken } = await enrollSmsMfa();
+
+      // emailVerified is master-only
+      const rejected = await request({
+        method: 'PUT',
+        url: `${Parse.serverURL}/users/${user.id}`,
+        headers: { ...headers, 'X-Parse-Session-Token': sessionToken },
+        body: JSON.stringify({ emailVerified: true }),
+      }).catch(e => e.data);
+      expect(rejected.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+
+      const spy = spyOn(mfa, 'sendSMS').and.callThrough();
+      // Smuggle the field in the code request body
+      const res = await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/login`,
+        headers,
+        body: JSON.stringify({
+          username: 'victim',
+          password: 'password',
+          authData: { mfa: { token: 'request' } },
+          emailVerified: true,
+        }),
+      }).catch(e => e.data);
+      expect(res).toEqual({ code: Parse.Error.SCRIPT_FAILED, error: 'Please enter the token' });
+      expect(spy).toHaveBeenCalled();
+
+      // Must not be persisted
+      await user.fetch({ useMasterKey: true });
+      expect(user.get('emailVerified')).not.toBe(true);
+    });
+
+    it('runs the _User beforeSave trigger when persisting the requested SMS code', async () => {
+      await enrollSmsMfa();
+      let beforeSaveCalls = 0;
+      Parse.Cloud.beforeSave('_User', () => {
+        beforeSaveCalls++;
+      });
+      const res = await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/login`,
+        headers,
+        body: JSON.stringify({
+          username: 'victim',
+          password: 'password',
+          authData: { mfa: { token: 'request' } },
+        }),
+      }).catch(e => e.data);
+      expect(res).toEqual({ code: Parse.Error.SCRIPT_FAILED, error: 'Please enter the token' });
+      // beforeSave must still run on the internal persist
+      expect(beforeSaveCalls).toBeGreaterThan(0);
+    });
+
+    it('still completes SMS MFA login end-to-end after requesting a code', async () => {
+      const { user } = await enrollSmsMfa();
+      await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/login`,
+        headers,
+        body: JSON.stringify({
+          username: 'victim',
+          password: 'password',
+          authData: { mfa: { token: 'request' } },
+        }),
+      }).catch(e => e.data);
+      const response = await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/login`,
+        headers,
+        body: JSON.stringify({
+          username: 'victim',
+          password: 'password',
+          authData: { mfa: { token: code } },
+        }),
+      }).then(r => r.data);
+      expect(response.objectId).toEqual(user.id);
+      expect(response.sessionToken).toBeDefined();
+    });
+  });
 });
