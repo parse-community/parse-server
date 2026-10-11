@@ -10,7 +10,7 @@ const GEO_INDEX_QUERY_OPERATORS = ['$nearSphere', '$near', '$geoNear'];
 // requiring a geospatial index. Returns the field name (e.g. 'location'), or
 // undefined if none is found. Used as the reliable source of truth for on-demand
 // geo index creation, since the MongoDB error message that used to carry the field
-// name (`... field=<name> ...`) was dropped in MongoDB 8.3+.
+// name (`... field=<name> ...`) is missing in MongoDB 8.3 to 8.x.
 //
 // A geo-near expression must be top-level or inside `$and`: MongoDB rejects it inside
 // `$or` / `$nor` ("geo $near must be top-level expr") and forbids more than one per
@@ -94,9 +94,9 @@ export default class MongoCollection {
         throw error;
       }
       // Figure out which field needs a geo index.
-      // Older MongoDB embeds the field name in the error message (`... field=<name> ...`);
-      // MongoDB 8.3+ shortened the message to `unable to find index for $geoNear query`
-      // and no longer includes it, so fall back to reading the field from the query itself.
+      // MongoDB embeds the field name in the error message (`... field=<name> ...`), except
+      // MongoDB 8.3 to 8.x, which shortened the message to `unable to find index for $geoNear query`,
+      // so fall back to reading the field from the query itself.
       const messageMatch = error.message.match(/field=([A-Za-z_0-9]+) /);
       const key = (messageMatch && messageMatch[1]) || findGeoIndexField(query);
       if (!key) {

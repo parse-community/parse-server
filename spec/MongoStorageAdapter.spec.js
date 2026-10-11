@@ -71,43 +71,33 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       });
   });
 
-  it('find succeeds when query is within maxTimeMS', done => {
-    const maxTimeMS = 250;
+  // MongoDB 9 runs server-side JavaScript in a WASM engine with a startup overhead of a few
+  // hundred milliseconds, so the time limit leaves a wide margin around the sleep duration.
+  it('find succeeds when query is within maxTimeMS', async () => {
+    const maxTimeMS = 1000;
     const adapter = new MongoStorageAdapter({
       uri: databaseURI,
       mongoOptions: { maxTimeMS },
     });
-    adapter
-      .createObject('Foo', { fields: {} }, { objectId: 'abcde' })
-      .then(() => adapter._rawFind('Foo', { $where: `sleep(${maxTimeMS / 2})` }))
-      .then(
-        () => done(),
-        err => {
-          done.fail(`maxTimeMS should not affect fast queries ${err}`);
-        }
-      );
+    await adapter.createObject('Foo', { fields: {} }, { objectId: 'abcde' });
+    await expectAsync(
+      adapter._rawFind('Foo', { $where: `sleep(${maxTimeMS / 4})` })
+    ).toBeResolved();
   });
 
-  it('find fails when query exceeds maxTimeMS', done => {
-    const maxTimeMS = 250;
+  // The error message differs between MongoDB versions, so only the error code is asserted.
+  it('find fails when query exceeds maxTimeMS', async () => {
+    const maxTimeMS = 1000;
     const adapter = new MongoStorageAdapter({
       uri: databaseURI,
       mongoOptions: { maxTimeMS },
     });
-    adapter
-      .createObject('Foo', { fields: {} }, { objectId: 'abcde' })
-      .then(() => adapter._rawFind('Foo', { $where: `sleep(${maxTimeMS * 2})` }))
-      .then(
-        () => {
-          done.fail('Find succeeded despite taking too long!');
-        },
-        err => {
-          expect(err.name).toEqual('MongoServerError');
-          expect(err.code).toEqual(50);
-          expect(err.message).toMatch('operation exceeded time limit');
-          done();
-        }
-      );
+    await adapter.createObject('Foo', { fields: {} }, { objectId: 'abcde' });
+    await expectAsync(
+      adapter._rawFind('Foo', { $where: `sleep(${maxTimeMS * 2})` })
+    ).toBeRejectedWith(
+      jasmine.objectContaining({ name: 'MongoServerError', code: 50, codeName: 'MaxTimeMSExpired' })
+    );
   });
 
   it('passes batchSize to the MongoDB driver find() call', async () => {
