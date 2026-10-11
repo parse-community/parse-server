@@ -2117,20 +2117,27 @@ RestWrite.prototype.filterProtectedFieldsInResponse = async function () {
   if (!protectedFields) {
     return;
   }
-  for (const field of protectedFields) {
-    delete this.response.response[field];
+  for (const key of Object.keys(this.response.response)) {
+    if (protectedFields.some(field => key === field || key.startsWith(`${field}.`))) {
+      delete this.response.response[key];
+    }
   }
 };
 
 RestWrite.prototype._updateResponseWithData = function (response, data) {
   const stateController = Parse.CoreManager.getObjectStateController();
   const [pending] = stateController.getPendingOps(this.pendingOps.identifier);
+  let revertedData;
   for (const key in this.pendingOps.operations) {
     if (!pending[key]) {
-      data[key] = this.originalData ? this.originalData[key] : { __op: 'Delete' };
+      // Reverted fields only correct the response; keep them out of the write data
+      // used to build the afterSave and LiveQuery objects.
+      revertedData ||= { ...data };
+      revertedData[key] = _.get(this.originalData, key.split('.'), { __op: 'Delete' });
       this.storage.fieldsChangedByTrigger.push(key);
     }
   }
+  data = revertedData || data;
   const skipKeys = [...(requiredColumns.read[this.className] || [])];
   if (!this.query) {
     skipKeys.push('objectId', 'createdAt');
