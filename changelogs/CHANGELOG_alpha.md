@@ -1,3 +1,10 @@
+## [9.10.5-alpha.6](https://github.com/parse-community/parse-server/compare/9.10.5-alpha.5...9.10.5-alpha.6) (2026-10-11)
+
+
+### Bug Fixes
+
+* Relation `$relatedTo` query using an operator instead of an object ID bypasses owning-object ACL ([GHSA-58m4-cqvw-4vgh](https://github.com/parse-community/parse-server/security/advisories/GHSA-58m4-cqvw-4vgh)) ([#10783](https://github.com/parse-community/parse-server/issues/10783)) ([36af858](https://github.com/parse-community/parse-server/commit/36af858405d3a844ce3c8744134c209e3c3231c2))
+
 ## [9.10.5-alpha.5](https://github.com/parse-community/parse-server/compare/9.10.5-alpha.4...9.10.5-alpha.5) (2026-10-11)
 
 
