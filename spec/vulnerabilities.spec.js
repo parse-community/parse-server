@@ -6245,6 +6245,132 @@ describe('Vulnerabilities', () => {
     });
   });
 
+  describe('(GHSA-58m4-cqvw-4vgh) $relatedTo owning objectId accepts query operators', () => {
+    let childPublic;
+    let childPrivateLink;
+    let parentPublic;
+    let parentPrivate;
+
+    const relatedToWhere = (object, key, extra = {}) => ({
+      $relatedTo: { object, key },
+      ...extra,
+    });
+
+    const pointer = objectId => ({ __type: 'Pointer', className: 'RelParent', objectId });
+
+    const queryChild = (where, qs = {}, headers = {}) =>
+      request({
+        method: 'GET',
+        url: `${Parse.serverURL}/classes/RelChild`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          ...headers,
+        },
+        qs: { where: JSON.stringify(where), ...qs },
+      }).catch(e => e);
+
+    beforeEach(async () => {
+      const schema = new Parse.Schema('RelParent');
+      schema.addString('name');
+      schema.addRelation('members', 'RelChild');
+      schema.setCLP({
+        find: { '*': true },
+        get: { '*': true },
+        count: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+      });
+      await schema.save();
+
+      // Both children are publicly readable, so the target-class ACL never hides
+      // them; the only thing protecting childPrivateLink's membership is the
+      // private owning object's ACL.
+      const publicAcl = new Parse.ACL();
+      publicAcl.setPublicReadAccess(true);
+
+      childPublic = new Parse.Object('RelChild', { value: 'public child' });
+      childPublic.setACL(publicAcl);
+      childPrivateLink = new Parse.Object('RelChild', { value: 'private-linked child' });
+      childPrivateLink.setACL(publicAcl);
+      await Parse.Object.saveAll([childPublic, childPrivateLink], { useMasterKey: true });
+
+      // Publicly readable owning object linked to childPublic.
+      parentPublic = new Parse.Object('RelParent', { name: 'public parent' });
+      parentPublic.setACL(publicAcl);
+      parentPublic.relation('members').add(childPublic);
+      await parentPublic.save(null, { useMasterKey: true });
+
+      // Owner-only owning object linked to childPrivateLink. A public caller
+      // cannot read this parent, so it must never learn childPrivateLink is a
+      // member of it.
+      const privateAcl = new Parse.ACL();
+      privateAcl.setPublicReadAccess(false);
+      privateAcl.setPublicWriteAccess(false);
+      parentPrivate = new Parse.Object('RelParent', { name: 'private parent' });
+      parentPrivate.setACL(privateAcl);
+      parentPrivate.relation('members').add(childPrivateLink);
+      await parentPrivate.save(null, { useMasterKey: true });
+    });
+
+    it('rejects a $relatedTo whose owning objectId is a query operator', async () => {
+      const res = await queryChild(relatedToWhere(pointer({ $gt: '' }), 'members'));
+      expect(res.data.code).toBe(Parse.Error.INVALID_QUERY);
+      // The membership of the unreadable private parent must not leak.
+      expect(res.data.results).toBeUndefined();
+    });
+
+    it('rejects a $relatedTo whose owning objectId uses $ne', async () => {
+      const res = await queryChild(relatedToWhere(pointer({ $ne: 'does-not-exist' }), 'members'));
+      expect(res.data.code).toBe(Parse.Error.INVALID_QUERY);
+    });
+
+    it('rejects an operator owning objectId on the count oracle variant', async () => {
+      const res = await queryChild(relatedToWhere(pointer({ $gt: '' }), 'members'), {
+        count: 1,
+        limit: 0,
+      });
+      expect(res.data.code).toBe(Parse.Error.INVALID_QUERY);
+      expect(res.data.count).toBeUndefined();
+    });
+
+    it('rejects an operator owning objectId nested in $or', async () => {
+      const res = await queryChild({ $or: [relatedToWhere(pointer({ $gt: '' }), 'members')] });
+      expect(res.data.code).toBe(Parse.Error.INVALID_QUERY);
+    });
+
+    it('rejects a $relatedTo whose owning className is not a string', async () => {
+      const res = await queryChild(
+        relatedToWhere(
+          { __type: 'Pointer', className: { $gt: '' }, objectId: parentPublic.id },
+          'members'
+        )
+      );
+      expect(res.data.code).toBe(Parse.Error.INVALID_QUERY);
+    });
+
+    it('rejects a $relatedTo whose relation key is not a string', async () => {
+      const res = await queryChild(relatedToWhere(pointer(parentPublic.id), { $gt: '' }));
+      expect(res.data.code).toBe(Parse.Error.INVALID_QUERY);
+    });
+
+    it('still returns related objects for a well-formed owning objectId', async () => {
+      const res = await queryChild(relatedToWhere(pointer(parentPublic.id), 'members'));
+      expect(res.data.results.length).toBe(1);
+      expect(res.data.results[0].objectId).toBe(childPublic.id);
+    });
+
+    it('rejects an operator owning objectId even for the master key', async () => {
+      const res = await queryChild(relatedToWhere(pointer({ $gt: '' }), 'members'), {}, {
+        'X-Parse-Master-Key': Parse.masterKey,
+      });
+      expect(res.data.code).toBe(Parse.Error.INVALID_QUERY);
+      expect(res.data.results).toBeUndefined();
+    });
+  });
+
   describe('(GHSA-9jpp-xhh6-75mf) LiveQuery does not apply role-scoped protectedFields', () => {
     const { sleep } = require('../lib/TestUtils');
     const roleName = 'LqProtectedRole';

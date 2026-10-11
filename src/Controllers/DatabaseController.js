@@ -1134,6 +1134,20 @@ class DatabaseController {
     }
     var relatedTo = query['$relatedTo'];
     if (relatedTo) {
+      // The owning reference and relation key must be well-formed strings. A
+      // non-string objectId (e.g. a query operator such as `{$gt: ''}`) would
+      // pass `authorizeRelatedToQuery` existentially against any readable owner
+      // while `relatedIds` applies the operator across every owner, disclosing
+      // relation membership of owning objects the caller cannot read.
+      const relatedToObject = relatedTo.object;
+      if (
+        !relatedToObject ||
+        typeof relatedToObject.className !== 'string' ||
+        typeof relatedToObject.objectId !== 'string' ||
+        typeof relatedTo.key !== 'string'
+      ) {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Invalid $relatedTo constraint.');
+      }
       return this.authorizeRelatedToQuery(relatedTo, auth, aclGroup, isMaster, schemaController)
         .then(canReadOwningObject => {
           delete query['$relatedTo'];
