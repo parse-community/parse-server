@@ -1,3 +1,10 @@
+## [8.6.104](https://github.com/parse-community/parse-server/compare/8.6.103...8.6.104) (2026-10-11)
+
+
+### Bug Fixes
+
+* SMS MFA login code request saves other login request fields with master privileges ([GHSA-9rh6-r4ph-367v](https://github.com/parse-community/parse-server/security/advisories/GHSA-9rh6-r4ph-367v)) ([#10782](https://github.com/parse-community/parse-server/issues/10782)) ([7433e30](https://github.com/parse-community/parse-server/commit/7433e30f1d91e9c06f046083d222df3197256157))
+
 ## [8.6.103](https://github.com/parse-community/parse-server/compare/8.6.102...8.6.103) (2026-10-10)
 
 
