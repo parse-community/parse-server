@@ -34,23 +34,15 @@ function stripUndefined(obj) {
     return obj;
   }
   if (Array.isArray(obj)) {
-    for (let i = 0; i < obj.length; i++) {
-      if (obj[i] === undefined) {
-        obj[i] = null;
-      } else {
-        stripUndefined(obj[i]);
-      }
-    }
-    return obj;
+    return obj.map(item => (item === undefined ? null : stripUndefined(item)));
   }
+  const result = {};
   for (const key of Object.keys(obj)) {
-    if (obj[key] === undefined) {
-      delete obj[key];
-    } else {
-      stripUndefined(obj[key]);
+    if (obj[key] !== undefined) {
+      result[key] = stripUndefined(obj[key]);
     }
   }
-  return obj;
+  return result;
 }
 
 function ParseServerRESTController(applicationId, router) {

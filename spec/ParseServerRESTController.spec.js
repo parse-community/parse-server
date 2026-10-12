@@ -921,6 +921,30 @@ describe('ParseServerRESTController', () => {
     expect('absentField' in getRes).toBe(false);
   });
 
+  it('should not throw when request body is frozen (directAccess)', async () => {
+    const createRes = await RESTController.request('POST', '/classes/MyObject', {
+      presentField: 'hello',
+    });
+    expect(createRes.objectId).toBeDefined();
+
+    const body = Object.freeze({
+      presentField: 'updated',
+      absentField: undefined,
+      nested: Object.freeze({ absentField: undefined, presentField: 'value' }),
+      arrayWithUndefined: Object.freeze([1, undefined, 3]),
+    });
+
+    await RESTController.request('PUT', `/classes/MyObject/${createRes.objectId}`, body);
+
+    const getRes = await RESTController.request('GET', `/classes/MyObject/${createRes.objectId}`);
+
+    expect(getRes.presentField).toBe('updated');
+    expect('absentField' in getRes).toBe(false);
+    expect(getRes.nested.presentField).toBe('value');
+    expect('absentField' in getRes.nested).toBe(false);
+    expect(getRes.arrayWithUndefined).toEqual([1, null, 3]);
+  });
+
   it('should not convert undefined values to null on update without directAccess (HTTP mode)', async () => {
     const serverURL = 'http://localhost:8378/1';
     const headers = {
