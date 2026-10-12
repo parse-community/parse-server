@@ -27,6 +27,11 @@ export class CacheAdapter {
 
   /**
    * Empty a cache
+   * @param {String} prefix Optional key prefix limiting the scope of the
+   * operation to keys of the form `<prefix>:*`. When omitted, the whole cache
+   * is emptied. Implementing scoped clearing is optional: an adapter that
+   * ignores this parameter empties the whole cache, which remains correct as
+   * long as the adapter is the sole owner of its storage.
    */
-  clear() {}
+  clear(prefix) {}
 }
