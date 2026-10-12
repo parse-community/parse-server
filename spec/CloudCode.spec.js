@@ -2345,6 +2345,27 @@ describe('cloud functions', () => {
 });
 
 describe('beforeSave hooks', () => {
+  it('should reject with the trigger error when the object cannot be serialized for logging', async () => {
+    Parse.Cloud.beforeSave('MyObject', req => {
+      const circular = {};
+      circular.self = circular;
+      req.object.set('circular', circular);
+      throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'blocked');
+    });
+    await expectAsync(new Parse.Object('MyObject').save()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.SCRIPT_FAILED, 'blocked')
+    );
+  });
+
+  it('should settle when a successful trigger leaves an object that cannot be serialized', async () => {
+    Parse.Cloud.beforeSave('MyObject', req => {
+      const circular = {};
+      circular.self = circular;
+      req.object.set('circular', circular);
+    });
+    await expectAsync(new Parse.Object('MyObject').save()).toBeRejected();
+  });
+
   it('should have request headers', done => {
     Parse.Cloud.beforeSave('MyObject', req => {
       expect(req.headers).toBeDefined();
@@ -2977,6 +2998,44 @@ describe('beforeFind hooks', () => {
 });
 
 describe('afterFind hooks', () => {
+  const invalidAfterFindError = new Parse.Error(
+    Parse.Error.SCRIPT_FAILED,
+    'afterFind trigger must return an array of objects.'
+  );
+
+  for (const [type, value] of [
+    ['an object', { foo: 'bar' }],
+    ['a string', 'invalid'],
+    ['a number', 1],
+  ]) {
+    it(`should reject a find when afterFind returns ${type}`, async () => {
+      Parse.Cloud.afterFind('MyObject', () => value);
+      await new Parse.Object('MyObject').save();
+      await expectAsync(new Parse.Query('MyObject').find()).toBeRejectedWith(
+        invalidAfterFindError
+      );
+    });
+  }
+
+  it('should reject a get when afterFind returns a non-array', async () => {
+    Parse.Cloud.afterFind('MyObject', () => ({ foo: 'bar' }));
+    const obj = await new Parse.Object('MyObject').save();
+    await expectAsync(new Parse.Query('MyObject').get(obj.id)).toBeRejectedWith(
+      invalidAfterFindError
+    );
+  });
+
+  for (const value of [null, undefined]) {
+    it(`should return the original objects when afterFind returns ${value}`, async () => {
+      Parse.Cloud.afterFind('MyObject', () => value);
+      const obj = await new Parse.Object('MyObject').save({ key: 'value' });
+      const results = await new Parse.Query('MyObject').find();
+      expect(results.length).toBe(1);
+      expect(results[0].id).toBe(obj.id);
+      expect(results[0].get('key')).toBe('value');
+    });
+  }
+
   it('should add afterFind trigger', done => {
     Parse.Cloud.afterFind('MyObject', req => {
       const q = req.query;
