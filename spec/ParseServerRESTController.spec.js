@@ -984,4 +984,12 @@ describe('ParseServerRESTController', () => {
     expect(getRes.data.absentField).toBeUndefined();
     expect('absentField' in getRes.data).toBe(false);
   });
+
+  it('handles an object ID without alphanumeric characters', async () => {
+    await reconfigureServer({ allowCustomObjectId: true });
+    await RESTController.request('POST', '/classes/TestObject', { objectId: '-', key: 'value' });
+    const res = await RESTController.request('GET', '/classes/TestObject/-');
+    expect(res.objectId).toBe('-');
+    expect(res.key).toBe('value');
+  });
 });

@@ -269,4 +269,37 @@ describe('Deprecator', () => {
       })
     );
   });
+
+  it('registers a deprecation entry for enableLiveQueryClassLevelPermissionRoles', () => {
+    const Deprecations = require('../lib/Deprecator/Deprecations');
+    const entry = Deprecations.find(
+      d => d.optionKey === 'enableLiveQueryClassLevelPermissionRoles'
+    );
+    expect(entry).toBeDefined();
+    expect(entry.changeNewDefault).toBe('true');
+    expect(entry.solution).toContain('enableLiveQueryClassLevelPermissionRoles');
+  });
+
+  it('logs deprecation for enableLiveQueryClassLevelPermissionRoles when not set', async () => {
+    const logSpy = spyOn(Deprecator, '_logOption').and.callFake(() => {});
+
+    await reconfigureServer();
+    expect(logSpy).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        optionKey: 'enableLiveQueryClassLevelPermissionRoles',
+        changeNewDefault: 'true',
+      })
+    );
+  });
+
+  it('does not log deprecation for enableLiveQueryClassLevelPermissionRoles when explicitly set', async () => {
+    const logSpy = spyOn(Deprecator, '_logOption').and.callFake(() => {});
+
+    await reconfigureServer({ enableLiveQueryClassLevelPermissionRoles: false });
+    expect(logSpy).not.toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        optionKey: 'enableLiveQueryClassLevelPermissionRoles',
+      })
+    );
+  });
 });

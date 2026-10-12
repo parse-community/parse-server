@@ -1,6 +1,7 @@
 'use strict';
 
 const Config = require('../lib/Config');
+const { resolvingPromise } = require('../lib/TestUtils');
 
 describe('routeAllowList', () => {
   describe('config validation', () => {
@@ -470,16 +471,17 @@ describe('routeAllowList', () => {
       it('completes email verification from the emailed link when routeAllowList is empty array', async () => {
         const config = { ...pagesConfig(), routeAllowList: [] };
         await reconfigureServer(config);
+        const sendPromise = resolvingPromise();
         const sendVerificationEmail = spyOn(
           config.emailAdapter,
           'sendVerificationEmail'
-        ).and.callThrough();
+        ).and.callFake(() => sendPromise.resolve());
         const user = new Parse.User();
         user.setUsername('exampleUsername');
         user.setPassword('examplePassword');
         user.set('email', 'user@example.com');
         await user.signUp(null, { useMasterKey: true });
-        await jasmine.timeout();
+        await sendPromise;
         const link = sendVerificationEmail.calls.all()[0].args[0].link;
         const response = await request({ url: link, followRedirects: false });
         expect(response.status).toBe(200);

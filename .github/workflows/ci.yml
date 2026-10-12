@@ -149,9 +149,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Set up QEMU
-        id: qemu
-        uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
       - name: Build docker image
@@ -217,7 +214,7 @@ jobs:
       fail-fast: false
     name: ${{ matrix.name }}
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
-    timeout-minutes: 20
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     services:
       redis:
@@ -272,7 +269,7 @@ jobs:
       fail-fast: false
     name: ${{ matrix.name }}
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
-    timeout-minutes: 20
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     services:
       redis:

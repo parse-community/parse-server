@@ -29,6 +29,20 @@ describe('rest query', () => {
       });
   });
 
+  it('rejects malformed where before running subqueries', async () => {
+    spyOn(database, 'find').and.callThrough();
+    const where = {
+      $or: { 0: { ptr: { $inQuery: { className: 'OtherObject', where: {} } } }, length: 1 },
+    };
+    await expectAsync(rest.find(config, auth.master(config), 'TestObject', where)).toBeRejectedWith(
+      jasmine.objectContaining({
+        code: Parse.Error.INVALID_QUERY,
+        message: 'Bad $or format - use an array value.',
+      })
+    );
+    expect(database.find).not.toHaveBeenCalled();
+  });
+
   it('query with limit', done => {
     rest
       .create(config, nobody, 'TestObject', { foo: 'baz' })

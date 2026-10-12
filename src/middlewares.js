@@ -184,6 +184,9 @@ export async function handleParseHeaders(req, res, next) {
           }
         }
         delete req.body._context;
+      } else if (req.body._context === null) {
+        // null context is equivalent to no context
+        delete req.body._context;
       }
       if (req.body._ContentType) {
         if (typeof req.body._ContentType !== 'string') {
@@ -294,7 +297,7 @@ const handleRateLimit = async (req, res, next) => {
     await Promise.all(
       rateLimits.map(async limit => {
         const pathExp = limit.path.regexp || limit.path;
-        if (pathExp.test(req.path)) {
+        if (pathExp.test(req.path) || (req._graphQLPath && pathExp.test(req._graphQLPath))) {
           await limit.handler(req, res, err => {
             if (err) {
               if (err.code === Parse.Error.CONNECTION_FAILED) {

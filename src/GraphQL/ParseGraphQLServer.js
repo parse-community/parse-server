@@ -70,19 +70,28 @@ const IntrospectionControlPlugin = (publicIntrospection) => ({
         return;
       }
 
-      const query = requestContext.request.query;
-
+      // Apollo resolves the operation text into `requestContext.source` before this hook
+      // runs and guarantees it is set here. It is NOT the same as `request.query`: on an
+      // automatic persisted query cache hit the text comes from the persisted-query cache
+      // and `request.query` is never populated, so reading `request.query` would leave
+      // nothing to inspect and silently skip both guards below. Apollo enables automatic
+      // persisted queries by default, so that path is reachable on every deployment. Fall
+      // back to `request.query` only for robustness, and fail closed when neither is a
+      // string so that an operation which cannot be inspected is never allowed through.
+      const query = requestContext.source ?? requestContext.request.query;
 
       // Fast path: simple string check for __schema
       // This avoids parsing the query in most cases
-      if (query?.includes('__schema')) {
+      // An operation text that is not a string cannot be inspected at all, so it is denied
+      // for the same reason: this guard must never let an operation through uninspected.
+      if (typeof query !== 'string' || query.includes('__schema')) {
         return throwIntrospectionError();
       }
 
       // Smart check for __type: only parse if the string is present
       // This avoids false positives (e.g., "__type" in strings or comments)
       // while still being efficient for the common case
-      if (query?.includes('__type') && hasTypeIntrospection(query)) {
+      if (query.includes('__type') && hasTypeIntrospection(query)) {
         return throwIntrospectionError();
       }
     },
@@ -267,7 +276,12 @@ const SchemaSuggestionsControlPlugin = (publicIntrospection) => ({
           : body?.kind === 'incremental'
             ? body.initialResult.errors
             : undefined;
-      const operationText = requestContext.request?.query;
+      // Same as in `IntrospectionControlPlugin`: `requestContext.source` carries the
+      // operation text for every request, including an automatic persisted query cache hit
+      // where `request.query` is undefined. Reading `request.query` alone would make the
+      // allowlist below empty on those requests and redact type names the caller wrote
+      // themselves.
+      const operationText = requestContext.source ?? requestContext.request?.query;
       errors?.forEach(error => {
         error.message = stripSchemaIdentifiers(error.message, operationText);
         if (Array.isArray(error.extensions?.stacktrace)) {
@@ -334,6 +348,11 @@ class ParseGraphQLServer {
     const createServer = async () => {
       try {
         const { schema, context } = await this._getGraphQLOptions();
+        // A value passed to this GraphQL server takes precedence; otherwise use the Parse Server
+        // option, where the option is documented and where the security check reads it.
+        const publicIntrospection =
+          this.config.graphQLPublicIntrospection ??
+          this.parseServer.config.graphQLPublicIntrospection;
         const apollo = new ApolloServer({
           csrfPrevention: {
             // See https://www.apollographql.com/docs/router/configuration/csrf/
@@ -343,7 +362,7 @@ class ParseGraphQLServer {
           // We need always true introspection because apollo server have changing behavior based on the NODE_ENV variable
           // we delegate the introspection control to the IntrospectionControlPlugin
           introspection: true,
-          plugins: [ApolloServerPluginCacheControlDisabled(), IntrospectionControlPlugin(this.config.graphQLPublicIntrospection), SchemaSuggestionsControlPlugin(this.config.graphQLPublicIntrospection), createComplexityValidationPlugin(() => this.parseServer.config.requestComplexity)],
+          plugins: [ApolloServerPluginCacheControlDisabled(), IntrospectionControlPlugin(publicIntrospection), SchemaSuggestionsControlPlugin(publicIntrospection), createComplexityValidationPlugin(() => this.parseServer.config.requestComplexity)],
           schema,
         });
         await apollo.start();
@@ -393,6 +412,11 @@ class ParseGraphQLServer {
       requiredParameter('You must provide an Express.js app instance!');
     }
     app.use(this.config.graphQLPath, allowCrossDomain(this.parseServer.config.appId));
+    app.use(this.config.graphQLPath, (req, _res, next) => {
+      // Rate limit path for any URL variant of the endpoint
+      req._graphQLPath = this.config.graphQLPath;
+      next();
+    });
     app.use(this.config.graphQLPath, handleParseHeaders);
     app.use(this.config.graphQLPath, handleParseSession);
     this.applyRequestContextMiddleware(app, this.parseServer.config);

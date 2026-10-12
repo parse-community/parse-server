@@ -30,4 +30,14 @@ describe('PromiseRouter', () => {
       }
     );
   });
+
+  it('passes route parameters to the handler as decoded from the path', () => {
+    const router = new PromiseRouter();
+    router.route('GET', '/classes/:className/:objectId', () => Promise.resolve({ response: {} }));
+    for (const objectId of ['-', '_', '~', ' ', 'abc']) {
+      const { params } = router.match('GET', `/classes/123/${encodeURIComponent(objectId)}`);
+      expect(params.className).toBe('123');
+      expect(params.objectId).toBe(objectId);
+    }
+  });
 });
