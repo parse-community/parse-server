@@ -2122,10 +2122,11 @@ describe('Cloud Code', () => {
       Parse.Cloud.beforeSave('TestObject', ({ object }) => {
         object.revert('field.sub');
       });
-      const subscription = await new Parse.Query('TestObject')
-        .equalTo('objectId', obj.id)
-        .subscribe();
+      const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
       try {
+        const subscription = await new Parse.Query('TestObject')
+          .equalTo('objectId', obj.id)
+          .subscribe();
         const update = new Promise(resolve => subscription.on('update', resolve));
         obj.unset('field.sub');
         obj.increment('count');
@@ -2136,7 +2137,7 @@ describe('Cloud Code', () => {
         expect(updatedObject.get('count')).toBe(1);
         expect(obj.get('field')).toEqual({ sub: 'original' });
       } finally {
-        await subscription.unsubscribe();
+        await client.close();
       }
     });
   });
