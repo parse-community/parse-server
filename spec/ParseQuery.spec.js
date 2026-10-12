@@ -5764,5 +5764,245 @@ describe('Parse.Query testing', () => {
         expect(result.data.results.length).toBe(1);
       });
     });
+
+    describe('query operator format', () => {
+      let user;
+      let authHeaders;
+
+      beforeEach(async () => {
+        user = await Parse.User.signUp('formatUser', 'password');
+        authHeaders = {
+          'REST API key': restHeaders,
+          'session token': { ...restHeaders, 'X-Parse-Session-Token': user.getSessionToken() },
+          'master key': { ...restHeaders, 'X-Parse-Master-Key': 'test' },
+          'maintenance key': { ...restHeaders, 'X-Parse-Maintenance-Key': 'testing' },
+        };
+      });
+
+      const find = (where, headers, { path = 'classes/TestClass', qs = {} } = {}) =>
+        request({
+          method: 'GET',
+          url: `http://localhost:8378/1/${path}`,
+          qs: { ...qs, where: JSON.stringify(where) },
+          headers,
+        });
+
+      const expectInvalidQuery = async (where, error, options = {}) => {
+        const { auths = Object.keys(authHeaders) } = options;
+        for (const auth of auths) {
+          await expectAsync(find(where, authHeaders[auth], options))
+            .withContext(`${auth}: ${JSON.stringify(where)}`)
+            .toBeRejectedWith(
+              jasmine.objectContaining({
+                status: 400,
+                data: { code: Parse.Error.INVALID_QUERY, error },
+              })
+            );
+        }
+      };
+
+      it('rejects $options without $regex', async () => {
+        for (const where of [
+          { field: { $options: 'i' } },
+          { field: { $options: 5 } },
+          { $or: [{ field: { $options: 'i' } }] },
+          { $and: [{ field: { $options: 'i' } }] },
+          { $nor: [{ field: { $options: 'i' } }] },
+        ]) {
+          await expectInvalidQuery(where, '$options requires $regex');
+        }
+      });
+
+      it('accepts $options with $regex in logical operator', async () => {
+        await new Parse.Object('TestClass', { field: 'hello' }).save();
+        const response = await find(
+          { $or: [{ field: { $regex: 'HELLO', $options: 'i' } }] },
+          authHeaders['REST API key']
+        );
+        expect(response.data.results.length).toBe(1);
+      });
+
+      for (const op of ['$or', '$and', '$nor']) {
+        it(`rejects ${op} value that is not an array`, async () => {
+          const error =
+            op === '$nor'
+              ? 'Bad $nor format - use an array of at least 1 value.'
+              : `Bad ${op} format - use an array value.`;
+          for (const value of [
+            'x',
+            {},
+            { field: 'a' },
+            { 0: { field: 'a' }, length: 1 },
+            1,
+            true,
+            null,
+            false,
+            0,
+            '',
+          ]) {
+            await expectInvalidQuery({ [op]: value }, error);
+          }
+        });
+
+        it(`rejects empty ${op} array`, async () => {
+          await expectInvalidQuery(
+            { [op]: [] },
+            `Bad ${op} format - use an array of at least 1 value.`
+          );
+        });
+
+        it(`rejects ${op} element that is not an object`, async () => {
+          for (const value of [[null], [1], ['x'], [true], [[{ field: 'a' }]]]) {
+            await expectInvalidQuery(
+              { [op]: value },
+              `Bad ${op} format - use an array of objects.`
+            );
+          }
+        });
+      }
+
+      it('rejects malformed logical operator nested in logical operator', async () => {
+        await expectInvalidQuery(
+          { $and: [{ $or: [] }] },
+          'Bad $or format - use an array of at least 1 value.'
+        );
+        await expectInvalidQuery({ $or: [{ $and: 'x' }] }, 'Bad $and format - use an array value.');
+        await expectInvalidQuery(
+          { $or: [{ $nor: [null] }] },
+          'Bad $nor format - use an array of objects.'
+        );
+      });
+
+      it('rejects malformed logical operator in subquery', async () => {
+        await expectInvalidQuery(
+          { ptr: { $inQuery: { className: 'TestClass2', where: { $or: 'x' } } } },
+          'Bad $or format - use an array value.'
+        );
+        await expectInvalidQuery(
+          { ptr: { $notInQuery: { className: 'TestClass2', where: { $or: [null] } } } },
+          'Bad $or format - use an array of objects.'
+        );
+        await expectInvalidQuery(
+          {
+            field: {
+              $select: { query: { className: 'TestClass2', where: { $and: [] } }, key: 'field' },
+            },
+          },
+          'Bad $and format - use an array of at least 1 value.'
+        );
+        await expectInvalidQuery(
+          {
+            field: {
+              $dontSelect: {
+                query: { className: 'TestClass2', where: { field: { $options: 'i' } } },
+                key: 'field',
+              },
+            },
+          },
+          '$options requires $regex'
+        );
+      });
+
+      it('rejects malformed logical operator in count query', async () => {
+        const qs = { count: 1, limit: 0 };
+        await expectInvalidQuery({ $or: 'x' }, 'Bad $or format - use an array value.', { qs });
+        await expectInvalidQuery(
+          { $and: [] },
+          'Bad $and format - use an array of at least 1 value.',
+          { qs }
+        );
+        await expectInvalidQuery({ $nor: [null] }, 'Bad $nor format - use an array of objects.', {
+          qs,
+        });
+      });
+
+      it('rejects malformed logical operator on class with pointer permissions', async () => {
+        const Config = require('../lib/Config');
+        await new Parse.Object('PointerClass', { owner: user, field: 'hello' }).save(null, {
+          useMasterKey: true,
+        });
+        const schema = await Config.get(Parse.applicationId).database.loadSchema();
+        await schema.updateClass(
+          'PointerClass',
+          {},
+          { find: {}, get: {}, readUserFields: ['owner'] }
+        );
+        const options = {
+          auths: ['REST API key', 'session token', 'master key'],
+          path: 'classes/PointerClass',
+        };
+        await expectInvalidQuery(
+          { $or: [] },
+          'Bad $or format - use an array of at least 1 value.',
+          options
+        );
+        await expectInvalidQuery(
+          { $or: [null] },
+          'Bad $or format - use an array of objects.',
+          options
+        );
+        await expectInvalidQuery({ field: { $options: 'i' } }, '$options requires $regex', options);
+      });
+
+      it('rejects malformed logical operator in sessions query', async () => {
+        const options = { auths: ['session token'], path: 'sessions' };
+        await expectInvalidQuery({ $or: 'x' }, 'Bad $or format - use an array value.', options);
+        await expectInvalidQuery(
+          { $or: [] },
+          'Bad $or format - use an array of at least 1 value.',
+          options
+        );
+        await expectInvalidQuery(
+          { $or: [null] },
+          'Bad $or format - use an array of objects.',
+          options
+        );
+        const response = await request({
+          method: 'GET',
+          url: 'http://localhost:8378/1/sessions',
+          headers: authHeaders['session token'],
+        });
+        expect(response.data.results.length).toBe(1);
+      });
+
+      it('accepts empty object and empty array elements in $and', async () => {
+        await Parse.Object.saveAll([
+          new Parse.Object('TestClass', { field: 'hello' }),
+          new Parse.Object('TestClass', { field: 'world' }),
+        ]);
+        for (const where of [
+          { $and: [{ field: 'hello' }, {}] },
+          { $and: [[], { field: 'hello' }] },
+        ]) {
+          for (const auth of ['REST API key', 'master key']) {
+            const response = await find(where, authHeaders[auth]);
+            expect(response.data.results.length)
+              .withContext(`${auth}: ${JSON.stringify(where)}`)
+              .toBe(1);
+          }
+        }
+      });
+
+      it_only_db('mongo')(
+        'accepts empty object and empty array elements in $or and $nor',
+        async () => {
+          await Parse.Object.saveAll([
+            new Parse.Object('TestClass', { field: 'hello' }),
+            new Parse.Object('TestClass', { field: 'world' }),
+          ]);
+          for (const [where, count] of [
+            [{ $or: [{}] }, 2],
+            [{ $or: [{ field: 'hello' }, {}] }, 2],
+            [{ $or: [[], { field: 'hello' }] }, 2],
+            [{ $and: [{}] }, 2],
+            [{ $nor: [{}] }, 0],
+            [{ $nor: [{ field: 'hello' }, {}] }, 0],
+          ]) {
+            const response = await find(where, authHeaders['REST API key']);
+            expect(response.data.results.length).withContext(JSON.stringify(where)).toBe(count);
+          }
+        }
+      );
+    });
   });
 });

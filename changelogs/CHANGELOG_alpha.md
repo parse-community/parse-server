@@ -1,3 +1,73 @@
+## [9.10.5-alpha.6](https://github.com/parse-community/parse-server/compare/9.10.5-alpha.5...9.10.5-alpha.6) (2026-10-11)
+
+
+### Bug Fixes
+
+* Relation `$relatedTo` query using an operator instead of an object ID bypasses owning-object ACL ([GHSA-58m4-cqvw-4vgh](https://github.com/parse-community/parse-server/security/advisories/GHSA-58m4-cqvw-4vgh)) ([#10783](https://github.com/parse-community/parse-server/issues/10783)) ([36af858](https://github.com/parse-community/parse-server/commit/36af858405d3a844ce3c8744134c209e3c3231c2))
+
+## [9.10.5-alpha.5](https://github.com/parse-community/parse-server/compare/9.10.5-alpha.4...9.10.5-alpha.5) (2026-10-11)
+
+
+### Bug Fixes
+
+* SMS MFA login code request saves other login request fields with master privileges ([GHSA-9rh6-r4ph-367v](https://github.com/parse-community/parse-server/security/advisories/GHSA-9rh6-r4ph-367v)) ([#10781](https://github.com/parse-community/parse-server/issues/10781)) ([e2a1474](https://github.com/parse-community/parse-server/commit/e2a14744e8e3a2f7b3a24c830ce523aea72229e5))
+
+## [9.10.5-alpha.4](https://github.com/parse-community/parse-server/compare/9.10.5-alpha.3...9.10.5-alpha.4) (2026-10-10)
+
+
+### Bug Fixes
+
+* LiveQuery subscriptions using a `$or` query can receive another user's events, including session tokens ([GHSA-349r-988w-x3jp](https://github.com/parse-community/parse-server/security/advisories/GHSA-349r-988w-x3jp)) ([#10776](https://github.com/parse-community/parse-server/issues/10776)) ([a7821c6](https://github.com/parse-community/parse-server/commit/a7821c6aebb4470c3d1e04e60295b02e7b365667))
+
+## [9.10.5-alpha.3](https://github.com/parse-community/parse-server/compare/9.10.5-alpha.2...9.10.5-alpha.3) (2026-10-10)
+
+
+### Bug Fixes
+
+* Malformed query operators `$or`, `$and`, `$nor`, `$options` cause internal server error ([#10775](https://github.com/parse-community/parse-server/issues/10775)) ([c56ccdf](https://github.com/parse-community/parse-server/commit/c56ccdfdc6799201be2b9b82b96ef8854b817676))
+
+## [9.10.5-alpha.2](https://github.com/parse-community/parse-server/compare/9.10.5-alpha.1...9.10.5-alpha.2) (2026-10-10)
+
+
+### Bug Fixes
+
+* Custom auth adapters that extend the AuthAdapter class accept any authData ([GHSA-rq3w-5c6f-p7wr](https://github.com/parse-community/parse-server/security/advisories/GHSA-rq3w-5c6f-p7wr)) ([#10773](https://github.com/parse-community/parse-server/issues/10773)) ([bee4082](https://github.com/parse-community/parse-server/commit/bee4082407da2d459c3a44808b150f0c242292e7))
+
+## [9.10.5-alpha.1](https://github.com/parse-community/parse-server/compare/9.10.4...9.10.5-alpha.1) (2026-10-09)
+
+
+### Bug Fixes
+
+* Login with master key overwrites stored MFA settings of user ([#10771](https://github.com/parse-community/parse-server/issues/10771)) ([28bb53b](https://github.com/parse-community/parse-server/commit/28bb53b7c18a349362a522c62a24775c7e9b27a6))
+
+## [9.10.4-alpha.4](https://github.com/parse-community/parse-server/compare/9.10.4-alpha.3...9.10.4-alpha.4) (2026-10-08)
+
+
+### Bug Fixes
+
+* Unauthenticated deletion of class schemas removes class-level permissions on MongoDB ([GHSA-qmg9-m772-5rm7](https://github.com/parse-community/parse-server/security/advisories/GHSA-qmg9-m772-5rm7)) ([#10767](https://github.com/parse-community/parse-server/issues/10767)) ([2114fca](https://github.com/parse-community/parse-server/commit/2114fcab98d9b154dc761b6b428bc364b65a5611))
+
+## [9.10.4-alpha.3](https://github.com/parse-community/parse-server/compare/9.10.4-alpha.2...9.10.4-alpha.3) (2026-10-08)
+
+
+### Bug Fixes
+
+* Object write with a reserved field name can make reads fail on MongoDB ([GHSA-gwrq-q25v-g8mr](https://github.com/parse-community/parse-server/security/advisories/GHSA-gwrq-q25v-g8mr)) ([#10763](https://github.com/parse-community/parse-server/issues/10763)) ([d90b841](https://github.com/parse-community/parse-server/commit/d90b8414f2fb6dfef0e777e86e9558df6851b14c))
+
+## [9.10.4-alpha.2](https://github.com/parse-community/parse-server/compare/9.10.4-alpha.1...9.10.4-alpha.2) (2026-10-07)
+
+
+### Bug Fixes
+
+* Batch and direct access requests fail for object IDs without alphanumeric characters or class names without letters ([#10761](https://github.com/parse-community/parse-server/issues/10761)) ([c8d5ebb](https://github.com/parse-community/parse-server/commit/c8d5ebb163ac9ec7040990fce2a4bdbc49048b9e))
+
+## [9.10.4-alpha.1](https://github.com/parse-community/parse-server/compare/9.10.3...9.10.4-alpha.1) (2026-10-07)
+
+
+### Bug Fixes
+
+* GraphQL API fails when a class name or mutation alias collides with a built-in name ([#10757](https://github.com/parse-community/parse-server/issues/10757)) ([866e82b](https://github.com/parse-community/parse-server/commit/866e82b98a57398fefb2a72c4f7c92196dce66a8))
+
 ## [9.10.3-alpha.3](https://github.com/parse-community/parse-server/compare/9.10.3-alpha.2...9.10.3-alpha.3) (2026-10-05)
 
 

@@ -2103,6 +2103,380 @@ describe('OTP TOTP auth adatper', () => {
     await user.fetch({ useMasterKey: true });
     expect(user.get('authData').mfa.secret).toBeDefined();
   });
+
+  it('rejects login with master key and incorrect TOTP token', async () => {
+    const user = await Parse.User.signUp('username', 'password');
+    const OTPAuth = require('otpauth');
+    const secret = new OTPAuth.Secret();
+    const totp = new OTPAuth.TOTP({
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
+    const token = totp.generate();
+    await user.save(
+      { authData: { mfa: { secret: secret.base32, token } } },
+      { sessionToken: user.getSessionToken() }
+    );
+    await user.fetch({ useMasterKey: true });
+    const enrolled = user.get('authData').mfa;
+    const logIn = requestHeaders =>
+      request({
+        headers: requestHeaders,
+        method: 'POST',
+        url: 'http://localhost:8378/1/login',
+        body: JSON.stringify({
+          username: 'username',
+          password: 'password',
+          authData: {
+            mfa: {
+              token: 'abcd',
+            },
+          },
+        }),
+      }).catch(e => {
+        throw e.data;
+      });
+    await expectAsync(logIn({ ...headers, 'X-Parse-Master-Key': 'test' })).toBeRejectedWith({
+      code: Parse.Error.SCRIPT_FAILED,
+      error: 'Invalid MFA token',
+    });
+    await user.fetch({ useMasterKey: true });
+    expect(user.get('authData').mfa).toEqual(enrolled);
+    await expectAsync(logIn(headers)).toBeRejectedWith({
+      code: Parse.Error.SCRIPT_FAILED,
+      error: 'Invalid MFA token',
+    });
+  });
+
+  it('can login with master key and valid TOTP token without changing stored MFA', async () => {
+    const user = await Parse.User.signUp('username', 'password');
+    const OTPAuth = require('otpauth');
+    const secret = new OTPAuth.Secret();
+    const totp = new OTPAuth.TOTP({
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
+    const token = totp.generate();
+    await user.save(
+      { authData: { mfa: { secret: secret.base32, token } } },
+      { sessionToken: user.getSessionToken() }
+    );
+    await user.fetch({ useMasterKey: true });
+    const enrolled = user.get('authData').mfa;
+    const response = await request({
+      headers: { ...headers, 'X-Parse-Master-Key': 'test' },
+      method: 'POST',
+      url: 'http://localhost:8378/1/login',
+      body: JSON.stringify({
+        username: 'username',
+        password: 'password',
+        authData: {
+          mfa: {
+            token: totp.generate(),
+          },
+        },
+      }),
+    }).then(res => res.data);
+    expect(response.objectId).toEqual(user.id);
+    expect(response.sessionToken).toBeDefined();
+    await user.fetch({ useMasterKey: true });
+    expect(user.get('authData').mfa).toEqual(enrolled);
+  });
+
+  it('consumes recovery code after use on login with master key', async () => {
+    const user = await Parse.User.signUp('username', 'password');
+    const OTPAuth = require('otpauth');
+    const secret = new OTPAuth.Secret();
+    const totp = new OTPAuth.TOTP({
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
+    const token = totp.generate();
+    await user.save(
+      { authData: { mfa: { secret: secret.base32, token } } },
+      { sessionToken: user.getSessionToken() }
+    );
+    await user.fetch({ useMasterKey: true });
+    const [recoveryCode, remainingCode] = user.get('authData').mfa.recovery;
+    const logIn = () =>
+      request({
+        headers: { ...headers, 'X-Parse-Master-Key': 'test' },
+        method: 'POST',
+        url: 'http://localhost:8378/1/login',
+        body: JSON.stringify({
+          username: 'username',
+          password: 'password',
+          authData: {
+            mfa: {
+              token: recoveryCode,
+            },
+          },
+        }),
+      }).catch(e => {
+        throw e.data;
+      });
+    await logIn();
+    await user.fetch({ useMasterKey: true });
+    expect(user.get('authData').mfa).toEqual({ secret: secret.base32, recovery: [remainingCode] });
+    await expectAsync(logIn()).toBeRejectedWith({
+      code: Parse.Error.SCRIPT_FAILED,
+      error: 'Invalid MFA token',
+    });
+  });
+
+  it('can replace MFA with master key', async () => {
+    const user = await Parse.User.signUp('username', 'password');
+    const OTPAuth = require('otpauth');
+    const secret = new OTPAuth.Secret();
+    const totp = new OTPAuth.TOTP({
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
+    const token = totp.generate();
+    await user.save(
+      { authData: { mfa: { secret: secret.base32, token } } },
+      { sessionToken: user.getSessionToken() }
+    );
+    const newSecret = new OTPAuth.Secret();
+    await user.save(
+      { authData: { mfa: { secret: newSecret.base32, recovery: [] } } },
+      { useMasterKey: true }
+    );
+    await user.fetch({ useMasterKey: true });
+    expect(user.get('authData').mfa).toEqual({ secret: newSecret.base32, recovery: [] });
+  });
+
+  it('rejects authData login with master key and incorrect TOTP token', async () => {
+    await reconfigureServer({
+      auth: {
+        fakeProvider: {
+          validateAppId: () => Promise.resolve(),
+          validateAuthData: () => Promise.resolve(),
+        },
+        mfa: {
+          enabled: true,
+          options: ['TOTP'],
+          algorithm: 'SHA1',
+          digits: 6,
+          period: 30,
+        },
+      },
+    });
+    const user = await Parse.User.logInWith('fakeProvider', {
+      authData: { id: 'user1', token: 'fakeToken' },
+    });
+    const OTPAuth = require('otpauth');
+    const secret = new OTPAuth.Secret();
+    const totp = new OTPAuth.TOTP({
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
+    const token = totp.generate();
+    await user.save(
+      { authData: { mfa: { secret: secret.base32, token } } },
+      { sessionToken: user.getSessionToken() }
+    );
+    await user.fetch({ useMasterKey: true });
+    const enrolled = user.get('authData').mfa;
+    await expectAsync(
+      request({
+        headers: { ...headers, 'X-Parse-Master-Key': 'test' },
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        body: JSON.stringify({
+          authData: {
+            fakeProvider: { id: 'user1', token: 'fakeToken' },
+            mfa: { token: 'abcd' },
+          },
+        }),
+      }).catch(e => {
+        throw e.data;
+      })
+    ).toBeRejectedWith({ code: Parse.Error.SCRIPT_FAILED, error: 'Invalid MFA token' });
+    await user.fetch({ useMasterKey: true });
+    expect(user.get('authData').mfa).toEqual(enrolled);
+  });
+
+  it('rejects authData login with master key and without TOTP token', async () => {
+    await reconfigureServer({
+      auth: {
+        fakeProvider: {
+          validateAppId: () => Promise.resolve(),
+          validateAuthData: () => Promise.resolve(),
+        },
+        mfa: {
+          enabled: true,
+          options: ['TOTP'],
+          algorithm: 'SHA1',
+          digits: 6,
+          period: 30,
+        },
+      },
+    });
+    const user = await Parse.User.logInWith('fakeProvider', {
+      authData: { id: 'user1', token: 'fakeToken' },
+    });
+    const OTPAuth = require('otpauth');
+    const secret = new OTPAuth.Secret();
+    const totp = new OTPAuth.TOTP({
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
+    const token = totp.generate();
+    await user.save(
+      { authData: { mfa: { secret: secret.base32, token } } },
+      { sessionToken: user.getSessionToken() }
+    );
+    await expectAsync(
+      request({
+        headers: { ...headers, 'X-Parse-Master-Key': 'test' },
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        body: JSON.stringify({
+          authData: {
+            fakeProvider: { id: 'user1', token: 'fakeToken' },
+            mfa: {},
+          },
+        }),
+      }).catch(e => {
+        throw e.data;
+      })
+    ).toBeRejectedWith({ code: Parse.Error.SCRIPT_FAILED, error: 'Invalid MFA token' });
+  });
+
+  it('can login with valid TOTP token in batch request with session token of user', async () => {
+    const user = await Parse.User.signUp('username', 'password');
+    const sessionToken = user.getSessionToken();
+    const OTPAuth = require('otpauth');
+    const secret = new OTPAuth.Secret();
+    const totp = new OTPAuth.TOTP({
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
+    const token = totp.generate();
+    await user.save({ authData: { mfa: { secret: secret.base32, token } } }, { sessionToken });
+    await user.fetch({ useMasterKey: true });
+    const enrolled = user.get('authData').mfa;
+    const response = await request({
+      headers: { ...headers, 'X-Parse-Session-Token': sessionToken },
+      method: 'POST',
+      url: 'http://localhost:8378/1/batch',
+      body: JSON.stringify({
+        requests: [
+          {
+            method: 'POST',
+            path: '/1/login',
+            body: {
+              username: 'username',
+              password: 'password',
+              authData: {
+                mfa: {
+                  token: totp.generate(),
+                },
+              },
+            },
+          },
+        ],
+      }),
+    }).then(res => res.data);
+    expect(response[0].error).toBeUndefined();
+    expect(response[0].success.objectId).toEqual(user.id);
+    expect(response[0].success.sessionToken).toBeDefined();
+    await user.fetch({ useMasterKey: true });
+    expect(user.get('authData').mfa).toEqual(enrolled);
+  });
+
+  it('rejects login with maintenance key and incorrect TOTP token', async () => {
+    const user = await Parse.User.signUp('username', 'password');
+    const OTPAuth = require('otpauth');
+    const secret = new OTPAuth.Secret();
+    const totp = new OTPAuth.TOTP({
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
+    const token = totp.generate();
+    await user.save(
+      { authData: { mfa: { secret: secret.base32, token } } },
+      { sessionToken: user.getSessionToken() }
+    );
+    await user.fetch({ useMasterKey: true });
+    const enrolled = user.get('authData').mfa;
+    await expectAsync(
+      request({
+        headers: { ...headers, 'X-Parse-Maintenance-Key': 'testing' },
+        method: 'POST',
+        url: 'http://localhost:8378/1/login',
+        body: JSON.stringify({
+          username: 'username',
+          password: 'password',
+          authData: {
+            mfa: {
+              token: 'abcd',
+            },
+          },
+        }),
+      }).catch(e => {
+        throw e.data;
+      })
+    ).toBeRejectedWith({ code: Parse.Error.SCRIPT_FAILED, error: 'Invalid MFA token' });
+    await user.fetch({ useMasterKey: true });
+    expect(user.get('authData').mfa).toEqual(enrolled);
+  });
+
+  it('rejects login with read-only master key and TOTP token', async () => {
+    const user = await Parse.User.signUp('username', 'password');
+    const OTPAuth = require('otpauth');
+    const secret = new OTPAuth.Secret();
+    const totp = new OTPAuth.TOTP({
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
+    const token = totp.generate();
+    await user.save(
+      { authData: { mfa: { secret: secret.base32, token } } },
+      { sessionToken: user.getSessionToken() }
+    );
+    await user.fetch({ useMasterKey: true });
+    const enrolled = user.get('authData').mfa;
+    await expectAsync(
+      request({
+        headers: { ...headers, 'X-Parse-Master-Key': 'read-only-test' },
+        method: 'POST',
+        url: 'http://localhost:8378/1/login',
+        body: JSON.stringify({
+          username: 'username',
+          password: 'password',
+          authData: {
+            mfa: {
+              token: totp.generate(),
+            },
+          },
+        }),
+      }).catch(e => {
+        throw e.data;
+      })
+    ).toBeRejectedWith({ code: Parse.Error.OPERATION_FORBIDDEN, error: 'Permission denied' });
+    await user.fetch({ useMasterKey: true });
+    expect(user.get('authData').mfa).toEqual(enrolled);
+  });
 });
 
 describe('OTP SMS auth adatper', () => {
@@ -2226,5 +2600,72 @@ describe('OTP SMS auth adatper', () => {
     const spy = spyOn(mfa, 'sendSMS').and.callThrough();
     await Parse.User.logIn('username', 'password');
     expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('rejects login with master key and incorrect SMS code', async () => {
+    const user = await Parse.User.signUp('username', 'password');
+    await user.save(
+      { authData: { mfa: { mobile: '+11111111111' } } },
+      { sessionToken: user.getSessionToken() }
+    );
+    await user.save(
+      { authData: { mfa: { mobile, token: code } } },
+      { sessionToken: user.getSessionToken() }
+    );
+    await user.fetch({ useMasterKey: true });
+    const enrolled = user.get('authData').mfa;
+    const res = await request({
+      headers: { ...headers, 'X-Parse-Master-Key': 'test' },
+      method: 'POST',
+      url: 'http://localhost:8378/1/login',
+      body: JSON.stringify({
+        username: 'username',
+        password: 'password',
+        authData: {
+          mfa: {
+            token: 'abcd',
+          },
+        },
+      }),
+    }).catch(e => e.data);
+    expect(res).toEqual({ code: Parse.Error.SCRIPT_FAILED, error: 'Invalid MFA token 1' });
+    await user.fetch({ useMasterKey: true });
+    expect(user.get('authData').mfa).toEqual(enrolled);
+  });
+
+  it('can login with master key and SMS code without changing stored MFA', async () => {
+    const user = await Parse.User.signUp('username', 'password');
+    await user.save(
+      { authData: { mfa: { mobile: '+11111111111' } } },
+      { sessionToken: user.getSessionToken() }
+    );
+    await user.save(
+      { authData: { mfa: { mobile, token: code } } },
+      { sessionToken: user.getSessionToken() }
+    );
+    await user.fetch({ useMasterKey: true });
+    const enrolled = user.get('authData').mfa;
+    const logIn = token =>
+      request({
+        headers: { ...headers, 'X-Parse-Master-Key': 'test' },
+        method: 'POST',
+        url: 'http://localhost:8378/1/login',
+        body: JSON.stringify({
+          username: 'username',
+          password: 'password',
+          authData: {
+            mfa: {
+              token,
+            },
+          },
+        }),
+      });
+    const res = await logIn('request').catch(e => e.data);
+    expect(res).toEqual({ code: Parse.Error.SCRIPT_FAILED, error: 'Please enter the token' });
+    const response = await logIn(code).then(res => res.data);
+    expect(response.objectId).toEqual(user.id);
+    expect(response.sessionToken).toBeDefined();
+    await user.fetch({ useMasterKey: true });
+    expect(user.get('authData').mfa).toEqual(enrolled);
   });
 });

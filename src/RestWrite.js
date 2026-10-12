@@ -98,6 +98,9 @@ function RestWrite(config, auth, className, query, data, originalData, context, 
 RestWrite.prototype.execute = function () {
   return Promise.resolve()
     .then(() => {
+      return this.checkInternalFields();
+    })
+    .then(() => {
       return this.getUserAndRoleACL();
     })
     .then(() => {
@@ -636,13 +639,14 @@ RestWrite.prototype.handleAuthData = async function (authData) {
   const results = this.filteredObjectsByACL(r);
 
   const userId = this.getUserId();
+  const isLogin = !userId;
   const userResult = results[0];
   const foundUserIsNotCurrentUser = userId && userResult && userId !== userResult.objectId;
 
   if (results.length > 1 || foundUserIsNotCurrentUser) {
     // To avoid https://github.com/parse-community/parse-server/security/advisories/GHSA-8w3j-g983-8jh5
     // Let's run some validation before throwing
-    await Auth.handleAuthDataValidation(authData, this, userResult);
+    await Auth.handleAuthDataValidation(authData, this, userResult, { isLogin });
     throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
   }
 
@@ -650,7 +654,9 @@ RestWrite.prototype.handleAuthData = async function (authData) {
   if (!results.length) {
     const { authData: validatedAuthData, authDataResponse } = await Auth.handleAuthDataValidation(
       authData,
-      this
+      this,
+      undefined,
+      { isLogin }
     );
     this.authDataResponse = authDataResponse;
     // Replace current authData by the new validated one
@@ -670,8 +676,6 @@ RestWrite.prototype.handleAuthData = async function (authData) {
     const isCurrentUserLoggedOrMaster =
       (this.auth && this.auth.user && this.auth.user.id === userResult.objectId) ||
       this.auth.isMaster;
-
-    const isLogin = !userId;
 
     if (isLogin || isCurrentUserLoggedOrMaster) {
       // no user making the call
@@ -704,7 +708,7 @@ RestWrite.prototype.handleAuthData = async function (authData) {
       }
 
       // Prevent validating if no mutated data detected on update
-      if (!hasMutatedAuthData && isCurrentUserLoggedOrMaster) {
+      if (!isLogin && !hasMutatedAuthData && isCurrentUserLoggedOrMaster) {
         return;
       }
 
@@ -715,7 +719,8 @@ RestWrite.prototype.handleAuthData = async function (authData) {
         const res = await Auth.handleAuthDataValidation(
           isLogin ? authData : mutatedAuthData,
           this,
-          userResult
+          userResult,
+          { isLogin }
         );
         this.data.authData = res.authData;
         this.authDataResponse = res.authDataResponse;
@@ -772,6 +777,18 @@ RestWrite.prototype.handleAuthData = async function (authData) {
         // concurrent single-use token consumers cannot both succeed.
         applyAuthDataOptimisticLock(this.query, originalAuthData, this.data.authData);
       }
+    }
+  }
+};
+
+// Rejects internal fields in client-supplied data
+RestWrite.prototype.checkInternalFields = function () {
+  if (this.auth.isMaster || this.auth.isMaintenance) {
+    return;
+  }
+  for (const fieldName in this.data) {
+    if (fieldName.charAt(0) === '_') {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
     }
   }
 };

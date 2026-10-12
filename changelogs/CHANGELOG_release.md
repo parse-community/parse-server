@@ -1,3 +1,13 @@
+## [9.10.4](https://github.com/parse-community/parse-server/compare/9.10.3...9.10.4) (2026-10-09)
+
+
+### Bug Fixes
+
+* Batch and direct access requests fail for object IDs without alphanumeric characters or class names without letters ([#10761](https://github.com/parse-community/parse-server/issues/10761)) ([c8d5ebb](https://github.com/parse-community/parse-server/commit/c8d5ebb163ac9ec7040990fce2a4bdbc49048b9e))
+* GraphQL API fails when a class name or mutation alias collides with a built-in name ([#10757](https://github.com/parse-community/parse-server/issues/10757)) ([866e82b](https://github.com/parse-community/parse-server/commit/866e82b98a57398fefb2a72c4f7c92196dce66a8))
+* Object write with a reserved field name can make reads fail on MongoDB ([GHSA-gwrq-q25v-g8mr](https://github.com/parse-community/parse-server/security/advisories/GHSA-gwrq-q25v-g8mr)) ([#10763](https://github.com/parse-community/parse-server/issues/10763)) ([d90b841](https://github.com/parse-community/parse-server/commit/d90b8414f2fb6dfef0e777e86e9558df6851b14c))
+* Unauthenticated deletion of class schemas removes class-level permissions on MongoDB ([GHSA-qmg9-m772-5rm7](https://github.com/parse-community/parse-server/security/advisories/GHSA-qmg9-m772-5rm7)) ([#10767](https://github.com/parse-community/parse-server/issues/10767)) ([2114fca](https://github.com/parse-community/parse-server/commit/2114fcab98d9b154dc761b6b428bc364b65a5611))
+
 ## [9.10.3](https://github.com/parse-community/parse-server/compare/9.10.2...9.10.3) (2026-10-05)
 
 

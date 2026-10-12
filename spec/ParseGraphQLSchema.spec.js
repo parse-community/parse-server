@@ -1,6 +1,9 @@
 const { GraphQLObjectType } = require('graphql');
+const pluralize = require('pluralize');
 const defaultLogger = require('../lib/logger').default;
 const { ParseGraphQLSchema } = require('../lib/GraphQL/ParseGraphQLSchema');
+const defaultGraphQLTypes = require('../lib/GraphQL/loaders/defaultGraphQLTypes');
+const { transformClassNameToGraphQL } = require('../lib/GraphQL/transformers/className');
 
 describe('ParseGraphQLSchema', () => {
   let parseServer;
@@ -498,6 +501,138 @@ describe('ParseGraphQLSchema', () => {
         Object.keys(mutations1).concat('createCars', 'updateCars', 'deleteCars').sort()
       ).toEqual(Object.keys(mutations2).sort());
     });
+
+    it('should keep built-in types when classes have the same names', async () => {
+      const builtInTypes = [
+        'ANY',
+        'BYTES',
+        'DATE',
+        'FILE',
+        'FILE_INFO',
+        'GEO_POINT',
+        'OBJECT',
+        'PARSE_OBJECT',
+        'READ_OPTIONS_INPUT',
+        'READ_PREFERENCE',
+      ].map(key => defaultGraphQLTypes[key]);
+      const warnings = [];
+      const parseGraphQLSchema = new ParseGraphQLSchema({
+        databaseController,
+        parseGraphQLController,
+        log: { warn: message => warnings.push(message) },
+        appId,
+      });
+      const schemaController = await databaseController.loadSchema();
+      for (const { name } of builtInTypes) {
+        await schemaController.addClassIfNotExists(name, {});
+      }
+      await parseGraphQLSchema.schemaCache.clear();
+      await parseGraphQLSchema.load();
+      for (const type of builtInTypes) {
+        expect(parseGraphQLSchema.graphQLSchema.getType(type.name)).toBe(type);
+        expect(warnings).toContain(
+          `Type ${type.name} could not be added to the auto schema because it collided with an existing type.`
+        );
+      }
+    });
+
+    [
+      ['ChallengeInput', 'ChallengeInput'],
+      ['ChallengePayload', 'ChallengePayload'],
+      ['CloudConfig', 'UpdateCloudConfigInput'],
+      ['ConfigValue', 'ConfigValue'],
+      ['ConfirmResetPasswordInput', 'ConfirmResetPasswordInput'],
+      ['ConfirmResetPasswordPayload', 'ConfirmResetPasswordPayload'],
+      ['LogInWithInput', 'LogInWithInput'],
+      ['LogInWithPayload', 'LogInWithPayload'],
+      ['ResetPasswordInput', 'ResetPasswordInput'],
+      ['ResetPasswordPayload', 'ResetPasswordPayload'],
+      ['SchemaField', 'SchemaField'],
+      ['SendVerificationEmailInput', 'SendVerificationEmailInput'],
+      ['SendVerificationEmailPayload', 'SendVerificationEmailPayload'],
+      ['UpdateCloudConfigInput', 'UpdateCloudConfigInput'],
+      ['UpdateCloudConfigPayload', 'UpdateCloudConfigPayload'],
+      ['UserLoginWithInput', 'UserLoginWithInput'],
+    ].forEach(([className, typeName]) => {
+      it(`should load the schema when class ${className} generates built-in type ${typeName}`, async () => {
+        const warnings = [];
+        const parseGraphQLSchema = new ParseGraphQLSchema({
+          databaseController,
+          parseGraphQLController,
+          log: { warn: message => warnings.push(message) },
+          appId,
+        });
+        await new Parse.Object(className).save();
+        await parseGraphQLSchema.schemaCache.clear();
+        await expectAsync(parseGraphQLSchema.load()).toBeResolved();
+        expect(warnings).toContain(
+          `Type ${typeName} could not be added to the auto schema because it collided with an existing type.`
+        );
+      });
+    });
+
+    it('should load the schema when classes generate every built-in type name', async () => {
+      const parseGraphQLSchema = new ParseGraphQLSchema({
+        databaseController,
+        parseGraphQLController,
+        log: { warn: () => {} },
+        appId,
+      });
+      await parseGraphQLSchema.schemaCache.clear();
+      await parseGraphQLSchema.load();
+      // Prefixes and suffixes of the type names generated for a class
+      const classTypeAffixes = [
+        ['', ''],
+        ['Create', 'FieldsInput'],
+        ['Update', 'FieldsInput'],
+        ['', 'PointerInput'],
+        ['', 'RelationInput'],
+        ['', 'WhereInput'],
+        ['', 'RelationWhereInput'],
+        ['', 'Order'],
+        ['', 'Edge'],
+        ['', 'Connection'],
+        ['Create', 'Input'],
+        ['Create', 'Payload'],
+        ['Update', 'Input'],
+        ['Update', 'Payload'],
+        ['Delete', 'Input'],
+        ['Delete', 'Payload'],
+      ];
+      const classTypeNames = new Set(
+        Object.keys(parseGraphQLSchema.parseClasses).flatMap(className =>
+          classTypeAffixes.map(
+            ([prefix, suffix]) => `${prefix}${transformClassNameToGraphQL(className)}${suffix}`
+          )
+        )
+      );
+      const builtInTypeNames = Object.keys(parseGraphQLSchema.graphQLSchema.getTypeMap()).filter(
+        typeName => !typeName.startsWith('__') && !classTypeNames.has(typeName)
+      );
+      const classNames = new Set();
+      builtInTypeNames.forEach(typeName =>
+        classTypeAffixes.forEach(([prefix, suffix]) => {
+          const className = typeName.slice(prefix.length, typeName.length - suffix.length);
+          if (
+            typeName.startsWith(prefix) &&
+            typeName.endsWith(suffix) &&
+            /^[A-Za-z][A-Za-z0-9_]*$/.test(className) &&
+            !parseGraphQLSchema.parseClasses[className]
+          ) {
+            classNames.add(className);
+          }
+        })
+      );
+      expect([...classNames]).toEqual(
+        jasmine.arrayContaining(['CloudConfig', 'ConfigValue', 'Date', 'SchemaField'])
+      );
+      const schemaController = await databaseController.loadSchema();
+      for (const className of classNames) {
+        await schemaController.addClassIfNotExists(className, {});
+      }
+      await parseGraphQLSchema.schemaCache.clear();
+      await expectAsync(parseGraphQLSchema.load()).toBeResolved();
+    });
   });
   describe('alias', () => {
     it_id('45282d26-f4c7-4d2d-a7b6-cd8741d5322f')(it)('Should be able to define alias for get and find query', async () => {
@@ -571,6 +706,73 @@ describe('ParseGraphQLSchema', () => {
       expect(Object.keys(mutations)).toContain('addTrack');
       expect(Object.keys(mutations)).toContain('modifyTrack');
       expect(Object.keys(mutations)).toContain('eraseTrack');
+    });
+
+    ['challenge', 'confirmResetPassword', 'logInWith', 'resetPassword', 'sendVerificationEmail'].forEach(
+      mutationName => {
+        it(`should load the schema when a mutation alias is built-in mutation ${mutationName}`, async () => {
+          const warnings = [];
+          const parseGraphQLSchema = new ParseGraphQLSchema({
+            databaseController,
+            parseGraphQLController,
+            log: { warn: message => warnings.push(message) },
+            appId,
+          });
+          await parseGraphQLSchema.parseGraphQLController.updateGraphQLConfig({
+            classConfigs: [{ className: 'Track', mutation: { createAlias: mutationName } }],
+          });
+          await new Parse.Object('Track').save();
+          await parseGraphQLSchema.schemaCache.clear();
+          await expectAsync(parseGraphQLSchema.load()).toBeResolved();
+          expect(warnings).toContain(
+            `Mutation ${mutationName} could not be added to the auto schema because it collided with an existing field.`
+          );
+        });
+      }
+    );
+
+    it('should load the schema when aliases use every built-in query and mutation name', async () => {
+      const parseGraphQLSchema = new ParseGraphQLSchema({
+        databaseController,
+        parseGraphQLController,
+        log: { warn: () => {} },
+        appId,
+      });
+      await parseGraphQLSchema.schemaCache.clear();
+      await parseGraphQLSchema.load();
+      const classOperationNames = new Set(
+        Object.keys(parseGraphQLSchema.parseClasses).flatMap(className => {
+          const graphQLClassName = transformClassNameToGraphQL(className);
+          const lowerCaseClassName =
+            graphQLClassName.charAt(0).toLowerCase() + graphQLClassName.slice(1);
+          return [
+            lowerCaseClassName,
+            pluralize(lowerCaseClassName),
+            `create${graphQLClassName}`,
+            `update${graphQLClassName}`,
+            `delete${graphQLClassName}`,
+          ];
+        })
+      );
+      const builtInQueryNames = Object.keys(parseGraphQLSchema.graphQLQueries).filter(
+        name => !classOperationNames.has(name)
+      );
+      const builtInMutationNames = Object.keys(parseGraphQLSchema.graphQLMutations).filter(
+        name => !classOperationNames.has(name)
+      );
+      expect(builtInQueryNames).toEqual(jasmine.arrayContaining(['cloudConfig', 'health']));
+      expect(builtInMutationNames).toEqual(jasmine.arrayContaining(['logInWith', 'resetPassword']));
+      const classConfigs = [
+        ...builtInQueryNames.map(name => ({ query: { getAlias: name } })),
+        ...builtInMutationNames.map(name => ({ mutation: { createAlias: name } })),
+      ].map((config, index) => ({ className: `AliasCollision${index}`, ...config }));
+      await parseGraphQLSchema.parseGraphQLController.updateGraphQLConfig({ classConfigs });
+      const schemaController = await databaseController.loadSchema();
+      for (const { className } of classConfigs) {
+        await schemaController.addClassIfNotExists(className, {});
+      }
+      await parseGraphQLSchema.schemaCache.clear();
+      await expectAsync(parseGraphQLSchema.load()).toBeResolved();
     });
   });
 });

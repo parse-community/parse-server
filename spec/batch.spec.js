@@ -1,5 +1,6 @@
 const batch = require('../lib/batch');
 const request = require('../lib/request');
+const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
 
 const originalURL = '/parse/batch';
 const serverURL = 'http://localhost:1234/parse';
@@ -851,6 +852,119 @@ describe('batch', () => {
       });
       expect(result.data).toEqual(jasmine.any(Array));
     });
+  });
+
+  describe('subrequest route parameters', () => {
+    const batchRequest = async subrequest => {
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/batch',
+        headers,
+        body: JSON.stringify({ requests: [subrequest] }),
+      });
+      return response.data[0];
+    };
+
+    const directRequest = ({ method, path, body }) =>
+      request({
+        method,
+        url: `http://localhost:8378${path}`,
+        headers,
+        body: body && JSON.stringify(body),
+      }).then(
+        response => ({ success: response.data }),
+        response => ({ error: response.data })
+      );
+
+    it('answers an object ID without alphanumeric characters like a direct request', async () => {
+      const object = new Parse.Object('TestObject');
+      await object.save({ key: 'value' });
+      for (const method of ['GET', 'PUT', 'DELETE']) {
+        const subrequest = {
+          method,
+          path: '/1/classes/TestObject/-',
+          body: method === 'PUT' ? { key: 'changed' } : undefined,
+        };
+        const batchResult = await batchRequest(subrequest);
+        const directResult = await directRequest(subrequest);
+        expect(batchResult).toEqual({
+          error: jasmine.objectContaining({ code: Parse.Error.OBJECT_NOT_FOUND }),
+        });
+        expect(batchResult.error).toEqual(directResult.error);
+      }
+      await object.fetch();
+      expect(object.get('key')).toBe('value');
+    });
+
+    it('reads, updates and deletes an object whose ID has no alphanumeric characters', async () => {
+      await reconfigureServer({ allowCustomObjectId: true });
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/classes/TestObject',
+        headers,
+        body: JSON.stringify({ objectId: '-', key: 'value' }),
+      });
+      const getResult = await batchRequest({ method: 'GET', path: '/1/classes/TestObject/-' });
+      expect(getResult.success).toEqual(jasmine.objectContaining({ objectId: '-', key: 'value' }));
+      const putResult = await batchRequest({
+        method: 'PUT',
+        path: '/1/classes/TestObject/-',
+        body: { key: 'changed' },
+      });
+      expect(putResult.success.updatedAt).toEqual(jasmine.any(String));
+      const object = await new Parse.Query('TestObject').get('-');
+      expect(object.get('key')).toBe('changed');
+      const deleteResult = await batchRequest({ method: 'DELETE', path: '/1/classes/TestObject/-' });
+      expect(deleteResult.success).toEqual({});
+      await expectAsync(new Parse.Query('TestObject').get('-')).toBeRejectedWith(
+        jasmine.objectContaining({ code: Parse.Error.OBJECT_NOT_FOUND })
+      );
+    });
+
+    it('answers a class name without letters like a direct request', async () => {
+      for (const subrequest of [
+        { method: 'GET', path: '/1/classes/123/abc' },
+        { method: 'PUT', path: '/1/classes/123/abc', body: { key: 'value' } },
+        { method: 'POST', path: '/1/classes/123', body: { key: 'value' } },
+      ]) {
+        const batchResult = await batchRequest(subrequest);
+        const directResult = await directRequest(subrequest);
+        expect(batchResult).toEqual({ error: jasmine.objectContaining({ code: jasmine.any(Number) }) });
+        expect(batchResult.error).toEqual(directResult.error);
+      }
+    });
+
+    it_only_db('mongo')(
+      'does not read or update another object for an object ID without alphanumeric characters when the database client ignores undefined values',
+      async () => {
+        await reconfigureServer({
+          databaseAdapter: new MongoStorageAdapter({
+            uri: 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
+            collectionPrefix: 'test_',
+            mongoOptions: { ignoreUndefined: true },
+          }),
+        });
+        const object = new Parse.Object('TestObject');
+        await object.save({ key: 'value' });
+        const beforeSave = jasmine.createSpy('beforeSave');
+        Parse.Cloud.beforeSave('TestObject', beforeSave);
+        const putResult = await batchRequest({
+          method: 'PUT',
+          path: '/1/classes/TestObject/-',
+          body: { key: 'changed' },
+        });
+        expect(putResult).toEqual({
+          error: jasmine.objectContaining({ code: Parse.Error.OBJECT_NOT_FOUND }),
+        });
+        const getResult = await batchRequest({ method: 'GET', path: '/1/classes/TestObject/-' });
+        expect(getResult).toEqual({
+          error: jasmine.objectContaining({ code: Parse.Error.OBJECT_NOT_FOUND }),
+        });
+        expect(beforeSave).not.toHaveBeenCalled();
+        await object.fetch();
+        expect(object.get('key')).toBe('value');
+      }
+    );
   });
 
   describe('nested batch requests', () => {
