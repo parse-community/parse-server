@@ -2508,6 +2508,296 @@ describe('Vulnerabilities', () => {
     });
   });
 
+  describe('(GHSA-rmhf-xv62-rm99) $relatedTo count query omits caller auth for protectedFields', () => {
+    let childLinked;
+    let parent;
+    let roleUser;
+    let otherUser;
+
+    const relatedToWhere = (parentId, key, extra = {}) => ({
+      $relatedTo: {
+        object: { __type: 'Pointer', className: 'RelParent', objectId: parentId },
+        key,
+      },
+      ...extra,
+    });
+
+    const queryChild = (where, qs = {}, headers = {}) =>
+      request({
+        method: 'GET',
+        url: `${Parse.serverURL}/classes/RelChild`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          ...headers,
+        },
+        qs: { where: JSON.stringify(where), ...qs },
+      }).catch(e => e);
+
+    // Mirrors the JS SDK `query.count()` request: `count=1&limit=0` skips the
+    // find path entirely, so only the count path is exercised.
+    const countChild = (where, headers = {}) => queryChild(where, { count: 1, limit: 0 }, headers);
+    const findChild = (where, headers = {}) => queryChild(where, {}, headers);
+
+    const setProtectedFields = async protectedFields => {
+      const schema = new Parse.Schema('RelParent');
+      schema.setCLP({
+        find: { '*': true },
+        get: { '*': true },
+        count: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+        protectedFields,
+      });
+      await schema.update();
+    };
+
+    beforeEach(async () => {
+      const schema = new Parse.Schema('RelParent');
+      schema.addString('name');
+      schema.addRelation('secretRel', 'RelChild');
+      schema.setCLP({
+        find: { '*': true },
+        get: { '*': true },
+        count: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+        // Protected only for members of the Guest role, with no '*' entry, so
+        // the guard has to resolve the caller's identity to enforce it.
+        protectedFields: { 'role:Guest': ['secretRel'] },
+      });
+      await schema.save();
+
+      roleUser = await Parse.User.signUp('relCountRoleUser', 'pw');
+      otherUser = await Parse.User.signUp('relCountOtherUser', 'pw');
+
+      const roleAcl = new Parse.ACL();
+      roleAcl.setPublicReadAccess(true);
+      const role = new Parse.Role('Guest', roleAcl);
+      role.getUsers().add(roleUser);
+      await role.save(null, { useMasterKey: true });
+
+      childLinked = new Parse.Object('RelChild', { value: 'linked child' });
+      await childLinked.save(null, { useMasterKey: true });
+
+      // Publicly readable parent, so the owning-object read passes and only the
+      // protected relation key decides the outcome.
+      const publicAcl = new Parse.ACL();
+      publicAcl.setPublicReadAccess(true);
+      parent = new Parse.Object('RelParent', { name: 'protected-key parent' });
+      parent.setACL(publicAcl);
+      parent.relation('secretRel').add(childLinked);
+      await parent.save(null, { useMasterKey: true });
+    });
+
+    it('denies count with $relatedTo on a relation protected for the caller role', async () => {
+      const headers = { 'X-Parse-Session-Token': roleUser.getSessionToken() };
+      const find = await findChild(relatedToWhere(parent.id, 'secretRel'), headers);
+      expect(find.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(find.data.error).toBe('Permission denied');
+
+      const count = await countChild(relatedToWhere(parent.id, 'secretRel'), headers);
+      expect(count.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(count.data.error).toBe('Permission denied');
+    });
+
+    it('does not act as a membership oracle via count with an objectId constraint', async () => {
+      const res = await countChild(
+        relatedToWhere(parent.id, 'secretRel', { objectId: childLinked.id }),
+        { 'X-Parse-Session-Token': roleUser.getSessionToken() }
+      );
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    });
+
+    it('allows count for a user outside the protected role', async () => {
+      const res = await countChild(relatedToWhere(parent.id, 'secretRel'), {
+        'X-Parse-Session-Token': otherUser.getSessionToken(),
+      });
+      expect(res.data.count).toBe(1);
+    });
+
+    it('denies count with $relatedTo on a relation protected for authenticated users', async () => {
+      await setProtectedFields({ authenticated: ['secretRel'] });
+      const res = await countChild(relatedToWhere(parent.id, 'secretRel'), {
+        'X-Parse-Session-Token': otherUser.getSessionToken(),
+      });
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+
+      // The `authenticated` group does not apply to unauthenticated callers.
+      const publicRes = await countChild(relatedToWhere(parent.id, 'secretRel'));
+      expect(publicRes.data.count).toBe(1);
+    });
+
+    it('denies count with $relatedTo on a relation protected for a specific user', async () => {
+      await setProtectedFields({ [roleUser.id]: ['secretRel'] });
+      const res = await countChild(relatedToWhere(parent.id, 'secretRel'), {
+        'X-Parse-Session-Token': roleUser.getSessionToken(),
+      });
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+
+      const other = await countChild(relatedToWhere(parent.id, 'secretRel'), {
+        'X-Parse-Session-Token': otherUser.getSessionToken(),
+      });
+      expect(other.data.count).toBe(1);
+    });
+
+    it('denies count with $relatedTo on a relation protected for the public', async () => {
+      await setProtectedFields({ '*': ['secretRel'] });
+      const res = await countChild(relatedToWhere(parent.id, 'secretRel'));
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe('Permission denied');
+    });
+
+    it('allows master key count on a protected relation', async () => {
+      await setProtectedFields({ '*': ['secretRel'] });
+      const res = await countChild(relatedToWhere(parent.id, 'secretRel'), {
+        'X-Parse-Master-Key': Parse.masterKey,
+      });
+      expect(res.data.count).toBe(1);
+    });
+
+    it('allows maintenance key count on a protected relation', async () => {
+      await setProtectedFields({ '*': ['secretRel'] });
+      const res = await countChild(relatedToWhere(parent.id, 'secretRel'), {
+        'X-Parse-Maintenance-Key': 'testing',
+      });
+      expect(res.data.count).toBe(1);
+    });
+  });
+
+  describe('(GHSA-58m4-cqvw-4vgh) $relatedTo owning objectId accepts query operators', () => {
+    let childPublic;
+    let childPrivateLink;
+    let parentPublic;
+    let parentPrivate;
+
+    const relatedToWhere = (object, key, extra = {}) => ({
+      $relatedTo: { object, key },
+      ...extra,
+    });
+
+    const pointer = objectId => ({ __type: 'Pointer', className: 'RelParent', objectId });
+
+    const queryChild = (where, qs = {}, headers = {}) =>
+      request({
+        method: 'GET',
+        url: `${Parse.serverURL}/classes/RelChild`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          ...headers,
+        },
+        qs: { where: JSON.stringify(where), ...qs },
+      }).catch(e => e);
+
+    beforeEach(async () => {
+      const schema = new Parse.Schema('RelParent');
+      schema.addString('name');
+      schema.addRelation('members', 'RelChild');
+      schema.setCLP({
+        find: { '*': true },
+        get: { '*': true },
+        count: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+      });
+      await schema.save();
+
+      // Both children are publicly readable, so the target-class ACL never hides
+      // them; the only thing protecting childPrivateLink's membership is the
+      // private owning object's ACL.
+      const publicAcl = new Parse.ACL();
+      publicAcl.setPublicReadAccess(true);
+
+      childPublic = new Parse.Object('RelChild', { value: 'public child' });
+      childPublic.setACL(publicAcl);
+      childPrivateLink = new Parse.Object('RelChild', { value: 'private-linked child' });
+      childPrivateLink.setACL(publicAcl);
+      await Parse.Object.saveAll([childPublic, childPrivateLink], { useMasterKey: true });
+
+      // Publicly readable owning object linked to childPublic.
+      parentPublic = new Parse.Object('RelParent', { name: 'public parent' });
+      parentPublic.setACL(publicAcl);
+      parentPublic.relation('members').add(childPublic);
+      await parentPublic.save(null, { useMasterKey: true });
+
+      // Owner-only owning object linked to childPrivateLink. A public caller
+      // cannot read this parent, so it must never learn childPrivateLink is a
+      // member of it.
+      const privateAcl = new Parse.ACL();
+      privateAcl.setPublicReadAccess(false);
+      privateAcl.setPublicWriteAccess(false);
+      parentPrivate = new Parse.Object('RelParent', { name: 'private parent' });
+      parentPrivate.setACL(privateAcl);
+      parentPrivate.relation('members').add(childPrivateLink);
+      await parentPrivate.save(null, { useMasterKey: true });
+    });
+
+    it('rejects a $relatedTo whose owning objectId is a query operator', async () => {
+      const res = await queryChild(relatedToWhere(pointer({ $gt: '' }), 'members'));
+      expect(res.data.code).toBe(Parse.Error.INVALID_QUERY);
+      // The membership of the unreadable private parent must not leak.
+      expect(res.data.results).toBeUndefined();
+    });
+
+    it('rejects a $relatedTo whose owning objectId uses $ne', async () => {
+      const res = await queryChild(relatedToWhere(pointer({ $ne: 'does-not-exist' }), 'members'));
+      expect(res.data.code).toBe(Parse.Error.INVALID_QUERY);
+    });
+
+    it('rejects an operator owning objectId on the count oracle variant', async () => {
+      const res = await queryChild(relatedToWhere(pointer({ $gt: '' }), 'members'), {
+        count: 1,
+        limit: 0,
+      });
+      expect(res.data.code).toBe(Parse.Error.INVALID_QUERY);
+      expect(res.data.count).toBeUndefined();
+    });
+
+    it('rejects an operator owning objectId nested in $or', async () => {
+      const res = await queryChild({ $or: [relatedToWhere(pointer({ $gt: '' }), 'members')] });
+      expect(res.data.code).toBe(Parse.Error.INVALID_QUERY);
+    });
+
+    it('rejects a $relatedTo whose owning className is not a string', async () => {
+      const res = await queryChild(
+        relatedToWhere(
+          { __type: 'Pointer', className: { $gt: '' }, objectId: parentPublic.id },
+          'members'
+        )
+      );
+      expect(res.data.code).toBe(Parse.Error.INVALID_QUERY);
+    });
+
+    it('rejects a $relatedTo whose relation key is not a string', async () => {
+      const res = await queryChild(relatedToWhere(pointer(parentPublic.id), { $gt: '' }));
+      expect(res.data.code).toBe(Parse.Error.INVALID_QUERY);
+    });
+
+    it('still returns related objects for a well-formed owning objectId', async () => {
+      const res = await queryChild(relatedToWhere(pointer(parentPublic.id), 'members'));
+      expect(res.data.results.length).toBe(1);
+      expect(res.data.results[0].objectId).toBe(childPublic.id);
+    });
+
+    it('rejects an operator owning objectId even for the master key', async () => {
+      const res = await queryChild(relatedToWhere(pointer({ $gt: '' }), 'members'), {}, {
+        'X-Parse-Master-Key': Parse.masterKey,
+      });
+      expect(res.data.code).toBe(Parse.Error.INVALID_QUERY);
+      expect(res.data.results).toBeUndefined();
+    });
+  });
+
   describe('(GHSA-j7mm-f4rv-6q6q) Protected fields bypass via LiveQuery dot-notation WHERE', () => {
     let obj;
 
@@ -2667,13 +2957,10 @@ describe('Vulnerabilities', () => {
       );
     });
 
-    it('should not reject when role-only protection exists without * entry', async () => {
-      // Edge case: protectedFields only has a role entry, no '*'.
-      // Without resolving roles, the protection set is empty, so the subscription is allowed.
-      // This is a correctness gap, not a security issue: the role entry means "protect this
-      // field FROM role members" (i.e. admins should not see it). Not resolving roles means
-      // the admin loses their own restriction — they see data meant to be hidden from them.
-      // This does not allow unprivileged users to access protected data.
+    it('should reject when role-only protection exists without a * entry', async () => {
+      // Edge case: protectedFields only has a role entry, no '*'. The subscriber's
+      // roles are resolved (GHSA-9jpp-xhh6-75mf), so the role entry applies and the
+      // WHERE clause on the protected field is rejected for members of that role.
       const config = Config.get(Parse.applicationId);
       const schemaController = await config.database.loadSchema();
       await schemaController.updateClass(
@@ -2701,13 +2988,11 @@ describe('Vulnerabilities', () => {
       role.getUsers().add(user);
       await role.save(null, { useMasterKey: true });
 
-      // This subscribes successfully because without '*' entry, no fields are protected
-      // for purposes of WHERE clause validation. The role-only config means "hide secretObj
-      // from admins" — a restriction ON the privileged user, not a security boundary.
       const query = new Parse.Query('SecretClass');
       query._addCondition('secretObj.apiKey', '$eq', 'SENSITIVE_KEY_123');
-      const subscription = await query.subscribe(user.getSessionToken());
-      expect(subscription).toBeDefined();
+      await expectAsync(query.subscribe(user.getSessionToken())).toBeRejectedWith(
+        new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+      );
     });
 
     // Note: master key bypass is inherently tested by the `!client.hasMasterKey` guard
@@ -2716,20 +3001,32 @@ describe('Vulnerabilities', () => {
   });
 
   describe('(GHSA-w54v-hf9p-8856) User enumeration via email verification endpoint', () => {
+    const { resolvingPromise } = require('../lib/TestUtils');
     let sendVerificationEmail;
 
+    // Resolves when the email is sent
+    function verificationEmailSent() {
+      const sendPromise = resolvingPromise();
+      sendVerificationEmail.and.callFake(() => sendPromise.resolve());
+      return sendPromise;
+    }
+
     async function createTestUsers() {
+      let sendPromise = verificationEmailSent();
       const user = new Parse.User();
       user.setUsername('testuser');
       user.setPassword('password123');
       user.set('email', 'unverified@example.com');
       await user.signUp();
+      await sendPromise;
 
+      sendPromise = verificationEmailSent();
       const user2 = new Parse.User();
       user2.setUsername('verifieduser');
       user2.setPassword('password123');
       user2.set('email', 'verified@example.com');
       await user2.signUp();
+      await sendPromise;
       const config = Config.get(Parse.applicationId);
       await config.database.update(
         '_User',
@@ -2785,6 +3082,7 @@ describe('Vulnerabilities', () => {
 
       it('returns success for unverified email', async () => {
         sendVerificationEmail.calls.reset();
+        const sendPromise = verificationEmailSent();
         const response = await request({
           url: 'http://localhost:8378/1/verificationEmailRequest',
           method: 'POST',
@@ -2797,7 +3095,7 @@ describe('Vulnerabilities', () => {
         });
         expect(response.status).toBe(200);
         expect(response.data).toEqual({});
-        await jasmine.timeout();
+        await sendPromise;
         expect(sendVerificationEmail).toHaveBeenCalledTimes(1);
       });
 
@@ -2880,6 +3178,7 @@ describe('Vulnerabilities', () => {
 
       it('sends verification email for unverified email', async () => {
         sendVerificationEmail.calls.reset();
+        const sendPromise = verificationEmailSent();
         await request({
           url: 'http://localhost:8378/1/verificationEmailRequest',
           method: 'POST',
@@ -2890,7 +3189,7 @@ describe('Vulnerabilities', () => {
             'Content-Type': 'application/json',
           },
         });
-        await jasmine.timeout();
+        await sendPromise;
         expect(sendVerificationEmail).toHaveBeenCalledTimes(1);
       });
     });
@@ -3013,6 +3312,374 @@ describe('Vulnerabilities', () => {
         },
       }).catch(e => e);
       expect(response.data.code).toBe(Parse.Error.USERNAME_TAKEN);
+    });
+  });
+
+  describe('(GHSA-p49q-9w65-f9p7) User update runs checks against the target account before authorization', () => {
+    const restHeaders = extra => ({
+      'X-Parse-Application-Id': Parse.applicationId,
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+      ...extra,
+    });
+
+    // Resolves with the HTTP response for both success and error so callers can compare them
+    const updateUser = (objectId, body, extraHeaders = {}) =>
+      request({
+        url: `http://localhost:8378/1/users/${objectId}`,
+        method: 'PUT',
+        body,
+        headers: restHeaders(extraHeaders),
+      }).then(
+        response => response,
+        error => error
+      );
+
+    // Signs up a user and returns its id and a live session token (no logout, which would revoke it)
+    const createUser = async (username, password) => {
+      const user = new Parse.User();
+      user.setUsername(username);
+      user.setPassword(password);
+      await user.signUp();
+      return { id: user.id, sessionToken: user.getSessionToken() };
+    };
+
+    // Comparable response signature: an oracle exists if two guesses answer differently
+    const signature = response => `${response.status}:${response.data && response.data.code}`;
+
+    describe('maxPasswordHistory', () => {
+      beforeEach(async () => {
+        await reconfigureServer({ passwordPolicy: { maxPasswordHistory: 3 } });
+      });
+
+      it('unauthenticated update does not reveal whether a guessed password matches the target', async () => {
+        const victim = await createUser('victimHistory', 'VictimSecret123');
+        const match = await updateUser(victim.id, { password: 'VictimSecret123' });
+        const wrong = await updateUser(victim.id, { password: 'WrongGuess999' });
+        expect(match.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(wrong.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(match.data.error).not.toContain('should not be the same');
+        expect(signature(match)).toBe(signature(wrong));
+      });
+
+      it('authenticated cross-user update does not reveal whether a guessed password matches the target', async () => {
+        const victim = await createUser('victimHistory', 'VictimSecret123');
+        const attacker = await createUser('attackerHistory', 'AttackerPass123');
+        const auth = { 'X-Parse-Session-Token': attacker.sessionToken };
+        const match = await updateUser(victim.id, { password: 'VictimSecret123' }, auth);
+        const wrong = await updateUser(victim.id, { password: 'WrongGuess999' }, auth);
+        expect(match.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(wrong.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(match.data.error).not.toContain('should not be the same');
+        expect(signature(match)).toBe(signature(wrong));
+      });
+
+      it('authenticated update cannot retarget the check to another user via a body objectId', async () => {
+        const victim = await createUser('victimHistory', 'VictimSecret123');
+        const attacker = await createUser('attackerHistory', 'AttackerPass123');
+        const auth = { 'X-Parse-Session-Token': attacker.sessionToken };
+        // The URL addresses the attacker's own record; the body objectId points at the victim
+        const match = await updateUser(
+          attacker.id,
+          { objectId: victim.id, password: 'VictimSecret123' },
+          auth
+        );
+        const wrong = await updateUser(
+          attacker.id,
+          { objectId: victim.id, password: 'WrongGuess999' },
+          auth
+        );
+        expect(match.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(wrong.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(signature(match)).toBe(signature(wrong));
+      });
+
+      it('does not answer a nonexistent target with an internal server error', async () => {
+        const unauthenticated = await updateUser('doesNotExist0', { password: 'Anything123' });
+        expect(unauthenticated.status).not.toBe(500);
+        expect(unauthenticated.data.code).toBe(Parse.Error.SESSION_MISSING);
+        const attacker = await createUser('attackerHistory', 'AttackerPass123');
+        const authenticated = await updateUser(
+          'doesNotExist0',
+          { password: 'Anything123' },
+          { 'X-Parse-Session-Token': attacker.sessionToken }
+        );
+        expect(authenticated.status).not.toBe(500);
+        expect(authenticated.data.code).toBe(Parse.Error.SESSION_MISSING);
+      });
+
+      it('still enforces the password history for the owner', async () => {
+        const owner = await createUser('ownerHistory', 'OwnerPass123');
+        const auth = { 'X-Parse-Session-Token': owner.sessionToken };
+        const repeat = await updateUser(owner.id, { password: 'OwnerPass123' }, auth);
+        expect(repeat.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+        expect(repeat.data.error).toContain('should not be the same');
+        const fresh = await updateUser(owner.id, { password: 'FreshPass456' }, auth);
+        expect(fresh.status).toBe(200);
+      });
+
+      it('still enforces the password history for the master key', async () => {
+        const target = await createUser('targetHistory', 'TargetPass123');
+        const master = { 'X-Parse-Master-Key': Parse.masterKey };
+        const repeat = await updateUser(target.id, { password: 'TargetPass123' }, master);
+        expect(repeat.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+        const fresh = await updateUser(target.id, { password: 'FreshPass456' }, master);
+        expect(fresh.status).toBe(200);
+      });
+
+      it('still enforces the password history for the maintenance key', async () => {
+        const target = await createUser('targetHistory', 'TargetPass123');
+        const maintenance = { 'X-Parse-Maintenance-Key': 'testing' };
+        const repeat = await updateUser(target.id, { password: 'TargetPass123' }, maintenance);
+        expect(repeat.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+        const fresh = await updateUser(target.id, { password: 'FreshPass456' }, maintenance);
+        expect(fresh.status).toBe(200);
+      });
+
+      it('answers a nonexistent target with OBJECT_NOT_FOUND for the master and maintenance keys', async () => {
+        for (const headers of [
+          { 'X-Parse-Master-Key': Parse.masterKey },
+          { 'X-Parse-Maintenance-Key': 'testing' },
+        ]) {
+          const response = await updateUser('doesNotExist0', { password: 'Anything123' }, headers);
+          expect(response.status).not.toBe(500);
+          expect(response.data.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+        }
+      });
+
+      it('answers a user deleted during the update with OBJECT_NOT_FOUND', async () => {
+        const DatabaseController = require('../lib/Controllers/DatabaseController');
+        const target = await createUser('targetHistory', 'TargetPass123');
+        const find = DatabaseController.prototype.find;
+        let historyReads = 0;
+        // Simulate the user being deleted between the history check and the history save
+        spyOn(DatabaseController.prototype, 'find').and.callFake(function (className, query, options, ...rest) {
+          if (className === '_User' && options?.keys?.includes('_password_history')) {
+            historyReads++;
+            if (historyReads === 2) {
+              return Promise.resolve([]);
+            }
+          }
+          return find.call(this, className, query, options, ...rest);
+        });
+        const response = await updateUser(
+          target.id,
+          { password: 'FreshPass456' },
+          { 'X-Parse-Master-Key': Parse.masterKey }
+        );
+        expect(historyReads).toBe(2);
+        expect(response.status).not.toBe(500);
+        expect(response.data.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      });
+
+      it('lets a user with write access through the ACL change the password', async () => {
+        const target = await createUser('targetHistory', 'TargetPass123');
+        const writer = await createUser('writerHistory', 'WriterPass123');
+        const acl = new Parse.ACL();
+        acl.setReadAccess(target.id, true);
+        acl.setWriteAccess(target.id, true);
+        acl.setReadAccess(writer.id, true);
+        acl.setWriteAccess(writer.id, true);
+        const targetUser = Parse.User.createWithoutData(target.id);
+        targetUser.setACL(acl);
+        await targetUser.save(null, { useMasterKey: true });
+        const auth = { 'X-Parse-Session-Token': writer.sessionToken };
+        const repeat = await updateUser(target.id, { password: 'TargetPass123' }, auth);
+        expect(repeat.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+        expect(repeat.data.error).toContain('should not be the same');
+        const fresh = await updateUser(target.id, { password: 'FreshPass456' }, auth);
+        expect(fresh.status).toBe(200);
+      });
+
+      it('lets a user with write access through a role change the password', async () => {
+        const target = await createUser('targetHistory', 'TargetPass123');
+        const writer = await createUser('writerHistory', 'WriterPass123');
+        const role = new Parse.Role('userAdmins', new Parse.ACL());
+        role.getUsers().add(Parse.User.createWithoutData(writer.id));
+        await role.save(null, { useMasterKey: true });
+        const acl = new Parse.ACL();
+        acl.setReadAccess(target.id, true);
+        acl.setWriteAccess(target.id, true);
+        acl.setRoleReadAccess('userAdmins', true);
+        acl.setRoleWriteAccess('userAdmins', true);
+        const targetUser = Parse.User.createWithoutData(target.id);
+        targetUser.setACL(acl);
+        await targetUser.save(null, { useMasterKey: true });
+        const auth = { 'X-Parse-Session-Token': writer.sessionToken };
+        const repeat = await updateUser(target.id, { password: 'TargetPass123' }, auth);
+        expect(repeat.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+        const fresh = await updateUser(target.id, { password: 'FreshPass456' }, auth);
+        expect(fresh.status).toBe(200);
+      });
+    });
+
+    describe('doNotAllowUsername', () => {
+      beforeEach(async () => {
+        await reconfigureServer({ passwordPolicy: { doNotAllowUsername: true } });
+      });
+
+      it('unauthenticated update does not reveal the target username', async () => {
+        const victim = await createUser('hiddenname', 'VictimSecret123');
+        const contains = await updateUser(victim.id, { password: 'xhiddennamex9' });
+        const free = await updateUser(victim.id, { password: 'nothinghere9' });
+        expect(contains.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(free.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(contains.data.error).not.toContain('cannot contain your username');
+        expect(signature(contains)).toBe(signature(free));
+      });
+
+      it('authenticated cross-user update does not reveal the target username', async () => {
+        const victim = await createUser('hiddenname', 'VictimSecret123');
+        const attacker = await createUser('attackerName', 'AttackerPass123');
+        const auth = { 'X-Parse-Session-Token': attacker.sessionToken };
+        const contains = await updateUser(victim.id, { password: 'xhiddennamex9' }, auth);
+        const free = await updateUser(victim.id, { password: 'nothinghere9' }, auth);
+        expect(contains.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(free.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(contains.data.error).not.toContain('cannot contain your username');
+        expect(signature(contains)).toBe(signature(free));
+      });
+
+      it('does not answer a nonexistent target with an internal server error', async () => {
+        const response = await updateUser('doesNotExist0', { password: 'Anything123' });
+        expect(response.status).not.toBe(500);
+        expect(response.data.code).toBe(Parse.Error.SESSION_MISSING);
+      });
+
+      it('answers a nonexistent target with OBJECT_NOT_FOUND for the master key', async () => {
+        const response = await updateUser(
+          'doesNotExist0',
+          { password: 'Anything123' },
+          { 'X-Parse-Master-Key': Parse.masterKey }
+        );
+        expect(response.status).not.toBe(500);
+        expect(response.data.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      });
+
+      it('still rejects a password containing the username for the owner', async () => {
+        const owner = await createUser('ownername', 'OwnerPass123');
+        const auth = { 'X-Parse-Session-Token': owner.sessionToken };
+        const contains = await updateUser(owner.id, { password: 'xownernamex9' }, auth);
+        expect(contains.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+        expect(contains.data.error).toContain('cannot contain your username');
+        const free = await updateUser(owner.id, { password: 'FreshPass456' }, auth);
+        expect(free.status).toBe(200);
+      });
+    });
+
+    describe('without a password policy', () => {
+      beforeEach(async () => {
+        await reconfigureServer();
+      });
+
+      it('rejects an unauthenticated user update before the username uniqueness check', async () => {
+        await createUser('takenName', 'OtherPass123');
+        const victim = await createUser('plainVictim', 'VictimSecret123');
+        const response = await updateUser(victim.id, { username: 'takenName' });
+        expect(response.data.code).toBe(Parse.Error.SESSION_MISSING);
+      });
+
+      it('authenticated cross-user update does not reveal whether a username is taken', async () => {
+        await createUser('takenName', 'OtherPass123');
+        const victim = await createUser('plainVictim', 'VictimSecret123');
+        const attacker = await createUser('plainAttacker', 'AttackerPass123');
+        const auth = { 'X-Parse-Session-Token': attacker.sessionToken };
+        const taken = await updateUser(victim.id, { username: 'takenName' }, auth);
+        const free = await updateUser(victim.id, { username: 'freeName' }, auth);
+        expect(taken.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(free.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(signature(taken)).toBe(signature(free));
+      });
+
+      it('authenticated cross-user update does not reveal whether an email is taken', async () => {
+        const other = new Parse.User();
+        other.set({ username: 'emailOwner', password: 'OtherPass123', email: 'taken@example.com' });
+        await other.signUp();
+        const victim = await createUser('plainVictim', 'VictimSecret123');
+        const attacker = await createUser('plainAttacker', 'AttackerPass123');
+        const auth = { 'X-Parse-Session-Token': attacker.sessionToken };
+        const taken = await updateUser(victim.id, { email: 'taken@example.com' }, auth);
+        const free = await updateUser(victim.id, { email: 'free@example.com' }, auth);
+        expect(taken.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(free.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(signature(taken)).toBe(signature(free));
+      });
+
+      it('rejects a body objectId that addresses another user', async () => {
+        const other = await createUser('plainOther', 'OtherPass123');
+        const owner = await createUser('plainOwner', 'OwnerPass123');
+        const response = await updateUser(
+          owner.id,
+          { objectId: other.id, nickname: 'me' },
+          { 'X-Parse-Session-Token': owner.sessionToken }
+        );
+        expect(response.data.code).toBe(Parse.Error.SESSION_MISSING);
+      });
+
+      it('rejects a cross-user update carrying authData before reading the target authData', async () => {
+        const Auth = require('../lib/Auth');
+        const victim = await createUser('plainVictim', 'VictimSecret123');
+        const attacker = await createUser('plainAttacker', 'AttackerPass123');
+        const spy = spyOn(Auth, 'findUsersWithAuthData').and.callThrough();
+        const body = { authData: { anonymous: { id: '00000000-0000-4000-8000-000000000000' } } };
+        const unauthenticated = await updateUser(victim.id, body);
+        const authenticated = await updateUser(victim.id, body, {
+          'X-Parse-Session-Token': attacker.sessionToken,
+        });
+        expect(unauthenticated.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(authenticated.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(spy).not.toHaveBeenCalled();
+      });
+
+      it('runs the _User beforeSave trigger only for an authorized update', async () => {
+        let calls = 0;
+        Parse.Cloud.beforeSave(Parse.User, () => {
+          calls++;
+        });
+        const victim = await createUser('plainVictim', 'VictimSecret123');
+        const attacker = await createUser('plainAttacker', 'AttackerPass123');
+        calls = 0;
+        const denied = await updateUser(
+          victim.id,
+          { nickname: 'x' },
+          { 'X-Parse-Session-Token': attacker.sessionToken }
+        );
+        expect(denied.data.code).toBe(Parse.Error.SESSION_MISSING);
+        expect(calls).toBe(0);
+        const allowed = await updateUser(
+          victim.id,
+          { nickname: 'x' },
+          { 'X-Parse-Session-Token': victim.sessionToken }
+        );
+        expect(allowed.status).toBe(200);
+        expect(calls).toBe(1);
+      });
+
+      it('does not add a write-access read when the owner updates the own record', async () => {
+        const DatabaseController = require('../lib/Controllers/DatabaseController');
+        const owner = await createUser('plainOwner', 'OwnerPass123');
+        const spy = spyOn(DatabaseController.prototype, 'update').and.callThrough();
+        const response = await updateUser(
+          owner.id,
+          { nickname: 'me' },
+          { 'X-Parse-Session-Token': owner.sessionToken }
+        );
+        expect(response.status).toBe(200);
+        const validateOnlyCalls = spy.calls
+          .allArgs()
+          .filter(args => args[0] === '_User' && args[5] === true);
+        expect(validateOnlyCalls.length).toBe(0);
+      });
+
+      it('still lets the owner update the own record', async () => {
+        const owner = await createUser('plainOwner', 'OwnerPass123');
+        const response = await updateUser(
+          owner.id,
+          { nickname: 'me' },
+          { 'X-Parse-Session-Token': owner.sessionToken }
+        );
+        expect(response.status).toBe(200);
+      });
     });
   });
 
@@ -6548,6 +7215,2501 @@ describe('Vulnerabilities', () => {
       // the full record (auth hierarchy preserved); the minimal denied-path
       // response only applies to non-master callers.
       expect(response.data.phone).toBe('555-1234');
+    });
+  });
+
+  describe('(GHSA-9jpp-xhh6-75mf) LiveQuery does not apply role-scoped protectedFields', () => {
+    const { sleep } = require('../lib/TestUtils');
+    const roleName = 'LqProtectedRole';
+    let member;
+    let memberToken;
+    let outsider;
+    let outsiderToken;
+    let doc;
+    let extraClients = [];
+
+    async function updateCLP(className, permissions) {
+      const response = await fetch(Parse.serverURL + '/schemas/' + className, {
+        method: 'PUT',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': Parse.masterKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ classLevelPermissions: permissions }),
+      });
+      const body = await response.json();
+      if (body.error) {
+        throw body;
+      }
+      return body;
+    }
+
+    // `keyPairs` is opt-in per test: the default LiveQueryClient always sends the
+    // master key in its connect frame, so enabling key pairs globally would turn
+    // every subscription in this suite into a master-key subscription.
+    async function setup(protectedFields, { keyPairs = false } = {}) {
+      Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+      extraClients = [];
+      await reconfigureServer({
+        liveQuery: { classNames: ['RoleProtectedDoc'] },
+        startLiveQueryServer: true,
+        ...(keyPairs
+          ? { liveQueryServerOptions: { keyPairs: { masterKey: 'test', javascriptKey: 'test' } } }
+          : {}),
+        verbose: false,
+        silent: true,
+      });
+
+      member = new Parse.User();
+      member.setUsername('lq_role_member');
+      member.setPassword('password123');
+      await member.signUp();
+      memberToken = member.getSessionToken();
+
+      outsider = new Parse.User();
+      outsider.setUsername('lq_role_outsider');
+      outsider.setPassword('password456');
+      await outsider.signUp();
+      outsiderToken = outsider.getSessionToken();
+      await Parse.User.logOut();
+
+      const roleACL = new Parse.ACL();
+      roleACL.setPublicReadAccess(true);
+      const role = new Parse.Role(roleName, roleACL);
+      role.getUsers().add(member);
+      await role.save(null, { useMasterKey: true });
+
+      // Create the object first so the class schema exists, then apply the CLP
+      doc = new Parse.Object('RoleProtectedDoc');
+      doc.set('ssn', '999-88-7777');
+      doc.set('name', 'bob');
+      await doc.save(null, { useMasterKey: true });
+
+      await updateCLP('RoleProtectedDoc', {
+        find: { '*': true },
+        get: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+        protectedFields,
+      });
+    }
+
+    afterEach(async () => {
+      for (const client of extraClients) {
+        await client.close();
+      }
+      extraClients = [];
+      try {
+        const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+        if (client) {
+          await client.close();
+        }
+      } catch (e) {
+        // Ignore cleanup errors when the client was never initialized
+      }
+    });
+
+    it('strips a role-scoped protected field from a REST get for a role member', async () => {
+      await setup({ [`role:${roleName}`]: ['ssn'] });
+
+      const response = await request({
+        method: 'GET',
+        url: `${Parse.serverURL}/classes/RoleProtectedDoc/${doc.id}`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': memberToken,
+        },
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.data.ssn).toBeUndefined();
+      expect(response.data.name).toBe('bob');
+    });
+
+    it('strips a role-scoped protected field from a LiveQuery update event for a role member', async () => {
+      await setup({ [`role:${roleName}`]: ['ssn'] });
+
+      const subscription = await new Parse.Query('RoleProtectedDoc').subscribe(
+        memberToken
+      );
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBeUndefined();
+            expect(object.get('name')).toBe('bob2');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+    });
+
+    it('strips a role-scoped protected field from a LiveQuery create event for a role member', async () => {
+      await setup({ [`role:${roleName}`]: ['ssn'] });
+
+      const subscription = await new Parse.Query('RoleProtectedDoc').subscribe(
+        memberToken
+      );
+
+      const created = new Parse.Object('RoleProtectedDoc');
+      created.set('ssn', '111-22-3333');
+      created.set('name', 'alice');
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('create', object => {
+            expect(object.get('ssn')).toBeUndefined();
+            expect(object.get('name')).toBe('alice');
+            resolve();
+          });
+        }),
+        created.save(null, { useMasterKey: true }),
+      ]);
+    });
+
+    it('delivers a role-scoped protected field to a LiveQuery subscriber outside the role', async () => {
+      await setup({ [`role:${roleName}`]: ['ssn'] });
+
+      const subscription = await new Parse.Query('RoleProtectedDoc').subscribe(
+        outsiderToken
+      );
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBe('999-88-7777');
+            expect(object.get('name')).toBe('bob2');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+    });
+
+    it('delivers a role-scoped protected field to a LiveQuery subscriber using the master key', async () => {
+      await setup({ [`role:${roleName}`]: ['ssn'] }, { keyPairs: true });
+
+      const subscription = await subscribeWithMasterKey('RoleProtectedDoc');
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBe('999-88-7777');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+    });
+
+    it('delivers a public protected field to a LiveQuery subscriber using the master key', async () => {
+      // Only a genuine master-key client receives a field protected for '*';
+      // any non-master subscriber has it stripped, so this asserts that the
+      // master-key path is really exercised.
+      await setup({ '*': ['ssn'] }, { keyPairs: true });
+
+      const subscription = await subscribeWithMasterKey('RoleProtectedDoc');
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBe('999-88-7777');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+    });
+
+    it('rejects a LiveQuery subscription with a role-scoped protected field in where', async () => {
+      await setup({ [`role:${roleName}`]: ['ssn'] });
+
+      const query = new Parse.Query('RoleProtectedDoc');
+      query.equalTo('ssn', '999-88-7777');
+      await expectAsync(query.subscribe(memberToken)).toBeRejectedWith(
+        new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+      );
+    });
+
+    it('rejects a LiveQuery subscription with a role-scoped protected field in watch', async () => {
+      await setup({ [`role:${roleName}`]: ['ssn'] });
+
+      const query = new Parse.Query('RoleProtectedDoc');
+      query.watch('ssn');
+      await expectAsync(query.subscribe(memberToken)).toBeRejectedWith(
+        new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied')
+      );
+    });
+
+    it('allows a LiveQuery subscription with a role-scoped protected field in where for a user outside the role', async () => {
+      await setup({ [`role:${roleName}`]: ['ssn'] });
+
+      const query = new Parse.Query('RoleProtectedDoc');
+      query.equalTo('ssn', '999-88-7777');
+      const subscription = await query.subscribe(outsiderToken);
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBe('999-88-7777');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+    });
+
+    // `query.subscribe(Parse.masterKey)` sends the master key as the subscription
+    // session token, which never sets `client.hasMasterKey` - that is derived from
+    // the connect frame (`_hasMasterKey` in ParseLiveQueryServer). A master-key
+    // subscriber must therefore be built as its own LiveQueryClient.
+    async function subscribeWithMasterKey(className) {
+      const client = new Parse.LiveQueryClient({
+        applicationId: Parse.applicationId,
+        serverURL: 'ws://localhost:8378',
+        javascriptKey: 'test',
+        masterKey: Parse.masterKey,
+      });
+      extraClients.push(client);
+      client.open();
+      const subscription = client.subscribe(new Parse.Query(className));
+      await new Promise(resolve => subscription.on('open', resolve));
+      return subscription;
+    }
+
+    async function subscribeWithoutSubscriptionToken(className) {
+      // Mirrors Parse.Query.subscribe() but omits the per-subscription session
+      // token, so only the connect frame carries it. `client.subscribe(query)`
+      // without the optional second argument is public SDK API.
+      const query = new Parse.Query(className);
+      const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+      if (client.shouldOpen()) {
+        client.open();
+      }
+      const subscription = client.subscribe(query);
+      await subscription.subscribePromise;
+      return subscription;
+    }
+
+    it('strips a role-scoped protected field when the subscription carries no session token', async () => {
+      await setup({ [`role:${roleName}`]: ['ssn'] });
+      // The connect frame carries the member's token, the subscribe frame does not
+      await Parse.User.logIn('lq_role_member', 'password123');
+      const subscription = await subscribeWithoutSubscriptionToken('RoleProtectedDoc');
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBeUndefined();
+            expect(object.get('name')).toBe('bob2');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+    });
+
+    it('strips an authenticated-scoped protected field when the subscription carries no session token', async () => {
+      await setup({ authenticated: ['ssn'] });
+      await Parse.User.logIn('lq_role_member', 'password123');
+      const subscription = await subscribeWithoutSubscriptionToken('RoleProtectedDoc');
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBeUndefined();
+            expect(object.get('name')).toBe('bob2');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+    });
+
+    it('allows a LiveQuery subscription when a role-scoped exemption clears a public protected field', async () => {
+      // The '*' group protects the field, the role group exempts members via the
+      // intersection. Resolving roles relaxes the guard here: before the fix the
+      // role member was rejected because only the '*' group was ever applied.
+      await setup({ '*': ['ssn'], [`role:${roleName}`]: [] });
+
+      const query = new Parse.Query('RoleProtectedDoc');
+      query.equalTo('ssn', '999-88-7777');
+      const subscription = await query.subscribe(memberToken);
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBe('999-88-7777');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+    });
+
+    it('keeps stripping a public protected field on LiveQuery events', async () => {
+      await setup({ '*': ['ssn'] });
+
+      const subscription = await new Parse.Query('RoleProtectedDoc').subscribe(
+        memberToken
+      );
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBeUndefined();
+            expect(object.get('name')).toBe('bob2');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+    });
+
+    it('intersects a public and a role-scoped protected field set on LiveQuery events', async () => {
+      // '*' protects both fields, the role set protects only one; the
+      // intersection leaves 'ssn' protected and exposes 'name' to role members
+      await setup({ '*': ['ssn', 'name'], [`role:${roleName}`]: ['ssn'] });
+
+      const subscription = await new Parse.Query('RoleProtectedDoc').subscribe(
+        memberToken
+      );
+
+      await Promise.all([
+        new Promise(resolve => {
+          subscription.on('update', object => {
+            expect(object.get('ssn')).toBeUndefined();
+            expect(object.get('name')).toBe('bob2');
+            resolve();
+          });
+        }),
+        doc.save({ name: 'bob2' }, { useMasterKey: true }),
+      ]);
+      await sleep(0);
+    });
+  });
+
+  describe('(GHSA-cc6h-c8m4-hgrx) NoSQL injection via _Installation deviceToken deduplication', () => {
+    const serverURL = 'http://localhost:8378/1';
+    const publicHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const attackerInstallationId = 'attacker-uuid-0000-0000-000000000000';
+
+    const postInstallation = body =>
+      request({
+        method: 'POST',
+        headers: publicHeaders,
+        url: `${serverURL}/installations`,
+        body: JSON.stringify(body),
+      }).catch(e => e);
+
+    const putInstallation = (objectId, body) =>
+      request({
+        method: 'PUT',
+        headers: publicHeaders,
+        url: `${serverURL}/installations/${objectId}`,
+        body: JSON.stringify(body),
+      }).catch(e => e);
+
+    const allInstallations = async () => {
+      const query = new Parse.Query(Parse.Installation);
+      query.limit(1000);
+      const results = await query.find({ useMasterKey: true });
+      return results.map(r => r.get('installationId')).sort();
+    };
+
+    // Registers `count` unrelated installations, each with its own installationId and
+    // deviceToken, exactly as a device SDK would.
+    const seedVictimInstallations = async count => {
+      for (let i = 0; i < count; i++) {
+        const response = await postInstallation({
+          installationId: `victim-uuid-0000-0000-00000000000${i}`,
+          deviceType: 'ios',
+          deviceToken: `victimtoken${i}`,
+        });
+        expect(response.status).toBe(201);
+      }
+    };
+
+    // Doubles as a positive control: proves the unauthenticated client really reaches the
+    // application, so a later "nothing was deleted" result cannot be a broken harness.
+    const registerAttackerInstallation = async () => {
+      const response = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceType: 'android',
+      });
+      expect(response.status).toBe(201);
+    };
+
+    it('does not delete other installations when deviceToken is an operator object', async () => {
+      await seedVictimInstallations(4);
+      await registerAttackerInstallation();
+      expect((await allInstallations()).length).toBe(5);
+
+      const response = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceToken: { $ne: null },
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect((await allInstallations()).length).toBe(5);
+    });
+
+    it('does not delete other installations when deviceToken is an operator object and no installation matches the installationId', async () => {
+      await seedVictimInstallations(4);
+      expect((await allInstallations()).length).toBe(4);
+
+      // No prior registration, so the request reaches the deduplication branch that runs
+      // when no row matches the installationId.
+      const response = await postInstallation({
+        installationId: 'unregistered-uuid-0000-0000-0000',
+        deviceType: 'android',
+        deviceToken: { $ne: null },
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect((await allInstallations()).length).toBe(4);
+    });
+
+    it('does not delete targeted installations when deviceToken is a regex operator', async () => {
+      await seedVictimInstallations(4);
+      await registerAttackerInstallation();
+
+      const response = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceToken: { $regex: '^victimtoken' },
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect((await allInstallations()).length).toBe(5);
+    });
+
+    it('does not clear device tokens when deviceToken is an operator object and the duplicate action is update', async () => {
+      await reconfigureServer({ installation: { duplicateDeviceTokenAction: 'update' } });
+      await seedVictimInstallations(4);
+      await registerAttackerInstallation();
+
+      const response = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceToken: { $ne: null },
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      const query = new Parse.Query(Parse.Installation);
+      query.exists('deviceToken');
+      expect(await query.count({ useMasterKey: true })).toBe(4);
+    });
+
+    it('does not delete other installations when deviceToken is an operator object on update', async () => {
+      await seedVictimInstallations(4);
+      const created = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceType: 'android',
+      });
+      expect(created.status).toBe(201);
+
+      const response = await putInstallation(created.data.objectId, {
+        deviceToken: { $ne: null },
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect((await allInstallations()).length).toBe(5);
+    });
+
+    it('does not delete other installations when appIdentifier is an operator object', async () => {
+      await seedVictimInstallations(4);
+      await registerAttackerInstallation();
+
+      const response = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceToken: 'victimtoken0',
+        appIdentifier: { $ne: null },
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect((await allInstallations()).length).toBe(5);
+    });
+
+    it('rejects a non-string installationId with a client error', async () => {
+      await seedVictimInstallations(1);
+
+      const response = await postInstallation({
+        installationId: { $ne: null },
+        deviceType: 'android',
+        deviceToken: 'sometoken',
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect((await allInstallations()).length).toBe(1);
+    });
+
+    it('still allows appIdentifier to be unset with a Delete operation', async () => {
+      const created = await postInstallation({
+        installationId: 'device-uuid-0000-0000-000000000009',
+        deviceType: 'ios',
+        deviceToken: 'unsettoken',
+        appIdentifier: 'com.example.app',
+      });
+      expect(created.status).toBe(201);
+
+      // `appIdentifier` only narrows the deduplication query, so unsetting it is a valid
+      // operation that must survive the type validation above.
+      const response = await putInstallation(created.data.objectId, {
+        appIdentifier: { __op: 'Delete' },
+      });
+
+      expect(response.status).toBe(200);
+      const query = new Parse.Query(Parse.Installation);
+      query.equalTo('objectId', created.data.objectId);
+      const [installation] = await query.find({ useMasterKey: true });
+      expect(installation.get('appIdentifier')).toBeUndefined();
+    });
+
+    it('does not clean up installations of other applications when appIdentifier is unset', async () => {
+      const victim = await postInstallation({
+        installationId: 'victim-uuid-0000-0000-00000000009',
+        deviceType: 'ios',
+        deviceToken: 'contested-token',
+        appIdentifier: 'com.example.victimapp',
+      });
+      expect(victim.status).toBe(201);
+      const attacker = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceType: 'android',
+        deviceToken: 'attacker-token',
+        appIdentifier: 'com.example.attackerapp',
+      });
+      expect(attacker.status).toBe(201);
+
+      // Claiming the other application's device token while unsetting `appIdentifier` must
+      // not drop the constraint that scopes the cleanup to the caller's own application.
+      const response = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceToken: 'contested-token',
+        appIdentifier: { __op: 'Delete' },
+      });
+      expect(response.status).toBe(200);
+
+      expect(await allInstallations()).toEqual(
+        ['victim-uuid-0000-0000-00000000009', attackerInstallationId].sort()
+      );
+    });
+
+    it('reports the received type when a deviceToken is an array', async () => {
+      await seedVictimInstallations(1);
+      await registerAttackerInstallation();
+
+      const response = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceToken: ['victimtoken0'],
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect(response.data.error).toBe(
+        'schema mismatch for _Installation.deviceToken; expected String but got Array'
+      );
+      expect((await allInstallations()).length).toBe(2);
+    });
+
+    it('skips the cleanup when appIdentifier is unset and the matched installation has none', async () => {
+      const victim = await postInstallation({
+        installationId: 'victim-uuid-0000-0000-00000000010',
+        deviceType: 'ios',
+        deviceToken: 'unscoped-token',
+        appIdentifier: 'com.example.victimapp',
+      });
+      expect(victim.status).toBe(201);
+      // The caller's own installation carries no application scope to fall back to.
+      const attacker = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceType: 'android',
+        deviceToken: 'attacker-token',
+      });
+      expect(attacker.status).toBe(201);
+
+      const response = await postInstallation({
+        installationId: attackerInstallationId,
+        deviceToken: 'unscoped-token',
+        appIdentifier: { __op: 'Delete' },
+      });
+
+      expect(response.status).toBe(200);
+      expect(await allInstallations()).toEqual(
+        ['victim-uuid-0000-0000-00000000010', attackerInstallationId].sort()
+      );
+    });
+
+    it('skips the cleanup when appIdentifier is unset and no installation matches', async () => {
+      const first = await postInstallation({
+        installationId: 'victim-uuid-0000-0000-00000000011',
+        deviceType: 'ios',
+        deviceToken: 'collide-token',
+        appIdentifier: 'com.example.appone',
+      });
+      expect(first.status).toBe(201);
+      const second = await postInstallation({
+        installationId: 'victim-uuid-0000-0000-00000000012',
+        deviceType: 'ios',
+        deviceToken: 'collide-token-2',
+        appIdentifier: 'com.example.apptwo',
+      });
+      expect(second.status).toBe(201);
+
+      // An unregistered installationId reaches the branch that runs when nothing matches.
+      const response = await postInstallation({
+        installationId: 'unregistered-uuid-0000-0000-0001',
+        deviceType: 'android',
+        deviceToken: 'collide-token',
+        appIdentifier: { __op: 'Delete' },
+      });
+
+      expect(response.status).toBe(201);
+      expect(await allInstallations()).toEqual(
+        [
+          'victim-uuid-0000-0000-00000000011',
+          'victim-uuid-0000-0000-00000000012',
+          'unregistered-uuid-0000-0000-0001',
+        ].sort()
+      );
+    });
+
+    it('guards every _Installation field that the schema declares as String and the deduplication queries use', () => {
+      // The guard in `handleInstallation` hardcodes `String` because the schema's own type
+      // check runs too late in the write pipeline to be reused. This pins the two together:
+      // if a field is renamed or redeclared, this fails rather than leaving a stale guard.
+      const { defaultColumns } = require('../lib/Controllers/SchemaController');
+      for (const fieldName of ['deviceToken', 'installationId', 'appIdentifier']) {
+        expect(defaultColumns._Installation[fieldName]).toEqual({ type: 'String' });
+      }
+    });
+
+    it('still deduplicates installations that share a string deviceToken', async () => {
+      const first = await postInstallation({
+        installationId: 'device-uuid-0000-0000-000000000001',
+        deviceType: 'ios',
+        deviceToken: 'sharedtoken',
+      });
+      expect(first.status).toBe(201);
+
+      // The same physical device re-registers under a new installationId: the stale row
+      // holding the device token must still be cleaned up.
+      const second = await postInstallation({
+        installationId: 'device-uuid-0000-0000-000000000002',
+        deviceType: 'ios',
+        deviceToken: 'sharedtoken',
+      });
+      expect(second.status).toBe(201);
+
+      expect(await allInstallations()).toEqual(['device-uuid-0000-0000-000000000002']);
+    });
+  });
+
+  describe('(GHSA-mr43-w6c2-mvjq) Unverified provider identity accepted on password login for code-based auth adapters', () => {
+    const tokenUrl = 'https://github.com/login/oauth/access_token';
+    const userUrl = 'https://api.github.com/user';
+    const victimProviderId = '13370001';
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+
+    // Stands in for the provider: the code exchange succeeds and resolves to `providerId`.
+    const mockProvider = providerId =>
+      mockFetch([
+        {
+          url: tokenUrl,
+          method: 'POST',
+          response: { ok: true, json: () => Promise.resolve({ access_token: 'provider-token' }) },
+        },
+        {
+          url: userUrl,
+          method: 'GET',
+          response: { ok: true, json: () => Promise.resolve({ id: providerId, login: 'login' }) },
+        },
+      ]);
+
+    const passwordLogin = (username, password, authData) =>
+      request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/login',
+        headers,
+        body: JSON.stringify({ username, password, authData }),
+      }).catch(e => e);
+
+    const challenge = body =>
+      request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/challenge',
+        headers,
+        body: JSON.stringify(body),
+      }).catch(e => e);
+
+    // Reads the row directly so the adapter's afterFind cannot mask what was persisted.
+    const storedProviderData = async objectId => {
+      const [row] = await Config.get('test').database.find('_User', { objectId });
+      return row.authData?.github;
+    };
+
+    let attacker;
+
+    beforeEach(async () => {
+      await reconfigureServer({
+        auth: { github: { clientId: 'clientId', clientSecret: 'clientSecret' } },
+      });
+      attacker = new Parse.User();
+      await attacker.signUp({ username: 'attacker', password: 'attacker-password' });
+    });
+
+    it('rejects a provider id on password login when no authorization code is supplied', async () => {
+      mockFetch();
+
+      const response = await passwordLogin('attacker', 'attacker-password', {
+        github: { id: victimProviderId },
+      });
+
+      const body = JSON.parse(response.text);
+      expect(body.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(body.error).toBe('GitHub code is required.');
+      expect(global.fetch.calls.count()).toBe(0);
+      expect(await storedProviderData(attacker.id)).toBeUndefined();
+    });
+
+    it('links a provider on password login with the identity the provider returns for the code', async () => {
+      mockProvider('attacker-provider-id');
+
+      const response = await passwordLogin('attacker', 'attacker-password', {
+        github: { code: 'valid-code' },
+      });
+
+      expect(response.status).toBe(200);
+      expect(global.fetch.calls.count()).toBe(2);
+      const stored = await storedProviderData(attacker.id);
+      expect(stored.id).toBe('attacker-provider-id');
+      expect(stored.code).toBeUndefined();
+    });
+
+    it('rejects a provider id on password login that differs from the identity the provider returns', async () => {
+      mockProvider('attacker-provider-id');
+
+      const response = await passwordLogin('attacker', 'attacker-password', {
+        github: { code: 'valid-code', id: victimProviderId },
+      });
+
+      const body = JSON.parse(response.text);
+      expect(body.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      expect(await storedProviderData(attacker.id)).toBeUndefined();
+    });
+
+    it("does not let a planted provider id capture the provider account owner's later sign-in", async () => {
+      mockFetch();
+      await passwordLogin('attacker', 'attacker-password', { github: { id: victimProviderId } });
+
+      mockProvider(victimProviderId);
+      const victim = await Parse.User.logInWith('github', { authData: { code: 'victim-code' } });
+
+      expect(victim.id).not.toBe(attacker.id);
+      expect((await storedProviderData(victim.id)).id).toBe(victimProviderId);
+      expect(await storedProviderData(attacker.id)).toBeUndefined();
+    });
+
+    it('rejects linking a provider identity on password login that is already linked to another user', async () => {
+      mockProvider(victimProviderId);
+      const victim = await Parse.User.logInWith('github', { authData: { code: 'victim-code' } });
+
+      mockProvider(victimProviderId);
+      const response = await passwordLogin('attacker', 'attacker-password', {
+        github: { code: 'leaked-code' },
+      });
+
+      const body = JSON.parse(response.text);
+      expect(body.code).toBe(Parse.Error.ACCOUNT_ALREADY_LINKED);
+      expect(await storedProviderData(attacker.id)).toBeUndefined();
+      expect((await storedProviderData(victim.id)).id).toBe(victimProviderId);
+    });
+
+    describe('challenge endpoint', () => {
+      beforeEach(async () => {
+        mockProvider(victimProviderId);
+        await Parse.User.logInWith('github', { authData: { code: 'victim-code' } });
+      });
+
+      it('rejects a provider id without an authorization code', async () => {
+        mockFetch();
+
+        const response = await challenge({
+          authData: { github: { id: victimProviderId } },
+          challengeData: { github: {} },
+        });
+
+        const body = JSON.parse(response.text);
+        expect(body.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+        expect(body.error).toBe('User not found.');
+        expect(global.fetch.calls.count()).toBe(0);
+      });
+
+      it('resolves the user by a valid authorization code', async () => {
+        mockProvider(victimProviderId);
+
+        const response = await challenge({
+          authData: { github: { code: 'victim-code' } },
+          challengeData: { github: {} },
+        });
+
+        expect(response.status).toBe(200);
+        expect(global.fetch.calls.count()).toBe(2);
+      });
+    });
+  });
+
+  describe('(GHSA-gpr6-gr9g-pfw6) Save with a file pointer without URL', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const file = { __type: 'File', name: 'x.jpg' };
+
+    let unhandled;
+    const onUnhandled = reason => unhandled.push(reason);
+    beforeEach(() => {
+      unhandled = [];
+      process.on('unhandledRejection', onUnhandled);
+    });
+    afterEach(() => {
+      process.removeListener('unhandledRejection', onUnhandled);
+    });
+
+    const post = (className, body) =>
+      request({
+        method: 'POST',
+        url: `http://localhost:8378/1/classes/${className}`,
+        headers,
+        body,
+      });
+
+    it('provides file URL to beforeSave trigger', async () => {
+      let url;
+      Parse.Cloud.beforeSave('Item', req => {
+        url = req.object.get('file').url();
+      });
+      const res = await post('Item', { file });
+      expect(res.status).toBe(201);
+      expect(url).toBe('http://localhost:8378/1/files/test/x.jpg');
+      const obj = await new Parse.Query('Item').get(res.data.objectId);
+      expect(obj.get('file').name()).toBe('x.jpg');
+    });
+
+    it('provides file URL to beforeSave trigger for nested file', async () => {
+      let urls;
+      Parse.Cloud.beforeSave('Item', req => {
+        urls = [req.object.get('nested').file.url(), req.object.get('list')[0].url()];
+      });
+      const res = await post('Item', { nested: { file }, list: [file] });
+      expect(res.status).toBe(201);
+      expect(urls).toEqual([
+        'http://localhost:8378/1/files/test/x.jpg',
+        'http://localhost:8378/1/files/test/x.jpg',
+      ]);
+      const obj = await new Parse.Query('Item').get(res.data.objectId);
+      expect(obj.get('nested').file.name()).toBe('x.jpg');
+      expect(obj.get('list')[0].name()).toBe('x.jpg');
+    });
+
+    it('provides file URL to afterSave trigger for file pointer set in beforeSave trigger', async () => {
+      Parse.Cloud.beforeSave('Item', req => {
+        req.object.set('raw', { __type: 'File', name: 'y.jpg' });
+      });
+      let url;
+      Parse.Cloud.afterSave('Item', req => {
+        url = req.object.get('raw').url();
+      });
+      const res = await post('Item', {});
+      expect(res.status).toBe(201);
+      expect(url).toBe('http://localhost:8378/1/files/test/y.jpg');
+      await new Promise(resolve => setTimeout(resolve, 100));
+      expect(unhandled).toEqual([]);
+    });
+
+    it('provides file URL to afterSave trigger', async () => {
+      let url;
+      Parse.Cloud.afterSave('Item', req => {
+        url = req.object.get('file').url();
+      });
+      const res = await post('Item', { file });
+      expect(res.status).toBe(201);
+      expect(url).toBe('http://localhost:8378/1/files/test/x.jpg');
+      await new Promise(resolve => setTimeout(resolve, 100));
+      expect(unhandled).toEqual([]);
+    });
+
+    it('provides file URL to beforeSave trigger on update with array operation', async () => {
+      const res = await post('Item', {});
+      let url;
+      Parse.Cloud.beforeSave('Item', req => {
+        url = req.object.get('list')[0].url();
+      });
+      const update = await request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/classes/Item/${res.data.objectId}`,
+        headers,
+        body: { list: { __op: 'Add', objects: [file] } },
+      });
+      expect(update.status).toBe(200);
+      expect(url).toBe('http://localhost:8378/1/files/test/x.jpg');
+    });
+
+    it('provides file URL to beforeSave trigger on user sign-up', async () => {
+      let url;
+      Parse.Cloud.beforeSave(Parse.User, req => {
+        url = req.object.get('file').url();
+      });
+      const res = await post('_User', { username: 'u', password: 'p', file });
+      expect(res.status).toBe(201);
+      expect(url).toBe('http://localhost:8378/1/files/test/x.jpg');
+    });
+
+    for (const invalid of [{ __type: 'File' }, { __type: 'File', name: 5 }]) {
+      it(`rejects invalid file pointer ${JSON.stringify(invalid)}`, async () => {
+        Parse.Cloud.beforeSave('Item', () => {});
+        for (const body of [{ file: invalid }, { list: [invalid] }, { nested: { invalid } }]) {
+          const res = await post('Item', body).catch(e => e);
+          expect(res.status).toBe(400);
+          expect(res.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+        }
+        await new Promise(resolve => setTimeout(resolve, 100));
+        expect(unhandled).toEqual([]);
+      });
+    }
+
+    describe('stored in array without URL', () => {
+      let objectId;
+      beforeEach(async () => {
+        const res = await post('Item', { list: [file], nested: { file } });
+        objectId = res.data.objectId;
+      });
+
+      const expectUrls = object => {
+        expect(object.get('list')[0].url()).toBe('http://localhost:8378/1/files/test/x.jpg');
+        expect(object.get('nested').file.url()).toBe('http://localhost:8378/1/files/test/x.jpg');
+      };
+
+      it('provides file URL to beforeSave trigger on update', async () => {
+        let original;
+        Parse.Cloud.beforeSave('Item', req => {
+          original = req.original;
+          expectUrls(req.object);
+        });
+        const res = await request({
+          method: 'PUT',
+          url: `http://localhost:8378/1/classes/Item/${objectId}`,
+          headers,
+          body: { foo: 'bar' },
+        });
+        expect(res.status).toBe(200);
+        expectUrls(original);
+      });
+
+      it('provides file URL to afterSave trigger on update', async () => {
+        let object;
+        Parse.Cloud.afterSave('Item', req => {
+          object = req.object;
+        });
+        const res = await request({
+          method: 'PUT',
+          url: `http://localhost:8378/1/classes/Item/${objectId}`,
+          headers,
+          body: { foo: 'bar' },
+        });
+        expect(res.status).toBe(200);
+        expectUrls(object);
+        await new Promise(resolve => setTimeout(resolve, 100));
+        expect(unhandled).toEqual([]);
+      });
+
+      it('provides file URL to afterFind trigger', async () => {
+        let object;
+        Parse.Cloud.afterFind('Item', req => {
+          object = req.objects[0];
+        });
+        const res = await request({
+          url: `http://localhost:8378/1/classes/Item/${objectId}`,
+          headers,
+        });
+        expect(res.status).toBe(200);
+        expectUrls(object);
+        expect(res.data.list[0].url).toBe('http://localhost:8378/1/files/test/x.jpg');
+      });
+
+      it('provides file URL to beforeDelete and afterDelete triggers', async () => {
+        const objects = [];
+        Parse.Cloud.beforeDelete('Item', req => {
+          objects.push(req.object);
+        });
+        Parse.Cloud.afterDelete('Item', req => {
+          objects.push(req.object);
+        });
+        const res = await request({
+          method: 'DELETE',
+          url: `http://localhost:8378/1/classes/Item/${objectId}`,
+          headers,
+        });
+        expect(res.status).toBe(200);
+        expect(objects.length).toBe(2);
+        objects.forEach(expectUrls);
+      });
+    });
+
+    it('does not cause unhandled rejection on LiveQuery publish', async () => {
+      await reconfigureServer({
+        liveQuery: { classNames: ['Chat'] },
+        startLiveQueryServer: true,
+      });
+      const res = await post('Chat', { file });
+      expect(res.status).toBe(201);
+      await new Promise(resolve => setTimeout(resolve, 200));
+      expect(unhandled).toEqual([]);
+    });
+
+    it('publishes LiveQuery update for object with stored file without URL', async () => {
+      Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+      await reconfigureServer({
+        liveQuery: { classNames: ['Chat'] },
+        startLiveQueryServer: true,
+      });
+      const res = await post('Chat', { list: [file] });
+      const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+      try {
+        const subscription = await new Parse.Query('Chat').subscribe();
+        const updated = new Promise(resolve => subscription.on('update', resolve));
+        await request({
+          method: 'PUT',
+          url: `http://localhost:8378/1/classes/Chat/${res.data.objectId}`,
+          headers,
+          body: { foo: 'bar' },
+        });
+        const object = await updated;
+        expect(object.get('list')[0].url()).toBe('http://localhost:8378/1/files/test/x.jpg');
+        expect(unhandled).toEqual([]);
+      } finally {
+        await client.close();
+      }
+    });
+  });
+
+  describe('(GHSA-jhh9-hrgh-c9gv) Transactional batch request can roll back or block writes of other clients', () => {
+    const AppCache = require('../lib/cache').AppCache;
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const post = (path, body) =>
+      request({
+        method: 'POST',
+        url: `http://localhost:8378/1${path}`,
+        headers,
+        body,
+      });
+    const get = path =>
+      request({
+        url: `http://localhost:8378/1${path}`,
+        headers,
+      });
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+    const expectSeparateDatabaseControllers = () => {
+      expect(Config.get('test').database).not.toBe(Config.get('test').database);
+    };
+    const expectServerConfigInCache = () => {
+      const cachedConfig = AppCache.get('test');
+      expect(cachedConfig.databaseController).toBeDefined();
+      expect(cachedConfig.database).toBeUndefined();
+    };
+
+    it('does not share the database controller after the master key is loaded from a function', async () => {
+      await reconfigureServer({ masterKey: () => 'test' });
+      await post('/classes/TestObject', { key: 'value' });
+      expect(Config.get('test').masterKeyCache.masterKey).toBe('test');
+      expectServerConfigInCache();
+      expectSeparateDatabaseControllers();
+    });
+
+    it('does not share the database controller after the master key is reloaded', async () => {
+      await reconfigureServer({ masterKey: () => 'test', masterKeyTtl: 1000 });
+      await post('/classes/TestObject', { key: 'value' });
+      Config.get('test').masterKeyCache.expiresAt = new Date(0);
+      await post('/classes/TestObject', { key: 'value' });
+      expect(Config.get('test').masterKeyCache.expiresAt.getTime()).toBeGreaterThan(Date.now());
+      expectServerConfigInCache();
+      expectSeparateDatabaseControllers();
+    });
+
+    it('does not share the database controller after a Cloud Code rate limit is registered', async () => {
+      Parse.Cloud.define('rateLimitedFunction', () => 'ok', {
+        rateLimit: { requestTimeWindow: 10000, requestCount: 1 },
+      });
+      expectSeparateDatabaseControllers();
+    });
+
+    it('does not share the database controller after the server config is set via Parse.Server', async () => {
+      const config = Parse.Server;
+      config.silent = false;
+      Parse.Server = config;
+      expectSeparateDatabaseControllers();
+    });
+
+    it('rejects a transactional session while another one is active on the same database controller', async () => {
+      const database = Config.get('test').database;
+      spyOn(database.adapter, 'createTransactionalSession').and.resolveTo({});
+      await database.createTransactionalSession();
+      await expectAsync(database.createTransactionalSession()).toBeRejectedWithError(
+        'There is already an active transactional session'
+      );
+      expect(database.adapter.createTransactionalSession).toHaveBeenCalledTimes(1);
+    });
+
+    it('rejects concurrent transactional sessions on the same database controller', async () => {
+      const database = Config.get('test').database;
+      spyOn(database.adapter, 'createTransactionalSession').and.resolveTo({});
+      const results = await Promise.allSettled([
+        database.createTransactionalSession(),
+        database.createTransactionalSession(),
+      ]);
+      expect(results.map(result => result.status)).toEqual(['fulfilled', 'rejected']);
+      expect(results[1].reason.message).toBe('There is already an active transactional session');
+      expect(database.adapter.createTransactionalSession).toHaveBeenCalledTimes(1);
+    });
+
+    it('allows a transactional session after the creation of a transactional session failed', async () => {
+      const database = Config.get('test').database;
+      spyOn(database.adapter, 'createTransactionalSession').and.returnValues(
+        Promise.reject(new Error('creation failed')),
+        Promise.resolve({})
+      );
+      await expectAsync(database.createTransactionalSession()).toBeRejectedWithError(
+        'creation failed'
+      );
+      await expectAsync(database.createTransactionalSession()).toBeResolved();
+    });
+
+    it('allows a transactional session after the creation of a transactional session threw', async () => {
+      const database = Config.get('test').database;
+      let calls = 0;
+      spyOn(database.adapter, 'createTransactionalSession').and.callFake(() => {
+        if (++calls === 1) {
+          throw new Error('creation threw');
+        }
+        return Promise.resolve({});
+      });
+      await expectAsync(database.createTransactionalSession()).toBeRejectedWithError(
+        'creation threw'
+      );
+      await expectAsync(database.createTransactionalSession()).toBeResolved();
+    });
+
+    if (
+      ['replicaset', 'replset'].includes(process.env.MONGODB_TOPOLOGY) ||
+      process.env.PARSE_SERVER_TEST_DB === 'postgres'
+    ) {
+      describe('transactions', () => {
+        beforeEach(async () => {
+          await reconfigureServer({ masterKey: () => 'test' });
+          // Transactions only work on existing classes
+          for (const className of ['SlowObject', 'FailingObject', 'OtherObject']) {
+            await post(`/classes/${className}`, { key: 'value' });
+          }
+          Parse.Cloud.beforeSave('SlowObject', () => sleep(500));
+        });
+
+        it('keeps a write of another client that runs during a failing transactional batch', async () => {
+          const batch = expectAsync(
+            post('/batch', {
+              transaction: true,
+              requests: [
+                { method: 'POST', path: '/1/classes/SlowObject', body: { key: 'value' } },
+                { method: 'POST', path: '/1/classes/FailingObject', body: { key: 10 } },
+              ],
+            })
+          ).toBeRejected();
+          await sleep(150);
+          const response = await post('/classes/OtherObject', { key: 'other client' });
+          await batch;
+          const object = await get(`/classes/OtherObject/${response.data.objectId}`);
+          expect(object.data.key).toBe('other client');
+        });
+
+        it('completes concurrent transactional batches', async () => {
+          const batch = () =>
+            post('/batch', {
+              transaction: true,
+              requests: [
+                { method: 'POST', path: '/1/classes/SlowObject', body: { key: 'value' } },
+                { method: 'POST', path: '/1/classes/OtherObject', body: { key: 'value' } },
+              ],
+            });
+          const first = batch();
+          await sleep(100);
+          const responses = await Promise.all([first, batch()]);
+          for (const response of responses) {
+            expect(response.data.length).toBe(2);
+            expect(response.data.every(result => result.success)).toBeTrue();
+          }
+          const objects = await get('/classes/OtherObject');
+          expect(objects.data.results.length).toBe(3);
+        });
+
+        it('does not fail writes of other clients after a failing transactional batch', async () => {
+          await expectAsync(
+            post('/batch', {
+              transaction: true,
+              requests: [
+                { method: 'POST', path: '/1/classes/OtherObject', body: { key: 'value' } },
+                { method: 'POST', path: '/1/classes/FailingObject', body: { key: 10 } },
+              ],
+            })
+          ).toBeRejected();
+          const response = await post('/classes/OtherObject', { key: 'other client' });
+          expect(response.data.objectId).toBeDefined();
+        });
+      });
+    }
+  });
+
+  describe('(GHSA-46jj-qw3p-48fc) Error when sending verification or password reset email', () => {
+    const { resolvingPromise, sleep } = require('../lib/TestUtils');
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const post = (path, body) =>
+      request({
+        method: 'POST',
+        url: `http://localhost:8378/1${path}`,
+        headers,
+        body,
+      });
+    const signUp = () =>
+      post('/users', { username: 'user', password: 'password', email: 'user@example.com' });
+    const error = new Error('mail provider error');
+
+    let unhandled;
+    let loggerErrorSpy;
+    const onUnhandled = reason => unhandled.push(reason);
+    beforeEach(() => {
+      unhandled = [];
+      process.on('unhandledRejection', onUnhandled);
+    });
+    afterEach(() => {
+      process.removeListener('unhandledRejection', onUnhandled);
+    });
+
+    const reconfigure = async options => {
+      await reconfigureServer({
+        appName: 'test',
+        publicServerURL: 'http://localhost:8378/1',
+        ...options,
+      });
+      loggerErrorSpy = spyOn(require('../lib/logger').default, 'error').and.callFake(() => {});
+    };
+    const errorLogged = message =>
+      loggerErrorSpy.calls.allArgs().some(args => args[0] === message);
+    const expectErrorLogged = async (message, loggedError) => {
+      for (let i = 0; i < 100 && !unhandled.length && !errorLogged(message); i++) {
+        await sleep(10);
+      }
+      expect(unhandled).toEqual([]);
+      expect(loggerErrorSpy).toHaveBeenCalledWith(message, { error: loggedError });
+    };
+    const errorWithRequestData = () => {
+      const e = new Error('mail provider error');
+      e.config = { headers: { Authorization: 'Bearer secret-api-key' } };
+      return e;
+    };
+    const expectRequestDataNotLogged = () => {
+      expect(JSON.stringify(loggerErrorSpy.calls.allArgs())).not.toContain('secret-api-key');
+    };
+
+    describe('verification email', () => {
+      const message = 'Failed to send verification email';
+
+      it('handles rejection of email adapter on sign-up', async () => {
+        await reconfigure({
+          verifyUserEmails: true,
+          emailAdapter: {
+            sendVerificationEmail: () => Promise.reject(error),
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => Promise.resolve(),
+          },
+        });
+        const res = await signUp();
+        expect(res.status).toBe(201);
+        await expectErrorLogged(message, error.stack);
+      });
+
+      it('handles synchronous error of email adapter on sign-up', async () => {
+        await reconfigure({
+          verifyUserEmails: true,
+          emailAdapter: {
+            sendVerificationEmail: () => {
+              throw error;
+            },
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => Promise.resolve(),
+          },
+        });
+        const res = await signUp();
+        expect(res.status).toBe(201);
+        await expectErrorLogged(message, error.stack);
+      });
+
+      it('handles rejection of email adapter sendMail on sign-up', async () => {
+        await reconfigure({
+          verifyUserEmails: true,
+          emailAdapter: {
+            sendMail: () => Promise.reject(error),
+          },
+        });
+        const res = await signUp();
+        expect(res.status).toBe(201);
+        await expectErrorLogged(message, error.stack);
+      });
+
+      it('handles error of sendUserEmailVerification on sign-up', async () => {
+        await reconfigure({
+          verifyUserEmails: true,
+          sendUserEmailVerification: () => {
+            throw error;
+          },
+          emailAdapter: {
+            sendVerificationEmail: () => Promise.resolve(),
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => Promise.resolve(),
+          },
+        });
+        const res = await signUp();
+        expect(res.status).toBe(201);
+        await expectErrorLogged(message, error.stack);
+      });
+
+      it('handles user deleted before verification email is sent', async () => {
+        await reconfigure({
+          verifyUserEmails: true,
+          emailAdapter: {
+            sendVerificationEmail: () => Promise.resolve(),
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => Promise.resolve(),
+          },
+        });
+        const userController = Config.get('test').userController;
+        const getUserIfNeeded = userController.getUserIfNeeded.bind(userController);
+        const userDeleted = resolvingPromise();
+        spyOn(userController, 'getUserIfNeeded').and.callFake(async user => {
+          await userDeleted;
+          return getUserIfNeeded(user);
+        });
+        const res = await signUp();
+        expect(res.status).toBe(201);
+        await request({
+          method: 'DELETE',
+          url: `http://localhost:8378/1/users/${res.data.objectId}`,
+          headers: { ...headers, 'X-Parse-Master-Key': 'test' },
+        });
+        userDeleted.resolve();
+        await expectErrorLogged(message, 'undefined');
+      });
+
+      it('does not log properties of email adapter error', async () => {
+        const adapterError = errorWithRequestData();
+        await reconfigure({
+          verifyUserEmails: true,
+          emailAdapter: {
+            sendVerificationEmail: () => Promise.reject(adapterError),
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => Promise.resolve(),
+          },
+        });
+        await signUp();
+        await expectErrorLogged(message, adapterError.stack);
+        expectRequestDataNotLogged();
+      });
+
+      it('does not log properties of sendUserEmailVerification error', async () => {
+        const callbackError = errorWithRequestData();
+        await reconfigure({
+          verifyUserEmails: true,
+          sendUserEmailVerification: () => {
+            throw callbackError;
+          },
+          emailAdapter: {
+            sendVerificationEmail: () => Promise.resolve(),
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => Promise.resolve(),
+          },
+        });
+        await signUp();
+        await expectErrorLogged(message, callbackError.stack);
+        expectRequestDataNotLogged();
+      });
+
+      describe('resend', () => {
+        let firstSend;
+        beforeEach(async () => {
+          firstSend = resolvingPromise();
+          let sendCount = 0;
+          await reconfigure({
+            verifyUserEmails: true,
+            emailAdapter: {
+              sendVerificationEmail: () => {
+                sendCount++;
+                if (sendCount === 1) {
+                  firstSend.resolve();
+                  return Promise.resolve();
+                }
+                return Promise.reject(error);
+              },
+              sendPasswordResetEmail: () => Promise.resolve(),
+              sendMail: () => Promise.resolve(),
+            },
+          });
+          await signUp();
+          await firstSend;
+        });
+
+        it('handles rejection of email adapter on verification email request', async () => {
+          const res = await post('/verificationEmailRequest', { email: 'user@example.com' });
+          expect(res.status).toBe(200);
+          expect(res.data).toEqual({});
+          await expectErrorLogged(message, error.stack);
+        });
+
+        it('handles rejection of email adapter on resend verification email page', async () => {
+          const res = await request({
+            method: 'POST',
+            url: 'http://localhost:8378/1/apps/test/resend_verification_email',
+            followRedirects: false,
+            body: { username: 'user' },
+          });
+          expect(res.status).toBe(303);
+          expect(res.text).toContain('email_verification_send_success.html');
+          await expectErrorLogged(message, error.stack);
+        });
+      });
+    });
+
+    describe('password reset email', () => {
+      const message = 'Failed to send password reset email';
+
+      const requestPasswordReset = async emailAdapter => {
+        await reconfigure({ emailAdapter });
+        await signUp();
+        const res = await post('/requestPasswordReset', { email: 'user@example.com' });
+        expect(res.status).toBe(200);
+        expect(res.data).toEqual({});
+      };
+
+      it('handles rejection of email adapter', async () => {
+        await requestPasswordReset({
+          sendVerificationEmail: () => Promise.resolve(),
+          sendPasswordResetEmail: () => Promise.reject(error),
+          sendMail: () => Promise.resolve(),
+        });
+        await expectErrorLogged(message, error.stack);
+      });
+
+      it('handles synchronous error of email adapter', async () => {
+        await requestPasswordReset({
+          sendVerificationEmail: () => Promise.resolve(),
+          sendPasswordResetEmail: () => {
+            throw error;
+          },
+          sendMail: () => Promise.resolve(),
+        });
+        await expectErrorLogged(message, error.stack);
+      });
+
+      it('handles rejection of email adapter sendMail', async () => {
+        await requestPasswordReset({
+          sendMail: () => Promise.reject(error),
+        });
+        await expectErrorLogged(message, error.stack);
+      });
+
+      it('does not log properties of email adapter error', async () => {
+        const adapterError = errorWithRequestData();
+        await requestPasswordReset({
+          sendVerificationEmail: () => Promise.resolve(),
+          sendPasswordResetEmail: () => Promise.reject(adapterError),
+          sendMail: () => Promise.resolve(),
+        });
+        await expectErrorLogged(message, adapterError.stack);
+        expectRequestDataNotLogged();
+      });
+    });
+  });
+
+  describe('(GHSA-gj37-5hg5-p729) Session creation bypasses _Session create and addField class-level permissions', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const masterHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Master-Key': 'test',
+      'Content-Type': 'application/json',
+    };
+    const publicCLP = {
+      find: { '*': true },
+      count: { '*': true },
+      get: { '*': true },
+      create: { '*': true },
+      update: { '*': true },
+      delete: { '*': true },
+      addField: { '*': true },
+      protectedFields: { '*': [] },
+    };
+    const setSessionCLP = permissions =>
+      request({
+        method: 'PUT',
+        url: 'http://localhost:8378/1/schemas/_Session',
+        headers: masterHeaders,
+        body: { classLevelPermissions: { ...publicCLP, ...permissions } },
+      });
+    const createSession = (sessionToken, body = {}, path = '/sessions') =>
+      request({
+        method: 'POST',
+        url: `http://localhost:8378/1${path}`,
+        headers: { ...headers, 'X-Parse-Session-Token': sessionToken },
+        body,
+      }).catch(e => e);
+    const countSessions = user =>
+      new Parse.Query('_Session').equalTo('user', user).count({ useMasterKey: true });
+    const getSessionFields = async () => {
+      const response = await request({
+        url: 'http://localhost:8378/1/schemas/_Session',
+        headers: masterHeaders,
+      });
+      return Object.keys(response.data.fields);
+    };
+
+    describe('create', () => {
+      it('rejects POST /sessions without creating a session', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        await setSessionCLP({ create: {} });
+        const count = await countSessions(user);
+        const response = await createSession(user.getSessionToken());
+        expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        expect(await countSessions(user)).toBe(count);
+      });
+
+      it('rejects POST /classes/_Session without creating a session', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        await setSessionCLP({ create: {} });
+        const count = await countSessions(user);
+        const response = await createSession(user.getSessionToken(), {}, '/classes/_Session');
+        expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        expect(await countSessions(user)).toBe(count);
+      });
+
+      it('rejects session creation in a batch request without creating a session', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        await setSessionCLP({ create: {} });
+        const count = await countSessions(user);
+        const response = await createSession(user.getSessionToken(), {
+          requests: [{ method: 'POST', path: '/1/sessions', body: {} }],
+        }, '/batch');
+        expect(response.data[0].error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        expect(await countSessions(user)).toBe(count);
+      });
+
+      it('rejects a user outside the role permitted to create sessions', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        const role = new Parse.Role('SessionProvisioner', new Parse.ACL());
+        await role.save(null, { useMasterKey: true });
+        await setSessionCLP({ create: { 'role:SessionProvisioner': true } });
+        const count = await countSessions(user);
+        const response = await createSession(user.getSessionToken());
+        expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        expect(await countSessions(user)).toBe(count);
+      });
+
+      it('allows a user in the role permitted to create sessions', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        const role = new Parse.Role('SessionProvisioner', new Parse.ACL());
+        role.getUsers().add(user);
+        await role.save(null, { useMasterKey: true });
+        await setSessionCLP({ create: { 'role:SessionProvisioner': true } });
+        const count = await countSessions(user);
+        const response = await createSession(user.getSessionToken());
+        expect(response.status).toBe(201);
+        expect(response.data.sessionToken).toMatch(/^r:/);
+        expect(await countSessions(user)).toBe(count + 1);
+      });
+
+      it('allows an authenticated user when create requires authentication', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        await setSessionCLP({ create: { requiresAuthentication: true } });
+        const response = await createSession(user.getSessionToken());
+        expect(response.status).toBe(201);
+        expect(response.data.sessionToken).toMatch(/^r:/);
+      });
+
+      it('allows the master key to create a session', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        await setSessionCLP({ create: {}, addField: {} });
+        const count = await countSessions(user);
+        const response = await request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/classes/_Session',
+          headers: masterHeaders,
+          body: {
+            user: { __type: 'Pointer', className: '_User', objectId: user.id },
+            sessionToken: 'r:master-created',
+          },
+        });
+        expect(response.status).toBe(201);
+        expect(await countSessions(user)).toBe(count + 1);
+      });
+
+      it('creates sessions on signup and login', async () => {
+        await Parse.User.signUp('existing', 'password');
+        await setSessionCLP({ create: {}, addField: {} });
+        const user = await Parse.User.signUp('user', 'password');
+        expect(user.getSessionToken()).toMatch(/^r:/);
+        const loggedIn = await Parse.User.logIn('user', 'password');
+        expect(loggedIn.getSessionToken()).toMatch(/^r:/);
+        expect(loggedIn.getSessionToken()).not.toBe(user.getSessionToken());
+      });
+    });
+
+    describe('addField', () => {
+      it('rejects a new field without adding it to the schema', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        await setSessionCLP({ addField: {} });
+        const count = await countSessions(user);
+        const response = await createSession(user.getSessionToken(), { newField: 'value' });
+        expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        expect(await getSessionFields()).not.toContain('newField');
+        expect(await countSessions(user)).toBe(count);
+      });
+
+      it('does not add a new field to the schema when create is not permitted', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        await setSessionCLP({ create: {} });
+        const response = await createSession(user.getSessionToken(), { newField: 'value' });
+        expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        expect(await getSessionFields()).not.toContain('newField');
+      });
+
+      it('allows existing fields', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        await request({
+          method: 'PUT',
+          url: 'http://localhost:8378/1/schemas/_Session',
+          headers: masterHeaders,
+          body: { fields: { deviceName: { type: 'String' } } },
+        });
+        await setSessionCLP({ addField: {} });
+        const response = await createSession(user.getSessionToken(), {
+          deviceName: 'device',
+          installationId: 'installation',
+        });
+        expect(response.status).toBe(201);
+        const session = await new Parse.Query('_Session').get(response.data.objectId, {
+          useMasterKey: true,
+        });
+        expect(session.get('deviceName')).toBe('device');
+        expect(session.get('installationId')).toBe('installation');
+      });
+
+      it('allows a new field when addField is permitted', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        await setSessionCLP({});
+        const response = await createSession(user.getSessionToken(), { newField: 'value' });
+        expect(response.status).toBe(201);
+        expect(await getSessionFields()).toContain('newField');
+      });
+    });
+
+    it('does not create a session when the request body fails schema validation', async () => {
+      const user = await Parse.User.signUp('user', 'password');
+      const count = await countSessions(user);
+      const response = await createSession(user.getSessionToken(), { expiresAt: 'invalid' });
+      expect(response.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect(await countSessions(user)).toBe(count);
+    });
+  });
+
+  describe('(GHSA-qmg9-m772-5rm7) Client can delete class schema documents via the internal _SCHEMA collection', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const masterHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Master-Key': 'test',
+      'Content-Type': 'application/json',
+    };
+    const lockedCLP = {
+      find: {},
+      count: {},
+      get: {},
+      create: {},
+      update: {},
+      delete: {},
+      addField: {},
+      protectedFields: {},
+    };
+    const send = (method, path, extraHeaders = {}, body) =>
+      request({
+        method,
+        url: `http://localhost:8378/1${path}`,
+        headers: { ...headers, ...extraHeaders },
+        body,
+      }).catch(e => e);
+    const createLockedClass = async () => {
+      const schema = new Parse.Schema('Secret');
+      schema.addString('data');
+      schema.setCLP(lockedCLP);
+      await schema.save();
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/classes/Secret',
+        headers: masterHeaders,
+        body: { data: 'secret' },
+      });
+    };
+    const expectSchemaIntact = async () => {
+      const schemaController = await Config.get('test').database.loadSchema({ clearCache: true });
+      expect(await schemaController.hasClass('Secret')).toBe(true);
+      expect(schemaController.getClassLevelPermissions('Secret').find).toEqual({});
+    };
+
+    for (const allowClientClassCreation of [false, true]) {
+      describe(`with allowClientClassCreation ${allowClientClassCreation}`, () => {
+        beforeEach(async () => {
+          await reconfigureServer({ allowClientClassCreation });
+          await createLockedClass();
+        });
+
+        it('rejects DELETE /classes/_SCHEMA/:className without the master key', async () => {
+          const response = await send('DELETE', '/classes/_SCHEMA/Secret');
+          expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+          await expectSchemaIntact();
+          const find = await send('GET', '/classes/Secret');
+          expect(find.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        });
+
+        it('rejects DELETE /classes/_SCHEMA/:className with a user session', async () => {
+          const user = await Parse.User.signUp('user', 'password');
+          const response = await send('DELETE', '/classes/_SCHEMA/Secret', {
+            'X-Parse-Session-Token': user.getSessionToken(),
+          });
+          expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+          await expectSchemaIntact();
+        });
+
+        it('rejects find, get, create and update on _SCHEMA without the master key', async () => {
+          const responses = await Promise.all([
+            send('GET', '/classes/_SCHEMA'),
+            send('GET', '/classes/_SCHEMA/Secret'),
+            send('POST', '/classes/_SCHEMA', {}, { foo: 'bar' }),
+            send('PUT', '/classes/_SCHEMA/Secret', {}, { foo: 'bar' }),
+          ]);
+          for (const response of responses) {
+            expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+          }
+          await expectSchemaIntact();
+        });
+
+        it('rejects DELETE on a class name that is not a valid class name', async () => {
+          const response = await send('DELETE', '/classes/_Internal/abc');
+          expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        });
+      });
+    }
+  });
+
+  describe('(GHSA-rq3w-5c6f-p7wr) Custom auth adapters that extend the exported AuthAdapter class accept any authData', () => {
+    const { AuthAdapter } = require('../lib/index');
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+    const send = (method, path, body, sessionToken) =>
+      request({
+        method,
+        url: `http://localhost:8378/1${path}`,
+        headers: sessionToken ? { ...headers, 'X-Parse-Session-Token': sessionToken } : headers,
+        body: JSON.stringify(body),
+      }).catch(e => e);
+    const validToken = 'valid-token';
+    const checkToken = authData => {
+      if (authData?.token !== validToken) {
+        throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Invalid token.');
+      }
+    };
+
+    // V2 adapter
+    class TokenAdapter extends AuthAdapter {
+      validateSetUp(authData) {
+        checkToken(authData);
+      }
+      validateLogin(authData) {
+        checkToken(authData);
+      }
+      validateUpdate(authData) {
+        checkToken(authData);
+      }
+    }
+
+    it('rejects login with invalid authData for a user linked to the provider', async () => {
+      await reconfigureServer({ auth: { tokenAuth: new TokenAdapter() } });
+      const signUp = await send('POST', '/users', {
+        authData: { tokenAuth: { id: 'victim', token: validToken } },
+      });
+      expect(signUp.data.sessionToken).toBeDefined();
+
+      const login = await send('POST', '/users', {
+        authData: { tokenAuth: { id: 'victim', token: 'invalid' } },
+      });
+      expect(login.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(login.data.error).toBe('Invalid token.');
+      expect(login.data.sessionToken).toBeUndefined();
+    });
+
+    it('rejects signup with invalid authData', async () => {
+      await reconfigureServer({ auth: { tokenAuth: new TokenAdapter() } });
+      const signUp = await send('POST', '/users', {
+        authData: { tokenAuth: { id: 'new-user', token: 'invalid' } },
+      });
+      expect(signUp.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(signUp.data.error).toBe('Invalid token.');
+      const users = await new Parse.Query(Parse.User).find({ useMasterKey: true });
+      expect(users.length).toBe(0);
+    });
+
+    it('rejects linking invalid authData to a logged-in user', async () => {
+      await reconfigureServer({ auth: { tokenAuth: new TokenAdapter() } });
+      const user = await Parse.User.signUp('user', 'password');
+      const link = await send(
+        'PUT',
+        `/users/${user.id}`,
+        { authData: { tokenAuth: { id: 'claimed', token: 'invalid' } } },
+        user.getSessionToken()
+      );
+      expect(link.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(link.data.error).toBe('Invalid token.');
+      await user.fetch({ useMasterKey: true });
+      expect(user.get('authData')).toBeUndefined();
+    });
+
+    it('rejects updating a linked provider with invalid authData', async () => {
+      await reconfigureServer({ auth: { tokenAuth: new TokenAdapter() } });
+      const signUp = await send('POST', '/users', {
+        authData: { tokenAuth: { id: 'user-id', token: validToken } },
+      });
+      expect(signUp.data.sessionToken).toBeDefined();
+
+      const update = await send(
+        'PUT',
+        `/users/${signUp.data.objectId}`,
+        { authData: { tokenAuth: { id: 'user-id', token: 'invalid' } } },
+        signUp.data.sessionToken
+      );
+      expect(update.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(update.data.error).toBe('Invalid token.');
+    });
+
+    it('rejects password login with invalid authData for an additional-policy provider', async () => {
+      class SecondFactorAdapter extends TokenAdapter {
+        constructor() {
+          super();
+          this.policy = 'additional';
+        }
+      }
+      await reconfigureServer({ auth: { secondFactor: new SecondFactorAdapter() } });
+      const user = await Parse.User.signUp('user', 'password');
+      const link = await send(
+        'PUT',
+        `/users/${user.id}`,
+        { authData: { secondFactor: { token: validToken } } },
+        user.getSessionToken()
+      );
+      expect(link.data.code).toBeUndefined();
+
+      const login = await send('POST', '/login', {
+        username: 'user',
+        password: 'password',
+        authData: { secondFactor: { token: 'invalid' } },
+      });
+      expect(login.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(login.data.error).toBe('Invalid token.');
+      expect(login.data.sessionToken).toBeUndefined();
+    });
+
+    it('rejects invalid authData for a subclass configured under a built-in provider name', async () => {
+      // Built-in adapter that accepts any authData
+      await reconfigureServer({ auth: { anonymous: new TokenAdapter() } });
+      const signUp = await send('POST', '/users', {
+        authData: { anonymous: { id: 'user-id', token: 'invalid' } },
+      });
+      expect(signUp.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(signUp.data.error).toBe('Invalid token.');
+      const users = await new Parse.Query(Parse.User).find({ useMasterKey: true });
+      expect(users.length).toBe(0);
+    });
+
+    it('runs the adapter methods with access to the instance state and helper methods', async () => {
+      class InstanceAdapter extends AuthAdapter {
+        constructor(token) {
+          super();
+          this.token = token;
+          this.idPrefix = 'user-';
+        }
+        check(authData) {
+          if (authData?.token !== this.token || !authData.id?.startsWith(this.idPrefix)) {
+            throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Invalid token.');
+          }
+        }
+        validateSetUp(authData) {
+          this.check(authData);
+        }
+        validateLogin(authData) {
+          this.check(authData);
+        }
+        validateUpdate(authData) {
+          this.check(authData);
+        }
+      }
+      await reconfigureServer({ auth: { instanceAuth: new InstanceAdapter(validToken) } });
+      const signUp = await send('POST', '/users', {
+        authData: { instanceAuth: { id: 'user-1', token: validToken } },
+      });
+      expect(signUp.data.sessionToken).toBeDefined();
+      const login = await send('POST', '/users', {
+        authData: { instanceAuth: { id: 'user-1', token: validToken } },
+      });
+      expect(login.data.objectId).toBe(signUp.data.objectId);
+      expect(login.data.sessionToken).toBeDefined();
+
+      const invalid = await send('POST', '/users', {
+        authData: { instanceAuth: { id: 'user-1', token: 'invalid' } },
+      });
+      expect(invalid.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(invalid.data.error).toBe('Invalid token.');
+    });
+
+    it('keeps beforeFind and skips validateOptions of a built-in adapter for a subclass configured under its name', async () => {
+      await reconfigureServer({ auth: { github: new TokenAdapter() } });
+      const signUp = await send('POST', '/users', {
+        authData: { github: { id: 'user-id', token: validToken } },
+      });
+      expect(signUp.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(signUp.data.error).toBe('GitHub code is required.');
+    });
+
+    it('keeps beforeFind of a built-in adapter for a class instance with its own beforeFind', async () => {
+      class GitHubOptions {
+        constructor() {
+          this.clientId = 'client-id';
+          this.clientSecret = 'client-secret';
+        }
+        beforeFind() {}
+      }
+      await reconfigureServer({ auth: { github: new GitHubOptions() } });
+      const signUp = await send('POST', '/users', {
+        authData: { github: { id: 'user-id' } },
+      });
+      expect(signUp.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(signUp.data.error).toBe('GitHub code is required.');
+      const users = await new Parse.Query(Parse.User).find({ useMasterKey: true });
+      expect(users.length).toBe(0);
+    });
+
+    it('loads a frozen class instance', async () => {
+      class FrozenAdapter extends AuthAdapter {
+        validateAuthData = authData => checkToken(authData);
+      }
+      await reconfigureServer({ auth: { frozenAuth: Object.freeze(new FrozenAdapter()) } });
+      const signUp = await send('POST', '/users', {
+        authData: { frozenAuth: { id: 'user-id', token: validToken } },
+      });
+      expect(signUp.data.sessionToken).toBeDefined();
+
+      const login = await send('POST', '/users', {
+        authData: { frozenAuth: { id: 'user-id', token: 'invalid' } },
+      });
+      expect(login.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(login.data.error).toBe('Invalid token.');
+    });
+
+    it('keeps a method that validateOptions deletes deleted', async () => {
+      class DeletingAdapter extends TokenAdapter {
+        validateOptions() {
+          delete this.validateAuthData;
+        }
+      }
+      await reconfigureServer({ auth: { deletingAuth: new DeletingAdapter() } });
+      const signUp = await send('POST', '/users', {
+        authData: { deletingAuth: { id: 'user-id', token: 'invalid' } },
+      });
+      expect(signUp.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(signUp.data.error).toBe('Invalid token.');
+    });
+
+    it('loads a class instance under a provider name that is an Object.prototype member', async () => {
+      class InstanceAdapter extends TokenAdapter {
+        constructor(token) {
+          super();
+          this.token = token;
+        }
+        validateLogin(authData) {
+          if (authData?.token !== this.token) {
+            throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Invalid token.');
+          }
+        }
+      }
+      await reconfigureServer({ auth: { valueOf: new InstanceAdapter(validToken) } });
+      const signUp = await send('POST', '/users', {
+        authData: { valueOf: { id: 'user-id', token: validToken } },
+      });
+      expect(signUp.data.sessionToken).toBeDefined();
+      const login = await send('POST', '/users', {
+        authData: { valueOf: { id: 'user-id', token: validToken } },
+      });
+      expect(login.data.sessionToken).toBeDefined();
+    });
+
+    it('runs the methods of a class instance that does not extend AuthAdapter with access to its state', async () => {
+      class ClassAdapter {
+        constructor(token) {
+          this.token = token;
+        }
+        validateAuthData(authData) {
+          if (authData?.token !== this.token) {
+            throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Invalid token.');
+          }
+        }
+      }
+      await reconfigureServer({ auth: { classAuth: new ClassAdapter(validToken) } });
+      const signUp = await send('POST', '/users', {
+        authData: { classAuth: { id: 'user-id', token: validToken } },
+      });
+      expect(signUp.data.sessionToken).toBeDefined();
+
+      const login = await send('POST', '/users', {
+        authData: { classAuth: { id: 'user-id', token: 'invalid' } },
+      });
+      expect(login.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(login.data.error).toBe('Invalid token.');
+    });
+
+    it('runs validateAuthData of a subclass that overrides it with access to the instance state', async () => {
+      class LegacyAdapter extends AuthAdapter {
+        constructor(token) {
+          super();
+          this.token = token;
+        }
+        validateAuthData(authData) {
+          if (authData?.token !== this.token) {
+            throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Invalid token.');
+          }
+        }
+      }
+      await reconfigureServer({ auth: { legacyAuth: new LegacyAdapter(validToken) } });
+      const signUp = await send('POST', '/users', {
+        authData: { legacyAuth: { id: 'user-id', token: validToken } },
+      });
+      expect(signUp.data.sessionToken).toBeDefined();
+
+      const login = await send('POST', '/users', {
+        authData: { legacyAuth: { id: 'user-id', token: 'invalid' } },
+      });
+      expect(login.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(login.data.error).toBe('Invalid token.');
+    });
+
+    it('runs beforeFind of a custom adapter', async () => {
+      // Resolves the provider id from a code
+      class CodeAdapter extends AuthAdapter {
+        beforeFind(authData) {
+          if (authData?.code !== 'valid-code') {
+            throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Invalid code.');
+          }
+          authData.id = 'code-user';
+          delete authData.code;
+        }
+        validateSetUp(authData) {
+          return { id: authData.id };
+        }
+        validateLogin(authData) {
+          return { id: authData.id };
+        }
+        validateUpdate(authData) {
+          return { id: authData.id };
+        }
+      }
+      await reconfigureServer({ auth: { codeAuth: new CodeAdapter() } });
+      const signUp = await send('POST', '/users', {
+        authData: { codeAuth: { code: 'valid-code' } },
+      });
+      expect(signUp.data.sessionToken).toBeDefined();
+
+      const login = await send('POST', '/users', {
+        authData: { codeAuth: { id: 'code-user', code: 'invalid' } },
+      });
+      expect(login.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(login.data.error).toBe('Invalid code.');
+      expect(login.data.sessionToken).toBeUndefined();
+    });
+
+    it('rejects authData for a subclass that does not implement all of validateSetUp, validateLogin and validateUpdate', async () => {
+      class PartialAdapter extends AuthAdapter {
+        validateLogin(authData) {
+          checkToken(authData);
+        }
+      }
+      await reconfigureServer({ auth: { partialAuth: new PartialAdapter() } });
+      const signUp = await send('POST', '/users', {
+        authData: { partialAuth: { id: 'user-id', token: validToken } },
+      });
+      expect(signUp.data.code).toBe(Parse.Error.OTHER_CAUSE);
+      expect(signUp.data.error).toContain('Adapter is not configured.');
+      const users = await new Parse.Query(Parse.User).find({ useMasterKey: true });
+      expect(users.length).toBe(0);
+    });
+
+    it('returns the stored authData of the provider to the user', async () => {
+      await reconfigureServer({ auth: { tokenAuth: new TokenAdapter() } });
+      const signUp = await send('POST', '/users', {
+        authData: { tokenAuth: { id: 'user-id', token: validToken } },
+      });
+      const me = await send('GET', '/users/me', undefined, signUp.data.sessionToken);
+      expect(me.data.authData.tokenAuth).toEqual({ id: 'user-id', token: validToken });
+    });
+
+    it('enforces a policy that validateOptions sets', async () => {
+      class SecondFactorAdapter extends TokenAdapter {
+        validateOptions() {
+          this.policy = 'additional';
+        }
+      }
+      await reconfigureServer({ auth: { secondFactor: new SecondFactorAdapter() } });
+      const user = await Parse.User.signUp('user', 'password');
+      const link = await send(
+        'PUT',
+        `/users/${user.id}`,
+        { authData: { secondFactor: { token: validToken } } },
+        user.getSessionToken()
+      );
+      expect(link.data.code).toBeUndefined();
+
+      const login = await send('POST', '/login', { username: 'user', password: 'password' });
+      expect(login.data.code).toBe(Parse.Error.OTHER_CAUSE);
+      expect(login.data.error).toBe('Missing additional authData secondFactor');
+      expect(login.data.sessionToken).toBeUndefined();
+    });
+
+    it('does not modify the configured instance when running validateOptions', async () => {
+      class ScopesAdapter extends TokenAdapter {
+        constructor() {
+          super();
+          this.scopes = 'read,write';
+        }
+        validateOptions() {
+          this.scopes = this.scopes.split(',');
+        }
+      }
+      const adapter = new ScopesAdapter();
+      await reconfigureServer({ auth: { scopesAuth: adapter } });
+      for (let i = 0; i < 2; i++) {
+        const response = await send('POST', '/users', {
+          authData: { scopesAuth: { id: 'user-id', token: validToken } },
+        });
+        expect(response.data.sessionToken).toBeDefined();
+      }
+      expect(adapter.scopes).toBe('read,write');
+    });
+  });
+
+  describe('(GHSA-349r-988w-x3jp) LiveQuery subscriptions sharing a hash leak events across a $or query', () => {
+    const { sleep } = require('../lib/TestUtils');
+    let extraClients = [];
+
+    afterEach(async () => {
+      for (const client of extraClients) {
+        try {
+          await client.close();
+        } catch (e) {
+          // Ignore cleanup errors when the client never opened
+        }
+      }
+      extraClients = [];
+      try {
+        const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+        if (client) {
+          await client.close();
+        }
+      } catch (e) {
+        // Ignore cleanup errors when the default client is not initialized
+      }
+    });
+
+    async function subscribeAsUser(sessionToken, query) {
+      const client = new Parse.LiveQueryClient({
+        applicationId: Parse.applicationId,
+        serverURL: 'ws://localhost:8378',
+        javascriptKey: 'test',
+        sessionToken,
+      });
+      extraClients.push(client);
+      client.open();
+      const subscription = client.subscribe(query, sessionToken);
+      await new Promise(resolve => subscription.on('open', resolve));
+      return subscription;
+    }
+
+    it('does not deliver another user session to a later _Session subscriber using the same $or', async () => {
+      Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+      await reconfigureServer({
+        liveQuery: { classNames: ['_Session'] },
+        startLiveQueryServer: true,
+        verbose: false,
+        silent: true,
+      });
+
+      const victim = new Parse.User();
+      victim.setUsername('lq_or_victim');
+      victim.setPassword('password123');
+      await victim.signUp();
+      const victimToken = victim.getSessionToken();
+
+      const attacker = new Parse.User();
+      attacker.setUsername('lq_or_attacker');
+      attacker.setPassword('password123');
+      await attacker.signUp();
+      const attackerToken = attacker.getSessionToken();
+
+      // Both subscriptions carry the same $or; the server adds each subscriber's
+      // own `user` pointer next to it. The victim subscribes first, so a shared
+      // subscription would keep the victim's `user` filter.
+      const orQuery = () =>
+        Parse.Query.or(
+          new Parse.Query('_Session').exists('sessionToken'),
+          new Parse.Query('_Session').exists('user')
+        );
+      const victimSub = await subscribeAsUser(victimToken, orQuery());
+      const attackerSub = await subscribeAsUser(attackerToken, orQuery());
+
+      const attackerReceived = [];
+      attackerSub.on('create', object => attackerReceived.push(object));
+      attackerSub.on('enter', object => attackerReceived.push(object));
+      const victimReceived = new Promise(resolve => victimSub.on('create', resolve));
+
+      // Create a new session for the victim, which matches the victim's own filter.
+      const newVictimSession = await Parse.User.logIn('lq_or_victim', 'password123');
+      const newVictimToken = newVictimSession.getSessionToken();
+
+      const victimEvent = await victimReceived;
+      await sleep(500);
+
+      // The victim receives its own new session (proves the event fired).
+      expect(victimEvent.get('sessionToken')).toBe(newVictimToken);
+      // The attacker must not receive the victim's session nor its token.
+      expect(attackerReceived.length).toBe(0);
+    });
+
+    it('does not deliver events across a beforeSubscribe tenant filter to a later subscriber using the same $or', async () => {
+      Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+      Parse.Cloud.beforeSubscribe('TenantDoc', request => {
+        const user = request.user;
+        if (user) {
+          const query = request.query;
+          query.equalTo('tenant', user.get('tenant'));
+        }
+      });
+      await reconfigureServer({
+        liveQuery: { classNames: ['TenantDoc'] },
+        startLiveQueryServer: true,
+        verbose: false,
+        silent: true,
+      });
+
+      const userA = new Parse.User();
+      userA.setUsername('lq_tenant_a');
+      userA.setPassword('password123');
+      userA.set('tenant', 'tenant-a');
+      await userA.signUp();
+      const tokenA = userA.getSessionToken();
+
+      const userB = new Parse.User();
+      userB.setUsername('lq_tenant_b');
+      userB.setPassword('password123');
+      userB.set('tenant', 'tenant-b');
+      await userB.signUp();
+      const tokenB = userB.getSessionToken();
+
+      // TenantDoc is public-read, so only the beforeSubscribe `tenant` filter
+      // isolates subscribers. Both use the same $or next to which it is added.
+      const orQuery = () =>
+        Parse.Query.or(
+          new Parse.Query('TenantDoc').exists('objectId'),
+          new Parse.Query('TenantDoc').exists('createdAt')
+        );
+      const subA = await subscribeAsUser(tokenA, orQuery());
+      const subB = await subscribeAsUser(tokenB, orQuery());
+
+      const aReceived = [];
+      subA.on('create', object => aReceived.push(object));
+      const bReceived = [];
+      subB.on('create', object => bReceived.push(object));
+
+      const docA = new Parse.Object('TenantDoc');
+      docA.set('tenant', 'tenant-a');
+      await docA.save(null, { useMasterKey: true });
+      const docB = new Parse.Object('TenantDoc');
+      docB.set('tenant', 'tenant-b');
+      await docB.save(null, { useMasterKey: true });
+
+      await sleep(500);
+
+      // Each subscriber receives only its own tenant's object.
+      expect(aReceived.map(o => o.get('tenant'))).toEqual(['tenant-a']);
+      expect(bReceived.map(o => o.get('tenant'))).toEqual(['tenant-b']);
+    });
+  });
+
+  describe('(GHSA-9rh6-r4ph-367v) SMS MFA login code request persists login body fields with master privileges', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    let code;
+    let mobile;
+    const mfa = {
+      enabled: true,
+      options: ['SMS'],
+      sendSMS(smsCode, number) {
+        code = smsCode;
+        mobile = number;
+      },
+      digits: 6,
+      period: 30,
+    };
+
+    beforeEach(async () => {
+      code = '';
+      mobile = '';
+      await reconfigureServer({ auth: { mfa } });
+    });
+
+    async function enrollSmsMfa() {
+      const user = await Parse.User.signUp('victim', 'password');
+      const sessionToken = user.getSessionToken();
+      await user.save({ authData: { mfa: { mobile: '+11111111111' } } }, { sessionToken });
+      await user.save({ authData: { mfa: { mobile, token: code } } }, { sessionToken });
+      return { user, sessionToken };
+    }
+
+    it('does not persist extra login body fields when requesting an SMS code', async () => {
+      const { user, sessionToken } = await enrollSmsMfa();
+
+      // emailVerified is master-only
+      const rejected = await request({
+        method: 'PUT',
+        url: `${Parse.serverURL}/users/${user.id}`,
+        headers: { ...headers, 'X-Parse-Session-Token': sessionToken },
+        body: JSON.stringify({ emailVerified: true }),
+      }).catch(e => e.data);
+      expect(rejected.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+
+      const spy = spyOn(mfa, 'sendSMS').and.callThrough();
+      // Smuggle the field in the code request body
+      const res = await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/login`,
+        headers,
+        body: JSON.stringify({
+          username: 'victim',
+          password: 'password',
+          authData: { mfa: { token: 'request' } },
+          emailVerified: true,
+        }),
+      }).catch(e => e.data);
+      expect(res).toEqual({ code: Parse.Error.SCRIPT_FAILED, error: 'Please enter the token' });
+      expect(spy).toHaveBeenCalled();
+
+      // Must not be persisted
+      await user.fetch({ useMasterKey: true });
+      expect(user.get('emailVerified')).not.toBe(true);
+    });
+
+    it('runs the _User beforeSave trigger when persisting the requested SMS code', async () => {
+      await enrollSmsMfa();
+      let beforeSaveCalls = 0;
+      Parse.Cloud.beforeSave('_User', () => {
+        beforeSaveCalls++;
+      });
+      const res = await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/login`,
+        headers,
+        body: JSON.stringify({
+          username: 'victim',
+          password: 'password',
+          authData: { mfa: { token: 'request' } },
+        }),
+      }).catch(e => e.data);
+      expect(res).toEqual({ code: Parse.Error.SCRIPT_FAILED, error: 'Please enter the token' });
+      // beforeSave must still run on the internal persist
+      expect(beforeSaveCalls).toBeGreaterThan(0);
+    });
+
+    it('still completes SMS MFA login end-to-end after requesting a code', async () => {
+      const { user } = await enrollSmsMfa();
+      await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/login`,
+        headers,
+        body: JSON.stringify({
+          username: 'victim',
+          password: 'password',
+          authData: { mfa: { token: 'request' } },
+        }),
+      }).catch(e => e.data);
+      const response = await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/login`,
+        headers,
+        body: JSON.stringify({
+          username: 'victim',
+          password: 'password',
+          authData: { mfa: { token: code } },
+        }),
+      }).then(r => r.data);
+      expect(response.objectId).toEqual(user.id);
+      expect(response.sessionToken).toBeDefined();
     });
   });
 });

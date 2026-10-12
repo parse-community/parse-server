@@ -74,7 +74,7 @@ const authAdapterPolicies = {
 };
 
 function authDataValidator(provider, adapter, appIds, options) {
-  return async function (authData, req, user, requestObject) {
+  return async function (authData, req, user, requestObject, { isLogin = true } = {}) {
     if (appIds && typeof adapter.validateAppId === 'function') {
       await Promise.resolve(adapter.validateAppId(appIds, authData, options, requestObject));
     }
@@ -101,16 +101,17 @@ function authDataValidator(provider, adapter, appIds, options) {
         'Adapter is not configured. Implement either validateAuthData or all of the following: validateSetUp, validateLogin and validateUpdate'
       );
     }
-    // When masterKey is detected, we should trigger a logged in user
-    const isLoggedIn =
-      (req.auth.user && user && req.auth.user.id === user.id) || (user && req.auth.isMaster);
+    // Update by the user or master key; never on login
+    const isUpdate =
+      !isLogin &&
+      ((req.auth.user && user && req.auth.user.id === user.id) || (user && req.auth.isMaster));
     let hasAuthDataConfigured = false;
 
     if (user && user.get('authData') && user.get('authData')[provider]) {
       hasAuthDataConfigured = true;
     }
 
-    if (isLoggedIn) {
+    if (isUpdate) {
       // User is updating their authData
       if (hasAuthDataConfigured) {
         return {
@@ -125,7 +126,7 @@ function authDataValidator(provider, adapter, appIds, options) {
       };
     }
 
-    // Not logged in and authData is configured on the user
+    // Not an update and authData is configured on the user
     if (hasAuthDataConfigured) {
       return {
         method: 'validateLogin',
@@ -133,7 +134,7 @@ function authDataValidator(provider, adapter, appIds, options) {
       };
     }
 
-    // User not logged in and the provider is not set up, for example when a new user
+    // Not an update and the provider is not set up, for example when a new user
     // signs up or an existing user uses a new auth provider
     return {
       method: 'validateSetUp',
@@ -142,9 +143,38 @@ function authDataValidator(provider, adapter, appIds, options) {
   };
 }
 
+// Default methods of the `AuthAdapter` base class
+const defaultAuthAdapter = new AuthAdapter();
+
+// Whether a method is an unmodified default of the `AuthAdapter` base class
+function isDefaultMethod(key, method) {
+  const defaultMethod = defaultAuthAdapter[key];
+  return (
+    typeof method === 'function' &&
+    typeof defaultMethod === 'function' &&
+    Function.prototype.toString.call(method) === Function.prototype.toString.call(defaultMethod)
+  );
+}
+
+// Whether an adapter is a class instance rather than a plain object
+function isClassInstance(adapter) {
+  if (!adapter || typeof adapter !== 'object') {
+    return false;
+  }
+  const prototype = Object.getPrototypeOf(adapter);
+  return prototype !== null && prototype !== Object.prototype;
+}
+
+// Own property, also over an inherited read-only property or accessor
+function setOwnProperty(object, key, value) {
+  Object.defineProperty(object, key, { value, writable: true, enumerable: true, configurable: true });
+}
+
 function loadAuthAdapter(provider, authOptions) {
   // providers are auth providers implemented by default
-  let defaultAdapter = providers[provider];
+  let defaultAdapter = Object.prototype.hasOwnProperty.call(providers, provider)
+    ? providers[provider]
+    : undefined;
   // authOptions can contain complete custom auth adapters or
   // a default auth adapter like Facebook
   const providerOptions = authOptions[provider];
@@ -161,8 +191,19 @@ function loadAuthAdapter(provider, authOptions) {
     return;
   }
 
-  const adapter =
-    defaultAdapter instanceof AuthAdapter ? new defaultAdapter.constructor() : Object.assign({}, defaultAdapter);
+  const optionalAdapter = providerOptions
+    ? loadAdapter(providerOptions, undefined, providerOptions)
+    : undefined;
+  const isCustomInstance = !defaultAdapter && isClassInstance(optionalAdapter);
+  let adapter;
+  if (defaultAdapter instanceof AuthAdapter) {
+    adapter = new defaultAdapter.constructor();
+  } else if (isCustomInstance) {
+    // Per-load copy of the instance
+    adapter = Object.create(optionalAdapter);
+  } else {
+    adapter = Object.assign({}, defaultAdapter);
+  }
   const keys = [
     'validateAuthData',
     'validateAppId',
@@ -174,32 +215,51 @@ function loadAuthAdapter(provider, authOptions) {
     'policy',
     'afterFind',
   ];
-  const defaultAuthAdapter = new AuthAdapter();
-  keys.forEach(key => {
-    const existing = adapter?.[key];
-    if (
-      existing &&
-      typeof existing === 'function' &&
-      existing.toString() === defaultAuthAdapter[key].toString()
-    ) {
-      adapter[key] = null;
-    }
-  });
+  const keysWithBeforeFind = [...keys, 'beforeFind'];
   const appIds = providerOptions ? providerOptions.appIds : undefined;
 
-  // Try the configuration methods
-  if (providerOptions) {
-    const optionalAdapter = loadAdapter(providerOptions, undefined, providerOptions);
+  if (isCustomInstance) {
+    // Own entries, methods bound to the copy
+    keysWithBeforeFind.forEach(key => {
+      const value = adapter[key];
+      if (isDefaultMethod(key, value)) {
+        setOwnProperty(adapter, key, null);
+      } else {
+        setOwnProperty(adapter, key, typeof value === 'function' ? value.bind(adapter) : value);
+      }
+    });
+  } else {
+    keys.forEach(key => {
+      if (isDefaultMethod(key, adapter?.[key])) {
+        adapter[key] = null;
+      }
+    });
+    // Try the configuration methods
     if (optionalAdapter) {
-      keys.forEach(key => {
-        if (optionalAdapter[key]) {
-          adapter[key] = optionalAdapter[key];
+      const isInstance = isClassInstance(optionalAdapter);
+      // Keep a built-in credential check
+      const loadsBeforeFind =
+        isInstance &&
+        (typeof adapter.beforeFind !== 'function' || isDefaultMethod('beforeFind', adapter.beforeFind));
+      (loadsBeforeFind ? keysWithBeforeFind : keys).forEach(key => {
+        const value = optionalAdapter[key];
+        if (!value || (key === 'beforeFind' && isDefaultMethod(key, value))) {
+          return;
         }
+        adapter[key] = isInstance && isDefaultMethod(key, value) ? null : value;
       });
     }
   }
   if (adapter.validateOptions) {
     adapter.validateOptions(providerOptions);
+  }
+  if (isCustomInstance) {
+    // Keys deleted by validateOptions stay deleted
+    keysWithBeforeFind.forEach(key => {
+      if (!Object.prototype.hasOwnProperty.call(adapter, key)) {
+        setOwnProperty(adapter, key, undefined);
+      }
+    });
   }
 
   return { adapter, appIds, providerOptions };

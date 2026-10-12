@@ -4,6 +4,7 @@ const MockEmailAdapterWithOptions = require('./support/MockEmailAdapterWithOptio
 const request = require('../lib/request');
 const Config = require('../lib/Config');
 const Auth = require('../lib/Auth');
+const { resolvingPromise } = require('../lib/TestUtils');
 
 describe('Custom Pages, Email Verification, Password Reset', () => {
   it('should set the custom pages', done => {
@@ -46,13 +47,14 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       emailAdapter: emailAdapter,
       publicServerURL: 'http://localhost:8378/1',
     }).then(async () => {
-      spyOn(emailAdapter, 'sendVerificationEmail');
+      const sendPromise = resolvingPromise();
+      spyOn(emailAdapter, 'sendVerificationEmail').and.callFake(() => sendPromise.resolve());
       const user = new Parse.User();
       user.setPassword('asdf');
       user.setUsername('zxcv');
       user.setEmail('testIfEnabled@parse.com');
       await user.signUp();
-      await jasmine.timeout();
+      await sendPromise;
       expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
       user.fetch().then(() => {
         expect(user.get('emailVerified')).toEqual(false);
@@ -98,7 +100,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       emailAdapter: emailAdapter,
       publicServerURL: 'http://localhost:8378/1',
     }).then(async () => {
-      spyOn(emailAdapter, 'sendVerificationEmail');
+      const sendPromise = resolvingPromise();
+      spyOn(emailAdapter, 'sendVerificationEmail').and.callFake(() => sendPromise.resolve());
       const user = new Parse.User();
       user.setPassword('asdf');
       user.setUsername('zxcv');
@@ -115,11 +118,11 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         })
         .then(() => {
           expect(user.get('emailVerified')).toEqual(false);
-          // Wait as on update email, we need to fetch the username
-          setTimeout(function () {
-            expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
-            done();
-          }, 200);
+          return sendPromise;
+        })
+        .then(() => {
+          expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
+          done();
         });
     });
   });
@@ -136,11 +139,12 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       emailAdapter: emailAdapter,
       publicServerURL: 'http://localhost:8378/1',
     });
+    const sendPromise = resolvingPromise();
     spyOn(emailAdapter, 'sendVerificationEmail').and.callFake(options => {
       expect(options.link).not.toBeNull();
       expect(options.link).not.toMatch(/token=undefined/);
       expect(options.link).not.toMatch(/username=undefined/);
-      Promise.resolve();
+      sendPromise.resolve();
     });
     const user = new Parse.User();
     user.setPassword('asdf');
@@ -152,21 +156,21 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     await user.save();
     await user.fetch();
     expect(user.get('emailVerified')).toEqual(false);
-    // Wait as on update email, we need to fetch the username
-    setTimeout(function () {
-      expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
-      done();
-    }, 200);
+    await sendPromise;
+    expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
+    done();
   });
 
   it_id('33d31119-c724-4f5d-83ec-f56815d23df3')(it)('does send with a simple adapter', done => {
     let calls = 0;
+    const sendPromise = resolvingPromise();
     const emailAdapter = {
       sendMail: function (options) {
         expect(options.to).toBe('testSendSimpleAdapter@parse.com');
         if (calls == 0) {
           expect(options.subject).toEqual('Please verify your e-mail for My Cool App');
           expect(options.text.match(/verify_email/)).not.toBe(null);
+          sendPromise.resolve();
         } else if (calls == 1) {
           expect(options.subject).toEqual('Password Reset for My Cool App');
           expect(options.text.match(/request_password_reset/)).not.toBe(null);
@@ -186,7 +190,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       user.setUsername('zxcv');
       user.set('email', 'testSendSimpleAdapter@parse.com');
       await user.signUp();
-      await jasmine.timeout();
+      await sendPromise;
       expect(calls).toBe(1);
       user
         .fetch()
@@ -309,9 +313,11 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
 
   it_id('2a5d24be-2ca5-4385-b580-1423bd392e43')(it)('allows user to login only after user clicks on the link to confirm email address if preventLoginWithUnverifiedEmail is set to true', async () => {
     let sendEmailOptions;
+    const sendPromise = resolvingPromise();
     const emailAdapter = {
       sendVerificationEmail: options => {
         sendEmailOptions = options;
+        sendPromise.resolve();
       },
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => {},
@@ -328,7 +334,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     user.setUsername('user');
     user.set('email', 'user@example.com');
     await user.signUp();
-    await jasmine.timeout();
+    await sendPromise;
     expect(sendEmailOptions).not.toBeUndefined();
     const response = await request({
       url: sendEmailOptions.link,
@@ -383,9 +389,11 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
 
   it_id('a18a07af-0319-4f15-8237-28070c5948fa')(it)('does not allow signup with preventSignupWithUnverified', async () => {
     let sendEmailOptions;
+    const sendPromise = resolvingPromise();
     const emailAdapter = {
       sendVerificationEmail: options => {
         sendEmailOptions = options;
+        sendPromise.resolve();
       },
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => {},
@@ -407,6 +415,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     );
     const user = await new Parse.Query(Parse.User).first({ useMasterKey: true });
     expect(user).toBeDefined();
+    await sendPromise;
     expect(sendEmailOptions).toBeDefined();
   });
 
@@ -618,11 +627,13 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
 
   it_id('45f550a2-a2b2-4b2b-b533-ccbf96139cc9')(it)('receives the app name and user in the adapter', done => {
     let emailSent = false;
+    const sendPromise = resolvingPromise();
     const emailAdapter = {
       sendVerificationEmail: options => {
         expect(options.appName).toEqual('emailing app');
         expect(options.user.get('email')).toEqual('user@parse.com');
         emailSent = true;
+        sendPromise.resolve();
       },
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => {},
@@ -638,7 +649,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       user.setUsername('zxcv');
       user.set('email', 'user@parse.com');
       await user.signUp();
-      await jasmine.timeout();
+      await sendPromise;
       expect(emailSent).toBe(true);
       done();
     });
@@ -647,9 +658,11 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
   it_id('ea37ef62-aad8-4a17-8dfe-35e5b2986f0f')(it)('when you click the link in the email it sets emailVerified to true and redirects you', done => {
     const user = new Parse.User();
     let sendEmailOptions;
+    const sendPromise = resolvingPromise();
     const emailAdapter = {
       sendVerificationEmail: options => {
         sendEmailOptions = options;
+        sendPromise.resolve();
       },
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => {},
@@ -666,7 +679,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         user.set('email', 'user@parse.com');
         return user.signUp();
       })
-      .then(() => jasmine.timeout())
+      .then(() => sendPromise)
       .then(() => {
         expect(sendEmailOptions).not.toBeUndefined();
         request({

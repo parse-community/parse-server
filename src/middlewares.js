@@ -184,6 +184,9 @@ export async function handleParseHeaders(req, res, next) {
           }
         }
         delete req.body._context;
+      } else if (req.body._context === null) {
+        // null context is equivalent to no context
+        delete req.body._context;
       }
       if (req.body._ContentType) {
         if (typeof req.body._ContentType !== 'string') {
@@ -294,7 +297,7 @@ const handleRateLimit = async (req, res, next) => {
     await Promise.all(
       rateLimits.map(async limit => {
         const pathExp = limit.path.regexp || limit.path;
-        if (pathExp.test(req.path)) {
+        if (pathExp.test(req.path) || (req._graphQLPath && pathExp.test(req._graphQLPath))) {
           await limit.handler(req, res, err => {
             if (err) {
               if (err.code === Parse.Error.CONNECTION_FAILED) {
@@ -662,6 +665,22 @@ export function promiseEnforceMasterKeyAccess(request) {
   return Promise.resolve();
 }
 
+/**
+ * Determines whether a request is an internal request, i.e. one that originates from the same host
+ * without passing through a proxy, such as a Cloud Code request that is routed via HTTP when the
+ * Parse Server option `directAccess` is `false`. Only the raw socket peer address is consulted,
+ * never `request.ip`: under a permissive `trustProxy` setting Express resolves `request.ip` from
+ * the client-supplied `X-Forwarded-For` header, so a remote client could otherwise pose as an
+ * internal request. A request that carries an `X-Forwarded-For` header, even an empty one, has been
+ * forwarded by a proxy or crafted by a client and is therefore never internal, even if it arrives
+ * over a loopback socket.
+ * @param {Object} request The request to evaluate.
+ * @returns {Boolean} Whether the request is internal.
+ */
+const isInternalRequest = request =>
+  request.socket?.remoteAddress === '127.0.0.1' &&
+  request.headers?.['x-forwarded-for'] === undefined;
+
 export const addRateLimit = (route, config, cloud) => {
   if (typeof config === 'string') {
     config = Config.get(config);
@@ -723,7 +742,7 @@ export const addRateLimit = (route, config, cloud) => {
         };
       },
       skip: request => {
-        if (request.ip === '127.0.0.1' && !route.includeInternalRequests) {
+        if (!route.includeInternalRequests && isInternalRequest(request)) {
           return true;
         }
         if (route.includeMasterKey) {
