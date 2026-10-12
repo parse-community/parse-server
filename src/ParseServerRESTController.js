@@ -33,6 +33,13 @@ function stripUndefined(obj) {
   if (obj === null || obj === undefined || typeof obj !== 'object') {
     return obj;
   }
+  // Match JSON.stringify semantics: objects with a toJSON() method serialize
+  // through it before undefined stripping. Date/RegExp are pre-encoded by the
+  // SDK/router, but a custom toJSON on a cloud function result reaches here
+  // (FunctionsRouter uses Parse._encode, not JSON.stringify).
+  if (typeof obj.toJSON === 'function') {
+    return stripUndefined(obj.toJSON());
+  }
   if (Array.isArray(obj)) {
     return obj.map(item => (item === undefined ? null : stripUndefined(item)));
   }
