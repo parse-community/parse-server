@@ -500,6 +500,7 @@ const validNonRelationOrPointerTypes = [
   'File',
   'Bytes',
   'Polygon',
+  'Decimal128',
 ];
 // Returns an error suitable for throwing if the type is invalid
 const fieldTypeIsInvalid = ({ type, targetClass }) => {
@@ -1623,6 +1624,11 @@ function getObjectType(obj): ?(SchemaField | string) {
       case 'Polygon':
         if (obj.coordinates) {
           return 'Polygon';
+        }
+        break;
+      case 'Decimal128':
+        if (typeof obj.value === 'string') {
+          return 'Decimal128';
         }
         break;
     }

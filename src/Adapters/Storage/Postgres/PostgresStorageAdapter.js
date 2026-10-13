@@ -46,6 +46,8 @@ const parseTypeToPostgresType = type => {
       return 'jsonb';
     case 'Polygon':
       return 'polygon';
+    case 'Decimal128':
+      return 'numeric';
     case 'Array':
       if (type.contents && type.contents.type === 'String') {
         return 'text[]';
@@ -86,6 +88,9 @@ const toPostgresValue = value => {
     }
     if (value.__type === 'File') {
       return value.name;
+    }
+    if (value.__type === 'Decimal128') {
+      return value.value;
     }
   }
   return value;
@@ -440,7 +445,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
         index += 3;
       } else {
         // TODO: support arrays
-        values.push(fieldName, fieldValue.$ne);
+        values.push(fieldName, toPostgresValue(fieldValue.$ne));
         index += 2;
       }
     }
@@ -463,7 +468,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
             '$relativeTime can only be used with the $lt, $lte, $gt, and $gte operators'
           );
         } else {
-          values.push(fieldName, fieldValue.$eq);
+          values.push(fieldName, toPostgresValue(fieldValue.$eq));
           patterns.push(`$${index}:name = $${index + 1}`);
           index += 2;
         }
@@ -522,7 +527,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
             values.push(fieldName);
             baseArray.forEach((listElem, listIndex) => {
               if (listElem != null) {
-                values.push(listElem);
+                values.push(toPostgresValue(listElem));
                 inPatterns.push(`$${index + 1 + listIndex}`);
               }
             });
@@ -833,6 +838,12 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       const value = convertPolygonToSQL(fieldValue.coordinates);
       patterns.push(`$${index}:name ~= $${index + 1}::polygon`);
       values.push(fieldName, value);
+      index += 2;
+    }
+
+    if (fieldValue.__type === 'Decimal128') {
+      patterns.push(`$${index}:name = $${index + 1}`);
+      values.push(fieldName, fieldValue.value);
       index += 2;
     }
 
@@ -1469,6 +1480,9 @@ export class PostgresStorageAdapter implements StorageAdapter {
         case 'File':
           valuesArray.push(object[fieldName].name);
           break;
+        case 'Decimal128':
+          valuesArray.push(object[fieldName].value);
+          break;
         case 'Polygon': {
           const value = convertPolygonToSQL(object[fieldName].coordinates);
           valuesArray.push(value);
@@ -1735,6 +1749,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
       } else if (fieldValue.__type === 'File') {
         updatePatterns.push(`$${index}:name = $${index + 1}`);
         values.push(fieldName, toPostgresValue(fieldValue));
+        index += 2;
+      } else if (fieldValue.__type === 'Decimal128') {
+        updatePatterns.push(`$${index}:name = $${index + 1}`);
+        values.push(fieldName, fieldValue.value);
         index += 2;
       } else if (fieldValue.__type === 'GeoPoint') {
         updatePatterns.push(`$${index}:name = POINT($${index + 1}, $${index + 2})`);
@@ -2047,6 +2065,12 @@ export class PostgresStorageAdapter implements StorageAdapter {
         object[fieldName] = {
           __type: 'File',
           name: object[fieldName],
+        };
+      }
+      if (object[fieldName] != null && schema.fields[fieldName].type === 'Decimal128') {
+        object[fieldName] = {
+          __type: 'Decimal128',
+          value: String(object[fieldName]),
         };
       }
     });
