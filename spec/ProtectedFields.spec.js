@@ -2394,6 +2394,95 @@ describe('ProtectedFields', function () {
   });
 
   describe('protectedFieldsSaveResponseExempt', function () {
+    for (const auth of ['anonymous', 'session', 'master', 'maintenance']) {
+      it(`filters reverted dot notation fields for ${auth} auth`, async () => {
+        await reconfigureServer({
+          protectedFields: { MyClass: { '*': ['secretField'] } },
+          protectedFieldsTriggerExempt: true,
+          protectedFieldsSaveResponseExempt: false,
+        });
+        const obj = await new Parse.Object('MyClass').save(
+          {
+            secretField: { sub: 'hidden' },
+            secretFieldPublic: { sub: 'visible' },
+          },
+          { useMasterKey: true }
+        );
+        Parse.Cloud.beforeSave('MyClass', ({ object }) => {
+          object.revert('secretField.sub', 'secretFieldPublic.sub');
+        });
+        const afterSave = jasmine.createSpy('afterSave');
+        Parse.Cloud.afterSave('MyClass', afterSave);
+        const headers = {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        };
+        if (auth === 'session') {
+          const user = await Parse.User.signUp('testuser', 'password');
+          headers['X-Parse-Session-Token'] = user.getSessionToken();
+        } else if (auth === 'master') {
+          headers['X-Parse-Master-Key'] = 'test';
+        } else if (auth === 'maintenance') {
+          headers['X-Parse-Maintenance-Key'] = 'testing';
+        }
+
+        const response = await request({
+          method: 'PUT',
+          url: `http://localhost:8378/1/classes/MyClass/${obj.id}`,
+          headers,
+          body: JSON.stringify({
+            'secretField.sub': { __op: 'Delete' },
+            'secretFieldPublic.sub': { __op: 'Delete' },
+          }),
+        });
+
+        expect(response.status).toBe(200);
+        expect(response.data['secretFieldPublic.sub']).toBe('visible');
+        if (auth === 'master' || auth === 'maintenance') {
+          expect(response.data['secretField.sub']).toBe('hidden');
+        } else {
+          expect(response.data.secretField).toBeUndefined();
+          expect(response.data['secretField.sub']).toBeUndefined();
+        }
+        expect(afterSave).toHaveBeenCalledTimes(1);
+        expect(afterSave.calls.first().args[0].object.get('secretField')).toEqual({ sub: 'hidden' });
+        await obj.fetch({ useMasterKey: true });
+        expect(obj.get('secretField')).toEqual({ sub: 'hidden' });
+      });
+    }
+
+    it('should strip a dot notation key that beforeSave writes beneath a protected field', async function () {
+      await reconfigureServer({
+        protectedFields: { MyClass: { '*': ['secretField'] } },
+        protectedFieldsSaveResponseExempt: false,
+      });
+      const obj = await new Parse.Object('MyClass').save(
+        { secretField: { sub: 'stored' }, count: 0 },
+        { useMasterKey: true }
+      );
+      Parse.Cloud.beforeSave('MyClass', ({ object }) => {
+        object.set('secretField.sub', 'written-by-trigger');
+      });
+
+      const response = await request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/classes/MyClass/${obj.id}`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ count: { __op: 'Increment', amount: 1 } }),
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.data.count).toBe(1);
+      expect(JSON.stringify(response.data)).not.toContain('written-by-trigger');
+      await obj.fetch({ useMasterKey: true });
+      expect(obj.get('secretField')).toEqual({ sub: 'written-by-trigger' });
+    });
+
     it('should strip protected fields from update response when protectedFieldsSaveResponseExempt is false', async function () {
       await reconfigureServer({
         protectedFields: { MyClass: { '*': ['secretField'] } },
