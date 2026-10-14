@@ -2245,11 +2245,8 @@ RestWrite.prototype.filterRevertedFieldsInResponse = async function () {
   const stateController = Parse.CoreManager.getObjectStateController();
   const [pending] = stateController.getPendingOps(this.pendingOps.identifier);
   const reverted = Object.keys(this.pendingOps.operations).filter(key => !pending[key]);
-  // Keys at or above a reverted path that hold the stored value
-  const keys = Object.keys(response).filter(
-    key =>
-      reverted.some(path => path === key || path.startsWith(`${key}.`)) &&
-      util.isDeepStrictEqual(response[key], getOwnPath(this.originalData, key.split('.')))
+  const keys = Object.keys(response).filter(key =>
+    reverted.some(path => path === key || path.startsWith(`${key}.`))
   );
   if (!keys.length) {
     return;
@@ -2271,14 +2268,27 @@ RestWrite.prototype.filterRevertedFieldsInResponse = async function () {
     // No read access
   }
   for (const key of keys) {
-    const value = getOwnPath(view, key.split('.'));
-    if (value !== undefined) {
+    // Removed beneath a key the caller cannot read
+    if (!hasOwn(response, key)) {
+      continue;
+    }
+    const path = key.split('.');
+    const value = getOwnPath(view, path);
+    if (value === undefined) {
+      for (const responseKey of Object.keys(response)) {
+        if (responseKey.startsWith(`${key}.`)) {
+          delete response[responseKey];
+        }
+      }
+      if (key === 'ACL') {
+        // The SDK cannot apply an operation to ACL
+        delete response[key];
+      } else {
+        response[key] = { __op: 'Delete' };
+      }
+    } else if (util.isDeepStrictEqual(response[key], getOwnPath(this.originalData, path))) {
+      // The stored value as the caller reads it
       response[key] = value;
-    } else if (key === 'ACL') {
-      // The SDK cannot apply an operation to ACL
-      delete response[key];
-    } else {
-      response[key] = { __op: 'Delete' };
     }
   }
 };

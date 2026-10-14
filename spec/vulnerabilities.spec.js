@@ -9808,14 +9808,52 @@ describe('Vulnerabilities', () => {
         expect(JSON.stringify(response.data)).not.toContain('stored-secret');
       });
 
-      it('keeps a value that afterSave sets on a reverted field', async () => {
+      it('does not return a stored array around a reverted dot notation key', async () => {
+        const arrayObj = await new Parse.Object('WriteOnly').save(
+          { field: { nested: [{ sub: 'stored-0', y: 'stored-y' }, { sub: 'stored-1' }] } },
+          { useMasterKey: true }
+        );
+        Parse.Cloud.beforeSave('WriteOnly', ({ object }) => {
+          object.revert('field.nested.5.sub');
+        });
+        Parse.Cloud.afterSave('WriteOnly', () => {});
+        const response = await request({
+          method: 'PUT',
+          url: `${Parse.serverURL}/classes/WriteOnly/${arrayObj.id}`,
+          headers,
+          body: JSON.stringify({
+            'field.nested.5.sub': { __op: 'Delete' },
+            'field.nested.0.y': { __op: 'Delete' },
+          }),
+        });
+        expect(response.data.field).toEqual({ __op: 'Delete' });
+        expect(response.data['field.nested']).toBeUndefined();
+        expect(JSON.stringify(response.data)).not.toContain('stored-');
+      });
+
+      it('does not return a value that afterSave sets on a reverted field', async () => {
+        Parse.Cloud.beforeSave('WriteOnly', ({ object }) => {
+          object.revert('secret');
+        });
+        Parse.Cloud.afterSave('WriteOnly', ({ object }) => {
+          object.set('secret', object.get('secret').slice(0, 6));
+        });
+        const response = await update({ secret: 'new' });
+        expect(response.data.secret).toEqual({ __op: 'Delete' });
+        expect(JSON.stringify(response.data)).not.toContain('stored');
+      });
+
+      it('keeps a value that afterSave sets on a reverted field for a caller with get permission', async () => {
         Parse.Cloud.beforeSave('WriteOnly', ({ object }) => {
           object.revert('secret');
         });
         Parse.Cloud.afterSave('WriteOnly', ({ object }) => {
           object.set('secret', 'masked');
         });
-        const response = await update({ secret: 'new' });
+        const response = await update(
+          { secret: 'new' },
+          { 'X-Parse-Session-Token': reader.getSessionToken() }
+        );
         expect(response.data.secret).toBe('masked');
       });
 
