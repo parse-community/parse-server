@@ -2868,6 +2868,29 @@ describe('Cloud Code', () => {
     expect(obj.get('secret')).toBe(true);
   });
 
+  it('can unset a reverted field in afterSave on update', async () => {
+    const obj = await new TestObject().save({ secret: 'stored' });
+    Parse.Cloud.beforeSave('TestObject', ({ object }) => {
+      object.revert('secret');
+    });
+    Parse.Cloud.afterSave('TestObject', ({ object }) => {
+      object.unset('secret');
+    });
+    const response = await request({
+      method: 'PUT',
+      url: `http://localhost:8378/1/classes/TestObject/${obj.id}`,
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ secret: 'new' }),
+    });
+    expect(response.data.secret).toBeUndefined();
+    await obj.fetch();
+    expect(obj.get('secret')).toBe('stored');
+  });
+
   it('should revert in beforeSave', async () => {
     Parse.Cloud.beforeSave('MyObject', ({ object }) => {
       if (!object.existed()) {

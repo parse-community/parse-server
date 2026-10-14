@@ -168,6 +168,9 @@ RestWrite.prototype.execute = function () {
       return this.cleanUserAuthData();
     })
     .then(() => {
+      return this.filterRevertedFieldsInResponse();
+    })
+    .then(() => {
       return this.filterProtectedFieldsInResponse();
     })
     .then(() => {
@@ -2230,6 +2233,56 @@ RestWrite.prototype._restoreRevertedPath = function (response, writeData, writte
   response[target] = value === undefined ? { __op: 'Delete' } : value;
 };
 
+// Returns reverted fields of an update only as the caller can read them
+RestWrite.prototype.filterRevertedFieldsInResponse = async function () {
+  const response = this.response?.response;
+  if (!this.query || !response || !this.pendingOps.operations) {
+    return;
+  }
+  if (this.auth.isMaster || this.auth.isMaintenance) {
+    return;
+  }
+  const stateController = Parse.CoreManager.getObjectStateController();
+  const [pending] = stateController.getPendingOps(this.pendingOps.identifier);
+  const reverted = Object.keys(this.pendingOps.operations).filter(key => !pending[key]);
+  // Keys at or above a reverted path that hold the stored value
+  const keys = Object.keys(response).filter(
+    key =>
+      reverted.some(path => path === key || path.startsWith(`${key}.`)) &&
+      util.isDeepStrictEqual(response[key], getOwnPath(this.originalData, key.split('.')))
+  );
+  if (!keys.length) {
+    return;
+  }
+  let view;
+  try {
+    const query = await RestQuery({
+      method: RestQuery.Method.get,
+      config: this.config,
+      auth: this.auth,
+      className: this.className,
+      restWhere: { objectId: this.query.objectId },
+      runBeforeFind: false,
+      runAfterFind: false,
+      context: this.context,
+    });
+    view = (await query.execute()).results[0];
+  } catch {
+    // No read access
+  }
+  for (const key of keys) {
+    const value = getOwnPath(view, key.split('.'));
+    if (value !== undefined) {
+      response[key] = value;
+    } else if (key === 'ACL') {
+      // The SDK cannot apply an operation to ACL
+      delete response[key];
+    } else {
+      response[key] = { __op: 'Delete' };
+    }
+  }
+};
+
 RestWrite.prototype._updateResponseWithData = function (response, data, isFinalObject = false) {
   const stateController = Parse.CoreManager.getObjectStateController();
   const [pending] = stateController.getPendingOps(this.pendingOps.identifier);
@@ -2252,7 +2305,11 @@ RestWrite.prototype._updateResponseWithData = function (response, data, isFinalO
     revertedData[key] = hasOwn(this.originalData, key)
       ? this.originalData[key]
       : { __op: 'Delete' };
-    (this.storage.fieldsChangedByTrigger ||= []).push(key);
+    this.storage.fieldsChangedByTrigger ||= [];
+    // Once only, so an afterSave unset is not undone by a second entry
+    if (this.storage.fieldsChangedByTrigger.indexOf(key) < 0) {
+      this.storage.fieldsChangedByTrigger.push(key);
+    }
   }
   const responseData = revertedData || data;
   // The final object, before unchanged fields are removed from the response
