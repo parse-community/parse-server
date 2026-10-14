@@ -8912,4 +8912,212 @@ describe('Vulnerabilities', () => {
       expect(response.sessionToken).toBeDefined();
     });
   });
+
+  describe('(GHSA-9rvr-f5hc-9f2f) Save response returns the stored value of a field reverted in beforeSave to a caller without read access', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+
+    describe('class without get permission', () => {
+      let reader;
+      let obj;
+
+      beforeEach(async () => {
+        reader = await Parse.User.signUp('reader', 'password');
+        const schema = new Parse.Schema('WriteOnly');
+        schema.addString('secret');
+        schema.addObject('field');
+        schema.setCLP({
+          find: { [reader.id]: true },
+          get: { [reader.id]: true },
+          count: { [reader.id]: true },
+          create: {},
+          update: { '*': true },
+          delete: {},
+          addField: {},
+        });
+        await schema.save();
+        obj = await new Parse.Object('WriteOnly').save(
+          { secret: 'stored-secret', field: { sub: 'stored-sub', other: 'stored-other' } },
+          { useMasterKey: true }
+        );
+      });
+
+      const update = (body, extraHeaders = {}) =>
+        request({
+          method: 'PUT',
+          url: `${Parse.serverURL}/classes/WriteOnly/${obj.id}`,
+          headers: { ...headers, ...extraHeaders },
+          body: JSON.stringify(body),
+        });
+
+      it('does not return a reverted field', async () => {
+        Parse.Cloud.beforeSave('WriteOnly', ({ object }) => {
+          object.revert('secret');
+        });
+        const get = await request({
+          url: `${Parse.serverURL}/classes/WriteOnly/${obj.id}`,
+          headers,
+        }).catch(e => e);
+        expect(get.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+
+        const response = await update({ secret: 'new' });
+        expect(response.data.secret).toEqual({ __op: 'Delete' });
+        expect(JSON.stringify(response.data)).not.toContain('stored-secret');
+        await obj.fetch({ useMasterKey: true });
+        expect(obj.get('secret')).toBe('stored-secret');
+      });
+
+      it('does not return a field reverted by a constant validator', async () => {
+        Parse.Cloud.beforeSave('WriteOnly', () => {}, {
+          fields: { secret: { constant: true } },
+        });
+        const response = await update({ secret: 'new' });
+        expect(response.data.secret).toEqual({ __op: 'Delete' });
+        expect(JSON.stringify(response.data)).not.toContain('stored-secret');
+      });
+
+      it('does not return a reverted dot notation field', async () => {
+        Parse.Cloud.beforeSave('WriteOnly', ({ object }) => {
+          object.revert('field.sub');
+        });
+        const response = await update({ 'field.sub': { __op: 'Delete' } });
+        expect(response.data['field.sub']).toEqual({ __op: 'Delete' });
+        expect(JSON.stringify(response.data)).not.toContain('stored-sub');
+        await obj.fetch({ useMasterKey: true });
+        expect(obj.get('field')).toEqual({ sub: 'stored-sub', other: 'stored-other' });
+      });
+
+      it('does not return a reverted field in a batch request', async () => {
+        Parse.Cloud.beforeSave('WriteOnly', ({ object }) => {
+          object.revert('secret');
+        });
+        const response = await request({
+          method: 'POST',
+          url: `${Parse.serverURL}/batch`,
+          headers,
+          body: JSON.stringify({
+            requests: [
+              { method: 'PUT', path: `/1/classes/WriteOnly/${obj.id}`, body: { secret: 'new' } },
+            ],
+          }),
+        });
+        expect(response.data[0].success.secret).toEqual({ __op: 'Delete' });
+        expect(JSON.stringify(response.data)).not.toContain('stored-secret');
+      });
+
+      it('does not return a stored array around a reverted dot notation key', async () => {
+        const arrayObj = await new Parse.Object('WriteOnly').save(
+          { field: { nested: [{ sub: 'stored-0', y: 'stored-y' }, { sub: 'stored-1' }] } },
+          { useMasterKey: true }
+        );
+        Parse.Cloud.beforeSave('WriteOnly', ({ object }) => {
+          object.revert('field.nested.5.sub');
+        });
+        Parse.Cloud.afterSave('WriteOnly', () => {});
+        const response = await request({
+          method: 'PUT',
+          url: `${Parse.serverURL}/classes/WriteOnly/${arrayObj.id}`,
+          headers,
+          body: JSON.stringify({
+            'field.nested.5.sub': { __op: 'Delete' },
+            'field.nested.0.y': { __op: 'Delete' },
+          }),
+        });
+        expect(response.data.field).toEqual({ __op: 'Delete' });
+        expect(response.data['field.nested']).toBeUndefined();
+        expect(JSON.stringify(response.data)).not.toContain('stored-');
+      });
+
+      it('does not return a value that afterSave sets on a reverted field', async () => {
+        Parse.Cloud.beforeSave('WriteOnly', ({ object }) => {
+          object.revert('secret');
+        });
+        Parse.Cloud.afterSave('WriteOnly', ({ object }) => {
+          object.set('secret', object.get('secret').slice(0, 6));
+        });
+        const response = await update({ secret: 'new' });
+        expect(response.data.secret).toEqual({ __op: 'Delete' });
+        expect(JSON.stringify(response.data)).not.toContain('stored');
+      });
+
+      it('keeps a value that afterSave sets on a reverted field for a caller with get permission', async () => {
+        Parse.Cloud.beforeSave('WriteOnly', ({ object }) => {
+          object.revert('secret');
+        });
+        Parse.Cloud.afterSave('WriteOnly', ({ object }) => {
+          object.set('secret', 'masked');
+        });
+        const response = await update(
+          { secret: 'new' },
+          { 'X-Parse-Session-Token': reader.getSessionToken() }
+        );
+        expect(response.data.secret).toBe('masked');
+      });
+
+      for (const auth of ['session with get permission', 'master', 'maintenance']) {
+        it(`returns a reverted field for ${auth} auth`, async () => {
+          Parse.Cloud.beforeSave('WriteOnly', ({ object }) => {
+            object.revert('secret');
+          });
+          const authHeaders = {
+            'session with get permission': { 'X-Parse-Session-Token': reader.getSessionToken() },
+            master: { 'X-Parse-Master-Key': 'test' },
+            maintenance: { 'X-Parse-Maintenance-Key': 'testing' },
+          }[auth];
+          const response = await update({ secret: 'new' }, authHeaders);
+          expect(response.data.secret).toBe('stored-secret');
+        });
+      }
+    });
+
+    describe('object without read access', () => {
+      let writer;
+      let obj;
+
+      beforeEach(async () => {
+        writer = await Parse.User.signUp('writer', 'password');
+        const acl = new Parse.ACL();
+        acl.setWriteAccess(writer, true);
+        acl.setReadAccess('otherUserId', true);
+        obj = new Parse.Object('WriteOnlyAcl');
+        obj.setACL(acl);
+        await obj.save({ secret: 'stored-secret' }, { useMasterKey: true });
+      });
+
+      const update = body =>
+        request({
+          method: 'PUT',
+          url: `${Parse.serverURL}/classes/WriteOnlyAcl/${obj.id}`,
+          headers: { ...headers, 'X-Parse-Session-Token': writer.getSessionToken() },
+          body: JSON.stringify(body),
+        });
+
+      it('does not return a reverted field', async () => {
+        Parse.Cloud.beforeSave('WriteOnlyAcl', ({ object }) => {
+          object.revert('secret');
+        });
+        const get = await request({
+          url: `${Parse.serverURL}/classes/WriteOnlyAcl/${obj.id}`,
+          headers: { ...headers, 'X-Parse-Session-Token': writer.getSessionToken() },
+        }).catch(e => e);
+        expect(get.data.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+
+        const response = await update({ secret: 'new' });
+        expect(response.data.secret).toEqual({ __op: 'Delete' });
+        expect(JSON.stringify(response.data)).not.toContain('stored-secret');
+      });
+
+      it('does not return a reverted ACL', async () => {
+        Parse.Cloud.beforeSave('WriteOnlyAcl', ({ object }) => {
+          object.revert('ACL');
+        });
+        const response = await update({ ACL: { [writer.id]: { read: true, write: true } } });
+        expect(response.data.ACL).toBeUndefined();
+        expect(JSON.stringify(response.data)).not.toContain('otherUserId');
+      });
+    });
+  });
 });
