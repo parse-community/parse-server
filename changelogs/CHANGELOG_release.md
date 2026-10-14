@@ -1,3 +1,10 @@
+## [8.6.106](https://github.com/parse-community/parse-server/compare/8.6.105...8.6.106) (2026-10-14)
+
+
+### Bug Fixes
+
+* Object write with a dot notation key can skip `afterSave` triggers and LiveQuery events ([GHSA-969q-274f-mc7w](https://github.com/parse-community/parse-server/security/advisories/GHSA-969q-274f-mc7w)) ([#10787](https://github.com/parse-community/parse-server/issues/10787)) ([6cc8990](https://github.com/parse-community/parse-server/commit/6cc899026ef9ecaac38dd37a8f9ba904a414ad10))
+
 ## [8.6.105](https://github.com/parse-community/parse-server/compare/8.6.104...8.6.105) (2026-10-11)
 
 
