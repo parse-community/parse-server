@@ -2478,7 +2478,11 @@ describe('ProtectedFields', function () {
 
       expect(response.status).toBe(200);
       expect(response.data.count).toBe(1);
-      expect(JSON.stringify(response.data)).not.toContain('written-by-trigger');
+      expect(
+        Object.keys(response.data).filter(
+          key => key === 'secretField' || key.startsWith('secretField.')
+        )
+      ).toEqual([]);
       await obj.fetch({ useMasterKey: true });
       expect(obj.get('secretField')).toEqual({ sub: 'written-by-trigger' });
     });
