@@ -2264,8 +2264,12 @@ RestWrite.prototype.filterRevertedFieldsInResponse = async function () {
       context: this.context,
     });
     view = (await query.execute()).results[0];
-  } catch {
-    // No read access
+  } catch (error) {
+    // Fails closed; access denial is expected
+    const denied = [Parse.Error.OPERATION_FORBIDDEN, Parse.Error.OBJECT_NOT_FOUND];
+    if (!(error instanceof Parse.Error) || !denied.includes(error.code)) {
+      logger.warn('Failed to read reverted fields for the save response', error);
+    }
   }
   for (const key of keys) {
     // Removed beneath a key the caller cannot read
