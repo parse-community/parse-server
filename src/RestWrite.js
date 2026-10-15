@@ -1467,8 +1467,8 @@ RestWrite.prototype.handleInstallation = function () {
 
   let installationId = this.data.installationId;
 
-  // If data.installationId is not set and we're not master, we can lookup in auth
-  if (!installationId && !this.auth.isMaster && !this.auth.isMaintenance) {
+  // Create only: the request installation ID names the caller's own installation
+  if (!installationId && !this.query && !this.auth.isMaster && !this.auth.isMaintenance) {
     installationId = this.auth.installationId;
   }
 

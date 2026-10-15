@@ -10182,4 +10182,132 @@ describe('Vulnerabilities', () => {
       expect(polluted).toEqual([]);
     });
   });
+
+  describe('(GHSA-8j8q-73xx-w3m4) Installation update is written to the installation named by the request installation ID', () => {
+    const serverURL = 'http://localhost:8378/1';
+    const clientHeaders = installationId => ({
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+      ...(installationId ? { 'X-Parse-Installation-Id': installationId } : {}),
+    });
+    const masterHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Master-Key': 'test',
+      'Content-Type': 'application/json',
+    };
+
+    const IID_A = 'aaaaaaaa-0000-4000-8000-000000000001';
+    const IID_B = 'bbbbbbbb-0000-4000-8000-000000000002';
+    const IID_SELF = 'cccccccc-0000-4000-8000-000000000003';
+
+    const createInstallation = (body, headers = clientHeaders()) =>
+      request({
+        method: 'POST',
+        headers,
+        url: `${serverURL}/installations`,
+        body: JSON.stringify(body),
+      }).catch(e => e);
+
+    const putInstallation = (objectId, body, headers) =>
+      request({
+        method: 'PUT',
+        headers,
+        url: `${serverURL}/installations/${objectId}`,
+        body: JSON.stringify(body),
+      }).catch(e => e);
+
+    const readInstallation = async objectId => {
+      const response = await request({
+        method: 'GET',
+        headers: masterHeaders,
+        url: `${serverURL}/installations/${objectId}`,
+      }).catch(e => e);
+      return response.data;
+    };
+
+    it('writes the update to the installation named by the objectId, not by the request installation ID header', async () => {
+      const a = (await createInstallation({ installationId: IID_A, deviceType: 'android', localeIdentifier: 'a' })).data.objectId;
+      const b = (await createInstallation({ installationId: IID_B, deviceType: 'ios', localeIdentifier: 'b' })).data.objectId;
+
+      const response = await putInstallation(a, { localeIdentifier: 'changed' }, clientHeaders(IID_B));
+
+      expect(response.status).toBe(200);
+      expect((await readInstallation(a)).localeIdentifier).toBe('changed');
+      expect((await readInstallation(b)).localeIdentifier).toBe('b');
+    });
+
+    it('runs beforeSave for the installation that is written', async () => {
+      const a = (await createInstallation({ installationId: IID_A, deviceType: 'android', localeIdentifier: 'a' })).data.objectId;
+      const b = (await createInstallation({ installationId: IID_B, deviceType: 'ios', localeIdentifier: 'b' })).data.objectId;
+      const seen = [];
+      Parse.Cloud.beforeSave('_Installation', req => {
+        seen.push({ id: req.object.id, originalId: req.original && req.original.id });
+      });
+
+      const response = await putInstallation(a, { localeIdentifier: 'changed' }, clientHeaders(IID_B));
+
+      expect(response.status).toBe(200);
+      expect(seen).toEqual([{ id: a, originalId: a }]);
+      expect((await readInstallation(a)).localeIdentifier).toBe('changed');
+      expect((await readInstallation(b)).localeIdentifier).toBe('b');
+    });
+
+    it('rejects an update addressed to an installation the caller cannot write even when the request installation ID names a writable one', async () => {
+      const own = (await createInstallation({ installationId: IID_SELF, deviceType: 'android', localeIdentifier: 'self' }, clientHeaders(IID_SELF))).data.objectId;
+      const locked = (await createInstallation({ installationId: IID_B, deviceType: 'ios', localeIdentifier: 'locked', ACL: {} }, masterHeaders)).data.objectId;
+
+      const response = await putInstallation(locked, { localeIdentifier: 'changed' }, clientHeaders(IID_SELF));
+
+      expect(response.status).toBe(404);
+      expect(response.data.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      expect((await readInstallation(locked)).localeIdentifier).toBe('locked');
+      expect((await readInstallation(own)).localeIdentifier).toBe('self');
+    });
+
+    it('does not run beforeSave with the stored data of an inaccessible installation when protectedFieldsTriggerExempt is enabled', async () => {
+      await reconfigureServer({ protectedFieldsTriggerExempt: true });
+      const own = (await createInstallation({ installationId: IID_SELF, deviceType: 'android', localeIdentifier: 'self' }, clientHeaders(IID_SELF))).data.objectId;
+      const locked = (await createInstallation(
+        { installationId: IID_B, deviceType: 'ios', localeIdentifier: 'locked', secretField: 'top-secret', ACL: {} },
+        masterHeaders
+      )).data.objectId;
+      const seen = [];
+      Parse.Cloud.beforeSave('_Installation', req => {
+        seen.push({ id: req.object.id, originalSecret: req.original && req.original.get('secretField') });
+      });
+
+      const response = await putInstallation(locked, { localeIdentifier: 'changed' }, clientHeaders(IID_SELF));
+
+      expect(response.status).toBe(404);
+      expect(response.data.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      expect(seen).toEqual([]);
+      expect((await readInstallation(locked)).secretField).toBe('top-secret');
+      expect((await readInstallation(own)).localeIdentifier).toBe('self');
+    });
+
+    it('still resolves the caller installation from the request installation ID on create with no objectId', async () => {
+      const created = await createInstallation({ installationId: IID_A, deviceType: 'android', localeIdentifier: 'a' });
+      expect(created.status).toBe(201);
+      const objectId = created.data.objectId;
+
+      const response = await createInstallation({ localeIdentifier: 'from-header' }, clientHeaders(IID_A));
+
+      expect(response.status).toBe(200);
+      expect((await readInstallation(objectId)).localeIdentifier).toBe('from-header');
+    });
+
+    it('writes to the addressed installation when a client saves one by objectId via the SDK', async () => {
+      const b = (await createInstallation({ installationId: IID_B, deviceType: 'ios', localeIdentifier: 'b' })).data.objectId;
+      const selfId = await Parse.CoreManager.getInstallationController().currentInstallationId();
+      const own = (await createInstallation({ installationId: selfId, deviceType: 'android', localeIdentifier: 'self' }, clientHeaders(selfId))).data.objectId;
+
+      const target = Parse.Installation.createWithoutData(b);
+      target.set('localeIdentifier', 'changed-by-sdk');
+      await target.save();
+
+      expect((await readInstallation(b)).localeIdentifier).toBe('changed-by-sdk');
+      expect((await readInstallation(own)).localeIdentifier).toBe('self');
+    });
+  });
 });
