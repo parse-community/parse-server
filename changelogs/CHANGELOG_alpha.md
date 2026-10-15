@@ -1,3 +1,10 @@
+## [9.10.5-alpha.10](https://github.com/parse-community/parse-server/compare/9.10.5-alpha.9...9.10.5-alpha.10) (2026-10-15)
+
+
+### Bug Fixes
+
+* Installation update is written to the installation named by the request's installation ID instead of the addressed object ([GHSA-8j8q-73xx-w3m4](https://github.com/parse-community/parse-server/security/advisories/GHSA-8j8q-73xx-w3m4)) ([#10792](https://github.com/parse-community/parse-server/issues/10792)) ([256a253](https://github.com/parse-community/parse-server/commit/256a253cd119a60fa6095163b9f846de361b398c))
+
 ## [9.10.5-alpha.9](https://github.com/parse-community/parse-server/compare/9.10.5-alpha.8...9.10.5-alpha.9) (2026-10-15)
 
 
