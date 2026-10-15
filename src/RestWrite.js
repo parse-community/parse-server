@@ -165,6 +165,9 @@ RestWrite.prototype.execute = function () {
       return this.cleanUserAuthData();
     })
     .then(() => {
+      return this.filterRevertedFieldsInResponse();
+    })
+    .then(() => {
       // Append the authDataResponse if exists
       if (this.authDataResponse) {
         if (this.response && this.response.response) {
@@ -2145,6 +2148,70 @@ RestWrite.prototype._restoreRevertedPath = function (response, writeData, writte
   response[target] = value === undefined ? { __op: 'Delete' } : value;
 };
 
+// Returns reverted fields of an update only as the caller can read them
+RestWrite.prototype.filterRevertedFieldsInResponse = async function () {
+  const response = this.response?.response;
+  if (!this.query || !response || !this.pendingOps.operations) {
+    return;
+  }
+  if (this.auth.isMaster || this.auth.isMaintenance) {
+    return;
+  }
+  const stateController = Parse.CoreManager.getObjectStateController();
+  const [pending] = stateController.getPendingOps(this.pendingOps.identifier);
+  const reverted = Object.keys(this.pendingOps.operations).filter(key => !pending[key]);
+  const keys = Object.keys(response).filter(key =>
+    reverted.some(path => path === key || path.startsWith(`${key}.`))
+  );
+  if (!keys.length) {
+    return;
+  }
+  let view;
+  try {
+    const query = await RestQuery({
+      method: RestQuery.Method.get,
+      config: this.config,
+      auth: this.auth,
+      className: this.className,
+      restWhere: { objectId: this.query.objectId },
+      runBeforeFind: false,
+      runAfterFind: false,
+      context: this.context,
+    });
+    view = (await query.execute()).results[0];
+  } catch (error) {
+    // Fails closed; access denial is expected
+    const denied = [Parse.Error.OPERATION_FORBIDDEN, Parse.Error.OBJECT_NOT_FOUND];
+    if (!(error instanceof Parse.Error) || !denied.includes(error.code)) {
+      logger.warn('Failed to read reverted fields for the save response', error);
+    }
+  }
+  for (const key of keys) {
+    // Removed beneath a key the caller cannot read
+    if (!hasOwn(response, key)) {
+      continue;
+    }
+    const path = key.split('.');
+    const value = getOwnPath(view, path);
+    if (value === undefined) {
+      for (const responseKey of Object.keys(response)) {
+        if (responseKey.startsWith(`${key}.`)) {
+          delete response[responseKey];
+        }
+      }
+      if (key === 'ACL') {
+        // The SDK cannot apply an operation to ACL
+        delete response[key];
+      } else {
+        response[key] = { __op: 'Delete' };
+      }
+    } else if (util.isDeepStrictEqual(response[key], getOwnPath(this.originalData, path))) {
+      // The stored value as the caller reads it
+      response[key] = value;
+    }
+  }
+};
+
 RestWrite.prototype._updateResponseWithData = function (response, data, isFinalObject = false) {
   const stateController = Parse.CoreManager.getObjectStateController();
   const [pending] = stateController.getPendingOps(this.pendingOps.identifier);
@@ -2167,7 +2234,11 @@ RestWrite.prototype._updateResponseWithData = function (response, data, isFinalO
     revertedData[key] = hasOwn(this.originalData, key)
       ? this.originalData[key]
       : { __op: 'Delete' };
-    (this.storage.fieldsChangedByTrigger ||= []).push(key);
+    this.storage.fieldsChangedByTrigger ||= [];
+    // Once only, so an afterSave unset is not undone by a second entry
+    if (this.storage.fieldsChangedByTrigger.indexOf(key) < 0) {
+      this.storage.fieldsChangedByTrigger.push(key);
+    }
   }
   const responseData = revertedData || data;
   // The final object, before unchanged fields are removed from the response
