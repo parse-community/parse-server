@@ -8954,6 +8954,8 @@ describe('Vulnerabilities', () => {
         });
 
       it('does not return a reverted field', async () => {
+        const logger = require('../lib/logger').default;
+        const warn = spyOn(logger, 'warn').and.callThrough();
         Parse.Cloud.beforeSave('WriteOnly', ({ object }) => {
           object.revert('secret');
         });
@@ -8966,8 +8968,42 @@ describe('Vulnerabilities', () => {
         const response = await update({ secret: 'new' });
         expect(response.data.secret).toEqual({ __op: 'Delete' });
         expect(JSON.stringify(response.data)).not.toContain('stored-secret');
+        expect(warn).not.toHaveBeenCalledWith(
+          'Failed to read reverted fields for the save response',
+          jasmine.anything()
+        );
         await obj.fetch({ useMasterKey: true });
         expect(obj.get('secret')).toBe('stored-secret');
+      });
+
+      it('logs an unexpected read failure and does not return the stored value', async () => {
+        const logger = require('../lib/logger').default;
+        const warn = spyOn(logger, 'warn').and.callFake(() => {});
+        const adapter = Config.get(Parse.applicationId).database.adapter;
+        const find = adapter.find.bind(adapter);
+        let failRead = false;
+        spyOn(adapter, 'find').and.callFake((className, ...args) => {
+          if (failRead && className === 'WriteOnly') {
+            failRead = false;
+            return Promise.reject(new Error('read failed'));
+          }
+          return find(className, ...args);
+        });
+        Parse.Cloud.beforeSave('WriteOnly', ({ object }) => {
+          object.revert('secret');
+        });
+        Parse.Cloud.afterSave('WriteOnly', () => {
+          failRead = true;
+        });
+        const response = await update(
+          { secret: 'new' },
+          { 'X-Parse-Session-Token': reader.getSessionToken() }
+        );
+        expect(response.data.secret).toEqual({ __op: 'Delete' });
+        expect(warn).toHaveBeenCalledWith(
+          'Failed to read reverted fields for the save response',
+          jasmine.anything()
+        );
       });
 
       it('does not return a field reverted by a constant validator', async () => {
