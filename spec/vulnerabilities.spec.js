@@ -9156,4 +9156,178 @@ describe('Vulnerabilities', () => {
       });
     });
   });
+
+  describe('(GHSA-rx55-fw4j-pvpx) Dot notation key corrupts shared runtime object', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Master-Key': 'test',
+      'Content-Type': 'application/json',
+    };
+
+    // Read the state of the shared built-ins that a response-builder regression
+    // could stamp an own property onto, then restore them immediately so a failing
+    // run cannot corrupt sibling specs running in the same process.
+    function protoStateAndRestore() {
+      const state = {
+        toStringCallType: typeof Object.prototype.toString.call,
+        toStringCallOwn: Object.hasOwn(Object.prototype.toString, 'call'),
+        hopCallType: typeof Object.prototype.hasOwnProperty.call,
+        hopCallOwn: Object.hasOwn(Object.prototype.hasOwnProperty, 'call'),
+      };
+      if (state.toStringCallOwn) {
+        try {
+          delete Object.prototype.toString.call;
+        } catch (e) {
+          /* ignore */
+        }
+      }
+      if (state.hopCallOwn) {
+        try {
+          delete Object.prototype.hasOwnProperty.call;
+        } catch (e) {
+          /* ignore */
+        }
+      }
+      return state;
+    }
+
+    async function seedObject(className) {
+      const res = await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/classes/${className}`,
+        headers,
+        body: JSON.stringify({ data: { x: 1 } }),
+      });
+      return res.data.objectId;
+    }
+
+    it('does not write onto an inherited prototype member when an update op key uses it as a path segment', async () => {
+      const id = await seedObject('GHSArx55Update');
+      await request({
+        method: 'PUT',
+        url: `${Parse.serverURL}/classes/GHSArx55Update/${id}`,
+        headers,
+        body: JSON.stringify({ 'data.toString.call': { __op: 'Increment', amount: 1 } }),
+      }).catch(e => e);
+      const state = protoStateAndRestore();
+      expect(state.toStringCallType).toBe('function');
+      expect(state.toStringCallOwn).toBe(false);
+      // The process is still healthy: an unrelated write succeeds.
+      const probe = await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/classes/GHSArx55Probe`,
+        headers,
+        body: JSON.stringify({ ok: true }),
+      }).catch(e => e);
+      expect(probe.status).toBe(201);
+    });
+
+    it('does not write onto hasOwnProperty when an update op key uses it as a path segment', async () => {
+      const id = await seedObject('GHSArx55Hop');
+      await request({
+        method: 'PUT',
+        url: `${Parse.serverURL}/classes/GHSArx55Hop/${id}`,
+        headers,
+        body: JSON.stringify({ 'data.hasOwnProperty.call': { __op: 'Increment', amount: 1 } }),
+      }).catch(e => e);
+      const state = protoStateAndRestore();
+      expect(state.hopCallType).toBe('function');
+      expect(state.hopCallOwn).toBe(false);
+    });
+
+    it('does not write onto an inherited prototype member when a create op key uses it as a path segment', async () => {
+      await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/classes/GHSArx55Create`,
+        headers,
+        body: JSON.stringify({
+          data: { x: 1 },
+          'data.toString.call': { __op: 'Increment', amount: 1 },
+        }),
+      }).catch(e => e);
+      const state = protoStateAndRestore();
+      expect(state.toStringCallType).toBe('function');
+      expect(state.toStringCallOwn).toBe(false);
+    });
+
+    it('still expands a legitimate dot notation operation result in the response', async () => {
+      const obj = await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/classes/GHSArx55Legit`,
+        headers,
+        body: JSON.stringify({ nested: { n: 1 } }),
+      });
+      const id = obj.data.objectId;
+      const res = await request({
+        method: 'PUT',
+        url: `${Parse.serverURL}/classes/GHSArx55Legit/${id}`,
+        headers,
+        body: JSON.stringify({ 'nested.n': { __op: 'Increment', amount: 4 } }),
+      });
+      expect(res.data.nested.n).toBe(5);
+    });
+
+    // Read/write any own property named after an inherited member off the shared
+    // built-ins the ACL transforms could stamp onto, then restore. ACL transforms
+    // use both the legacy { r, w } keys and the REST { read, write } keys.
+    function aclProtoStateAndRestore() {
+      const targets = [
+        Object.prototype.toString,
+        Object.prototype.valueOf,
+        Object.prototype.hasOwnProperty,
+        Object.prototype,
+      ];
+      const props = ['r', 'w', 'read', 'write'];
+      const polluted = [];
+      for (const target of targets) {
+        for (const prop of props) {
+          if (Object.hasOwn(target, prop)) {
+            polluted.push(`${target === Object.prototype ? 'Object.prototype' : target.name || 'fn'}.${prop}`);
+            try {
+              delete target[prop];
+            } catch (e) {
+              /* ignore */
+            }
+          }
+        }
+      }
+      return polluted;
+    }
+
+    it('does not corrupt a shared built-in when an ACL key names an inherited member', async () => {
+      // Raw JSON body so the keys arrive as the client sends them.
+      const create = await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/classes/GHSArx55Acl`,
+        headers,
+        body: '{"x":1,"ACL":{"toString":{"read":true,"write":true},"valueOf":{"read":true}}}',
+      }).catch(e => e);
+      let acl;
+      if (create.data && create.data.objectId) {
+        const get = await request({
+          method: 'GET',
+          url: `${Parse.serverURL}/classes/GHSArx55Acl/${create.data.objectId}`,
+          headers,
+        }).catch(e => e);
+        acl = get.data && get.data.ACL;
+      }
+      const polluted = aclProtoStateAndRestore();
+      expect(create.status).toBe(201);
+      expect(polluted).toEqual([]);
+      // The ACL round-trips faithfully instead of being mangled away.
+      expect(acl).toEqual({ toString: { read: true, write: true }, valueOf: { read: true } });
+    });
+
+    it('rejects an ACL key that is a prohibited keyword', async () => {
+      const create = await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/classes/GHSArx55AclProto`,
+        headers,
+        body: '{"x":1,"ACL":{"__proto__":{"read":true}}}',
+      }).catch(e => e);
+      const polluted = aclProtoStateAndRestore();
+      expect(create.status).toBe(400);
+      expect(polluted).toEqual([]);
+    });
+  });
 });
