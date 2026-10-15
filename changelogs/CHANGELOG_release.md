@@ -1,3 +1,10 @@
+## [8.6.107](https://github.com/parse-community/parse-server/compare/8.6.106...8.6.107) (2026-10-15)
+
+
+### Bug Fixes
+
+* Object update returns the stored value of a field reverted in `beforeSave` to a caller without read access ([GHSA-9rvr-f5hc-9f2f](https://github.com/parse-community/parse-server/security/advisories/GHSA-9rvr-f5hc-9f2f)) ([#10789](https://github.com/parse-community/parse-server/issues/10789)) ([27a5928](https://github.com/parse-community/parse-server/commit/27a59287a4233bf723964788238effeeb9776e74))
+
 ## [8.6.106](https://github.com/parse-community/parse-server/compare/8.6.105...8.6.106) (2026-10-14)
 
 
