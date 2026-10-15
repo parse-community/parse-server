@@ -1,3 +1,10 @@
+## [8.6.108](https://github.com/parse-community/parse-server/compare/8.6.107...8.6.108) (2026-10-15)
+
+
+### Bug Fixes
+
+* Object write with a crafted key can pollute a shared prototype and cause denial of service ([GHSA-rx55-fw4j-pvpx](https://github.com/parse-community/parse-server/security/advisories/GHSA-rx55-fw4j-pvpx)) ([#10791](https://github.com/parse-community/parse-server/issues/10791)) ([e4621ac](https://github.com/parse-community/parse-server/commit/e4621ac0f168f356ced9f7df3f2a5d3bba74a2ae))
+
 ## [8.6.107](https://github.com/parse-community/parse-server/compare/8.6.106...8.6.107) (2026-10-15)
 
 
