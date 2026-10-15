@@ -419,8 +419,9 @@ const untransformObjectACL = ({ _rperm, _wperm, ...output }) => {
   if (_rperm || _wperm) {
     output.ACL = {};
 
+    // Own-property check so an inherited member name is never read as the container
     (_rperm || []).forEach(entry => {
-      if (!output.ACL[entry]) {
+      if (!Object.hasOwn(output.ACL, entry)) {
         output.ACL[entry] = { read: true };
       } else {
         output.ACL[entry]['read'] = true;
@@ -428,7 +429,7 @@ const untransformObjectACL = ({ _rperm, _wperm, ...output }) => {
     });
 
     (_wperm || []).forEach(entry => {
-      if (!output.ACL[entry]) {
+      if (!Object.hasOwn(output.ACL, entry)) {
         output.ACL[entry] = { write: true };
       } else {
         output.ACL[entry]['write'] = true;
@@ -2176,11 +2177,12 @@ class DatabaseController {
       }
     }
 
-    object[firstKey] = this._expandResultOnKeyPath(
-      object[firstKey] || {},
-      nextPath,
-      value[firstKey]
-    );
+    // Only descend into an own object, never an inherited prototype member
+    const child =
+      Object.hasOwn(object, firstKey) && object[firstKey] && typeof object[firstKey] === 'object'
+        ? object[firstKey]
+        : {};
+    object[firstKey] = this._expandResultOnKeyPath(child, nextPath, value[firstKey]);
     delete object[key];
     return object;
   }
