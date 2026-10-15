@@ -188,7 +188,11 @@ const handleDotFields = object => {
     if (fieldName.indexOf('.') > -1) {
       const components = fieldName.split('.');
       const first = components.shift();
-      object[first] = object[first] || {};
+      // Only descend into an own object, never an inherited prototype member
+      object[first] =
+        Object.hasOwn(object, first) && object[first] && typeof object[first] === 'object'
+          ? object[first]
+          : {};
       let currentObj = object[first];
       let next;
       let value = object[fieldName];
@@ -196,11 +200,15 @@ const handleDotFields = object => {
         value = undefined;
       }
       while ((next = components.shift())) {
-        currentObj[next] = currentObj[next] || {};
         if (components.length === 0) {
           currentObj[next] = value;
+        } else {
+          currentObj[next] =
+            Object.hasOwn(currentObj, next) && currentObj[next] && typeof currentObj[next] === 'object'
+              ? currentObj[next]
+              : {};
+          currentObj = currentObj[next];
         }
-        currentObj = currentObj[next];
       }
       delete object[fieldName];
     }
