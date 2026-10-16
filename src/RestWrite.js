@@ -76,12 +76,6 @@ function RestWrite(config, auth, className, query, data, originalData, context, 
   // copy
   this.query = structuredClone(query);
   this.data = structuredClone(data);
-  // Dot notation keys of the request and its triggers, and whether they are still written
-  this.dotNotationKeys = new Map(
-    Object.keys(this.data || {})
-      .filter(key => key.includes('.'))
-      .map(key => [key, true])
-  );
   // We never change originalData, so we do not need a deep copy
   this.originalData = originalData;
 
@@ -377,13 +371,6 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
         if (this.query && this.query.objectId) {
           delete this.data.objectId;
         }
-        // Dot notation keys the trigger writes; it may replace those of the request
-        for (const key of this.dotNotationKeys.keys()) {
-          this.dotNotationKeys.set(key, false);
-        }
-        Object.keys(this.data)
-          .filter(key => key.includes('.'))
-          .forEach(key => this.dotNotationKeys.set(key, true));
       }
       try {
         Utils.checkProhibitedKeywords(this.config, this.data);
@@ -2000,17 +1987,15 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
       const jsonReturned = result && !result._toFullJSON;
       if (jsonReturned) {
         // The returned object is the response as is
+        this.storage.responseFromTrigger = true;
         this.pendingOps.operations = {};
-        this.dotNotationKeys.clear();
         this.response.response = result;
       } else {
-        const object = result || updatedObject;
-        // Dot notation keys the trigger sets
-        object
-          .dirtyKeys()
-          .filter(key => key.includes('.'))
-          .forEach(key => this.dotNotationKeys.set(key, true));
-        this.response.response = this._updateResponseWithData(object.toJSON(), this.data, true);
+        this.response.response = this._updateResponseWithData(
+          (result || updatedObject).toJSON(),
+          this.data,
+          true
+        );
       }
     })
     .catch(function (err) {
@@ -2166,20 +2151,6 @@ const getOwnPath = (object, path) => {
   return value;
 };
 
-// Whether a value holds keys outside the dot notation paths
-const holdsOtherKeys = (value, paths) => {
-  if (paths.some(path => !path.length)) {
-    return false;
-  }
-  if (!isContainer(value)) {
-    return true;
-  }
-  return Object.keys(value).some(key => {
-    const nested = paths.filter(path => path[0] === key).map(path => path.slice(1));
-    return !nested.length || holdsOtherKeys(value[key], nested);
-  });
-};
-
 // Restores a reverted dot notation key in the response
 RestWrite.prototype._restoreRevertedPath = function (response, writeData, written, key, finalObject) {
   // A write at or beneath the key governs
@@ -2267,30 +2238,16 @@ RestWrite.prototype._restoreRevertedPath = function (response, writeData, writte
 // Returns stored values in an update response only as the caller can read them
 RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
   const response = this.response?.response;
-  if (!this.query || !response) {
+  if (!this.query || !response || this.storage.responseFromTrigger) {
     return;
   }
   if (this.auth.isMaster || this.auth.isMaintenance) {
     return;
   }
-  let reverted = [];
-  if (this.pendingOps.operations) {
-    const stateController = Parse.CoreManager.getObjectStateController();
-    const [pending] = stateController.getPendingOps(this.pendingOps.identifier);
-    reverted = Object.keys(this.pendingOps.operations).filter(key => !pending[key]);
-  }
-  const keys = Object.keys(response).filter(key =>
-    reverted.some(path => path === key || path.startsWith(`${key}.`))
+  const fields = Object.keys(response).filter(
+    key => !['objectId', 'createdAt', 'updatedAt'].includes(key)
   );
-  const tracked = [...this.dotNotationKeys.keys()];
-  const beneath = key => tracked.filter(path => path.startsWith(`${key}.`));
-  const written = key => beneath(key).filter(path => this.dotNotationKeys.get(path));
-  // Parents of dot notation keys that hold values outside the written keys
-  const parents = Object.keys(response).filter(key => {
-    const paths = written(key).map(path => path.slice(key.length + 1).split('.'));
-    return !keys.includes(key) && beneath(key).length > 0 && holdsOtherKeys(response[key], paths);
-  });
-  if (!keys.length && !parents.length) {
+  if (!fields.length) {
     return;
   }
   let view;
@@ -2300,7 +2257,8 @@ RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
       config: this.config,
       auth: this.auth,
       className: this.className,
-      restWhere: { objectId: this.query.objectId },
+      // The query of the write may constrain more than the objectId
+      restWhere: structuredClone(this.query),
       runBeforeFind: false,
       runAfterFind: false,
       context: this.context,
@@ -2310,9 +2268,31 @@ RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
     // Fails closed; access denial is expected
     const denied = [Parse.Error.OPERATION_FORBIDDEN, Parse.Error.OBJECT_NOT_FOUND];
     if (!(error instanceof Parse.Error) || !denied.includes(error.code)) {
-      logger.warn('Failed to read reverted fields for the save response', error);
+      logger.warn('Failed to read the object for the save response', error);
     }
   }
+  if (!view) {
+    // No stored values for a caller who cannot read the object
+    for (const key of fields) {
+      delete response[key];
+    }
+    for (const field of new Set(fields.map(key => key.split('.')[0]))) {
+      // The SDK cannot apply an operation to ACL
+      if (field !== 'ACL') {
+        response[field] = { __op: 'Delete' };
+      }
+    }
+    return;
+  }
+  if (!this.pendingOps.operations) {
+    return;
+  }
+  const stateController = Parse.CoreManager.getObjectStateController();
+  const [pending] = stateController.getPendingOps(this.pendingOps.identifier);
+  const reverted = Object.keys(this.pendingOps.operations).filter(key => !pending[key]);
+  const keys = fields.filter(key =>
+    reverted.some(path => path === key || path.startsWith(`${key}.`))
+  );
   for (const key of keys) {
     // Removed beneath a key the caller cannot read
     if (!hasOwn(response, key)) {
@@ -2335,20 +2315,6 @@ RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
     } else if (util.isDeepStrictEqual(response[key], getOwnPath(this.originalData, path))) {
       // The stored value as the caller reads it
       response[key] = value;
-    }
-  }
-  for (const key of parents) {
-    if (!hasOwn(response, key) || getOwnPath(view, key.split('.')) !== undefined) {
-      continue;
-    }
-    const value = response[key];
-    delete response[key];
-    // Only the written dot notation keys
-    for (const path of written(key)) {
-      const pathValue = getOwnPath(value, path.slice(key.length + 1).split('.'));
-      if (pathValue !== undefined && !pathValue?.__op) {
-        response[path] = pathValue;
-      }
     }
   }
 };
