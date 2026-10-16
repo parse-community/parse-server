@@ -76,8 +76,12 @@ function RestWrite(config, auth, className, query, data, originalData, context, 
   // copy
   this.query = structuredClone(query);
   this.data = structuredClone(data);
-  // Dot notation keys of the request; triggers add theirs
-  this.dotNotationKeys = new Set(Object.keys(this.data || {}).filter(key => key.includes('.')));
+  // Dot notation keys of the request and its triggers, and whether they are still written
+  this.dotNotationKeys = new Map(
+    Object.keys(this.data || {})
+      .filter(key => key.includes('.'))
+      .map(key => [key, true])
+  );
   // We never change originalData, so we do not need a deep copy
   this.originalData = originalData;
 
@@ -367,10 +371,13 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
         if (this.query && this.query.objectId) {
           delete this.data.objectId;
         }
-        // Dot notation keys the trigger writes
+        // Dot notation keys the trigger writes; it may replace those of the request
+        for (const key of this.dotNotationKeys.keys()) {
+          this.dotNotationKeys.set(key, false);
+        }
         Object.keys(this.data)
           .filter(key => key.includes('.'))
-          .forEach(key => this.dotNotationKeys.add(key));
+          .forEach(key => this.dotNotationKeys.set(key, true));
       }
       try {
         Utils.checkProhibitedKeywords(this.config, this.data);
@@ -1947,7 +1954,7 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
         object
           .dirtyKeys()
           .filter(key => key.includes('.'))
-          .forEach(key => this.dotNotationKeys.add(key));
+          .forEach(key => this.dotNotationKeys.set(key, true));
         this.response.response = this._updateResponseWithData(object.toJSON(), this.data, true);
       }
     })
@@ -2190,12 +2197,13 @@ RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
   const keys = Object.keys(response).filter(key =>
     reverted.some(path => path === key || path.startsWith(`${key}.`))
   );
-  const written = [...this.dotNotationKeys];
-  const beneath = key => written.filter(path => path.startsWith(`${key}.`));
-  // Parents of written dot notation keys that hold other values
+  const tracked = [...this.dotNotationKeys.keys()];
+  const beneath = key => tracked.filter(path => path.startsWith(`${key}.`));
+  const written = key => beneath(key).filter(path => this.dotNotationKeys.get(path));
+  // Parents of dot notation keys that hold values outside the written keys
   const parents = Object.keys(response).filter(key => {
-    const paths = beneath(key).map(path => path.slice(key.length + 1).split('.'));
-    return !keys.includes(key) && paths.length > 0 && holdsOtherKeys(response[key], paths);
+    const paths = written(key).map(path => path.slice(key.length + 1).split('.'));
+    return !keys.includes(key) && beneath(key).length > 0 && holdsOtherKeys(response[key], paths);
   });
   if (!keys.length && !parents.length) {
     return;
@@ -2251,7 +2259,7 @@ RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
     const value = response[key];
     delete response[key];
     // Only the written dot notation keys
-    for (const path of beneath(key)) {
+    for (const path of written(key)) {
       const pathValue = getOwnPath(value, path.slice(key.length + 1).split('.'));
       if (pathValue !== undefined && !pathValue?.__op) {
         response[path] = pathValue;
