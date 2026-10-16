@@ -76,6 +76,8 @@ function RestWrite(config, auth, className, query, data, originalData, context, 
   // copy
   this.query = structuredClone(query);
   this.data = structuredClone(data);
+  // Before triggers change the data
+  this.dotNotationKeys = Object.keys(this.data || {}).filter(key => key.includes('.'));
   // We never change originalData, so we do not need a deep copy
   this.originalData = originalData;
 
@@ -168,7 +170,7 @@ RestWrite.prototype.execute = function () {
       return this.cleanUserAuthData();
     })
     .then(() => {
-      return this.filterRevertedFieldsInResponse();
+      return this.filterUnreadableFieldsInResponse();
     })
     .then(() => {
       return this.filterProtectedFieldsInResponse();
@@ -1825,6 +1827,8 @@ RestWrite.prototype.runDatabaseOperation = function () {
         })
         .then(response => {
           response.updatedAt = this.updatedAt;
+          // The response without trigger changes
+          this.databaseResponse = { ...response };
           this._updateResponseWithData(response, this.data);
           this.response = { response };
         });
@@ -1986,7 +1990,9 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
     .then(result => {
       const jsonReturned = result && !result._toFullJSON;
       if (jsonReturned) {
+        // The returned object is the response as is
         this.pendingOps.operations = {};
+        this.dotNotationKeys = [];
         this.response.response = result;
       } else {
         this.response.response = this._updateResponseWithData(
@@ -2233,22 +2239,32 @@ RestWrite.prototype._restoreRevertedPath = function (response, writeData, writte
   response[target] = value === undefined ? { __op: 'Delete' } : value;
 };
 
-// Returns reverted fields of an update only as the caller can read them
-RestWrite.prototype.filterRevertedFieldsInResponse = async function () {
+// Returns stored values in an update response only as the caller can read them
+RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
   const response = this.response?.response;
-  if (!this.query || !response || !this.pendingOps.operations) {
+  if (!this.query || !response) {
     return;
   }
   if (this.auth.isMaster || this.auth.isMaintenance) {
     return;
   }
-  const stateController = Parse.CoreManager.getObjectStateController();
-  const [pending] = stateController.getPendingOps(this.pendingOps.identifier);
-  const reverted = Object.keys(this.pendingOps.operations).filter(key => !pending[key]);
+  let reverted = [];
+  if (this.pendingOps.operations) {
+    const stateController = Parse.CoreManager.getObjectStateController();
+    const [pending] = stateController.getPendingOps(this.pendingOps.identifier);
+    reverted = Object.keys(this.pendingOps.operations).filter(key => !pending[key]);
+  }
   const keys = Object.keys(response).filter(key =>
     reverted.some(path => path === key || path.startsWith(`${key}.`))
   );
-  if (!keys.length) {
+  // Parents of dot notation keys beyond the database response
+  const parents = Object.keys(response).filter(
+    key =>
+      !keys.includes(key) &&
+      this.dotNotationKeys.some(path => path.startsWith(`${key}.`)) &&
+      !util.isDeepStrictEqual(response[key], this.databaseResponse?.[key])
+  );
+  if (!keys.length && !parents.length) {
     return;
   }
   let view;
@@ -2293,6 +2309,17 @@ RestWrite.prototype.filterRevertedFieldsInResponse = async function () {
     } else if (util.isDeepStrictEqual(response[key], getOwnPath(this.originalData, path))) {
       // The stored value as the caller reads it
       response[key] = value;
+    }
+  }
+  for (const key of parents) {
+    if (getOwnPath(view, key.split('.')) !== undefined) {
+      continue;
+    }
+    // As returned without triggers
+    if (hasOwn(this.databaseResponse, key)) {
+      response[key] = this.databaseResponse[key];
+    } else {
+      delete response[key];
     }
   }
 };

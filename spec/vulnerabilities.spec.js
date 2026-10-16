@@ -10009,6 +10009,188 @@ describe('Vulnerabilities', () => {
     });
   });
 
+  describe('(GHSA-2rcp-jc67-vq74) Save response returns the stored parent of a dot notation key to a caller without read access', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+
+    describe('class without get permission', () => {
+      let reader;
+      let obj;
+
+      beforeEach(async () => {
+        reader = await Parse.User.signUp('reader', 'password');
+        const schema = new Parse.Schema('WriteOnly');
+        schema.addObject('field');
+        schema.setCLP({
+          find: { [reader.id]: true },
+          get: { [reader.id]: true },
+          count: { [reader.id]: true },
+          create: {},
+          update: { '*': true },
+          delete: {},
+          addField: {},
+        });
+        await schema.save();
+        obj = await new Parse.Object('WriteOnly').save(
+          { field: { sub: 'stored-sub', other: 'stored-other' } },
+          { useMasterKey: true }
+        );
+      });
+
+      const update = (body, extraHeaders = {}) =>
+        request({
+          method: 'PUT',
+          url: `${Parse.serverURL}/classes/WriteOnly/${obj.id}`,
+          headers: { ...headers, ...extraHeaders },
+          body: JSON.stringify(body),
+        });
+
+      it('does not return the stored parent of a dot notation key with afterSave', async () => {
+        Parse.Cloud.afterSave('WriteOnly', () => {});
+        const get = await request({
+          url: `${Parse.serverURL}/classes/WriteOnly/${obj.id}`,
+          headers,
+        }).catch(e => e);
+        expect(get.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+
+        const response = await update({ 'field.added': 'x' });
+        expect(response.data.field).toBeUndefined();
+        expect(JSON.stringify(response.data)).not.toContain('stored-');
+        await obj.fetch({ useMasterKey: true });
+        expect(obj.get('field')).toEqual({ sub: 'stored-sub', other: 'stored-other', added: 'x' });
+      });
+
+      it('returns only the operation result for a dot notation operation with afterSave', async () => {
+        Parse.Cloud.afterSave('WriteOnly', () => {});
+        const response = await update({ 'field.count': { __op: 'Increment', amount: 1 } });
+        expect(response.data.field).toEqual({ count: 1 });
+      });
+
+      it('does not return the stored parent of a dot notation key changed by afterSave', async () => {
+        Parse.Cloud.afterSave('WriteOnly', ({ object }) => {
+          object.set('field.audit', 'audited');
+        });
+        const response = await update({ 'field.added': 'x' });
+        expect(JSON.stringify(response.data)).not.toContain('stored-');
+      });
+
+      it('does not return the stored parent of a dot notation key with beforeSave', async () => {
+        Parse.Cloud.beforeSave('WriteOnly', () => {});
+        const response = await update({ 'field.added': 'x' });
+        expect(response.data.field).toBeUndefined();
+        expect(JSON.stringify(response.data)).not.toContain('stored-');
+      });
+
+      it('keeps an object returned by afterSave', async () => {
+        Parse.Cloud.afterSave('WriteOnly', () => ({ field: 'returned' }));
+        const response = await update({ 'field.added': 'x' });
+        expect(response.data.field).toBe('returned');
+      });
+
+      it('does not return the stored ACL for a dot notation ACL key with beforeSave', async () => {
+        const acl = new Parse.ACL();
+        acl.setPublicWriteAccess(true);
+        acl.setReadAccess('storedReaderId', true);
+        obj.setACL(acl);
+        await obj.save(null, { useMasterKey: true });
+        Parse.Cloud.beforeSave('WriteOnly', () => {});
+        const response = await update({ 'ACL.newUserId': { read: true } });
+        expect(response.data.ACL).toBeUndefined();
+        expect(JSON.stringify(response.data)).not.toContain('storedReaderId');
+      });
+
+      it('does not return the stored parent of a dot notation key in a batch request', async () => {
+        Parse.Cloud.afterSave('WriteOnly', () => {});
+        const response = await request({
+          method: 'POST',
+          url: `${Parse.serverURL}/batch`,
+          headers,
+          body: JSON.stringify({
+            requests: [
+              { method: 'PUT', path: `/1/classes/WriteOnly/${obj.id}`, body: { 'field.added': 'x' } },
+            ],
+          }),
+        });
+        expect(response.data[0].success.field).toBeUndefined();
+        expect(JSON.stringify(response.data)).not.toContain('stored-');
+      });
+
+      it('does not read the object for a dot notation operation without triggers', async () => {
+        const DatabaseController = require('../lib/Controllers/DatabaseController');
+        const find = spyOn(DatabaseController.prototype, 'find').and.callThrough();
+        const response = await update({ 'field.count': { __op: 'Increment', amount: 1 } });
+        expect(response.data.field).toEqual({ count: 1 });
+        expect(find.calls.allArgs().filter(([className]) => className === 'WriteOnly').length).toBe(0);
+      });
+
+      for (const auth of ['session with get permission', 'master', 'maintenance']) {
+        it(`returns the parent of a dot notation key for ${auth} auth`, async () => {
+          Parse.Cloud.afterSave('WriteOnly', () => {});
+          const authHeaders = {
+            'session with get permission': { 'X-Parse-Session-Token': reader.getSessionToken() },
+            master: { 'X-Parse-Master-Key': 'test' },
+            maintenance: { 'X-Parse-Maintenance-Key': 'testing' },
+          }[auth];
+          const response = await update({ 'field.added': 'x' }, authHeaders);
+          expect(response.data.field).toEqual({
+            sub: 'stored-sub',
+            other: 'stored-other',
+            added: 'x',
+          });
+        });
+      }
+    });
+
+    it('does not return the stored parent of a dot notation key for an object without read access', async () => {
+      const writer = await Parse.User.signUp('writer', 'password');
+      const acl = new Parse.ACL();
+      acl.setWriteAccess(writer, true);
+      acl.setReadAccess('otherUserId', true);
+      const obj = new Parse.Object('WriteOnlyAcl');
+      obj.setACL(acl);
+      await obj.save({ field: { sub: 'stored-sub' } }, { useMasterKey: true });
+      Parse.Cloud.afterSave('WriteOnlyAcl', () => {});
+      const sessionHeaders = { ...headers, 'X-Parse-Session-Token': writer.getSessionToken() };
+      const get = await request({
+        url: `${Parse.serverURL}/classes/WriteOnlyAcl/${obj.id}`,
+        headers: sessionHeaders,
+      }).catch(e => e);
+      expect(get.data.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+
+      const response = await request({
+        method: 'PUT',
+        url: `${Parse.serverURL}/classes/WriteOnlyAcl/${obj.id}`,
+        headers: sessionHeaders,
+        body: JSON.stringify({ 'field.added': 'x' }),
+      });
+      expect(response.data.field).toBeUndefined();
+      expect(JSON.stringify(response.data)).not.toContain('stored-sub');
+    });
+
+    it('does not return a protected parent of a dot notation key when protectedFieldsTriggerExempt is true', async () => {
+      await reconfigureServer({
+        protectedFields: { MyClass: { '*': ['secretField'] } },
+        protectedFieldsTriggerExempt: true,
+      });
+      const obj = await new Parse.Object('MyClass').save(
+        { secretField: { sub: 'stored-sub' } },
+        { useMasterKey: true }
+      );
+      Parse.Cloud.afterSave('MyClass', () => {});
+      const response = await request({
+        method: 'PUT',
+        url: `${Parse.serverURL}/classes/MyClass/${obj.id}`,
+        headers,
+        body: JSON.stringify({ 'secretField.added': 'x' }),
+      });
+      expect(response.data.secretField).toBeUndefined();
+      expect(JSON.stringify(response.data)).not.toContain('stored-sub');
+    });
+  });
+
   describe('(GHSA-rx55-fw4j-pvpx) Dot notation key corrupts shared runtime object', () => {
     const headers = {
       'X-Parse-Application-Id': 'test',
