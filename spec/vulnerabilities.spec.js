@@ -10283,6 +10283,36 @@ describe('Vulnerabilities', () => {
       expect(JSON.stringify(response.data)).not.toContain('stored-sub');
     });
 
+    it('returns stored values to a user who updates the auth data of a linked provider', async () => {
+      await reconfigureServer({
+        auth: {
+          tokenAdapter: {
+            validateAppId: () => Promise.resolve(),
+            validateAuthData: () => Promise.resolve(),
+          },
+        },
+      });
+      const user = await Parse.User.signUp('tokenuser', 'password');
+      const sessionHeaders = { ...headers, 'X-Parse-Session-Token': user.getSessionToken() };
+      const url = `${Parse.serverURL}/users/${user.id}`;
+      await request({
+        method: 'PUT',
+        url,
+        headers: sessionHeaders,
+        body: JSON.stringify({ authData: { tokenAdapter: { id: 'p1', token: 'old' } } }),
+      });
+      const response = await request({
+        method: 'PUT',
+        url,
+        headers: sessionHeaders,
+        body: JSON.stringify({
+          authData: { tokenAdapter: { id: 'p1', token: 'new' } },
+          logins: { __op: 'Increment', amount: 1 },
+        }),
+      });
+      expect(response.data.logins).toBe(1);
+    });
+
     it_only_db('mongo')(
       'returns the stored array of a dot notation operation to the session owner',
       async () => {
