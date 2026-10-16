@@ -10,6 +10,7 @@ const { continueWhile } = require('parse/lib/node/promiseUtils');
 const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt', 'ACL'];
 const { enforceRoleSecurity } = require('./SharedRest');
 const { createSanitizedError } = require('./Error');
+const Utils = require('./Utils');
 
 // restOptions can include:
 //   skip
@@ -131,6 +132,22 @@ function _UnsafeRestQuery(
           },
         ],
       };
+    }
+  }
+
+  // Reject prohibited keywords in field paths
+  for (const option of ['keys', 'excludeKeys', 'include']) {
+    if (typeof restOptions[option] !== 'string') {
+      continue;
+    }
+    // Field names have no value, so only key entries of the denylist match
+    const fields = Object.fromEntries(
+      restOptions[option].split(/[,.]/).map(name => [name, undefined])
+    );
+    try {
+      Utils.checkProhibitedKeywords(config, fields);
+    } catch (error) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `${error}`);
     }
   }
 
