@@ -239,6 +239,7 @@ describe('Parse Role testing', () => {
         },
       },
     });
+    const getRolesForUser = spyOn(Auth.prototype, 'getRolesForUser').and.callThrough();
     const getRolesByIds = Auth.prototype.getRolesByIds;
     let lookups = 0;
     spyOn(Auth.prototype, 'getRolesByIds').and.callFake(async function (...args) {
@@ -251,6 +252,7 @@ describe('Parse Role testing', () => {
     await expectAsync(
       new Parse.Query('TestObject').find({ sessionToken: user.getSessionToken() })
     ).toBeResolved();
+    expect(getRolesForUser).toHaveBeenCalled();
     expect(lookups).toBeLessThanOrEqual(1);
   });
 
