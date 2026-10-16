@@ -10024,6 +10024,8 @@ describe('Vulnerabilities', () => {
         reader = await Parse.User.signUp('reader', 'password');
         const schema = new Parse.Schema('WriteOnly');
         schema.addObject('field');
+        schema.addArray('list');
+        schema.addString('name');
         schema.setCLP({
           find: { [reader.id]: true },
           get: { [reader.id]: true },
@@ -10066,7 +10068,8 @@ describe('Vulnerabilities', () => {
       it('returns only the operation result for a dot notation operation with afterSave', async () => {
         Parse.Cloud.afterSave('WriteOnly', () => {});
         const response = await update({ 'field.count': { __op: 'Increment', amount: 1 } });
-        expect(response.data.field).toEqual({ count: 1 });
+        expect(response.data.field).toBeUndefined();
+        expect(response.data['field.count']).toBe(1);
       });
 
       it('does not return the stored parent of a dot notation key changed by afterSave', async () => {
@@ -10076,6 +10079,43 @@ describe('Vulnerabilities', () => {
         const response = await update({ 'field.added': 'x' });
         expect(JSON.stringify(response.data)).not.toContain('stored-');
       });
+
+      it('does not return the stored parent of a dot notation key set by afterSave', async () => {
+        Parse.Cloud.afterSave('WriteOnly', ({ object }) => {
+          object.set('field.audit', 'audited');
+        });
+        const response = await update({ name: 'x' });
+        expect(response.data.field).toBeUndefined();
+        expect(response.data['field.audit']).toBe('audited');
+        expect(JSON.stringify(response.data)).not.toContain('stored-');
+      });
+
+      it('does not return the stored parent of a dot notation key set by beforeSave', async () => {
+        Parse.Cloud.beforeSave('WriteOnly', ({ object }) => {
+          object.increment('field.count');
+        });
+        Parse.Cloud.afterSave('WriteOnly', () => {});
+        const response = await update({ name: 'x' });
+        expect(response.data.field).toBeUndefined();
+        expect(response.data['field.count']).toBe(1);
+        expect(JSON.stringify(response.data)).not.toContain('stored-');
+      });
+
+      it_only_db('mongo')(
+        'does not return the stored array for a dot notation operation on an array index',
+        async () => {
+          await obj.save(
+            { list: [{ count: 1, sub: 'stored-sub' }, { sub: 'stored-other' }] },
+            { useMasterKey: true }
+          );
+          const response = await update({ 'list.0.count': { __op: 'Increment', amount: 1 } });
+          expect(response.data.list).toBeUndefined();
+          expect(response.data['list.0.count']).toBe(2);
+          expect(JSON.stringify(response.data)).not.toContain('stored-');
+          await obj.fetch({ useMasterKey: true });
+          expect(obj.get('list')).toEqual([{ count: 2, sub: 'stored-sub' }, { sub: 'stored-other' }]);
+        }
+      );
 
       it('does not return the stored parent of a dot notation key with beforeSave', async () => {
         Parse.Cloud.beforeSave('WriteOnly', () => {});

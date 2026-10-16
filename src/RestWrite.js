@@ -76,8 +76,8 @@ function RestWrite(config, auth, className, query, data, originalData, context, 
   // copy
   this.query = structuredClone(query);
   this.data = structuredClone(data);
-  // Before triggers change the data
-  this.dotNotationKeys = Object.keys(this.data || {}).filter(key => key.includes('.'));
+  // Dot notation keys of the request; triggers add theirs
+  this.dotNotationKeys = new Set(Object.keys(this.data || {}).filter(key => key.includes('.')));
   // We never change originalData, so we do not need a deep copy
   this.originalData = originalData;
 
@@ -373,6 +373,10 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
         if (this.query && this.query.objectId) {
           delete this.data.objectId;
         }
+        // Dot notation keys the trigger writes
+        Object.keys(this.data)
+          .filter(key => key.includes('.'))
+          .forEach(key => this.dotNotationKeys.add(key));
       }
       try {
         Utils.checkProhibitedKeywords(this.config, this.data);
@@ -1827,8 +1831,6 @@ RestWrite.prototype.runDatabaseOperation = function () {
         })
         .then(response => {
           response.updatedAt = this.updatedAt;
-          // The response without trigger changes
-          this.databaseResponse = { ...response };
           this._updateResponseWithData(response, this.data);
           this.response = { response };
         });
@@ -1992,14 +1994,16 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
       if (jsonReturned) {
         // The returned object is the response as is
         this.pendingOps.operations = {};
-        this.dotNotationKeys = [];
+        this.dotNotationKeys.clear();
         this.response.response = result;
       } else {
-        this.response.response = this._updateResponseWithData(
-          (result || updatedObject).toJSON(),
-          this.data,
-          true
-        );
+        const object = result || updatedObject;
+        // Dot notation keys the trigger sets
+        object
+          .dirtyKeys()
+          .filter(key => key.includes('.'))
+          .forEach(key => this.dotNotationKeys.add(key));
+        this.response.response = this._updateResponseWithData(object.toJSON(), this.data, true);
       }
     })
     .catch(function (err) {
@@ -2155,6 +2159,20 @@ const getOwnPath = (object, path) => {
   return value;
 };
 
+// Whether a value holds keys outside the dot notation paths
+const holdsOtherKeys = (value, paths) => {
+  if (paths.some(path => !path.length)) {
+    return false;
+  }
+  if (!isContainer(value)) {
+    return true;
+  }
+  return Object.keys(value).some(key => {
+    const nested = paths.filter(path => path[0] === key).map(path => path.slice(1));
+    return !nested.length || holdsOtherKeys(value[key], nested);
+  });
+};
+
 // Restores a reverted dot notation key in the response
 RestWrite.prototype._restoreRevertedPath = function (response, writeData, written, key, finalObject) {
   // A write at or beneath the key governs
@@ -2257,13 +2275,13 @@ RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
   const keys = Object.keys(response).filter(key =>
     reverted.some(path => path === key || path.startsWith(`${key}.`))
   );
-  // Parents of dot notation keys beyond the database response
-  const parents = Object.keys(response).filter(
-    key =>
-      !keys.includes(key) &&
-      this.dotNotationKeys.some(path => path.startsWith(`${key}.`)) &&
-      !util.isDeepStrictEqual(response[key], this.databaseResponse?.[key])
-  );
+  const written = [...this.dotNotationKeys];
+  const beneath = key => written.filter(path => path.startsWith(`${key}.`));
+  // Parents of written dot notation keys that hold other values
+  const parents = Object.keys(response).filter(key => {
+    const paths = beneath(key).map(path => path.slice(key.length + 1).split('.'));
+    return !keys.includes(key) && paths.length > 0 && holdsOtherKeys(response[key], paths);
+  });
   if (!keys.length && !parents.length) {
     return;
   }
@@ -2312,14 +2330,17 @@ RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
     }
   }
   for (const key of parents) {
-    if (getOwnPath(view, key.split('.')) !== undefined) {
+    if (!hasOwn(response, key) || getOwnPath(view, key.split('.')) !== undefined) {
       continue;
     }
-    // As returned without triggers
-    if (hasOwn(this.databaseResponse, key)) {
-      response[key] = this.databaseResponse[key];
-    } else {
-      delete response[key];
+    const value = response[key];
+    delete response[key];
+    // Only the written dot notation keys
+    for (const path of beneath(key)) {
+      const pathValue = getOwnPath(value, path.slice(key.length + 1).split('.'));
+      if (pathValue !== undefined && !pathValue?.__op) {
+        response[path] = pathValue;
+      }
     }
   }
 };
