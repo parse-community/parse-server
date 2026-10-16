@@ -2172,8 +2172,8 @@ RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
       config: this.config,
       auth: this.auth,
       className: this.className,
-      // The query of the write may constrain more than the objectId
-      restWhere: structuredClone(this.query),
+      // A session update wraps the addressed objectId
+      restWhere: { objectId: this.query.objectId ?? this.query.$and?.[0]?.objectId },
       runBeforeFind: false,
       runAfterFind: false,
       context: this.context,
