@@ -8969,7 +8969,7 @@ describe('Vulnerabilities', () => {
         expect(response.data.secret).toEqual({ __op: 'Delete' });
         expect(JSON.stringify(response.data)).not.toContain('stored-secret');
         expect(warn).not.toHaveBeenCalledWith(
-          'Failed to read reverted fields for the save response',
+          'Failed to read the object for the save response',
           jasmine.anything()
         );
         await obj.fetch({ useMasterKey: true });
@@ -9001,7 +9001,7 @@ describe('Vulnerabilities', () => {
         );
         expect(response.data.secret).toEqual({ __op: 'Delete' });
         expect(warn).toHaveBeenCalledWith(
-          'Failed to read reverted fields for the save response',
+          'Failed to read the object for the save response',
           jasmine.anything()
         );
       });
@@ -9020,7 +9020,8 @@ describe('Vulnerabilities', () => {
           object.revert('field.sub');
         });
         const response = await update({ 'field.sub': { __op: 'Delete' } });
-        expect(response.data['field.sub']).toEqual({ __op: 'Delete' });
+        expect(response.data.field).toEqual({ __op: 'Delete' });
+        expect(response.data['field.sub']).toBeUndefined();
         expect(JSON.stringify(response.data)).not.toContain('stored-sub');
         await obj.fetch({ useMasterKey: true });
         expect(obj.get('field')).toEqual({ sub: 'stored-sub', other: 'stored-other' });
@@ -9157,12 +9158,13 @@ describe('Vulnerabilities', () => {
     });
   });
 
-  describe('(GHSA-2rcp-jc67-vq74) Save response returns the stored parent of a dot notation key to a caller without read access', () => {
+  describe('(GHSA-2rcp-jc67-vq74) Update response returns stored values to a caller without read access', () => {
     const headers = {
       'X-Parse-Application-Id': 'test',
       'X-Parse-REST-API-Key': 'rest',
       'Content-Type': 'application/json',
     };
+    const deleted = { __op: 'Delete' };
 
     describe('class without get permission', () => {
       let reader;
@@ -9173,6 +9175,8 @@ describe('Vulnerabilities', () => {
         const schema = new Parse.Schema('WriteOnly');
         schema.addObject('field');
         schema.addArray('list');
+        schema.addArray('tags');
+        schema.addNumber('count');
         schema.addString('name');
         schema.setCLP({
           find: { [reader.id]: true },
@@ -9185,7 +9189,11 @@ describe('Vulnerabilities', () => {
         });
         await schema.save();
         obj = await new Parse.Object('WriteOnly').save(
-          { field: { sub: 'stored-sub', other: 'stored-other' } },
+          {
+            field: { sub: 'stored-sub', other: 'stored-other' },
+            tags: ['stored-tag'],
+            count: 41,
+          },
           { useMasterKey: true }
         );
       });
@@ -9207,45 +9215,57 @@ describe('Vulnerabilities', () => {
         expect(get.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
 
         const response = await update({ 'field.added': 'x' });
-        expect(response.data.field).toBeUndefined();
+        expect(response.data.field).toEqual(deleted);
         expect(JSON.stringify(response.data)).not.toContain('stored-');
         await obj.fetch({ useMasterKey: true });
         expect(obj.get('field')).toEqual({ sub: 'stored-sub', other: 'stored-other', added: 'x' });
       });
 
-      it('returns only the operation result for a dot notation operation with afterSave', async () => {
-        Parse.Cloud.afterSave('WriteOnly', () => {});
-        const response = await update({ 'field.count': { __op: 'Increment', amount: 1 } });
-        expect(response.data.field).toBeUndefined();
-        expect(response.data['field.count']).toBe(1);
-      });
-
-      it('does not return the stored parent of a dot notation key changed by afterSave', async () => {
-        Parse.Cloud.afterSave('WriteOnly', ({ object }) => {
-          object.set('field.audit', 'audited');
-        });
+      it('does not return the stored parent of a dot notation key with beforeSave', async () => {
+        Parse.Cloud.beforeSave('WriteOnly', () => {});
         const response = await update({ 'field.added': 'x' });
+        expect(response.data.field).toEqual(deleted);
         expect(JSON.stringify(response.data)).not.toContain('stored-');
       });
 
-      it('does not return the stored parent of a dot notation key set by afterSave', async () => {
-        Parse.Cloud.afterSave('WriteOnly', ({ object }) => {
-          object.set('field.audit', 'audited');
-        });
-        const response = await update({ name: 'x' });
-        expect(response.data.field).toBeUndefined();
-        expect(response.data['field.audit']).toBe('audited');
-        expect(JSON.stringify(response.data)).not.toContain('stored-');
-      });
-
-      it('does not return the stored parent of a dot notation key set by beforeSave', async () => {
+      it('does not return the stored parent of a dot notation key that beforeSave sets', async () => {
         Parse.Cloud.beforeSave('WriteOnly', ({ object }) => {
           object.increment('field.count');
         });
         Parse.Cloud.afterSave('WriteOnly', () => {});
         const response = await update({ name: 'x' });
-        expect(response.data.field).toBeUndefined();
-        expect(response.data['field.count']).toBe(1);
+        expect(response.data.field).toEqual(deleted);
+        expect(JSON.stringify(response.data)).not.toContain('stored-');
+      });
+
+      it('does not return the stored parent of a dot notation key that afterSave sets', async () => {
+        Parse.Cloud.afterSave('WriteOnly', ({ object }) => {
+          object.set('field.audit', 'audited');
+        });
+        const response = await update({ name: 'x' });
+        expect(response.data.field).toEqual(deleted);
+        expect(JSON.stringify(response.data)).not.toContain('stored-');
+      });
+
+      it('does not return the stored parent of a dot notation key that afterSave saves', async () => {
+        Parse.Cloud.afterSave('WriteOnly', async ({ object, master }) => {
+          if (master) {
+            return;
+          }
+          object.set('field.audit', 'audited');
+          await object.save(null, { useMasterKey: true });
+        });
+        const response = await update({ name: 'x' });
+        expect(response.data.field).toEqual(deleted);
+        expect(JSON.stringify(response.data)).not.toContain('stored-');
+      });
+
+      it('does not return a stored value that beforeSave writes in place of a dot notation key', async () => {
+        Parse.Cloud.beforeSave('WriteOnly', ({ object, original }) => {
+          object.set('field', original.get('field'));
+        });
+        const response = await update({ 'field.sub': 'x' });
+        expect(response.data.field).toEqual(deleted);
         expect(JSON.stringify(response.data)).not.toContain('stored-');
       });
 
@@ -9257,39 +9277,22 @@ describe('Vulnerabilities', () => {
             { useMasterKey: true }
           );
           const response = await update({ 'list.0.count': { __op: 'Increment', amount: 1 } });
-          expect(response.data.list).toBeUndefined();
-          expect(response.data['list.0.count']).toBe(2);
+          expect(response.data.list).toEqual(deleted);
           expect(JSON.stringify(response.data)).not.toContain('stored-');
           await obj.fetch({ useMasterKey: true });
           expect(obj.get('list')).toEqual([{ count: 2, sub: 'stored-sub' }, { sub: 'stored-other' }]);
         }
       );
 
-      it('does not return the stored parent of a dot notation key with beforeSave', async () => {
-        Parse.Cloud.beforeSave('WriteOnly', () => {});
-        const response = await update({ 'field.added': 'x' });
-        expect(response.data.field).toBeUndefined();
-        expect(JSON.stringify(response.data)).not.toContain('stored-');
-      });
-
-      it('keeps an object returned by afterSave', async () => {
-        Parse.Cloud.afterSave('WriteOnly', () => ({ field: 'returned' }));
-        const response = await update({ 'field.added': 'x' });
-        expect(response.data.field).toBe('returned');
-      });
-
-      for (const stored of [
-        { sub: 'stored-sub', other: 'stored-other' },
-        { sub: 'stored-sub' },
-      ]) {
-        it(`does not return a stored value that beforeSave writes in place of a dot notation key (${Object.keys(stored)})`, async () => {
-          await obj.save({ field: stored }, { useMasterKey: true });
-          Parse.Cloud.beforeSave('WriteOnly', ({ object, original }) => {
-            object.set('field', original.get('field'));
-          });
-          const response = await update({ 'field.sub': 'x' });
-          expect(response.data.field).toBeUndefined();
-          expect(response.data['field.sub']).toBeUndefined();
+      for (const [name, body] of Object.entries({
+        Increment: { count: { __op: 'Increment', amount: 0 } },
+        Remove: { tags: { __op: 'Remove', objects: ['x'] } },
+        AddUnique: { tags: { __op: 'AddUnique', objects: ['stored-tag'] } },
+      })) {
+        it(`does not return the result of the ${name} operation`, async () => {
+          const response = await update(body);
+          const [key] = Object.keys(body);
+          expect(response.data[key]).toEqual(deleted);
           expect(JSON.stringify(response.data)).not.toContain('stored-');
         });
       }
@@ -9318,32 +9321,86 @@ describe('Vulnerabilities', () => {
             ],
           }),
         });
-        expect(response.data[0].success.field).toBeUndefined();
+        expect(response.data[0].success.field).toEqual(deleted);
         expect(JSON.stringify(response.data)).not.toContain('stored-');
       });
 
-      it('does not read the object for a dot notation operation without triggers', async () => {
+      it('keeps an object returned by afterSave', async () => {
+        Parse.Cloud.afterSave('WriteOnly', () => ({ field: 'returned' }));
+        const response = await update({ 'field.added': 'x' });
+        expect(response.data.field).toBe('returned');
+      });
+
+      it('does not read the object for an update that returns no field values', async () => {
         const DatabaseController = require('../lib/Controllers/DatabaseController');
         const find = spyOn(DatabaseController.prototype, 'find').and.callThrough();
-        const response = await update({ 'field.count': { __op: 'Increment', amount: 1 } });
-        expect(response.data.field).toEqual({ count: 1 });
+        const response = await update({ name: 'x' });
+        expect(Object.keys(response.data)).toEqual(['updatedAt']);
         expect(find.calls.allArgs().filter(([className]) => className === 'WriteOnly').length).toBe(0);
       });
 
+      it('does not overwrite stored values on a later save by a client without read access', async () => {
+        Parse.Cloud.afterSave('WriteOnly', () => {});
+        await Parse.User.logOut();
+        const client = Parse.Object.extend('WriteOnly').createWithoutData(obj.id);
+        client.increment('field.count');
+        await client.save();
+        client.set('name', 'y');
+        await client.save();
+        await obj.fetch({ useMasterKey: true });
+        expect(obj.get('field')).toEqual({ sub: 'stored-sub', other: 'stored-other', count: 1 });
+      });
+
+      it('does not overwrite stored values after a reverted dot notation key on a later save by a client without read access', async () => {
+        Parse.Cloud.beforeSave('WriteOnly', ({ object }) => {
+          object.revert('field.sub');
+        });
+        await Parse.User.logOut();
+        const client = Parse.Object.extend('WriteOnly').createWithoutData(obj.id);
+        client.unset('field.sub');
+        await client.save();
+        client.set('name', 'y');
+        await client.save();
+        await obj.fetch({ useMasterKey: true });
+        expect(obj.get('field')).toEqual({ sub: 'stored-sub', other: 'stored-other' });
+      });
+
+      it_only_db('mongo')(
+        'does not overwrite a stored array on a later save by a client without read access',
+        async () => {
+          await obj.save(
+            { list: [{ count: 1, sub: 'stored-sub' }, { sub: 'stored-other' }] },
+            { useMasterKey: true }
+          );
+          await Parse.User.logOut();
+          const client = Parse.Object.extend('WriteOnly').createWithoutData(obj.id);
+          client.increment('list.0.count');
+          await client.save();
+          client.set('name', 'y');
+          await client.save();
+          await obj.fetch({ useMasterKey: true });
+          expect(obj.get('list')).toEqual([{ count: 2, sub: 'stored-sub' }, { sub: 'stored-other' }]);
+        }
+      );
+
       for (const auth of ['session with get permission', 'master', 'maintenance']) {
-        it(`returns the parent of a dot notation key for ${auth} auth`, async () => {
+        it(`returns stored values for ${auth} auth`, async () => {
           Parse.Cloud.afterSave('WriteOnly', () => {});
           const authHeaders = {
             'session with get permission': { 'X-Parse-Session-Token': reader.getSessionToken() },
             master: { 'X-Parse-Master-Key': 'test' },
             maintenance: { 'X-Parse-Maintenance-Key': 'testing' },
           }[auth];
-          const response = await update({ 'field.added': 'x' }, authHeaders);
+          const response = await update(
+            { 'field.added': 'x', count: { __op: 'Increment', amount: 1 } },
+            authHeaders
+          );
           expect(response.data.field).toEqual({
             sub: 'stored-sub',
             other: 'stored-other',
             added: 'x',
           });
+          expect(response.data.count).toBe(42);
         });
       }
     });
@@ -9370,9 +9427,32 @@ describe('Vulnerabilities', () => {
         headers: sessionHeaders,
         body: JSON.stringify({ 'field.added': 'x' }),
       });
-      expect(response.data.field).toBeUndefined();
+      expect(response.data.field).toEqual(deleted);
       expect(JSON.stringify(response.data)).not.toContain('stored-sub');
     });
+
+    it_only_db('mongo')(
+      'returns the stored array of a dot notation operation to the session owner',
+      async () => {
+        const user = await Parse.User.signUp('owner', 'password');
+        const sessionHeaders = { ...headers, 'X-Parse-Session-Token': user.getSessionToken() };
+        const me = await request({ url: `${Parse.serverURL}/sessions/me`, headers: sessionHeaders });
+        const url = `${Parse.serverURL}/sessions/${me.data.objectId}`;
+        await request({
+          method: 'PUT',
+          url,
+          headers: { ...headers, 'X-Parse-Master-Key': 'test' },
+          body: JSON.stringify({ counters: [1, 2] }),
+        });
+        const response = await request({
+          method: 'PUT',
+          url,
+          headers: sessionHeaders,
+          body: JSON.stringify({ 'counters.0': { __op: 'Increment', amount: 1 } }),
+        });
+        expect(response.data.counters).toEqual([2, 2]);
+      }
+    );
   });
 
   describe('(GHSA-rx55-fw4j-pvpx) Dot notation key corrupts shared runtime object', () => {
