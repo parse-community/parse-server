@@ -1,3 +1,10 @@
+## [9.10.5-alpha.11](https://github.com/parse-community/parse-server/compare/9.10.5-alpha.10...9.10.5-alpha.11) (2026-10-16)
+
+
+### Bug Fixes
+
+* Option `requestKeywordDenylist` does not apply to query parameters `keys`, `include` and `excludeKeys` ([#10793](https://github.com/parse-community/parse-server/issues/10793)) ([e220f51](https://github.com/parse-community/parse-server/commit/e220f514e601fd5d1e8fd3b9c3ae9426b1fab813))
+
 ## [9.10.5-alpha.10](https://github.com/parse-community/parse-server/compare/9.10.5-alpha.9...9.10.5-alpha.10) (2026-10-15)
 
 
