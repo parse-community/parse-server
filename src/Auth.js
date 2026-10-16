@@ -390,11 +390,17 @@ Auth.prototype.getRolesByIds = async function (ins) {
 };
 
 // Given a list of roleIds, find all the parent roles, returns a promise with all names
-Auth.prototype._getAllRolesNamesForRoleIds = function (roleIDs, names = [], queriedRoles = {}) {
+Auth.prototype._getAllRolesNamesForRoleIds = function (
+  roleIDs,
+  names = [],
+  queriedRoles = new Set()
+) {
   const ins = roleIDs.filter(roleID => {
-    const wasQueried = queriedRoles[roleID] !== true;
-    queriedRoles[roleID] = true;
-    return wasQueried;
+    if (queriedRoles.has(roleID)) {
+      return false;
+    }
+    queriedRoles.add(roleID);
+    return true;
   });
 
   // all roles are accounted for, return the names
