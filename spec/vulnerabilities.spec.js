@@ -10130,6 +10130,22 @@ describe('Vulnerabilities', () => {
         expect(response.data.field).toBe('returned');
       });
 
+      for (const stored of [
+        { sub: 'stored-sub', other: 'stored-other' },
+        { sub: 'stored-sub' },
+      ]) {
+        it(`does not return a stored value that beforeSave writes in place of a dot notation key (${Object.keys(stored)})`, async () => {
+          await obj.save({ field: stored }, { useMasterKey: true });
+          Parse.Cloud.beforeSave('WriteOnly', ({ object, original }) => {
+            object.set('field', original.get('field'));
+          });
+          const response = await update({ 'field.sub': 'x' });
+          expect(response.data.field).toBeUndefined();
+          expect(response.data['field.sub']).toBeUndefined();
+          expect(JSON.stringify(response.data)).not.toContain('stored-');
+        });
+      }
+
       it('does not return the stored ACL for a dot notation ACL key with beforeSave', async () => {
         const acl = new Parse.ACL();
         acl.setPublicWriteAccess(true);
