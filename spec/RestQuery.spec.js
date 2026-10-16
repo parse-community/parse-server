@@ -29,6 +29,20 @@ describe('rest query', () => {
       });
   });
 
+  it('rejects malformed where before running subqueries', async () => {
+    spyOn(database, 'find').and.callThrough();
+    const where = {
+      $or: { 0: { ptr: { $inQuery: { className: 'OtherObject', where: {} } } }, length: 1 },
+    };
+    await expectAsync(rest.find(config, auth.master(config), 'TestObject', where)).toBeRejectedWith(
+      jasmine.objectContaining({
+        code: Parse.Error.INVALID_QUERY,
+        message: 'Bad $or format - use an array value.',
+      })
+    );
+    expect(database.find).not.toHaveBeenCalled();
+  });
+
   it('query with limit', done => {
     rest
       .create(config, nobody, 'TestObject', { foo: 'baz' })
@@ -491,6 +505,122 @@ describe('rest query', () => {
         expect(level2Field.get('value')).toBe(`level2_${i * 10 + j}`);
       }
     }
+  });
+
+  describe('requestKeywordDenylist in field lists', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+    const probe = 'restQueryDenylistProbe';
+    let objectId;
+
+    const find = params =>
+      request({
+        headers,
+        url: 'http://localhost:8378/1/classes/TestObject?' + querystring.stringify(params),
+      });
+
+    const expectProhibited = async (promise, keyword) => {
+      const response = await promise.then(fail, e => e);
+      expect(response.status).toBe(400);
+      expect(response.data).toEqual({
+        code: Parse.Error.INVALID_KEY_NAME,
+        error: `Prohibited keyword in request data: ${JSON.stringify(keyword)}.`,
+      });
+    };
+
+    beforeEach(async () => {
+      const obj = new Parse.Object('TestObject');
+      obj.set('meta', { title: 'a' });
+      await obj.save();
+      objectId = obj.id;
+    });
+
+    afterEach(() => {
+      delete Object.prototype[probe];
+    });
+
+    it('rejects a prohibited keyword in keys', async () => {
+      await expectProhibited(find({ keys: `__proto__.${probe}` }), { key: '__proto__' });
+      await expectProhibited(find({ keys: `meta.__proto__.${probe}` }), { key: '__proto__' });
+      await expectProhibited(find({ keys: `constructor.prototype.${probe}.x` }), {
+        key: 'constructor',
+      });
+      await expectProhibited(find({ keys: `meta.constructor.${probe}` }), { key: 'constructor' });
+      expect(probe in {}).toBe(false);
+    });
+
+    it('rejects a prohibited keyword in include', async () => {
+      await expectProhibited(find({ include: `__proto__.${probe}` }), { key: '__proto__' });
+      await expectProhibited(find({ include: 'constructor' }), { key: 'constructor' });
+    });
+
+    it('rejects a prohibited keyword in excludeKeys', async () => {
+      await expectProhibited(find({ excludeKeys: `__proto__.${probe}.x` }), { key: '__proto__' });
+      await expectProhibited(find({ excludeKeys: 'meta.constructor' }), { key: 'constructor' });
+    });
+
+    it('rejects a prohibited keyword in keys of a get request', async () => {
+      await expectProhibited(
+        request({
+          headers,
+          url:
+            `http://localhost:8378/1/classes/TestObject/${objectId}?` +
+            querystring.stringify({ keys: `__proto__.${probe}` }),
+        }),
+        { key: '__proto__' }
+      );
+    });
+
+    it('rejects a prohibited keyword in a query select', async () => {
+      const error = new Parse.Error(
+        Parse.Error.INVALID_KEY_NAME,
+        'Prohibited keyword in request data: {"key":"__proto__"}.'
+      );
+      for (const keys of [`__proto__.${probe}`, `meta.__proto__.${probe}`]) {
+        await expectAsync(new Parse.Query('TestObject').select(keys).find()).toBeRejectedWith(
+          error
+        );
+        await expectAsync(Parse.Query.fromJSON('TestObject', { keys }).find()).toBeRejectedWith(
+          error
+        );
+      }
+      expect(probe in {}).toBe(false);
+    });
+
+    it('rejects a prohibited keyword in keys of a query run by a beforeFind trigger', async () => {
+      Parse.Cloud.beforeFind(
+        'TestObject',
+        async req => {
+          await req.query.find({ useMasterKey: true });
+        },
+        { skipWithMasterKey: true }
+      );
+      const response = await find({ keys: `__proto__.${probe}` }).then(fail, e => e);
+      expect(response.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+      expect(probe in {}).toBe(false);
+    });
+
+    it('applies a custom requestKeywordDenylist to field lists', async () => {
+      await reconfigureServer({ requestKeywordDenylist: [{ key: 'blocked' }] });
+      await expectProhibited(find({ keys: 'blocked' }), { key: 'blocked' });
+      await expectProhibited(find({ include: 'meta.blocked' }), { key: 'blocked' });
+      await expectProhibited(find({ excludeKeys: 'blocked' }), { key: 'blocked' });
+    });
+
+    it('does not apply value entries of requestKeywordDenylist to field lists', async () => {
+      await reconfigureServer({
+        requestKeywordDenylist: [{ key: 'meta', value: true }, { value: 'meta' }],
+      });
+      const response = await find({ keys: 'meta.title' });
+      expect(response.data.results[0].meta).toEqual({ title: 'a' });
+    });
+
+    it('allows field lists without a prohibited keyword', async () => {
+      const response = await find({ keys: 'meta.title', include: 'meta', excludeKeys: 'foo' });
+      expect(response.data.results[0].meta).toEqual({ title: 'a' });
+    });
   });
 });
 

@@ -2672,6 +2672,132 @@ describe('Vulnerabilities', () => {
     });
   });
 
+  describe('(GHSA-58m4-cqvw-4vgh) $relatedTo owning objectId accepts query operators', () => {
+    let childPublic;
+    let childPrivateLink;
+    let parentPublic;
+    let parentPrivate;
+
+    const relatedToWhere = (object, key, extra = {}) => ({
+      $relatedTo: { object, key },
+      ...extra,
+    });
+
+    const pointer = objectId => ({ __type: 'Pointer', className: 'RelParent', objectId });
+
+    const queryChild = (where, qs = {}, headers = {}) =>
+      request({
+        method: 'GET',
+        url: `${Parse.serverURL}/classes/RelChild`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          ...headers,
+        },
+        qs: { where: JSON.stringify(where), ...qs },
+      }).catch(e => e);
+
+    beforeEach(async () => {
+      const schema = new Parse.Schema('RelParent');
+      schema.addString('name');
+      schema.addRelation('members', 'RelChild');
+      schema.setCLP({
+        find: { '*': true },
+        get: { '*': true },
+        count: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+      });
+      await schema.save();
+
+      // Both children are publicly readable, so the target-class ACL never hides
+      // them; the only thing protecting childPrivateLink's membership is the
+      // private owning object's ACL.
+      const publicAcl = new Parse.ACL();
+      publicAcl.setPublicReadAccess(true);
+
+      childPublic = new Parse.Object('RelChild', { value: 'public child' });
+      childPublic.setACL(publicAcl);
+      childPrivateLink = new Parse.Object('RelChild', { value: 'private-linked child' });
+      childPrivateLink.setACL(publicAcl);
+      await Parse.Object.saveAll([childPublic, childPrivateLink], { useMasterKey: true });
+
+      // Publicly readable owning object linked to childPublic.
+      parentPublic = new Parse.Object('RelParent', { name: 'public parent' });
+      parentPublic.setACL(publicAcl);
+      parentPublic.relation('members').add(childPublic);
+      await parentPublic.save(null, { useMasterKey: true });
+
+      // Owner-only owning object linked to childPrivateLink. A public caller
+      // cannot read this parent, so it must never learn childPrivateLink is a
+      // member of it.
+      const privateAcl = new Parse.ACL();
+      privateAcl.setPublicReadAccess(false);
+      privateAcl.setPublicWriteAccess(false);
+      parentPrivate = new Parse.Object('RelParent', { name: 'private parent' });
+      parentPrivate.setACL(privateAcl);
+      parentPrivate.relation('members').add(childPrivateLink);
+      await parentPrivate.save(null, { useMasterKey: true });
+    });
+
+    it('rejects a $relatedTo whose owning objectId is a query operator', async () => {
+      const res = await queryChild(relatedToWhere(pointer({ $gt: '' }), 'members'));
+      expect(res.data.code).toBe(Parse.Error.INVALID_QUERY);
+      // The membership of the unreadable private parent must not leak.
+      expect(res.data.results).toBeUndefined();
+    });
+
+    it('rejects a $relatedTo whose owning objectId uses $ne', async () => {
+      const res = await queryChild(relatedToWhere(pointer({ $ne: 'does-not-exist' }), 'members'));
+      expect(res.data.code).toBe(Parse.Error.INVALID_QUERY);
+    });
+
+    it('rejects an operator owning objectId on the count oracle variant', async () => {
+      const res = await queryChild(relatedToWhere(pointer({ $gt: '' }), 'members'), {
+        count: 1,
+        limit: 0,
+      });
+      expect(res.data.code).toBe(Parse.Error.INVALID_QUERY);
+      expect(res.data.count).toBeUndefined();
+    });
+
+    it('rejects an operator owning objectId nested in $or', async () => {
+      const res = await queryChild({ $or: [relatedToWhere(pointer({ $gt: '' }), 'members')] });
+      expect(res.data.code).toBe(Parse.Error.INVALID_QUERY);
+    });
+
+    it('rejects a $relatedTo whose owning className is not a string', async () => {
+      const res = await queryChild(
+        relatedToWhere(
+          { __type: 'Pointer', className: { $gt: '' }, objectId: parentPublic.id },
+          'members'
+        )
+      );
+      expect(res.data.code).toBe(Parse.Error.INVALID_QUERY);
+    });
+
+    it('rejects a $relatedTo whose relation key is not a string', async () => {
+      const res = await queryChild(relatedToWhere(pointer(parentPublic.id), { $gt: '' }));
+      expect(res.data.code).toBe(Parse.Error.INVALID_QUERY);
+    });
+
+    it('still returns related objects for a well-formed owning objectId', async () => {
+      const res = await queryChild(relatedToWhere(pointer(parentPublic.id), 'members'));
+      expect(res.data.results.length).toBe(1);
+      expect(res.data.results[0].objectId).toBe(childPublic.id);
+    });
+
+    it('rejects an operator owning objectId even for the master key', async () => {
+      const res = await queryChild(relatedToWhere(pointer({ $gt: '' }), 'members'), {}, {
+        'X-Parse-Master-Key': Parse.masterKey,
+      });
+      expect(res.data.code).toBe(Parse.Error.INVALID_QUERY);
+      expect(res.data.results).toBeUndefined();
+    });
+  });
+
   describe('(GHSA-j7mm-f4rv-6q6q) Protected fields bypass via LiveQuery dot-notation WHERE', () => {
     let obj;
 
@@ -8920,5 +9046,1268 @@ describe('Vulnerabilities', () => {
         });
       });
     }
+  });
+
+  describe('(GHSA-rq3w-5c6f-p7wr) Custom auth adapters that extend the exported AuthAdapter class accept any authData', () => {
+    const { AuthAdapter } = require('../lib/index');
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+    const send = (method, path, body, sessionToken) =>
+      request({
+        method,
+        url: `http://localhost:8378/1${path}`,
+        headers: sessionToken ? { ...headers, 'X-Parse-Session-Token': sessionToken } : headers,
+        body: JSON.stringify(body),
+      }).catch(e => e);
+    const validToken = 'valid-token';
+    const checkToken = authData => {
+      if (authData?.token !== validToken) {
+        throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Invalid token.');
+      }
+    };
+
+    // V2 adapter
+    class TokenAdapter extends AuthAdapter {
+      validateSetUp(authData) {
+        checkToken(authData);
+      }
+      validateLogin(authData) {
+        checkToken(authData);
+      }
+      validateUpdate(authData) {
+        checkToken(authData);
+      }
+    }
+
+    it('rejects login with invalid authData for a user linked to the provider', async () => {
+      await reconfigureServer({ auth: { tokenAuth: new TokenAdapter() } });
+      const signUp = await send('POST', '/users', {
+        authData: { tokenAuth: { id: 'victim', token: validToken } },
+      });
+      expect(signUp.data.sessionToken).toBeDefined();
+
+      const login = await send('POST', '/users', {
+        authData: { tokenAuth: { id: 'victim', token: 'invalid' } },
+      });
+      expect(login.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(login.data.error).toBe('Invalid token.');
+      expect(login.data.sessionToken).toBeUndefined();
+    });
+
+    it('rejects signup with invalid authData', async () => {
+      await reconfigureServer({ auth: { tokenAuth: new TokenAdapter() } });
+      const signUp = await send('POST', '/users', {
+        authData: { tokenAuth: { id: 'new-user', token: 'invalid' } },
+      });
+      expect(signUp.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(signUp.data.error).toBe('Invalid token.');
+      const users = await new Parse.Query(Parse.User).find({ useMasterKey: true });
+      expect(users.length).toBe(0);
+    });
+
+    it('rejects linking invalid authData to a logged-in user', async () => {
+      await reconfigureServer({ auth: { tokenAuth: new TokenAdapter() } });
+      const user = await Parse.User.signUp('user', 'password');
+      const link = await send(
+        'PUT',
+        `/users/${user.id}`,
+        { authData: { tokenAuth: { id: 'claimed', token: 'invalid' } } },
+        user.getSessionToken()
+      );
+      expect(link.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(link.data.error).toBe('Invalid token.');
+      await user.fetch({ useMasterKey: true });
+      expect(user.get('authData')).toBeUndefined();
+    });
+
+    it('rejects updating a linked provider with invalid authData', async () => {
+      await reconfigureServer({ auth: { tokenAuth: new TokenAdapter() } });
+      const signUp = await send('POST', '/users', {
+        authData: { tokenAuth: { id: 'user-id', token: validToken } },
+      });
+      expect(signUp.data.sessionToken).toBeDefined();
+
+      const update = await send(
+        'PUT',
+        `/users/${signUp.data.objectId}`,
+        { authData: { tokenAuth: { id: 'user-id', token: 'invalid' } } },
+        signUp.data.sessionToken
+      );
+      expect(update.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(update.data.error).toBe('Invalid token.');
+    });
+
+    it('rejects password login with invalid authData for an additional-policy provider', async () => {
+      class SecondFactorAdapter extends TokenAdapter {
+        constructor() {
+          super();
+          this.policy = 'additional';
+        }
+      }
+      await reconfigureServer({ auth: { secondFactor: new SecondFactorAdapter() } });
+      const user = await Parse.User.signUp('user', 'password');
+      const link = await send(
+        'PUT',
+        `/users/${user.id}`,
+        { authData: { secondFactor: { token: validToken } } },
+        user.getSessionToken()
+      );
+      expect(link.data.code).toBeUndefined();
+
+      const login = await send('POST', '/login', {
+        username: 'user',
+        password: 'password',
+        authData: { secondFactor: { token: 'invalid' } },
+      });
+      expect(login.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(login.data.error).toBe('Invalid token.');
+      expect(login.data.sessionToken).toBeUndefined();
+    });
+
+    it('rejects invalid authData for a subclass configured under a built-in provider name', async () => {
+      // Built-in adapter that accepts any authData
+      await reconfigureServer({ auth: { anonymous: new TokenAdapter() } });
+      const signUp = await send('POST', '/users', {
+        authData: { anonymous: { id: 'user-id', token: 'invalid' } },
+      });
+      expect(signUp.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(signUp.data.error).toBe('Invalid token.');
+      const users = await new Parse.Query(Parse.User).find({ useMasterKey: true });
+      expect(users.length).toBe(0);
+    });
+
+    it('runs the adapter methods with access to the instance state and helper methods', async () => {
+      class InstanceAdapter extends AuthAdapter {
+        constructor(token) {
+          super();
+          this.token = token;
+          this.idPrefix = 'user-';
+        }
+        check(authData) {
+          if (authData?.token !== this.token || !authData.id?.startsWith(this.idPrefix)) {
+            throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Invalid token.');
+          }
+        }
+        validateSetUp(authData) {
+          this.check(authData);
+        }
+        validateLogin(authData) {
+          this.check(authData);
+        }
+        validateUpdate(authData) {
+          this.check(authData);
+        }
+      }
+      await reconfigureServer({ auth: { instanceAuth: new InstanceAdapter(validToken) } });
+      const signUp = await send('POST', '/users', {
+        authData: { instanceAuth: { id: 'user-1', token: validToken } },
+      });
+      expect(signUp.data.sessionToken).toBeDefined();
+      const login = await send('POST', '/users', {
+        authData: { instanceAuth: { id: 'user-1', token: validToken } },
+      });
+      expect(login.data.objectId).toBe(signUp.data.objectId);
+      expect(login.data.sessionToken).toBeDefined();
+
+      const invalid = await send('POST', '/users', {
+        authData: { instanceAuth: { id: 'user-1', token: 'invalid' } },
+      });
+      expect(invalid.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(invalid.data.error).toBe('Invalid token.');
+    });
+
+    it('keeps beforeFind and skips validateOptions of a built-in adapter for a subclass configured under its name', async () => {
+      await reconfigureServer({ auth: { github: new TokenAdapter() } });
+      const signUp = await send('POST', '/users', {
+        authData: { github: { id: 'user-id', token: validToken } },
+      });
+      expect(signUp.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(signUp.data.error).toBe('GitHub code is required.');
+    });
+
+    it('keeps beforeFind of a built-in adapter for a class instance with its own beforeFind', async () => {
+      class GitHubOptions {
+        constructor() {
+          this.clientId = 'client-id';
+          this.clientSecret = 'client-secret';
+        }
+        beforeFind() {}
+      }
+      await reconfigureServer({ auth: { github: new GitHubOptions() } });
+      const signUp = await send('POST', '/users', {
+        authData: { github: { id: 'user-id' } },
+      });
+      expect(signUp.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(signUp.data.error).toBe('GitHub code is required.');
+      const users = await new Parse.Query(Parse.User).find({ useMasterKey: true });
+      expect(users.length).toBe(0);
+    });
+
+    it('loads a frozen class instance', async () => {
+      class FrozenAdapter extends AuthAdapter {
+        validateAuthData = authData => checkToken(authData);
+      }
+      await reconfigureServer({ auth: { frozenAuth: Object.freeze(new FrozenAdapter()) } });
+      const signUp = await send('POST', '/users', {
+        authData: { frozenAuth: { id: 'user-id', token: validToken } },
+      });
+      expect(signUp.data.sessionToken).toBeDefined();
+
+      const login = await send('POST', '/users', {
+        authData: { frozenAuth: { id: 'user-id', token: 'invalid' } },
+      });
+      expect(login.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(login.data.error).toBe('Invalid token.');
+    });
+
+    it('keeps a method that validateOptions deletes deleted', async () => {
+      class DeletingAdapter extends TokenAdapter {
+        validateOptions() {
+          delete this.validateAuthData;
+        }
+      }
+      await reconfigureServer({ auth: { deletingAuth: new DeletingAdapter() } });
+      const signUp = await send('POST', '/users', {
+        authData: { deletingAuth: { id: 'user-id', token: 'invalid' } },
+      });
+      expect(signUp.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(signUp.data.error).toBe('Invalid token.');
+    });
+
+    it('loads a class instance under a provider name that is an Object.prototype member', async () => {
+      class InstanceAdapter extends TokenAdapter {
+        constructor(token) {
+          super();
+          this.token = token;
+        }
+        validateLogin(authData) {
+          if (authData?.token !== this.token) {
+            throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Invalid token.');
+          }
+        }
+      }
+      await reconfigureServer({ auth: { valueOf: new InstanceAdapter(validToken) } });
+      const signUp = await send('POST', '/users', {
+        authData: { valueOf: { id: 'user-id', token: validToken } },
+      });
+      expect(signUp.data.sessionToken).toBeDefined();
+      const login = await send('POST', '/users', {
+        authData: { valueOf: { id: 'user-id', token: validToken } },
+      });
+      expect(login.data.sessionToken).toBeDefined();
+    });
+
+    it('runs the methods of a class instance that does not extend AuthAdapter with access to its state', async () => {
+      class ClassAdapter {
+        constructor(token) {
+          this.token = token;
+        }
+        validateAuthData(authData) {
+          if (authData?.token !== this.token) {
+            throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Invalid token.');
+          }
+        }
+      }
+      await reconfigureServer({ auth: { classAuth: new ClassAdapter(validToken) } });
+      const signUp = await send('POST', '/users', {
+        authData: { classAuth: { id: 'user-id', token: validToken } },
+      });
+      expect(signUp.data.sessionToken).toBeDefined();
+
+      const login = await send('POST', '/users', {
+        authData: { classAuth: { id: 'user-id', token: 'invalid' } },
+      });
+      expect(login.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(login.data.error).toBe('Invalid token.');
+    });
+
+    it('runs validateAuthData of a subclass that overrides it with access to the instance state', async () => {
+      class LegacyAdapter extends AuthAdapter {
+        constructor(token) {
+          super();
+          this.token = token;
+        }
+        validateAuthData(authData) {
+          if (authData?.token !== this.token) {
+            throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Invalid token.');
+          }
+        }
+      }
+      await reconfigureServer({ auth: { legacyAuth: new LegacyAdapter(validToken) } });
+      const signUp = await send('POST', '/users', {
+        authData: { legacyAuth: { id: 'user-id', token: validToken } },
+      });
+      expect(signUp.data.sessionToken).toBeDefined();
+
+      const login = await send('POST', '/users', {
+        authData: { legacyAuth: { id: 'user-id', token: 'invalid' } },
+      });
+      expect(login.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(login.data.error).toBe('Invalid token.');
+    });
+
+    it('runs beforeFind of a custom adapter', async () => {
+      // Resolves the provider id from a code
+      class CodeAdapter extends AuthAdapter {
+        beforeFind(authData) {
+          if (authData?.code !== 'valid-code') {
+            throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Invalid code.');
+          }
+          authData.id = 'code-user';
+          delete authData.code;
+        }
+        validateSetUp(authData) {
+          return { id: authData.id };
+        }
+        validateLogin(authData) {
+          return { id: authData.id };
+        }
+        validateUpdate(authData) {
+          return { id: authData.id };
+        }
+      }
+      await reconfigureServer({ auth: { codeAuth: new CodeAdapter() } });
+      const signUp = await send('POST', '/users', {
+        authData: { codeAuth: { code: 'valid-code' } },
+      });
+      expect(signUp.data.sessionToken).toBeDefined();
+
+      const login = await send('POST', '/users', {
+        authData: { codeAuth: { id: 'code-user', code: 'invalid' } },
+      });
+      expect(login.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+      expect(login.data.error).toBe('Invalid code.');
+      expect(login.data.sessionToken).toBeUndefined();
+    });
+
+    it('rejects authData for a subclass that does not implement all of validateSetUp, validateLogin and validateUpdate', async () => {
+      class PartialAdapter extends AuthAdapter {
+        validateLogin(authData) {
+          checkToken(authData);
+        }
+      }
+      await reconfigureServer({ auth: { partialAuth: new PartialAdapter() } });
+      const signUp = await send('POST', '/users', {
+        authData: { partialAuth: { id: 'user-id', token: validToken } },
+      });
+      expect(signUp.data.code).toBe(Parse.Error.OTHER_CAUSE);
+      expect(signUp.data.error).toContain('Adapter is not configured.');
+      const users = await new Parse.Query(Parse.User).find({ useMasterKey: true });
+      expect(users.length).toBe(0);
+    });
+
+    it('returns the stored authData of the provider to the user', async () => {
+      await reconfigureServer({ auth: { tokenAuth: new TokenAdapter() } });
+      const signUp = await send('POST', '/users', {
+        authData: { tokenAuth: { id: 'user-id', token: validToken } },
+      });
+      const me = await send('GET', '/users/me', undefined, signUp.data.sessionToken);
+      expect(me.data.authData.tokenAuth).toEqual({ id: 'user-id', token: validToken });
+    });
+
+    it('enforces a policy that validateOptions sets', async () => {
+      class SecondFactorAdapter extends TokenAdapter {
+        validateOptions() {
+          this.policy = 'additional';
+        }
+      }
+      await reconfigureServer({ auth: { secondFactor: new SecondFactorAdapter() } });
+      const user = await Parse.User.signUp('user', 'password');
+      const link = await send(
+        'PUT',
+        `/users/${user.id}`,
+        { authData: { secondFactor: { token: validToken } } },
+        user.getSessionToken()
+      );
+      expect(link.data.code).toBeUndefined();
+
+      const login = await send('POST', '/login', { username: 'user', password: 'password' });
+      expect(login.data.code).toBe(Parse.Error.OTHER_CAUSE);
+      expect(login.data.error).toBe('Missing additional authData secondFactor');
+      expect(login.data.sessionToken).toBeUndefined();
+    });
+
+    it('does not modify the configured instance when running validateOptions', async () => {
+      class ScopesAdapter extends TokenAdapter {
+        constructor() {
+          super();
+          this.scopes = 'read,write';
+        }
+        validateOptions() {
+          this.scopes = this.scopes.split(',');
+        }
+      }
+      const adapter = new ScopesAdapter();
+      await reconfigureServer({ auth: { scopesAuth: adapter } });
+      for (let i = 0; i < 2; i++) {
+        const response = await send('POST', '/users', {
+          authData: { scopesAuth: { id: 'user-id', token: validToken } },
+        });
+        expect(response.data.sessionToken).toBeDefined();
+      }
+      expect(adapter.scopes).toBe('read,write');
+    });
+  });
+
+  describe('(GHSA-349r-988w-x3jp) LiveQuery subscriptions sharing a hash leak events across a $or query', () => {
+    const { sleep } = require('../lib/TestUtils');
+    let extraClients = [];
+
+    afterEach(async () => {
+      for (const client of extraClients) {
+        try {
+          await client.close();
+        } catch (e) {
+          // Ignore cleanup errors when the client never opened
+        }
+      }
+      extraClients = [];
+      try {
+        const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+        if (client) {
+          await client.close();
+        }
+      } catch (e) {
+        // Ignore cleanup errors when the default client is not initialized
+      }
+    });
+
+    async function subscribeAsUser(sessionToken, query) {
+      const client = new Parse.LiveQueryClient({
+        applicationId: Parse.applicationId,
+        serverURL: 'ws://localhost:8378',
+        javascriptKey: 'test',
+        sessionToken,
+      });
+      extraClients.push(client);
+      client.open();
+      const subscription = client.subscribe(query, sessionToken);
+      await new Promise(resolve => subscription.on('open', resolve));
+      return subscription;
+    }
+
+    it('does not deliver another user session to a later _Session subscriber using the same $or', async () => {
+      Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+      await reconfigureServer({
+        liveQuery: { classNames: ['_Session'] },
+        startLiveQueryServer: true,
+        verbose: false,
+        silent: true,
+      });
+
+      const victim = new Parse.User();
+      victim.setUsername('lq_or_victim');
+      victim.setPassword('password123');
+      await victim.signUp();
+      const victimToken = victim.getSessionToken();
+
+      const attacker = new Parse.User();
+      attacker.setUsername('lq_or_attacker');
+      attacker.setPassword('password123');
+      await attacker.signUp();
+      const attackerToken = attacker.getSessionToken();
+
+      // Both subscriptions carry the same $or; the server adds each subscriber's
+      // own `user` pointer next to it. The victim subscribes first, so a shared
+      // subscription would keep the victim's `user` filter.
+      const orQuery = () =>
+        Parse.Query.or(
+          new Parse.Query('_Session').exists('sessionToken'),
+          new Parse.Query('_Session').exists('user')
+        );
+      const victimSub = await subscribeAsUser(victimToken, orQuery());
+      const attackerSub = await subscribeAsUser(attackerToken, orQuery());
+
+      const attackerReceived = [];
+      attackerSub.on('create', object => attackerReceived.push(object));
+      attackerSub.on('enter', object => attackerReceived.push(object));
+      const victimReceived = new Promise(resolve => victimSub.on('create', resolve));
+
+      // Create a new session for the victim, which matches the victim's own filter.
+      const newVictimSession = await Parse.User.logIn('lq_or_victim', 'password123');
+      const newVictimToken = newVictimSession.getSessionToken();
+
+      const victimEvent = await victimReceived;
+      await sleep(500);
+
+      // The victim receives its own new session (proves the event fired).
+      expect(victimEvent.get('sessionToken')).toBe(newVictimToken);
+      // The attacker must not receive the victim's session nor its token.
+      expect(attackerReceived.length).toBe(0);
+    });
+
+    it('does not deliver events across a beforeSubscribe tenant filter to a later subscriber using the same $or', async () => {
+      Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+      Parse.Cloud.beforeSubscribe('TenantDoc', request => {
+        const user = request.user;
+        if (user) {
+          const query = request.query;
+          query.equalTo('tenant', user.get('tenant'));
+        }
+      });
+      await reconfigureServer({
+        liveQuery: { classNames: ['TenantDoc'] },
+        startLiveQueryServer: true,
+        verbose: false,
+        silent: true,
+      });
+
+      const userA = new Parse.User();
+      userA.setUsername('lq_tenant_a');
+      userA.setPassword('password123');
+      userA.set('tenant', 'tenant-a');
+      await userA.signUp();
+      const tokenA = userA.getSessionToken();
+
+      const userB = new Parse.User();
+      userB.setUsername('lq_tenant_b');
+      userB.setPassword('password123');
+      userB.set('tenant', 'tenant-b');
+      await userB.signUp();
+      const tokenB = userB.getSessionToken();
+
+      // TenantDoc is public-read, so only the beforeSubscribe `tenant` filter
+      // isolates subscribers. Both use the same $or next to which it is added.
+      const orQuery = () =>
+        Parse.Query.or(
+          new Parse.Query('TenantDoc').exists('objectId'),
+          new Parse.Query('TenantDoc').exists('createdAt')
+        );
+      const subA = await subscribeAsUser(tokenA, orQuery());
+      const subB = await subscribeAsUser(tokenB, orQuery());
+
+      const aReceived = [];
+      subA.on('create', object => aReceived.push(object));
+      const bReceived = [];
+      subB.on('create', object => bReceived.push(object));
+
+      const docA = new Parse.Object('TenantDoc');
+      docA.set('tenant', 'tenant-a');
+      await docA.save(null, { useMasterKey: true });
+      const docB = new Parse.Object('TenantDoc');
+      docB.set('tenant', 'tenant-b');
+      await docB.save(null, { useMasterKey: true });
+
+      await sleep(500);
+
+      // Each subscriber receives only its own tenant's object.
+      expect(aReceived.map(o => o.get('tenant'))).toEqual(['tenant-a']);
+      expect(bReceived.map(o => o.get('tenant'))).toEqual(['tenant-b']);
+    });
+  });
+
+  describe('(GHSA-9rh6-r4ph-367v) SMS MFA login code request persists login body fields with master privileges', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    let code;
+    let mobile;
+    const mfa = {
+      enabled: true,
+      options: ['SMS'],
+      sendSMS(smsCode, number) {
+        code = smsCode;
+        mobile = number;
+      },
+      digits: 6,
+      period: 30,
+    };
+
+    beforeEach(async () => {
+      code = '';
+      mobile = '';
+      await reconfigureServer({ auth: { mfa } });
+    });
+
+    async function enrollSmsMfa() {
+      const user = await Parse.User.signUp('victim', 'password');
+      const sessionToken = user.getSessionToken();
+      await user.save({ authData: { mfa: { mobile: '+11111111111' } } }, { sessionToken });
+      await user.save({ authData: { mfa: { mobile, token: code } } }, { sessionToken });
+      return { user, sessionToken };
+    }
+
+    it('does not persist extra login body fields when requesting an SMS code', async () => {
+      const { user, sessionToken } = await enrollSmsMfa();
+
+      // emailVerified is master-only
+      const rejected = await request({
+        method: 'PUT',
+        url: `${Parse.serverURL}/users/${user.id}`,
+        headers: { ...headers, 'X-Parse-Session-Token': sessionToken },
+        body: JSON.stringify({ emailVerified: true }),
+      }).catch(e => e.data);
+      expect(rejected.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+
+      const spy = spyOn(mfa, 'sendSMS').and.callThrough();
+      // Smuggle the field in the code request body
+      const res = await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/login`,
+        headers,
+        body: JSON.stringify({
+          username: 'victim',
+          password: 'password',
+          authData: { mfa: { token: 'request' } },
+          emailVerified: true,
+        }),
+      }).catch(e => e.data);
+      expect(res).toEqual({ code: Parse.Error.SCRIPT_FAILED, error: 'Please enter the token' });
+      expect(spy).toHaveBeenCalled();
+
+      // Must not be persisted
+      await user.fetch({ useMasterKey: true });
+      expect(user.get('emailVerified')).not.toBe(true);
+    });
+
+    it('runs the _User beforeSave trigger when persisting the requested SMS code', async () => {
+      await enrollSmsMfa();
+      let beforeSaveCalls = 0;
+      Parse.Cloud.beforeSave('_User', () => {
+        beforeSaveCalls++;
+      });
+      const res = await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/login`,
+        headers,
+        body: JSON.stringify({
+          username: 'victim',
+          password: 'password',
+          authData: { mfa: { token: 'request' } },
+        }),
+      }).catch(e => e.data);
+      expect(res).toEqual({ code: Parse.Error.SCRIPT_FAILED, error: 'Please enter the token' });
+      // beforeSave must still run on the internal persist
+      expect(beforeSaveCalls).toBeGreaterThan(0);
+    });
+
+    it('still completes SMS MFA login end-to-end after requesting a code', async () => {
+      const { user } = await enrollSmsMfa();
+      await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/login`,
+        headers,
+        body: JSON.stringify({
+          username: 'victim',
+          password: 'password',
+          authData: { mfa: { token: 'request' } },
+        }),
+      }).catch(e => e.data);
+      const response = await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/login`,
+        headers,
+        body: JSON.stringify({
+          username: 'victim',
+          password: 'password',
+          authData: { mfa: { token: code } },
+        }),
+      }).then(r => r.data);
+      expect(response.objectId).toEqual(user.id);
+      expect(response.sessionToken).toBeDefined();
+    });
+  });
+
+  describe('(GHSA-9rvr-f5hc-9f2f) Save response returns the stored value of a field reverted in beforeSave to a caller without read access', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+
+    describe('class without get permission', () => {
+      let reader;
+      let obj;
+
+      beforeEach(async () => {
+        reader = await Parse.User.signUp('reader', 'password');
+        const schema = new Parse.Schema('WriteOnly');
+        schema.addString('secret');
+        schema.addObject('field');
+        schema.setCLP({
+          find: { [reader.id]: true },
+          get: { [reader.id]: true },
+          count: { [reader.id]: true },
+          create: {},
+          update: { '*': true },
+          delete: {},
+          addField: {},
+        });
+        await schema.save();
+        obj = await new Parse.Object('WriteOnly').save(
+          { secret: 'stored-secret', field: { sub: 'stored-sub', other: 'stored-other' } },
+          { useMasterKey: true }
+        );
+      });
+
+      const update = (body, extraHeaders = {}) =>
+        request({
+          method: 'PUT',
+          url: `${Parse.serverURL}/classes/WriteOnly/${obj.id}`,
+          headers: { ...headers, ...extraHeaders },
+          body: JSON.stringify(body),
+        });
+
+      it('does not return a reverted field', async () => {
+        const logger = require('../lib/logger').default;
+        const warn = spyOn(logger, 'warn').and.callThrough();
+        Parse.Cloud.beforeSave('WriteOnly', ({ object }) => {
+          object.revert('secret');
+        });
+        const get = await request({
+          url: `${Parse.serverURL}/classes/WriteOnly/${obj.id}`,
+          headers,
+        }).catch(e => e);
+        expect(get.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+
+        const response = await update({ secret: 'new' });
+        expect(response.data.secret).toEqual({ __op: 'Delete' });
+        expect(JSON.stringify(response.data)).not.toContain('stored-secret');
+        expect(warn).not.toHaveBeenCalledWith(
+          'Failed to read reverted fields for the save response',
+          jasmine.anything()
+        );
+        await obj.fetch({ useMasterKey: true });
+        expect(obj.get('secret')).toBe('stored-secret');
+      });
+
+      it('logs an unexpected read failure and does not return the stored value', async () => {
+        const logger = require('../lib/logger').default;
+        const warn = spyOn(logger, 'warn').and.callFake(() => {});
+        const adapter = Config.get(Parse.applicationId).database.adapter;
+        const find = adapter.find.bind(adapter);
+        let failRead = false;
+        spyOn(adapter, 'find').and.callFake((className, ...args) => {
+          if (failRead && className === 'WriteOnly') {
+            failRead = false;
+            return Promise.reject(new Error('read failed'));
+          }
+          return find(className, ...args);
+        });
+        Parse.Cloud.beforeSave('WriteOnly', ({ object }) => {
+          object.revert('secret');
+        });
+        Parse.Cloud.afterSave('WriteOnly', () => {
+          failRead = true;
+        });
+        const response = await update(
+          { secret: 'new' },
+          { 'X-Parse-Session-Token': reader.getSessionToken() }
+        );
+        expect(response.data.secret).toEqual({ __op: 'Delete' });
+        expect(warn).toHaveBeenCalledWith(
+          'Failed to read reverted fields for the save response',
+          jasmine.anything()
+        );
+      });
+
+      it('does not return a field reverted by a constant validator', async () => {
+        Parse.Cloud.beforeSave('WriteOnly', () => {}, {
+          fields: { secret: { constant: true } },
+        });
+        const response = await update({ secret: 'new' });
+        expect(response.data.secret).toEqual({ __op: 'Delete' });
+        expect(JSON.stringify(response.data)).not.toContain('stored-secret');
+      });
+
+      it('does not return a reverted dot notation field', async () => {
+        Parse.Cloud.beforeSave('WriteOnly', ({ object }) => {
+          object.revert('field.sub');
+        });
+        const response = await update({ 'field.sub': { __op: 'Delete' } });
+        expect(response.data['field.sub']).toEqual({ __op: 'Delete' });
+        expect(JSON.stringify(response.data)).not.toContain('stored-sub');
+        await obj.fetch({ useMasterKey: true });
+        expect(obj.get('field')).toEqual({ sub: 'stored-sub', other: 'stored-other' });
+      });
+
+      it('does not return a reverted field in a batch request', async () => {
+        Parse.Cloud.beforeSave('WriteOnly', ({ object }) => {
+          object.revert('secret');
+        });
+        const response = await request({
+          method: 'POST',
+          url: `${Parse.serverURL}/batch`,
+          headers,
+          body: JSON.stringify({
+            requests: [
+              { method: 'PUT', path: `/1/classes/WriteOnly/${obj.id}`, body: { secret: 'new' } },
+            ],
+          }),
+        });
+        expect(response.data[0].success.secret).toEqual({ __op: 'Delete' });
+        expect(JSON.stringify(response.data)).not.toContain('stored-secret');
+      });
+
+      it('does not return a stored array around a reverted dot notation key', async () => {
+        const arrayObj = await new Parse.Object('WriteOnly').save(
+          { field: { nested: [{ sub: 'stored-0', y: 'stored-y' }, { sub: 'stored-1' }] } },
+          { useMasterKey: true }
+        );
+        Parse.Cloud.beforeSave('WriteOnly', ({ object }) => {
+          object.revert('field.nested.5.sub');
+        });
+        Parse.Cloud.afterSave('WriteOnly', () => {});
+        const response = await request({
+          method: 'PUT',
+          url: `${Parse.serverURL}/classes/WriteOnly/${arrayObj.id}`,
+          headers,
+          body: JSON.stringify({
+            'field.nested.5.sub': { __op: 'Delete' },
+            'field.nested.0.y': { __op: 'Delete' },
+          }),
+        });
+        expect(response.data.field).toEqual({ __op: 'Delete' });
+        expect(response.data['field.nested']).toBeUndefined();
+        expect(JSON.stringify(response.data)).not.toContain('stored-');
+      });
+
+      it('does not return a value that afterSave sets on a reverted field', async () => {
+        Parse.Cloud.beforeSave('WriteOnly', ({ object }) => {
+          object.revert('secret');
+        });
+        Parse.Cloud.afterSave('WriteOnly', ({ object }) => {
+          object.set('secret', object.get('secret').slice(0, 6));
+        });
+        const response = await update({ secret: 'new' });
+        expect(response.data.secret).toEqual({ __op: 'Delete' });
+        expect(JSON.stringify(response.data)).not.toContain('stored');
+      });
+
+      it('keeps a value that afterSave sets on a reverted field for a caller with get permission', async () => {
+        Parse.Cloud.beforeSave('WriteOnly', ({ object }) => {
+          object.revert('secret');
+        });
+        Parse.Cloud.afterSave('WriteOnly', ({ object }) => {
+          object.set('secret', 'masked');
+        });
+        const response = await update(
+          { secret: 'new' },
+          { 'X-Parse-Session-Token': reader.getSessionToken() }
+        );
+        expect(response.data.secret).toBe('masked');
+      });
+
+      for (const auth of ['session with get permission', 'master', 'maintenance']) {
+        it(`returns a reverted field for ${auth} auth`, async () => {
+          Parse.Cloud.beforeSave('WriteOnly', ({ object }) => {
+            object.revert('secret');
+          });
+          const authHeaders = {
+            'session with get permission': { 'X-Parse-Session-Token': reader.getSessionToken() },
+            master: { 'X-Parse-Master-Key': 'test' },
+            maintenance: { 'X-Parse-Maintenance-Key': 'testing' },
+          }[auth];
+          const response = await update({ secret: 'new' }, authHeaders);
+          expect(response.data.secret).toBe('stored-secret');
+        });
+      }
+    });
+
+    describe('object without read access', () => {
+      let writer;
+      let obj;
+
+      beforeEach(async () => {
+        writer = await Parse.User.signUp('writer', 'password');
+        const acl = new Parse.ACL();
+        acl.setWriteAccess(writer, true);
+        acl.setReadAccess('otherUserId', true);
+        obj = new Parse.Object('WriteOnlyAcl');
+        obj.setACL(acl);
+        await obj.save({ secret: 'stored-secret' }, { useMasterKey: true });
+      });
+
+      const update = body =>
+        request({
+          method: 'PUT',
+          url: `${Parse.serverURL}/classes/WriteOnlyAcl/${obj.id}`,
+          headers: { ...headers, 'X-Parse-Session-Token': writer.getSessionToken() },
+          body: JSON.stringify(body),
+        });
+
+      it('does not return a reverted field', async () => {
+        Parse.Cloud.beforeSave('WriteOnlyAcl', ({ object }) => {
+          object.revert('secret');
+        });
+        const get = await request({
+          url: `${Parse.serverURL}/classes/WriteOnlyAcl/${obj.id}`,
+          headers: { ...headers, 'X-Parse-Session-Token': writer.getSessionToken() },
+        }).catch(e => e);
+        expect(get.data.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+
+        const response = await update({ secret: 'new' });
+        expect(response.data.secret).toEqual({ __op: 'Delete' });
+        expect(JSON.stringify(response.data)).not.toContain('stored-secret');
+      });
+
+      it('does not return a reverted ACL', async () => {
+        Parse.Cloud.beforeSave('WriteOnlyAcl', ({ object }) => {
+          object.revert('ACL');
+        });
+        const response = await update({ ACL: { [writer.id]: { read: true, write: true } } });
+        expect(response.data.ACL).toBeUndefined();
+        expect(JSON.stringify(response.data)).not.toContain('otherUserId');
+      });
+    });
+
+    it('does not return a reverted protected field when protectedFieldsTriggerExempt is true', async () => {
+      await reconfigureServer({
+        protectedFields: { MyClass: { '*': ['secretField'] } },
+        protectedFieldsTriggerExempt: true,
+      });
+      const obj = await new Parse.Object('MyClass').save(
+        { secretField: 'stored-secret' },
+        { useMasterKey: true }
+      );
+      Parse.Cloud.beforeSave('MyClass', ({ object }) => {
+        object.revert('secretField');
+      });
+      const response = await request({
+        method: 'PUT',
+        url: `${Parse.serverURL}/classes/MyClass/${obj.id}`,
+        headers,
+        body: JSON.stringify({ secretField: 'new' }),
+      });
+      expect(response.data.secretField).toEqual({ __op: 'Delete' });
+      expect(JSON.stringify(response.data)).not.toContain('stored-secret');
+    });
+
+    it('does not return raw auth data when beforeSave reverts authData', async () => {
+      await reconfigureServer({
+        protectedFieldsTriggerExempt: true,
+        auth: {
+          mfa: { enabled: true, options: ['TOTP'], algorithm: 'SHA1', digits: 6, period: 30 },
+        },
+      });
+      const OTPAuth = require('otpauth');
+      const user = await Parse.User.signUp('mfauser', 'password');
+      const secret = new OTPAuth.Secret();
+      const totp = new OTPAuth.TOTP({ algorithm: 'SHA1', digits: 6, period: 30, secret });
+      await user.save(
+        { authData: { mfa: { secret: secret.base32, token: totp.generate() } } },
+        { sessionToken: user.getSessionToken() }
+      );
+      Parse.Cloud.beforeSave(Parse.User, ({ object, master }) => {
+        if (!master) {
+          object.revert('authData');
+        }
+      });
+      const response = await request({
+        method: 'PUT',
+        url: `${Parse.serverURL}/users/${user.id}`,
+        headers: { ...headers, 'X-Parse-Session-Token': user.getSessionToken() },
+        body: JSON.stringify({ authData: {} }),
+      });
+      expect(response.data.authData).toEqual({ mfa: { status: 'enabled' } });
+      expect(JSON.stringify(response.data)).not.toContain(secret.base32);
+    });
+  });
+
+  describe('(GHSA-rx55-fw4j-pvpx) Dot notation key corrupts shared runtime object', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Master-Key': 'test',
+      'Content-Type': 'application/json',
+    };
+
+    // Read the state of the shared built-ins that a response-builder regression
+    // could stamp an own property onto, then restore them immediately so a failing
+    // run cannot corrupt sibling specs running in the same process.
+    function protoStateAndRestore() {
+      const state = {
+        toStringCallType: typeof Object.prototype.toString.call,
+        toStringCallOwn: Object.hasOwn(Object.prototype.toString, 'call'),
+        hopCallType: typeof Object.prototype.hasOwnProperty.call,
+        hopCallOwn: Object.hasOwn(Object.prototype.hasOwnProperty, 'call'),
+      };
+      if (state.toStringCallOwn) {
+        try {
+          delete Object.prototype.toString.call;
+        } catch (e) {
+          /* ignore */
+        }
+      }
+      if (state.hopCallOwn) {
+        try {
+          delete Object.prototype.hasOwnProperty.call;
+        } catch (e) {
+          /* ignore */
+        }
+      }
+      return state;
+    }
+
+    async function seedObject(className) {
+      const res = await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/classes/${className}`,
+        headers,
+        body: JSON.stringify({ data: { x: 1 } }),
+      });
+      return res.data.objectId;
+    }
+
+    it('does not write onto an inherited prototype member when an update op key uses it as a path segment', async () => {
+      const id = await seedObject('GHSArx55Update');
+      await request({
+        method: 'PUT',
+        url: `${Parse.serverURL}/classes/GHSArx55Update/${id}`,
+        headers,
+        body: JSON.stringify({ 'data.toString.call': { __op: 'Increment', amount: 1 } }),
+      }).catch(e => e);
+      const state = protoStateAndRestore();
+      expect(state.toStringCallType).toBe('function');
+      expect(state.toStringCallOwn).toBe(false);
+      // The process is still healthy: an unrelated write succeeds.
+      const probe = await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/classes/GHSArx55Probe`,
+        headers,
+        body: JSON.stringify({ ok: true }),
+      }).catch(e => e);
+      expect(probe.status).toBe(201);
+    });
+
+    it('does not write onto hasOwnProperty when an update op key uses it as a path segment', async () => {
+      const id = await seedObject('GHSArx55Hop');
+      await request({
+        method: 'PUT',
+        url: `${Parse.serverURL}/classes/GHSArx55Hop/${id}`,
+        headers,
+        body: JSON.stringify({ 'data.hasOwnProperty.call': { __op: 'Increment', amount: 1 } }),
+      }).catch(e => e);
+      const state = protoStateAndRestore();
+      expect(state.hopCallType).toBe('function');
+      expect(state.hopCallOwn).toBe(false);
+    });
+
+    it('does not write onto an inherited prototype member when a create op key uses it as a path segment', async () => {
+      await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/classes/GHSArx55Create`,
+        headers,
+        body: JSON.stringify({
+          data: { x: 1 },
+          'data.toString.call': { __op: 'Increment', amount: 1 },
+        }),
+      }).catch(e => e);
+      const state = protoStateAndRestore();
+      expect(state.toStringCallType).toBe('function');
+      expect(state.toStringCallOwn).toBe(false);
+    });
+
+    it('still expands a legitimate dot notation operation result in the response', async () => {
+      const obj = await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/classes/GHSArx55Legit`,
+        headers,
+        body: JSON.stringify({ nested: { n: 1 } }),
+      });
+      const id = obj.data.objectId;
+      const res = await request({
+        method: 'PUT',
+        url: `${Parse.serverURL}/classes/GHSArx55Legit/${id}`,
+        headers,
+        body: JSON.stringify({ 'nested.n': { __op: 'Increment', amount: 4 } }),
+      });
+      expect(res.data.nested.n).toBe(5);
+    });
+
+    // Read/write any own property named after an inherited member off the shared
+    // built-ins the ACL transforms could stamp onto, then restore. ACL transforms
+    // use both the legacy { r, w } keys and the REST { read, write } keys.
+    function aclProtoStateAndRestore() {
+      const targets = [
+        Object.prototype.toString,
+        Object.prototype.valueOf,
+        Object.prototype.hasOwnProperty,
+        Object.prototype,
+      ];
+      const props = ['r', 'w', 'read', 'write'];
+      const polluted = [];
+      for (const target of targets) {
+        for (const prop of props) {
+          if (Object.hasOwn(target, prop)) {
+            polluted.push(`${target === Object.prototype ? 'Object.prototype' : target.name || 'fn'}.${prop}`);
+            try {
+              delete target[prop];
+            } catch (e) {
+              /* ignore */
+            }
+          }
+        }
+      }
+      return polluted;
+    }
+
+    it('does not corrupt a shared built-in when an ACL key names an inherited member', async () => {
+      // Raw JSON body so the keys arrive as the client sends them.
+      const create = await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/classes/GHSArx55Acl`,
+        headers,
+        body: '{"x":1,"ACL":{"toString":{"read":true,"write":true},"valueOf":{"read":true}}}',
+      }).catch(e => e);
+      let acl;
+      if (create.data && create.data.objectId) {
+        const get = await request({
+          method: 'GET',
+          url: `${Parse.serverURL}/classes/GHSArx55Acl/${create.data.objectId}`,
+          headers,
+        }).catch(e => e);
+        acl = get.data && get.data.ACL;
+      }
+      const polluted = aclProtoStateAndRestore();
+      expect(create.status).toBe(201);
+      expect(polluted).toEqual([]);
+      // The ACL round-trips faithfully instead of being mangled away.
+      expect(acl).toEqual({ toString: { read: true, write: true }, valueOf: { read: true } });
+    });
+
+    it('rejects an ACL key that is a prohibited keyword', async () => {
+      const create = await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/classes/GHSArx55AclProto`,
+        headers,
+        body: '{"x":1,"ACL":{"__proto__":{"read":true}}}',
+      }).catch(e => e);
+      const polluted = aclProtoStateAndRestore();
+      expect(create.status).toBe(400);
+      expect(polluted).toEqual([]);
+    });
+  });
+
+  describe('(GHSA-8j8q-73xx-w3m4) Installation update is written to the installation named by the request installation ID', () => {
+    const serverURL = 'http://localhost:8378/1';
+    const clientHeaders = installationId => ({
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+      ...(installationId ? { 'X-Parse-Installation-Id': installationId } : {}),
+    });
+    const masterHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Master-Key': 'test',
+      'Content-Type': 'application/json',
+    };
+
+    const IID_A = 'aaaaaaaa-0000-4000-8000-000000000001';
+    const IID_B = 'bbbbbbbb-0000-4000-8000-000000000002';
+    const IID_SELF = 'cccccccc-0000-4000-8000-000000000003';
+
+    const createInstallation = (body, headers = clientHeaders()) =>
+      request({
+        method: 'POST',
+        headers,
+        url: `${serverURL}/installations`,
+        body: JSON.stringify(body),
+      }).catch(e => e);
+
+    const putInstallation = (objectId, body, headers) =>
+      request({
+        method: 'PUT',
+        headers,
+        url: `${serverURL}/installations/${objectId}`,
+        body: JSON.stringify(body),
+      }).catch(e => e);
+
+    const readInstallation = async objectId => {
+      const response = await request({
+        method: 'GET',
+        headers: masterHeaders,
+        url: `${serverURL}/installations/${objectId}`,
+      }).catch(e => e);
+      return response.data;
+    };
+
+    it('writes the update to the installation named by the objectId, not by the request installation ID header', async () => {
+      const a = (await createInstallation({ installationId: IID_A, deviceType: 'android', localeIdentifier: 'a' })).data.objectId;
+      const b = (await createInstallation({ installationId: IID_B, deviceType: 'ios', localeIdentifier: 'b' })).data.objectId;
+
+      const response = await putInstallation(a, { localeIdentifier: 'changed' }, clientHeaders(IID_B));
+
+      expect(response.status).toBe(200);
+      expect((await readInstallation(a)).localeIdentifier).toBe('changed');
+      expect((await readInstallation(b)).localeIdentifier).toBe('b');
+    });
+
+    it('runs beforeSave for the installation that is written', async () => {
+      const a = (await createInstallation({ installationId: IID_A, deviceType: 'android', localeIdentifier: 'a' })).data.objectId;
+      const b = (await createInstallation({ installationId: IID_B, deviceType: 'ios', localeIdentifier: 'b' })).data.objectId;
+      const seen = [];
+      Parse.Cloud.beforeSave('_Installation', req => {
+        seen.push({ id: req.object.id, originalId: req.original && req.original.id });
+      });
+
+      const response = await putInstallation(a, { localeIdentifier: 'changed' }, clientHeaders(IID_B));
+
+      expect(response.status).toBe(200);
+      expect(seen).toEqual([{ id: a, originalId: a }]);
+      expect((await readInstallation(a)).localeIdentifier).toBe('changed');
+      expect((await readInstallation(b)).localeIdentifier).toBe('b');
+    });
+
+    it('rejects an update addressed to an installation the caller cannot write even when the request installation ID names a writable one', async () => {
+      const own = (await createInstallation({ installationId: IID_SELF, deviceType: 'android', localeIdentifier: 'self' }, clientHeaders(IID_SELF))).data.objectId;
+      const locked = (await createInstallation({ installationId: IID_B, deviceType: 'ios', localeIdentifier: 'locked', ACL: {} }, masterHeaders)).data.objectId;
+
+      const response = await putInstallation(locked, { localeIdentifier: 'changed' }, clientHeaders(IID_SELF));
+
+      expect(response.status).toBe(404);
+      expect(response.data.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      expect((await readInstallation(locked)).localeIdentifier).toBe('locked');
+      expect((await readInstallation(own)).localeIdentifier).toBe('self');
+    });
+
+    it('does not run beforeSave with the stored data of an inaccessible installation when protectedFieldsTriggerExempt is enabled', async () => {
+      await reconfigureServer({ protectedFieldsTriggerExempt: true });
+      const own = (await createInstallation({ installationId: IID_SELF, deviceType: 'android', localeIdentifier: 'self' }, clientHeaders(IID_SELF))).data.objectId;
+      const locked = (await createInstallation(
+        { installationId: IID_B, deviceType: 'ios', localeIdentifier: 'locked', secretField: 'top-secret', ACL: {} },
+        masterHeaders
+      )).data.objectId;
+      const seen = [];
+      Parse.Cloud.beforeSave('_Installation', req => {
+        seen.push({ id: req.object.id, originalSecret: req.original && req.original.get('secretField') });
+      });
+
+      const response = await putInstallation(locked, { localeIdentifier: 'changed' }, clientHeaders(IID_SELF));
+
+      expect(response.status).toBe(404);
+      expect(response.data.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      expect(seen).toEqual([]);
+      expect((await readInstallation(locked)).secretField).toBe('top-secret');
+      expect((await readInstallation(own)).localeIdentifier).toBe('self');
+    });
+
+    it('still resolves the caller installation from the request installation ID on create with no objectId', async () => {
+      const created = await createInstallation({ installationId: IID_A, deviceType: 'android', localeIdentifier: 'a' });
+      expect(created.status).toBe(201);
+      const objectId = created.data.objectId;
+
+      const response = await createInstallation({ localeIdentifier: 'from-header' }, clientHeaders(IID_A));
+
+      expect(response.status).toBe(200);
+      expect((await readInstallation(objectId)).localeIdentifier).toBe('from-header');
+    });
+
+    it('writes to the addressed installation when a client saves one by objectId via the SDK', async () => {
+      const b = (await createInstallation({ installationId: IID_B, deviceType: 'ios', localeIdentifier: 'b' })).data.objectId;
+      const selfId = await Parse.CoreManager.getInstallationController().currentInstallationId();
+      const own = (await createInstallation({ installationId: selfId, deviceType: 'android', localeIdentifier: 'self' }, clientHeaders(selfId))).data.objectId;
+
+      const target = Parse.Installation.createWithoutData(b);
+      target.set('localeIdentifier', 'changed-by-sdk');
+      await target.save();
+
+      expect((await readInstallation(b)).localeIdentifier).toBe('changed-by-sdk');
+      expect((await readInstallation(own)).localeIdentifier).toBe('self');
+    });
   });
 });
