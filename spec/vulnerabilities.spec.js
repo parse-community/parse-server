@@ -9526,6 +9526,40 @@ describe('Vulnerabilities', () => {
         expect(response.data.counters).toEqual([2, 2]);
       }
     );
+
+    it('returns the new session token of a password change to a user who cannot read their own user', async () => {
+      const user = await Parse.User.signUp('writer', 'password');
+      const acl = new Parse.ACL();
+      acl.setWriteAccess(user.id, true);
+      user.setACL(acl);
+      await user.save(null, { useMasterKey: true });
+      const response = await request({
+        method: 'PUT',
+        url: `${Parse.serverURL}/users/${user.id}`,
+        headers: { ...headers, 'X-Parse-Session-Token': user.getSessionToken() },
+        body: JSON.stringify({ password: 'new-password' }),
+      });
+      expect(response.data.sessionToken).toMatch(/^r:/);
+      const session = await new Parse.Query('_Session')
+        .equalTo('sessionToken', response.data.sessionToken)
+        .first({ useMasterKey: true });
+      expect(session.get('user').id).toBe(user.id);
+    });
+
+    it('does not return the atomic operation result of a field named sessionToken', async () => {
+      const acl = new Parse.ACL();
+      acl.setPublicWriteAccess(true);
+      const obj = new Parse.Object('WriteOnlyToken');
+      obj.setACL(acl);
+      await obj.save({ sessionToken: 41 }, { useMasterKey: true });
+      const response = await request({
+        method: 'PUT',
+        url: `${Parse.serverURL}/classes/WriteOnlyToken/${obj.id}`,
+        headers,
+        body: JSON.stringify({ sessionToken: { __op: 'Increment', amount: 1 } }),
+      });
+      expect(response.data.sessionToken).toEqual(deleted);
+    });
   });
 
   describe('(GHSA-rx55-fw4j-pvpx) Dot notation key corrupts shared runtime object', () => {
