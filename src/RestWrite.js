@@ -2265,8 +2265,10 @@ RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
   if (this.auth.isMaster || this.auth.isMaintenance) {
     return;
   }
+  // A new session token is issued to the caller, not stored
+  const issued = this.className === '_User' ? ['sessionToken'] : [];
   const fields = Object.keys(response).filter(
-    key => !['objectId', 'createdAt', 'updatedAt'].includes(key)
+    key => !['objectId', 'createdAt', 'updatedAt', ...issued].includes(key)
   );
   if (!fields.length) {
     return;
