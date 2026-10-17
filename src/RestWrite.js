@@ -1754,13 +1754,15 @@ RestWrite.prototype.runDatabaseOperation = function () {
 
     return defer.then(() => {
       // Run an update
+      // The unsanitized result of a client update carries the read access of the object
+      const raw = !this.runOptions.many && !this.auth.isMaster && !this.auth.isMaintenance;
       return this.config.database
         .update(
           this.className,
           this.query,
           this.data,
           this.runOptions,
-          false,
+          raw,
           false,
           this.validSchemaController
         )
@@ -1768,7 +1770,12 @@ RestWrite.prototype.runDatabaseOperation = function () {
           this._throwIfAuthDataDuplicate(error);
           throw error;
         })
-        .then(response => {
+        .then(async result => {
+          let response = result;
+          if (raw) {
+            this.writtenReadAccess = result._rperm || null;
+            response = await this.config.database._sanitizeDatabaseResult(this.data, result);
+          }
           response.updatedAt = this.updatedAt;
           this._updateResponseWithData(response, this.data);
           this.response = { response };
@@ -2150,6 +2157,20 @@ RestWrite.prototype._restoreRevertedPath = function (response, writeData, writte
   response[target] = value === undefined ? { __op: 'Delete' } : value;
 };
 
+// Whether the class and object permissions certainly let the caller read the written object
+RestWrite.prototype._canReadWithoutQuery = function () {
+  // System classes have their own read rules
+  if (this.className.startsWith('_') || this.writtenReadAccess === undefined) {
+    return false;
+  }
+  const aclGroup = this.runOptions.acl || [];
+  if (!this.validSchemaController.testPermissionsForClassName(this.className, aclGroup, 'get')) {
+    return false;
+  }
+  const readers = this.writtenReadAccess;
+  return !readers || readers.some(reader => aclGroup.includes(reader));
+};
+
 // Returns stored values in an update response only as the caller can read them
 RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
   const response = this.response?.response;
@@ -2163,6 +2184,18 @@ RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
     key => !['objectId', 'createdAt', 'updatedAt'].includes(key)
   );
   if (!fields.length) {
+    return;
+  }
+  let reverted = [];
+  if (this.pendingOps.operations) {
+    const stateController = Parse.CoreManager.getObjectStateController();
+    const [pending] = stateController.getPendingOps(this.pendingOps.identifier);
+    reverted = Object.keys(this.pendingOps.operations).filter(key => !pending[key]);
+  }
+  const keys = fields.filter(key =>
+    reverted.some(path => path === key || path.startsWith(`${key}.`))
+  );
+  if (!keys.length && this._canReadWithoutQuery()) {
     return;
   }
   let view;
@@ -2199,15 +2232,6 @@ RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
     }
     return;
   }
-  if (!this.pendingOps.operations) {
-    return;
-  }
-  const stateController = Parse.CoreManager.getObjectStateController();
-  const [pending] = stateController.getPendingOps(this.pendingOps.identifier);
-  const reverted = Object.keys(this.pendingOps.operations).filter(key => !pending[key]);
-  const keys = fields.filter(key =>
-    reverted.some(path => path === key || path.startsWith(`${key}.`))
-  );
   for (const key of keys) {
     // Removed beneath a key the caller cannot read
     if (!hasOwn(response, key)) {
