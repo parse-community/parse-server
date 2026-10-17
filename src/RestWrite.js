@@ -2164,14 +2164,14 @@ RestWrite.prototype._readAccessWithoutQuery = function () {
   if (readers === undefined || (readers !== null && !Array.isArray(readers))) {
     return undefined;
   }
-  // afterSave may change the object after the write
-  if (triggers.triggerExists(this.className, triggers.Types.afterSave, this.config.applicationId)) {
-    return undefined;
-  }
   const aclGroup = this.runOptions.acl || [];
   // Every client read applies the object ACL
   if (readers && !readers.some(reader => aclGroup.includes(reader))) {
     return false;
+  }
+  // afterSave may change the object after the write
+  if (triggers.triggerExists(this.className, triggers.Types.afterSave, this.config.applicationId)) {
+    return undefined;
   }
   // System classes have their own read rules
   if (this.className.startsWith('_')) {

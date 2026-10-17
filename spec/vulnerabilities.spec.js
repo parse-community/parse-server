@@ -9627,6 +9627,19 @@ describe('Vulnerabilities', () => {
         expect(reads.length).toBe(0);
       });
 
+      it('does not read the object when the class has an afterSave trigger', async () => {
+        Parse.Cloud.afterSave('WriteOnlyCounter', () => {});
+        const DatabaseController = require('../lib/Controllers/DatabaseController');
+        const find = spyOn(DatabaseController.prototype, 'find').and.callThrough();
+        const response = await increment();
+        expect(response.data.count).toEqual(deleted);
+        // The update itself reads the original object for the trigger
+        const reads = find.calls
+          .allArgs()
+          .filter(([className, , options]) => className === 'WriteOnlyCounter' && options.op !== 'update');
+        expect(reads.length).toBe(0);
+      });
+
       for (const [name, rewrite] of Object.entries({
         'without the read access': result => {
           delete result._rperm;
@@ -9678,46 +9691,51 @@ describe('Vulnerabilities', () => {
     });
 
     if (
-      process.env.MONGODB_TOPOLOGY === 'replicaset' ||
+      ['replicaset', 'replset'].includes(process.env.MONGODB_TOPOLOGY) ||
       process.env.PARSE_SERVER_TEST_DB === 'postgres'
     ) {
-      it('does not return a value of a transactional update that revokes the read access of the caller', async () => {
-        const user = await Parse.User.signUp('submitter', 'password');
-        const schema = new Parse.Schema('TxSubmission');
-        schema.addNumber('count');
-        schema.addString('grade');
-        await schema.save();
-        const obj = new Parse.Object('TxSubmission');
-        obj.setACL(new Parse.ACL(user));
-        await obj.save({ count: 1 }, { useMasterKey: true });
-        Parse.Cloud.beforeSave('TxSubmission', ({ object, master }) => {
-          if (master) {
-            return;
+      for (const [name, afterSave] of Object.entries({ '': false, ' with afterSave': true })) {
+        it(`does not return a value of a transactional update that revokes the read access of the caller${name}`, async () => {
+          const user = await Parse.User.signUp('submitter', 'password');
+          const schema = new Parse.Schema('TxSubmission');
+          schema.addNumber('count');
+          schema.addString('grade');
+          await schema.save();
+          const obj = new Parse.Object('TxSubmission');
+          obj.setACL(new Parse.ACL(user));
+          await obj.save({ count: 1 }, { useMasterKey: true });
+          Parse.Cloud.beforeSave('TxSubmission', ({ object, master }) => {
+            if (master) {
+              return;
+            }
+            const locked = new Parse.ACL();
+            locked.setWriteAccess(user, true);
+            object.setACL(locked);
+            object.set('grade', 'stored-grade');
+          });
+          if (afterSave) {
+            Parse.Cloud.afterSave('TxSubmission', () => {});
           }
-          const locked = new Parse.ACL();
-          locked.setWriteAccess(user, true);
-          object.setACL(locked);
-          object.set('grade', 'stored-grade');
+          const response = await request({
+            method: 'POST',
+            url: `${Parse.serverURL}/batch`,
+            headers: { ...headers, 'X-Parse-Session-Token': user.getSessionToken() },
+            body: JSON.stringify({
+              transaction: true,
+              requests: [
+                {
+                  method: 'PUT',
+                  path: `/1/classes/TxSubmission/${obj.id}`,
+                  body: { count: { __op: 'Increment', amount: 1 } },
+                },
+              ],
+            }),
+          });
+          const result = response.data[0].success;
+          expect(result.grade).toEqual(deleted);
+          expect(result.count).toEqual(deleted);
         });
-        const response = await request({
-          method: 'POST',
-          url: `${Parse.serverURL}/batch`,
-          headers: { ...headers, 'X-Parse-Session-Token': user.getSessionToken() },
-          body: JSON.stringify({
-            transaction: true,
-            requests: [
-              {
-                method: 'PUT',
-                path: `/1/classes/TxSubmission/${obj.id}`,
-                body: { count: { __op: 'Increment', amount: 1 } },
-              },
-            ],
-          }),
-        });
-        const result = response.data[0].success;
-        expect(result.grade).toEqual(deleted);
-        expect(result.count).toEqual(deleted);
-      });
+      }
     }
 
     it('decides on the read access of the caller after the update', async () => {
