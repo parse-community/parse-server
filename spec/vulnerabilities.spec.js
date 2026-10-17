@@ -9286,6 +9286,7 @@ describe('Vulnerabilities', () => {
 
       for (const [name, body] of Object.entries({
         Increment: { count: { __op: 'Increment', amount: 0 } },
+        Add: { tags: { __op: 'Add', objects: ['x'] } },
         Remove: { tags: { __op: 'Remove', objects: ['x'] } },
         AddUnique: { tags: { __op: 'AddUnique', objects: ['stored-tag'] } },
       })) {
@@ -9403,6 +9404,23 @@ describe('Vulnerabilities', () => {
           expect(response.data.count).toBe(42);
         });
       }
+
+      it('does not return the stored parent of a dot notation key when afterSave returns the object', async () => {
+        Parse.Cloud.afterSave('WriteOnly', ({ object }) => object);
+        const response = await update({ 'field.added': 'x' });
+        expect(response.data.field).toEqual(deleted);
+        expect(JSON.stringify(response.data)).not.toContain('stored-');
+      });
+
+      it('reads the object from the primary to decide on the response', async () => {
+        const DatabaseController = require('../lib/Controllers/DatabaseController');
+        const find = spyOn(DatabaseController.prototype, 'find').and.callThrough();
+        const response = await update({ count: { __op: 'Increment', amount: 1 } });
+        expect(response.data.count).toEqual(deleted);
+        const reads = find.calls.allArgs().filter(([className]) => className === 'WriteOnly');
+        expect(reads.length).toBe(1);
+        expect(reads[0][2].readPreference).toBe('primary');
+      });
     });
 
     it('does not return the stored parent of a dot notation key for an object without read access', async () => {
@@ -9559,6 +9577,285 @@ describe('Vulnerabilities', () => {
         body: JSON.stringify({ sessionToken: { __op: 'Increment', amount: 1 } }),
       });
       expect(response.data.sessionToken).toEqual(deleted);
+    });
+
+    it('does not return the atomic operation result of a stored sessionToken field of a user', async () => {
+      const user = await Parse.User.signUp('tokenfield', 'password');
+      const url = `${Parse.serverURL}/users/${user.id}`;
+      await request({
+        method: 'PUT',
+        url,
+        headers: { ...headers, 'X-Parse-Master-Key': 'test' },
+        body: JSON.stringify({ sessionToken: 41, ACL: { [user.id]: { write: true } } }),
+      });
+      const response = await request({
+        method: 'PUT',
+        url,
+        headers: { ...headers, 'X-Parse-Session-Token': user.getSessionToken() },
+        body: JSON.stringify({ sessionToken: { __op: 'Increment', amount: 1 } }),
+      });
+      expect(response.data.sessionToken).toEqual(deleted);
+    });
+
+    describe('object without read access for the caller', () => {
+      let writer;
+      let obj;
+
+      beforeEach(async () => {
+        writer = await Parse.User.signUp('writer', 'password');
+        const acl = new Parse.ACL();
+        acl.setWriteAccess(writer, true);
+        obj = new Parse.Object('WriteOnlyCounter');
+        obj.setACL(acl);
+        await obj.save({ count: 41 }, { useMasterKey: true });
+      });
+
+      const increment = () =>
+        request({
+          method: 'PUT',
+          url: `${Parse.serverURL}/classes/WriteOnlyCounter/${obj.id}`,
+          headers: { ...headers, 'X-Parse-Session-Token': writer.getSessionToken() },
+          body: JSON.stringify({ count: { __op: 'Increment', amount: 1 } }),
+        });
+
+      it('does not read the object', async () => {
+        const DatabaseController = require('../lib/Controllers/DatabaseController');
+        const find = spyOn(DatabaseController.prototype, 'find').and.callThrough();
+        const response = await increment();
+        expect(response.data.count).toEqual(deleted);
+        const reads = find.calls.allArgs().filter(([className]) => className === 'WriteOnlyCounter');
+        expect(reads.length).toBe(0);
+      });
+
+      for (const [name, rewrite] of Object.entries({
+        'without the read access': result => {
+          delete result._rperm;
+          delete result._wperm;
+        },
+        'with an invalid read access': result => {
+          result._rperm = 'invalid';
+        },
+      })) {
+        it(`does not return the stored value for an update result ${name}`, async () => {
+          const adapter = Config.get(Parse.applicationId).database.adapter;
+          const findOneAndUpdate = adapter.findOneAndUpdate.bind(adapter);
+          spyOn(adapter, 'findOneAndUpdate').and.callFake(async (...args) => {
+            const result = await findOneAndUpdate(...args);
+            rewrite(result);
+            return result;
+          });
+          const response = await increment();
+          expect(response.data.count).toEqual(deleted);
+        });
+      }
+    });
+
+    it('does not return a value that afterSave sets after it revokes the read access of the caller', async () => {
+      const user = await Parse.User.signUp('submitter', 'password');
+      const obj = new Parse.Object('LockedSubmission');
+      obj.setACL(new Parse.ACL(user));
+      await obj.save({ count: 1 }, { useMasterKey: true });
+      Parse.Cloud.afterSave('LockedSubmission', async ({ object, master }) => {
+        if (master) {
+          return;
+        }
+        const locked = new Parse.ACL();
+        locked.setWriteAccess(user, true);
+        object.setACL(locked);
+        object.set('grade', 'stored-grade');
+        await object.save(null, { useMasterKey: true });
+      });
+      const response = await request({
+        method: 'PUT',
+        url: `${Parse.serverURL}/classes/LockedSubmission/${obj.id}`,
+        headers: { ...headers, 'X-Parse-Session-Token': user.getSessionToken() },
+        body: JSON.stringify({ count: { __op: 'Increment', amount: 1 } }),
+      });
+      expect(response.data.grade).toEqual(deleted);
+      expect(response.data.count).toEqual(deleted);
+      expect(response.data.ACL).toBeUndefined();
+      expect(JSON.stringify(response.data)).not.toContain('stored-grade');
+    });
+
+    if (
+      process.env.MONGODB_TOPOLOGY === 'replicaset' ||
+      process.env.PARSE_SERVER_TEST_DB === 'postgres'
+    ) {
+      it('does not return a value of a transactional update that revokes the read access of the caller', async () => {
+        const user = await Parse.User.signUp('submitter', 'password');
+        const schema = new Parse.Schema('TxSubmission');
+        schema.addNumber('count');
+        schema.addString('grade');
+        await schema.save();
+        const obj = new Parse.Object('TxSubmission');
+        obj.setACL(new Parse.ACL(user));
+        await obj.save({ count: 1 }, { useMasterKey: true });
+        Parse.Cloud.beforeSave('TxSubmission', ({ object, master }) => {
+          if (master) {
+            return;
+          }
+          const locked = new Parse.ACL();
+          locked.setWriteAccess(user, true);
+          object.setACL(locked);
+          object.set('grade', 'stored-grade');
+        });
+        const response = await request({
+          method: 'POST',
+          url: `${Parse.serverURL}/batch`,
+          headers: { ...headers, 'X-Parse-Session-Token': user.getSessionToken() },
+          body: JSON.stringify({
+            transaction: true,
+            requests: [
+              {
+                method: 'PUT',
+                path: `/1/classes/TxSubmission/${obj.id}`,
+                body: { count: { __op: 'Increment', amount: 1 } },
+              },
+            ],
+          }),
+        });
+        const result = response.data[0].success;
+        expect(result.grade).toEqual(deleted);
+        expect(result.count).toEqual(deleted);
+      });
+    }
+
+    it('decides on the read access of the caller after the update', async () => {
+      const user = await Parse.User.signUp('acluser', 'password');
+      const readWrite = new Parse.ACL(user);
+      const writeOnly = new Parse.ACL();
+      writeOnly.setWriteAccess(user, true);
+      const increment = async (stored, updated) => {
+        const obj = new Parse.Object('AclChange');
+        obj.setACL(stored);
+        await obj.save({ count: 1 }, { useMasterKey: true });
+        return request({
+          method: 'PUT',
+          url: `${Parse.serverURL}/classes/AclChange/${obj.id}`,
+          headers: { ...headers, 'X-Parse-Session-Token': user.getSessionToken() },
+          body: JSON.stringify({ ACL: updated, count: { __op: 'Increment', amount: 1 } }),
+        });
+      };
+      const revoked = await increment(readWrite, writeOnly.toJSON());
+      expect(revoked.data.count).toEqual(deleted);
+      const granted = await increment(writeOnly, readWrite.toJSON());
+      expect(granted.data.count).toBe(2);
+    });
+
+    it('returns stored values only to an authenticated caller when get requires authentication', async () => {
+      const user = await Parse.User.signUp('authuser', 'password');
+      const schema = new Parse.Schema('AuthRead');
+      schema.addNumber('count');
+      schema.setCLP({
+        find: { requiresAuthentication: true },
+        get: { requiresAuthentication: true },
+        count: {},
+        create: {},
+        update: { '*': true },
+        delete: {},
+        addField: {},
+      });
+      await schema.save();
+      const obj = await new Parse.Object('AuthRead').save({ count: 1 }, { useMasterKey: true });
+      const increment = (extraHeaders = {}) =>
+        request({
+          method: 'PUT',
+          url: `${Parse.serverURL}/classes/AuthRead/${obj.id}`,
+          headers: { ...headers, ...extraHeaders },
+          body: JSON.stringify({ count: { __op: 'Increment', amount: 1 } }),
+        });
+      const authenticated = await increment({ 'X-Parse-Session-Token': user.getSessionToken() });
+      expect(authenticated.data.count).toBe(2);
+      const anonymous = await increment();
+      expect(anonymous.data.count).toEqual(deleted);
+    });
+
+    it('returns stored values only to the user of a pointer permission', async () => {
+      const owner = await Parse.User.signUp('owner', 'password');
+      const other = await Parse.User.signUp('other', 'password');
+      const schema = new Parse.Schema('OwnerRead');
+      schema.addPointer('owner', '_User');
+      schema.addNumber('count');
+      schema.setCLP({
+        find: { pointerFields: ['owner'] },
+        get: { pointerFields: ['owner'] },
+        count: {},
+        create: {},
+        update: { '*': true },
+        delete: {},
+        addField: {},
+      });
+      await schema.save();
+      const obj = await new Parse.Object('OwnerRead').save({ owner, count: 1 }, { useMasterKey: true });
+      const increment = user =>
+        request({
+          method: 'PUT',
+          url: `${Parse.serverURL}/classes/OwnerRead/${obj.id}`,
+          headers: { ...headers, 'X-Parse-Session-Token': user.getSessionToken() },
+          body: JSON.stringify({ count: { __op: 'Increment', amount: 1 } }),
+        });
+      expect((await increment(owner)).data.count).toBe(2);
+      expect((await increment(other)).data.count).toEqual(deleted);
+    });
+
+    it('returns the results of atomic operations of an installation update', async () => {
+      const created = await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/installations`,
+        headers,
+        body: JSON.stringify({
+          installationId: '11111111-2222-3333-4444-555555555555',
+          deviceType: 'ios',
+          channels: ['a'],
+        }),
+      });
+      const response = await request({
+        method: 'PUT',
+        url: `${Parse.serverURL}/installations/${created.data.objectId}`,
+        headers,
+        body: JSON.stringify({
+          channels: { __op: 'AddUnique', objects: ['b'] },
+          badge: { __op: 'Increment', amount: 1 },
+        }),
+      });
+      expect(response.data.channels).toEqual(['a', 'b']);
+      expect(response.data.badge).toBe(1);
+    });
+
+    it('returns the result of an atomic operation to the session owner', async () => {
+      const user = await Parse.User.signUp('owner', 'password');
+      const sessionHeaders = { ...headers, 'X-Parse-Session-Token': user.getSessionToken() };
+      const me = await request({ url: `${Parse.serverURL}/sessions/me`, headers: sessionHeaders });
+      const url = `${Parse.serverURL}/sessions/${me.data.objectId}`;
+      await request({
+        method: 'PUT',
+        url,
+        headers: { ...headers, 'X-Parse-Master-Key': 'test' },
+        body: JSON.stringify({ counter: 1 }),
+      });
+      const response = await request({
+        method: 'PUT',
+        url,
+        headers: sessionHeaders,
+        body: JSON.stringify({ counter: { __op: 'Increment', amount: 1 } }),
+      });
+      expect(response.data.counter).toBe(2);
+    });
+
+    it('does not return a stored value of another user to a writer without read access', async () => {
+      const target = await Parse.User.signUp('target', 'password');
+      const writer = await Parse.User.signUp('writer', 'password');
+      const acl = new Parse.ACL(target);
+      acl.setWriteAccess(writer, true);
+      target.setACL(acl);
+      await target.save(null, { useMasterKey: true });
+      const response = await request({
+        method: 'PUT',
+        url: `${Parse.serverURL}/users/${target.id}`,
+        headers: { ...headers, 'X-Parse-Session-Token': writer.getSessionToken() },
+        body: JSON.stringify({ logins: { __op: 'Increment', amount: 1 } }),
+      });
+      expect(response.data.logins).toEqual(deleted);
     });
   });
 

@@ -1166,6 +1166,7 @@ RestWrite.prototype.createSessionToken = async function () {
 
   if (this.response && this.response.response) {
     this.response.response.sessionToken = sessionData.sessionToken;
+    this.storage.issuedSessionToken = sessionData.sessionToken;
   }
 
   return createSession();
@@ -1773,7 +1774,7 @@ RestWrite.prototype.runDatabaseOperation = function () {
         .then(async result => {
           let response = result;
           if (raw) {
-            this.writtenReadAccess = result._rperm || null;
+            this.writtenReadAccess = result._rperm;
             response = await this.config.database._sanitizeDatabaseResult(this.data, result);
           }
           response.updatedAt = this.updatedAt;
@@ -2157,18 +2158,28 @@ RestWrite.prototype._restoreRevertedPath = function (response, writeData, writte
   response[target] = value === undefined ? { __op: 'Delete' } : value;
 };
 
-// Whether the class and object permissions certainly let the caller read the written object
-RestWrite.prototype._canReadWithoutQuery = function () {
-  // System classes have their own read rules
-  if (this.className.startsWith('_') || this.writtenReadAccess === undefined) {
-    return false;
+// Whether the caller can read the written object, or undefined if only a read can tell
+RestWrite.prototype._readAccessWithoutQuery = function () {
+  const readers = this.writtenReadAccess;
+  if (readers === undefined || (readers !== null && !Array.isArray(readers))) {
+    return undefined;
+  }
+  // afterSave may change the object after the write
+  if (triggers.triggerExists(this.className, triggers.Types.afterSave, this.config.applicationId)) {
+    return undefined;
   }
   const aclGroup = this.runOptions.acl || [];
-  if (!this.validSchemaController.testPermissionsForClassName(this.className, aclGroup, 'get')) {
+  // Every client read applies the object ACL
+  if (readers && !readers.some(reader => aclGroup.includes(reader))) {
     return false;
   }
-  const readers = this.writtenReadAccess;
-  return !readers || readers.some(reader => aclGroup.includes(reader));
+  // System classes have their own read rules
+  if (this.className.startsWith('_')) {
+    return undefined;
+  }
+  if (this.validSchemaController.testPermissionsForClassName(this.className, aclGroup, 'get')) {
+    return true;
+  }
 };
 
 // Returns stored values in an update response only as the caller can read them
@@ -2180,10 +2191,12 @@ RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
   if (this.auth.isMaster || this.auth.isMaintenance) {
     return;
   }
-  // A new session token is issued to the caller, not stored
-  const issued = this.className === '_User' ? ['sessionToken'] : [];
+  // A session token issued by this request is not a stored value
+  const issued = this.storage.issuedSessionToken;
   const fields = Object.keys(response).filter(
-    key => !['objectId', 'createdAt', 'updatedAt', ...issued].includes(key)
+    key =>
+      !['objectId', 'createdAt', 'updatedAt'].includes(key) &&
+      !(key === 'sessionToken' && issued && response[key] === issued)
   );
   if (!fields.length) {
     return;
@@ -2197,28 +2210,33 @@ RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
   const keys = fields.filter(key =>
     reverted.some(path => path === key || path.startsWith(`${key}.`))
   );
-  if (!keys.length && this._canReadWithoutQuery()) {
+  const readable = this._readAccessWithoutQuery();
+  if (readable && !keys.length) {
     return;
   }
   let view;
-  try {
-    const query = await RestQuery({
-      method: RestQuery.Method.get,
-      config: this.config,
-      auth: this.auth,
-      className: this.className,
-      // A session update wraps the addressed objectId
-      restWhere: { objectId: this.query.objectId ?? this.query.$and?.[0]?.objectId },
-      runBeforeFind: false,
-      runAfterFind: false,
-      context: this.context,
-    });
-    view = (await query.execute()).results[0];
-  } catch (error) {
-    // Fails closed; access denial is expected
-    const denied = [Parse.Error.OPERATION_FORBIDDEN, Parse.Error.OBJECT_NOT_FOUND];
-    if (!(error instanceof Parse.Error) || !denied.includes(error.code)) {
-      logger.warn('Failed to read the object for the save response', error);
+  if (readable !== false) {
+    try {
+      const query = await RestQuery({
+        method: RestQuery.Method.get,
+        config: this.config,
+        auth: this.auth,
+        className: this.className,
+        // A session update wraps the addressed objectId
+        restWhere: { objectId: this.query.objectId ?? this.query.$and?.[0]?.objectId },
+        // A secondary may not have the write yet
+        restOptions: { readPreference: 'primary' },
+        runBeforeFind: false,
+        runAfterFind: false,
+        context: this.context,
+      });
+      view = (await query.execute()).results[0];
+    } catch (error) {
+      // Fails closed; access denial is expected
+      const denied = [Parse.Error.OPERATION_FORBIDDEN, Parse.Error.OBJECT_NOT_FOUND];
+      if (!(error instanceof Parse.Error) || !denied.includes(error.code)) {
+        logger.warn('Failed to read the object for the save response', error);
+      }
     }
   }
   if (!view) {
