@@ -10283,6 +10283,49 @@ describe('Vulnerabilities', () => {
       expect(JSON.stringify(response.data)).not.toContain('stored-sub');
     });
 
+    describe('caller with read access', () => {
+      const reads = className => {
+        const DatabaseController = require('../lib/Controllers/DatabaseController');
+        const find = spyOn(DatabaseController.prototype, 'find').and.callThrough();
+        return () => find.calls.allArgs().filter(([name]) => name === className).length;
+      };
+
+      it('does not read the object for an atomic operation on a public object', async () => {
+        const obj = await new Parse.Object('PublicCounter').save({ count: 41 });
+        const readCount = reads('PublicCounter');
+        const response = await request({
+          method: 'PUT',
+          url: `${Parse.serverURL}/classes/PublicCounter/${obj.id}`,
+          headers,
+          body: JSON.stringify({ count: { __op: 'Increment', amount: 1 } }),
+        });
+        expect(response.data.count).toBe(42);
+        expect(readCount()).toBe(0);
+      });
+
+      it('does not read the object for an atomic operation with role read access', async () => {
+        const user = await Parse.User.signUp('roleuser', 'password');
+        const role = new Parse.Role('Readers', new Parse.ACL());
+        role.getUsers().add(user);
+        await role.save(null, { useMasterKey: true });
+        const acl = new Parse.ACL();
+        acl.setPublicWriteAccess(true);
+        acl.setRoleReadAccess('Readers', true);
+        const obj = new Parse.Object('RoleCounter');
+        obj.setACL(acl);
+        await obj.save({ count: 41 }, { useMasterKey: true });
+        const readCount = reads('RoleCounter');
+        const response = await request({
+          method: 'PUT',
+          url: `${Parse.serverURL}/classes/RoleCounter/${obj.id}`,
+          headers: { ...headers, 'X-Parse-Session-Token': user.getSessionToken() },
+          body: JSON.stringify({ count: { __op: 'Increment', amount: 1 } }),
+        });
+        expect(response.data.count).toBe(42);
+        expect(readCount()).toBe(0);
+      });
+    });
+
     it('returns stored values to a user who updates the auth data of a linked provider', async () => {
       await reconfigureServer({
         auth: {
