@@ -593,6 +593,22 @@ class Utils {
     }
     return filename.substring(filename.lastIndexOf('.') + 1);
   }
+
+  /**
+   * @function safeToJSON
+   * @description Serializes a Parse object, returning `undefined` if serialization
+   * throws (for example a pointer left without an object ID by a dot notation write).
+   * Use where a failed serialization must not interrupt control flow, such as logging.
+   * @param {object} object The Parse object to serialize.
+   * @returns {object|undefined} The serialized object, or `undefined` on failure.
+   */
+  static safeToJSON(object) {
+    try {
+      return object.toJSON();
+    } catch {
+      return undefined;
+    }
+  }
 }
 
 module.exports = Utils;
