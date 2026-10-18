@@ -5,6 +5,7 @@
 const RestQuery = require('../lib/RestQuery');
 const Auth = require('../lib/Auth').Auth;
 const Config = require('../lib/Config');
+const request = require('../lib/request');
 
 function testLoadRoles(config, done) {
   const rolesNames = ['FooRole', 'BarRole', 'BazRole'];
@@ -195,6 +196,64 @@ describe('Parse Role testing', () => {
         fail('should succeed');
         done();
       });
+  });
+
+  it('stops role resolution at a cycle through a role with object ID __proto__', async () => {
+    const auth = new Auth({ config: Config.get('test'), isMaster: true });
+    let lookups = 0;
+    spyOn(auth, 'getRolesByIds').and.callFake(async () => {
+      lookups++;
+      if (lookups > 10) {
+        throw new Error('Role resolution did not stop at the cycle.');
+      }
+      return [{ objectId: '__proto__', name: 'CyclicRole' }];
+    });
+    await expectAsync(
+      auth._getAllRolesNamesForRoleIds(['__proto__'], ['CyclicRole'])
+    ).toBeResolvedTo(['CyclicRole']);
+    expect(lookups).toBe(1);
+  });
+
+  it('resolves the roles of a member of a self-cyclic role with object ID __proto__', async () => {
+    await reconfigureServer({ allowCustomObjectId: true });
+    const user = await createTestUser();
+    await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/_Role',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+        'Content-Type': 'application/json',
+      },
+      body: {
+        objectId: '__proto__',
+        name: 'CyclicRole',
+        ACL: {},
+        users: {
+          __op: 'AddRelation',
+          objects: [{ __type: 'Pointer', className: '_User', objectId: user.id }],
+        },
+        roles: {
+          __op: 'AddRelation',
+          objects: [{ __type: 'Pointer', className: '_Role', objectId: '__proto__' }],
+        },
+      },
+    });
+    const getRolesForUser = spyOn(Auth.prototype, 'getRolesForUser').and.callThrough();
+    const getRolesByIds = Auth.prototype.getRolesByIds;
+    let lookups = 0;
+    spyOn(Auth.prototype, 'getRolesByIds').and.callFake(async function (...args) {
+      lookups++;
+      if (lookups > 10) {
+        throw new Error('Role resolution did not stop at the cycle.');
+      }
+      return getRolesByIds.apply(this, args);
+    });
+    await expectAsync(
+      new Parse.Query('TestObject').find({ sessionToken: user.getSessionToken() })
+    ).toBeResolved();
+    expect(getRolesForUser).toHaveBeenCalled();
+    expect(lookups).toBeLessThanOrEqual(1);
   });
 
   it('should recursively load roles', done => {

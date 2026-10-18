@@ -512,7 +512,7 @@ module.exports.ParseServerOptions = {
   },
   protectedFieldsSaveResponseExempt: {
     env: 'PARSE_SERVER_PROTECTED_FIELDS_SAVE_RESPONSE_EXEMPT',
-    help: 'Whether save operation responses (create, update) are exempt from `protectedFields`. If `true` (default), protected fields modified during a save are included in the response to the client. If `false`, protected fields are stripped from save responses, consistent with how they are stripped from query results. Defaults to `true`.',
+    help: 'Whether save operation responses (create, update) are exempt from `protectedFields`. If `true` (default), protected fields modified during a save are included in the response to the client. If `false`, protected fields are stripped from save responses, consistent with how they are stripped from query results. Independently of this option, an update response contains stored field values only if the client can read the object, unless an `afterSave` trigger returns a plain object as the response. Defaults to `true`.',
     action: parsers.booleanParser,
     default: true,
   },

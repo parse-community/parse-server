@@ -662,7 +662,14 @@ export class MongoStorageAdapter implements StorageAdapter {
           session: transactionalSession || undefined,
         })
       )
-      .then(result => mongoObjectToParseObject(className, result, schema))
+      .then(result => {
+        const object = mongoObjectToParseObject(className, result, schema);
+        // Reports the read access of an object without ACL
+        if (object && object._rperm === undefined) {
+          object._rperm = null;
+        }
+        return object;
+      })
       .catch(error => {
         if (error.code === 11000) {
           logger.error('Duplicate key error:', error.message);
