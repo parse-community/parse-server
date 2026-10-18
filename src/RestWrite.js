@@ -1956,10 +1956,17 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
   }
 
   const { originalObject, updatedObject } = this.buildParseObjects();
-  updatedObject._handleSaveResponse(
-    this.cloneWithFileUrls(this.response.response),
-    this.response.status || 200
-  );
+  // Drop response keys that remove a pointer's object ID (e.g. a reverted dot
+  // notation key below a pointer), so applying the response cannot strip the ID
+  // off the trigger object and break its serialization.
+  const responseForTrigger = this.cloneWithFileUrls(this.response.response);
+  const pointerRoot = this._dotNotationFieldRoot();
+  for (const key of Object.keys(responseForTrigger)) {
+    if (key.indexOf('.') > 0 && targetsPointerId(pointerRoot, key)) {
+      delete responseForTrigger[key];
+    }
+  }
+  updatedObject._handleSaveResponse(responseForTrigger, this.response.status || 200);
 
   if (hasLiveQuery) {
     this.config.database
@@ -2036,6 +2043,21 @@ RestWrite.prototype.sanitizedData = function () {
   return Parse._decode(undefined, data);
 };
 
+// A raw view of the object's fields (stored values overlaid with whole-field
+// writes in this request) used to resolve whether a dot notation key targets a
+// pointer's object ID.
+RestWrite.prototype._dotNotationFieldRoot = function () {
+  const root = Object.assign({}, this.originalData);
+  if (this.data) {
+    for (const key of Object.keys(this.data)) {
+      if (key.indexOf('.') < 0) {
+        root[key] = this.data[key];
+      }
+    }
+  }
+  return root;
+};
+
 // Returns an updated copy of the object
 RestWrite.prototype.buildParseObjects = function () {
   const extraData = { className: this.className, objectId: this.query?.objectId };
@@ -2062,11 +2084,14 @@ RestWrite.prototype.buildParseObjects = function () {
     }
   }
   const updatedObject = triggers.inflate(extraData, this.originalData);
+  const pointerRoot = this._dotNotationFieldRoot();
   Object.keys(this.data).reduce(function (data, key) {
     if (key.indexOf('.') > 0) {
       // Null and undefined are set at their own dot notation path, like an operation
       if (data[key] == null || typeof data[key].__op === 'string') {
-        if (!readOnlyAttributes.includes(key)) {
+        // A dot notation key that removes a pointer's object ID would leave the
+        // pointer unserializable and break the trigger object, so skip it.
+        if (!readOnlyAttributes.includes(key) && !targetsPointerId(pointerRoot, key)) {
           // The SDK key name rules apply to top-level fields only
           updatedObject.set(key, data[key], { ignoreValidation: true });
         }
@@ -2157,6 +2182,22 @@ const getOwnPath = (object, path) => {
     value = value[key];
   }
   return value;
+};
+
+// Whether a dot notation key targets a pointer's object ID (`id`/`objectId`).
+// Removing it leaves the pointer unserializable (`toPointer` throws), which
+// corrupts the trigger object; other sub-keys below a pointer are left to the
+// existing handling.
+const targetsPointerId = (root, key) => {
+  const segments = key.split('.');
+  for (let depth = 1; depth < segments.length; depth++) {
+    const parent = getOwnPath(root, segments.slice(0, depth));
+    if (parent !== null && typeof parent === 'object' && parent.__type === 'Pointer') {
+      const next = segments[depth];
+      return next === 'id' || next === 'objectId';
+    }
+  }
+  return false;
 };
 
 // Restores a reverted dot notation key in the response
