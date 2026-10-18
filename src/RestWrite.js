@@ -165,7 +165,7 @@ RestWrite.prototype.execute = function () {
       return this.cleanUserAuthData();
     })
     .then(() => {
-      return this.filterRevertedFieldsInResponse();
+      return this.filterUnreadableFieldsInResponse();
     })
     .then(() => {
       // Append the authDataResponse if exists
@@ -1166,6 +1166,7 @@ RestWrite.prototype.createSessionToken = async function () {
 
   if (this.response && this.response.response) {
     this.response.response.sessionToken = sessionData.sessionToken;
+    this.storage.issuedSessionToken = sessionData.sessionToken;
   }
 
   return createSession();
@@ -1754,13 +1755,15 @@ RestWrite.prototype.runDatabaseOperation = function () {
 
     return defer.then(() => {
       // Run an update
+      // The unsanitized result of a client update carries the read access of the object
+      const raw = !this.runOptions.many && !this.auth.isMaster && !this.auth.isMaintenance;
       return this.config.database
         .update(
           this.className,
           this.query,
           this.data,
           this.runOptions,
-          false,
+          raw,
           false,
           this.validSchemaController
         )
@@ -1768,7 +1771,12 @@ RestWrite.prototype.runDatabaseOperation = function () {
           this._throwIfAuthDataDuplicate(error);
           throw error;
         })
-        .then(response => {
+        .then(async result => {
+          let response = result;
+          if (raw) {
+            this.writtenReadAccess = result._rperm;
+            response = await this.config.database._sanitizeDatabaseResult(this.data, result);
+          }
           response.updatedAt = this.updatedAt;
           this._updateResponseWithData(response, this.data);
           this.response = { response };
@@ -1931,6 +1939,8 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
     .then(result => {
       const jsonReturned = result && !result._toFullJSON;
       if (jsonReturned) {
+        // The returned object is the response as is
+        this.storage.responseFromTrigger = true;
         this.pendingOps.operations = {};
         this.response.response = result;
       } else {
@@ -2148,43 +2158,99 @@ RestWrite.prototype._restoreRevertedPath = function (response, writeData, writte
   response[target] = value === undefined ? { __op: 'Delete' } : value;
 };
 
-// Returns reverted fields of an update only as the caller can read them
-RestWrite.prototype.filterRevertedFieldsInResponse = async function () {
+// Whether the caller can read the written object, or undefined if only a read can tell
+RestWrite.prototype._readAccessWithoutQuery = function () {
+  const readers = this.writtenReadAccess;
+  if (readers === undefined || (readers !== null && !Array.isArray(readers))) {
+    return undefined;
+  }
+  const aclGroup = this.runOptions.acl || [];
+  // Every client read applies the object ACL
+  if (readers && !readers.some(reader => aclGroup.includes(reader))) {
+    return false;
+  }
+  // afterSave may change the object after the write
+  if (triggers.triggerExists(this.className, triggers.Types.afterSave, this.config.applicationId)) {
+    return undefined;
+  }
+  // System classes have their own read rules
+  if (this.className.startsWith('_')) {
+    return undefined;
+  }
+  if (this.validSchemaController.testPermissionsForClassName(this.className, aclGroup, 'get')) {
+    return true;
+  }
+};
+
+// Returns stored values in an update response only as the caller can read them
+RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
   const response = this.response?.response;
-  if (!this.query || !response || !this.pendingOps.operations) {
+  if (!this.query || !response || this.storage.responseFromTrigger) {
     return;
   }
   if (this.auth.isMaster || this.auth.isMaintenance) {
     return;
   }
-  const stateController = Parse.CoreManager.getObjectStateController();
-  const [pending] = stateController.getPendingOps(this.pendingOps.identifier);
-  const reverted = Object.keys(this.pendingOps.operations).filter(key => !pending[key]);
-  const keys = Object.keys(response).filter(key =>
+  // A session token issued by this request is not a stored value
+  const issued = this.storage.issuedSessionToken;
+  const fields = Object.keys(response).filter(
+    key =>
+      !['objectId', 'createdAt', 'updatedAt'].includes(key) &&
+      !(key === 'sessionToken' && issued && response[key] === issued)
+  );
+  if (!fields.length) {
+    return;
+  }
+  let reverted = [];
+  if (this.pendingOps.operations) {
+    const stateController = Parse.CoreManager.getObjectStateController();
+    const [pending] = stateController.getPendingOps(this.pendingOps.identifier);
+    reverted = Object.keys(this.pendingOps.operations).filter(key => !pending[key]);
+  }
+  const keys = fields.filter(key =>
     reverted.some(path => path === key || path.startsWith(`${key}.`))
   );
-  if (!keys.length) {
+  const readable = this._readAccessWithoutQuery();
+  if (readable && !keys.length) {
     return;
   }
   let view;
-  try {
-    const query = await RestQuery({
-      method: RestQuery.Method.get,
-      config: this.config,
-      auth: this.auth,
-      className: this.className,
-      restWhere: { objectId: this.query.objectId },
-      runBeforeFind: false,
-      runAfterFind: false,
-      context: this.context,
-    });
-    view = (await query.execute()).results[0];
-  } catch (error) {
-    // Fails closed; access denial is expected
-    const denied = [Parse.Error.OPERATION_FORBIDDEN, Parse.Error.OBJECT_NOT_FOUND];
-    if (!(error instanceof Parse.Error) || !denied.includes(error.code)) {
-      logger.warn('Failed to read reverted fields for the save response', error);
+  if (readable !== false) {
+    try {
+      const query = await RestQuery({
+        method: RestQuery.Method.get,
+        config: this.config,
+        auth: this.auth,
+        className: this.className,
+        // A session update wraps the addressed objectId
+        restWhere: { objectId: this.query.objectId ?? this.query.$and?.[0]?.objectId },
+        // A secondary may not have the write yet
+        restOptions: { readPreference: 'primary' },
+        runBeforeFind: false,
+        runAfterFind: false,
+        context: this.context,
+      });
+      view = (await query.execute()).results[0];
+    } catch (error) {
+      // Fails closed; access denial is expected
+      const denied = [Parse.Error.OPERATION_FORBIDDEN, Parse.Error.OBJECT_NOT_FOUND];
+      if (!(error instanceof Parse.Error) || !denied.includes(error.code)) {
+        logger.warn('Failed to read the object for the save response', error);
+      }
     }
+  }
+  if (!view) {
+    // No stored values for a caller who cannot read the object
+    for (const key of fields) {
+      delete response[key];
+    }
+    for (const field of new Set(fields.map(key => key.split('.')[0]))) {
+      // The SDK cannot apply an operation to ACL
+      if (field !== 'ACL') {
+        response[field] = { __op: 'Delete' };
+      }
+    }
+    return;
   }
   for (const key of keys) {
     // Removed beneath a key the caller cannot read
