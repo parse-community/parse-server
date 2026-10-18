@@ -1,3 +1,10 @@
+## [8.6.109](https://github.com/parse-community/parse-server/compare/8.6.108...8.6.109) (2026-10-18)
+
+
+### Bug Fixes
+
+* Object update returns stored field values to a caller without read access ([GHSA-2rcp-jc67-vq74](https://github.com/parse-community/parse-server/security/advisories/GHSA-2rcp-jc67-vq74)) ([#10799](https://github.com/parse-community/parse-server/issues/10799)) ([2750e78](https://github.com/parse-community/parse-server/commit/2750e7876f191492c19ef4495b0168f15b2541a6))
+
 ## [8.6.108](https://github.com/parse-community/parse-server/compare/8.6.107...8.6.108) (2026-10-15)
 
 
