@@ -1972,6 +1972,854 @@ describe('Cloud Code', () => {
     expect(obj.get('foo')).toBe('bar');
   });
 
+  it('before save can revert a dot notation operation without skipping afterSave', async () => {
+    const obj = await new Parse.Object('BeforeSaveRevert').save({
+      field: { sub: 'original', other: 1 },
+      count: 0,
+    });
+    Parse.Cloud.beforeSave('BeforeSaveRevert', ({ object }) => {
+      object.revert('field.sub');
+    });
+    const afterSave = jasmine.createSpy('afterSave');
+    Parse.Cloud.afterSave('BeforeSaveRevert', afterSave);
+
+    const response = await request({
+      method: 'PUT',
+      url: `http://localhost:8378/1/classes/BeforeSaveRevert/${obj.id}`,
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+      body: {
+        'field.sub': { __op: 'Delete' },
+        'field.other': { __op: 'Increment', amount: 1 },
+        count: { __op: 'Increment', amount: 1 },
+      },
+    }).catch(error => error);
+
+    expect(response.status).toBe(200);
+    expect(response.data['field.sub']).toBe('original');
+    expect(afterSave).toHaveBeenCalledTimes(1);
+    if (afterSave.calls.count()) {
+      const { object, original } = afterSave.calls.first().args[0];
+      expect(object.get('field')).toEqual({ sub: 'original', other: 2 });
+      expect(object.get('count')).toBe(1);
+      expect(original.get('field')).toEqual({ sub: 'original', other: 1 });
+    }
+    await obj.fetch();
+    expect(obj.get('field')).toEqual({ sub: 'original', other: 2 });
+    expect(obj.get('count')).toBe(1);
+  });
+
+  describe('before save reverts dot notation operations', () => {
+    let liveQueryClient;
+
+    afterEach(async () => {
+      await liveQueryClient?.close();
+      liveQueryClient = undefined;
+    });
+
+    const putObject = (className, objectId, body) =>
+      request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/classes/${className}/${objectId}`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+        body,
+      }).catch(error => error);
+
+    for (const withAfterSave of [false, true]) {
+      for (const change of ['replace', 'remove child', 'unset']) {
+        it(`preserves a beforeSave parent ${change} with afterSave=${withAfterSave}`, async () => {
+          const original = { sub: 'original', other: 1 };
+          const replacement = change === 'replace' ? { sub: 'replacement', other: 2 } : { other: 2 };
+          const expected = change === 'unset' ? undefined : replacement;
+          const obj = await new Parse.Object('BeforeSaveRevert').save({ field: { ...original }, count: 0 });
+          Parse.Cloud.beforeSave('BeforeSaveRevert', ({ object }) => {
+            object.revert('field.sub');
+            if (change === 'unset') {
+              object.unset('field');
+            } else {
+              object.set('field', replacement);
+            }
+          });
+          const afterSave = jasmine.createSpy('afterSave');
+          if (withAfterSave) {
+            Parse.Cloud.afterSave('BeforeSaveRevert', afterSave);
+          }
+
+          obj.unset('field.sub');
+          obj.increment('count');
+          await obj.save();
+
+          expect(obj.get('field')).toEqual(expected);
+          expect(obj.get('count')).toBe(1);
+          if (withAfterSave) {
+            expect(afterSave).toHaveBeenCalledTimes(1);
+            const { object, original: originalObject } = afterSave.calls.first().args[0];
+            expect(object.get('field')).toEqual(expected);
+            expect(originalObject.get('field')).toEqual(original);
+          }
+          await obj.fetch();
+          expect(obj.get('field')).toEqual(expected);
+          expect(obj.get('count')).toBe(1);
+        });
+      }
+    }
+
+    for (const change of ['replace', 'remove child', 'unset']) {
+      for (const transport of ['SDK', 'REST']) {
+        it(`preserves an afterSave parent ${change} in the ${transport} response`, async () => {
+          const original = { sub: 'response-secret', other: 1 };
+          const replacement = change === 'replace' ? { sub: 'redacted', other: 1 } : { other: 1 };
+          const expected = change === 'unset' ? undefined : replacement;
+          const obj = await new Parse.Object('BeforeSaveRevert').save({ field: { ...original }, count: 0 });
+          Parse.Cloud.beforeSave('BeforeSaveRevert', ({ object }) => {
+            object.revert('field.sub');
+          });
+          Parse.Cloud.afterSave('BeforeSaveRevert', ({ object }) => {
+            expect(object.get('field')).toEqual(original);
+            if (change === 'unset') {
+              object.unset('field');
+            } else {
+              object.set('field', replacement);
+            }
+          });
+
+          if (transport === 'SDK') {
+            obj.unset('field.sub');
+            obj.increment('count');
+            await obj.save();
+            expect(obj.get('field')).toEqual(expected);
+            expect(obj.get('count')).toBe(1);
+          } else {
+            const response = await putObject('BeforeSaveRevert', obj.id, {
+              'field.sub': { __op: 'Delete' },
+              count: { __op: 'Increment', amount: 1 },
+            });
+            expect(response.status).toBe(200);
+            expect(JSON.stringify(response.data)).not.toContain('response-secret');
+            expect(response.data.field).toEqual(expected || { __op: 'Delete' });
+          }
+          await obj.fetch();
+          expect(obj.get('field')).toEqual(original);
+          expect(obj.get('count')).toBe(1);
+        });
+      }
+    }
+
+    for (const returned of ['request object', 'clone']) {
+      it(`preserves an afterSave parent replacement in a returned ${returned}`, async () => {
+        const original = { sub: 'response-secret', other: 1 };
+        const obj = await new Parse.Object('BeforeSaveRevert').save({ field: { ...original }, count: 0 });
+        Parse.Cloud.beforeSave('BeforeSaveRevert', ({ object }) => {
+          object.revert('field.sub');
+        });
+        Parse.Cloud.afterSave('BeforeSaveRevert', ({ object }) => {
+          const result = returned === 'clone' ? object.clone() : object;
+          result.set('field', 'redacted');
+          return result;
+        });
+
+        const response = await putObject('BeforeSaveRevert', obj.id, {
+          'field.sub': { __op: 'Delete' },
+          count: { __op: 'Increment', amount: 1 },
+        });
+        expect(response.status).toBe(200);
+        expect(JSON.stringify(response.data)).not.toContain('response-secret');
+
+        obj.unset('field.sub');
+        obj.increment('count');
+        await obj.save();
+        expect(obj.get('field')).toBe('redacted');
+        expect(obj.get('count')).toBe(2);
+        await obj.fetch();
+        expect(obj.get('field')).toEqual(original);
+      });
+    }
+
+    it('restores a reverted dot notation key when afterSave returns an object without the field', async () => {
+      const obj = await new Parse.Object('BeforeSaveRevert').save({
+        field: { sub: 'stored', other: 1 },
+        count: 0,
+      });
+      Parse.Cloud.beforeSave('BeforeSaveRevert', ({ object }) => {
+        object.revert('field.sub');
+      });
+      Parse.Cloud.afterSave('BeforeSaveRevert', ({ object }) =>
+        new Parse.Query('BeforeSaveRevert').select('count').get(object.id, { useMasterKey: true })
+      );
+
+      obj.unset('field.sub');
+      obj.increment('count');
+      await obj.save();
+      expect(obj.get('field')).toEqual({ sub: 'stored', other: 1 });
+
+      obj.increment('count');
+      await obj.save();
+      await obj.fetch();
+      expect(obj.get('field')).toEqual({ sub: 'stored', other: 1 });
+      expect(obj.get('count')).toBe(2);
+    });
+
+    for (const change of ['replace', 'unset']) {
+      it(`preserves a beforeSave intermediate parent ${change}`, async () => {
+        const obj = await new Parse.Object('BeforeSaveRevert').save({
+          field: { nested: { sub: 'original', other: 1 }, sibling: 'unchanged' },
+        });
+        Parse.Cloud.beforeSave('BeforeSaveRevert', ({ object }) => {
+          object.revert('field.nested.sub');
+          if (change === 'unset') {
+            object.unset('field.nested');
+          } else {
+            object.set('field.nested', { sub: 'replacement', other: 2 });
+          }
+        });
+        const afterSave = jasmine.createSpy('afterSave');
+        Parse.Cloud.afterSave('BeforeSaveRevert', afterSave);
+        obj.unset('field.nested.sub');
+        await obj.save();
+
+        const expected = { sibling: 'unchanged' };
+        if (change !== 'unset') {
+          expected.nested = { sub: 'replacement', other: 2 };
+        }
+        expect(obj.get('field')).toEqual(expected);
+        expect(afterSave).toHaveBeenCalledTimes(1);
+        expect(afterSave.calls.first().args[0].object.get('field')).toEqual(expected);
+        await obj.fetch();
+        expect(obj.get('field')).toEqual(expected);
+      });
+    }
+
+    // Postgres stores an op on a dot notation key literally
+    for (const withAfterSave of [false, true]) {
+      it_only_db('mongo')(`preserves a computed beforeSave ancestor with afterSave=${withAfterSave}`, async () => {
+        const obj = await new Parse.Object('BeforeSaveRevert').save({
+          field: { nested: [{ sub: 'original' }], sibling: 'unchanged' },
+        });
+        Parse.Cloud.beforeSave('BeforeSaveRevert', ({ object }) => {
+          object.revert('field.nested.0.sub');
+          object.add('field.nested', { sub: 'added' });
+        });
+        const afterSave = jasmine.createSpy('afterSave');
+        if (withAfterSave) {
+          Parse.Cloud.afterSave('BeforeSaveRevert', afterSave);
+        }
+        obj.unset('field.nested.0.sub');
+        await obj.save();
+
+        const expected = { nested: [{ sub: 'original' }, { sub: 'added' }], sibling: 'unchanged' };
+        expect(obj.get('field')).toEqual(expected);
+        if (withAfterSave) {
+          expect(afterSave).toHaveBeenCalledTimes(1);
+          expect(afterSave.calls.first().args[0].object.get('field')).toEqual(expected);
+        }
+        await obj.fetch();
+        expect(obj.get('field')).toEqual(expected);
+      });
+    }
+
+    for (const change of ['unset child', 'unset intermediate parent', 'null', 'pointer']) {
+      it(`preserves an afterSave ${change} with multiple reverted children`, async () => {
+        const original = { nested: { a: 'secret-a', b: 'secret-b' }, sibling: 'unchanged' };
+        const obj = await new Parse.Object('BeforeSaveRevert').save({ field: structuredClone(original) });
+        const pointer = change === 'pointer' ? await new Parse.Object('Target').save() : undefined;
+        Parse.Cloud.beforeSave('BeforeSaveRevert', ({ object }) => {
+          object.revert('field.nested.a', 'field.nested.b');
+        });
+        Parse.Cloud.afterSave('BeforeSaveRevert', ({ object }) => {
+          if (change === 'unset child') {
+            object.unset('field.nested.a');
+          } else if (change === 'unset intermediate parent') {
+            object.unset('field.nested');
+          } else {
+            object.set('field', pointer || null);
+          }
+        });
+        obj.unset('field.nested.a');
+        obj.unset('field.nested.b');
+        await obj.save();
+
+        if (change === 'unset child') {
+          expect(obj.get('field')).toEqual({ nested: { b: 'secret-b' }, sibling: 'unchanged' });
+        } else if (change === 'unset intermediate parent') {
+          expect(obj.get('field')).toEqual({ sibling: 'unchanged' });
+        } else if (change === 'pointer') {
+          expect(obj.get('field').id).toBe(pointer.id);
+          expect(obj.get('field').className).toBe('Target');
+        } else {
+          expect(obj.get('field')).toBeNull();
+        }
+        await obj.fetch();
+        expect(obj.get('field')).toEqual(original);
+      });
+    }
+
+    const cases = [
+      { name: 'Delete on a string', value: 'original', op: { __op: 'Delete' } },
+      { name: 'Delete on zero', value: 0, op: { __op: 'Delete' } },
+      { name: 'Delete on false', value: false, op: { __op: 'Delete' } },
+      { name: 'Delete on null', value: null, op: { __op: 'Delete' } },
+      { name: 'Delete on an object', value: { nested: 'original' }, op: { __op: 'Delete' } },
+      { name: 'Increment', value: 5, op: { __op: 'Increment', amount: 1 } },
+      { name: 'Add', value: ['original'], op: { __op: 'Add', objects: ['new'] } },
+      { name: 'AddUnique', value: ['original'], op: { __op: 'AddUnique', objects: ['new'] } },
+      { name: 'Remove', value: ['original'], op: { __op: 'Remove', objects: ['original'] } },
+      { name: 'Increment on a missing field', op: { __op: 'Increment', amount: 1 } },
+    ];
+
+    for (const { name, value, op } of cases) {
+      it(`restores the SDK and afterSave object for ${name}`, async () => {
+        const field = { other: 'unchanged' };
+        if (value !== undefined) {
+          field.sub = value;
+        }
+        const obj = await new Parse.Object('BeforeSaveRevert').save({ field });
+        Parse.Cloud.beforeSave('BeforeSaveRevert', ({ object }) => {
+          object.revert('field.sub');
+        });
+        const afterSave = jasmine.createSpy('afterSave');
+        Parse.Cloud.afterSave('BeforeSaveRevert', afterSave);
+
+        obj.set('field.sub', op);
+        await obj.save();
+
+        expect(obj.get('field')).toEqual(field);
+        expect(afterSave).toHaveBeenCalledTimes(1);
+        expect(afterSave.calls.first().args[0].object.get('field')).toEqual(field);
+        await obj.fetch();
+        expect(obj.get('field')).toEqual(field);
+      });
+    }
+
+    it('restores a deeply nested field without an afterSave trigger', async () => {
+      const field = { nested: { sub: 5, other: 'unchanged' } };
+      const obj = await new Parse.Object('BeforeSaveRevert').save({ field });
+      Parse.Cloud.beforeSave('BeforeSaveRevert', ({ object }) => {
+        object.revert('field.nested.sub');
+      });
+
+      obj.increment('field.nested.sub');
+      await obj.save();
+
+      expect(obj.get('field')).toEqual(field);
+      await obj.fetch();
+      expect(obj.get('field')).toEqual(field);
+    });
+
+    it('reverts all operations on a new object', async () => {
+      Parse.Cloud.beforeSave('BeforeSaveRevert', ({ object }) => {
+        object.revert();
+      });
+      const afterSave = jasmine.createSpy('afterSave');
+      Parse.Cloud.afterSave('BeforeSaveRevert', afterSave);
+      const obj = new Parse.Object('BeforeSaveRevert');
+      obj.increment('field.sub');
+      obj.increment('count');
+      await obj.save();
+
+      expect(obj.get('field')).toBeUndefined();
+      expect(obj.get('count')).toBeUndefined();
+      expect(afterSave).toHaveBeenCalledTimes(1);
+      expect(afterSave.calls.first().args[0].object.get('field')).toBeUndefined();
+      await obj.fetch();
+      expect(obj.get('field')).toBeUndefined();
+      expect(obj.get('count')).toBeUndefined();
+    });
+
+    it('reverts a dot notation operation on an installation pointer', async () => {
+      const pointer = await new Parse.Object('Target').save();
+      const obj = await new Parse.Object('_Installation').save({
+        deviceType: 'ios',
+        deviceToken: '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306',
+        field: pointer,
+      });
+      Parse.Cloud.beforeSave('_Installation', ({ object }) => {
+        object.revert('field.sub');
+      });
+      const afterSave = jasmine.createSpy('afterSave');
+      Parse.Cloud.afterSave('_Installation', afterSave);
+
+      const response = await putObject('_Installation', obj.id, { 'field.sub': { __op: 'Delete' } });
+
+      expect(response.status).toBe(200);
+      expect(response.data['field.sub']).toEqual({ __op: 'Delete' });
+      expect(afterSave).toHaveBeenCalledTimes(1);
+      expect(afterSave.calls.first().args[0].object.get('field').id).toBe(pointer.id);
+      await obj.fetch({ useMasterKey: true });
+      expect(obj.get('field').id).toBe(pointer.id);
+    });
+
+    it('reverts an ACL change on an object without an ACL', async () => {
+      const obj = await new Parse.Object('BeforeSaveRevert').save({ count: 0 });
+      Parse.Cloud.beforeSave('BeforeSaveRevert', ({ object }) => {
+        object.revert('ACL');
+      });
+
+      obj.setACL(new Parse.ACL({ '*': { read: true, write: true } }));
+      obj.increment('count');
+      await obj.save();
+      expect(obj.get('count')).toBe(1);
+
+      const response = await putObject('BeforeSaveRevert', obj.id, {
+        ACL: { '*': { read: true } },
+        count: { __op: 'Increment', amount: 1 },
+      });
+      expect(response.status).toBe(200);
+      expect(response.data.ACL).toBeUndefined();
+      await obj.fetch();
+      expect(obj.getACL()).toBeNull();
+      expect(obj.get('count')).toBe(2);
+    });
+
+    for (const { name, className, create, withAfterSave } of [
+      { name: 'a create', className: 'BeforeSaveRevert', create: true, withAfterSave: false },
+      { name: 'a create with afterSave', className: 'BeforeSaveRevert', create: true, withAfterSave: true },
+      { name: 'an update with afterSave', className: 'BeforeSaveRevert', create: false, withAfterSave: true },
+      { name: 'an update with LiveQuery', className: 'TestObject', create: false, withAfterSave: false },
+    ]) {
+      it(`reverts an ACL change without a stored ACL on ${name}`, async () => {
+        const obj = create
+          ? new Parse.Object(className)
+          : await new Parse.Object(className).save({ count: 0 });
+        Parse.Cloud.beforeSave(className, ({ object }) => {
+          object.revert('ACL');
+        });
+        const afterSave = jasmine.createSpy('afterSave');
+        if (withAfterSave) {
+          Parse.Cloud.afterSave(className, afterSave);
+        }
+
+        obj.setACL(new Parse.ACL({ '*': { read: true, write: true } }));
+        obj.increment('count');
+        await obj.save();
+
+        expect(obj.get('count')).toBe(1);
+        expect(afterSave).toHaveBeenCalledTimes(withAfterSave ? 1 : 0);
+        const stored = await new Parse.Query(className).get(obj.id, { useMasterKey: true });
+        expect(stored.getACL()).toBeNull();
+        expect(stored.get('count')).toBe(1);
+      });
+    }
+
+    it('reverts a dot notation ACL operation on a new object', async () => {
+      Parse.Cloud.beforeSave('BeforeSaveRevert', ({ object }) => {
+        object.revert('ACL.role');
+      });
+      const afterSave = jasmine.createSpy('afterSave');
+      Parse.Cloud.afterSave('BeforeSaveRevert', afterSave);
+
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/classes/BeforeSaveRevert',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+        body: { 'ACL.role': { __op: 'Delete' }, count: 1 },
+      }).catch(error => error);
+
+      expect(response.status).toBe(201);
+      expect(response.data.ACL).toBeUndefined();
+      expect(afterSave).toHaveBeenCalledTimes(1);
+    });
+
+    it('reverts a dot notation ACL operation without a stored ACL', async () => {
+      const obj = await new Parse.Object('BeforeSaveRevert').save({ count: 0 });
+      Parse.Cloud.beforeSave('BeforeSaveRevert', ({ object }) => {
+        object.revert('ACL.role');
+      });
+      const afterSave = jasmine.createSpy('afterSave');
+      Parse.Cloud.afterSave('BeforeSaveRevert', afterSave);
+
+      const response = await putObject('BeforeSaveRevert', obj.id, {
+        'ACL.role': { __op: 'Delete' },
+        count: { __op: 'Increment', amount: 1 },
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.data.ACL).toBeUndefined();
+      expect(afterSave).toHaveBeenCalledTimes(1);
+      await obj.fetch();
+      expect(obj.getACL()).toBeNull();
+      expect(obj.get('count')).toBe(1);
+    });
+
+    // Postgres returns a null field as undefined
+    it_only_db('mongo')('reverts a dot notation operation beneath a null parent', async () => {
+      const obj = await new Parse.Object('BeforeSaveRevert').save({ field: null, count: 0 });
+      Parse.Cloud.beforeSave('BeforeSaveRevert', ({ object }) => {
+        object.revert('field.sub');
+      });
+      const afterSave = jasmine.createSpy('afterSave');
+      Parse.Cloud.afterSave('BeforeSaveRevert', afterSave);
+
+      const response = await putObject('BeforeSaveRevert', obj.id, {
+        'field.sub': { __op: 'Delete' },
+        count: { __op: 'Increment', amount: 1 },
+      });
+
+      expect(response.status).toBe(200);
+      expect(afterSave).toHaveBeenCalledTimes(1);
+      expect(afterSave.calls.first().args[0].object.get('field')).toBeNull();
+      await obj.fetch();
+      expect(obj.get('field')).toBeNull();
+      expect(obj.get('count')).toBe(1);
+    });
+
+    for (const { parent, field, key } of [
+      { parent: 'string', field: 'original', key: 'sub' },
+      { parent: 'object', field: { sub: 'original' }, key: 'toString' },
+    ]) {
+      it(`reverts a dot notation operation on a built-in ${parent} property name`, async () => {
+        const obj = await new Parse.Object('BeforeSaveRevert').save({ field, count: 0 });
+        Parse.Cloud.beforeSave('BeforeSaveRevert', ({ object }) => {
+          object.revert(`field.${key}`);
+        });
+        const afterSave = jasmine.createSpy('afterSave');
+        Parse.Cloud.afterSave('BeforeSaveRevert', afterSave);
+
+        const response = await putObject('BeforeSaveRevert', obj.id, {
+          [`field.${key}`]: { __op: 'Delete' },
+          count: { __op: 'Increment', amount: 1 },
+        });
+
+        expect(response.status).toBe(200);
+        expect(afterSave).toHaveBeenCalledTimes(1);
+        expect(afterSave.calls.first().args[0].object.get('field')).toEqual(field);
+        await obj.fetch();
+        expect(obj.get('field')).toEqual(field);
+        expect(obj.get('count')).toBe(1);
+      });
+    }
+
+    it('does not create a missing parent when reverting a dot notation operation', async () => {
+      const obj = await new Parse.Object('BeforeSaveRevert').save({ other: { x: 1 }, count: 0 });
+      Parse.Cloud.beforeSave('BeforeSaveRevert', ({ object }) => {
+        object.revert('field.sub', 'other.a.b');
+      });
+      const afterSave = jasmine.createSpy('afterSave');
+      Parse.Cloud.afterSave('BeforeSaveRevert', afterSave);
+
+      obj.increment('field.sub');
+      obj.increment('other.a.b');
+      obj.increment('count');
+      await obj.save();
+
+      expect(obj.get('field')).toBeUndefined();
+      expect(obj.get('other')).toEqual({ x: 1 });
+      expect(afterSave).toHaveBeenCalledTimes(1);
+      const { object } = afterSave.calls.first().args[0];
+      expect(object.get('field')).toBeUndefined();
+      expect(object.get('other')).toEqual({ x: 1 });
+      await obj.fetch();
+      expect(obj.get('field')).toBeUndefined();
+      expect(obj.get('other')).toEqual({ x: 1 });
+      expect(obj.get('count')).toBe(1);
+    });
+
+    it('reverts a dot notation operation beneath a parent that another key creates', async () => {
+      const obj = await new Parse.Object('BeforeSaveRevert').save({ prefs: { x: 1 } });
+      Parse.Cloud.beforeSave('BeforeSaveRevert', ({ object }) => {
+        object.revert('prefs.a.c');
+      });
+
+      obj.increment('prefs.a.c');
+      obj.set('prefs.a.d', null);
+      await obj.save();
+
+      expect(obj.get('prefs')).toEqual({ x: 1, a: { d: null } });
+      await obj.fetch();
+      expect(obj.get('prefs')).toEqual({ x: 1, a: { d: null } });
+    });
+
+    it('reverts dot notation operations beneath a missing parent beside a null sibling', async () => {
+      await new Parse.Object('BeforeSaveRevert').save({ prefs: { z: 1 } });
+      const obj = await new Parse.Object('BeforeSaveRevert').save({ count: 0 });
+      Parse.Cloud.beforeSave('BeforeSaveRevert', ({ object }) => {
+        object.revert('prefs.a', 'prefs.c.d');
+      });
+
+      obj.increment('prefs.a');
+      obj.increment('prefs.c.d');
+      obj.set('prefs.b', null);
+      await obj.save();
+
+      expect(obj.get('prefs')).toEqual({ b: null });
+      await obj.fetch();
+      expect(obj.get('prefs')).toEqual({ b: null });
+    });
+
+    it('does not create an intermediate object for nested reverted keys', async () => {
+      const obj = await new Parse.Object('BeforeSaveRevert').save({ field: { a: { x: 1 } } });
+      Parse.Cloud.beforeSave('BeforeSaveRevert', ({ object }) => {
+        object.revert();
+      });
+      const afterSave = jasmine.createSpy('afterSave');
+      Parse.Cloud.afterSave('BeforeSaveRevert', afterSave);
+
+      obj.unset('field.a');
+      obj.increment('field.a.c.d');
+      await obj.save();
+
+      expect(obj.get('field')).toEqual({ a: { x: 1 } });
+      expect(afterSave).toHaveBeenCalledTimes(1);
+      expect(afterSave.calls.first().args[0].object.get('field')).toEqual({ a: { x: 1 } });
+      await obj.fetch();
+      expect(obj.get('field')).toEqual({ a: { x: 1 } });
+    });
+
+    it('restores a reverted index beneath an unchanged computed ancestor', async () => {
+      const obj = await new Parse.Object('BeforeSaveRevert').save({ field: [{ sub: 'a' }] });
+      Parse.Cloud.beforeSave('BeforeSaveRevert', ({ object }) => {
+        object.revert('field.0.sub');
+        object.addUnique('field', { sub: 'a' });
+      });
+
+      obj.unset('field.0.sub');
+      await obj.save();
+      expect(obj.get('field')).toEqual([{ sub: 'a' }]);
+
+      obj.set('count', 1);
+      await obj.save();
+      await obj.fetch();
+      expect(obj.get('field')).toEqual([{ sub: 'a' }]);
+    });
+
+    it('reverts a dot notation operation beside a computed operation that creates the parent', async () => {
+      await new Parse.Object('BeforeSaveRevert').save({ field: { seed: 1 } });
+      const obj = await new Parse.Object('BeforeSaveRevert').save({ count: 0 });
+      Parse.Cloud.beforeSave('BeforeSaveRevert', ({ object }) => {
+        object.revert('field.b');
+      });
+
+      obj.increment('field.a');
+      obj.increment('field.b');
+      await obj.save();
+
+      expect(obj.get('field')).toEqual({ a: 1 });
+      await obj.fetch();
+      expect(obj.get('field')).toEqual({ a: 1 });
+    });
+
+    it('reverts a dot notation operation on a missing array index', async () => {
+      const obj = await new Parse.Object('BeforeSaveRevert').save({ field: [{ sub: 'x' }], count: 0 });
+      Parse.Cloud.beforeSave('BeforeSaveRevert', ({ object }) => {
+        object.revert('field.1.sub');
+      });
+
+      obj.unset('field.1.sub');
+      await obj.save();
+      expect(obj.get('field')).toEqual([{ sub: 'x' }]);
+
+      obj.increment('count');
+      await obj.save();
+      await obj.fetch();
+      expect(obj.get('field')).toEqual([{ sub: 'x' }]);
+      expect(obj.get('count')).toBe(1);
+    });
+
+    it('reverts an operation on a field missing from the stored object', async () => {
+      const obj = await new Parse.Object('BeforeSaveRevert').save({ count: 0 });
+      Parse.Cloud.beforeSave('BeforeSaveRevert', ({ object }) => {
+        object.revert('missing');
+      });
+
+      obj.increment('missing');
+      obj.increment('count');
+      await obj.save();
+
+      expect(obj.get('missing')).toBeUndefined();
+      expect(obj.get('count')).toBe(1);
+      await obj.fetch();
+      expect(obj.get('missing')).toBeUndefined();
+    });
+
+    // Postgres returns a null field as undefined
+    it_only_db('mongo')('preserves a beforeSave parent set to null', async () => {
+      const obj = await new Parse.Object('BeforeSaveRevert').save({ field: { sub: 'original' }, count: 0 });
+      Parse.Cloud.beforeSave('BeforeSaveRevert', ({ object }) => {
+        object.revert('field.sub');
+        object.set('field', null);
+      });
+      const afterSave = jasmine.createSpy('afterSave');
+      Parse.Cloud.afterSave('BeforeSaveRevert', afterSave);
+
+      obj.unset('field.sub');
+      obj.increment('count');
+      await obj.save();
+
+      expect(obj.get('field')).toBeNull();
+      expect(afterSave).toHaveBeenCalledTimes(1);
+      expect(afterSave.calls.first().args[0].object.get('field')).toBeNull();
+      await obj.fetch();
+      expect(obj.get('field')).toBeNull();
+      expect(obj.get('count')).toBe(1);
+    });
+
+    it('delivers a LiveQuery update without an afterSave trigger', async () => {
+      const obj = await new TestObject().save({ field: { sub: 'original' }, count: 0 });
+      Parse.Cloud.beforeSave('TestObject', ({ object }) => {
+        object.revert('field.sub');
+      });
+      liveQueryClient = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+      const subscription = await new Parse.Query('TestObject').equalTo('objectId', obj.id).subscribe();
+      const update = new Promise(resolve => subscription.on('update', resolve));
+      obj.unset('field.sub');
+      obj.increment('count');
+      await obj.save();
+
+      const updatedObject = await update;
+      expect(updatedObject.get('field')).toEqual({ sub: 'original' });
+      expect(updatedObject.get('count')).toBe(1);
+      expect(obj.get('field')).toEqual({ sub: 'original' });
+    });
+
+    it('delivers a LiveQuery update with the beforeSave parent replacement', async () => {
+      const obj = await new TestObject().save({ field: { sub: 'original' }, count: 0 });
+      const replacement = { sub: 'replacement' };
+      Parse.Cloud.beforeSave('TestObject', ({ object }) => {
+        object.revert('field.sub');
+        object.set('field', replacement);
+      });
+      liveQueryClient = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+      const subscription = await new Parse.Query('TestObject').equalTo('objectId', obj.id).subscribe();
+      const update = new Promise(resolve => subscription.on('update', resolve));
+      obj.unset('field.sub');
+      obj.increment('count');
+      await obj.save();
+
+      const updatedObject = await update;
+      expect(updatedObject.get('field')).toEqual(replacement);
+      expect(updatedObject.get('count')).toBe(1);
+      expect(obj.get('field')).toEqual(replacement);
+      await obj.fetch();
+      expect(obj.get('field')).toEqual(replacement);
+    });
+  });
+
+  describe('dot notation values with triggers', () => {
+    let liveQueryClient;
+
+    afterEach(async () => {
+      await liveQueryClient?.close();
+      liveQueryClient = undefined;
+    });
+
+    for (const trigger of ['beforeSave', 'afterSave']) {
+      it(`saves a dot notation null in ${trigger}`, async () => {
+        const obj = await new Parse.Object('DotNotationNull').save({
+          field: { sub: 'original', other: 1 },
+          count: 0,
+        });
+        const hook = jasmine.createSpy(trigger);
+        Parse.Cloud[trigger]('DotNotationNull', hook);
+
+        obj.set('field.sub', null);
+        obj.increment('count');
+        await obj.save();
+
+        expect(hook).toHaveBeenCalledTimes(1);
+        expect(hook.calls.first().args[0].object.get('field')).toEqual({ sub: null, other: 1 });
+        await obj.fetch();
+        expect(obj.get('field')).toEqual({ sub: null, other: 1 });
+        expect(obj.get('count')).toBe(1);
+      });
+    }
+
+    // Postgres replaces the intermediate object of a deep dot notation set
+    it_only_db('mongo')('saves a nested dot notation null with a beforeSave trigger', async () => {
+      const obj = await new Parse.Object('DotNotationNull').save({
+        field: { nested: { sub: 'original', other: 1 } },
+      });
+      Parse.Cloud.beforeSave('DotNotationNull', () => {});
+
+      obj.set('field.nested.sub', null);
+      await obj.save();
+
+      await obj.fetch();
+      expect(obj.get('field')).toEqual({ nested: { sub: null, other: 1 } });
+    });
+
+    for (const { name, op, expected, trigger } of [
+      { name: 'null', op: null, expected: null, trigger: 'afterSave' },
+      { name: 'an increment', op: { __op: 'Increment', amount: 1 }, expected: 2, trigger: 'afterSave' },
+      { name: 'null', op: null, expected: null, trigger: 'beforeSave' },
+      { name: 'an increment', op: { __op: 'Increment', amount: 1 }, expected: 2, trigger: 'beforeSave' },
+    ]) {
+      it(`saves ${name} on a dot notation sub-key with a hyphen in ${trigger}`, async () => {
+        const obj = await new Parse.Object('DotNotationNull').save({ field: { 'a-b': 1, other: 1 } });
+        const hook = jasmine.createSpy(trigger);
+        Parse.Cloud[trigger]('DotNotationNull', hook);
+
+        const response = await request({
+          method: 'PUT',
+          url: `http://localhost:8378/1/classes/DotNotationNull/${obj.id}`,
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+            'Content-Type': 'application/json',
+          },
+          body: { 'field.a-b': op },
+        }).catch(error => error);
+
+        expect(response.status).toBe(200);
+        expect(hook).toHaveBeenCalledTimes(1);
+        expect(hook.calls.first().args[0].object.get('field')).toEqual({ 'a-b': expected, other: 1 });
+        await obj.fetch();
+        expect(obj.get('field')).toEqual({ 'a-b': expected, other: 1 });
+      });
+    }
+
+    it('reverts a dot notation null in beforeSave', async () => {
+      const obj = await new Parse.Object('DotNotationNull').save({ field: { sub: 'original', other: 1 } });
+      Parse.Cloud.beforeSave('DotNotationNull', ({ object }) => {
+        object.revert('field.sub');
+      });
+
+      obj.set('field.sub', null);
+      await obj.save();
+
+      expect(obj.get('field')).toEqual({ sub: 'original', other: 1 });
+      await obj.fetch();
+      expect(obj.get('field')).toEqual({ sub: 'original', other: 1 });
+    });
+
+    it('saves a dot notation key that beforeSave sets to undefined with an afterSave trigger', async () => {
+      const obj = await new Parse.Object('DotNotationNull').save({ field: { sub: 'original' }, count: 0 });
+      Parse.Cloud.beforeSave('DotNotationNull', ({ object }) => {
+        object.set('field.sub', undefined);
+      });
+      const afterSave = jasmine.createSpy('afterSave');
+      Parse.Cloud.afterSave('DotNotationNull', afterSave);
+
+      obj.increment('count');
+      await obj.save();
+
+      expect(afterSave).toHaveBeenCalledTimes(1);
+      await obj.fetch();
+      expect(obj.get('count')).toBe(1);
+    });
+
+    it('delivers a LiveQuery update for a dot notation null', async () => {
+      const obj = await new TestObject().save({ field: { sub: 'original', other: 1 } });
+      liveQueryClient = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+      const subscription = await new Parse.Query('TestObject').equalTo('objectId', obj.id).subscribe();
+      const update = new Promise(resolve => subscription.on('update', resolve));
+      obj.set('field.sub', null);
+      await obj.save();
+
+      const updatedObject = await update;
+      expect(updatedObject.get('field')).toEqual({ sub: null, other: 1 });
+    });
+  });
+
   it('create role with name and ACL and a beforeSave', async () => {
     Parse.Cloud.beforeSave(Parse.Role, ({ object }) => {
       return object;
@@ -2018,6 +2866,29 @@ describe('Cloud Code', () => {
     expect(obj.get('secret')).toBeUndefined();
     await obj.fetch({ useMasterKey: true });
     expect(obj.get('secret')).toBe(true);
+  });
+
+  it('can unset a reverted field in afterSave on update', async () => {
+    const obj = await new TestObject().save({ secret: 'stored' });
+    Parse.Cloud.beforeSave('TestObject', ({ object }) => {
+      object.revert('secret');
+    });
+    Parse.Cloud.afterSave('TestObject', ({ object }) => {
+      object.unset('secret');
+    });
+    const response = await request({
+      method: 'PUT',
+      url: `http://localhost:8378/1/classes/TestObject/${obj.id}`,
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ secret: 'new' }),
+    });
+    expect(response.data.secret).toBeUndefined();
+    await obj.fetch();
+    expect(obj.get('secret')).toBe('stored');
   });
 
   it('should revert in beforeSave', async () => {
@@ -2671,6 +3542,18 @@ describe('beforeFind hooks', () => {
         done();
       });
     });
+  });
+
+  it('should reject malformed query set by beforeFind trigger', async () => {
+    Parse.Cloud.beforeFind('MyObject', req => {
+      req.query.withJSON({ where: { $or: [null] } });
+    });
+    await expectAsync(new Parse.Query('MyObject').find()).toBeRejectedWith(
+      jasmine.objectContaining({
+        code: Parse.Error.INVALID_QUERY,
+        message: 'Bad $or format - use an array of objects.',
+      })
+    );
   });
 
   it('should have object found with nested relational data query', async () => {
@@ -3919,32 +4802,38 @@ describe('afterLogin hook', () => {
     done();
   });
 
-  it('context options should override _context object property when saving a new object', async () => {
-    Parse.Cloud.beforeSave('TestObject', req => {
-      expect(req.context.a).toEqual('a');
-      expect(req.context.hello).not.toBeDefined();
-      expect(req._context).not.toBeDefined();
-      expect(req.object._context).not.toBeDefined();
-      expect(req.object.context).not.toBeDefined();
-    });
-    Parse.Cloud.afterSave('TestObject', req => {
-      expect(req.context.a).toEqual('a');
-      expect(req.context.hello).not.toBeDefined();
-      expect(req._context).not.toBeDefined();
-      expect(req.object._context).not.toBeDefined();
-      expect(req.object.context).not.toBeDefined();
-    });
-    await request({
+  it('rejects a _context object property when saving a new object with header authentication', async () => {
+    const beforeSave = jasmine.createSpy('beforeSave');
+    const afterSave = jasmine.createSpy('afterSave');
+    Parse.Cloud.beforeSave('TestObject', beforeSave);
+    Parse.Cloud.afterSave('TestObject', afterSave);
+    const response = await request({
       url: 'http://localhost:8378/1/classes/TestObject',
       method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
         'X-Parse-Cloud-Context': '{"a":"a"}',
       },
       body: JSON.stringify({ _context: { hello: 'world' } }),
+    }).catch(e => e);
+    expect(response.data).toEqual({
+      code: Parse.Error.INVALID_KEY_NAME,
+      error: 'Invalid field name: _context.',
     });
+    expect(beforeSave).not.toHaveBeenCalled();
+    expect(afterSave).not.toHaveBeenCalled();
+  });
 
+  it('treats a null save context as no context', async () => {
+    const contexts = [];
+    Parse.Cloud.beforeSave('TestObject', req => {
+      contexts.push(req.context);
+    });
+    const obj = await new Parse.Object('TestObject').save({ foo: 'bar' }, { context: null });
+    await obj.save({ foo: 'baz' }, { context: null });
+    expect(contexts).toEqual([{}, {}]);
   });
 
   it('should have access to context when saving a new object', async () => {

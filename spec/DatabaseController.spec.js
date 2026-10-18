@@ -55,6 +55,122 @@ describe('DatabaseController', function () {
       expect(() => validateQuery({ $or: [{ a: 1 }, { b: 2 }] })).not.toThrow();
       done();
     });
+
+    it('rejects falsy or empty logical operator value', () => {
+      const expectInvalidQuery = (query, message) =>
+        expect(() => validateQuery(query))
+          .withContext(JSON.stringify(query))
+          .toThrowMatching(e => e.code === Parse.Error.INVALID_QUERY && e.message === message);
+      for (const value of [null, false, 0, '']) {
+        expectInvalidQuery({ $or: value }, 'Bad $or format - use an array value.');
+        expectInvalidQuery({ $and: value }, 'Bad $and format - use an array value.');
+        expectInvalidQuery({ $nor: value }, 'Bad $nor format - use an array of at least 1 value.');
+      }
+      expectInvalidQuery({ $or: [] }, 'Bad $or format - use an array of at least 1 value.');
+      expectInvalidQuery({ $and: [] }, 'Bad $and format - use an array of at least 1 value.');
+    });
+  });
+
+  describe('validateQueryFormat', function () {
+    const validateQueryFormat = DatabaseController.validateQueryFormat;
+    const expectInvalidQuery = (where, message) =>
+      expect(() => validateQueryFormat(where))
+        .withContext(JSON.stringify(where))
+        .toThrowMatching(e => e.code === Parse.Error.INVALID_QUERY && e.message === message);
+    const expectValidQuery = where =>
+      expect(() => validateQueryFormat(where))
+        .withContext(JSON.stringify(where))
+        .not.toThrow();
+
+    it('rejects logical operator value that is not an array', () => {
+      for (const value of [
+        'x',
+        {},
+        { a: 1 },
+        { 0: { a: 1 }, length: 1 },
+        1,
+        true,
+        null,
+        false,
+        0,
+        '',
+      ]) {
+        expectInvalidQuery({ $or: value }, 'Bad $or format - use an array value.');
+        expectInvalidQuery({ $and: value }, 'Bad $and format - use an array value.');
+        expectInvalidQuery({ $nor: value }, 'Bad $nor format - use an array of at least 1 value.');
+      }
+    });
+
+    it('rejects empty logical operator array', () => {
+      for (const op of ['$or', '$and', '$nor']) {
+        expectInvalidQuery({ [op]: [] }, `Bad ${op} format - use an array of at least 1 value.`);
+      }
+    });
+
+    it('rejects logical operator element that is not an object', () => {
+      for (const op of ['$or', '$and', '$nor']) {
+        for (const value of [[null], [1], ['x'], [true], [[{ a: 1 }]], [{ a: 1 }, null]]) {
+          expectInvalidQuery({ [op]: value }, `Bad ${op} format - use an array of objects.`);
+        }
+      }
+    });
+
+    it('rejects malformed logical operator nested in logical operator', () => {
+      expectInvalidQuery(
+        { $and: [{ $or: [] }] },
+        'Bad $or format - use an array of at least 1 value.'
+      );
+      expectInvalidQuery({ $or: [{ $and: 'x' }] }, 'Bad $and format - use an array value.');
+      expectInvalidQuery({ $or: [{ $nor: [null] }] }, 'Bad $nor format - use an array of objects.');
+    });
+
+    it('rejects $options without $regex', () => {
+      for (const where of [
+        { a: { $options: 'i' } },
+        { a: { $options: 5 } },
+        { $or: [{ a: { $options: 'i' } }] },
+        { $and: [{ $nor: [{ a: { $options: 'i' } }] }] },
+      ]) {
+        expectInvalidQuery(where, '$options requires $regex');
+      }
+    });
+
+    it('accepts well-formed queries', () => {
+      const user = { __type: 'Pointer', className: '_User', objectId: 'u1' };
+      for (const where of [
+        {},
+        { a: 1 },
+        { $or: [{ a: 1 }, { b: 2 }] },
+        { $or: [{}] },
+        { $or: [{}, { a: 1 }] },
+        { $and: [{}, { user }] },
+        { $nor: [{ a: 1 }] },
+        { $or: [[], { a: 1 }] },
+        { $or: [{ $relatedTo: { object: user, key: 'r' } }] },
+        { a: { $regex: '^a', $options: 'i' } },
+        { $or: [{ a: { $regex: '^a', $options: 'i' } }] },
+        { c: { $nearSphere: {} } },
+      ]) {
+        expectValidQuery(where);
+      }
+    });
+
+    it('ignores $options and logical operators inside field operators', () => {
+      for (const where of [
+        { a: { $not: { $options: 'i' } } },
+        { a: { $elemMatch: { $options: 'i' } } },
+        { a: { $eq: { $options: 'i' } } },
+        { a: { $in: [{ $or: 'x' }] } },
+      ]) {
+        expectValidQuery(where);
+      }
+    });
+
+    it('ignores where clause that is not an object', () => {
+      for (const where of [null, 5, 'x']) {
+        expectValidQuery(where);
+      }
+    });
   });
 
   describe('addPointerPermissions', function () {

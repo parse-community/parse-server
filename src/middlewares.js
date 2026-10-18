@@ -184,6 +184,9 @@ export async function handleParseHeaders(req, res, next) {
           }
         }
         delete req.body._context;
+      } else if (req.body._context === null) {
+        // null context is equivalent to no context
+        delete req.body._context;
       }
       if (req.body._ContentType) {
         if (typeof req.body._ContentType !== 'string') {
