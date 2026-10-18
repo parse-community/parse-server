@@ -1956,17 +1956,10 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
   }
 
   const { originalObject, updatedObject } = this.buildParseObjects();
-  // Drop response keys that remove a pointer's object ID (e.g. a reverted dot
-  // notation key below a pointer), so applying the response cannot strip the ID
-  // off the trigger object and break its serialization.
-  const responseForTrigger = this.cloneWithFileUrls(this.response.response);
-  const pointerRoot = this._dotNotationFieldRoot();
-  for (const key of Object.keys(responseForTrigger)) {
-    if (key.indexOf('.') > 0 && targetsPointerId(pointerRoot, key)) {
-      delete responseForTrigger[key];
-    }
-  }
-  updatedObject._handleSaveResponse(responseForTrigger, this.response.status || 200);
+  updatedObject._handleSaveResponse(
+    this.cloneWithFileUrls(this.response.response),
+    this.response.status || 200
+  );
 
   if (hasLiveQuery) {
     this.config.database

@@ -932,6 +932,7 @@ function safeToJSON(parseObject) {
   try {
     return parseObject.toJSON();
   } catch {
+    /* istanbul ignore next: defensive fallback, logging must not break the trigger */
     return undefined;
   }
 }
