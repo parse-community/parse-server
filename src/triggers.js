@@ -1,6 +1,7 @@
 // triggers.js
 import Parse from 'parse/node';
 import { logger } from './logger';
+import Utils from './Utils';
 
 export const Types = {
   beforeLogin: 'beforeLogin',
@@ -908,18 +909,6 @@ async function builtInTriggerValidator(options, request, auth) {
 // Resolves to an object, empty or containing an object key. A beforeSave
 // trigger will set the object key to the rest format object to save.
 // originalParseObject is optional, we only need that for before/afterSave functions
-// Serializes a Parse object for logging only. Serialization can throw (e.g. a
-// pointer left without an object ID by a dot notation write), so it must never
-// prevent the trigger promise from settling; fall back to undefined on failure.
-function safeToJSON(parseObject) {
-  try {
-    return parseObject.toJSON();
-  } catch {
-    /* istanbul ignore next: defensive fallback, logging must not break the trigger */
-    return undefined;
-  }
-}
-
 export function maybeRunTrigger(
   triggerType,
   auth,
@@ -948,7 +937,7 @@ export function maybeRunTrigger(
         logTriggerSuccessBeforeHook(
           triggerType,
           parseObject.className,
-          safeToJSON(parseObject),
+          Utils.safeToJSON(parseObject),
           object,
           auth,
           triggerType.startsWith('after')
@@ -969,7 +958,7 @@ export function maybeRunTrigger(
         logTriggerErrorBeforeHook(
           triggerType,
           parseObject.className,
-          safeToJSON(parseObject),
+          Utils.safeToJSON(parseObject),
           auth,
           error,
           config.logLevels.triggerBeforeError
@@ -1000,7 +989,7 @@ export function maybeRunTrigger(
           logTriggerAfterHook(
             triggerType,
             parseObject.className,
-            safeToJSON(parseObject),
+            Utils.safeToJSON(parseObject),
             auth,
             config.logLevels.triggerAfter
           );
