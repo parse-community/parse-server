@@ -10117,14 +10117,13 @@ describe('Vulnerabilities', () => {
       expect(rejections).toEqual([]);
     });
 
-    it_only_db('mongo')('completes a dot notation null on a pointer id', async () => {
+    it_only_db('mongo')('rejects a dot notation null on a pointer id without crashing', async () => {
+      // GHSA-655c-2xf3-77x9: a null dot notation key below a pointer is now rejected by
+      // schema validation (it previously completed and corrupted the stored pointer).
+      // The request still settles cleanly, with no hang and no unhandled rejection.
       const target = await makeTarget();
       const holder = await makeHolder({ owner: target });
-      let seenOwnerId = 'not-called';
-      Parse.Cloud.afterSave('Holder', req => {
-        const owner = req.object.get('owner');
-        seenOwnerId = owner ? owner.id : null;
-      });
+      Parse.Cloud.afterSave('Holder', () => {});
       const result = await within(
         request({
           method: 'PUT',
@@ -10134,8 +10133,10 @@ describe('Vulnerabilities', () => {
         })
       );
       expect(result.hung).toBeUndefined();
-      expect(result.status).toBe(200);
-      expect(seenOwnerId).toBe(target.id);
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      await holder.fetch({ useMasterKey: true });
+      expect(holder.get('owner').id).toBe(target.id);
       expect(rejections).toEqual([]);
     });
 
@@ -10267,6 +10268,184 @@ describe('Vulnerabilities', () => {
       expect(result.status).toBe(200);
       expect(ownerPointer).toEqual({ __type: 'Pointer', className: 'Target', objectId: target.id });
       expect(rejections).toEqual([]);
+    });
+  });
+
+  describe('(GHSA-655c-2xf3-77x9) Dot notation key with a null value below a non-object field', () => {
+    const serverURL = 'http://localhost:8378/1';
+    const masterHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Master-Key': 'test',
+      'Content-Type': 'application/json',
+    };
+    const clientHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const maintenanceHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Maintenance-Key': 'testing',
+      'Content-Type': 'application/json',
+    };
+
+    const send = (method, path, body, headers = masterHeaders) =>
+      request({ method, url: `${serverURL}${path}`, headers, body: body && JSON.stringify(body) }).then(
+        r => ({ status: r.status, data: r.data }),
+        e => ({ status: e.status, data: e.data })
+      );
+    const put = (id, body, headers) => send('PUT', `/classes/Probe655c/${id}`, body, headers);
+
+    async function setupSchema() {
+      await send('POST', '/schemas/Probe655c', {
+        className: 'Probe655c',
+        fields: {
+          owner: { type: 'Pointer', targetClass: 'Target655c' },
+          count: { type: 'Number' },
+          str: { type: 'String' },
+          obj: { type: 'Object' },
+          arr: { type: 'Array' },
+        },
+      });
+    }
+    const makeTarget = () => new Parse.Object('Target655c').save({ n: 1 }, { useMasterKey: true });
+    async function makeProbe(fields) {
+      const o = new Parse.Object('Probe655c');
+      await o.save(fields, { useMasterKey: true });
+      return o;
+    }
+
+    beforeEach(setupSchema);
+
+    it('rejects a null dot notation key below a Pointer field instead of corrupting it', async () => {
+      const target = await makeTarget();
+      const probe = await makeProbe({ owner: target });
+      const res = await put(probe.id, { 'owner.sub': null });
+      expect(res.status).toBe(400);
+      expect(res.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      await probe.fetch({ useMasterKey: true });
+      expect(probe.get('owner').id).toBe(target.id);
+    });
+
+    it('rejects a null dot notation pointer id key', async () => {
+      const target = await makeTarget();
+      const probe = await makeProbe({ owner: target });
+      const res = await put(probe.id, { 'owner.id': null });
+      expect(res.status).toBe(400);
+      expect(res.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      await probe.fetch({ useMasterKey: true });
+      expect(probe.get('owner').id).toBe(target.id);
+    });
+
+    it('rejects a null dot notation key below a Number field', async () => {
+      const probe = await makeProbe({ count: 5 });
+      const res = await put(probe.id, { 'count.sub': null });
+      expect(res.status).toBe(400);
+      expect(res.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      await probe.fetch({ useMasterKey: true });
+      expect(probe.get('count')).toBe(5);
+    });
+
+    it('rejects a null dot notation key below a String field', async () => {
+      const probe = await makeProbe({ str: 'abc' });
+      const res = await put(probe.id, { 'str.sub': null });
+      expect(res.status).toBe(400);
+      expect(res.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      await probe.fetch({ useMasterKey: true });
+      expect(probe.get('str')).toBe('abc');
+    });
+
+    it('does not make the object unreadable via a null dot notation key below a reserved field', async () => {
+      const probe = await makeProbe({ str: 'abc' });
+      const res = await put(probe.id, { 'createdAt.sub': null });
+      expect(res.status).toBe(400);
+      expect(res.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      const read = await send('GET', `/classes/Probe655c/${probe.id}`);
+      expect(read.status).toBe(200);
+    });
+
+    it('rejects a null dot notation key below the ACL', async () => {
+      const probe = await makeProbe({ str: 'abc' });
+      const res = await put(probe.id, { 'ACL.sub': null });
+      expect(res.status).toBe(400);
+      expect(res.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+    });
+
+    it('rejects a null dot notation key below a Pointer field on create', async () => {
+      const target = await makeTarget();
+      const res = await send('POST', '/classes/Probe655c', {
+        owner: target.toPointer(),
+        'owner.sub': null,
+      });
+      expect(res.status).toBe(400);
+      expect(res.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+    });
+
+    it('rejects the write for a non-master caller on a publicly writable object', async () => {
+      const target = await makeTarget();
+      const probe = new Parse.Object('Probe655c');
+      probe.set('owner', target);
+      probe.setACL(new Parse.ACL({ '*': { read: true, write: true } }));
+      await probe.save(null, { useMasterKey: true });
+      const res = await put(probe.id, { 'owner.sub': null }, clientHeaders);
+      expect(res.status).toBe(400);
+      expect(res.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      await probe.fetch({ useMasterKey: true });
+      expect(probe.get('owner').id).toBe(target.id);
+    });
+
+    it('rejects the write for a maintenance-key caller', async () => {
+      const target = await makeTarget();
+      const probe = await makeProbe({ owner: target });
+      const res = await put(probe.id, { 'owner.sub': null }, maintenanceHeaders);
+      expect(res.status).toBe(400);
+      expect(res.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      await probe.fetch({ useMasterKey: true });
+      expect(probe.get('owner').id).toBe(target.id);
+    });
+
+    it('rejects the write for a class with a beforeSave trigger', async () => {
+      const target = await makeTarget();
+      const probe = await makeProbe({ owner: target });
+      Parse.Cloud.beforeSave('Probe655c', () => {});
+      const res = await put(probe.id, { 'owner.sub': null });
+      expect(res.status).toBe(400);
+      expect(res.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      await probe.fetch({ useMasterKey: true });
+      expect(probe.get('owner').id).toBe(target.id);
+    });
+
+    it('still accepts a null dot notation key below an Object field', async () => {
+      const probe = await makeProbe({ obj: { a: 1 } });
+      const res = await put(probe.id, { 'obj.sub': null });
+      expect(res.status).toBe(200);
+      await probe.fetch({ useMasterKey: true });
+      expect(probe.get('obj')).toEqual({ a: 1, sub: null });
+    });
+
+    it('still accepts setting a whole object field to null', async () => {
+      const probe = await makeProbe({ obj: { a: 1 } });
+      const res = await put(probe.id, { obj: null });
+      expect(res.status).toBe(200);
+      await probe.fetch({ useMasterKey: true });
+      expect(probe.get('obj') ?? null).toBeNull();
+    });
+
+    it_only_db('mongo')('still accepts a null array element by index', async () => {
+      const probe = await makeProbe({ arr: ['x'] });
+      const res = await put(probe.id, { 'arr.0': null });
+      expect(res.status).toBe(200);
+      await probe.fetch({ useMasterKey: true });
+      expect(probe.get('arr')).toEqual([null]);
+    });
+
+    it_only_db('mongo')('still treats a Delete of a dot notation key below a Pointer as a no-op', async () => {
+      const target = await makeTarget();
+      const probe = await makeProbe({ owner: target });
+      const res = await put(probe.id, { 'owner.sub': { __op: 'Delete' } });
+      expect(res.status).toBe(200);
+      await probe.fetch({ useMasterKey: true });
+      expect(probe.get('owner').id).toBe(target.id);
     });
   });
 });
