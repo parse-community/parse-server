@@ -1306,7 +1306,13 @@ export default class SchemaController {
         continue;
       }
       const expected = getType(object[fieldName]);
-      if (!expected) {
+      // A null value and a Delete op have no type, which skips enforceFieldExists and
+      // with it the rule that a dot notation key's parent must be an Object or Array
+      // field. A null value below a non-object field (e.g. a Pointer) is then written
+      // as a sub-document and corrupts the field, so still validate it as for a typed
+      // value. A Delete only removes a sub-path and is a no-op here.
+      const isNullDotNotationKey = object[fieldName] === null && fieldName.indexOf('.') > 0;
+      if (!expected && !isNullDotNotationKey) {
         continue;
       }
       if (fieldName === 'ACL') {
