@@ -11428,4 +11428,131 @@ describe('Vulnerabilities', () => {
       expect(probe.get('owner').id).toBe(target.id);
     });
   });
+
+  describe('(GHSA-2j2x-c587-q33g) Session upgrade with an already revocable session token', () => {
+    const serverURL = 'http://localhost:8378/1';
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const masterHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Master-Key': 'test',
+      'Content-Type': 'application/json',
+    };
+    const publicCLP = {
+      find: { '*': true },
+      count: { '*': true },
+      get: { '*': true },
+      create: { '*': true },
+      update: { '*': true },
+      delete: { '*': true },
+      addField: { '*': true },
+      protectedFields: { '*': [] },
+    };
+    const send = (path, sessionToken, body) =>
+      request({
+        method: 'POST',
+        url: `${serverURL}${path}`,
+        headers: {
+          ...headers,
+          'X-Parse-Session-Token': sessionToken,
+          'X-Parse-Installation-Id': 'other-installation',
+        },
+        body,
+      }).then(
+        r => ({ status: r.status, data: r.data }),
+        e => ({ status: e.status, data: e.data })
+      );
+    const upgrade = sessionToken => send('/upgradeToRevocableSession', sessionToken);
+    const upgradeInBatch = sessionToken =>
+      send('/batch', sessionToken, {
+        requests: [{ method: 'POST', path: '/1/upgradeToRevocableSession' }],
+      });
+    const countSessions = user =>
+      new Parse.Query('_Session').equalTo('user', user).count({ useMasterKey: true });
+
+    it('returns the current session without creating a session', async () => {
+      const user = await Parse.User.signUp('user', 'password');
+      const count = await countSessions(user);
+      const response = await upgrade(user.getSessionToken());
+      expect(response.status).toBe(200);
+      expect(response.data.sessionToken).toBe(user.getSessionToken());
+      expect(await countSessions(user)).toBe(count);
+    });
+
+    it('does not create a session when the _Session create class-level permission does not permit it', async () => {
+      const user = await Parse.User.signUp('user', 'password');
+      await request({
+        method: 'PUT',
+        url: `${serverURL}/schemas/_Session`,
+        headers: masterHeaders,
+        body: { classLevelPermissions: { ...publicCLP, create: {} } },
+      });
+      const count = await countSessions(user);
+      const response = await upgrade(user.getSessionToken());
+      expect(response.data.sessionToken).toBe(user.getSessionToken());
+      expect(await countSessions(user)).toBe(count);
+    });
+
+    it('returns the current session without creating a session in a batch request', async () => {
+      const user = await Parse.User.signUp('user', 'password');
+      const count = await countSessions(user);
+      const response = await upgradeInBatch(user.getSessionToken());
+      expect(response.data[0].success?.sessionToken).toBe(user.getSessionToken());
+      expect(await countSessions(user)).toBe(count);
+    });
+
+    it('does not upgrade a session token without the revocable prefix in a batch request', async () => {
+      const user = await Parse.User.signUp('user', 'password');
+      await request({
+        method: 'POST',
+        url: `${serverURL}/classes/_Session`,
+        headers: masterHeaders,
+        body: {
+          user: { __type: 'Pointer', className: '_User', objectId: user.id },
+          sessionToken: 'master-created-token',
+        },
+      });
+      const count = await countSessions(user);
+      const response = await upgradeInBatch('master-created-token');
+      expect(response.data[0].success?.sessionToken).toBe('master-created-token');
+      expect(await countSessions(user)).toBe(count);
+    });
+
+    it('does not create a session for a session token whose session no longer exists', async () => {
+      const user = await Parse.User.signUp('user', 'password');
+      const sessionToken = user.getSessionToken();
+      // Cache the authentication of the session token, then delete the session without clearing the cache
+      await request({
+        url: `${serverURL}/users/me`,
+        headers: { ...headers, 'X-Parse-Session-Token': sessionToken },
+      });
+      await Config.get('test').database.destroy('_Session', { sessionToken });
+      const response = await upgrade(sessionToken);
+      expect(response.data.code).toBe(Parse.Error.INVALID_SESSION_TOKEN);
+      expect(await countSessions(user)).toBe(0);
+    });
+
+    it('applies the _Session protected fields to the returned session', async () => {
+      await reconfigureServer({
+        protectedFields: { _Session: { '*': ['createdWith', 'installationId'] } },
+      });
+      const user = await Parse.User.signUp('user', 'password');
+      const response = await upgrade(user.getSessionToken());
+      expect(response.data.sessionToken).toBe(user.getSessionToken());
+      expect(response.data.createdWith).toBeUndefined();
+      expect(response.data.installationId).toBeUndefined();
+    });
+
+    it('keeps the session token when the JS SDK upgrades a revocable session', async () => {
+      const user = await Parse.User.signUp('user', 'password');
+      const sessionToken = user.getSessionToken();
+      const count = await countSessions(user);
+      await user._upgradeToRevocableSession();
+      expect(user.getSessionToken()).toBe(sessionToken);
+      expect(await countSessions(user)).toBe(count);
+    });
+  });
 });
