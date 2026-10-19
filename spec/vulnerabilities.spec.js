@@ -10050,4 +10050,223 @@ describe('Vulnerabilities', () => {
       expect(polluted).toEqual([]);
     });
   });
+
+  describe('(GHSA-wc3c-6843-q7mv) Dot notation key below a pointer field with an afterSave trigger', () => {
+    const serverURL = 'http://localhost:8378/1';
+    const masterHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Master-Key': 'test',
+      'Content-Type': 'application/json',
+    };
+    const clientHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+
+    let rejections;
+    const onRejection = reason => rejections.push(reason);
+    beforeEach(() => {
+      rejections = [];
+      process.on('unhandledRejection', onRejection);
+    });
+    afterEach(() => {
+      process.removeListener('unhandledRejection', onRejection);
+    });
+
+    // Resolves with the response, or with { hung: true } if the request does not complete in time.
+    const within = (promise, ms = 7000) =>
+      Promise.race([
+        promise.then(
+          r => ({ status: r.status, data: r.data }),
+          e => ({ status: e.status, data: e.data })
+        ),
+        new Promise(resolve => setTimeout(() => resolve({ hung: true }), ms)),
+      ]);
+
+    async function makeTarget() {
+      const target = new Parse.Object('Target');
+      await target.save({ n: 1 }, { useMasterKey: true });
+      return target;
+    }
+    async function makeHolder(fields) {
+      const holder = new Parse.Object('Holder');
+      await holder.save(fields, { useMasterKey: true });
+      return holder;
+    }
+
+    it_only_db('mongo')('completes a dot notation delete of a pointer id', async () => {
+      const target = await makeTarget();
+      const holder = await makeHolder({ owner: target });
+      let seenOwnerId = 'not-called';
+      Parse.Cloud.afterSave('Holder', req => {
+        const owner = req.object.get('owner');
+        seenOwnerId = owner ? owner.id : null;
+      });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/Holder/${holder.id}`,
+          headers: masterHeaders,
+          body: JSON.stringify({ 'owner.id': { __op: 'Delete' } }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(200);
+      expect(seenOwnerId).toBe(target.id);
+      expect(rejections).toEqual([]);
+    });
+
+    it_only_db('mongo')('completes a dot notation null on a pointer id', async () => {
+      const target = await makeTarget();
+      const holder = await makeHolder({ owner: target });
+      let seenOwnerId = 'not-called';
+      Parse.Cloud.afterSave('Holder', req => {
+        const owner = req.object.get('owner');
+        seenOwnerId = owner ? owner.id : null;
+      });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/Holder/${holder.id}`,
+          headers: masterHeaders,
+          body: JSON.stringify({ 'owner.id': null }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(200);
+      expect(seenOwnerId).toBe(target.id);
+      expect(rejections).toEqual([]);
+    });
+
+    it('completes when beforeSave reverts a dot notation key below a pointer', async () => {
+      const target = await makeTarget();
+      const holder = await makeHolder({ owner: target });
+      Parse.Cloud.beforeSave('Holder', ({ object }) => {
+        object.revert('owner.id');
+      });
+      let seenOwnerId = 'not-called';
+      Parse.Cloud.afterSave('Holder', req => {
+        const owner = req.object.get('owner');
+        seenOwnerId = owner ? owner.id : null;
+      });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/Holder/${holder.id}`,
+          headers: masterHeaders,
+          body: JSON.stringify({ 'owner.id': { __op: 'Delete' } }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(200);
+      expect(seenOwnerId).toBe(target.id);
+      expect(rejections).toEqual([]);
+    });
+
+    it('completes a dot notation delete of a nested pointer id', async () => {
+      const target = await makeTarget();
+      const holder = await makeHolder({ meta: { ptr: target.toPointer() } });
+      Parse.Cloud.afterSave('Holder', () => {});
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/Holder/${holder.id}`,
+          headers: masterHeaders,
+          body: JSON.stringify({ 'meta.ptr.id': { __op: 'Delete' } }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(200);
+      expect(rejections).toEqual([]);
+    });
+
+    it('still deletes a dot notation key below a plain object field', async () => {
+      const holder = await makeHolder({ meta: { note: 'keep', other: 'x' } });
+      let seenMeta = 'not-called';
+      Parse.Cloud.afterSave('Holder', req => {
+        seenMeta = req.object.get('meta');
+      });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/Holder/${holder.id}`,
+          headers: masterHeaders,
+          body: JSON.stringify({ 'meta.note': { __op: 'Delete' } }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(200);
+      expect(seenMeta).toEqual({ other: 'x' });
+      expect(rejections).toEqual([]);
+    });
+
+    it_only_db('mongo')('completes a dot notation delete of a pointer id in a batch request', async () => {
+      const target = await makeTarget();
+      const holder = await makeHolder({ owner: target });
+      Parse.Cloud.afterSave('Holder', () => {});
+      const result = await within(
+        request({
+          method: 'POST',
+          url: `${serverURL}/batch`,
+          headers: masterHeaders,
+          body: JSON.stringify({
+            requests: [
+              {
+                method: 'PUT',
+                path: `/1/classes/Holder/${holder.id}`,
+                body: { 'owner.id': { __op: 'Delete' } },
+              },
+            ],
+          }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(200);
+      expect(result.data[0].success).toBeDefined();
+      expect(rejections).toEqual([]);
+    });
+
+    it_only_db('mongo')('completes for a non-master caller on a publicly writable object', async () => {
+      const target = await makeTarget();
+      const holder = new Parse.Object('Holder');
+      holder.set('owner', target);
+      holder.setACL(new Parse.ACL({ '*': { read: true, write: true } }));
+      await holder.save(null, { useMasterKey: true });
+      Parse.Cloud.afterSave('Holder', () => {});
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/Holder/${holder.id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({ 'owner.id': { __op: 'Delete' } }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(200);
+      expect(rejections).toEqual([]);
+    });
+
+    it_only_db('mongo')('passes the stored pointer to the afterSave trigger unchanged', async () => {
+      const target = await makeTarget();
+      const holder = await makeHolder({ owner: target });
+      let ownerPointer = 'not-called';
+      Parse.Cloud.afterSave('Holder', req => {
+        const owner = req.object.get('owner');
+        ownerPointer = owner ? owner.toPointer() : null;
+      });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/Holder/${holder.id}`,
+          headers: masterHeaders,
+          body: JSON.stringify({ 'owner.id': { __op: 'Delete' }, label: 'x' }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(200);
+      expect(ownerPointer).toEqual({ __type: 'Pointer', className: 'Target', objectId: target.id });
+      expect(rejections).toEqual([]);
+    });
+  });
 });
