@@ -1,3 +1,10 @@
+## [9.10.6-alpha.3](https://github.com/parse-community/parse-server/compare/9.10.6-alpha.2...9.10.6-alpha.3) (2026-10-19)
+
+
+### Bug Fixes
+
+* Object write with a null dot notation key can corrupt a field or make reads fail on MongoDB ([GHSA-655c-2xf3-77x9](https://github.com/parse-community/parse-server/security/advisories/GHSA-655c-2xf3-77x9)) ([#10804](https://github.com/parse-community/parse-server/issues/10804)) ([b405b63](https://github.com/parse-community/parse-server/commit/b405b637a6adaff21ac27d2b4cf4c164ce54e39a))
+
 ## [9.10.6-alpha.2](https://github.com/parse-community/parse-server/compare/9.10.6-alpha.1...9.10.6-alpha.2) (2026-10-19)
 
 
