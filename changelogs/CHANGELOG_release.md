@@ -1,3 +1,10 @@
+## [8.6.110](https://github.com/parse-community/parse-server/compare/8.6.109...8.6.110) (2026-10-19)
+
+
+### Bug Fixes
+
+* Object update with a dot notation key below a pointer field can terminate the server process ([GHSA-wc3c-6843-q7mv](https://github.com/parse-community/parse-server/security/advisories/GHSA-wc3c-6843-q7mv)) ([#10803](https://github.com/parse-community/parse-server/issues/10803)) ([9318856](https://github.com/parse-community/parse-server/commit/9318856495ed221d0f02045fc0f87e2f08ac2bca))
+
 ## [8.6.109](https://github.com/parse-community/parse-server/compare/8.6.108...8.6.109) (2026-10-18)
 
 
