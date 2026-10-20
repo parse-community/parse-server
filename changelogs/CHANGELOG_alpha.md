@@ -1,3 +1,10 @@
+## [9.10.6-alpha.5](https://github.com/parse-community/parse-server/compare/9.10.6-alpha.4...9.10.6-alpha.5) (2026-10-20)
+
+
+### Bug Fixes
+
+* Object write with a crafted dot notation key can pollute a shared prototype when the class has a trigger or LiveQuery ([GHSA-95hp-82c6-25q5](https://github.com/parse-community/parse-server/security/advisories/GHSA-95hp-82c6-25q5)) ([#10810](https://github.com/parse-community/parse-server/issues/10810)) ([9e3da78](https://github.com/parse-community/parse-server/commit/9e3da782be8e2225a06d87851ee450da6a0b57a4))
+
 ## [9.10.6-alpha.4](https://github.com/parse-community/parse-server/compare/9.10.6-alpha.3...9.10.6-alpha.4) (2026-10-20)
 
 
