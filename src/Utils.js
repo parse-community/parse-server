@@ -8,16 +8,6 @@ const path = require('path');
 const fs = require('fs').promises;
 const { types } = require('util');
 
-// Members inherited by stored objects and arrays. A dot notation key whose
-// non-leaf segment is one of these descends through the prototype chain when
-// the key is applied to the stored value, so the final segment is written onto
-// a shared built-in instead of a stored sub-object. Primitive values are not
-// included: a dot notation key cannot descend through one.
-const PROTOTYPE_MEMBERS = new Set([
-  ...Object.getOwnPropertyNames(Object.prototype),
-  ...Object.getOwnPropertyNames(Array.prototype),
-]);
-
 /**
  * The general purpose utilities.
  */
@@ -449,22 +439,6 @@ class Utils {
         const match = Utils.objectContainsKeyValue(data, keyword.key, keyword.value);
         if (match) {
           throw `Prohibited keyword in request data: ${JSON.stringify(keyword)}.`;
-        }
-      }
-    }
-    // A dot notation key whose non-leaf segment names a member inherited from
-    // `Object.prototype` descends through the prototype chain and writes onto a
-    // shared built-in, so reject it regardless of the configured denylist.
-    if (data && typeof data === 'object') {
-      for (const key of Object.keys(data)) {
-        if (key.indexOf('.') < 0) {
-          continue;
-        }
-        const segments = key.split('.');
-        for (let i = 0; i < segments.length - 1; i++) {
-          if (PROTOTYPE_MEMBERS.has(segments[i])) {
-            throw `Prohibited dot notation key in request data: ${JSON.stringify(key)}.`;
-          }
         }
       }
     }

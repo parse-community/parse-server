@@ -11283,6 +11283,11 @@ describe('Vulnerabilities', () => {
         ['Object.prototype.toString', Object.prototype.toString],
         ['Object.prototype.hasOwnProperty', Object.prototype.hasOwnProperty],
         ['Object.prototype.valueOf', Object.prototype.valueOf],
+        ['Array.prototype.push', Array.prototype.push],
+        ['Array.prototype.map', Array.prototype.map],
+        ['Parse.Object.prototype.get', Parse.Object.prototype.get],
+        ['Parse.GeoPoint.prototype.toJSON', Parse.GeoPoint.prototype.toJSON],
+        ['Date.prototype.getTime', Date.prototype.getTime],
       ];
       const polluted = [];
       for (const [name, target] of targets) {
@@ -11398,14 +11403,316 @@ describe('Vulnerabilities', () => {
       expect(protoStateAndRestore()).toEqual([]);
     });
 
-    it('rejects the dangerous key even without a trigger, so it can never be stored and later read', async () => {
-      const id = await seed('GHSA95hpStore', { data: { x: 1 } });
+    it('rejects a create whose dot notation key uses an inherited member even without a trigger', async () => {
       const result = await within(
+        request({
+          method: 'POST',
+          url: `${serverURL}/classes/GHSA95hpCreateNoTrigger`,
+          headers: clientHeaders,
+          body: JSON.stringify({ data: { x: 1 }, 'data.toString.call': 1 }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    // Without a trigger or LiveQuery no trigger object is built, so the update is applied
+    // by the database as nested own keys; reading it back must not touch anything shared.
+    it('stores an update without a trigger as own keys that read back safely', async () => {
+      const id = await seed('GHSA95hpStore', { data: { x: 1 } });
+      const update = await within(
         request({
           method: 'PUT',
           url: `${serverURL}/classes/GHSA95hpStore/${id}`,
           headers: clientHeaders,
           body: JSON.stringify({ 'data.toString.call': { __op: 'Increment', amount: 1 } }),
+        })
+      );
+      expect(update.hung).toBeUndefined();
+      expect(update.status).toBe(200);
+      expect(protoStateAndRestore()).toEqual([]);
+      Parse.Cloud.afterFind('GHSA95hpStore', req => req.objects);
+      const read = await within(
+        request({
+          method: 'GET',
+          url: `${serverURL}/classes/GHSA95hpStore/${id}`,
+          headers: masterHeaders,
+        })
+      );
+      expect(read.hung).toBeUndefined();
+      expect(read.status).toBe(200);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    // Stored before its container, the key is inflated first and never resolved through it
+    it('does not resolve a dot notation key created without its container through a container added later', async () => {
+      const create = await within(
+        request({
+          method: 'POST',
+          url: `${serverURL}/classes/GHSA95hpLater`,
+          headers: clientHeaders,
+          body: JSON.stringify({ 'data.toString.call': 1 }),
+        })
+      );
+      expect(create.status).toBe(201);
+      const id = create.data.objectId;
+      const addContainer = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpLater/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({ data: { x: 1 } }),
+        })
+      );
+      expect(addContainer.status).toBe(200);
+      Parse.Cloud.afterFind('GHSA95hpLater', req => req.objects);
+      const later = await within(
+        request({
+          method: 'GET',
+          url: `${serverURL}/classes/GHSA95hpLater/${id}`,
+          headers: masterHeaders,
+        })
+      );
+      expect(later.hung).toBeUndefined();
+      expect(later.status).toBe(200);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    // The trigger object is built from the stored object before the other fields of the
+    // request are applied, so the stored container decides even when the request replaces it.
+    it('rejects a dot notation key through a stored array when the same request replaces the field', async () => {
+      Parse.Cloud.afterSave('GHSA95hpReplace', () => {});
+      const id = await seed('GHSA95hpReplace', { data: { list: [1] } });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpReplace/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({ data: { list: {} }, 'data.list.push.call': { __op: 'Increment', amount: 1 } }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    it('rejects a dot notation key through a stored object when the same request sets the field to null', async () => {
+      Parse.Cloud.afterSave('GHSA95hpNullField', () => {});
+      const id = await seed('GHSA95hpNullField', { data: { x: 1 } });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpNullField/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({ data: null, 'data.toString.call': { __op: 'Increment', amount: 1 } }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    it('rejects a dot notation key through a stored object when the same request deletes the field', async () => {
+      Parse.Cloud.afterSave('GHSA95hpDeleteField', () => {});
+      const id = await seed('GHSA95hpDeleteField', { data: { x: 1 } });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpDeleteField/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({ data: { __op: 'Delete' }, 'data.toString.call': { __op: 'Increment', amount: 1 } }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    // Only the types the SDK decodes to instances are special; any other tagged object is a plain object
+    it('still applies a dot notation operation through a nested object with a custom type tag', async () => {
+      Parse.Cloud.afterSave('GHSA95hpCustomTag', () => {});
+      const id = await seed('GHSA95hpCustomTag', { data: { item: { __type: 'product', specs: { weight: 1 } } } });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpCustomTag/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({ 'data.item.specs.weight': { __op: 'Increment', amount: 1 } }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(200);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    it('still applies a dot notation operation through a nested pointer-shaped object without a class name', async () => {
+      Parse.Cloud.afterSave('GHSA95hpNoClassName', () => {});
+      const id = await seed('GHSA95hpNoClassName', {
+        data: { item: { __type: 'Pointer', objectId: 'abc', specs: { weight: 1 } } },
+      });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpNoClassName/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({ 'data.item.specs.weight': { __op: 'Increment', amount: 1 } }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(200);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    // Another dot notation key of the same request can create the container a key descends
+    it('rejects a dot notation key through an object another key of the request writes', async () => {
+      Parse.Cloud.afterSave('GHSA95hpSiblingObject', () => {});
+      const id = await seed('GHSA95hpSiblingObject', { data: { x: 1 } });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpSiblingObject/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({
+            'data.sub': { y: 1 },
+            'data.sub.toString.call': { __op: 'Increment', amount: 1 },
+          }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    it('rejects a dot notation key through an array another key of the request writes', async () => {
+      Parse.Cloud.afterSave('GHSA95hpSiblingArray', () => {});
+      const id = await seed('GHSA95hpSiblingArray', { data: { x: 1 } });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpSiblingArray/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({
+            'data.list': [1],
+            'data.list.push.call': { __op: 'Increment', amount: 1 },
+          }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    it('rejects a dot notation key through an array an operation of the request adds', async () => {
+      Parse.Cloud.afterSave('GHSA95hpSiblingAddUnique', () => {});
+      const id = await seed('GHSA95hpSiblingAddUnique', { data: { x: 1 } });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpSiblingAddUnique/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({
+            'data.list': { __op: 'AddUnique', objects: [1] },
+            'data.list.push.call': { __op: 'Increment', amount: 1 },
+          }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    it('rejects a dot notation key through a date another key of the request writes', async () => {
+      Parse.Cloud.afterSave('GHSA95hpSiblingDate', () => {});
+      const id = await seed('GHSA95hpSiblingDate', { data: { x: 1 } });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpSiblingDate/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({
+            'data.when': { __type: 'Date', iso: '2026-01-01T00:00:00.000Z' },
+            'data.when.getTime.call': { __op: 'Increment', amount: 1 },
+          }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    // MongoDB rejects two update operators on overlapping paths in one update
+    it_only_db('postgres')('still applies a dot notation operation through an own key of an object another key of the request writes', async () => {
+      Parse.Cloud.afterSave('GHSA95hpSiblingOwn', () => {});
+      const id = await seed('GHSA95hpSiblingOwn', { data: { x: 1 } });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpSiblingOwn/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({
+            'data.sub': { n: 1 },
+            'data.sub.n': { __op: 'Increment', amount: 1 },
+          }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(200);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    // A stored operation object decodes to an instance whose prototype a further segment walks
+    it('rejects a dot notation key that descends into a stored operation object', async () => {
+      Parse.Cloud.afterSave('GHSA95hpStoredOp', () => {});
+      const id = await seed('GHSA95hpStoredOp', { data: { inner: { __op: 'Delete' } } });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpStoredOp/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({ 'data.inner.toString.call': null }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    it('rejects a dot notation key that descends into a stored operation object through an operation method', async () => {
+      Parse.Cloud.afterSave('GHSA95hpStoredOpMethod', () => {});
+      const id = await seed('GHSA95hpStoredOpMethod', { data: { inner: { __op: 'Delete' } } });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpStoredOpMethod/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({ 'data.inner.applyTo.call': { __op: 'Increment', amount: 1 } }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    it('rejects a dot notation key that descends into a stored object with a non-string operation key', async () => {
+      Parse.Cloud.afterSave('GHSA95hpStoredOpKey', () => {});
+      const id = await seed('GHSA95hpStoredOpKey', { data: { inner: { __op: 1 } } });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpStoredOpKey/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({ 'data.inner.toString.call': { __op: 'Increment', amount: 1 } }),
         })
       );
       expect(result.hung).toBeUndefined();
@@ -11498,6 +11805,160 @@ describe('Vulnerabilities', () => {
           url: `${serverURL}/classes/GHSA95hpLeaf/${id}`,
           headers: clientHeaders,
           body: JSON.stringify({ 'data.toString': 5 }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(200);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    // A nested object key may share its name with an inherited member; it is an own
+    // key of the stored value, so the write descends into it and nothing shared is touched.
+    for (const name of ['keys', 'find', 'map', 'length', 'filter']) {
+      it(`still applies a dot notation operation through a nested object key named ${name}`, async () => {
+        const className = `GHSA95hpOwn${name}`;
+        Parse.Cloud.afterSave(className, () => {});
+        const id = await seed(className, { data: { [name]: { n: 1 } } });
+        const result = await within(
+          request({
+            method: 'PUT',
+            url: `${serverURL}/classes/${className}/${id}`,
+            headers: clientHeaders,
+            body: JSON.stringify({ [`data.${name}.n`]: { __op: 'Increment', amount: 1 } }),
+          })
+        );
+        expect(result.hung).toBeUndefined();
+        expect(result.status).toBe(200);
+        expect(protoStateAndRestore()).toEqual([]);
+      });
+    }
+
+    it('still applies a dot notation operation through a stored own key named toString', async () => {
+      Parse.Cloud.afterSave('GHSA95hpOwnToString', () => {});
+      const id = await seed('GHSA95hpOwnToString', { data: { toString: { call: 1 } } });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpOwnToString/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({ 'data.toString.call': { __op: 'Increment', amount: 1 } }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(200);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    // Nested operations two levels deep are only applied by MongoDB
+    it_only_db('mongo')('persists a dot notation operation through a nested object key and an array index', async () => {
+      Parse.Cloud.afterSave('GHSA95hpPersist', () => {});
+      const id = await seed('GHSA95hpPersist', { data: { keys: { n: 1 }, list: [1, 2] } });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpPersist/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({ 'data.keys.n': { __op: 'Increment', amount: 1 }, 'data.list.0': 9 }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(200);
+      const stored = await request({
+        method: 'GET',
+        url: `${serverURL}/classes/GHSA95hpPersist/${id}`,
+        headers: masterHeaders,
+      });
+      expect(stored.data.data.keys.n).toBe(2);
+      expect(stored.data.data.list).toEqual([9, 2]);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    it('rejects a null dot notation key whose non-leaf segment names an inherited member', async () => {
+      Parse.Cloud.afterSave('GHSA95hpNull', () => {});
+      const id = await seed('GHSA95hpNull', { data: { x: 1 } });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpNull/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({ 'data.toString.call': null }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    it('rejects a dot notation key that descends into a nested pointer', async () => {
+      Parse.Cloud.afterSave('GHSA95hpNestedPtr', () => {});
+      const targetId = await seed('GHSA95hpPtrTarget', { n: 1 });
+      const id = await seed('GHSA95hpNestedPtr', {
+        data: { owner: { __type: 'Pointer', className: 'GHSA95hpPtrTarget', objectId: targetId } },
+      });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpNestedPtr/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({ 'data.owner.get.call': { __op: 'Increment', amount: 1 } }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    it('rejects a dot notation key that descends into a nested geo point', async () => {
+      Parse.Cloud.afterSave('GHSA95hpNestedGeo', () => {});
+      const id = await seed('GHSA95hpNestedGeo', {
+        data: { loc: { __type: 'GeoPoint', latitude: 1, longitude: 2 } },
+      });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpNestedGeo/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({ 'data.loc.toJSON.call': { __op: 'Increment', amount: 1 } }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    it('rejects a dot notation key that descends into a nested date', async () => {
+      Parse.Cloud.afterSave('GHSA95hpNestedDate', () => {});
+      const id = await seed('GHSA95hpNestedDate', {
+        data: { when: { __type: 'Date', iso: '2026-01-01T00:00:00.000Z' } },
+      });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpNestedDate/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({ 'data.when.getTime.call': { __op: 'Increment', amount: 1 } }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    it('still allows a dot notation key whose leaf is a key of a nested date', async () => {
+      Parse.Cloud.afterSave('GHSA95hpNestedDateLeaf', () => {});
+      const id = await seed('GHSA95hpNestedDateLeaf', {
+        data: { when: { __type: 'Date', iso: '2026-01-01T00:00:00.000Z' } },
+      });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpNestedDateLeaf/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({ 'data.when.iso': { __op: 'Delete' } }),
         })
       );
       expect(result.hung).toBeUndefined();
