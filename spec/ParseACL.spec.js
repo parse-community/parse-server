@@ -931,6 +931,7 @@ describe('Parse.ACL', () => {
       'TestObject',
       {},
       {
+        get: { '*': true },
         create: {
           '*': true,
         },
