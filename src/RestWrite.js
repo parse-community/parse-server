@@ -2068,28 +2068,31 @@ const writtenContainer = value => {
 // another key of this request writes above it.
 RestWrite.prototype.validateDotNotationKeys = function () {
   const keys = Object.keys(this.data);
+  const keySet = new Set(keys);
   const roots = [this._dotNotationFieldRoot()];
   if (this.originalData) {
     roots.push(this.originalData);
   }
+  // Only a key that is a prefix of this key, ending on a segment boundary, writes above it
+  const writtenAbove = segments => {
+    let prefix = segments[0];
+    for (let depth = 1; depth < segments.length - 1; depth++) {
+      if (keySet.has(prefix)) {
+        const container = writtenContainer(this.data[prefix]);
+        if (container !== undefined && descendsIntoPrototype(container, segments, depth)) {
+          return true;
+        }
+      }
+      prefix += `.${segments[depth]}`;
+    }
+    return false;
+  };
   for (const key of keys) {
     if (key.indexOf('.') < 0) {
       continue;
     }
     const segments = key.split('.');
-    const prohibited =
-      roots.some(root => descendsIntoPrototype(root, segments)) ||
-      keys.some(sibling => {
-        if (sibling === key || !key.startsWith(`${sibling}.`)) {
-          return false;
-        }
-        const container = writtenContainer(this.data[sibling]);
-        return (
-          container !== undefined &&
-          descendsIntoPrototype(container, segments, sibling.split('.').length)
-        );
-      });
-    if (prohibited) {
+    if (roots.some(root => descendsIntoPrototype(root, segments)) || writtenAbove(segments)) {
       throw prohibitedDotNotationKey(key);
     }
   }
