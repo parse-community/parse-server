@@ -11251,6 +11251,203 @@ describe('Vulnerabilities', () => {
     });
   });
 
+  describe('(GHSA-95hp-82c6-25q5) Dot notation key whose non-leaf segment names an inherited member', () => {
+    const serverURL = 'http://localhost:8378/1';
+    const masterHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Master-Key': 'test',
+      'Content-Type': 'application/json',
+    };
+    const clientHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+
+    let rejections;
+    const onRejection = reason => rejections.push(reason);
+    beforeEach(() => {
+      rejections = [];
+      process.on('unhandledRejection', onRejection);
+    });
+    afterEach(() => {
+      process.removeListener('unhandledRejection', onRejection);
+      // Clean any own property a regression could have stamped onto a shared
+      // built-in so a failing run cannot corrupt sibling specs in the process.
+      protoStateAndRestore();
+    });
+
+    // The shared built-ins a nested-set regression could write an own property onto.
+    function protoStateAndRestore() {
+      const targets = [
+        ['Object.prototype.toString', Object.prototype.toString],
+        ['Object.prototype.hasOwnProperty', Object.prototype.hasOwnProperty],
+        ['Object.prototype.valueOf', Object.prototype.valueOf],
+      ];
+      const polluted = [];
+      for (const [name, target] of targets) {
+        if (Object.hasOwn(target, 'call')) {
+          polluted.push(`${name}.call`);
+          try {
+            delete target.call;
+          } catch (e) {
+            /* ignore */
+          }
+        }
+      }
+      return polluted;
+    }
+
+    // Resolves with the response, or with { hung: true } if it does not complete in time.
+    const within = (promise, ms = 7000) =>
+      Promise.race([
+        promise.then(
+          r => ({ status: r.status, data: r.data }),
+          e => ({ status: e.status, data: e.data })
+        ),
+        new Promise(resolve => setTimeout(() => resolve({ hung: true }), ms)),
+      ]);
+
+    async function seed(className, fields) {
+      const res = await request({
+        method: 'POST',
+        url: `${serverURL}/classes/${className}`,
+        headers: masterHeaders,
+        body: JSON.stringify(fields),
+      });
+      return res.data.objectId;
+    }
+
+    it('rejects an update whose dot notation key uses an inherited member as a non-leaf segment when the class has an afterSave trigger', async () => {
+      Parse.Cloud.afterSave('GHSA95hpUpdate', () => {});
+      const id = await seed('GHSA95hpUpdate', { data: { x: 1 } });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpUpdate/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({ 'data.toString.call': { __op: 'Increment', amount: 1 } }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+      expect(protoStateAndRestore()).toEqual([]);
+      // The process is healthy: an unrelated write still succeeds.
+      const probe = await within(
+        request({
+          method: 'POST',
+          url: `${serverURL}/classes/GHSA95hpProbe`,
+          headers: masterHeaders,
+          body: JSON.stringify({ ok: true }),
+        })
+      );
+      expect(probe.status).toBe(201);
+    });
+
+    it('rejects the hasOwnProperty variant when the class has an afterSave trigger', async () => {
+      Parse.Cloud.afterSave('GHSA95hpHop', () => {});
+      const id = await seed('GHSA95hpHop', { data: { x: 1 } });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpHop/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({ 'data.hasOwnProperty.call': { __op: 'Increment', amount: 1 } }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    it('rejects the dangerous key for a class configured for LiveQuery', async () => {
+      await reconfigureServer({ liveQuery: { classNames: ['GHSA95hpLive'] } });
+      const id = await seed('GHSA95hpLive', { data: { x: 1 } });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpLive/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({ 'data.toString.call': { __op: 'Increment', amount: 1 } }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    it('rejects a create whose dot notation key uses an inherited member as a non-leaf segment when the class has an afterSave trigger', async () => {
+      Parse.Cloud.afterSave('GHSA95hpCreate', () => {});
+      const result = await within(
+        request({
+          method: 'POST',
+          url: `${serverURL}/classes/GHSA95hpCreate`,
+          headers: clientHeaders,
+          body: JSON.stringify({
+            data: { x: 1 },
+            'data.toString.call': { __op: 'Increment', amount: 1 },
+          }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    it('rejects the dangerous key even without a trigger, so it can never be stored and later read', async () => {
+      const id = await seed('GHSA95hpStore', { data: { x: 1 } });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpStore/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({ 'data.toString.call': { __op: 'Increment', amount: 1 } }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    it('still applies a legitimate nested dot notation operation when the class has an afterSave trigger', async () => {
+      Parse.Cloud.afterSave('GHSA95hpLegit', () => {});
+      const id = await seed('GHSA95hpLegit', { nested: { n: 1 } });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpLegit/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({ 'nested.n': { __op: 'Increment', amount: 4 } }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(200);
+      expect(result.data.nested.n).toBe(5);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    it('still allows a dot notation key whose inherited-member segment is the leaf', async () => {
+      Parse.Cloud.afterSave('GHSA95hpLeaf', () => {});
+      const id = await seed('GHSA95hpLeaf', { data: { x: 1 } });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpLeaf/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({ 'data.toString': 5 }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(200);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+  });
+
   describe('(GHSA-655c-2xf3-77x9) Dot notation key with a null value below a non-object field', () => {
     const serverURL = 'http://localhost:8378/1';
     const masterHeaders = {
