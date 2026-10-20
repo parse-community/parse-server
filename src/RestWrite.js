@@ -125,6 +125,9 @@ RestWrite.prototype.execute = function () {
       return this.resolveFileUrls();
     })
     .then(() => {
+      return this.validateDotNotationKeys();
+    })
+    .then(() => {
       return this.runBeforeSaveTrigger();
     })
     .then(() => {
@@ -371,6 +374,7 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
       } catch (error) {
         throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, error);
       }
+      this.validateDotNotationKeys();
       if (response && response.object) {
         // The trigger may have set file pointers without URL
         return this.resolveFileUrls();
@@ -1994,6 +1998,104 @@ RestWrite.prototype._dotNotationFieldRoot = function () {
     }
   }
   return root;
+};
+
+const prohibitedDotNotationKey = key =>
+  new Parse.Error(
+    Parse.Error.INVALID_KEY_NAME,
+    `Prohibited dot notation key in request data: ${JSON.stringify(key)}.`
+  );
+
+// Values the SDK decodes to an instance rather than a plain object: an operation or a
+// typed value
+const decodesToInstance = value => {
+  if (typeof value.__op === 'string') {
+    return true;
+  }
+  switch (value.__type) {
+    case 'Pointer':
+    case 'Object':
+      return !!value.className;
+    case 'Relation':
+    case 'Date':
+    case 'File':
+    case 'GeoPoint':
+    case 'Polygon':
+      return true;
+    default:
+      return false;
+  }
+};
+
+// Whether the SDK would resolve a non-leaf segment of the key, from the given depth
+// on, through the prototype chain of the container instead of an own key, writing
+// the final segment onto a shared built-in.
+const descendsIntoPrototype = (container, segments, depth = 0) => {
+  for (let i = depth; i < segments.length - 1; i++) {
+    if (container === null || typeof container !== 'object') {
+      return false;
+    }
+    // A further segment walks the prototype of the decoded instance
+    if (decodesToInstance(container)) {
+      return true;
+    }
+    const segment = segments[i];
+    if (!hasOwn(container, segment)) {
+      // An inherited member of a nested value resolves to a shared built-in; the root
+      // has no prototype in the SDK, and a missing key is created fresh
+      return i > 0 && segment in container;
+    }
+    container = container[segment];
+  }
+  return false;
+};
+
+// The container a written value provides for keys below it: the value itself, or
+// the elements an array operation adds
+const writtenContainer = value => {
+  if (value === null || typeof value !== 'object') {
+    return undefined;
+  }
+  if (typeof value.__op === 'string') {
+    return Array.isArray(value.objects) ? value.objects : undefined;
+  }
+  return value;
+};
+
+// Rejects a dot notation key that the SDK would apply through a prototype member of
+// the stored object (the trigger object is built from it before the other fields of
+// this request are applied), of the object as written by this request, or of a value
+// another key of this request writes above it.
+RestWrite.prototype.validateDotNotationKeys = function () {
+  const keys = Object.keys(this.data);
+  const keySet = new Set(keys);
+  const roots = [this._dotNotationFieldRoot()];
+  if (this.originalData) {
+    roots.push(this.originalData);
+  }
+  // Only a key that is a prefix of this key, ending on a segment boundary, writes above it
+  const writtenAbove = segments => {
+    let prefix = segments[0];
+    for (let depth = 1; depth < segments.length - 1; depth++) {
+      if (keySet.has(prefix)) {
+        const container = writtenContainer(this.data[prefix]);
+        if (container !== undefined && descendsIntoPrototype(container, segments, depth)) {
+          return true;
+        }
+      }
+      prefix += `.${segments[depth]}`;
+    }
+    return false;
+  };
+  for (const key of keys) {
+    if (key.indexOf('.') < 0) {
+      continue;
+    }
+    const segments = key.split('.');
+    if (roots.some(root => descendsIntoPrototype(root, segments)) || writtenAbove(segments)) {
+      throw prohibitedDotNotationKey(key);
+    }
+  }
 };
 
 // Returns an updated copy of the object
