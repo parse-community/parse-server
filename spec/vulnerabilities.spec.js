@@ -11414,6 +11414,64 @@ describe('Vulnerabilities', () => {
       expect(protoStateAndRestore()).toEqual([]);
     });
 
+    it('rejects a dot notation key whose non-leaf segment names an inherited array member', async () => {
+      Parse.Cloud.afterSave('GHSA95hpArr', () => {});
+      const id = await seed('GHSA95hpArr', { data: { list: [1] } });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpArr/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({ 'data.list.push.call': { __op: 'Increment', amount: 1 } }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+      expect(Object.hasOwn(Array.prototype.push, 'call')).toBe(false);
+      if (Object.hasOwn(Array.prototype.push, 'call')) {
+        delete Array.prototype.push.call;
+      }
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    it('rejects the array map variant when the class has an afterSave trigger', async () => {
+      Parse.Cloud.afterSave('GHSA95hpArrMap', () => {});
+      const id = await seed('GHSA95hpArrMap', { data: { list: [1] } });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpArrMap/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({ 'data.list.map.call': { __op: 'Increment', amount: 1 } }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+      expect(Object.hasOwn(Array.prototype.map, 'call')).toBe(false);
+      if (Object.hasOwn(Array.prototype.map, 'call')) {
+        delete Array.prototype.map.call;
+      }
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    it('still applies a legitimate nested array index write when the class has an afterSave trigger', async () => {
+      Parse.Cloud.afterSave('GHSA95hpArrIdx', () => {});
+      const id = await seed('GHSA95hpArrIdx', { data: { list: [1, 2] } });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpArrIdx/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({ 'data.list.0': 9 }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(200);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
     it('still applies a legitimate nested dot notation operation when the class has an afterSave trigger', async () => {
       Parse.Cloud.afterSave('GHSA95hpLegit', () => {});
       const id = await seed('GHSA95hpLegit', { nested: { n: 1 } });

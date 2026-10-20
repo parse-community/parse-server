@@ -8,11 +8,15 @@ const path = require('path');
 const fs = require('fs').promises;
 const { types } = require('util');
 
-// Members every object inherits from `Object.prototype`. A dot notation key
-// whose non-leaf segment is one of these descends through the prototype chain
-// when the key is applied to a plain object, so the final segment is written
-// onto a shared built-in instead of a stored sub-object.
-const PROTOTYPE_MEMBERS = new Set(Object.getOwnPropertyNames(Object.prototype));
+// Members inherited by stored objects and arrays. A dot notation key whose
+// non-leaf segment is one of these descends through the prototype chain when
+// the key is applied to the stored value, so the final segment is written onto
+// a shared built-in instead of a stored sub-object. Primitive values are not
+// included: a dot notation key cannot descend through one.
+const PROTOTYPE_MEMBERS = new Set([
+  ...Object.getOwnPropertyNames(Object.prototype),
+  ...Object.getOwnPropertyNames(Array.prototype),
+]);
 
 /**
  * The general purpose utilities.
