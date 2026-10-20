@@ -11704,6 +11704,44 @@ describe('Vulnerabilities', () => {
       expect(protoStateAndRestore()).toEqual([]);
     });
 
+    // A primitive written at the parent is not a container; the field type check rejects the write
+    it('leaves a dot notation key beneath a whole-field primitive write to the type validation', async () => {
+      Parse.Cloud.afterSave('GHSA95hpPrimitiveParent', () => {});
+      const id = await seed('GHSA95hpPrimitiveParent', { data: { x: 1 } });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpPrimitiveParent/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({ data: 5, 'data.y': { __op: 'Increment', amount: 1 } }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
+    // A nested object with a class name decodes to an instance of whatever class is registered
+    it('rejects a dot notation key that descends two levels into a nested object with a class name', async () => {
+      Parse.Cloud.afterSave('GHSA95hpNestedObject', () => {});
+      const id = await seed('GHSA95hpNestedObject', {
+        data: { obj: { __type: 'Object', className: 'GHSA95hpFoo', objectId: 'abc', nested: { deep: 1 } } },
+      });
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/GHSA95hpNestedObject/${id}`,
+          headers: clientHeaders,
+          body: JSON.stringify({ 'data.obj.nested.deep': { __op: 'Increment', amount: 1 } }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.INVALID_KEY_NAME);
+      expect(protoStateAndRestore()).toEqual([]);
+    });
+
     it('rejects a dot notation key that descends into a stored object with a non-string operation key', async () => {
       Parse.Cloud.afterSave('GHSA95hpStoredOpKey', () => {});
       const id = await seed('GHSA95hpStoredOpKey', { data: { inner: { __op: 1 } } });
