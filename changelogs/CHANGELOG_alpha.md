@@ -1,3 +1,10 @@
+## [9.10.6-alpha.4](https://github.com/parse-community/parse-server/compare/9.10.6-alpha.3...9.10.6-alpha.4) (2026-10-20)
+
+
+### Bug Fixes
+
+* Session upgrade endpoint creates an additional session from an already revocable session token ([GHSA-2j2x-c587-q33g](https://github.com/parse-community/parse-server/security/advisories/GHSA-2j2x-c587-q33g)) ([#10808](https://github.com/parse-community/parse-server/issues/10808)) ([5bcb56b](https://github.com/parse-community/parse-server/commit/5bcb56b1e77326f33d7b89787ee4cbc3870e6cec))
+
 ## [9.10.6-alpha.3](https://github.com/parse-community/parse-server/compare/9.10.6-alpha.2...9.10.6-alpha.3) (2026-10-19)
 
 
