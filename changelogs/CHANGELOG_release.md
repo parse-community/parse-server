@@ -1,3 +1,10 @@
+## [8.6.114](https://github.com/parse-community/parse-server/compare/8.6.113...8.6.114) (2026-10-21)
+
+
+### Bug Fixes
+
+* Object create returns field values to a caller without read access ([GHSA-qq3r-ppqq-rh6m](https://github.com/parse-community/parse-server/security/advisories/GHSA-qq3r-ppqq-rh6m)) ([#10814](https://github.com/parse-community/parse-server/issues/10814)) ([45e3d76](https://github.com/parse-community/parse-server/commit/45e3d76b3261fe4a3bcd1688a4fc231d89886872))
+
 ## [8.6.113](https://github.com/parse-community/parse-server/compare/8.6.112...8.6.113) (2026-10-20)
 
 
