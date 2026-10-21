@@ -723,6 +723,10 @@ export function resolveError(message, defaultOpts) {
   const error = new Parse.Error(code, message.message || message);
   if (Utils.isNativeError(message)) {
     error.stack = message.stack;
+    Object.defineProperty(error, 'wrappedNativeError', {
+      value: true,
+      enumerable: false,
+    });
   }
   return error;
 }
