@@ -15,6 +15,7 @@ function Auth({
   isMaster = false,
   isMaintenance = false,
   isReadOnly = false,
+  isLegacySession = false,
   user,
   installationId,
 }) {
@@ -25,6 +26,7 @@ function Auth({
   this.isMaintenance = isMaintenance;
   this.user = user;
   this.isReadOnly = isReadOnly;
+  this.isLegacySession = isLegacySession;
 
   // Assuming a users roles won't change during a single request, we'll
   // only load them once.
@@ -243,6 +245,7 @@ var getAuthForLegacySessionToken = async function ({ config, sessionToken, insta
     return new Auth({
       config,
       isMaster: false,
+      isLegacySession: true,
       installationId,
       user: userObject,
     });
@@ -390,11 +393,17 @@ Auth.prototype.getRolesByIds = async function (ins) {
 };
 
 // Given a list of roleIds, find all the parent roles, returns a promise with all names
-Auth.prototype._getAllRolesNamesForRoleIds = function (roleIDs, names = [], queriedRoles = {}) {
+Auth.prototype._getAllRolesNamesForRoleIds = function (
+  roleIDs,
+  names = [],
+  queriedRoles = new Set()
+) {
   const ins = roleIDs.filter(roleID => {
-    const wasQueried = queriedRoles[roleID] !== true;
-    queriedRoles[roleID] = true;
-    return wasQueried;
+    if (queriedRoles.has(roleID)) {
+      return false;
+    }
+    queriedRoles.add(roleID);
+    return true;
   });
 
   // all roles are accounted for, return the names
@@ -582,7 +591,7 @@ const checkIfUserHasProvidedConfiguredProvidersForLogin = (
 };
 
 // Validate each authData step-by-step and return the provider responses
-const handleAuthDataValidation = async (authData, req, foundUser) => {
+const handleAuthDataValidation = async (authData, req, foundUser, { isLogin = true } = {}) => {
   let user;
   if (foundUser) {
     user = Parse.User.fromJSON({ className: '_User', ...foundUser });
@@ -620,7 +629,9 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
           'This authentication method is unsupported.'
         );
       }
-      let validationResult = await validator(authData[provider], req, user, requestObject);
+      let validationResult = await validator(authData[provider], req, user, requestObject, {
+        isLogin,
+      });
       method = validationResult && validationResult.method;
       requestObject.triggerName = method;
       if (validationResult && validationResult.validator) {

@@ -2,6 +2,7 @@
 // operation, encoded in the REST API format.
 
 var SchemaController = require('./Controllers/SchemaController');
+const DatabaseController = require('./Controllers/DatabaseController');
 var Parse = require('parse/node').Parse;
 var logger = require('./logger').default;
 const triggers = require('./triggers');
@@ -9,6 +10,7 @@ const { continueWhile } = require('parse/lib/node/promiseUtils');
 const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt', 'ACL'];
 const { enforceRoleSecurity } = require('./SharedRest');
 const { createSanitizedError } = require('./Error');
+const Utils = require('./Utils');
 
 // restOptions can include:
 //   skip
@@ -130,6 +132,22 @@ function _UnsafeRestQuery(
           },
         ],
       };
+    }
+  }
+
+  // Reject prohibited keywords in field paths
+  for (const option of ['keys', 'excludeKeys', 'include']) {
+    if (typeof restOptions[option] !== 'string') {
+      continue;
+    }
+    // Field names have no value, so only key entries of the denylist match
+    const fields = Object.fromEntries(
+      restOptions[option].split(/[,.]/).map(name => [name, undefined])
+    );
+    try {
+      Utils.checkProhibitedKeywords(config, fields);
+    } catch (error) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `${error}`);
     }
   }
 
@@ -387,8 +405,16 @@ _UnsafeRestQuery.prototype.validateQueryDepth = function () {
   checkDepth(this.restWhere, 0);
 };
 
+// Validates the format of the where clause before it is processed
+_UnsafeRestQuery.prototype.validateQueryFormat = function () {
+  DatabaseController.validateQueryFormat(this.restWhere);
+};
+
 _UnsafeRestQuery.prototype.buildRestWhere = function () {
   return Promise.resolve()
+    .then(() => {
+      return this.validateQueryFormat();
+    })
     .then(() => {
       return this.getUserAndRoleACL();
     })
@@ -920,7 +946,7 @@ _UnsafeRestQuery.prototype.runCount = function () {
   this.findOptions.count = true;
   delete this.findOptions.skip;
   delete this.findOptions.limit;
-  return this.config.database.find(this.className, this.restWhere, this.findOptions).then(c => {
+  return this.config.database.find(this.className, this.restWhere, this.findOptions, this.auth).then(c => {
     this.response.count = c;
   });
 };
@@ -955,11 +981,7 @@ _UnsafeRestQuery.prototype.denyProtectedFields = async function () {
     }
     for (const op of ['$or', '$and', '$nor']) {
       if (where[op] !== undefined && !Array.isArray(where[op])) {
-        throw createSanitizedError(
-          Parse.Error.INVALID_QUERY,
-          `${op} must be an array`,
-          this.config
-        );
+        throw DatabaseController.logicalOperatorError(op, where[op]);
       }
       if (Array.isArray(where[op])) {
         where[op].forEach(subQuery => checkWhere(subQuery));
@@ -1121,8 +1143,8 @@ _UnsafeRestQuery.prototype.runAfterFindTrigger = function () {
   if (!hasAfterFindHook) {
     return Promise.resolve();
   }
-  // Skip Aggregate and Distinct Queries
-  if (this.findOptions.pipeline || this.findOptions.distinct) {
+  // Skip Aggregate, Distinct and Explain Queries
+  if (this.findOptions.pipeline || this.findOptions.distinct || this.findOptions.explain) {
     return Promise.resolve();
   }
 

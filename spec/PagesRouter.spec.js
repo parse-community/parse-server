@@ -9,6 +9,7 @@ const { Page } = require('../lib/Page');
 const Config = require('../lib/Config');
 const Definitions = require('../lib/Options/Definitions');
 const UserController = require('../lib/Controllers/UserController').UserController;
+const { resolvingPromise } = require('../lib/TestUtils');
 const {
   PagesRouter,
   pages,
@@ -708,16 +709,17 @@ describe('Pages Router', () => {
 
       it_id('2845c2ea-23ba-45d2-a33f-63181d419bca')(it)('localizes end-to-end for verify email: success', async () => {
         await reconfigureServer(config);
+        const sendPromise = resolvingPromise();
         const sendVerificationEmail = spyOn(
           config.emailAdapter,
           'sendVerificationEmail'
-        ).and.callThrough();
+        ).and.callFake(() => sendPromise.resolve());
         const user = new Parse.User();
         user.setUsername('exampleUsername');
         user.setPassword('examplePassword');
         user.set('email', 'mail@example.com');
         await user.signUp();
-        await jasmine.timeout();
+        await sendPromise;
 
         const link = sendVerificationEmail.calls.all()[0].args[0].link;
         const linkWithLocale = new URL(link);
@@ -737,16 +739,17 @@ describe('Pages Router', () => {
 
       it_id('f2272b94-b4ac-474f-8e47-1ca74de136f5')(it)('localizes end-to-end for verify email: invalid verification link - link send success', async () => {
         await reconfigureServer(config);
+        const sendPromise = resolvingPromise();
         const sendVerificationEmail = spyOn(
           config.emailAdapter,
           'sendVerificationEmail'
-        ).and.callThrough();
+        ).and.callFake(() => sendPromise.resolve());
         const user = new Parse.User();
         user.setUsername('exampleUsername');
         user.setPassword('examplePassword');
         user.set('email', 'mail@example.com');
         await user.signUp();
-        await jasmine.timeout();
+        await sendPromise;
 
         const link = sendVerificationEmail.calls.all()[0].args[0].link;
         const linkWithLocale = new URL(link);
@@ -789,16 +792,17 @@ describe('Pages Router', () => {
 
       it_id('1d46d36a-e455-4ae7-8717-e0d286e95f02')(it)('localizes end-to-end for verify email: invalid verification link - link send fail', async () => {
         await reconfigureServer(config);
+        const sendPromise = resolvingPromise();
         const sendVerificationEmail = spyOn(
           config.emailAdapter,
           'sendVerificationEmail'
-        ).and.callThrough();
+        ).and.callFake(() => sendPromise.resolve());
         const user = new Parse.User();
         user.setUsername('exampleUsername');
         user.setPassword('examplePassword');
         user.set('email', 'mail@example.com');
         await user.signUp();
-        await jasmine.timeout();
+        await sendPromise;
 
         const link = sendVerificationEmail.calls.all()[0].args[0].link;
         const linkWithLocale = new URL(link);
@@ -850,16 +854,17 @@ describe('Pages Router', () => {
       it('localizes end-to-end for verify email: invalid verification link - link send fail with emailVerifySuccessOnInvalidEmail disabled', async () => {
         config.emailVerifySuccessOnInvalidEmail = false;
         await reconfigureServer(config);
+        const sendPromise = resolvingPromise();
         const sendVerificationEmail = spyOn(
           config.emailAdapter,
           'sendVerificationEmail'
-        ).and.callThrough();
+        ).and.callFake(() => sendPromise.resolve());
         const user = new Parse.User();
         user.setUsername('exampleUsername');
         user.setPassword('examplePassword');
         user.set('email', 'mail@example.com');
         await user.signUp();
-        await jasmine.timeout();
+        await sendPromise;
 
         const link = sendVerificationEmail.calls.all()[0].args[0].link;
         const linkWithLocale = new URL(link);
@@ -1452,16 +1457,17 @@ describe('Pages Router', () => {
       it_id('81c1c28e-5dfd-4ffb-a09b-283156c08483')(it)('email verification works with custom endpoint', async () => {
         config.pages.pagesEndpoint = 'customEndpoint';
         await reconfigureServer(config);
+        const sendPromise = resolvingPromise();
         const sendVerificationEmail = spyOn(
           config.emailAdapter,
           'sendVerificationEmail'
-        ).and.callThrough();
+        ).and.callFake(() => sendPromise.resolve());
         const user = new Parse.User();
         user.setUsername('exampleUsername');
         user.setPassword('examplePassword');
         user.set('email', 'mail@example.com');
         await user.signUp();
-        await jasmine.timeout();
+        await sendPromise;
 
         const link = sendVerificationEmail.calls.all()[0].args[0].link;
         const linkResponse = await request({

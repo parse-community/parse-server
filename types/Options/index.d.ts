@@ -136,6 +136,7 @@ export interface ParseServerOptions {
     security?: SecurityOptions;
     enforcePrivateUsers?: boolean;
     allowExpiredAuthDataToken?: boolean;
+    enableLiveQueryClassLevelPermissionRoles?: boolean;
     requestKeywordDenylist?: (RequestKeywordDenylist[]);
     rateLimit?: (RateLimitOptions[]);
     verifyServerUrl?: boolean;

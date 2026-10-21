@@ -52,12 +52,17 @@ export class Config {
     const config = new Config();
     config.applicationId = applicationId;
     Object.keys(cacheInfo).forEach(key => {
-      if (key == 'databaseController') {
-        config.database = new DatabaseController(cacheInfo.databaseController.adapter, config);
-      } else {
+      if (key != 'databaseController' && key != 'database') {
         config[key] = cacheInfo[key];
       }
     });
+    // Always create a new database controller, as it holds request-scoped state such as the
+    // transactional session; a request-scoped config in the cache has `database` instead of
+    // `databaseController`
+    const databaseController = cacheInfo.databaseController || cacheInfo.database;
+    if (databaseController) {
+      config.database = new DatabaseController(databaseController.adapter, config);
+    }
     config.mount = removeTrailingSlash(mount);
     config.generateSessionExpiresAt = config.generateSessionExpiresAt.bind(config);
     config.generateEmailVerifyTokenExpiresAt = config.generateEmailVerifyTokenExpiresAt.bind(
@@ -989,7 +994,11 @@ export class Config {
 
       const expiresAt = this.masterKeyTtl ? new Date(Date.now() + 1000 * this.masterKeyTtl) : null
       this.masterKeyCache = { masterKey, expiresAt };
-      Config.put(this);
+      // Update only the cached server config, as this config is request-scoped
+      const serverConfig = AppCache.get(this.applicationId);
+      if (serverConfig) {
+        serverConfig.masterKeyCache = this.masterKeyCache;
+      }
 
       return this.masterKeyCache.masterKey;
     }

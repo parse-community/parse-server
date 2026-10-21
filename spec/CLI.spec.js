@@ -178,7 +178,7 @@ describe('definitions', () => {
       if (typeof definition.required !== 'undefined') {
         expect(typeof definition.required).toBe('boolean');
       }
-      if (typeof definition.action !== 'undefined') {
+      if ('action' in definition) {
         expect(typeof definition.action).toBe('function');
       }
     }
@@ -188,6 +188,14 @@ describe('definitions', () => {
     expect(() => {
       definitions.facebookAppIds.action();
     }).toThrow();
+  });
+
+  it('should coerce the NumberOrBoolean cluster option value', () => {
+    const action = definitions.cluster.action;
+    expect(typeof action).toBe('function');
+    expect(action('2')).toBe(2);
+    expect(action('true')).toBe(true);
+    expect(action('false')).toBe(false);
   });
 });
 
@@ -203,7 +211,7 @@ describe('LiveQuery definitions', () => {
       if (typeof definition.required !== 'undefined') {
         expect(typeof definition.required).toBe('boolean');
       }
-      if (typeof definition.action !== 'undefined') {
+      if ('action' in definition) {
         expect(typeof definition.action).toBe('function');
       }
     }

@@ -162,9 +162,7 @@ cat > ./package.json << EOF
   "scripts": {
     "start": "parse-server config.json"
   },
-  "dependencies": {
-    "parse-server": "^3.9.0"
-  }
+  "dependencies": {}
 }
 EOF
 echo "${CHECK} Created package.json"
@@ -195,7 +193,7 @@ fi
 
 echo "\n${CHECK} running npm install\n"
 
-npm install -s
+npm install parse-server -s
 
 CURL_CMD=$(cat << EOF
 curl -X POST -H 'X-Parse-Application-Id: ${APP_ID}' \\

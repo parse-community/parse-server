@@ -9,7 +9,6 @@
  * To rebuild the definitions file, run
  * `$ node resources/buildConfigDefinitions.js`
  */
-const parsers = require('../src/Options/parsers');
 
 /** The types of nested options. */
 const nestedOptionTypes = [
@@ -177,7 +176,7 @@ function mapperFor(elt, t) {
       return wrap(t.identifier('moduleOrObjectParser'));
     }
     if (type == 'NumberOrBoolean') {
-      return wrap(t.identifier('numberOrBooleanParser'));
+      return t.callExpression(wrap(t.identifier('numberOrBoolParser')), [t.stringLiteral(elt.name)]);
     }
     if (type == 'NumberOrString') {
       return t.callExpression(wrap(t.identifier('numberOrStringParser')), [t.stringLiteral(elt.name)]);
@@ -190,6 +189,8 @@ function mapperFor(elt, t) {
 }
 
 function parseDefaultValue(elt, value, t) {
+  /* istanbul ignore next: lazy require (not module scope) so specs don't double-instrument parsers.js; only reached by `npm run definitions` */
+  const parsers = require('../src/Options/parsers');
   let literalValue;
   if (t.isStringTypeAnnotation(elt)) {
     if (value == '""' || value == "''") {
