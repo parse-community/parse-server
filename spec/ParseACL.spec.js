@@ -931,6 +931,7 @@ describe('Parse.ACL', () => {
       'TestObject',
       {},
       {
+        get: { '*': true },
         create: {
           '*': true,
         },
@@ -959,6 +960,7 @@ describe('Parse.ACL', () => {
       'TestObject',
       {},
       {
+        get: { '*': true },
         create: { '*': true },
         update: { '*': true },
         addField: { '*': true },

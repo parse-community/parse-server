@@ -12309,4 +12309,463 @@ describe('Vulnerabilities', () => {
       expect(await countSessions(user)).toBe(count);
     });
   });
+
+  describe('(GHSA-qq3r-ppqq-rh6m) Create response returns values to a caller without read access', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const deleted = { __op: 'Delete' };
+    const reads = className => {
+      const DatabaseController = require('../lib/Controllers/DatabaseController');
+      const find = spyOn(DatabaseController.prototype, 'find').and.callThrough();
+      return () => find.calls.allArgs().filter(([name]) => name === className);
+    };
+
+    describe('class without get permission', () => {
+      let reader;
+
+      beforeEach(async () => {
+        reader = await Parse.User.signUp('reader', 'password');
+        const schema = new Parse.Schema('CreateOnly');
+        schema.addString('title');
+        schema.addString('secret');
+        schema.addString('defaulted', { defaultValue: 'default-value' });
+        schema.setCLP({
+          find: { [reader.id]: true },
+          get: { [reader.id]: true },
+          count: { [reader.id]: true },
+          create: { '*': true },
+          update: {},
+          delete: {},
+          addField: {},
+        });
+        await schema.save();
+      });
+
+      const create = (body, extraHeaders = {}) =>
+        request({
+          method: 'POST',
+          url: `${Parse.serverURL}/classes/CreateOnly`,
+          headers: { ...headers, ...extraHeaders },
+          body: JSON.stringify(body),
+        });
+
+      it('does not return values that beforeSave sets', async () => {
+        Parse.Cloud.beforeSave('CreateOnly', ({ object }) => {
+          object.set('secret', 'trigger-secret');
+          object.set('title', 'trigger-title');
+        });
+        const response = await create({ title: 'x' });
+        const get = await request({
+          url: `${Parse.serverURL}/classes/CreateOnly/${response.data.objectId}`,
+          headers,
+        }).catch(e => e);
+        expect(get.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        expect(response.data).toEqual({
+          objectId: jasmine.any(String),
+          createdAt: jasmine.any(String),
+          title: deleted,
+          secret: deleted,
+          defaulted: deleted,
+        });
+        const obj = await new Parse.Query('CreateOnly').get(response.data.objectId, {
+          useMasterKey: true,
+        });
+        expect(obj.get('secret')).toBe('trigger-secret');
+        expect(obj.get('title')).toBe('trigger-title');
+      });
+
+      it('does not return a schema default value', async () => {
+        const response = await create({ title: 'x' });
+        expect(response.data.defaulted).toEqual(deleted);
+        expect(JSON.stringify(response.data)).not.toContain('default-value');
+      });
+
+      it('does not return a value that afterSave sets', async () => {
+        Parse.Cloud.afterSave('CreateOnly', ({ object }) => {
+          object.set('secret', 'after-save-secret');
+        });
+        const response = await create({ title: 'x', defaulted: 'x' });
+        expect(response.data.secret).toEqual(deleted);
+        expect(JSON.stringify(response.data)).not.toContain('after-save-secret');
+      });
+
+      it('does not return a value that afterSave saves', async () => {
+        Parse.Cloud.afterSave('CreateOnly', async ({ object, master }) => {
+          if (master) {
+            return;
+          }
+          object.set('secret', 'after-save-secret');
+          await object.save(null, { useMasterKey: true });
+        });
+        const response = await create({ title: 'x', defaulted: 'x' });
+        expect(response.data.secret).toEqual(deleted);
+        expect(JSON.stringify(response.data)).not.toContain('after-save-secret');
+      });
+
+      it('does not return values in a batch request', async () => {
+        Parse.Cloud.beforeSave('CreateOnly', ({ object }) => {
+          object.set('secret', 'trigger-secret');
+        });
+        const response = await request({
+          method: 'POST',
+          url: `${Parse.serverURL}/batch`,
+          headers,
+          body: JSON.stringify({
+            requests: [{ method: 'POST', path: '/1/classes/CreateOnly', body: { title: 'x' } }],
+          }),
+        });
+        expect(response.data[0].success.secret).toEqual(deleted);
+        expect(JSON.stringify(response.data)).not.toContain('trigger-secret');
+      });
+
+      it('keeps an object returned by afterSave', async () => {
+        Parse.Cloud.afterSave('CreateOnly', () => ({ secret: 'returned' }));
+        const response = await create({ title: 'x' });
+        expect(response.data.secret).toBe('returned');
+      });
+
+      it('does not read the object for a create that returns no field values', async () => {
+        const readCalls = reads('CreateOnly');
+        const response = await create({ title: 'x', defaulted: 'x' });
+        expect(Object.keys(response.data).sort()).toEqual(['createdAt', 'objectId']);
+        expect(readCalls().length).toBe(0);
+      });
+
+      it('reads the object from the primary to decide on the response', async () => {
+        const readCalls = reads('CreateOnly');
+        const response = await create({ title: 'x' });
+        expect(response.data.defaulted).toEqual(deleted);
+        const calls = readCalls();
+        expect(calls.length).toBe(1);
+        expect(calls[0][2].readPreference).toBe('primary');
+      });
+
+      for (const auth of ['session with get permission', 'master', 'maintenance']) {
+        it(`returns values for ${auth} auth`, async () => {
+          Parse.Cloud.beforeSave('CreateOnly', ({ object }) => {
+            object.set('secret', 'trigger-secret');
+          });
+          const authHeaders = {
+            'session with get permission': { 'X-Parse-Session-Token': reader.getSessionToken() },
+            master: { 'X-Parse-Master-Key': 'test' },
+            maintenance: { 'X-Parse-Maintenance-Key': 'testing' },
+          }[auth];
+          const response = await create({ title: 'x' }, authHeaders);
+          expect(response.data.secret).toBe('trigger-secret');
+          expect(response.data.defaulted).toBe('default-value');
+        });
+      }
+    });
+
+    describe('object without read access for the caller', () => {
+      const createWithDefaultACL = async ACL => {
+        const schema = new Parse.Schema('DefaultAcl');
+        schema.addString('secret');
+        schema.setCLP({
+          find: { '*': true },
+          get: { '*': true },
+          count: { '*': true },
+          create: { '*': true },
+          update: { '*': true },
+          delete: { '*': true },
+          addField: {},
+          ACL,
+        });
+        await schema.save();
+        Parse.Cloud.beforeSave('DefaultAcl', ({ object }) => {
+          object.set('secret', 'trigger-secret');
+        });
+        return request({
+          method: 'POST',
+          url: `${Parse.serverURL}/classes/DefaultAcl`,
+          headers,
+          body: JSON.stringify({}),
+        });
+      };
+
+      it('does not return the class default ACL', async () => {
+        const response = await createWithDefaultACL({ 'role:staff': { read: true, write: true } });
+        const get = await request({
+          url: `${Parse.serverURL}/classes/DefaultAcl/${response.data.objectId}`,
+          headers,
+        }).catch(e => e);
+        expect(get.data.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+        expect(response.data.ACL).toBeUndefined();
+        expect(response.data.secret).toEqual(deleted);
+        expect(JSON.stringify(response.data)).not.toContain('role:staff');
+        expect(JSON.stringify(response.data)).not.toContain('trigger-secret');
+      });
+
+      it('returns the class default ACL to a caller with read access without reading the object', async () => {
+        const readCalls = reads('DefaultAcl');
+        const response = await createWithDefaultACL({ '*': { read: true } });
+        expect(response.data.ACL).toEqual({ '*': { read: true } });
+        expect(response.data.secret).toBe('trigger-secret');
+        expect(readCalls().length).toBe(0);
+      });
+
+      it('does not read the object when beforeSave sets an ACL without read access for the caller', async () => {
+        Parse.Cloud.beforeSave('LockedReport', ({ object }) => {
+          const acl = new Parse.ACL();
+          acl.setRoleReadAccess('staff', true);
+          object.setACL(acl);
+          object.set('status', 'pending-review');
+        });
+        const readCalls = reads('LockedReport');
+        const response = await request({
+          method: 'POST',
+          url: `${Parse.serverURL}/classes/LockedReport`,
+          headers,
+          body: JSON.stringify({ title: 'x' }),
+        });
+        expect(response.data.status).toEqual(deleted);
+        expect(response.data.ACL).toBeUndefined();
+        expect(JSON.stringify(response.data)).not.toContain('pending-review');
+        expect(readCalls().length).toBe(0);
+      });
+    });
+
+    it('does not read the installation to decide on the response of an installation create', async () => {
+      Parse.Cloud.beforeSave(Parse.Installation, ({ object }) => {
+        object.set('tag', 'x');
+      });
+      const readCalls = reads('_Installation');
+      const response = await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/installations`,
+        headers,
+        body: JSON.stringify({
+          installationId: '11111111-2222-3333-4444-555555555555',
+          deviceType: 'ios',
+        }),
+      });
+      expect(response.data.tag).toBe('x');
+      expect(readCalls().filter(([, where]) => typeof where.objectId === 'string').length).toBe(0);
+    });
+
+    it('does not read the role to decide on the response of a role create', async () => {
+      Parse.Cloud.beforeSave(Parse.Role, ({ object }) => {
+        object.set('tag', 'x');
+      });
+      const readCalls = reads('_Role');
+      const response = await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/roles`,
+        headers,
+        body: JSON.stringify({ name: 'Editors', ACL: { '*': { read: true } } }),
+      });
+      expect(response.data.tag).toBe('x');
+      expect(readCalls().filter(([, where]) => typeof where.objectId === 'string').length).toBe(0);
+    });
+
+    it('does not read the object for a create with a field that beforeSave reverts', async () => {
+      Parse.Cloud.beforeSave('PublicNote', ({ object }) => {
+        object.revert('pinned');
+        object.set('status', 'new');
+      });
+      const readCalls = reads('PublicNote');
+      const response = await request({
+        method: 'POST',
+        url: `${Parse.serverURL}/classes/PublicNote`,
+        headers,
+        body: JSON.stringify({ title: 'x', pinned: true }),
+      });
+      expect(response.data.status).toBe('new');
+      expect(response.data.pinned).toEqual(deleted);
+      expect(readCalls().length).toBe(0);
+    });
+
+    describe('update of a user who cannot read their own user', () => {
+      let user;
+
+      beforeEach(async () => {
+        user = await Parse.User.signUp('owner', 'password');
+        const acl = new Parse.ACL();
+        acl.setWriteAccess(user.id, true);
+        user.setACL(acl);
+        await user.save(null, { useMasterKey: true });
+        Parse.Cloud.afterSave('_User', () => {});
+      });
+
+      const update = body =>
+        request({
+          method: 'PUT',
+          url: `${Parse.serverURL}/users/${user.id}`,
+          headers: { ...headers, 'X-Parse-Session-Token': user.getSessionToken() },
+          body: JSON.stringify(body),
+        });
+
+      it('keeps an unchanged username that the caller sends', async () => {
+        const response = await update({ username: 'owner' });
+        expect(response.data.username).toBe('owner');
+      });
+
+      it('does not return the stored username that the caller does not send', async () => {
+        const response = await update({ nickname: 'x' });
+        expect(response.data.username).toEqual(deleted);
+      });
+    });
+
+    describe('sign-up', () => {
+      const signUp = body =>
+        request({
+          method: 'POST',
+          url: `${Parse.serverURL}/users`,
+          headers,
+          body: JSON.stringify(body),
+        });
+      const setTier = () =>
+        Parse.Cloud.beforeSave('_User', ({ object }) => {
+          object.set('tier', 'gold');
+        });
+      // A sign-up then issues no session
+      const requireEmailVerification = () =>
+        reconfigureServer({
+          appName: 'test',
+          publicServerURL: 'http://localhost:8378/1',
+          verifyUserEmails: true,
+          preventLoginWithUnverifiedEmail: true,
+          emailAdapter: {
+            sendVerificationEmail: () => {},
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => {},
+          },
+        });
+
+      it('does not return values that beforeSave sets to a new user who cannot read their own user', async () => {
+        // Creates the user class
+        await Parse.User.signUp('existing', 'password');
+        await request({
+          method: 'PUT',
+          url: `${Parse.serverURL}/schemas/_User`,
+          headers: { ...headers, 'X-Parse-Master-Key': 'test' },
+          body: JSON.stringify({
+            fields: { tier: { type: 'String' } },
+            classLevelPermissions: {
+              get: {},
+              find: {},
+              count: {},
+              create: { '*': true },
+              update: { '*': true },
+              delete: { '*': true },
+              addField: {},
+            },
+          }),
+        });
+        setTier();
+        const response = await signUp({ username: 'newuser', password: 'password' });
+        const get = await request({
+          url: `${Parse.serverURL}/users/${response.data.objectId}`,
+          headers: { ...headers, 'X-Parse-Session-Token': response.data.sessionToken },
+        }).catch(e => e);
+        expect(get.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        expect(response.data.tier).toEqual(deleted);
+        expect(response.data.sessionToken).toMatch(/^r:/);
+        expect(JSON.stringify(response.data)).not.toContain('gold');
+      });
+
+      it('returns values that beforeSave sets to the new user', async () => {
+        setTier();
+        const response = await signUp({ username: 'newuser', password: 'password' });
+        expect(response.data.tier).toBe('gold');
+        expect(response.data.sessionToken).toMatch(/^r:/);
+      });
+
+      it('does not return values that beforeSave sets to a sign-up that issues no session', async () => {
+        await requireEmailVerification();
+        setTier();
+        const response = await signUp({
+          username: 'newuser',
+          password: 'password',
+          email: 'newuser@example.com',
+        });
+        expect(response.data.sessionToken).toBeUndefined();
+        expect(response.data.tier).toEqual(deleted);
+        expect(JSON.stringify(response.data)).not.toContain('gold');
+      });
+
+      it('keeps the username of a sign-up that issues no session when the user class has an afterSave trigger', async () => {
+        await requireEmailVerification();
+        Parse.Cloud.afterSave('_User', () => {});
+        const user = new Parse.User();
+        user.setUsername('newuser');
+        user.setPassword('password');
+        user.setEmail('newuser@example.com');
+        await user.signUp();
+        expect(user.getSessionToken()).toBeUndefined();
+        expect(user.getUsername()).toBe('newuser');
+      });
+
+      it('does not return a username that beforeSave changes to a sign-up that issues no session', async () => {
+        await requireEmailVerification();
+        Parse.Cloud.beforeSave('_User', ({ object }) => {
+          object.set('username', 'changed-username');
+        });
+        Parse.Cloud.afterSave('_User', () => {});
+        const response = await signUp({
+          username: 'newuser',
+          password: 'password',
+          email: 'newuser@example.com',
+        });
+        expect(response.data.sessionToken).toBeUndefined();
+        expect(response.data.username).toEqual(deleted);
+        expect(JSON.stringify(response.data)).not.toContain('changed-username');
+      });
+
+      it('does not return a generated username to a logged-in caller who creates a user with auth data', async () => {
+        await reconfigureServer({
+          auth: {
+            tokenAdapter: {
+              validateAppId: () => Promise.resolve(),
+              validateAuthData: () => Promise.resolve(),
+            },
+          },
+        });
+        const caller = await Parse.User.signUp('caller', 'password');
+        const response = await request({
+          method: 'POST',
+          url: `${Parse.serverURL}/users`,
+          headers: { ...headers, 'X-Parse-Session-Token': caller.getSessionToken() },
+          body: JSON.stringify({ authData: { tokenAdapter: { id: 'p2', token: 't' } } }),
+        });
+        expect(response.status).toBe(201);
+        expect(response.data.objectId).not.toBe(caller.id);
+        expect(response.data.sessionToken).toBeUndefined();
+        expect(response.data.username).toEqual(deleted);
+      });
+
+      it('does not read the new user to decide on the response', async () => {
+        setTier();
+        const readCalls = reads('_User');
+        const response = await signUp({ username: 'newuser', password: 'password' });
+        expect(response.data.tier).toBe('gold');
+        expect(readCalls().filter(([, where]) => typeof where.objectId === 'string').length).toBe(0);
+      });
+
+      it('returns the stored fields of the user on a login with auth data', async () => {
+        await reconfigureServer({
+          auth: {
+            tokenAdapter: {
+              validateAppId: () => Promise.resolve(),
+              validateAuthData: () => Promise.resolve(),
+            },
+          },
+        });
+        setTier();
+        const authData = { tokenAdapter: { id: 'p1', token: 't' } };
+        const created = await signUp({ authData });
+        expect(created.status).toBe(201);
+        expect(created.data.tier).toBe('gold');
+        const login = await signUp({ authData });
+        expect(login.status).toBe(200);
+        expect(login.data.objectId).toBe(created.data.objectId);
+        expect(login.data.tier).toBe('gold');
+        expect(login.data.username).toBe(created.data.username);
+        expect(login.data.sessionToken).toMatch(/^r:/);
+      });
+    });
+  });
 });

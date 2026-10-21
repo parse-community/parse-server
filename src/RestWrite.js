@@ -1933,6 +1933,9 @@ RestWrite.prototype.runDatabaseOperation = function () {
           response.username = this.data.username;
         }
         this._updateResponseWithData(response, this.data);
+        // Read access as stored
+        const acl = this.data.ACL;
+        this.writtenReadAccess = acl ? Object.keys(acl).filter(key => acl[key].read) : null;
         this.response = {
           status: 201,
           response,
@@ -2379,13 +2382,12 @@ RestWrite.prototype._restoreRevertedPath = function (response, writeData, writte
   response[target] = value === undefined ? { __op: 'Delete' } : value;
 };
 
-// Whether the caller can read the written object, or undefined if only a read can tell
-RestWrite.prototype._readAccessWithoutQuery = function () {
+// Whether the reader can read the written object, or undefined if only a read can tell
+RestWrite.prototype._readAccessWithoutQuery = function (aclGroup) {
   const readers = this.writtenReadAccess;
   if (readers === undefined || (readers !== null && !Array.isArray(readers))) {
     return undefined;
   }
-  const aclGroup = this.runOptions.acl || [];
   // Every client read applies the object ACL
   if (readers && !readers.some(reader => aclGroup.includes(reader))) {
     return false;
@@ -2394,8 +2396,11 @@ RestWrite.prototype._readAccessWithoutQuery = function () {
   if (triggers.triggerExists(this.className, triggers.Types.afterSave, this.config.applicationId)) {
     return undefined;
   }
-  // System classes have their own read rules
-  if (this.className.startsWith('_')) {
+  // System classes have their own read rules, except for a created user, installation or role
+  if (
+    this.className.startsWith('_') &&
+    (this.query || !['_User', '_Installation', '_Role'].includes(this.className))
+  ) {
     return undefined;
   }
   if (this.validSchemaController.testPermissionsForClassName(this.className, aclGroup, 'get')) {
@@ -2403,10 +2408,14 @@ RestWrite.prototype._readAccessWithoutQuery = function () {
   }
 };
 
-// Returns stored values in an update response only as the caller can read them
+// Returns stored values in a save response only as the caller can read them
 RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
   const response = this.response?.response;
-  if (!this.query || !response || this.storage.responseFromTrigger) {
+  if (!response || this.storage.responseFromTrigger) {
+    return;
+  }
+  // Login and session requests build their own response
+  if (!this.query && this.writtenReadAccess === undefined) {
     return;
   }
   if (this.auth.isMaster || this.auth.isMaintenance) {
@@ -2414,16 +2423,24 @@ RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
   }
   // A session token issued by this request is not a stored value
   const issued = this.storage.issuedSessionToken;
+  // Nor is a required column that echoes the caller's unchanged input
+  const echoed = key =>
+    (requiredColumns.read[this.className] || []).includes(key) &&
+    !(this.storage.fieldsChangedByTrigger || []).includes(key) &&
+    !(key === 'username' && this.responseShouldHaveUsername) &&
+    util.isDeepStrictEqual(response[key], this.data[key]);
   const fields = Object.keys(response).filter(
     key =>
       !['objectId', 'createdAt', 'updatedAt'].includes(key) &&
-      !(key === 'sessionToken' && issued && response[key] === issued)
+      !(key === 'sessionToken' && issued && response[key] === issued) &&
+      !echoed(key)
   );
   if (!fields.length) {
     return;
   }
   let reverted = [];
-  if (this.pendingOps.operations) {
+  // A created object has no stored value to restore
+  if (this.query && this.pendingOps.operations) {
     const stateController = Parse.CoreManager.getObjectStateController();
     const [pending] = stateController.getPendingOps(this.pendingOps.identifier);
     reverted = Object.keys(this.pendingOps.operations).filter(key => !pending[key]);
@@ -2431,7 +2448,10 @@ RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
   const keys = fields.filter(key =>
     reverted.some(path => path === key || path.startsWith(`${key}.`))
   );
-  const readable = this._readAccessWithoutQuery();
+  // A sign-up response is for the new user if it issues the new user a session
+  const signUp = !this.query && this.className === '_User' && !!issued;
+  const aclGroup = signUp ? ['*', this.data.objectId] : this.runOptions.acl || [];
+  const readable = this._readAccessWithoutQuery(aclGroup);
   if (readable && !keys.length) {
     return;
   }
@@ -2441,10 +2461,21 @@ RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
       const query = await RestQuery({
         method: RestQuery.Method.get,
         config: this.config,
-        auth: this.auth,
+        auth: signUp
+          ? new Auth.Auth({
+            config: this.config,
+            isMaster: false,
+            user: Parse.Object.fromJSON({ className: '_User', objectId: this.data.objectId }),
+            installationId: this.auth.installationId,
+          })
+          : this.auth,
         className: this.className,
-        // A session update wraps the addressed objectId
-        restWhere: { objectId: this.query.objectId ?? this.query.$and?.[0]?.objectId },
+        restWhere: {
+          // A session update wraps the addressed objectId
+          objectId: this.query
+            ? this.query.objectId ?? this.query.$and?.[0]?.objectId
+            : this.data.objectId,
+        },
         // A secondary may not have the write yet
         restOptions: { readPreference: 'primary' },
         runBeforeFind: false,
