@@ -74,6 +74,11 @@ export interface StorageAdapter {
     update: any,
     transactionalSession: ?any
   ): Promise<[any] | UpdateManyResult>;
+  /**
+   * Updates the first object that matches the given query and resolves with the updated object.
+   * The object includes its read access in `_rperm` (`null` for an object without ACL); if it is
+   * missing, Parse Server reads the object again to decide which fields an update response contains.
+   */
   findOneAndUpdate(
     className: string,
     schema: SchemaType,

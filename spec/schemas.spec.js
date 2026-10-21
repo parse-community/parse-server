@@ -2847,7 +2847,9 @@ describe('schemas', () => {
     await obj.save({ key: 1 }, { useMasterKey: true });
     obj.increment('key', 10);
     const objectAgain = await obj.save();
-    expect(objectAgain.get('key')).toBe(11);
+    expect(objectAgain.get('key')).toBeUndefined();
+    const stored = await new Parse.Query('AClass').get(obj.id, { useMasterKey: true });
+    expect(stored.get('key')).toBe(11);
   });
 
   it('regression test for #2246', done => {

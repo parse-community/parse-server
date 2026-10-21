@@ -68,6 +68,10 @@ export class SessionsRouter extends ClassesRouter {
     if (!user) {
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'invalid session');
     }
+    // Only a legacy session token is upgraded
+    if (!req.auth.isLegacySession) {
+      return this.handleMe(req);
+    }
     const { sessionData, createSession } = RestWrite.createSession(config, {
       userId: user.id,
       createdWith: {
