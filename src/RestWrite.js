@@ -2338,10 +2338,17 @@ RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
   }
   // A session token issued by this request is not a stored value
   const issued = this.storage.issuedSessionToken;
+  // Nor is a required column that echoes the caller's unchanged input
+  const echoed = key =>
+    (requiredColumns.read[this.className] || []).includes(key) &&
+    !(this.storage.fieldsChangedByTrigger || []).includes(key) &&
+    !(key === 'username' && this.responseShouldHaveUsername) &&
+    util.isDeepStrictEqual(response[key], this.data[key]);
   const fields = Object.keys(response).filter(
     key =>
       !['objectId', 'createdAt', 'updatedAt'].includes(key) &&
-      !(key === 'sessionToken' && issued && response[key] === issued)
+      !(key === 'sessionToken' && issued && response[key] === issued) &&
+      !echoed(key)
   );
   if (!fields.length) {
     return;
@@ -2356,8 +2363,8 @@ RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
   const keys = fields.filter(key =>
     reverted.some(path => path === key || path.startsWith(`${key}.`))
   );
-  // A sign-up response is for the new user
-  const signUp = !this.query && this.className === '_User';
+  // A sign-up response is for the new user if it issues the new user a session
+  const signUp = !this.query && this.className === '_User' && !!issued;
   const aclGroup = signUp ? ['*', this.data.objectId] : this.runOptions.acl || [];
   const readable = this._readAccessWithoutQuery(aclGroup);
   if (readable && !keys.length) {

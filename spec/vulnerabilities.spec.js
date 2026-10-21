@@ -11598,6 +11598,37 @@ describe('Vulnerabilities', () => {
       expect(readCalls().length).toBe(0);
     });
 
+    describe('update of a user who cannot read their own user', () => {
+      let user;
+
+      beforeEach(async () => {
+        user = await Parse.User.signUp('owner', 'password');
+        const acl = new Parse.ACL();
+        acl.setWriteAccess(user.id, true);
+        user.setACL(acl);
+        await user.save(null, { useMasterKey: true });
+        Parse.Cloud.afterSave('_User', () => {});
+      });
+
+      const update = body =>
+        request({
+          method: 'PUT',
+          url: `${Parse.serverURL}/users/${user.id}`,
+          headers: { ...headers, 'X-Parse-Session-Token': user.getSessionToken() },
+          body: JSON.stringify(body),
+        });
+
+      it('keeps an unchanged username that the caller sends', async () => {
+        const response = await update({ username: 'owner' });
+        expect(response.data.username).toBe('owner');
+      });
+
+      it('does not return the stored username that the caller does not send', async () => {
+        const response = await update({ nickname: 'x' });
+        expect(response.data.username).toEqual(deleted);
+      });
+    });
+
     describe('sign-up', () => {
       const signUp = body =>
         request({
@@ -11609,6 +11640,19 @@ describe('Vulnerabilities', () => {
       const setTier = () =>
         Parse.Cloud.beforeSave('_User', ({ object }) => {
           object.set('tier', 'gold');
+        });
+      // A sign-up then issues no session
+      const requireEmailVerification = () =>
+        reconfigureServer({
+          appName: 'test',
+          publicServerURL: 'http://localhost:8378/1',
+          verifyUserEmails: true,
+          preventLoginWithUnverifiedEmail: true,
+          emailAdapter: {
+            sendVerificationEmail: () => {},
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => {},
+          },
         });
 
       it('does not return values that beforeSave sets to a new user who cannot read their own user', async () => {
@@ -11648,6 +11692,69 @@ describe('Vulnerabilities', () => {
         const response = await signUp({ username: 'newuser', password: 'password' });
         expect(response.data.tier).toBe('gold');
         expect(response.data.sessionToken).toMatch(/^r:/);
+      });
+
+      it('does not return values that beforeSave sets to a sign-up that issues no session', async () => {
+        await requireEmailVerification();
+        setTier();
+        const response = await signUp({
+          username: 'newuser',
+          password: 'password',
+          email: 'newuser@example.com',
+        });
+        expect(response.data.sessionToken).toBeUndefined();
+        expect(response.data.tier).toEqual(deleted);
+        expect(JSON.stringify(response.data)).not.toContain('gold');
+      });
+
+      it('keeps the username of a sign-up that issues no session when the user class has an afterSave trigger', async () => {
+        await requireEmailVerification();
+        Parse.Cloud.afterSave('_User', () => {});
+        const user = new Parse.User();
+        user.setUsername('newuser');
+        user.setPassword('password');
+        user.setEmail('newuser@example.com');
+        await user.signUp();
+        expect(user.getSessionToken()).toBeUndefined();
+        expect(user.getUsername()).toBe('newuser');
+      });
+
+      it('does not return a username that beforeSave changes to a sign-up that issues no session', async () => {
+        await requireEmailVerification();
+        Parse.Cloud.beforeSave('_User', ({ object }) => {
+          object.set('username', 'changed-username');
+        });
+        Parse.Cloud.afterSave('_User', () => {});
+        const response = await signUp({
+          username: 'newuser',
+          password: 'password',
+          email: 'newuser@example.com',
+        });
+        expect(response.data.sessionToken).toBeUndefined();
+        expect(response.data.username).toEqual(deleted);
+        expect(JSON.stringify(response.data)).not.toContain('changed-username');
+      });
+
+      it('does not return a generated username to a logged-in caller who creates a user with auth data', async () => {
+        await reconfigureServer({
+          auth: {
+            tokenAdapter: {
+              validateAppId: () => Promise.resolve(),
+              validateAuthData: () => Promise.resolve(),
+            },
+          },
+        });
+        const caller = await Parse.User.signUp('caller', 'password');
+        const response = await request({
+          method: 'POST',
+          url: `${Parse.serverURL}/users`,
+          headers: { ...headers, 'X-Parse-Session-Token': caller.getSessionToken() },
+          body: JSON.stringify({ authData: { tokenAdapter: { id: 'p2', token: 't' } } }),
+        });
+        expect(response.status).toBe(201);
+        expect(response.data.objectId).not.toBe(caller.id);
+        expect(response.data.sessionToken).toBeUndefined();
+        expect(response.data.username).toEqual(deleted);
       });
 
       it('does not read the new user to decide on the response', async () => {
