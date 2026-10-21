@@ -425,6 +425,8 @@ ParseCloud.beforePasswordResetRequest = function (handler, validationHandler) {
  *
  * If you want to use afterSave for a predefined class in the Parse JavaScript SDK (e.g. {@link Parse.User} or {@link Parse.File}), you should pass the class itself and not the String for arg1.
  *
+ * For a `Parse.Object` subclass, if the function returns a plain object instead of a `Parse.Object`, Parse Server sends that object to the client as the response of the save request. It does not remove fields from it that the client cannot read, except protected fields if `protectedFieldsSaveResponseExempt` is `false`. For `Parse.File` and `Parse.Config`, the return value does not change the response.
+ *
  * ```
  * Parse.Cloud.afterSave('MyCustomClass', async function(request) {
  *   // code here

@@ -125,6 +125,9 @@ RestWrite.prototype.execute = function () {
       return this.resolveFileUrls();
     })
     .then(() => {
+      return this.validateDotNotationKeys();
+    })
+    .then(() => {
       return this.runBeforeSaveTrigger();
     })
     .then(() => {
@@ -166,6 +169,9 @@ RestWrite.prototype.execute = function () {
     })
     .then(() => {
       return this.cleanUserAuthData();
+    })
+    .then(() => {
+      return this.filterUnreadableFieldsInResponse();
     })
     .then(() => {
       return this.filterProtectedFieldsInResponse();
@@ -374,6 +380,7 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
       } catch (error) {
         throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `${error}`);
       }
+      this.validateDotNotationKeys();
       if (response && response.object) {
         // The trigger may have set file pointers without URL
         return this.resolveFileUrls();
@@ -1208,6 +1215,7 @@ RestWrite.prototype.createSessionToken = async function () {
 
   if (this.response && this.response.response) {
     this.response.response.sessionToken = sessionData.sessionToken;
+    this.storage.issuedSessionToken = sessionData.sessionToken;
   }
 
   return createSession();
@@ -1464,8 +1472,8 @@ RestWrite.prototype.handleInstallation = function () {
 
   let installationId = this.data.installationId;
 
-  // If data.installationId is not set and we're not master, we can lookup in auth
-  if (!installationId && !this.auth.isMaster && !this.auth.isMaintenance) {
+  // Create only: the request installation ID names the caller's own installation
+  if (!installationId && !this.query && !this.auth.isMaster && !this.auth.isMaintenance) {
     installationId = this.auth.installationId;
   }
 
@@ -1806,13 +1814,15 @@ RestWrite.prototype.runDatabaseOperation = function () {
 
     return defer.then(() => {
       // Run an update
+      // The unsanitized result of a client update carries the read access of the object
+      const raw = !this.runOptions.many && !this.auth.isMaster && !this.auth.isMaintenance;
       return this.config.database
         .update(
           this.className,
           this.query,
           this.data,
           this.runOptions,
-          false,
+          raw,
           false,
           this.validSchemaController
         )
@@ -1820,7 +1830,12 @@ RestWrite.prototype.runDatabaseOperation = function () {
           this._throwIfAuthDataDuplicate(error);
           throw error;
         })
-        .then(response => {
+        .then(async result => {
+          let response = result;
+          if (raw) {
+            this.writtenReadAccess = result._rperm;
+            response = await this.config.database._sanitizeDatabaseResult(this.data, result);
+          }
           response.updatedAt = this.updatedAt;
           this._updateResponseWithData(response, this.data);
           this.response = { response };
@@ -1983,12 +1998,15 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
     .then(result => {
       const jsonReturned = result && !result._toFullJSON;
       if (jsonReturned) {
+        // The returned object is the response as is
+        this.storage.responseFromTrigger = true;
         this.pendingOps.operations = {};
         this.response.response = result;
       } else {
         this.response.response = this._updateResponseWithData(
           (result || updatedObject).toJSON(),
-          this.data
+          this.data,
+          true
         );
       }
     })
@@ -2022,6 +2040,119 @@ RestWrite.prototype.sanitizedData = function () {
   return Parse._decode(undefined, data);
 };
 
+// A raw view of the object's fields (stored values overlaid with whole-field
+// writes in this request) used to resolve whether a dot notation key targets a
+// pointer's object ID.
+RestWrite.prototype._dotNotationFieldRoot = function () {
+  const root = Object.assign({}, this.originalData);
+  if (this.data) {
+    for (const key of Object.keys(this.data)) {
+      if (key.indexOf('.') < 0) {
+        root[key] = this.data[key];
+      }
+    }
+  }
+  return root;
+};
+
+const prohibitedDotNotationKey = key =>
+  new Parse.Error(
+    Parse.Error.INVALID_KEY_NAME,
+    `Prohibited dot notation key in request data: ${JSON.stringify(key)}.`
+  );
+
+// Values the SDK decodes to an instance rather than a plain object: an operation or a
+// typed value
+const decodesToInstance = value => {
+  if (typeof value.__op === 'string') {
+    return true;
+  }
+  switch (value.__type) {
+    case 'Pointer':
+    case 'Object':
+      return !!value.className;
+    case 'Relation':
+    case 'Date':
+    case 'File':
+    case 'GeoPoint':
+    case 'Polygon':
+      return true;
+    default:
+      return false;
+  }
+};
+
+// Whether the SDK would resolve a non-leaf segment of the key, from the given depth
+// on, through the prototype chain of the container instead of an own key, writing
+// the final segment onto a shared built-in.
+const descendsIntoPrototype = (container, segments, depth = 0) => {
+  for (let i = depth; i < segments.length - 1; i++) {
+    if (container === null || typeof container !== 'object') {
+      return false;
+    }
+    // A further segment walks the prototype of the decoded instance
+    if (decodesToInstance(container)) {
+      return true;
+    }
+    const segment = segments[i];
+    if (!hasOwn(container, segment)) {
+      // An inherited member of a nested value resolves to a shared built-in; the root
+      // has no prototype in the SDK, and a missing key is created fresh
+      return i > 0 && segment in container;
+    }
+    container = container[segment];
+  }
+  return false;
+};
+
+// The container a written value provides for keys below it: the value itself, or
+// the elements an array operation adds
+const writtenContainer = value => {
+  if (value === null || typeof value !== 'object') {
+    return undefined;
+  }
+  if (typeof value.__op === 'string') {
+    return Array.isArray(value.objects) ? value.objects : undefined;
+  }
+  return value;
+};
+
+// Rejects a dot notation key that the SDK would apply through a prototype member of
+// the stored object (the trigger object is built from it before the other fields of
+// this request are applied), of the object as written by this request, or of a value
+// another key of this request writes above it.
+RestWrite.prototype.validateDotNotationKeys = function () {
+  const keys = Object.keys(this.data);
+  const keySet = new Set(keys);
+  const roots = [this._dotNotationFieldRoot()];
+  if (this.originalData) {
+    roots.push(this.originalData);
+  }
+  // Only a key that is a prefix of this key, ending on a segment boundary, writes above it
+  const writtenAbove = segments => {
+    let prefix = segments[0];
+    for (let depth = 1; depth < segments.length - 1; depth++) {
+      if (keySet.has(prefix)) {
+        const container = writtenContainer(this.data[prefix]);
+        if (container !== undefined && descendsIntoPrototype(container, segments, depth)) {
+          return true;
+        }
+      }
+      prefix += `.${segments[depth]}`;
+    }
+    return false;
+  };
+  for (const key of keys) {
+    if (key.indexOf('.') < 0) {
+      continue;
+    }
+    const segments = key.split('.');
+    if (roots.some(root => descendsIntoPrototype(root, segments)) || writtenAbove(segments)) {
+      throw prohibitedDotNotationKey(key);
+    }
+  }
+};
+
 // Returns an updated copy of the object
 RestWrite.prototype.buildParseObjects = function () {
   const extraData = { className: this.className, objectId: this.query?.objectId };
@@ -2048,11 +2179,16 @@ RestWrite.prototype.buildParseObjects = function () {
     }
   }
   const updatedObject = triggers.inflate(extraData, this.originalData);
+  const pointerRoot = this._dotNotationFieldRoot();
   Object.keys(this.data).reduce(function (data, key) {
     if (key.indexOf('.') > 0) {
-      if (typeof data[key].__op === 'string') {
-        if (!readOnlyAttributes.includes(key)) {
-          updatedObject.set(key, data[key]);
+      // Null and undefined are set at their own dot notation path, like an operation
+      if (data[key] == null || typeof data[key].__op === 'string') {
+        // A dot notation key that removes a pointer's object ID would leave the
+        // pointer unserializable and break the trigger object, so skip it.
+        if (!readOnlyAttributes.includes(key) && !targetsPointerId(pointerRoot, key)) {
+          // The SDK key name rules apply to top-level fields only
+          updatedObject.set(key, data[key], { ignoreValidation: true });
         }
       } else {
         // subdocument key with dot notation { 'x.y': v } => { 'x': { 'y' : v } })
@@ -2117,20 +2253,283 @@ RestWrite.prototype.filterProtectedFieldsInResponse = async function () {
   if (!protectedFields) {
     return;
   }
-  for (const field of protectedFields) {
-    delete this.response.response[field];
+  for (const key of Object.keys(this.response.response)) {
+    if (protectedFields.some(field => key === field || key.startsWith(`${field}.`))) {
+      delete this.response.response[key];
+    }
   }
 };
 
-RestWrite.prototype._updateResponseWithData = function (response, data) {
+const hasOwn = (object, key) =>
+  object !== null && object !== undefined && Object.prototype.hasOwnProperty.call(object, key);
+
+// Whether a dot notation path can descend into the value
+const isContainer = value =>
+  value !== null && typeof value === 'object' && !value.__type && !value.__op;
+
+// Reads a dot notation path through own properties of containers only
+const getOwnPath = (object, path) => {
+  let value = object;
+  for (const key of path) {
+    if (!isContainer(value) || !hasOwn(value, key)) {
+      return undefined;
+    }
+    value = value[key];
+  }
+  return value;
+};
+
+// Whether a dot notation key targets a pointer's object ID (`id`/`objectId`).
+// Removing it leaves the pointer unserializable (`toPointer` throws), which
+// corrupts the trigger object; other sub-keys below a pointer are left to the
+// existing handling.
+const targetsPointerId = (root, key) => {
+  const segments = key.split('.');
+  for (let depth = 1; depth < segments.length; depth++) {
+    const parent = getOwnPath(root, segments.slice(0, depth));
+    if (parent !== null && typeof parent === 'object' && parent.__type === 'Pointer') {
+      const next = segments[depth];
+      return next === 'id' || next === 'objectId';
+    }
+  }
+  return false;
+};
+
+// Restores a reverted dot notation key in the response
+RestWrite.prototype._restoreRevertedPath = function (response, writeData, written, key, finalObject) {
+  // A write at or beneath the key governs
+  if (written.some(k => k === key || k.startsWith(`${key}.`))) {
+    return;
+  }
+  const path = key.split('.');
+  // A returned object without the field leaves the stored value
+  const fromFinal = !!finalObject && hasOwn(finalObject, path[0]);
+  let value = fromFinal ? finalObject : this.originalData || {};
+  let depth = 0;
+  let authoritative = fromFinal;
+  if (!fromFinal) {
+    // A written ancestor governs; computed operations are returned expanded
+    const ancestor = written
+      .filter(k => key.startsWith(`${k}.`))
+      .sort((a, b) => b.length - a.length)[0];
+    if (ancestor) {
+      const ancestorPath = ancestor.split('.');
+      let returned = getOwnPath(response, ancestorPath);
+      // An unchanged computed result is no longer in the response
+      const op = writeData[ancestor]?.__op;
+      if (returned === undefined && op && op !== 'Delete') {
+        returned = getOwnPath(this.originalData, ancestorPath);
+      }
+      value = returned !== undefined ? returned : writeData[ancestor];
+      if (!isContainer(value)) {
+        return;
+      }
+      depth = ancestorPath.length;
+      authoritative = true;
+    }
+  }
+  while (depth < path.length && isContainer(value) && hasOwn(value, path[depth])) {
+    value = value[path[depth++]];
+  }
+  // A missing array index returns the whole array, so the client keeps no hole
+  const missingIndex = depth < path.length && Array.isArray(value) && /^\d+$/.test(path[depth]);
+  if (depth < path.length && !missingIndex) {
+    if (isContainer(value)) {
+      // Delete at the first missing key
+      depth++;
+      value = undefined;
+    } else if (value?.__op) {
+      return;
+    } else {
+      const unchanged = util.isDeepStrictEqual(
+        value,
+        getOwnPath(this.originalData, path.slice(0, depth))
+      );
+      if (!fromFinal || unchanged) {
+        // Clears the client operation beneath an unchanged typed value
+        if (value?.__type && unchanged) {
+          response[key] = { __op: 'Delete' };
+        }
+        return;
+      }
+    }
+  }
+  const target = path.slice(0, depth).join('.');
+  const keys = [...written, ...Object.keys(response)];
+  const overlaps = prefix =>
+    keys.some(k => k === prefix || k.startsWith(`${prefix}.`) || prefix.startsWith(`${k}.`));
+  if (!authoritative && (value === undefined || missingIndex) && overlaps(target)) {
+    // Another write creates the path; clear the shallowest untouched reverted part
+    if (value === undefined) {
+      for (let length = depth + 1; length <= path.length; length++) {
+        const prefix = path.slice(0, length).join('.');
+        if (!overlaps(prefix)) {
+          response[prefix] = { __op: 'Delete' };
+          break;
+        }
+      }
+    }
+    return;
+  }
+  for (const responseKey of Object.keys(response)) {
+    if (responseKey.startsWith(`${target}.`)) {
+      delete response[responseKey];
+    }
+  }
+  response[target] = value === undefined ? { __op: 'Delete' } : value;
+};
+
+// Whether the caller can read the written object, or undefined if only a read can tell
+RestWrite.prototype._readAccessWithoutQuery = function () {
+  const readers = this.writtenReadAccess;
+  if (readers === undefined || (readers !== null && !Array.isArray(readers))) {
+    return undefined;
+  }
+  const aclGroup = this.runOptions.acl || [];
+  // Every client read applies the object ACL
+  if (readers && !readers.some(reader => aclGroup.includes(reader))) {
+    return false;
+  }
+  // afterSave may change the object after the write
+  if (triggers.triggerExists(this.className, triggers.Types.afterSave, this.config.applicationId)) {
+    return undefined;
+  }
+  // System classes have their own read rules
+  if (this.className.startsWith('_')) {
+    return undefined;
+  }
+  if (this.validSchemaController.testPermissionsForClassName(this.className, aclGroup, 'get')) {
+    return true;
+  }
+};
+
+// Returns stored values in an update response only as the caller can read them
+RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
+  const response = this.response?.response;
+  if (!this.query || !response || this.storage.responseFromTrigger) {
+    return;
+  }
+  if (this.auth.isMaster || this.auth.isMaintenance) {
+    return;
+  }
+  // A session token issued by this request is not a stored value
+  const issued = this.storage.issuedSessionToken;
+  const fields = Object.keys(response).filter(
+    key =>
+      !['objectId', 'createdAt', 'updatedAt'].includes(key) &&
+      !(key === 'sessionToken' && issued && response[key] === issued)
+  );
+  if (!fields.length) {
+    return;
+  }
+  let reverted = [];
+  if (this.pendingOps.operations) {
+    const stateController = Parse.CoreManager.getObjectStateController();
+    const [pending] = stateController.getPendingOps(this.pendingOps.identifier);
+    reverted = Object.keys(this.pendingOps.operations).filter(key => !pending[key]);
+  }
+  const keys = fields.filter(key =>
+    reverted.some(path => path === key || path.startsWith(`${key}.`))
+  );
+  const readable = this._readAccessWithoutQuery();
+  if (readable && !keys.length) {
+    return;
+  }
+  let view;
+  if (readable !== false) {
+    try {
+      const query = await RestQuery({
+        method: RestQuery.Method.get,
+        config: this.config,
+        auth: this.auth,
+        className: this.className,
+        // A session update wraps the addressed objectId
+        restWhere: { objectId: this.query.objectId ?? this.query.$and?.[0]?.objectId },
+        // A secondary may not have the write yet
+        restOptions: { readPreference: 'primary' },
+        runBeforeFind: false,
+        runAfterFind: false,
+        context: this.context,
+      });
+      view = (await query.execute()).results[0];
+    } catch (error) {
+      // Fails closed; access denial is expected
+      const denied = [Parse.Error.OPERATION_FORBIDDEN, Parse.Error.OBJECT_NOT_FOUND];
+      if (!(error instanceof Parse.Error) || !denied.includes(error.code)) {
+        logger.warn('Failed to read the object for the save response', error);
+      }
+    }
+  }
+  if (!view) {
+    // No stored values for a caller who cannot read the object
+    for (const key of fields) {
+      delete response[key];
+    }
+    for (const field of new Set(fields.map(key => key.split('.')[0]))) {
+      // The SDK cannot apply an operation to ACL
+      if (field !== 'ACL') {
+        response[field] = { __op: 'Delete' };
+      }
+    }
+    return;
+  }
+  for (const key of keys) {
+    // Removed beneath a key the caller cannot read
+    if (!hasOwn(response, key)) {
+      continue;
+    }
+    const path = key.split('.');
+    const value = getOwnPath(view, path);
+    if (value === undefined) {
+      for (const responseKey of Object.keys(response)) {
+        if (responseKey.startsWith(`${key}.`)) {
+          delete response[responseKey];
+        }
+      }
+      if (key === 'ACL') {
+        // The SDK cannot apply an operation to ACL
+        delete response[key];
+      } else {
+        response[key] = { __op: 'Delete' };
+      }
+    } else if (util.isDeepStrictEqual(response[key], getOwnPath(this.originalData, path))) {
+      // The stored value as the caller reads it
+      response[key] = value;
+    }
+  }
+};
+
+RestWrite.prototype._updateResponseWithData = function (response, data, isFinalObject = false) {
   const stateController = Parse.CoreManager.getObjectStateController();
   const [pending] = stateController.getPendingOps(this.pendingOps.identifier);
+  let revertedData;
+  const revertedPaths = [];
   for (const key in this.pendingOps.operations) {
-    if (!pending[key]) {
-      data[key] = this.originalData ? this.originalData[key] : { __op: 'Delete' };
+    if (pending[key]) {
+      continue;
+    }
+    // The SDK cannot apply an operation or a dot notation path to ACL
+    if (key.startsWith('ACL.') || (key === 'ACL' && !hasOwn(this.originalData, 'ACL'))) {
+      continue;
+    }
+    if (key.includes('.')) {
+      revertedPaths.push(key);
+      continue;
+    }
+    // Response only; the write data builds the afterSave and LiveQuery objects
+    revertedData ||= { ...data };
+    revertedData[key] = hasOwn(this.originalData, key)
+      ? this.originalData[key]
+      : { __op: 'Delete' };
+    this.storage.fieldsChangedByTrigger ||= [];
+    // Once only, so an afterSave unset is not undone by a second entry
+    if (this.storage.fieldsChangedByTrigger.indexOf(key) < 0) {
       this.storage.fieldsChangedByTrigger.push(key);
     }
   }
+  const responseData = revertedData || data;
+  // The final object, before unchanged fields are removed from the response
+  const finalObject = isFinalObject && revertedPaths.length ? { ...response } : undefined;
   const skipKeys = [...(requiredColumns.read[this.className] || [])];
   if (!this.query) {
     skipKeys.push('objectId', 'createdAt');
@@ -2146,17 +2545,14 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
     if (
       value == null ||
       (value.__type && value.__type === 'Pointer') ||
-      util.isDeepStrictEqual(data[key], value) ||
+      util.isDeepStrictEqual(responseData[key], value) ||
       util.isDeepStrictEqual((this.originalData || {})[key], value)
     ) {
       delete response[key];
     }
   }
-  if (_.isEmpty(this.storage.fieldsChangedByTrigger)) {
-    return response;
-  }
-  this.storage.fieldsChangedByTrigger.forEach(fieldName => {
-    const dataValue = data[fieldName];
+  (this.storage.fieldsChangedByTrigger || []).forEach(fieldName => {
+    const dataValue = responseData[fieldName];
 
     if (!Object.prototype.hasOwnProperty.call(response, fieldName)) {
       response[fieldName] = dataValue;
@@ -2169,6 +2565,12 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
       }
     }
   });
+  if (revertedPaths.length) {
+    const written = Object.keys(data);
+    for (const key of revertedPaths) {
+      this._restoreRevertedPath(response, data, written, key, finalObject);
+    }
+  }
   return response;
 };
 

@@ -1,3 +1,73 @@
+## [9.10.6-alpha.5](https://github.com/parse-community/parse-server/compare/9.10.6-alpha.4...9.10.6-alpha.5) (2026-10-20)
+
+
+### Bug Fixes
+
+* Object write with a crafted dot notation key can pollute a shared prototype when the class has a trigger or LiveQuery ([GHSA-95hp-82c6-25q5](https://github.com/parse-community/parse-server/security/advisories/GHSA-95hp-82c6-25q5)) ([#10810](https://github.com/parse-community/parse-server/issues/10810)) ([9e3da78](https://github.com/parse-community/parse-server/commit/9e3da782be8e2225a06d87851ee450da6a0b57a4))
+
+## [9.10.6-alpha.4](https://github.com/parse-community/parse-server/compare/9.10.6-alpha.3...9.10.6-alpha.4) (2026-10-20)
+
+
+### Bug Fixes
+
+* Session upgrade endpoint creates an additional session from an already revocable session token ([GHSA-2j2x-c587-q33g](https://github.com/parse-community/parse-server/security/advisories/GHSA-2j2x-c587-q33g)) ([#10808](https://github.com/parse-community/parse-server/issues/10808)) ([5bcb56b](https://github.com/parse-community/parse-server/commit/5bcb56b1e77326f33d7b89787ee4cbc3870e6cec))
+
+## [9.10.6-alpha.3](https://github.com/parse-community/parse-server/compare/9.10.6-alpha.2...9.10.6-alpha.3) (2026-10-19)
+
+
+### Bug Fixes
+
+* Object write with a null dot notation key can corrupt a field or make reads fail on MongoDB ([GHSA-655c-2xf3-77x9](https://github.com/parse-community/parse-server/security/advisories/GHSA-655c-2xf3-77x9)) ([#10804](https://github.com/parse-community/parse-server/issues/10804)) ([b405b63](https://github.com/parse-community/parse-server/commit/b405b637a6adaff21ac27d2b4cf4c164ce54e39a))
+
+## [9.10.6-alpha.2](https://github.com/parse-community/parse-server/compare/9.10.6-alpha.1...9.10.6-alpha.2) (2026-10-19)
+
+
+### Bug Fixes
+
+* Object update with a dot notation key below a pointer field can terminate the server process ([GHSA-wc3c-6843-q7mv](https://github.com/parse-community/parse-server/security/advisories/GHSA-wc3c-6843-q7mv)) ([#10802](https://github.com/parse-community/parse-server/issues/10802)) ([946b670](https://github.com/parse-community/parse-server/commit/946b670186cc4b3932a5a738f3264404de8a0aa5))
+
+## [9.10.6-alpha.1](https://github.com/parse-community/parse-server/compare/9.10.5...9.10.6-alpha.1) (2026-10-18)
+
+
+### Bug Fixes
+
+* Object update returns stored field values to a caller without read access ([GHSA-2rcp-jc67-vq74](https://github.com/parse-community/parse-server/security/advisories/GHSA-2rcp-jc67-vq74)) ([#10798](https://github.com/parse-community/parse-server/issues/10798)) ([4f110a9](https://github.com/parse-community/parse-server/commit/4f110a9cf262375b7432dc1a630200272a8232ed))
+
+## [9.10.5-alpha.11](https://github.com/parse-community/parse-server/compare/9.10.5-alpha.10...9.10.5-alpha.11) (2026-10-16)
+
+
+### Bug Fixes
+
+* Option `requestKeywordDenylist` does not apply to query parameters `keys`, `include` and `excludeKeys` ([#10793](https://github.com/parse-community/parse-server/issues/10793)) ([e220f51](https://github.com/parse-community/parse-server/commit/e220f514e601fd5d1e8fd3b9c3ae9426b1fab813))
+
+## [9.10.5-alpha.10](https://github.com/parse-community/parse-server/compare/9.10.5-alpha.9...9.10.5-alpha.10) (2026-10-15)
+
+
+### Bug Fixes
+
+* Installation update is written to the installation named by the request's installation ID instead of the addressed object ([GHSA-8j8q-73xx-w3m4](https://github.com/parse-community/parse-server/security/advisories/GHSA-8j8q-73xx-w3m4)) ([#10792](https://github.com/parse-community/parse-server/issues/10792)) ([256a253](https://github.com/parse-community/parse-server/commit/256a253cd119a60fa6095163b9f846de361b398c))
+
+## [9.10.5-alpha.9](https://github.com/parse-community/parse-server/compare/9.10.5-alpha.8...9.10.5-alpha.9) (2026-10-15)
+
+
+### Bug Fixes
+
+* Object write with a crafted key can pollute a shared prototype and cause denial of service ([GHSA-rx55-fw4j-pvpx](https://github.com/parse-community/parse-server/security/advisories/GHSA-rx55-fw4j-pvpx)) ([#10790](https://github.com/parse-community/parse-server/issues/10790)) ([e895091](https://github.com/parse-community/parse-server/commit/e895091e1b7ca3bf9e1a9509538c49fb992308ab))
+
+## [9.10.5-alpha.8](https://github.com/parse-community/parse-server/compare/9.10.5-alpha.7...9.10.5-alpha.8) (2026-10-15)
+
+
+### Bug Fixes
+
+* Object update returns the stored value of a field reverted in `beforeSave` to a caller without read access ([GHSA-9rvr-f5hc-9f2f](https://github.com/parse-community/parse-server/security/advisories/GHSA-9rvr-f5hc-9f2f)) ([#10788](https://github.com/parse-community/parse-server/issues/10788)) ([0b33504](https://github.com/parse-community/parse-server/commit/0b33504364362b7399f0415115d57d05a24f4dd2))
+
+## [9.10.5-alpha.7](https://github.com/parse-community/parse-server/compare/9.10.5-alpha.6...9.10.5-alpha.7) (2026-10-14)
+
+
+### Bug Fixes
+
+* Object write with a dot notation key can skip `afterSave` triggers and LiveQuery events ([GHSA-969q-274f-mc7w](https://github.com/parse-community/parse-server/security/advisories/GHSA-969q-274f-mc7w)) ([#10786](https://github.com/parse-community/parse-server/issues/10786)) ([6dab17c](https://github.com/parse-community/parse-server/commit/6dab17c844905e028be8bf07b01770dda70bf5a9))
+
 ## [9.10.5-alpha.6](https://github.com/parse-community/parse-server/compare/9.10.5-alpha.5...9.10.5-alpha.6) (2026-10-11)
 
 
