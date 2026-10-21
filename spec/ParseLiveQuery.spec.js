@@ -2688,4 +2688,39 @@ describe('ParseLiveQuery beforeLiveQueryEvent', function () {
     expect(handlerSpy).not.toHaveBeenCalled();
     expect(warnSpy).toHaveBeenCalledWith('beforeLiveQueryEvent validation failed', jasmine.anything());
   });
+
+  it('logs and does not fail the delete when the LiveQuery delete notification throws', async () => {
+    const parseServer = await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const object = new TestObject();
+    object.set('foo', 'bar');
+    await object.save();
+
+    Parse.Cloud.beforeLiveQueryEvent('TestObject', () => {});
+    spyOn(parseServer.config.liveQueryController, 'onAfterDelete').and.throwError(
+      'notification failure'
+    );
+    const logger = require('../lib/logger').logger;
+    const errorPromise = resolvingPromise();
+    const errorSpy = spyOn(logger, 'error').and.callFake(message => {
+      if (message === 'LiveQuery afterDelete notification failed') {
+        errorPromise.resolve();
+      }
+    });
+
+    // The delete succeeds even though the detached LiveQuery notification throws.
+    await object.destroy();
+
+    await errorPromise;
+    expect(errorSpy).toHaveBeenCalledWith(
+      'LiveQuery afterDelete notification failed',
+      jasmine.any(Error)
+    );
+  });
 });

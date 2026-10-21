@@ -15,6 +15,7 @@ var triggers = require('./triggers');
 const Auth = require('./Auth');
 const { enforceRoleSecurity } = require('./SharedRest');
 const { createSanitizedError } = require('./Error');
+const { getLogger } = require('./logger');
 
 function checkTriggers(className, config, types) {
   return types.some(triggerType => {
@@ -251,6 +252,9 @@ function del(config, auth, className, objectId, context) {
           if (publish) {
             config.liveQueryController.onAfterDelete(className, inflatedObject, null, perms);
           }
+        })
+        .catch(err => {
+          getLogger().error('LiveQuery afterDelete notification failed', err);
         });
       return triggers.maybeRunTrigger(
         triggers.Types.afterDelete,
