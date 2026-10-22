@@ -1,3 +1,10 @@
+## [8.6.115](https://github.com/parse-community/parse-server/compare/8.6.114...8.6.115) (2026-10-22)
+
+
+### Bug Fixes
+
+* Pre-authentication denial of service via email address format regex backtracking ([GHSA-9492-427f-466x](https://github.com/parse-community/parse-server/security/advisories/GHSA-9492-427f-466x)) ([#10822](https://github.com/parse-community/parse-server/issues/10822)) ([4a5941d](https://github.com/parse-community/parse-server/commit/4a5941d09cc73e850dc36b659d42ff6d94cad0b1))
+
 ## [8.6.114](https://github.com/parse-community/parse-server/compare/8.6.113...8.6.114) (2026-10-21)
 
 
