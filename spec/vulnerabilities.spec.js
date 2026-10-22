@@ -11788,4 +11788,78 @@ describe('Vulnerabilities', () => {
       });
     });
   });
+
+  describe('(GHSA-9492-427f-466x) Email address format validation backtracks on a crafted email address', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const lineTerminators = {
+      LF: '\n',
+      CR: '\r',
+      LS: String.fromCharCode(0x2028),
+      PS: String.fromCharCode(0x2029),
+    };
+    const craftedEmail = lineTerminator => '@'.repeat(100000) + lineTerminator;
+    const signUp = body =>
+      request({
+        method: 'POST',
+        url: `${Parse.serverURL}/users`,
+        headers,
+        body: JSON.stringify(body),
+      }).catch(e => e);
+
+    for (const [name, lineTerminator] of Object.entries(lineTerminators)) {
+      it(`rejects a crafted email address ending with ${name} on sign-up in time`, async () => {
+        const start = Date.now();
+        const response = await signUp({
+          username: 'user',
+          password: 'password',
+          email: craftedEmail(lineTerminator),
+        });
+        expect(Date.now() - start).toBeLessThan(2000);
+        expect(response.data.code).toBe(Parse.Error.INVALID_EMAIL_ADDRESS);
+      });
+    }
+
+    it('rejects a crafted email address on user update in time', async () => {
+      const user = await Parse.User.signUp('user', 'password');
+      const start = Date.now();
+      const response = await request({
+        method: 'PUT',
+        url: `${Parse.serverURL}/users/${user.id}`,
+        headers: { ...headers, 'X-Parse-Session-Token': user.getSessionToken() },
+        body: JSON.stringify({ email: craftedEmail(lineTerminators.LF) }),
+      }).catch(e => e);
+      expect(Date.now() - start).toBeLessThan(2000);
+      expect(response.data.code).toBe(Parse.Error.INVALID_EMAIL_ADDRESS);
+    });
+
+    it('accepts an email address with a character before and after an at sign', async () => {
+      const emails = ['user@example.com', 'a@b', 'a @ b', 'a@b@c', 'a@@b', '@a@b'];
+      for (const [i, email] of emails.entries()) {
+        const response = await signUp({ username: `user${i}`, password: 'password', email });
+        expect(response.status).withContext(email).toBe(201);
+      }
+    });
+
+    it('rejects an email address without a character before or after an at sign', async () => {
+      for (const email of ['example.com', '@example.com', 'user@', '@', '@@']) {
+        const response = await signUp({ username: 'user', password: 'password', email });
+        expect(response.data.code).withContext(email).toBe(Parse.Error.INVALID_EMAIL_ADDRESS);
+      }
+    });
+
+    it('rejects an email address with a line terminator', async () => {
+      for (const lt of Object.values(lineTerminators)) {
+        for (const email of [`${lt}a@b`, `a${lt}@b`, `a@${lt}b`, `a@b${lt}`]) {
+          const response = await signUp({ username: 'user', password: 'password', email });
+          expect(response.data.code)
+            .withContext(encodeURIComponent(email))
+            .toBe(Parse.Error.INVALID_EMAIL_ADDRESS);
+        }
+      }
+    });
+  });
 });
