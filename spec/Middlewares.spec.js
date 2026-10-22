@@ -580,4 +580,52 @@ describe('middlewares', () => {
     expect(cache4.get('192.168.0.101')).toBe(undefined);
     expect(spyBlockListCheck).toHaveBeenCalledTimes(1);
   });
+
+  describe('enforceParsedBody', () => {
+    const createReq = ({ headers = {}, body, isMultipart = false }) => ({
+      headers,
+      body,
+      is: type => (type === 'multipart/form-data' && isMultipart ? type : false),
+    });
+
+    it('rejects a request with a body that was not parsed', () => {
+      const next = jasmine.createSpy('next');
+      middlewares.enforceParsedBody(createReq({ headers: { 'content-length': '42' } }), {}, next);
+      expect(next).toHaveBeenCalledTimes(1);
+      const error = next.calls.argsFor(0)[0];
+      expect(error).toEqual(jasmine.any(Parse.Error));
+      expect(error.code).toBe(Parse.Error.INVALID_JSON);
+    });
+
+    it('rejects a chunked request with a body that was not parsed', () => {
+      const next = jasmine.createSpy('next');
+      const req = createReq({ headers: { 'transfer-encoding': 'chunked' } });
+      middlewares.enforceParsedBody(req, {}, next);
+      expect(next.calls.argsFor(0)[0]).toEqual(jasmine.any(Parse.Error));
+    });
+
+    it('allows a request with a parsed body', () => {
+      const next = jasmine.createSpy('next');
+      const req = createReq({ headers: { 'content-length': '42' }, body: { a: 1 } });
+      middlewares.enforceParsedBody(req, {}, next);
+      expect(next).toHaveBeenCalledOnceWith();
+    });
+
+    it('allows a request without a body', () => {
+      const next = jasmine.createSpy('next');
+      middlewares.enforceParsedBody(createReq({}), {}, next);
+      expect(next).toHaveBeenCalledOnceWith();
+      const emptyReq = createReq({ headers: { 'content-length': '0' } });
+      middlewares.enforceParsedBody(emptyReq, {}, next);
+      expect(next).toHaveBeenCalledTimes(2);
+      expect(next.calls.argsFor(1)).toEqual([]);
+    });
+
+    it('allows a multipart request that is not parsed as JSON', () => {
+      const next = jasmine.createSpy('next');
+      const req = createReq({ headers: { 'content-length': '42' }, isMultipart: true });
+      middlewares.enforceParsedBody(req, {}, next);
+      expect(next).toHaveBeenCalledOnceWith();
+    });
+  });
 });
