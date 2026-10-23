@@ -2551,12 +2551,9 @@ RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
       });
       view = (await query.execute()).results[0];
     } catch (error) {
-      // Fails closed; access denial is expected and an internal server error is already logged
+      // Fails closed; access denial is expected and an already logged error is not logged again
       const denied = [Parse.Error.OPERATION_FORBIDDEN, Parse.Error.OBJECT_NOT_FOUND];
-      if (
-        !(error instanceof Parse.Error) ||
-        (!denied.includes(error.code) && error.code !== Parse.Error.INTERNAL_SERVER_ERROR)
-      ) {
+      if (!error?.logged && !(error instanceof Parse.Error && denied.includes(error.code))) {
         logger.error('Failed to read the object for the save response', error);
       }
     }

@@ -1362,6 +1362,19 @@ describe('miscellaneous', () => {
       });
     }
 
+    it('logs an internal error that the storage adapter did not log', async () => {
+      const internal = new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'adapter error');
+      const error = spyOn(logger(), 'error');
+      const warn = spyOn(logger(), 'warn');
+      failRead(Config.get(Parse.applicationId).database.adapter, 'find', internal);
+      await create();
+      expect(error).toHaveBeenCalledOnceWith(
+        'Failed to read the object for the save response',
+        internal
+      );
+      expect(warn).not.toHaveBeenCalled();
+    });
+
     for (const [code, get] of Object.entries({
       OPERATION_FORBIDDEN: {},
       OBJECT_NOT_FOUND: { requiresAuthentication: true },
@@ -1396,6 +1409,53 @@ describe('miscellaneous', () => {
         expect(warn).not.toHaveBeenCalled();
       });
     }
+
+    it('does not log a read denied by a pointer permission', async () => {
+      const schema = new Parse.Schema('Item');
+      schema.addPointer('owner', '_User');
+      schema.setCLP({
+        find: { pointerFields: ['owner'] },
+        get: { pointerFields: ['owner'] },
+        count: {},
+        create: { '*': true },
+        update: { '*': true },
+        delete: {},
+        addField: { '*': true },
+      });
+      await schema.save();
+      const DatabaseController = require('../lib/Controllers/DatabaseController');
+      const find = spyOn(DatabaseController.prototype, 'find').and.callThrough();
+      const error = spyOn(logger(), 'error');
+      const warn = spyOn(logger(), 'warn');
+      const response = await create();
+      expect(response.data).toEqual({
+        objectId: jasmine.any(String),
+        createdAt: jasmine.any(String),
+      });
+      // The read of the saved object is denied without a log
+      await expectAsync(find.calls.mostRecent().returnValue).toBeRejectedWith(
+        jasmine.objectContaining({ code: Parse.Error.OBJECT_NOT_FOUND })
+      );
+      expect(error).not.toHaveBeenCalled();
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it('does not log a read that the storage adapter denies', async () => {
+      const error = spyOn(logger(), 'error');
+      const warn = spyOn(logger(), 'warn');
+      failRead(
+        Config.get(Parse.applicationId).database.adapter,
+        'find',
+        new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'denied')
+      );
+      const response = await create();
+      expect(response.data).toEqual({
+        objectId: jasmine.any(String),
+        createdAt: jasmine.any(String),
+      });
+      expect(error).not.toHaveBeenCalled();
+      expect(warn).not.toHaveBeenCalled();
+    });
   });
 
   it('test cloud function error handling', done => {

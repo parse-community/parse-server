@@ -1,6 +1,18 @@
 import defaultLogger from './logger';
 
 /**
+ * Marks an error as logged where it occurs, so that code that catches it does not log it again.
+ *
+ * @param {Error} error - The logged error
+ * @returns {Error} The same error
+ */
+function markLogged(error) {
+  // Non-enumerable, so not serialized with the error
+  Object.defineProperty(error, 'logged', { value: true });
+  return error;
+}
+
+/**
  * Creates a sanitized error that hides detailed information from clients
  * while logging the detailed message server-side.
  *
@@ -18,7 +30,12 @@ function createSanitizedError(errorCode, detailedMessage, config, sanitizedMessa
     defaultLogger.error(detailedMessage);
   }
 
-  return new Parse.Error(errorCode, config?.enableSanitizedErrorResponse !== false ? sanitizedMessage : detailedMessage);
+  return markLogged(
+    new Parse.Error(
+      errorCode,
+      config?.enableSanitizedErrorResponse !== false ? sanitizedMessage : detailedMessage
+    )
+  );
 }
 
 /**
@@ -43,4 +60,4 @@ function createSanitizedHttpError(statusCode, detailedMessage, config) {
   return error;
 }
 
-export { createSanitizedError, createSanitizedHttpError };
+export { createSanitizedError, createSanitizedHttpError, markLogged };
