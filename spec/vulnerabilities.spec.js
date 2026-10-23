@@ -9766,8 +9766,7 @@ describe('Vulnerabilities', () => {
         expect(get.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
 
         const response = await update({ secret: 'new' });
-        expect(response.data.secret).toEqual({ __op: 'Delete' });
-        expect(JSON.stringify(response.data)).not.toContain('stored-secret');
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
         expect(warn).not.toHaveBeenCalledWith(
           'Failed to read the object for the save response',
           jasmine.anything()
@@ -9799,7 +9798,7 @@ describe('Vulnerabilities', () => {
           { secret: 'new' },
           { 'X-Parse-Session-Token': reader.getSessionToken() }
         );
-        expect(response.data.secret).toEqual({ __op: 'Delete' });
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
         expect(warn).toHaveBeenCalledWith(
           'Failed to read the object for the save response',
           jasmine.anything()
@@ -9811,8 +9810,7 @@ describe('Vulnerabilities', () => {
           fields: { secret: { constant: true } },
         });
         const response = await update({ secret: 'new' });
-        expect(response.data.secret).toEqual({ __op: 'Delete' });
-        expect(JSON.stringify(response.data)).not.toContain('stored-secret');
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
       });
 
       it('does not return a reverted dot notation field', async () => {
@@ -9820,9 +9818,7 @@ describe('Vulnerabilities', () => {
           object.revert('field.sub');
         });
         const response = await update({ 'field.sub': { __op: 'Delete' } });
-        expect(response.data.field).toEqual({ __op: 'Delete' });
-        expect(response.data['field.sub']).toBeUndefined();
-        expect(JSON.stringify(response.data)).not.toContain('stored-sub');
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String), field: {} });
         await obj.fetch({ useMasterKey: true });
         expect(obj.get('field')).toEqual({ sub: 'stored-sub', other: 'stored-other' });
       });
@@ -9841,8 +9837,7 @@ describe('Vulnerabilities', () => {
             ],
           }),
         });
-        expect(response.data[0].success.secret).toEqual({ __op: 'Delete' });
-        expect(JSON.stringify(response.data)).not.toContain('stored-secret');
+        expect(response.data[0].success).toEqual({ updatedAt: jasmine.any(String) });
       });
 
       it('does not return a stored array around a reverted dot notation key', async () => {
@@ -9863,9 +9858,10 @@ describe('Vulnerabilities', () => {
             'field.nested.0.y': { __op: 'Delete' },
           }),
         });
-        expect(response.data.field).toEqual({ __op: 'Delete' });
-        expect(response.data['field.nested']).toBeUndefined();
-        expect(JSON.stringify(response.data)).not.toContain('stored-');
+        expect(response.data).toEqual({
+          updatedAt: jasmine.any(String),
+          field: { nested: { 0: {}, 5: {} } },
+        });
       });
 
       it('does not return a value that afterSave sets on a reverted field', async () => {
@@ -9876,8 +9872,7 @@ describe('Vulnerabilities', () => {
           object.set('secret', object.get('secret').slice(0, 6));
         });
         const response = await update({ secret: 'new' });
-        expect(response.data.secret).toEqual({ __op: 'Delete' });
-        expect(JSON.stringify(response.data)).not.toContain('stored');
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
       });
 
       it('keeps a value that afterSave sets on a reverted field for a caller with get permission', async () => {
@@ -9943,8 +9938,7 @@ describe('Vulnerabilities', () => {
         expect(get.data.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
 
         const response = await update({ secret: 'new' });
-        expect(response.data.secret).toEqual({ __op: 'Delete' });
-        expect(JSON.stringify(response.data)).not.toContain('stored-secret');
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
       });
 
       it('does not return a reverted ACL', async () => {
@@ -10016,7 +10010,6 @@ describe('Vulnerabilities', () => {
       'X-Parse-REST-API-Key': 'rest',
       'Content-Type': 'application/json',
     };
-    const deleted = { __op: 'Delete' };
 
     describe('class without get permission', () => {
       let reader;
@@ -10067,8 +10060,7 @@ describe('Vulnerabilities', () => {
         expect(get.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
 
         const response = await update({ 'field.added': 'x' });
-        expect(response.data.field).toEqual(deleted);
-        expect(JSON.stringify(response.data)).not.toContain('stored-');
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String), field: { added: 'x' } });
         await obj.fetch({ useMasterKey: true });
         expect(obj.get('field')).toEqual({ sub: 'stored-sub', other: 'stored-other', added: 'x' });
       });
@@ -10076,8 +10068,7 @@ describe('Vulnerabilities', () => {
       it('does not return the stored parent of a dot notation key with beforeSave', async () => {
         Parse.Cloud.beforeSave('WriteOnly', () => {});
         const response = await update({ 'field.added': 'x' });
-        expect(response.data.field).toEqual(deleted);
-        expect(JSON.stringify(response.data)).not.toContain('stored-');
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String), field: { added: 'x' } });
       });
 
       it('does not return the stored parent of a dot notation key that beforeSave sets', async () => {
@@ -10086,8 +10077,7 @@ describe('Vulnerabilities', () => {
         });
         Parse.Cloud.afterSave('WriteOnly', () => {});
         const response = await update({ name: 'x' });
-        expect(response.data.field).toEqual(deleted);
-        expect(JSON.stringify(response.data)).not.toContain('stored-');
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
       });
 
       it('does not return the stored parent of a dot notation key that afterSave sets', async () => {
@@ -10095,8 +10085,7 @@ describe('Vulnerabilities', () => {
           object.set('field.audit', 'audited');
         });
         const response = await update({ name: 'x' });
-        expect(response.data.field).toEqual(deleted);
-        expect(JSON.stringify(response.data)).not.toContain('stored-');
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
       });
 
       it('does not return the stored parent of a dot notation key that afterSave saves', async () => {
@@ -10108,8 +10097,7 @@ describe('Vulnerabilities', () => {
           await object.save(null, { useMasterKey: true });
         });
         const response = await update({ name: 'x' });
-        expect(response.data.field).toEqual(deleted);
-        expect(JSON.stringify(response.data)).not.toContain('stored-');
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
       });
 
       it('does not return a stored value that beforeSave writes in place of a dot notation key', async () => {
@@ -10117,8 +10105,7 @@ describe('Vulnerabilities', () => {
           object.set('field', original.get('field'));
         });
         const response = await update({ 'field.sub': 'x' });
-        expect(response.data.field).toEqual(deleted);
-        expect(JSON.stringify(response.data)).not.toContain('stored-');
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String), field: { sub: 'x' } });
       });
 
       it_only_db('mongo')(
@@ -10129,8 +10116,7 @@ describe('Vulnerabilities', () => {
             { useMasterKey: true }
           );
           const response = await update({ 'list.0.count': { __op: 'Increment', amount: 1 } });
-          expect(response.data.list).toEqual(deleted);
-          expect(JSON.stringify(response.data)).not.toContain('stored-');
+          expect(response.data).toEqual({ updatedAt: jasmine.any(String), list: [{ count: 1 }] });
           await obj.fetch({ useMasterKey: true });
           expect(obj.get('list')).toEqual([{ count: 2, sub: 'stored-sub' }, { sub: 'stored-other' }]);
         }
@@ -10144,9 +10130,7 @@ describe('Vulnerabilities', () => {
       })) {
         it(`does not return the result of the ${name} operation`, async () => {
           const response = await update(body);
-          const [key] = Object.keys(body);
-          expect(response.data[key]).toEqual(deleted);
-          expect(JSON.stringify(response.data)).not.toContain('stored-');
+          expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
         });
       }
 
@@ -10158,8 +10142,7 @@ describe('Vulnerabilities', () => {
         await obj.save(null, { useMasterKey: true });
         Parse.Cloud.beforeSave('WriteOnly', () => {});
         const response = await update({ 'ACL.newUserId': { read: true } });
-        expect(response.data.ACL).toBeUndefined();
-        expect(JSON.stringify(response.data)).not.toContain('storedReaderId');
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
       });
 
       it('does not return the stored parent of a dot notation key in a batch request', async () => {
@@ -10174,8 +10157,10 @@ describe('Vulnerabilities', () => {
             ],
           }),
         });
-        expect(response.data[0].success.field).toEqual(deleted);
-        expect(JSON.stringify(response.data)).not.toContain('stored-');
+        expect(response.data[0].success).toEqual({
+          updatedAt: jasmine.any(String),
+          field: { added: 'x' },
+        });
       });
 
       it('keeps an object returned by afterSave', async () => {
@@ -10260,15 +10245,14 @@ describe('Vulnerabilities', () => {
       it('does not return the stored parent of a dot notation key when afterSave returns the object', async () => {
         Parse.Cloud.afterSave('WriteOnly', ({ object }) => object);
         const response = await update({ 'field.added': 'x' });
-        expect(response.data.field).toEqual(deleted);
-        expect(JSON.stringify(response.data)).not.toContain('stored-');
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String), field: { added: 'x' } });
       });
 
       it('reads the object from the primary to decide on the response', async () => {
         const DatabaseController = require('../lib/Controllers/DatabaseController');
         const find = spyOn(DatabaseController.prototype, 'find').and.callThrough();
         const response = await update({ count: { __op: 'Increment', amount: 1 } });
-        expect(response.data.count).toEqual(deleted);
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
         const reads = find.calls.allArgs().filter(([className]) => className === 'WriteOnly');
         expect(reads.length).toBe(1);
         expect(reads[0][2].readPreference).toBe('primary');
@@ -10297,8 +10281,7 @@ describe('Vulnerabilities', () => {
         headers: sessionHeaders,
         body: JSON.stringify({ 'field.added': 'x' }),
       });
-      expect(response.data.field).toEqual(deleted);
-      expect(JSON.stringify(response.data)).not.toContain('stored-sub');
+      expect(response.data).toEqual({ updatedAt: jasmine.any(String), field: { added: 'x' } });
     });
 
     describe('caller with read access', () => {
@@ -10428,7 +10411,7 @@ describe('Vulnerabilities', () => {
         headers,
         body: JSON.stringify({ sessionToken: { __op: 'Increment', amount: 1 } }),
       });
-      expect(response.data.sessionToken).toEqual(deleted);
+      expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
     });
 
     it('does not return the atomic operation result of a stored sessionToken field of a user', async () => {
@@ -10446,7 +10429,7 @@ describe('Vulnerabilities', () => {
         headers: { ...headers, 'X-Parse-Session-Token': user.getSessionToken() },
         body: JSON.stringify({ sessionToken: { __op: 'Increment', amount: 1 } }),
       });
-      expect(response.data.sessionToken).toEqual(deleted);
+      expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
     });
 
     describe('object without read access for the caller', () => {
@@ -10474,7 +10457,7 @@ describe('Vulnerabilities', () => {
         const DatabaseController = require('../lib/Controllers/DatabaseController');
         const find = spyOn(DatabaseController.prototype, 'find').and.callThrough();
         const response = await increment();
-        expect(response.data.count).toEqual(deleted);
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
         const reads = find.calls.allArgs().filter(([className]) => className === 'WriteOnlyCounter');
         expect(reads.length).toBe(0);
       });
@@ -10484,7 +10467,7 @@ describe('Vulnerabilities', () => {
         const DatabaseController = require('../lib/Controllers/DatabaseController');
         const find = spyOn(DatabaseController.prototype, 'find').and.callThrough();
         const response = await increment();
-        expect(response.data.count).toEqual(deleted);
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
         // The update itself reads the original object for the trigger
         const reads = find.calls
           .allArgs()
@@ -10510,7 +10493,7 @@ describe('Vulnerabilities', () => {
             return result;
           });
           const response = await increment();
-          expect(response.data.count).toEqual(deleted);
+          expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
         });
       }
     });
@@ -10536,10 +10519,7 @@ describe('Vulnerabilities', () => {
         headers: { ...headers, 'X-Parse-Session-Token': user.getSessionToken() },
         body: JSON.stringify({ count: { __op: 'Increment', amount: 1 } }),
       });
-      expect(response.data.grade).toEqual(deleted);
-      expect(response.data.count).toEqual(deleted);
-      expect(response.data.ACL).toBeUndefined();
-      expect(JSON.stringify(response.data)).not.toContain('stored-grade');
+      expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
     });
 
     if (
@@ -10583,9 +10563,7 @@ describe('Vulnerabilities', () => {
               ],
             }),
           });
-          const result = response.data[0].success;
-          expect(result.grade).toEqual(deleted);
-          expect(result.count).toEqual(deleted);
+          expect(response.data[0].success).toEqual({ updatedAt: jasmine.any(String) });
         });
       }
     }
@@ -10607,7 +10585,7 @@ describe('Vulnerabilities', () => {
         });
       };
       const revoked = await increment(readWrite, writeOnly.toJSON());
-      expect(revoked.data.count).toEqual(deleted);
+      expect(revoked.data).toEqual({ updatedAt: jasmine.any(String) });
       const granted = await increment(writeOnly, readWrite.toJSON());
       expect(granted.data.count).toBe(2);
     });
@@ -10637,7 +10615,7 @@ describe('Vulnerabilities', () => {
       const authenticated = await increment({ 'X-Parse-Session-Token': user.getSessionToken() });
       expect(authenticated.data.count).toBe(2);
       const anonymous = await increment();
-      expect(anonymous.data.count).toEqual(deleted);
+      expect(anonymous.data).toEqual({ updatedAt: jasmine.any(String) });
     });
 
     it('returns stored values only to the user of a pointer permission', async () => {
@@ -10665,7 +10643,7 @@ describe('Vulnerabilities', () => {
           body: JSON.stringify({ count: { __op: 'Increment', amount: 1 } }),
         });
       expect((await increment(owner)).data.count).toBe(2);
-      expect((await increment(other)).data.count).toEqual(deleted);
+      expect((await increment(other)).data).toEqual({ updatedAt: jasmine.any(String) });
     });
 
     it('returns the results of atomic operations of an installation update', async () => {
@@ -10725,7 +10703,7 @@ describe('Vulnerabilities', () => {
         headers: { ...headers, 'X-Parse-Session-Token': writer.getSessionToken() },
         body: JSON.stringify({ logins: { __op: 'Increment', amount: 1 } }),
       });
-      expect(response.data.logins).toEqual(deleted);
+      expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
     });
   });
 
@@ -12366,9 +12344,6 @@ describe('Vulnerabilities', () => {
         expect(response.data).toEqual({
           objectId: jasmine.any(String),
           createdAt: jasmine.any(String),
-          title: deleted,
-          secret: deleted,
-          defaulted: deleted,
         });
         const obj = await new Parse.Query('CreateOnly').get(response.data.objectId, {
           useMasterKey: true,
@@ -12379,8 +12354,10 @@ describe('Vulnerabilities', () => {
 
       it('does not return a schema default value', async () => {
         const response = await create({ title: 'x' });
-        expect(response.data.defaulted).toEqual(deleted);
-        expect(JSON.stringify(response.data)).not.toContain('default-value');
+        expect(response.data).toEqual({
+          objectId: jasmine.any(String),
+          createdAt: jasmine.any(String),
+        });
       });
 
       it('does not return a value that afterSave sets', async () => {
@@ -12388,8 +12365,10 @@ describe('Vulnerabilities', () => {
           object.set('secret', 'after-save-secret');
         });
         const response = await create({ title: 'x', defaulted: 'x' });
-        expect(response.data.secret).toEqual(deleted);
-        expect(JSON.stringify(response.data)).not.toContain('after-save-secret');
+        expect(response.data).toEqual({
+          objectId: jasmine.any(String),
+          createdAt: jasmine.any(String),
+        });
       });
 
       it('does not return a value that afterSave saves', async () => {
@@ -12401,8 +12380,11 @@ describe('Vulnerabilities', () => {
           await object.save(null, { useMasterKey: true });
         });
         const response = await create({ title: 'x', defaulted: 'x' });
-        expect(response.data.secret).toEqual(deleted);
-        expect(JSON.stringify(response.data)).not.toContain('after-save-secret');
+        expect(response.data).toEqual({
+          objectId: jasmine.any(String),
+          createdAt: jasmine.any(String),
+          updatedAt: jasmine.any(String),
+        });
       });
 
       it('does not return values in a batch request', async () => {
@@ -12417,8 +12399,10 @@ describe('Vulnerabilities', () => {
             requests: [{ method: 'POST', path: '/1/classes/CreateOnly', body: { title: 'x' } }],
           }),
         });
-        expect(response.data[0].success.secret).toEqual(deleted);
-        expect(JSON.stringify(response.data)).not.toContain('trigger-secret');
+        expect(response.data[0].success).toEqual({
+          objectId: jasmine.any(String),
+          createdAt: jasmine.any(String),
+        });
       });
 
       it('keeps an object returned by afterSave', async () => {
@@ -12437,7 +12421,10 @@ describe('Vulnerabilities', () => {
       it('reads the object from the primary to decide on the response', async () => {
         const readCalls = reads('CreateOnly');
         const response = await create({ title: 'x' });
-        expect(response.data.defaulted).toEqual(deleted);
+        expect(response.data).toEqual({
+          objectId: jasmine.any(String),
+          createdAt: jasmine.any(String),
+        });
         const calls = readCalls();
         expect(calls.length).toBe(1);
         expect(calls[0][2].readPreference).toBe('primary');
@@ -12493,10 +12480,10 @@ describe('Vulnerabilities', () => {
           headers,
         }).catch(e => e);
         expect(get.data.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
-        expect(response.data.ACL).toBeUndefined();
-        expect(response.data.secret).toEqual(deleted);
-        expect(JSON.stringify(response.data)).not.toContain('role:staff');
-        expect(JSON.stringify(response.data)).not.toContain('trigger-secret');
+        expect(response.data).toEqual({
+          objectId: jasmine.any(String),
+          createdAt: jasmine.any(String),
+        });
       });
 
       it('returns the class default ACL to a caller with read access without reading the object', async () => {
@@ -12521,9 +12508,10 @@ describe('Vulnerabilities', () => {
           headers,
           body: JSON.stringify({ title: 'x' }),
         });
-        expect(response.data.status).toEqual(deleted);
-        expect(response.data.ACL).toBeUndefined();
-        expect(JSON.stringify(response.data)).not.toContain('pending-review');
+        expect(response.data).toEqual({
+          objectId: jasmine.any(String),
+          createdAt: jasmine.any(String),
+        });
         expect(readCalls().length).toBe(0);
       });
     });
@@ -12605,7 +12593,7 @@ describe('Vulnerabilities', () => {
 
       it('does not return the stored username that the caller does not send', async () => {
         const response = await update({ nickname: 'x' });
-        expect(response.data.username).toEqual(deleted);
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
       });
     });
 
@@ -12662,9 +12650,11 @@ describe('Vulnerabilities', () => {
           headers: { ...headers, 'X-Parse-Session-Token': response.data.sessionToken },
         }).catch(e => e);
         expect(get.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
-        expect(response.data.tier).toEqual(deleted);
-        expect(response.data.sessionToken).toMatch(/^r:/);
-        expect(JSON.stringify(response.data)).not.toContain('gold');
+        expect(response.data).toEqual({
+          objectId: jasmine.any(String),
+          createdAt: jasmine.any(String),
+          sessionToken: jasmine.stringMatching(/^r:/),
+        });
       });
 
       it('returns values that beforeSave sets to the new user', async () => {
@@ -12682,9 +12672,10 @@ describe('Vulnerabilities', () => {
           password: 'password',
           email: 'newuser@example.com',
         });
-        expect(response.data.sessionToken).toBeUndefined();
-        expect(response.data.tier).toEqual(deleted);
-        expect(JSON.stringify(response.data)).not.toContain('gold');
+        expect(response.data).toEqual({
+          objectId: jasmine.any(String),
+          createdAt: jasmine.any(String),
+        });
       });
 
       it('keeps the username of a sign-up that issues no session when the user class has an afterSave trigger', async () => {
@@ -12710,9 +12701,10 @@ describe('Vulnerabilities', () => {
           password: 'password',
           email: 'newuser@example.com',
         });
-        expect(response.data.sessionToken).toBeUndefined();
-        expect(response.data.username).toEqual(deleted);
-        expect(JSON.stringify(response.data)).not.toContain('changed-username');
+        expect(response.data).toEqual({
+          objectId: jasmine.any(String),
+          createdAt: jasmine.any(String),
+        });
       });
 
       it('does not return a generated username to a logged-in caller who creates a user with auth data', async () => {
@@ -12734,7 +12726,7 @@ describe('Vulnerabilities', () => {
         expect(response.status).toBe(201);
         expect(response.data.objectId).not.toBe(caller.id);
         expect(response.data.sessionToken).toBeUndefined();
-        expect(response.data.username).toEqual(deleted);
+        expect(response.data.username).toBeUndefined();
       });
 
       it('does not read the new user to decide on the response', async () => {
@@ -12838,6 +12830,248 @@ describe('Vulnerabilities', () => {
           expect(response.data.code)
             .withContext(encodeURIComponent(email))
             .toBe(Parse.Error.INVALID_EMAIL_ADDRESS);
+        }
+      }
+    });
+  });
+
+  describe('(GHSA-ch64-8phh-m7hc) Save response reveals whether a field is stored to a caller without read access', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+
+    describe('class without get permission', () => {
+      beforeEach(async () => {
+        const schema = new Parse.Schema('WriteOnly');
+        schema.addObject('field');
+        schema.addArray('list');
+        schema.addArray('tags');
+        schema.addNumber('count');
+        schema.addString('name');
+        schema.setCLP({
+          find: {},
+          get: {},
+          count: {},
+          create: {},
+          update: { '*': true },
+          delete: {},
+          addField: {},
+        });
+        await schema.save();
+      });
+
+      const update = async (stored, body) => {
+        const obj = await new Parse.Object('WriteOnly').save(stored, { useMasterKey: true });
+        return request({
+          method: 'PUT',
+          url: `${Parse.serverURL}/classes/WriteOnly/${obj.id}`,
+          headers,
+          body: JSON.stringify(body),
+        });
+      };
+
+      describe('top-level key', () => {
+        const storedValues = {
+          'an unchanged value': { count: 0, tags: ['x'], name: 'x' },
+          'a different value': { count: 5, tags: ['y'], name: 'y' },
+          'a missing field': {},
+        };
+        const cases = {
+          Increment: { count: { __op: 'Increment', amount: 0 } },
+          Add: { tags: { __op: 'Add', objects: ['x'] } },
+          AddUnique: { tags: { __op: 'AddUnique', objects: ['x'] } },
+          Remove: { tags: { __op: 'Remove', objects: ['y'] } },
+          set: { name: 'x' },
+          unset: { name: { __op: 'Delete' } },
+        };
+        for (const trigger of ['no trigger', 'beforeSave', 'afterSave']) {
+          for (const [name, body] of Object.entries(cases)) {
+            it(`returns no field values for ${name} with ${trigger}`, async () => {
+              if (trigger !== 'no trigger') {
+                Parse.Cloud[trigger]('WriteOnly', () => {});
+              }
+              for (const [stored, values] of Object.entries(storedValues)) {
+                const response = await update(values, body);
+                expect(response.data)
+                  .withContext(stored)
+                  .toEqual({ updatedAt: jasmine.any(String) });
+              }
+            });
+          }
+        }
+      });
+
+      describe('dot notation key', () => {
+        const storedValues = {
+          'an unchanged value': { field: { count: 0, items: ['x'], sub: 'x', deep: { count: 0 } } },
+          'a missing value': { field: { other: 'stored-other' } },
+          'a missing field': {},
+        };
+        const cases = [
+          ['Increment', { 'field.count': { __op: 'Increment', amount: 0 } }, { count: 0 }],
+          ['Add', { 'field.items': { __op: 'Add', objects: ['x'] } }, { items: ['x'] }],
+          [
+            'AddUnique',
+            { 'field.items': { __op: 'AddUnique', objects: ['x', 'x'] } },
+            { items: ['x'] },
+          ],
+          ['Remove', { 'field.items': { __op: 'Remove', objects: ['y'] } }, { items: [] }],
+          [
+            'nested Increment',
+            { 'field.deep.count': { __op: 'Increment', amount: 0 } },
+            { deep: { count: 0 } },
+          ],
+          ['set', { 'field.sub': 'x' }, { sub: 'x' }],
+          ['unset', { 'field.sub': { __op: 'Delete' } }, {}],
+          [
+            'several operations',
+            {
+              'field.count': { __op: 'Increment', amount: 0 },
+              'field.deep.count': { __op: 'Increment', amount: 0 },
+              'field.items': { __op: 'AddUnique', objects: ['x'] },
+            },
+            { count: 0, deep: { count: 0 }, items: ['x'] },
+          ],
+          [
+            'set with an operation on another field',
+            { 'field.sub': 'x', count: { __op: 'Increment', amount: 1 } },
+            { sub: 'x' },
+          ],
+        ];
+        for (const trigger of ['no trigger', 'beforeSave', 'afterSave']) {
+          for (const [name, body, field] of cases) {
+            it(`returns the request values of ${name} with ${trigger}`, async () => {
+              if (trigger !== 'no trigger') {
+                Parse.Cloud[trigger]('WriteOnly', () => {});
+              }
+              // A set has a response value only with a trigger, an unset only with afterSave
+              const valueless =
+                (name === 'set' && trigger === 'no trigger') ||
+                (name === 'unset' && trigger !== 'afterSave');
+              const expected = valueless
+                ? { updatedAt: jasmine.any(String) }
+                : { updatedAt: jasmine.any(String), field };
+              for (const [stored, values] of Object.entries(storedValues)) {
+                // A Remove needs a stored parent field on MongoDB
+                if (
+                  name === 'Remove' &&
+                  stored === 'a missing field' &&
+                  process.env.PARSE_SERVER_TEST_DB !== 'postgres'
+                ) {
+                  continue;
+                }
+                const response = await update(values, body);
+                expect(response.data).withContext(stored).toEqual(expected);
+              }
+            });
+          }
+        }
+      });
+
+      it_only_db('mongo')(
+        'returns only the elements of the request for array indexes of dot notation keys',
+        async () => {
+          const response = await update(
+            {},
+            {
+              'list.1000000.count': { __op: 'Increment', amount: 2 },
+              'list.2.count': { __op: 'Increment', amount: 1 },
+            }
+          );
+          expect(response.data).toEqual({
+            updatedAt: jasmine.any(String),
+            list: [{ count: 1 }, { count: 2 }],
+          });
+        }
+      );
+    });
+
+    describe('save with the JavaScript SDK', () => {
+      const stored = () => ({
+        counter: 10,
+        tags: ['a'],
+        name: 'n',
+        stats: { views: 5, likes: 3, list: ['a'], label: 'l' },
+      });
+      // [operation, field, local value after the save]
+      const cases = [
+        ['increment', item => item.increment('counter'), 'counter', 1],
+        ['add', item => item.add('tags', 'b'), 'tags', ['b']],
+        ['addUnique', item => item.addUnique('tags', 'b'), 'tags', ['b']],
+        ['remove', item => item.remove('tags', 'a'), 'tags', []],
+        ['set', item => item.set('name', 'x'), 'name', 'x'],
+        ['unset', item => item.unset('name'), 'name', undefined],
+        [
+          'dot notation increment',
+          item => item.increment('stats.views'),
+          'stats',
+          { views: 1, likes: 3, list: ['a'], label: 'l' },
+        ],
+        [
+          'dot notation add',
+          item => item.add('stats.list', 'b'),
+          'stats',
+          { views: 5, likes: 3, list: ['b'], label: 'l' },
+        ],
+        [
+          'dot notation addUnique',
+          item => item.addUnique('stats.list', 'b'),
+          'stats',
+          { views: 5, likes: 3, list: ['b'], label: 'l' },
+        ],
+        [
+          'dot notation remove',
+          item => item.remove('stats.list', 'a'),
+          'stats',
+          { views: 5, likes: 3, list: [], label: 'l' },
+        ],
+        [
+          'dot notation set',
+          item => item.set('stats.label', 'x'),
+          'stats',
+          { views: 5, likes: 3, list: ['a'], label: 'x' },
+        ],
+        // The SDK merges the response into its values from before the save
+        [
+          'dot notation unset',
+          item => item.unset('stats.likes'),
+          'stats',
+          { views: 5, likes: 3, list: ['a'], label: 'l' },
+        ],
+      ];
+      // A dot notation set or unset without a value in the response stays changed in the SDK
+      const triggers = {
+        'dot notation set': ['beforeSave', 'afterSave'],
+        'dot notation unset': ['afterSave'],
+      };
+      for (const [name, apply, field, local] of cases) {
+        for (const trigger of triggers[name] || ['no trigger', 'beforeSave', 'afterSave']) {
+          it(`keeps the local value of ${name} with ${trigger}`, async () => {
+            const user = await Parse.User.signUp('writer', 'password');
+            if (trigger !== 'no trigger') {
+              Parse.Cloud[trigger]('Item', () => {});
+            }
+            for (const saveAll of [false, true]) {
+              const item = new Parse.Object('Item');
+              const acl = new Parse.ACL();
+              acl.setWriteAccess(user.id, true);
+              item.setACL(acl);
+              await item.save(stored());
+              apply(item);
+              await (saveAll ? Parse.Object.saveAll([item]) : item.save());
+              expect(item.get(field)).withContext(`saveAll: ${saveAll}`).toEqual(local);
+              expect(item.dirtyKeys()).withContext(`saveAll: ${saveAll}`).toEqual([]);
+              const saved = await new Parse.Query('Item').get(item.id, { useMasterKey: true });
+              item.set('other', 'later');
+              await item.save();
+              const resaved = await new Parse.Query('Item').get(item.id, { useMasterKey: true });
+              expect(resaved.get(field))
+                .withContext(`saveAll: ${saveAll}`)
+                .toEqual(saved.get(field));
+            }
+          });
         }
       }
     });
