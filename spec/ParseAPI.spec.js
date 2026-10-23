@@ -1207,6 +1207,257 @@ describe('miscellaneous', () => {
     }
   });
 
+  describe('save response with a failed read of the saved object', () => {
+    const logger = () => require('../lib/logger').default;
+
+    beforeEach(() => {
+      Parse.Cloud.beforeSave('Item', ({ object }) => {
+        object.set('normalized', String(object.get('name')).toLowerCase());
+      });
+    });
+
+    // Fails the read of the saved object, which runs after afterSave
+    const failRead = (target, method, error, className = 'Item') => {
+      let fail = false;
+      Parse.Cloud.afterSave(className, () => {
+        fail = true;
+      });
+      const original = target[method];
+      spyOn(target, method).and.callFake(function (...args) {
+        // The class name, or the prefixed name of a MongoDB collection
+        const name = this._mongoCollection?.collectionName ?? args[0];
+        if (fail && name.endsWith(className)) {
+          fail = false;
+          return Promise.reject(error);
+        }
+        return original.apply(this, args);
+      });
+    };
+
+    const create = () =>
+      request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/classes/Item',
+        headers,
+        body: JSON.stringify({ name: 'Alice', count: 0 }),
+      });
+
+    it('returns no stored values on create', async () => {
+      failRead(Config.get(Parse.applicationId).database.adapter, 'find', new Error('read failed'));
+      const response = await create();
+      expect(response.data).toEqual({
+        objectId: jasmine.any(String),
+        createdAt: jasmine.any(String),
+      });
+      const obj = await new Parse.Query('Item').get(response.data.objectId, { useMasterKey: true });
+      expect(obj.get('normalized')).toBe('alice');
+    });
+
+    it('returns no stored values on update', async () => {
+      const obj = await new Parse.Object('Item').save(
+        { name: 'Alice', count: 0 },
+        { useMasterKey: true }
+      );
+      failRead(Config.get(Parse.applicationId).database.adapter, 'find', new Error('read failed'));
+      const response = await request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/classes/Item/${obj.id}`,
+        headers,
+        body: JSON.stringify({ count: { __op: 'Increment', amount: 1 } }),
+      });
+      expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
+      await obj.fetch({ useMasterKey: true });
+      expect(obj.get('count')).toBe(1);
+    });
+
+    it('returns the session token of a sign-up', async () => {
+      Parse.Cloud.beforeSave('_User', ({ object }) => {
+        object.set('nickname', 'stored-nickname');
+      });
+      failRead(
+        Config.get(Parse.applicationId).database.adapter,
+        'find',
+        new Error('read failed'),
+        '_User'
+      );
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        headers,
+        body: JSON.stringify({ username: 'alice', password: 'password' }),
+      });
+      expect(response.data).toEqual({
+        objectId: jasmine.any(String),
+        createdAt: jasmine.any(String),
+        username: 'alice',
+        sessionToken: jasmine.any(String),
+      });
+      const user = await new Parse.Query(Parse.User).get(response.data.objectId, {
+        useMasterKey: true,
+      });
+      expect(user.get('nickname')).toBe('stored-nickname');
+    });
+
+    if (
+      ['replicaset', 'replset'].includes(process.env.MONGODB_TOPOLOGY) ||
+      process.env.PARSE_SERVER_TEST_DB === 'postgres'
+    ) {
+      it('returns no stored values in a transactional batch', async () => {
+        const error = spyOn(logger(), 'error');
+        failRead(Config.get(Parse.applicationId).database.adapter, 'find', new Error('read failed'));
+        const response = await request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/batch',
+          headers,
+          body: JSON.stringify({
+            transaction: true,
+            requests: [
+              { method: 'POST', path: '/1/classes/Item', body: { name: 'Alice', count: 0 } },
+            ],
+          }),
+        });
+        expect(response.data).toEqual([
+          { success: { objectId: jasmine.any(String), createdAt: jasmine.any(String) } },
+        ]);
+        expect(error).toHaveBeenCalledWith('Sanitized error:', 'read failed');
+      });
+    }
+
+    it('logs a database error once', async () => {
+      const error = spyOn(logger(), 'error');
+      const warn = spyOn(logger(), 'warn');
+      failRead(Config.get(Parse.applicationId).database.adapter, 'find', new Error('read failed'));
+      await create();
+      expect(error).toHaveBeenCalledOnceWith('Sanitized error:', 'read failed');
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it_only_db('mongo')('logs a transient MongoDB error once', async () => {
+      const MongoCollection = require('../lib/Adapters/Storage/Mongo/MongoCollection').default;
+      const networkError = new Error('connection reset');
+      networkError.name = 'MongoNetworkError';
+      const error = spyOn(logger(), 'error');
+      const warn = spyOn(logger(), 'warn');
+      failRead(MongoCollection.prototype, 'find', networkError);
+      await create();
+      expect(error).toHaveBeenCalledOnceWith('Database transient error', networkError);
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    for (const [name, unexpected] of Object.entries({
+      error: new Error('unexpected'),
+      'Parse error': new Parse.Error(Parse.Error.INVALID_QUERY, 'unexpected'),
+    })) {
+      it(`logs an unexpected ${name} once at error level`, async () => {
+        const DatabaseController = require('../lib/Controllers/DatabaseController');
+        const error = spyOn(logger(), 'error');
+        const warn = spyOn(logger(), 'warn');
+        failRead(DatabaseController.prototype, 'find', unexpected);
+        await create();
+        expect(error).toHaveBeenCalledOnceWith(
+          'Failed to read the object for the save response',
+          unexpected
+        );
+        expect(warn).not.toHaveBeenCalled();
+      });
+    }
+
+    it('logs an internal error that the storage adapter did not log', async () => {
+      const internal = new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'adapter error');
+      const error = spyOn(logger(), 'error');
+      const warn = spyOn(logger(), 'warn');
+      failRead(Config.get(Parse.applicationId).database.adapter, 'find', internal);
+      await create();
+      expect(error).toHaveBeenCalledOnceWith(
+        'Failed to read the object for the save response',
+        internal
+      );
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    for (const [code, get] of Object.entries({
+      OPERATION_FORBIDDEN: {},
+      OBJECT_NOT_FOUND: { requiresAuthentication: true },
+    })) {
+      it(`does not log a read denied with ${code} as a failed read`, async () => {
+        const schema = new Parse.Schema('Item');
+        schema.setCLP({
+          find: get,
+          get,
+          count: {},
+          create: { '*': true },
+          update: { '*': true },
+          delete: {},
+          addField: { '*': true },
+        });
+        await schema.save();
+        const error = spyOn(logger(), 'error');
+        const warn = spyOn(logger(), 'warn');
+        const response = await create();
+        expect(response.data).toEqual({
+          objectId: jasmine.any(String),
+          createdAt: jasmine.any(String),
+        });
+        expect(error).toHaveBeenCalledWith(
+          'Sanitized error:',
+          jasmine.stringContaining('Permission denied')
+        );
+        expect(error).not.toHaveBeenCalledWith(
+          'Failed to read the object for the save response',
+          jasmine.anything()
+        );
+        expect(warn).not.toHaveBeenCalled();
+      });
+    }
+
+    it('does not log a read denied by a pointer permission', async () => {
+      const schema = new Parse.Schema('Item');
+      schema.addPointer('owner', '_User');
+      schema.setCLP({
+        find: { pointerFields: ['owner'] },
+        get: { pointerFields: ['owner'] },
+        count: {},
+        create: { '*': true },
+        update: { '*': true },
+        delete: {},
+        addField: { '*': true },
+      });
+      await schema.save();
+      const DatabaseController = require('../lib/Controllers/DatabaseController');
+      const find = spyOn(DatabaseController.prototype, 'find').and.callThrough();
+      const error = spyOn(logger(), 'error');
+      const warn = spyOn(logger(), 'warn');
+      const response = await create();
+      expect(response.data).toEqual({
+        objectId: jasmine.any(String),
+        createdAt: jasmine.any(String),
+      });
+      // The read of the saved object is denied without a log
+      await expectAsync(find.calls.mostRecent().returnValue).toBeRejectedWith(
+        jasmine.objectContaining({ code: Parse.Error.OBJECT_NOT_FOUND })
+      );
+      expect(error).not.toHaveBeenCalled();
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it('does not log a read that the storage adapter denies', async () => {
+      const error = spyOn(logger(), 'error');
+      const warn = spyOn(logger(), 'warn');
+      failRead(
+        Config.get(Parse.applicationId).database.adapter,
+        'find',
+        new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'denied')
+      );
+      const response = await create();
+      expect(response.data).toEqual({
+        objectId: jasmine.any(String),
+        createdAt: jasmine.any(String),
+      });
+      expect(error).not.toHaveBeenCalled();
+      expect(warn).not.toHaveBeenCalled();
+    });
+  });
+
   it('test cloud function error handling', done => {
     // Register a function which will fail
     Parse.Cloud.define('willFail', () => {

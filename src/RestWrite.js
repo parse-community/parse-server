@@ -15,7 +15,7 @@ import RestQuery from './RestQuery';
 import _ from 'lodash';
 import logger from './logger';
 import { requiredColumns } from './Controllers/SchemaController';
-import { createSanitizedError } from './Error';
+import { createSanitizedError, isLogged } from './Error';
 import { applyAuthDataOptimisticLock } from './AuthDataLock';
 import * as InstallationDedup from './InstallationDedup';
 
@@ -2551,10 +2551,10 @@ RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
       });
       view = (await query.execute()).results[0];
     } catch (error) {
-      // Fails closed; access denial is expected
+      // Fails closed; access denial is expected and an already logged error is not logged again
       const denied = [Parse.Error.OPERATION_FORBIDDEN, Parse.Error.OBJECT_NOT_FOUND];
-      if (!(error instanceof Parse.Error) || !denied.includes(error.code)) {
-        logger.warn('Failed to read the object for the save response', error);
+      if (!isLogged(error) && !(error instanceof Parse.Error && denied.includes(error.code))) {
+        logger.error('Failed to read the object for the save response', error);
       }
     }
   }

@@ -9755,7 +9755,7 @@ describe('Vulnerabilities', () => {
 
       it('does not return a reverted field', async () => {
         const logger = require('../lib/logger').default;
-        const warn = spyOn(logger, 'warn').and.callThrough();
+        const error = spyOn(logger, 'error').and.callThrough();
         Parse.Cloud.beforeSave('WriteOnly', ({ object }) => {
           object.revert('secret');
         });
@@ -9767,7 +9767,7 @@ describe('Vulnerabilities', () => {
 
         const response = await update({ secret: 'new' });
         expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
-        expect(warn).not.toHaveBeenCalledWith(
+        expect(error).not.toHaveBeenCalledWith(
           'Failed to read the object for the save response',
           jasmine.anything()
         );
@@ -9777,7 +9777,7 @@ describe('Vulnerabilities', () => {
 
       it('logs an unexpected read failure and does not return the stored value', async () => {
         const logger = require('../lib/logger').default;
-        const warn = spyOn(logger, 'warn').and.callFake(() => {});
+        const error = spyOn(logger, 'error').and.callFake(() => {});
         const adapter = Config.get(Parse.applicationId).database.adapter;
         const find = adapter.find.bind(adapter);
         let failRead = false;
@@ -9799,10 +9799,7 @@ describe('Vulnerabilities', () => {
           { 'X-Parse-Session-Token': reader.getSessionToken() }
         );
         expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
-        expect(warn).toHaveBeenCalledWith(
-          'Failed to read the object for the save response',
-          jasmine.anything()
-        );
+        expect(error).toHaveBeenCalledOnceWith('Sanitized error:', 'read failed');
       });
 
       it('does not return a field reverted by a constant validator', async () => {
