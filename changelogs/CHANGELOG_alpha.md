@@ -1,3 +1,10 @@
+## [9.10.7-alpha.3](https://github.com/parse-community/parse-server/compare/9.10.7-alpha.2...9.10.7-alpha.3) (2026-10-23)
+
+
+### Bug Fixes
+
+* Save response read access check logs errors twice or as warnings ([#10831](https://github.com/parse-community/parse-server/issues/10831)) ([fc6e60b](https://github.com/parse-community/parse-server/commit/fc6e60bc24bba5b6de6ad21bd10470591a6e144c))
+
 ## [9.10.7-alpha.2](https://github.com/parse-community/parse-server/compare/9.10.7-alpha.1...9.10.7-alpha.2) (2026-10-23)
 
 
