@@ -1,3 +1,10 @@
+## [8.6.116](https://github.com/parse-community/parse-server/compare/8.6.115...8.6.116) (2026-10-23)
+
+
+### Bug Fixes
+
+* Save response reveals whether a field is stored to a caller without read access ([GHSA-ch64-8phh-m7hc](https://github.com/parse-community/parse-server/security/advisories/GHSA-ch64-8phh-m7hc)) ([#10830](https://github.com/parse-community/parse-server/issues/10830)) ([cefeb78](https://github.com/parse-community/parse-server/commit/cefeb7838304d36b5b2d82a5edbd52d18739f1e3))
+
 ## [8.6.115](https://github.com/parse-community/parse-server/compare/8.6.114...8.6.115) (2026-10-22)
 
 
