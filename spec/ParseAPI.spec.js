@@ -1559,6 +1559,37 @@ describe('miscellaneous', () => {
     });
   });
 
+  it('does not create an object if a query sent as POST with _method GET is aborted before its body is parsed', async () => {
+    // An async config key that takes real time lets the socket close be processed
+    // before the JSON body parser runs
+    await reconfigureServer({
+      publicServerURL: () =>
+        new Promise(resolve => setTimeout(() => resolve('http://localhost:8378/1'), 50)),
+    });
+    const body = JSON.stringify({ where: {}, _method: 'GET' });
+    const rawRequest =
+      'POST /1/classes/AbortedQuery HTTP/1.1\r\n' +
+      'Host: localhost:8378\r\n' +
+      'X-Parse-Application-Id: test\r\n' +
+      'X-Parse-Master-Key: test\r\n' +
+      'Content-Type: application/json\r\n' +
+      `Content-Length: ${Buffer.byteLength(body)}\r\n` +
+      '\r\n' +
+      body;
+    await new Promise(resolve => {
+      const socket = require('net').connect(8378, 'localhost', () => {
+        socket.write(rawRequest);
+        socket.end();
+      });
+      socket.on('data', () => {});
+      socket.on('error', resolve);
+      socket.on('close', resolve);
+    });
+    await new Promise(resolve => setTimeout(resolve, 200));
+    const count = await new Parse.Query('AbortedQuery').count({ useMasterKey: true });
+    expect(count).toBe(0);
+  });
+
   it('doesnt convert interior keys of objects that use special names', done => {
     const obj = new Parse.Object('Obj');
     obj.set('val', { createdAt: 'a', updatedAt: 1 });
