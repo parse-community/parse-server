@@ -1,5 +1,8 @@
 import defaultLogger from './logger';
 
+// Flag of an error that is logged where it occurs
+const logged = Symbol('logged');
+
 /**
  * Marks an error as logged where it occurs, so that code that catches it does not log it again.
  *
@@ -7,9 +10,18 @@ import defaultLogger from './logger';
  * @returns {Error} The same error
  */
 function markLogged(error) {
-  // Non-enumerable, so not serialized with the error
-  Object.defineProperty(error, 'logged', { value: true });
+  error[logged] = true;
   return error;
+}
+
+/**
+ * Whether an error is logged where it occurs.
+ *
+ * @param {any} error - The error
+ * @returns {boolean} Whether the error is logged
+ */
+function isLogged(error) {
+  return error?.[logged] === true;
 }
 
 /**
@@ -60,4 +72,4 @@ function createSanitizedHttpError(statusCode, detailedMessage, config) {
   return error;
 }
 
-export { createSanitizedError, createSanitizedHttpError, markLogged };
+export { createSanitizedError, createSanitizedHttpError, markLogged, isLogged };
