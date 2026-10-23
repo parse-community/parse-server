@@ -1321,8 +1321,13 @@ class DatabaseController {
     const relationKey = relatedTo && relatedTo.key;
     return this.loadSchemaIfNeeded(schemaController).then(loadedSchema => {
       // 1. The relation key must not be a protected field on the owning class.
-      const protectedFields =
-        this.addProtectedFields(loadedSchema, owningClassName, {}, aclGroup, auth) || [];
+      const isOwnerExempt =
+        this.options.protectedFieldsOwnerExempt !== false &&
+        owningClassName === '_User' &&
+        auth.user?.id === owningId;
+      const protectedFields = isOwnerExempt
+        ? []
+        : this.addProtectedFields(loadedSchema, owningClassName, {}, aclGroup, auth) || [];
       const rootField = typeof relationKey === 'string' ? relationKey.split('.')[0] : relationKey;
       if (protectedFields.includes(relationKey) || protectedFields.includes(rootField)) {
         throw createSanitizedError(
