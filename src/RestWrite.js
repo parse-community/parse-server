@@ -19,6 +19,9 @@ import { createSanitizedError } from './Error';
 import { applyAuthDataOptimisticLock } from './AuthDataLock';
 import * as InstallationDedup from './InstallationDedup';
 
+// Operations whose result the database computes from the stored value
+const computedOperations = ['Increment', 'Add', 'AddUnique', 'Remove'];
+
 // query and data are both provided in REST API format. So data
 // types are encoded by plain old objects.
 // If query is null, this is a "create" and the data in data should be
@@ -76,6 +79,10 @@ function RestWrite(config, auth, className, query, data, originalData, context, 
   // copy
   this.query = structuredClone(query);
   this.data = structuredClone(data);
+  // The client's dot notation keys and computed operations, before triggers change the data
+  this.requestOperations = Object.keys(this.data)
+    .filter(key => key.includes('.') || computedOperations.includes(this.data[key]?.__op))
+    .map(key => [key, this.data[key]]);
   // We never change originalData, so we do not need a deep copy
   this.originalData = originalData;
 
@@ -2382,6 +2389,66 @@ RestWrite.prototype._restoreRevertedPath = function (response, writeData, writte
   response[target] = value === undefined ? { __op: 'Delete' } : value;
 };
 
+// The value of an operation applied to an empty value
+const appliedToEmpty = value => {
+  switch (value?.__op) {
+    case 'Increment':
+      return value.amount;
+    case 'Add':
+      return value.objects;
+    case 'AddUnique':
+      return _.uniqWith(value.objects, util.isDeepStrictEqual);
+    case 'Remove':
+      return [];
+    default:
+      return value;
+  }
+};
+
+// Sets the dot notation keys of the request in the response, applied to an empty value
+RestWrite.prototype._setRequestPaths = function (response) {
+  // Fields the response keeps, such as objectId
+  const kept = Object.keys(response);
+  const arrays = new Set();
+  for (const [key, value] of this.requestOperations) {
+    const segments = key.split('.');
+    if (segments.length < 2 || kept.includes(segments[0])) {
+      continue;
+    }
+    // The SDK cannot apply a dot notation path to ACL
+    if (segments[0] === 'ACL') {
+      continue;
+    }
+    const op = value?.__op;
+    // Another operation, such as a relation operation, has no value
+    if (op && op !== 'Delete' && !computedOperations.includes(op)) {
+      continue;
+    }
+    // An index below an Array field
+    if (
+      this.validSchemaController.getExpectedType(this.className, segments[0])?.type === 'Array' &&
+      /^\d+$/.test(segments[1])
+    ) {
+      arrays.add(segments[0]);
+    }
+    let container = response;
+    for (const segment of segments.slice(0, -1)) {
+      if (!hasOwn(container, segment) || !isContainer(container[segment])) {
+        container[segment] = {};
+      }
+      container = container[segment];
+    }
+    // An unset leaves only the parents
+    if (op !== 'Delete') {
+      container[segments[segments.length - 1]] = appliedToEmpty(value);
+    }
+  }
+  // Only the elements of the request, in index order
+  for (const field of arrays) {
+    response[field] = Object.values(response[field]);
+  }
+};
+
 // Whether the reader can read the written object, or undefined if only a read can tell
 RestWrite.prototype._readAccessWithoutQuery = function (aclGroup) {
   const readers = this.writtenReadAccess;
@@ -2496,12 +2563,7 @@ RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
     for (const key of fields) {
       delete response[key];
     }
-    for (const field of new Set(fields.map(key => key.split('.')[0]))) {
-      // The SDK cannot apply an operation to ACL
-      if (field !== 'ACL') {
-        response[field] = { __op: 'Delete' };
-      }
-    }
+    this._setRequestPaths(response);
     return;
   }
   for (const key of keys) {
@@ -2568,6 +2630,12 @@ RestWrite.prototype._updateResponseWithData = function (response, data, isFinalO
     skipKeys.push('updatedAt');
     delete response.objectId;
   }
+  // The client's operation results and dot notation parents, also if unchanged
+  const requested = this.requestOperations
+    .filter(([key]) =>
+      key.includes('.') ? hasOwn(data, key) : computedOperations.includes(data[key]?.__op)
+    )
+    .map(([key]) => key.split('.')[0]);
   for (const key in response) {
     if (skipKeys.includes(key)) {
       continue;
@@ -2577,7 +2645,7 @@ RestWrite.prototype._updateResponseWithData = function (response, data, isFinalO
       value == null ||
       (value.__type && value.__type === 'Pointer') ||
       util.isDeepStrictEqual(responseData[key], value) ||
-      util.isDeepStrictEqual((this.originalData || {})[key], value)
+      (!requested.includes(key) && util.isDeepStrictEqual((this.originalData || {})[key], value))
     ) {
       delete response[key];
     }

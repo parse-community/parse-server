@@ -1100,6 +1100,113 @@ describe('miscellaneous', () => {
     expect(body.updatedAt).not.toBeUndefined();
   });
 
+  describe('save response with an operation that leaves the field unchanged', () => {
+    for (const trigger of ['beforeSave', 'afterSave']) {
+      it(`returns the stored values with ${trigger}`, async () => {
+        Parse.Cloud[trigger]('Score', () => {});
+        const obj = await new Parse.Object('Score').save({
+          counter: 10,
+          members: ['alice', 'bob'],
+          removed: ['x'],
+          stats: { views: 5, label: 'l' },
+        });
+        const response = await request({
+          method: 'PUT',
+          url: `http://localhost:8378/1/classes/Score/${obj.id}`,
+          headers,
+          body: JSON.stringify({
+            counter: { __op: 'Increment', amount: 0 },
+            members: { __op: 'AddUnique', objects: ['alice'] },
+            removed: { __op: 'Remove', objects: ['y'] },
+            'stats.views': { __op: 'Increment', amount: 0 },
+          }),
+        });
+        expect(response.data).toEqual({
+          updatedAt: jasmine.any(String),
+          counter: 10,
+          members: ['alice', 'bob'],
+          removed: ['x'],
+          // The final object of afterSave has the whole field
+          stats: trigger === 'afterSave' ? { views: 5, label: 'l' } : { views: 5 },
+        });
+      });
+    }
+
+    it('returns the stored parent of a dot notation key set to its stored value with afterSave', async () => {
+      Parse.Cloud.afterSave('Score', () => {});
+      const obj = await new Parse.Object('Score').save({ stats: { views: 5, label: 'l' } });
+      const response = await request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/classes/Score/${obj.id}`,
+        headers,
+        body: JSON.stringify({ 'stats.label': 'l' }),
+      });
+      expect(response.data).toEqual({
+        updatedAt: jasmine.any(String),
+        stats: { views: 5, label: 'l' },
+      });
+    });
+
+    it('returns a field that beforeSave unsets as deleted', async () => {
+      const obj = await new Parse.Object('Score').save({ counter: 10, label: 'l' });
+      Parse.Cloud.beforeSave('Score', ({ object }) => {
+        object.unset('label');
+      });
+      const response = await request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/classes/Score/${obj.id}`,
+        headers,
+        body: JSON.stringify({ counter: { __op: 'Increment', amount: 1 }, label: 'x' }),
+      });
+      expect(response.data).toEqual({
+        updatedAt: jasmine.any(String),
+        counter: 11,
+        label: { __op: 'Delete' },
+      });
+    });
+
+    it('passes the stored values to afterSave', async () => {
+      let object;
+      Parse.Cloud.afterSave('Score', request => {
+        object = request.object;
+      });
+      const item = await new Parse.Object('Score').save({ members: ['alice', 'bob'], counter: 10 });
+      item.addUnique('members', 'alice');
+      item.increment('counter', 0);
+      await item.save();
+      expect(object.get('members')).toEqual(['alice', 'bob']);
+      expect(object.get('counter')).toBe(10);
+    });
+
+    it('keeps the stored values in the JavaScript SDK', async () => {
+      Parse.Cloud.beforeSave('Score', () => {});
+      const item = await new Parse.Object('Score').save({ members: ['alice', 'bob'], counter: 10 });
+      item.addUnique('members', 'alice');
+      item.increment('counter', 0);
+      await item.save();
+      expect(item.get('members')).toEqual(['alice', 'bob']);
+      expect(item.get('counter')).toBe(10);
+    });
+
+    for (const [name, apply] of Object.entries({
+      'dot notation increment': item => item.increment('stats.views', 0),
+      'dot notation set': item => item.set('stats.label', 'l'),
+    })) {
+      it(`does not overwrite stored values after a ${name} on a later save in the JavaScript SDK`, async () => {
+        Parse.Cloud.afterSave('Score', () => {});
+        const obj = await new Parse.Object('Score').save({ stats: { views: 5, label: 'l' } });
+        const item = Parse.Object.extend('Score').createWithoutData(obj.id);
+        apply(item);
+        await item.save();
+        expect(item.dirtyKeys()).toEqual([]);
+        item.set('name', 'later');
+        await item.save();
+        await obj.fetch();
+        expect(obj.get('stats')).toEqual({ views: 5, label: 'l' });
+      });
+    }
+  });
+
   it('test cloud function error handling', done => {
     // Register a function which will fail
     Parse.Cloud.define('willFail', () => {
