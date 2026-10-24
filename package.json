@@ -29,7 +29,7 @@
     "@parse/fs-files-adapter": "3.0.0",
     "@parse/push-adapter": "8.5.5",
     "bcryptjs": "3.0.3",
-    "commander": "14.0.3",
+    "commander": "15.0.0",
     "cors": "2.8.6",
     "express": "5.2.1",
     "express-rate-limit": "8.7.0",
