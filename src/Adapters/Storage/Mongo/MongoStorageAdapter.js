@@ -20,7 +20,6 @@ import _ from 'lodash';
 import { EJSON } from 'bson';
 import defaults, { ParseServerDatabaseOptions } from '../../../defaults';
 import logger from '../../../logger';
-import { markLogged } from '../../../Error';
 
 // @flow-disable-next
 const mongodb = require('mongodb');
@@ -291,7 +290,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     // Transform infrastructure/transient errors into Parse.Error.INTERNAL_SERVER_ERROR
     if (isTransientError(error)) {
       logger.error('Database transient error', error);
-      throw markLogged(new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database error'));
+      throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database error');
     }
 
     throw error;

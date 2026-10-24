@@ -1,29 +1,5 @@
 import defaultLogger from './logger';
 
-// Flag of an error that is logged where it occurs
-const logged = Symbol('logged');
-
-/**
- * Marks an error as logged where it occurs, so that code that catches it does not log it again.
- *
- * @param {Error} error - The logged error
- * @returns {Error} The same error
- */
-function markLogged(error) {
-  error[logged] = true;
-  return error;
-}
-
-/**
- * Whether an error is logged where it occurs.
- *
- * @param {any} error - The error
- * @returns {boolean} Whether the error is logged
- */
-function isLogged(error) {
-  return error?.[logged] === true;
-}
-
 /**
  * Creates a sanitized error that hides detailed information from clients
  * while logging the detailed message server-side.
@@ -42,12 +18,7 @@ function createSanitizedError(errorCode, detailedMessage, config, sanitizedMessa
     defaultLogger.error(detailedMessage);
   }
 
-  return markLogged(
-    new Parse.Error(
-      errorCode,
-      config?.enableSanitizedErrorResponse !== false ? sanitizedMessage : detailedMessage
-    )
-  );
+  return new Parse.Error(errorCode, config?.enableSanitizedErrorResponse !== false ? sanitizedMessage : detailedMessage);
 }
 
 /**
@@ -72,4 +43,4 @@ function createSanitizedHttpError(statusCode, detailedMessage, config) {
   return error;
 }
 
-export { createSanitizedError, createSanitizedHttpError, markLogged, isLogged };
+export { createSanitizedError, createSanitizedHttpError };
