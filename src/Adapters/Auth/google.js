@@ -3,7 +3,7 @@
  *
  * @class GoogleAdapter
  * @param {Object} options - The adapter configuration options.
- * @param {string} options.clientId - Your Google application Client ID.
+ * @param {string|string[]} options.clientId - Your Google application Client ID, or an array of Client IDs to accept tokens issued for any of them.
  * @param {number} [options.cacheMaxEntries] - Maximum number of JWKS cache entries. Default: 5.
  * @param {number} [options.cacheMaxAge] - Maximum age of JWKS cache entries in ms. Default: 3600000 (1 hour).
  *
@@ -18,6 +18,10 @@
  *     }
  *   }
  * }
+ * ```
+ * `clientId` also accepts an array of Client IDs to accept tokens issued for any of them:
+ * ```json
+ * { "auth": { "google": { "clientId": ["id-1", "id-2"] } } }
  * ```
  *
  * The adapter requires the following `authData` fields:
@@ -74,7 +78,7 @@ const getGoogleKeyByKeyId = async (keyId, cacheMaxEntries, cacheMaxAge) => {
 };
 
 async function verifyIdToken({ id_token: token, id }, { clientId, cacheMaxEntries, cacheMaxAge }) {
-  if (!clientId) {
+  if (!clientId || (Array.isArray(clientId) && !clientId.length)) {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
       'Google auth is not configured.'
