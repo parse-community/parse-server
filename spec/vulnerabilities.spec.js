@@ -8954,8 +8954,6 @@ describe('Vulnerabilities', () => {
         });
 
       it('does not return a reverted field', async () => {
-        const logger = require('../lib/logger').default;
-        const warn = spyOn(logger, 'warn').and.callThrough();
         Parse.Cloud.beforeSave('WriteOnly', ({ object }) => {
           object.revert('secret');
         });
@@ -8967,42 +8965,8 @@ describe('Vulnerabilities', () => {
 
         const response = await update({ secret: 'new' });
         expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
-        expect(warn).not.toHaveBeenCalledWith(
-          'Failed to read the object for the save response',
-          jasmine.anything()
-        );
         await obj.fetch({ useMasterKey: true });
         expect(obj.get('secret')).toBe('stored-secret');
-      });
-
-      it('logs an unexpected read failure and does not return the stored value', async () => {
-        const logger = require('../lib/logger').default;
-        const warn = spyOn(logger, 'warn').and.callFake(() => {});
-        const adapter = Config.get(Parse.applicationId).database.adapter;
-        const find = adapter.find.bind(adapter);
-        let failRead = false;
-        spyOn(adapter, 'find').and.callFake((className, ...args) => {
-          if (failRead && className === 'WriteOnly') {
-            failRead = false;
-            return Promise.reject(new Error('read failed'));
-          }
-          return find(className, ...args);
-        });
-        Parse.Cloud.beforeSave('WriteOnly', ({ object }) => {
-          object.revert('secret');
-        });
-        Parse.Cloud.afterSave('WriteOnly', () => {
-          failRead = true;
-        });
-        const response = await update(
-          { secret: 'new' },
-          { 'X-Parse-Session-Token': reader.getSessionToken() }
-        );
-        expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
-        expect(warn).toHaveBeenCalledWith(
-          'Failed to read the object for the save response',
-          jasmine.anything()
-        );
       });
 
       it('does not return a field reverted by a constant validator', async () => {
@@ -9396,14 +9360,13 @@ describe('Vulnerabilities', () => {
         expect(response.data).toEqual({ updatedAt: jasmine.any(String), field: { added: 'x' } });
       });
 
-      it('reads the object from the primary to decide on the response', async () => {
+      it('decides on the response without a read of the object', async () => {
         const DatabaseController = require('../lib/Controllers/DatabaseController');
         const find = spyOn(DatabaseController.prototype, 'find').and.callThrough();
         const response = await update({ count: { __op: 'Increment', amount: 1 } });
         expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
         const reads = find.calls.allArgs().filter(([className]) => className === 'WriteOnly');
-        expect(reads.length).toBe(1);
-        expect(reads[0][2].readPreference).toBe('primary');
+        expect(reads.length).toBe(0);
       });
     });
 
@@ -9646,7 +9609,7 @@ describe('Vulnerabilities', () => {
       }
     });
 
-    it('does not return a value that afterSave sets after it revokes the read access of the caller', async () => {
+    it('decides read access as of the update when afterSave revokes the read access of the caller', async () => {
       const user = await Parse.User.signUp('submitter', 'password');
       const obj = new Parse.Object('LockedSubmission');
       obj.setACL(new Parse.ACL(user));
@@ -9667,7 +9630,13 @@ describe('Vulnerabilities', () => {
         headers: { ...headers, 'X-Parse-Session-Token': user.getSessionToken() },
         body: JSON.stringify({ count: { __op: 'Increment', amount: 1 } }),
       });
-      expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
+      // The response has the values that afterSave sets on its object
+      expect(response.data).toEqual({
+        updatedAt: jasmine.any(String),
+        count: 2,
+        ACL: { [user.id]: { write: true } },
+        grade: 'stored-grade',
+      });
     });
 
     if (
@@ -11438,16 +11407,14 @@ describe('Vulnerabilities', () => {
         expect(readCalls().length).toBe(0);
       });
 
-      it('reads the object from the primary to decide on the response', async () => {
+      it('decides on the response without a read of the object', async () => {
         const readCalls = reads('CreateOnly');
         const response = await create({ title: 'x' });
         expect(response.data).toEqual({
           objectId: jasmine.any(String),
           createdAt: jasmine.any(String),
         });
-        const calls = readCalls();
-        expect(calls.length).toBe(1);
-        expect(calls[0][2].readPreference).toBe('primary');
+        expect(readCalls().length).toBe(0);
       });
 
       for (const auth of ['session with get permission', 'master', 'maintenance']) {

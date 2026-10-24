@@ -1206,6 +1206,507 @@ describe('miscellaneous', () => {
     }
   });
 
+  describe('save response read access', () => {
+    // Counts the reads of the saved object as the caller, except the original object for triggers
+    const responseReads = className => {
+      const DatabaseController = require('../lib/Controllers/DatabaseController');
+      const find = spyOn(DatabaseController.prototype, 'find').and.callThrough();
+      return objectId =>
+        find.calls
+          .allArgs()
+          .filter(
+            ([name, where, options, auth]) =>
+              name === className &&
+              !auth?.isMaster &&
+              options?.op !== 'update' &&
+              // A session read wraps the objectId
+              [where?.objectId, where?.$and?.[0]?.objectId].includes(objectId)
+          ).length;
+    };
+
+    const update = (className, objectId, body, sessionToken) =>
+      request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/classes/${className}/${objectId}`,
+        headers: sessionToken ? { ...headers, 'X-Parse-Session-Token': sessionToken } : headers,
+        body: JSON.stringify(body),
+      });
+
+    const increment = { count: { __op: 'Increment', amount: 1 } };
+
+    const pointer = user => ({ __type: 'Pointer', className: '_User', objectId: user.id });
+
+    describe('class with an afterSave trigger', () => {
+      it('returns the stored values of a create without a read', async () => {
+        Parse.Cloud.beforeSave('Item', ({ object }) => {
+          object.set('normalized', String(object.get('name')).toLowerCase());
+        });
+        Parse.Cloud.afterSave('Item', () => {});
+        const reads = responseReads('Item');
+        const response = await request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/classes/Item',
+          headers,
+          body: JSON.stringify({ name: 'Alice' }),
+        });
+        expect(response.data).toEqual({
+          objectId: jasmine.any(String),
+          createdAt: jasmine.any(String),
+          normalized: 'alice',
+        });
+        expect(reads(response.data.objectId)).toBe(0);
+      });
+
+      it('returns the stored values of an update without a read', async () => {
+        Parse.Cloud.afterSave('Item', () => {});
+        const obj = await new Parse.Object('Item').save({ count: 1 });
+        const reads = responseReads('Item');
+        const response = await update('Item', obj.id, increment);
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String), count: 2 });
+        expect(reads(obj.id)).toBe(0);
+      });
+
+      it('returns the stored values of a sign-up without a read', async () => {
+        Parse.Cloud.beforeSave('_User', ({ object }) => {
+          object.set('nickname', 'stored-nickname');
+        });
+        Parse.Cloud.afterSave('_User', () => {});
+        const reads = responseReads('_User');
+        const response = await request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/users',
+          headers,
+          body: JSON.stringify({ username: 'alice', password: 'password' }),
+        });
+        expect(response.data).toEqual({
+          objectId: jasmine.any(String),
+          createdAt: jasmine.any(String),
+          username: 'alice',
+          sessionToken: jasmine.any(String),
+          nickname: 'stored-nickname',
+        });
+        expect(reads(response.data.objectId)).toBe(0);
+      });
+    });
+
+    describe('class whose get permission requires authentication', () => {
+      let obj;
+
+      beforeEach(async () => {
+        const schema = new Parse.Schema('AuthItem');
+        schema.addNumber('count');
+        schema.setCLP({
+          find: { requiresAuthentication: true },
+          get: { requiresAuthentication: true },
+          count: {},
+          create: {},
+          update: { '*': true },
+          delete: {},
+          addField: {},
+        });
+        await schema.save();
+        obj = await new Parse.Object('AuthItem').save({ count: 1 }, { useMasterKey: true });
+      });
+
+      it('returns the stored values to a logged-in user without a read', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        const reads = responseReads('AuthItem');
+        const response = await update('AuthItem', obj.id, increment, user.getSessionToken());
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String), count: 2 });
+        expect(reads(obj.id)).toBe(0);
+      });
+
+      it('returns no stored values to a client without a session and without a read', async () => {
+        const reads = responseReads('AuthItem');
+        const response = await update('AuthItem', obj.id, increment);
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
+        expect(reads(obj.id)).toBe(0);
+      });
+    });
+
+    it('returns no stored values to a client that the get permission denies, without a read or an error log', async () => {
+      const schema = new Parse.Schema('WriteOnlyItem');
+      schema.addNumber('count');
+      schema.setCLP({
+        find: {},
+        get: {},
+        count: {},
+        create: {},
+        update: { '*': true },
+        delete: {},
+        addField: {},
+      });
+      await schema.save();
+      const obj = await new Parse.Object('WriteOnlyItem').save(
+        { count: 1 },
+        { useMasterKey: true }
+      );
+      const error = spyOn(require('../lib/logger').default, 'error');
+      const reads = responseReads('WriteOnlyItem');
+      const response = await update('WriteOnlyItem', obj.id, increment);
+      expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
+      expect(reads(obj.id)).toBe(0);
+      expect(error).not.toHaveBeenCalled();
+    });
+
+    describe('class with a pointer permission', () => {
+      let owner;
+      let other;
+      let obj;
+
+      beforeEach(async () => {
+        owner = await Parse.User.signUp('owner', 'password');
+        other = await Parse.User.signUp('other', 'password');
+        const schema = new Parse.Schema('OwnedItem');
+        schema.addPointer('owner', '_User');
+        schema.addNumber('count');
+        schema.setCLP({
+          find: { pointerFields: ['owner'] },
+          get: { pointerFields: ['owner'] },
+          count: {},
+          create: { '*': true },
+          update: { '*': true },
+          delete: {},
+          addField: {},
+        });
+        await schema.save();
+        obj = await new Parse.Object('OwnedItem').save({ owner, count: 1 }, { useMasterKey: true });
+      });
+
+      it('returns the stored values to the user of the pointer without a read', async () => {
+        const reads = responseReads('OwnedItem');
+        const response = await update('OwnedItem', obj.id, increment, owner.getSessionToken());
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String), count: 2 });
+        expect(reads(obj.id)).toBe(0);
+      });
+
+      it('returns no stored values to another user without a read', async () => {
+        const reads = responseReads('OwnedItem');
+        const response = await update('OwnedItem', obj.id, increment, other.getSessionToken());
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
+        expect(reads(obj.id)).toBe(0);
+      });
+
+      it('returns no stored values to a client without a session and without a read', async () => {
+        const reads = responseReads('OwnedItem');
+        const response = await update('OwnedItem', obj.id, increment);
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
+        expect(reads(obj.id)).toBe(0);
+      });
+
+      it('decides on the pointer as written by the update, without a read', async () => {
+        const reads = responseReads('OwnedItem');
+        const moved = await update(
+          'OwnedItem',
+          obj.id,
+          { ...increment, owner: pointer(other) },
+          owner.getSessionToken()
+        );
+        expect(moved.data).toEqual({ updatedAt: jasmine.any(String) });
+        const taken = await update(
+          'OwnedItem',
+          obj.id,
+          { ...increment, owner: pointer(owner) },
+          owner.getSessionToken()
+        );
+        expect(taken.data).toEqual({ updatedAt: jasmine.any(String), count: 3 });
+        expect(reads(obj.id)).toBe(0);
+      });
+
+      const create = (body, user) =>
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/classes/OwnedItem',
+          headers: { ...headers, 'X-Parse-Session-Token': user.getSessionToken() },
+          body: JSON.stringify(body),
+        });
+
+      it('returns the stored values of a create to the user of the pointer', async () => {
+        const response = await create({ ...increment, owner: pointer(owner) }, owner);
+        expect(response.data).toEqual({
+          objectId: jasmine.any(String),
+          createdAt: jasmine.any(String),
+          count: 1,
+        });
+      });
+
+      it('returns no stored values of a create to another user', async () => {
+        const response = await create({ ...increment, owner: pointer(other) }, owner);
+        expect(response.data).toEqual({
+          objectId: jasmine.any(String),
+          createdAt: jasmine.any(String),
+        });
+      });
+
+      if (
+        ['replicaset', 'replset'].includes(process.env.MONGODB_TOPOLOGY) ||
+        process.env.PARSE_SERVER_TEST_DB === 'postgres'
+      ) {
+        it('decides on the pointer as written by an update in a transactional batch', async () => {
+          const response = await request({
+            method: 'POST',
+            url: 'http://localhost:8378/1/batch',
+            headers: { ...headers, 'X-Parse-Session-Token': owner.getSessionToken() },
+            body: JSON.stringify({
+              transaction: true,
+              requests: [
+                {
+                  method: 'PUT',
+                  path: `/1/classes/OwnedItem/${obj.id}`,
+                  body: { ...increment, owner: pointer(other) },
+                },
+              ],
+            }),
+          });
+          expect(response.data).toEqual([{ success: { updatedAt: jasmine.any(String) } }]);
+        });
+      }
+    });
+
+    describe('class with a pointer permission on an array', () => {
+      let reader;
+      let obj;
+
+      beforeEach(async () => {
+        reader = await Parse.User.signUp('reader', 'password');
+        const schema = new Parse.Schema('SharedItem');
+        schema.addArray('readers');
+        schema.addNumber('count');
+        schema.setCLP({
+          find: {},
+          get: {},
+          count: {},
+          create: { '*': true },
+          update: { '*': true },
+          delete: {},
+          addField: {},
+          readUserFields: ['readers'],
+        });
+        await schema.save();
+        obj = await new Parse.Object('SharedItem').save(
+          { readers: [pointer(reader)], count: 1 },
+          { useMasterKey: true }
+        );
+      });
+
+      it('returns the stored values to a user in the array without a read', async () => {
+        const reads = responseReads('SharedItem');
+        const response = await update('SharedItem', obj.id, increment, reader.getSessionToken());
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String), count: 2 });
+        expect(reads(obj.id)).toBe(0);
+      });
+
+      it('returns the stored values of a create that adds the user to the array', async () => {
+        const response = await request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/classes/SharedItem',
+          headers: { ...headers, 'X-Parse-Session-Token': reader.getSessionToken() },
+          body: JSON.stringify({
+            ...increment,
+            readers: { __op: 'AddUnique', objects: [pointer(reader)] },
+          }),
+        });
+        expect(response.data).toEqual({
+          objectId: jasmine.any(String),
+          createdAt: jasmine.any(String),
+          count: 1,
+          readers: [pointer(reader)],
+        });
+      });
+
+      for (const [name, element] of Object.entries({
+        'a plain object': user => ({ objectId: user.id }),
+        'a pointer to another class': user => ({
+          __type: 'Pointer',
+          className: 'Team',
+          objectId: user.id,
+        }),
+      })) {
+        it(`returns no stored values to a user whose objectId is in the array as ${name}`, async () => {
+          const other = await Parse.User.signUp('other', 'password');
+          const response = await update(
+            'SharedItem',
+            obj.id,
+            { ...increment, readers: [element(other)] },
+            other.getSessionToken()
+          );
+          expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
+        });
+      }
+
+      it('returns no stored values to a user not in the array without a read', async () => {
+        const other = await Parse.User.signUp('other', 'password');
+        const reads = responseReads('SharedItem');
+        const response = await update('SharedItem', obj.id, increment, other.getSessionToken());
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
+        expect(reads(obj.id)).toBe(0);
+      });
+    });
+
+    describe('system class', () => {
+      it('returns the stored values of a user update without a read', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        const reads = responseReads('_User');
+        const response = await request({
+          method: 'PUT',
+          url: `http://localhost:8378/1/users/${user.id}`,
+          headers: { ...headers, 'X-Parse-Session-Token': user.getSessionToken() },
+          body: JSON.stringify(increment),
+        });
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String), count: 1 });
+        expect(reads(user.id)).toBe(0);
+      });
+
+      it('returns the stored values of an installation update without a read', async () => {
+        const created = await request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/installations',
+          headers,
+          body: JSON.stringify({ installationId: 'yolo', deviceType: 'ios', channels: ['a'] }),
+        });
+        const reads = responseReads('_Installation');
+        const response = await request({
+          method: 'PUT',
+          url: `http://localhost:8378/1/installations/${created.data.objectId}`,
+          headers,
+          body: JSON.stringify({ channels: { __op: 'AddUnique', objects: ['b'] } }),
+        });
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String), channels: ['a', 'b'] });
+        expect(reads(created.data.objectId)).toBe(0);
+      });
+
+      it('returns the stored values of a role update without a read', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        const acl = new Parse.ACL();
+        acl.setPublicReadAccess(true);
+        acl.setWriteAccess(user, true);
+        const role = await new Parse.Role('Editors', acl).save(null, { useMasterKey: true });
+        const reads = responseReads('_Role');
+        const response = await request({
+          method: 'PUT',
+          url: `http://localhost:8378/1/roles/${role.id}`,
+          headers: { ...headers, 'X-Parse-Session-Token': user.getSessionToken() },
+          body: JSON.stringify(increment),
+        });
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String), count: 1 });
+        expect(reads(role.id)).toBe(0);
+      });
+
+      it('returns the stored values of a session update without a read', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        const sessionHeaders = { ...headers, 'X-Parse-Session-Token': user.getSessionToken() };
+        const me = await request({
+          url: 'http://localhost:8378/1/sessions/me',
+          headers: sessionHeaders,
+        });
+        const url = `http://localhost:8378/1/sessions/${me.data.objectId}`;
+        await request({
+          method: 'PUT',
+          url,
+          headers: { ...headers, 'X-Parse-Master-Key': 'test' },
+          body: JSON.stringify({ count: 1 }),
+        });
+        const reads = responseReads('_Session');
+        const response = await request({
+          method: 'PUT',
+          url,
+          headers: sessionHeaders,
+          body: JSON.stringify(increment),
+        });
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String), count: 2 });
+        expect(reads(me.data.objectId)).toBe(0);
+      });
+
+      it('returns the stored values of a product update without a read', async () => {
+        const file = new Parse.File('name', { base64: Buffer.from('file').toString('base64') });
+        await file.save();
+        const product = await new Parse.Object('_Product').save(
+          {
+            download: file,
+            icon: file,
+            title: 'a product',
+            subtitle: 'a product',
+            order: 1,
+            productIdentifier: 'a-product',
+          },
+          { useMasterKey: true }
+        );
+        const reads = responseReads('_Product');
+        const response = await update('_Product', product.id, {
+          order: { __op: 'Increment', amount: 1 },
+        });
+        expect(response.data).toEqual({ updatedAt: jasmine.any(String), order: 2 });
+        expect(reads(product.id)).toBe(0);
+      });
+    });
+
+    it('returns the stored value of a field that beforeSave reverts without a read', async () => {
+      const obj = await new Parse.Object('Item').save({ name: 'Alice', count: 1 });
+      Parse.Cloud.beforeSave('Item', ({ object, master }) => {
+        if (!master) {
+          object.revert('name');
+        }
+      });
+      const reads = responseReads('Item');
+      const response = await update('Item', obj.id, { ...increment, name: 'Bob' });
+      expect(response.data).toEqual({ updatedAt: jasmine.any(String), name: 'Alice', count: 2 });
+      expect(reads(obj.id)).toBe(0);
+    });
+
+    it('returns no stored values for an update result without the read access', async () => {
+      const obj = await new Parse.Object('Item').save({ count: 1 });
+      const adapter = Config.get(Parse.applicationId).database.adapter;
+      const findOneAndUpdate = adapter.findOneAndUpdate.bind(adapter);
+      spyOn(adapter, 'findOneAndUpdate').and.callFake(async (...args) => {
+        const result = await findOneAndUpdate(...args);
+        delete result._rperm;
+        return result;
+      });
+      const response = await update('Item', obj.id, increment);
+      expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
+    });
+
+    if (
+      ['replicaset', 'replset'].includes(process.env.MONGODB_TOPOLOGY) ||
+      process.env.PARSE_SERVER_TEST_DB === 'postgres'
+    ) {
+      it('returns the stored values of a create in a transactional batch', async () => {
+        const schema = new Parse.Schema('Item');
+        schema.addNumber('computed');
+        await schema.save();
+        Parse.Cloud.beforeSave('Item', ({ object }) => {
+          object.set('computed', 42);
+        });
+        Parse.Cloud.afterSave('Item', () => {});
+        const user = await Parse.User.signUp('user', 'password');
+        const response = await request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/batch',
+          headers: { ...headers, 'X-Parse-Session-Token': user.getSessionToken() },
+          body: JSON.stringify({
+            transaction: true,
+            requests: [
+              {
+                method: 'POST',
+                path: '/1/classes/Item',
+                body: { ACL: { [user.id]: { read: true, write: true } } },
+              },
+            ],
+          }),
+        });
+        expect(response.data).toEqual([
+          {
+            success: {
+              objectId: jasmine.any(String),
+              createdAt: jasmine.any(String),
+              computed: 42,
+            },
+          },
+        ]);
+      });
+    }
+  });
+
   it('test cloud function error handling', done => {
     // Register a function which will fail
     Parse.Cloud.define('willFail', () => {
