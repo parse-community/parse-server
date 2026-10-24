@@ -187,6 +187,8 @@ ParseCloud.job = function (functionName, handler) {
  *
  * If you want to use beforeSave for a predefined class in the Parse JavaScript SDK (e.g. {@link Parse.User} or {@link Parse.File}), you should pass the class itself and not the String for arg1.
  *
+ * For a `Parse.Object` subclass, the response to a save request without the master key or maintenance key contains stored field values, for example the values that this function sets, only if the client can read the object as the save writes it. To restrict the response, set the ACL in this function.
+ *
  * ```
  * Parse.Cloud.beforeSave('MyCustomClass', (request) => {
  *   // code here
@@ -424,6 +426,8 @@ ParseCloud.beforePasswordResetRequest = function (handler, validationHandler) {
  * **Available in Cloud Code only.**
  *
  * If you want to use afterSave for a predefined class in the Parse JavaScript SDK (e.g. {@link Parse.User} or {@link Parse.File}), you should pass the class itself and not the String for arg1.
+ *
+ * For a `Parse.Object` subclass, the response to a save request without the master key or maintenance key contains stored field values only if the client can read the object as the save writes it. Changes that this function makes do not change that: if it restricts read access, for example with a new ACL, the response still contains the stored field values and the values that this function sets on `request.object`. To restrict the response, set the ACL in a `beforeSave` trigger.
  *
  * For a `Parse.Object` subclass, if the function returns a plain object instead of a `Parse.Object`, Parse Server sends that object to the client as the response of the save request. It does not remove fields from it that the client cannot read, except protected fields if `protectedFieldsSaveResponseExempt` is `false`. For `Parse.File` and `Parse.Config`, the return value does not change the response.
  *

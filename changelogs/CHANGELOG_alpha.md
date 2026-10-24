@@ -1,3 +1,31 @@
+## [9.10.7-alpha.4](https://github.com/parse-community/parse-server/compare/9.10.7-alpha.3...9.10.7-alpha.4) (2026-10-24)
+
+
+### Performance Improvements
+
+* Remove additional database read when saving an object ([#10833](https://github.com/parse-community/parse-server/issues/10833)) ([bec1c70](https://github.com/parse-community/parse-server/commit/bec1c70468670277baefbf360d5f10c1c046ddda))
+
+## [9.10.7-alpha.3](https://github.com/parse-community/parse-server/compare/9.10.7-alpha.2...9.10.7-alpha.3) (2026-10-23)
+
+
+### Bug Fixes
+
+* Save response read access check logs errors twice or as warnings ([#10831](https://github.com/parse-community/parse-server/issues/10831)) ([fc6e60b](https://github.com/parse-community/parse-server/commit/fc6e60bc24bba5b6de6ad21bd10470591a6e144c))
+
+## [9.10.7-alpha.2](https://github.com/parse-community/parse-server/compare/9.10.7-alpha.1...9.10.7-alpha.2) (2026-10-23)
+
+
+### Bug Fixes
+
+* Save response reveals whether a field is stored to a caller without read access ([GHSA-ch64-8phh-m7hc](https://github.com/parse-community/parse-server/security/advisories/GHSA-ch64-8phh-m7hc)) ([#10829](https://github.com/parse-community/parse-server/issues/10829)) ([ae08ab6](https://github.com/parse-community/parse-server/commit/ae08ab620c735c11d205c07b72c074450a0f78a8))
+
+## [9.10.7-alpha.1](https://github.com/parse-community/parse-server/compare/9.10.6...9.10.7-alpha.1) (2026-10-22)
+
+
+### Bug Fixes
+
+* Pre-authentication denial of service via email address format regex backtracking ([GHSA-9492-427f-466x](https://github.com/parse-community/parse-server/security/advisories/GHSA-9492-427f-466x)) ([#10821](https://github.com/parse-community/parse-server/issues/10821)) ([fbd370a](https://github.com/parse-community/parse-server/commit/fbd370aa5ab2c09ef4b4281b4b7c5064ed1b9cba))
+
 ## [9.10.6-alpha.6](https://github.com/parse-community/parse-server/compare/9.10.6-alpha.5...9.10.6-alpha.6) (2026-10-21)
 
 
