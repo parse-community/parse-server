@@ -1515,6 +1515,26 @@ describe('miscellaneous', () => {
         });
       });
 
+      for (const [name, element] of Object.entries({
+        'a plain object': user => ({ objectId: user.id }),
+        'a pointer to another class': user => ({
+          __type: 'Pointer',
+          className: 'Team',
+          objectId: user.id,
+        }),
+      })) {
+        it(`returns no stored values to a user whose objectId is in the array as ${name}`, async () => {
+          const other = await Parse.User.signUp('other', 'password');
+          const response = await update(
+            'SharedItem',
+            obj.id,
+            { ...increment, readers: [element(other)] },
+            other.getSessionToken()
+          );
+          expect(response.data).toEqual({ updatedAt: jasmine.any(String) });
+        });
+      }
+
       it('returns no stored values to a user not in the array without a read', async () => {
         const other = await Parse.User.signUp('other', 'password');
         const reads = responseReads('SharedItem');

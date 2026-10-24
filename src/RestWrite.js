@@ -2489,9 +2489,9 @@ RestWrite.prototype._canReadWrittenObject = function (aclGroup) {
         value = appliedToEmpty(value);
       }
       // An update result of the Postgres adapter has the objectId of a pointer
-      return typeof value === 'string' &&
-        this.validSchemaController.getExpectedType(this.className, field)?.type === 'Pointer'
-        ? { objectId: value }
+      const expected = this.validSchemaController.getExpectedType(this.className, field);
+      return typeof value === 'string' && expected?.type === 'Pointer'
+        ? { __type: 'Pointer', className: expected.targetClass, objectId: value }
         : value;
     }
   );

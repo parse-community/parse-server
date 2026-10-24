@@ -1506,8 +1506,11 @@ export default class SchemaController {
     if (!userId) {
       return false;
     }
-    // A Parse.Object pointer has an id, a pointer in JSON an objectId
-    const pointsToUser = value => (value?.id ? value.id === userId : value?.objectId === userId);
+    // A pointer to the user, as a Parse.Object or in JSON
+    const pointsToUser = value =>
+      value instanceof Parse.Object
+        ? value.className === '_User' && value.id === userId
+        : value?.__type === 'Pointer' && value.className === '_User' && value.objectId === userId;
     return pointerFields.some(field => {
       const value = getValue(field);
       return Array.isArray(value) ? value.some(pointsToUser) : pointsToUser(value);
