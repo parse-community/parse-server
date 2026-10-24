@@ -15,7 +15,7 @@ import RestQuery from './RestQuery';
 import _ from 'lodash';
 import logger from './logger';
 import { requiredColumns } from './Controllers/SchemaController';
-import { createSanitizedError, isLogged } from './Error';
+import { createSanitizedError } from './Error';
 import { applyAuthDataOptimisticLock } from './AuthDataLock';
 import * as InstallationDedup from './InstallationDedup';
 
@@ -1841,6 +1841,7 @@ RestWrite.prototype.runDatabaseOperation = function () {
           let response = result;
           if (raw) {
             this.writtenReadAccess = result._rperm;
+            this.writtenObject = result;
             response = await this.config.database._sanitizeDatabaseResult(this.data, result);
           }
           response.updatedAt = this.updatedAt;
@@ -1943,6 +1944,7 @@ RestWrite.prototype.runDatabaseOperation = function () {
         // Read access as stored
         const acl = this.data.ACL;
         this.writtenReadAccess = acl ? Object.keys(acl).filter(key => acl[key].read) : null;
+        this.writtenObject = this.data;
         this.response = {
           status: 201,
           response,
@@ -2449,34 +2451,54 @@ RestWrite.prototype._setRequestPaths = function (response) {
   }
 };
 
-// Whether the reader can read the written object, or undefined if only a read can tell
-RestWrite.prototype._readAccessWithoutQuery = function (aclGroup) {
+// Whether the caller can read the object as written; changes after the write are not considered
+RestWrite.prototype._canReadWrittenObject = function (aclGroup) {
   const readers = this.writtenReadAccess;
-  if (readers === undefined || (readers !== null && !Array.isArray(readers))) {
-    return undefined;
+  // A write result without valid read access fails closed
+  if (readers !== null && !Array.isArray(readers)) {
+    return false;
   }
-  // Every client read applies the object ACL
+  // The object ACL
   if (readers && !readers.some(reader => aclGroup.includes(reader))) {
     return false;
   }
-  // afterSave may change the object after the write
-  if (triggers.triggerExists(this.className, triggers.Types.afterSave, this.config.applicationId)) {
-    return undefined;
-  }
-  // System classes have their own read rules, except for a created user, installation or role
+  // A client reads a session with a find constrained to the session user
+  const operation = this.className === '_Session' ? 'find' : 'get';
+  const permissions = this.validSchemaController.getClassLevelPermissions(this.className);
   if (
-    this.className.startsWith('_') &&
-    (this.query || !['_User', '_Installation', '_Role'].includes(this.className))
+    SchemaController.SchemaController.permissionDenial(
+      permissions,
+      this.className,
+      aclGroup,
+      operation
+    )
   ) {
-    return undefined;
+    return false;
   }
-  if (this.validSchemaController.testPermissionsForClassName(this.className, aclGroup, 'get')) {
-    return true;
-  }
+  // The pointer permissions of the written object
+  const users = aclGroup.filter(entry => entry !== '*' && !entry.startsWith('role:'));
+  return SchemaController.SchemaController.testPointerPermissions(
+    permissions,
+    aclGroup,
+    operation,
+    users.length === 1 ? users[0] : undefined,
+    field => {
+      let value = this.writtenObject?.[field];
+      // A create stores an operation applied to an empty value
+      if (!this.query) {
+        value = appliedToEmpty(value);
+      }
+      // An update result of the Postgres adapter has the objectId of a pointer
+      const expected = this.validSchemaController.getExpectedType(this.className, field);
+      return typeof value === 'string' && expected?.type === 'Pointer'
+        ? { __type: 'Pointer', className: expected.targetClass, objectId: value }
+        : value;
+    }
+  );
 };
 
-// Returns stored values in a save response only as the caller can read them
-RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
+// Returns stored values in a save response only if the caller can read the object as written
+RestWrite.prototype.filterUnreadableFieldsInResponse = function () {
   const response = this.response?.response;
   if (!response || this.storage.responseFromTrigger) {
     return;
@@ -2505,60 +2527,10 @@ RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
   if (!fields.length) {
     return;
   }
-  let reverted = [];
-  // A created object has no stored value to restore
-  if (this.query && this.pendingOps.operations) {
-    const stateController = Parse.CoreManager.getObjectStateController();
-    const [pending] = stateController.getPendingOps(this.pendingOps.identifier);
-    reverted = Object.keys(this.pendingOps.operations).filter(key => !pending[key]);
-  }
-  const keys = fields.filter(key =>
-    reverted.some(path => path === key || path.startsWith(`${key}.`))
-  );
   // A sign-up response is for the new user if it issues the new user a session
   const signUp = !this.query && this.className === '_User' && !!issued;
   const aclGroup = signUp ? ['*', this.data.objectId] : this.runOptions.acl || [];
-  const readable = this._readAccessWithoutQuery(aclGroup);
-  if (readable && !keys.length) {
-    return;
-  }
-  let view;
-  if (readable !== false) {
-    try {
-      const query = await RestQuery({
-        method: RestQuery.Method.get,
-        config: this.config,
-        auth: signUp
-          ? new Auth.Auth({
-            config: this.config,
-            isMaster: false,
-            user: Parse.Object.fromJSON({ className: '_User', objectId: this.data.objectId }),
-            installationId: this.auth.installationId,
-          })
-          : this.auth,
-        className: this.className,
-        restWhere: {
-          // A session update wraps the addressed objectId
-          objectId: this.query
-            ? this.query.objectId ?? this.query.$and?.[0]?.objectId
-            : this.data.objectId,
-        },
-        // A secondary may not have the write yet
-        restOptions: { readPreference: 'primary' },
-        runBeforeFind: false,
-        runAfterFind: false,
-        context: this.context,
-      });
-      view = (await query.execute()).results[0];
-    } catch (error) {
-      // Fails closed; access denial is expected and an already logged error is not logged again
-      const denied = [Parse.Error.OPERATION_FORBIDDEN, Parse.Error.OBJECT_NOT_FOUND];
-      if (!isLogged(error) && !(error instanceof Parse.Error && denied.includes(error.code))) {
-        logger.error('Failed to read the object for the save response', error);
-      }
-    }
-  }
-  if (!view) {
+  if (!this._canReadWrittenObject(aclGroup)) {
     // No stored values for a caller who cannot read the object
     for (const key of fields) {
       delete response[key];
@@ -2566,28 +2538,20 @@ RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
     this._setRequestPaths(response);
     return;
   }
-  for (const key of keys) {
-    // Removed beneath a key the caller cannot read
-    if (!hasOwn(response, key)) {
-      continue;
-    }
-    const path = key.split('.');
-    const value = getOwnPath(view, path);
-    if (value === undefined) {
-      for (const responseKey of Object.keys(response)) {
-        if (responseKey.startsWith(`${key}.`)) {
-          delete response[responseKey];
-        }
-      }
-      if (key === 'ACL') {
-        // The SDK cannot apply an operation to ACL
+  // A field reverted in beforeSave has the value of the original object, which triggers that are
+  // exempt from protected fields read with the master key
+  if (this.config.protectedFieldsTriggerExempt && this.query && this.pendingOps.operations) {
+    const stateController = Parse.CoreManager.getObjectStateController();
+    const [pending] = stateController.getPendingOps(this.pendingOps.identifier);
+    const reverted = Object.keys(this.pendingOps.operations).filter(key => !pending[key]);
+    for (const key of fields) {
+      if (
+        reverted.some(
+          path => path === key || path.startsWith(`${key}.`) || key.startsWith(`${path}.`)
+        )
+      ) {
         delete response[key];
-      } else {
-        response[key] = { __op: 'Delete' };
       }
-    } else if (util.isDeepStrictEqual(response[key], getOwnPath(this.originalData, path))) {
-      // The stored value as the caller reads it
-      response[key] = value;
     }
   }
 };
