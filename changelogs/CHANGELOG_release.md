@@ -1,3 +1,10 @@
+## [8.6.117](https://github.com/parse-community/parse-server/compare/8.6.116...8.6.117) (2026-10-24)
+
+
+### Performance Improvements
+
+* Remove additional database read when saving an object ([#10834](https://github.com/parse-community/parse-server/issues/10834)) ([dfb0ff4](https://github.com/parse-community/parse-server/commit/dfb0ff4a23ed05bc467e6301901de1642880cbd5))
+
 ## [8.6.116](https://github.com/parse-community/parse-server/compare/8.6.115...8.6.116) (2026-10-23)
 
 
