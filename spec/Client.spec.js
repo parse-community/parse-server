@@ -190,6 +190,76 @@ describe('Client', function () {
     expect(messageJSON.requestId).toBe(2);
   });
 
+  it('can push query result response', function () {
+    const parseObjectJSON = {
+      key: 'value',
+      className: 'test',
+      objectId: 'test',
+      updatedAt: '2015-12-07T21:27:13.746Z',
+      createdAt: '2015-12-07T21:27:13.746Z',
+      ACL: 'test',
+      test: 'test',
+    };
+    const parseWebSocket = {
+      send: jasmine.createSpy('send'),
+    };
+    const client = new Client(1, parseWebSocket, false, undefined, 'installationId');
+    client.pushResult(2, [parseObjectJSON]);
+
+    const lastCall = parseWebSocket.send.calls.first();
+    const messageJSON = JSON.parse(lastCall.args[0]);
+    expect(messageJSON.op).toBe('result');
+    expect(messageJSON.clientId).toBe(1);
+    expect(messageJSON.installationId).toBe('installationId');
+    expect(messageJSON.requestId).toBe(2);
+    expect(messageJSON.results).toEqual([parseObjectJSON]);
+  });
+
+  it('can push query result response with selected fields', function () {
+    const parseObjectJSON = {
+      key: 'value',
+      className: 'test',
+      objectId: 'test',
+      updatedAt: '2015-12-07T21:27:13.746Z',
+      createdAt: '2015-12-07T21:27:13.746Z',
+      ACL: 'test',
+      test: 'test',
+    };
+    const parseWebSocket = {
+      send: jasmine.createSpy('send'),
+    };
+    const client = new Client(1, parseWebSocket);
+    client.addSubscriptionInfo(2, { keys: ['test'] });
+    client.pushResult(2, [parseObjectJSON]);
+
+    const lastCall = parseWebSocket.send.calls.first();
+    const messageJSON = JSON.parse(lastCall.args[0]);
+    expect(messageJSON.results).toEqual([
+      {
+        className: 'test',
+        objectId: 'test',
+        updatedAt: '2015-12-07T21:27:13.746Z',
+        createdAt: '2015-12-07T21:27:13.746Z',
+        ACL: 'test',
+        test: 'test',
+      },
+    ]);
+  });
+
+  it('can push empty query result response when results are missing', function () {
+    const parseWebSocket = {
+      send: jasmine.createSpy('send'),
+    };
+    const client = new Client(1, parseWebSocket);
+    client.pushResult(2);
+
+    const lastCall = parseWebSocket.send.calls.first();
+    const messageJSON = JSON.parse(lastCall.args[0]);
+    expect(messageJSON.op).toBe('result');
+    expect(messageJSON.requestId).toBe(2);
+    expect(messageJSON.results).toEqual([]);
+  });
+
   it('can push create response', function () {
     const parseObjectJSON = {
       key: 'value',
