@@ -1,3 +1,10 @@
+## [9.10.7-alpha.4](https://github.com/parse-community/parse-server/compare/9.10.7-alpha.3...9.10.7-alpha.4) (2026-10-24)
+
+
+### Performance Improvements
+
+* Remove additional database read when saving an object ([#10833](https://github.com/parse-community/parse-server/issues/10833)) ([bec1c70](https://github.com/parse-community/parse-server/commit/bec1c70468670277baefbf360d5f10c1c046ddda))
+
 ## [9.10.7-alpha.3](https://github.com/parse-community/parse-server/compare/9.10.7-alpha.2...9.10.7-alpha.3) (2026-10-23)
 
 
