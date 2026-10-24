@@ -1653,6 +1653,22 @@ describe('miscellaneous', () => {
       expect(reads(obj.id)).toBe(0);
     });
 
+    it('does not return the stored value of a protected field that beforeSave reverts', async () => {
+      await reconfigureServer({ protectedFields: { Item: { '*': ['secret'] } } });
+      const obj = await new Parse.Object('Item').save(
+        { secret: 'stored-secret', count: 1 },
+        { useMasterKey: true }
+      );
+      Parse.Cloud.beforeSave('Item', ({ object, master }) => {
+        if (!master) {
+          object.revert('secret');
+        }
+      });
+      const response = await update('Item', obj.id, { ...increment, secret: 'new' });
+      expect(response.data.count).toBe(2);
+      expect(JSON.stringify(response.data)).not.toContain('stored-secret');
+    });
+
     it('returns no stored values for an update result without the read access', async () => {
       const obj = await new Parse.Object('Item').save({ count: 1 });
       const adapter = Config.get(Parse.applicationId).database.adapter;
