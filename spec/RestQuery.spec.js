@@ -732,6 +732,8 @@ describe('RestQuery.each', () => {
       [{ numbers: { $in: [null] } }, 0],
       [{ numbers: { $nin: [null] } }, 1],
       [{ numbers: { $ne: null, $in: [] } }, 0],
+      [{ numbers: { $ne: null, $nin: [] } }, 1],
+      [{ numbers: { $in: [null, object1.toPointer()] } }, 1],
     ]) {
       const query = await RestQuery({
         method: RestQuery.Method.find,

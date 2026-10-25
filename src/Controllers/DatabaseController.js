@@ -1142,7 +1142,8 @@ class DatabaseController {
           }
           return {
             isNegation,
-            relatedIds,
+            // Null operands cannot match a related object
+            relatedIds: relatedIds.filter(id => id != null),
           };
         });
       } else {
