@@ -40,7 +40,6 @@ const internalFields = {
   _account_lockout_expires_at:    { clientRead: false, masterRead: true,  masterWrite: true  },
   _password_changed_at:           { clientRead: false, masterRead: true,  masterWrite: true  },
   _password_history:              { clientRead: false, masterRead: true,  masterWrite: true  },
-  _tombstone:                     { clientRead: false, masterRead: true,  masterWrite: false },
   _session_token:                 { clientRead: false, masterRead: true,  masterWrite: false },
   /////////////////////////////////////////////////////////////////////////////////////////////
   // The following fields are not accessed by their _-prefixed name through the API;
