@@ -43,6 +43,8 @@ const transformInputTypeToGraphQL = (parseType, targetClass, parseClassTypes) =>
       return defaultGraphQLTypes.POLYGON_INPUT;
     case 'Bytes':
       return defaultGraphQLTypes.BYTES;
+    case 'Decimal128':
+      return defaultGraphQLTypes.DECIMAL128;
     case 'ACL':
       return defaultGraphQLTypes.ACL_INPUT;
     default:
