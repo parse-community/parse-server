@@ -13,7 +13,7 @@ describe('Personally Identifiable Information', () => {
   let user;
 
   beforeEach(async done => {
-    await reconfigureServer();
+    await reconfigureServer({directAccess: false});
     user = await Parse.User.signUp('tester', 'abc');
     user = await Parse.User.logIn(user.get('username'), 'abc');
     const acl = new Parse.ACL();

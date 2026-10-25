@@ -1216,6 +1216,7 @@ describe('Parse.File testing', () => {
 
     it('rejects all file uploads', async () => {
       await reconfigureServer({
+        directAccess:false,
         fileUpload: {
           enableForPublic: false,
           enableForAnonymousUser: false,
@@ -1261,6 +1262,7 @@ describe('Parse.File testing', () => {
 
     it('allows file upload only for public', async () => {
       await reconfigureServer({
+        directAccess:false,
         fileUpload: {
           enableForPublic: true,
           enableForAnonymousUser: false,
@@ -1286,6 +1288,7 @@ describe('Parse.File testing', () => {
 
     it('allows file upload only for anonymous user', async () => {
       await reconfigureServer({
+        directAccess:false,
         fileUpload: {
           enableForPublic: false,
           enableForAnonymousUser: true,
@@ -1311,6 +1314,7 @@ describe('Parse.File testing', () => {
 
     it('allows file upload only for authenticated user', async () => {
       await reconfigureServer({
+        directAccess:false,
         fileUpload: {
           enableForPublic: false,
           enableForAnonymousUser: false,
