@@ -342,6 +342,31 @@ describe('Account Lockout Policy: ', () => {
       });
   });
 
+  it('allows a fresh set of attempts after the lockout duration expires', async () => {
+    await reconfigureServer({
+      appName: 'lockout reset',
+      accountLockout: { duration: 0.05 /* 3s */, threshold: 2 },
+      publicServerURL: 'http://localhost:8378/1',
+    });
+    const user = new Parse.User();
+    user.setUsername('username_reset');
+    user.setPassword('correct password');
+    await user.signUp();
+
+    // Trip the lockout (threshold = 2 failed attempts).
+    await loginWithWrongCredentialsShouldFail('username_reset', 'wrong password');
+    await loginWithWrongCredentialsShouldFail('username_reset', 'wrong password');
+
+    // Wait out the 3s lockout.
+    await new Promise(resolve => setTimeout(resolve, 3100));
+
+    // One post-expiry failure must NOT re-lock (bug: it throws the lockout error here)...
+    await loginWithWrongCredentialsShouldFail('username_reset', 'wrong password');
+    // ...and a correct login within the fresh window must still succeed.
+    const loggedIn = await Parse.User.logIn('username_reset', 'correct password');
+    expect(loggedIn.getUsername()).toBe('username_reset');
+  });
+
   it('should enforce lockout threshold under concurrent failed login attempts', async () => {
     const threshold = 3;
     await reconfigureServer({
