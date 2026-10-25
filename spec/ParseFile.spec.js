@@ -793,9 +793,9 @@ describe('Parse.File testing', () => {
     it('does not crash on file metadata request with invalid app ID', async () => {
       const res1 = await request({
         url: `http://localhost:8378/1/files/invalid-id/metadata/invalid-file.txt`,
-      });
-      expect(res1.status).toBe(200);
-      expect(res1.data).toEqual({});
+      }).catch(e => e);
+      expect(res1.status).toBe(403);
+      expect(res1.data).toEqual({ error: 'Permission denied' });
       // Ensure server did not crash
       const res2 = await request({ url: 'http://localhost:8378/1/health' });
       expect(res2.status).toEqual(200);
