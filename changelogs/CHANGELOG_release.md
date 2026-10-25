@@ -1,3 +1,28 @@
+## [9.10.7](https://github.com/parse-community/parse-server/compare/9.10.6...9.10.7) (2026-10-24)
+
+
+### Bug Fixes
+
+* Pre-authentication denial of service via email address format regex backtracking ([GHSA-9492-427f-466x](https://github.com/parse-community/parse-server/security/advisories/GHSA-9492-427f-466x)) ([#10821](https://github.com/parse-community/parse-server/issues/10821)) ([fbd370a](https://github.com/parse-community/parse-server/commit/fbd370aa5ab2c09ef4b4281b4b7c5064ed1b9cba))
+* Save response read access check logs errors twice or as warnings ([#10831](https://github.com/parse-community/parse-server/issues/10831)) ([fc6e60b](https://github.com/parse-community/parse-server/commit/fc6e60bc24bba5b6de6ad21bd10470591a6e144c))
+* Save response reveals whether a field is stored to a caller without read access ([GHSA-ch64-8phh-m7hc](https://github.com/parse-community/parse-server/security/advisories/GHSA-ch64-8phh-m7hc)) ([#10829](https://github.com/parse-community/parse-server/issues/10829)) ([ae08ab6](https://github.com/parse-community/parse-server/commit/ae08ab620c735c11d205c07b72c074450a0f78a8))
+
+### Performance Improvements
+
+* Remove additional database read when saving an object ([#10833](https://github.com/parse-community/parse-server/issues/10833)) ([bec1c70](https://github.com/parse-community/parse-server/commit/bec1c70468670277baefbf360d5f10c1c046ddda))
+
+## [9.10.6](https://github.com/parse-community/parse-server/compare/9.10.5...9.10.6) (2026-10-22)
+
+
+### Bug Fixes
+
+* Object create returns field values to a caller without read access ([GHSA-qq3r-ppqq-rh6m](https://github.com/parse-community/parse-server/security/advisories/GHSA-qq3r-ppqq-rh6m)) ([#10813](https://github.com/parse-community/parse-server/issues/10813)) ([d95b14d](https://github.com/parse-community/parse-server/commit/d95b14d08819e859c4385532510d1c8d6e787112))
+* Object update returns stored field values to a caller without read access ([GHSA-2rcp-jc67-vq74](https://github.com/parse-community/parse-server/security/advisories/GHSA-2rcp-jc67-vq74)) ([#10798](https://github.com/parse-community/parse-server/issues/10798)) ([4f110a9](https://github.com/parse-community/parse-server/commit/4f110a9cf262375b7432dc1a630200272a8232ed))
+* Object update with a dot notation key below a pointer field can terminate the server process ([GHSA-wc3c-6843-q7mv](https://github.com/parse-community/parse-server/security/advisories/GHSA-wc3c-6843-q7mv)) ([#10802](https://github.com/parse-community/parse-server/issues/10802)) ([946b670](https://github.com/parse-community/parse-server/commit/946b670186cc4b3932a5a738f3264404de8a0aa5))
+* Object write with a crafted dot notation key can pollute a shared prototype when the class has a trigger or LiveQuery ([GHSA-95hp-82c6-25q5](https://github.com/parse-community/parse-server/security/advisories/GHSA-95hp-82c6-25q5)) ([#10810](https://github.com/parse-community/parse-server/issues/10810)) ([9e3da78](https://github.com/parse-community/parse-server/commit/9e3da782be8e2225a06d87851ee450da6a0b57a4))
+* Object write with a null dot notation key can corrupt a field or make reads fail on MongoDB ([GHSA-655c-2xf3-77x9](https://github.com/parse-community/parse-server/security/advisories/GHSA-655c-2xf3-77x9)) ([#10804](https://github.com/parse-community/parse-server/issues/10804)) ([b405b63](https://github.com/parse-community/parse-server/commit/b405b637a6adaff21ac27d2b4cf4c164ce54e39a))
+* Session upgrade endpoint creates an additional session from an already revocable session token ([GHSA-2j2x-c587-q33g](https://github.com/parse-community/parse-server/security/advisories/GHSA-2j2x-c587-q33g)) ([#10808](https://github.com/parse-community/parse-server/issues/10808)) ([5bcb56b](https://github.com/parse-community/parse-server/commit/5bcb56b1e77326f33d7b89787ee4cbc3870e6cec))
+
 ## [9.10.5](https://github.com/parse-community/parse-server/compare/9.10.4...9.10.5) (2026-10-16)
 
 

@@ -953,7 +953,7 @@ export function maybeRunTrigger(
         logTriggerSuccessBeforeHook(
           triggerType,
           parseObject.className,
-          parseObject.toJSON(),
+          Utils.safeToJSON(parseObject),
           object,
           auth,
           triggerType.startsWith('after')
@@ -974,7 +974,7 @@ export function maybeRunTrigger(
         logTriggerErrorBeforeHook(
           triggerType,
           parseObject.className,
-          parseObject.toJSON(),
+          Utils.safeToJSON(parseObject),
           auth,
           error,
           config.logLevels.triggerBeforeError
@@ -1005,7 +1005,7 @@ export function maybeRunTrigger(
           logTriggerAfterHook(
             triggerType,
             parseObject.className,
-            parseObject.toJSON(),
+            Utils.safeToJSON(parseObject),
             auth,
             config.logLevels.triggerAfter
           );
