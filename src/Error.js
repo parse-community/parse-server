@@ -1,4 +1,5 @@
 import defaultLogger from './logger';
+import Utils from './Utils';
 
 /**
  * Creates a sanitized error that hides detailed information from clients
@@ -43,4 +44,51 @@ function createSanitizedHttpError(statusCode, detailedMessage, config) {
   return error;
 }
 
-export { createSanitizedError, createSanitizedHttpError };
+function safeBulkReasonDetailedMessage(reason) {
+  if (reason === undefined || reason === null) {
+    return 'Internal server error';
+  }
+  try {
+    let detail;
+    if (typeof reason.message === 'string') {
+      detail = reason.message;
+    } else {
+      detail = String(reason);
+    }
+    return typeof detail === 'string' ? detail : 'Internal server error';
+  } catch {
+    return 'Internal server error';
+  }
+}
+
+/**
+ * `{ code, message }` for GraphQL bulk mutation per-item failures (`ParseGraphQLBulkError`).
+ * Explicit `Parse.Error` keeps its original code and message. Native hook errors wrapped by
+ * `resolveError` as `Parse.Error(SCRIPT_FAILED, error.message)` are sanitized like other
+ * non-Parse values when `enableSanitizedErrorResponse` is enabled.
+ *
+ * @param {unknown} reason
+ * @param {object} config
+ * @returns {{ code: number, message: string }}
+ */
+function bulkErrorPayloadFromReason(reason, config) {
+  const sanitize = config?.enableSanitizedErrorResponse !== false;
+  const isWrappedNativeError = reason instanceof Parse.Error && reason.wrappedNativeError;
+  if (reason instanceof Parse.Error && !(isWrappedNativeError && sanitize)) {
+    return { code: reason.code, message: reason.message };
+  }
+  const detailedMessage = safeBulkReasonDetailedMessage(reason);
+  if (process.env.TESTING) {
+    defaultLogger.error('Bulk mutation non-Parse error:', detailedMessage);
+  } else {
+    defaultLogger.error(
+      'Bulk mutation non-Parse error:',
+      detailedMessage,
+      Utils.isNativeError(reason) ? reason.stack : ''
+    );
+  }
+  const message = sanitize ? 'Internal server error' : detailedMessage;
+  return { code: Parse.Error.INTERNAL_SERVER_ERROR, message };
+}
+
+export { createSanitizedError, createSanitizedHttpError, bulkErrorPayloadFromReason };
