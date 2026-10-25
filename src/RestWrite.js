@@ -1978,17 +1978,34 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
   );
 
   if (hasLiveQuery) {
-    this.config.database
-      .loadSchema()
-      .then(schemaController => {
-        // Notify LiveQueryServer if possible
-        const perms = schemaController.getClassLevelPermissions(updatedObject.className);
-        this.config.liveQueryController.onAfterSave(
-          updatedObject.className,
-          updatedObject,
-          originalObject,
-          perms
-        );
+    // Run the beforeLiveQueryEvent trigger, if defined, to let Cloud Code decide
+    // whether the event should be published. Returning `false` from the trigger
+    // prevents the event from being sent to the LiveQuery server, which saves
+    // network and CPU resources for events that no client needs to receive.
+    // Fire-and-forget: the trigger and the notification must not delay the
+    // save response.
+    triggers
+      .maybeRunBeforeLiveQueryEventTrigger(
+        this.auth,
+        updatedObject,
+        originalObject,
+        this.config,
+        this.context
+      )
+      .then(publish => {
+        if (!publish) {
+          return;
+        }
+        return this.config.database.loadSchema().then(schemaController => {
+          // Notify LiveQueryServer if possible
+          const perms = schemaController.getClassLevelPermissions(updatedObject.className);
+          this.config.liveQueryController.onAfterSave(
+            updatedObject.className,
+            updatedObject,
+            originalObject,
+            perms
+          );
+        });
       })
       .catch(err => {
         logger.error('LiveQuery afterSave notification failed', err);
