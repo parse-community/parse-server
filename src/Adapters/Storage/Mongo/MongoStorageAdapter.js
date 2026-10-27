@@ -1259,7 +1259,13 @@ export class MongoStorageAdapter implements StorageAdapter {
   dropIndex(className: string, index: any) {
     return this._adaptiveCollection(className)
       .then(collection => collection._mongoCollection.dropIndex(index))
-      .catch(err => this.handleError(err));
+      .catch(err => {
+        // IndexNotFound: another instance already dropped this index.
+        if (err && err.code === 27) {
+          return;
+        }
+        return this.handleError(err);
+      });
   }
 
   dropAllIndexes(className: string) {

@@ -912,6 +912,37 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       expect(userIndexes.find(idx => idx.name === '_perishable_token' || idx.name === '_perishable_token_1')).toBeDefined();
       expect(roleIndexes.find(idx => idx.name === 'name_1')).toBeDefined();
     });
+
+    it('should not throw when concurrent updates drop the same index', async () => {
+      const adapter = new MongoStorageAdapter({ uri: databaseURI });
+      const className = 'ConcurrentIndexDrop';
+      await adapter.createClass(className, {
+        fields: {
+          name: { type: 'String' },
+        },
+        indexes: {
+          name_1: { name: 1 },
+        },
+      });
+      const stored = await adapter.getClass(className);
+      const deleteOp = { name_1: { __op: 'Delete' } };
+      await Promise.all([
+        adapter.setIndexesWithSchemaFormat(
+          className,
+          deleteOp,
+          { ...stored.indexes },
+          stored.fields
+        ),
+        adapter.setIndexesWithSchemaFormat(
+          className,
+          deleteOp,
+          { ...stored.indexes },
+          stored.fields
+        ),
+      ]);
+      const indexes = await adapter.database.collection(className).indexes();
+      expect(indexes.find(index => index.name === 'name_1')).toBeUndefined();
+    });
   });
 
   describe('logClientEvents', () => {
