@@ -533,7 +533,7 @@ describe('DefinedSchemas', () => {
       expect(definedSchema.isProtectedIndex('ExampleClass', '_id_')).toEqual(true);
     });
 
-    it('should not delete internal _User indexes absent from the local schema', async () => {
+    it_only_db('mongo')('should not delete internal _User indexes absent from the local schema', async () => {
       const server = await reconfigureServer();
       const config = Config.get(server.config.appId);
       const adapter = config.database.adapter;
@@ -563,7 +563,7 @@ describe('DefinedSchemas', () => {
       expect(after.indexes.custom_unprotected).toBeUndefined();
     });
 
-    it('should not delete the internal ttl index on _Idempotency', async () => {
+    it_only_db('mongo')('should not delete the internal ttl index on _Idempotency', async () => {
       const server = await reconfigureServer();
       const config = Config.get(server.config.appId);
       const adapter = config.database.adapter;

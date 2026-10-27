@@ -943,6 +943,11 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       const indexes = await adapter.database.collection(className).indexes();
       expect(indexes.find(index => index.name === 'name_1')).toBeUndefined();
     });
+
+    it('should still reject dropIndex errors other than IndexNotFound', async () => {
+      const adapter = new MongoStorageAdapter({ uri: databaseURI });
+      await expectAsync(adapter.dropIndex('MissingDropIndexClass', 'missing_index')).toBeRejected();
+    });
   });
 
   describe('logClientEvents', () => {
