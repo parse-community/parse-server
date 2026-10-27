@@ -482,11 +482,22 @@ describe('DefinedSchemas', () => {
 
     it('should detect protected indexes for _User class', () => {
       const definedSchema = new DefinedSchemas({}, {});
-      const protectedUserIndexes = ['_id_', 'case_insensitive_email', 'username_1', 'email_1'];
+      const protectedUserIndexes = [
+        '_id_',
+        'case_insensitive_username',
+        'case_insensitive_email',
+        'username_1',
+        'email_1',
+        '_email_verify_token',
+        '_perishable_token',
+        '_auth_data_admin_id',
+      ];
       protectedUserIndexes.forEach(field => {
         expect(definedSchema.isProtectedIndex('_User', field)).toEqual(true);
       });
       expect(definedSchema.isProtectedIndex('_User', 'test')).toEqual(false);
+      expect(definedSchema.isProtectedIndex('_User', 'auth_data_admin_id')).toEqual(false);
+      expect(definedSchema.isProtectedIndex('_User', '_auth_data_admin')).toEqual(false);
     });
 
     it('should detect protected indexes for _Role class', () => {
@@ -498,22 +509,103 @@ describe('DefinedSchemas', () => {
     it('should detect protected indexes for _Idempotency class', () => {
       const definedSchema = new DefinedSchemas({}, {});
       expect(definedSchema.isProtectedIndex('_Idempotency', 'reqId_1')).toEqual(true);
+      expect(definedSchema.isProtectedIndex('_Idempotency', 'ttl')).toEqual(true);
       expect(definedSchema.isProtectedIndex('_Idempotency', 'test')).toEqual(false);
     });
 
     it('should not detect protected indexes on user defined class', () => {
       const definedSchema = new DefinedSchemas({}, {});
       const protectedIndexes = [
+        'case_insensitive_username',
         'case_insensitive_email',
         'username_1',
         'email_1',
+        '_email_verify_token',
+        '_perishable_token',
+        '_auth_data_admin_id',
         'reqId_1',
+        'ttl',
         'name_1',
       ];
       protectedIndexes.forEach(field => {
         expect(definedSchema.isProtectedIndex('ExampleClass', field)).toEqual(false);
       });
       expect(definedSchema.isProtectedIndex('ExampleClass', '_id_')).toEqual(true);
+    });
+
+    it_only_db('mongo')('should not delete internal _User indexes absent from the local schema', async () => {
+      const server = await reconfigureServer();
+      const config = Config.get(server.config.appId);
+      const adapter = config.database.adapter;
+      await adapter.ensureAuthDataUniqueness('admin');
+      await adapter.updateSchemaWithIndexes();
+
+      const userSchema = new Parse.Schema('_User');
+      userSchema.addIndex('custom_unprotected', { username: 1 });
+      await userSchema.update();
+      config.schemaCache.clear();
+
+      const before = await new Parse.Schema('_User').get();
+      expect(before.indexes._email_verify_token).toEqual({ _email_verify_token: 1 });
+      expect(before.indexes._perishable_token).toEqual({ _perishable_token: 1 });
+      expect(before.indexes._auth_data_admin_id).toEqual({ '_auth_data_admin.id': 1 });
+      expect(before.indexes.custom_unprotected).toEqual({ username: 1 });
+
+      await new DefinedSchemas(
+        { definitions: [{ className: '_User', indexes: {} }] },
+        server.config
+      ).execute();
+
+      const after = await new Parse.Schema('_User').get();
+      expect(after.indexes._email_verify_token).toEqual({ _email_verify_token: 1 });
+      expect(after.indexes._perishable_token).toEqual({ _perishable_token: 1 });
+      expect(after.indexes._auth_data_admin_id).toEqual({ '_auth_data_admin.id': 1 });
+      expect(after.indexes.custom_unprotected).toBeUndefined();
+    });
+
+    it_only_db('mongo')('should not delete the internal ttl index on _Idempotency', async () => {
+      const server = await reconfigureServer();
+      const config = Config.get(server.config.appId);
+      const adapter = config.database.adapter;
+      const mongoIndexes = await adapter.getIndexes('_Idempotency');
+      expect(mongoIndexes.find(index => index.name === 'ttl')).toBeDefined();
+
+      // _Idempotency is volatile, so startup does not copy its indexes into _SCHEMA.
+      // Put them in the cloud schema that the migration reads.
+      await adapter.database.collection(`${adapter._collectionPrefix}_SCHEMA`).updateOne(
+        { _id: '_Idempotency' },
+        {
+          $set: {
+            objectId: 'string',
+            updatedAt: 'string',
+            createdAt: 'string',
+            reqId: 'string',
+            expire: 'date',
+            _metadata: {
+              indexes: {
+                _id_: { _id: 1 },
+                reqId_1: { reqId: 1 },
+                ttl: { expire: 1 },
+                custom_unprotected: { reqId: 1 },
+              },
+            },
+          },
+        },
+        { upsert: true }
+      );
+      config.schemaCache.clear();
+
+      await new DefinedSchemas(
+        { definitions: [{ className: '_Idempotency', indexes: {} }] },
+        server.config
+      ).execute();
+
+      const after = await adapter.getClass('_Idempotency');
+      expect(after.indexes.ttl).toEqual({ expire: 1 });
+      expect(after.indexes.reqId_1).toEqual({ reqId: 1 });
+      expect(after.indexes.custom_unprotected).toBeUndefined();
+      const afterMongo = await adapter.getIndexes('_Idempotency');
+      expect(afterMongo.find(index => index.name === 'ttl')).toBeDefined();
     });
   });
 

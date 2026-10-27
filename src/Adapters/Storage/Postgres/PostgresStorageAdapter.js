@@ -2557,7 +2557,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
   async dropIndexes(className: string, indexes: any, conn: any): Promise<void> {
     const queries = indexes.map(i => ({
-      query: 'DROP INDEX $1:name',
+      query: 'DROP INDEX IF EXISTS $1:name',
       values: i,
     }));
     await (conn || this._client).tx(t => t.none(this._pgp.helpers.concat(queries)));

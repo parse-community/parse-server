@@ -411,15 +411,21 @@ export class DefinedSchemas {
           'case_insensitive_username',
           'case_insensitive_email',
           'username_1',
-          'email_1'
+          'email_1',
+          '_email_verify_token',
+          '_perishable_token'
         );
+        // Unique indexes created for each auth provider: _auth_data_<provider>_id
+        if (/^_auth_data_.+_id$/.test(indexName)) {
+          return true;
+        }
         break;
       case '_Role':
         indexes.push('name_1');
         break;
 
       case '_Idempotency':
-        indexes.push('reqId_1');
+        indexes.push('reqId_1', 'ttl');
         break;
     }
 
