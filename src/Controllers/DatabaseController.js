@@ -2182,7 +2182,12 @@ class DatabaseController {
       Object.hasOwn(object, firstKey) && object[firstKey] && typeof object[firstKey] === 'object'
         ? object[firstKey]
         : {};
-    object[firstKey] = this._expandResultOnKeyPath(child, nextPath, value[firstKey]);
+    // No value below a path segment that the result does not contain
+    const next =
+      Object.hasOwn(value, firstKey) && value[firstKey] && typeof value[firstKey] === 'object'
+        ? value[firstKey]
+        : undefined;
+    object[firstKey] = next ? this._expandResultOnKeyPath(child, nextPath, next) : child;
     delete object[key];
     return object;
   }

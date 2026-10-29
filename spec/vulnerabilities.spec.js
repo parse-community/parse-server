@@ -12923,14 +12923,6 @@ describe('Vulnerabilities', () => {
                 ? { updatedAt: jasmine.any(String) }
                 : { updatedAt: jasmine.any(String), field };
               for (const [stored, values] of Object.entries(storedValues)) {
-                // A Remove needs a stored parent field on MongoDB
-                if (
-                  name === 'Remove' &&
-                  stored === 'a missing field' &&
-                  process.env.PARSE_SERVER_TEST_DB !== 'postgres'
-                ) {
-                  continue;
-                }
                 const response = await update(values, body);
                 expect(response.data).withContext(stored).toEqual(expected);
               }
@@ -13043,6 +13035,172 @@ describe('Vulnerabilities', () => {
           });
         }
       }
+    });
+  });
+  describe('(GHSA-4m87-fqwv-2m8v) Dot notation operation on a missing field reveals whether the field is stored to a caller without read access', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const masterHeaders = { ...headers, 'X-Parse-Master-Key': 'test' };
+
+    beforeEach(async () => {
+      const schema = new Parse.Schema('WriteOnly');
+      schema.addObject('field');
+      schema.addArray('list');
+      schema.setCLP({
+        find: {},
+        get: {},
+        count: {},
+        create: { '*': true },
+        update: { '*': true },
+        delete: {},
+        addField: {},
+      });
+      await schema.save();
+    });
+
+    const update = async (stored, body, extraHeaders = {}) => {
+      const obj = await new Parse.Object('WriteOnly').save(stored, { useMasterKey: true });
+      const response = await request({
+        method: 'PUT',
+        url: `${Parse.serverURL}/classes/WriteOnly/${obj.id}`,
+        headers: { ...headers, ...extraHeaders },
+        body: JSON.stringify(body),
+      });
+      return { ...response, id: obj.id };
+    };
+
+    const create = (body, extraHeaders = {}) =>
+      request({
+        method: 'POST',
+        url: `${Parse.serverURL}/classes/WriteOnly`,
+        headers: { ...headers, ...extraHeaders },
+        body: JSON.stringify(body),
+      });
+
+    describe('update', () => {
+      const storedValues = {
+        'a stored path': { field: { items: ['y'], deep: { items: ['y'] } } },
+        'a parent without the path': { field: { other: 'stored-other' } },
+        'a missing parent field': {},
+      };
+      const cases = [
+        ['Remove', { 'field.items': { __op: 'Remove', objects: ['y'] } }, { items: [] }],
+        [
+          'nested Remove',
+          { 'field.deep.items': { __op: 'Remove', objects: ['y'] } },
+          { deep: { items: [] } },
+        ],
+        [
+          'Remove with an operation on another path',
+          {
+            'field.items': { __op: 'Remove', objects: ['y'] },
+            'field.count': { __op: 'Increment', amount: 0 },
+          },
+          { items: [], count: 0 },
+        ],
+      ];
+      for (const trigger of ['no trigger', 'beforeSave', 'afterSave']) {
+        for (const [name, body, field] of cases) {
+          it(`returns the request values of ${name} with ${trigger}`, async () => {
+            if (trigger !== 'no trigger') {
+              Parse.Cloud[trigger]('WriteOnly', () => {});
+            }
+            for (const [stored, values] of Object.entries(storedValues)) {
+              const response = await update(values, body);
+              expect(response.status).withContext(stored).toBe(200);
+              expect(response.data)
+                .withContext(stored)
+                .toEqual({ updatedAt: jasmine.any(String), field });
+            }
+          });
+        }
+      }
+
+      it('succeeds for a Remove on a missing parent field with the master key', async () => {
+        const response = await update(
+          {},
+          { 'field.items': { __op: 'Remove', objects: ['y'] } },
+          masterHeaders
+        );
+        expect(response.status).toBe(200);
+        expect(response.data.updatedAt).toEqual(jasmine.any(String));
+      });
+
+      it_only_db('mongo')(
+        'returns an empty parent for a Remove on a missing parent field with the master key',
+        async () => {
+          const response = await update(
+            {},
+            { 'field.items': { __op: 'Remove', objects: ['y'] } },
+            masterHeaders
+          );
+          expect(response.data).toEqual({ updatedAt: jasmine.any(String), field: {} });
+          const obj = await new Parse.Query('WriteOnly').get(response.id, { useMasterKey: true });
+          expect(obj.get('field')).toBeUndefined();
+        }
+      );
+
+      it_only_db('mongo')(
+        'keeps the object clean after a Remove on a missing parent field with the master key',
+        async () => {
+          const obj = await new Parse.Object('WriteOnly').save({ other: 1 }, { useMasterKey: true });
+          obj.remove('field.items', 'y');
+          await obj.save(null, { useMasterKey: true });
+          expect(obj.dirtyKeys()).toEqual([]);
+          const stored = await new Parse.Query('WriteOnly').get(obj.id, { useMasterKey: true });
+          expect(stored.get('field')).toBeUndefined();
+        }
+      );
+
+      it_only_db('mongo')(
+        'returns the request values of a Remove below an array index for every stored value',
+        async () => {
+          const body = { 'list.1.items': { __op: 'Remove', objects: ['y'] } };
+          const storedLists = {
+            'a stored path': { list: [{ items: ['y'] }, { items: ['y'] }] },
+            'a shorter array': { list: [{ items: ['y'] }] },
+            'a missing field': {},
+          };
+          for (const [stored, values] of Object.entries(storedLists)) {
+            const response = await update(values, body);
+            expect(response.status).withContext(stored).toBe(200);
+            expect(response.data)
+              .withContext(stored)
+              .toEqual({ updatedAt: jasmine.any(String), list: [{ items: [] }] });
+          }
+        }
+      );
+    });
+
+    describe('create', () => {
+      it('returns the request value of a dot notation operation', async () => {
+        const response = await create({ 'field.count': { __op: 'Increment', amount: 1 } });
+        expect(response.status).toBe(201);
+        expect(response.data).toEqual({
+          objectId: jasmine.any(String),
+          createdAt: jasmine.any(String),
+          field: { count: 1 },
+        });
+      });
+
+      it('succeeds for a dot notation operation with the master key', async () => {
+        const response = await create(
+          { 'field.count': { __op: 'Increment', amount: 1 } },
+          masterHeaders
+        );
+        expect(response.status).toBe(201);
+        expect(response.data.objectId).toEqual(jasmine.any(String));
+      });
+
+      it('keeps the object clean after a create with a dot notation operation', async () => {
+        const obj = new Parse.Object('WriteOnly');
+        obj.increment('field.count');
+        await obj.save(null, { useMasterKey: true });
+        expect(obj.dirtyKeys()).toEqual([]);
+      });
     });
   });
 });
