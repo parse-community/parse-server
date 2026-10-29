@@ -734,4 +734,187 @@ describe('Parse Role testing', () => {
     const fetchedRole = await query.get(savedRole.id, { useMasterKey: true });
     expect(fetchedRole.get('name')).toBe('ModifiedName');
   });
+
+  describe('role name reuse after deletion with restricted _Role class-level permissions', () => {
+    // Deleting a role keeps its `role:<name>` keys in ACLs and CLPs; the `_Role`
+    // class-level permissions decide who may create or rename a role to that name.
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+    const masterHeaders = { ...headers, 'X-Parse-Master-Key': 'test' };
+    const restrictedRoleClp = {
+      find: { '*': true },
+      get: { '*': true },
+      count: { '*': true },
+      create: {},
+      update: {},
+      delete: {},
+      addField: {},
+      protectedFields: { '*': [] },
+    };
+    let user;
+    let sessionHeaders;
+
+    const send = async (method, path, requestHeaders, body) => {
+      try {
+        const response = await request({
+          method,
+          url: `${Parse.serverURL}${path}`,
+          headers: requestHeaders,
+          body,
+          json: true,
+        });
+        return { status: response.status, data: response.data };
+      } catch (error) {
+        return { status: error.status, data: error.data };
+      }
+    };
+    const setClassLevelPermissions = (className, classLevelPermissions) =>
+      request({
+        method: 'PUT',
+        url: `${Parse.serverURL}/schemas/${className}`,
+        headers: masterHeaders,
+        body: { classLevelPermissions },
+        json: true,
+      });
+    // Creates the role with the master key, then reserves role writes to the master key.
+    const createRole = async name => {
+      const role = new Parse.Role(name, new Parse.ACL());
+      await role.save(null, { useMasterKey: true });
+      await setClassLevelPermissions('_Role', restrictedRoleClp);
+      return role;
+    };
+    const createObjectWithRoleAcl = async roleName => {
+      const acl = new Parse.ACL();
+      acl.setRoleReadAccess(roleName, true);
+      acl.setRoleWriteAccess(roleName, true);
+      const object = new Parse.Object('Secret');
+      object.set('value', 'stored');
+      object.setACL(acl);
+      await object.save(null, { useMasterKey: true });
+      return object;
+    };
+    const roleBody = name => ({
+      name,
+      ACL: { [user.id]: { read: true, write: true } },
+      users: {
+        __op: 'AddRelation',
+        objects: [{ __type: 'Pointer', className: '_User', objectId: user.id }],
+      },
+    });
+    const expectObjectHidden = async objectId => {
+      const get = await send('GET', `/classes/Secret/${objectId}`, sessionHeaders);
+      expect(get.status).toBe(404);
+      expect(get.data.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      const update = await send('PUT', `/classes/Secret/${objectId}`, sessionHeaders, {
+        value: 'changed',
+      });
+      expect(update.status).toBe(404);
+      expect(update.data.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      const stored = await new Parse.Query('Secret').get(objectId, { useMasterKey: true });
+      expect(stored.get('value')).toBe('stored');
+    };
+
+    beforeEach(async () => {
+      user = await Parse.User.signUp('member', 'password');
+      sessionHeaders = { ...headers, 'X-Parse-Session-Token': user.getSessionToken() };
+    });
+
+    it('rejects creating a role with the name of a deleted role referenced by an object ACL', async () => {
+      const role = await createRole('Priv');
+      const object = await createObjectWithRoleAcl('Priv');
+      await role.destroy({ useMasterKey: true });
+
+      const create = await send('POST', '/roles', sessionHeaders, roleBody('Priv'));
+      expect(create.status).toBe(400);
+      expect(create.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      const roles = await new Parse.Query(Parse.Role).find({ useMasterKey: true });
+      expect(roles.length).toBe(0);
+      await expectObjectHidden(object.id);
+    });
+
+    it('rejects creating a role with the name of a deleted role referenced by a class CLP', async () => {
+      const role = await createRole('Priv');
+      const object = new Parse.Object('Vault');
+      object.set('secret', 'stored');
+      await object.save(null, { useMasterKey: true });
+      await setClassLevelPermissions('Vault', {
+        find: { 'role:Priv': true },
+        get: { 'role:Priv': true },
+        create: { '*': true },
+        update: { 'role:Priv': true },
+        delete: { 'role:Priv': true },
+      });
+      await role.destroy({ useMasterKey: true });
+
+      const before = await send('GET', '/classes/Vault', sessionHeaders);
+      expect(before.status).toBe(400);
+      expect(before.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      const create = await send('POST', '/roles', sessionHeaders, roleBody('Priv'));
+      expect(create.status).toBe(400);
+      expect(create.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      const after = await send('GET', '/classes/Vault', sessionHeaders);
+      expect(after.status).toBe(400);
+      expect(after.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      const update = await send('PUT', `/classes/Vault/${object.id}`, sessionHeaders, {
+        secret: 'changed',
+      });
+      expect(update.status).toBe(400);
+      expect(update.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      const stored = await new Parse.Query('Vault').get(object.id, { useMasterKey: true });
+      expect(stored.get('secret')).toBe('stored');
+    });
+
+    it('rejects creating a role with the name of a deleted role referenced by the _User CLP', async () => {
+      const role = await createRole('Priv');
+      await setClassLevelPermissions('_User', {
+        find: { 'role:Priv': true },
+        get: { 'role:Priv': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: { '*': true },
+      });
+      await role.destroy({ useMasterKey: true });
+
+      const before = await send('GET', '/users', sessionHeaders);
+      expect(before.status).toBe(400);
+      expect(before.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      const create = await send('POST', '/roles', sessionHeaders, roleBody('Priv'));
+      expect(create.status).toBe(400);
+      expect(create.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      const after = await send('GET', '/users', sessionHeaders);
+      expect(after.status).toBe(400);
+      expect(after.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+    });
+
+    it('rejects renaming a role to the name of a deleted role', async () => {
+      const role = await createRole('Priv');
+      const object = await createObjectWithRoleAcl('Priv');
+      await role.destroy({ useMasterKey: true });
+      // A role the user is a member of and may write per the role ACL.
+      const owned = new Parse.Role('Owned', new Parse.ACL(user));
+      owned.getUsers().add(user);
+      await owned.save(null, { useMasterKey: true });
+
+      const rename = await send('PUT', `/roles/${owned.id}`, sessionHeaders, { name: 'Priv' });
+      expect(rename.status).toBe(400);
+      expect(rename.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      const stored = await new Parse.Query(Parse.Role).get(owned.id, { useMasterKey: true });
+      expect(stored.get('name')).toBe('Owned');
+      await expectObjectHidden(object.id);
+    });
+
+    it('allows the master key to create a role with the name of a deleted role', async () => {
+      const role = await createRole('Priv');
+      await role.destroy({ useMasterKey: true });
+
+      const create = await send('POST', '/roles', masterHeaders, { name: 'Priv', ACL: {} });
+      expect(create.status).toBe(201);
+      expect(create.data.objectId).toBeDefined();
+      expect(create.data.objectId).not.toBe(role.id);
+    });
+  });
 });
