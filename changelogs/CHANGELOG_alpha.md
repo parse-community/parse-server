@@ -1,3 +1,10 @@
+## [9.10.8-alpha.1](https://github.com/parse-community/parse-server/compare/9.10.7...9.10.8-alpha.1) (2026-10-29)
+
+
+### Bug Fixes
+
+* Dot notation operation on a missing field reveals whether the field is stored to a caller without read access ([GHSA-4m87-fqwv-2m8v](https://github.com/parse-community/parse-server/security/advisories/GHSA-4m87-fqwv-2m8v)) ([#10842](https://github.com/parse-community/parse-server/issues/10842)) ([d88efed](https://github.com/parse-community/parse-server/commit/d88efeda88baf341ba4fdbbcc3e6ce16d80dd75d))
+
 ## [9.10.7-alpha.4](https://github.com/parse-community/parse-server/compare/9.10.7-alpha.3...9.10.7-alpha.4) (2026-10-24)
 
 
