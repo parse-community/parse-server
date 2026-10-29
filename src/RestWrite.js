@@ -1495,6 +1495,29 @@ RestWrite.prototype.handleInstallation = function () {
 
   var promise = Promise.resolve();
 
+  // Whether the caller may write the addressed installation, checked as the write checks it
+  const canWriteInstallation = async () => {
+    if (this.auth.isMaster || this.auth.isMaintenance) {
+      return true;
+    }
+    try {
+      await this.config.database.update(
+        this.className,
+        { objectId: this.query.objectId },
+        {},
+        this.runOptions,
+        false,
+        true
+      );
+      return true;
+    } catch (error) {
+      if (error instanceof Parse.Error) {
+        return false;
+      }
+      throw error;
+    }
+  };
+
   var idMatch; // Will be a match on either objectId or installationId
   var objectIdMatch;
   var installationIdMatch;
@@ -1530,7 +1553,7 @@ RestWrite.prototype.handleInstallation = function () {
         {}
       );
     })
-    .then(results => {
+    .then(async results => {
       results.forEach(result => {
         if (this.query && this.query.objectId && result.objectId == this.query.objectId) {
           objectIdMatch = result;
@@ -1545,31 +1568,32 @@ RestWrite.prototype.handleInstallation = function () {
 
       // Sanity checks when running a query
       if (this.query && this.query.objectId) {
+        let error;
         if (!objectIdMatch) {
-          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found for update.');
-        }
-        if (
+          error = new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found for update.');
+        } else if (
           this.data.installationId &&
           objectIdMatch.installationId &&
           this.data.installationId !== objectIdMatch.installationId
         ) {
-          throw new Parse.Error(136, 'installationId may not be changed in this ' + 'operation');
-        }
-        if (
+          error = new Parse.Error(136, 'installationId may not be changed in this ' + 'operation');
+        } else if (
           this.data.deviceToken &&
           objectIdMatch.deviceToken &&
           this.data.deviceToken !== objectIdMatch.deviceToken &&
           !this.data.installationId &&
           !objectIdMatch.installationId
         ) {
-          throw new Parse.Error(136, 'deviceToken may not be changed in this ' + 'operation');
+          error = new Parse.Error(136, 'deviceToken may not be changed in this ' + 'operation');
+        } else if (this.data.deviceType && this.data.deviceType !== objectIdMatch.deviceType) {
+          error = new Parse.Error(136, 'deviceType may not be changed in this ' + 'operation');
         }
-        if (
-          this.data.deviceType &&
-          this.data.deviceType &&
-          this.data.deviceType !== objectIdMatch.deviceType
-        ) {
-          throw new Parse.Error(136, 'deviceType may not be changed in this ' + 'operation');
+        if (error) {
+          if (await canWriteInstallation()) {
+            throw error;
+          }
+          // Without write access, the write pipeline answers as for any class
+          return false;
         }
       }
 
@@ -1584,8 +1608,12 @@ RestWrite.prototype.handleInstallation = function () {
       if (!this.query && !this.data.deviceType && !idMatch) {
         throw new Parse.Error(135, 'deviceType must be specified in this operation');
       }
+      return true;
     })
-    .then(() => {
+    .then(proceed => {
+      if (!proceed) {
+        return;
+      }
       if (!idMatch) {
         if (!deviceTokenMatches.length) {
           return;
