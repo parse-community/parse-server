@@ -24,6 +24,7 @@ import Config from '../Config';
 import { LRUCache as LRU } from 'lru-cache';
 import UserRouter from '../Routers/UsersRouter';
 import DatabaseController from '../Controllers/DatabaseController';
+import { enforceRoleSecurity } from '../SharedRest';
 import { isDeepStrictEqual } from 'util';
 
 
@@ -1000,6 +1001,9 @@ class ParseLiveQueryServer {
     let authCalled = false;
     let clientAuth;
     try {
+      const appConfig = Config.get(this.config.appId);
+      // Enforce the class access rules of a REST find
+      enforceRoleSecurity('find', className, { isMaster: client.hasMasterKey }, appConfig);
       const trigger = getTrigger(className, 'beforeSubscribe', Parse.applicationId);
       if (trigger) {
         const auth = await this.getAuthFromClient(client, request.requestId, request.sessionToken);
@@ -1044,7 +1048,6 @@ class ParseLiveQueryServer {
         }
       }
       // Validate query condition depth
-      const appConfig = Config.get(this.config.appId);
       if (!client.hasMasterKey) {
         const rc = appConfig.requestComplexity;
         if (rc && rc.queryDepth !== -1) {
