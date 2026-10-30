@@ -185,6 +185,7 @@ First of all, we appreciate your contribution. In rare cases, where we consider 
 
 * [Visual Studio Code](https://code.visualstudio.com), the popular IDE.
 * [Jasmine Test Explorer](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-jasmine-test-adapter), a very practical test exploration plugin which let you run, debug and see the test results inline.
+* [Parse MCP Server](https://github.com/R3D347HR4Y/parse-mcp), for AI-assisted development with tools like Cursor or Claude. See [AI_INTEGRATION.md](AI_INTEGRATION.md) for setup.
 
 ### Setting up your local machine
 
