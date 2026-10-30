@@ -192,6 +192,8 @@ $ docker run --name my-parse-server -v config-vol:/parse-server/config -p 1337:1
 
 **_Note:_** _If you want to use [Cloud Code](https://docs.parseplatform.org/cloudcode/guide/), add `-v cloud-code-vol:/parse-server/cloud --cloud /parse-server/cloud/main.js` to the command above. Make sure `main.js` is in the `cloud-code-vol` directory before starting Parse Server._
 
+**_Note:_** _The Docker image runs on the newest Node.js LTS version that the Parse Server major version supports, see [Compatibility](#nodejs). Node.js minor and patch versions are updated regularly. The Node.js major version is updated with every Parse Server major release, or earlier if that Node.js version reaches its end-of-life. Cloud Code runs on the same Node.js version._
+
 You can use any arbitrary string as your application id and master key. These will be used by your clients to authenticate with the Parse Server.
 
 That's it! You are now running a standalone version of Parse Server on your machine.
