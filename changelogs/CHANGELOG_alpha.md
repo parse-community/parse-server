@@ -1,3 +1,10 @@
+## [9.10.8-alpha.3](https://github.com/parse-community/parse-server/compare/9.10.8-alpha.2...9.10.8-alpha.3) (2026-10-30)
+
+
+### Bug Fixes
+
+* LiveQuery subscriptions can receive installations and objects of other internal classes without the master key ([GHSA-q2gf-q36j-h978](https://github.com/parse-community/parse-server/security/advisories/GHSA-q2gf-q36j-h978)) ([#10848](https://github.com/parse-community/parse-server/issues/10848)) ([3a1595b](https://github.com/parse-community/parse-server/commit/3a1595ba3a2ab530d35131af0510e7e632512b8f))
+
 ## [9.10.8-alpha.2](https://github.com/parse-community/parse-server/compare/9.10.8-alpha.1...9.10.8-alpha.2) (2026-10-30)
 
 
