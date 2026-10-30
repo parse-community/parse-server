@@ -1,3 +1,10 @@
+## [9.10.8-alpha.2](https://github.com/parse-community/parse-server/compare/9.10.8-alpha.1...9.10.8-alpha.2) (2026-10-30)
+
+
+### Bug Fixes
+
+* Installation update rejects a changed device type or installation ID before checking the caller's write permission ([#10847](https://github.com/parse-community/parse-server/issues/10847)) ([3373ee2](https://github.com/parse-community/parse-server/commit/3373ee22400bd1ca29b017033d1a0542accfe010))
+
 ## [9.10.8-alpha.1](https://github.com/parse-community/parse-server/compare/9.10.7...9.10.8-alpha.1) (2026-10-29)
 
 
