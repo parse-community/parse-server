@@ -13203,4 +13203,328 @@ describe('Vulnerabilities', () => {
       });
     });
   });
+
+  describe('(GHSA-q2gf-q36j-h978) LiveQuery subscription to a class that clients cannot query', () => {
+    const { sleep } = require('../lib/TestUtils');
+    const permissionDenied = new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Permission denied');
+    const masterOnlyClassNames = [
+      '_JobStatus',
+      '_PushStatus',
+      '_Hooks',
+      '_GlobalConfig',
+      '_GraphQLConfig',
+      '_JobSchedule',
+      '_Audience',
+      '_Idempotency',
+    ];
+    const masterHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Master-Key': 'test',
+      'Content-Type': 'application/json',
+    };
+    let extraClients = [];
+    let sockets = [];
+
+    beforeEach(() => {
+      Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+    });
+
+    afterEach(async () => {
+      for (const socket of sockets) {
+        if (socket.readyState !== ws.CLOSED) {
+          await new Promise(resolve => {
+            socket.once('close', resolve);
+            socket.close();
+          });
+        }
+      }
+      sockets = [];
+      for (const client of extraClients) {
+        try {
+          await client.close();
+        } catch (e) {
+          // Ignore cleanup errors when the client never opened
+        }
+      }
+      extraClients = [];
+      try {
+        const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+        if (client) {
+          await client.close();
+        }
+      } catch (e) {
+        // Ignore cleanup errors when the default client is not initialized
+      }
+    });
+
+    // Without key pairs the LiveQuery server treats no client as master, although
+    // the default client sends the master key.
+    async function startLiveQuery(classNames, liveQueryServerOptions) {
+      await reconfigureServer({
+        liveQuery: { classNames },
+        startLiveQueryServer: true,
+        ...(liveQueryServerOptions ? { liveQueryServerOptions } : {}),
+        verbose: false,
+        silent: true,
+      });
+    }
+
+    function openClient(options) {
+      const client = new Parse.LiveQueryClient({
+        applicationId: Parse.applicationId,
+        serverURL: 'ws://localhost:8378',
+        javascriptKey: 'test',
+        ...options,
+      });
+      extraClients.push(client);
+      client.open();
+      return client;
+    }
+
+    // Returns the subscription before the server answers, so that event
+    // listeners are attached whether or not the subscription is accepted.
+    async function subscribe(query) {
+      const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+      if (client.shouldOpen()) {
+        client.open();
+      }
+      return client.subscribe(query);
+    }
+
+    function registerInstallation(installationId) {
+      return request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/installations',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Installation-Id': installationId,
+          'Content-Type': 'application/json',
+        },
+        body: { installationId, deviceType: 'ios', deviceToken: 'a'.repeat(64) },
+      });
+    }
+
+    it('rejects an installation subscription without the master key', async () => {
+      await startLiveQuery(['_Installation']);
+      await expectAsync(new Parse.Query(Parse.Installation).subscribe()).toBeRejectedWith(
+        permissionDenied
+      );
+    });
+
+    it('rejects an installation subscription of an authenticated user', async () => {
+      await startLiveQuery(['_Installation']);
+      const user = await Parse.User.signUp('lq_installation_user', 'password');
+      await expectAsync(
+        new Parse.Query(Parse.Installation).subscribe(user.getSessionToken())
+      ).toBeRejectedWith(permissionDenied);
+    });
+
+    it('rejects an installation subscription constrained to an installation ID', async () => {
+      await startLiveQuery(['_Installation']);
+      const query = new Parse.Query(Parse.Installation);
+      query.equalTo('installationId', '12345678-abcd-4ef0-8123-456789abcdef');
+      await expectAsync(query.subscribe()).toBeRejectedWith(permissionDenied);
+    });
+
+    it('does not deliver an installation to a client without the master key', async () => {
+      await startLiveQuery(['_Installation']);
+      const subscription = await subscribe(new Parse.Query(Parse.Installation));
+      const events = [];
+      for (const type of ['create', 'update', 'enter', 'leave', 'delete']) {
+        subscription.on(type, object => events.push(object));
+      }
+      await expectAsync(subscription.subscribePromise).toBeRejectedWith(permissionDenied);
+
+      const installationId = '12345678-abcd-4ef0-8123-456789abcdef';
+      const { data } = await registerInstallation(installationId);
+      await request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/installations/${data.objectId}`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Installation-Id': installationId,
+          'Content-Type': 'application/json',
+        },
+        body: { badge: 0 },
+      });
+      await request({
+        method: 'DELETE',
+        url: `http://localhost:8378/1/installations/${data.objectId}`,
+        headers: masterHeaders,
+      });
+      await sleep(500);
+      expect(events).toEqual([]);
+    });
+
+    it('rejects an installation subscription without the master key when key pairs are set', async () => {
+      await startLiveQuery(['_Installation'], {
+        keyPairs: { masterKey: 'test', javascriptKey: 'test' },
+      });
+      const subscription = openClient().subscribe(new Parse.Query(Parse.Installation));
+      await expectAsync(subscription.subscribePromise).toBeRejectedWith(permissionDenied);
+    });
+
+    it('rejects an installation subscription without the master key that matches a master key subscription', async () => {
+      await startLiveQuery(['_Installation'], {
+        keyPairs: { masterKey: 'test', javascriptKey: 'test' },
+      });
+      const masterSubscription = openClient({ masterKey: Parse.masterKey }).subscribe(
+        new Parse.Query(Parse.Installation)
+      );
+      await masterSubscription.subscribePromise;
+      const masterCreated = new Promise(resolve => masterSubscription.on('create', resolve));
+      const subscription = openClient().subscribe(new Parse.Query(Parse.Installation));
+      const events = [];
+      subscription.on('create', object => events.push(object));
+      await expectAsync(subscription.subscribePromise).toBeRejectedWith(permissionDenied);
+
+      const installationId = '12345678-abcd-4ef0-8123-456789abcdef';
+      await registerInstallation(installationId);
+      const object = await masterCreated;
+      expect(object.get('installationId')).toBe(installationId);
+      await sleep(500);
+      expect(events).toEqual([]);
+    });
+
+    it('delivers an installation to a client with the master key', async () => {
+      await startLiveQuery(['_Installation'], {
+        keyPairs: { masterKey: 'test', javascriptKey: 'test' },
+      });
+      const subscription = openClient({ masterKey: Parse.masterKey }).subscribe(
+        new Parse.Query(Parse.Installation)
+      );
+      await subscription.subscribePromise;
+      const created = new Promise(resolve => subscription.on('create', resolve));
+
+      const installationId = '12345678-abcd-4ef0-8123-456789abcdef';
+      await registerInstallation(installationId);
+      const object = await created;
+      expect(object.get('installationId')).toBe(installationId);
+    });
+
+    it('rejects a subscription to a master-only class without the master key', async () => {
+      await startLiveQuery(masterOnlyClassNames);
+      for (const className of masterOnlyClassNames) {
+        await expectAsync(new Parse.Query(className).subscribe())
+          .withContext(className)
+          .toBeRejectedWith(permissionDenied);
+      }
+    });
+
+    async function createAudienceAndJobSchedule() {
+      Parse.Cloud.job('lqScheduledJob', () => {});
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/push_audiences',
+        headers: masterHeaders,
+        body: { name: 'audience', query: JSON.stringify({ deviceType: 'ios' }) },
+      });
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/cloud_code/jobs',
+        headers: masterHeaders,
+        body: { job_schedule: { jobName: 'lqScheduledJob', params: '{"key":"value"}' } },
+      });
+    }
+
+    it('does not deliver audiences and job schedules to a client without the master key', async () => {
+      await startLiveQuery(['_Audience', '_JobSchedule']);
+      const events = [];
+      for (const className of ['_Audience', '_JobSchedule']) {
+        const subscription = await subscribe(new Parse.Query(className));
+        subscription.on('create', object => events.push(object));
+        await expectAsync(subscription.subscribePromise)
+          .withContext(className)
+          .toBeRejectedWith(permissionDenied);
+      }
+
+      await createAudienceAndJobSchedule();
+      await sleep(500);
+      expect(events).toEqual([]);
+    });
+
+    it('delivers audiences and job schedules to a client with the master key', async () => {
+      await startLiveQuery(['_Audience', '_JobSchedule'], {
+        keyPairs: { masterKey: 'test', javascriptKey: 'test' },
+      });
+      const client = openClient({ masterKey: Parse.masterKey });
+      const audienceSubscription = client.subscribe(new Parse.Query('_Audience'));
+      const jobSubscription = client.subscribe(new Parse.Query('_JobSchedule'));
+      await Promise.all([audienceSubscription.subscribePromise, jobSubscription.subscribePromise]);
+      const audienceCreated = new Promise(resolve => audienceSubscription.on('create', resolve));
+      const jobCreated = new Promise(resolve => jobSubscription.on('create', resolve));
+
+      await createAudienceAndJobSchedule();
+      const [audience, job] = await Promise.all([audienceCreated, jobCreated]);
+      expect(audience.get('name')).toBe('audience');
+      expect(job.get('jobName')).toBe('lqScheduledJob');
+    });
+
+    it('rejects a subscription to an internal collection without the master key', async () => {
+      for (const className of ['_Join:users:_Role', '_SCHEMA']) {
+        await expectAsync(new Parse.Query(className).subscribe())
+          .withContext(className)
+          .toBeRejectedWith(permissionDenied);
+      }
+    });
+
+    it('does not run the beforeSubscribe trigger for a rejected installation subscription', async () => {
+      await startLiveQuery(['_Installation']);
+      const trigger = jasmine.createSpy('beforeSubscribe');
+      Parse.Cloud.beforeSubscribe(Parse.Installation, trigger);
+      await expectAsync(new Parse.Query(Parse.Installation).subscribe()).toBeRejectedWith(
+        permissionDenied
+      );
+      expect(trigger).not.toHaveBeenCalled();
+    });
+
+    it('rejects an update of a subscription to the installation class without the master key', async () => {
+      await startLiveQuery(['_Installation', 'LiveQueryItem']);
+      const socket = new ws('ws://localhost:8378/1');
+      sockets.push(socket);
+      const messages = [];
+      socket.on('message', data => messages.push(JSON.parse(data.toString())));
+      await new Promise((resolve, reject) => {
+        socket.on('open', resolve);
+        socket.on('error', reject);
+      });
+      const waitForMessage = async predicate => {
+        for (let i = 0; i < 200 && !messages.some(predicate); i++) {
+          await sleep(20);
+        }
+        return messages.find(predicate);
+      };
+      socket.send(JSON.stringify({ op: 'connect', applicationId: Parse.applicationId }));
+      await waitForMessage(message => message.op === 'connected');
+      socket.send(
+        JSON.stringify({
+          op: 'subscribe',
+          requestId: 1,
+          query: { className: 'LiveQueryItem', where: {} },
+        })
+      );
+      expect(await waitForMessage(message => message.op === 'subscribed')).toBeDefined();
+
+      socket.send(
+        JSON.stringify({
+          op: 'update',
+          requestId: 1,
+          query: { className: '_Installation', where: {} },
+        })
+      );
+      const error = await waitForMessage(message => message.op === 'error');
+      expect(error).toEqual(
+        jasmine.objectContaining({
+          code: Parse.Error.OPERATION_FORBIDDEN,
+          error: 'Permission denied',
+          requestId: 1,
+        })
+      );
+      await registerInstallation('12345678-abcd-4ef0-8123-456789abcdef');
+      await sleep(500);
+      expect(messages.filter(message => message.op === 'create')).toEqual([]);
+    });
+  });
 });
