@@ -12,3 +12,16 @@ updates:
     commit-message:
       # Set commit message prefix
       prefix: "refactor"
+  - package-ecosystem: "docker"
+    # Location of Dockerfile
+    directory: "/"
+    # Check daily for updates
+    schedule:
+      interval: "daily"
+    ignore:
+      # Update the Node.js major version only with a Parse Server major release
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
+    commit-message:
+      # Set commit message prefix; fix triggers a release that publishes the updated image
+      prefix: "fix"

@@ -616,6 +616,7 @@ The following changes are done in the `alpha` branch, before publishing the last
 
 - Make sure all [deprecations](https://github.com/parse-community/parse-server/blob/alpha/DEPRECATIONS.md) are reflected in code, old code is removed and the deprecations table is updated.
 - Add the future LTS branch `release-#.x.x` to the branch list in [release.config.js](https://github.com/parse-community/parse-server/blob/alpha/release.config.js) so that the branch will later be recognized for release automation.
+- Update the Node.js version of the Docker image in the [Dockerfile](https://github.com/parse-community/parse-server/blob/alpha/Dockerfile) to the newest Node.js LTS version that is supported by the new major version.
 
 ### Publishing Release (forward-merge):
 
