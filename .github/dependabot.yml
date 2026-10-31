@@ -23,5 +23,5 @@ updates:
       - dependency-name: "node"
         update-types: ["version-update:semver-major"]
     commit-message:
-      # Set commit message prefix
-      prefix: "refactor"
+      # Set commit message prefix; fix triggers a release that publishes the updated image
+      prefix: "fix"
