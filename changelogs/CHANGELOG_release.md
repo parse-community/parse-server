@@ -1,3 +1,10 @@
+## [8.6.120](https://github.com/parse-community/parse-server/compare/8.6.119...8.6.120) (2026-11-03)
+
+
+### Bug Fixes
+
+* Security upgrade Docker image from Node.js 20 to 22 ([#10852](https://github.com/parse-community/parse-server/issues/10852)) ([546307c](https://github.com/parse-community/parse-server/commit/546307c3a377df431e11b9a339e3328b87ec4ce1))
+
 ## [8.6.119](https://github.com/parse-community/parse-server/compare/8.6.118...8.6.119) (2026-10-30)
 
 
