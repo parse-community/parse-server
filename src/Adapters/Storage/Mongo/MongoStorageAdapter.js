@@ -1260,7 +1260,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     return this._adaptiveCollection(className)
       .then(collection => collection._mongoCollection.dropIndex(index))
       .catch(err => {
-        // IndexNotFound: another instance already dropped this index.
+        // Ignore "index not found"
         if (err && err.code === 27) {
           return;
         }

@@ -416,7 +416,7 @@ export class DefinedSchemas {
           '_perishable_token'
         );
         // Unique indexes created for each auth provider: _auth_data_<provider>_id
-        if (/^_auth_data_.+_id$/.test(indexName)) {
+        if (/^_auth_data_[a-zA-Z0-9_]+_id$/.test(indexName)) {
           return true;
         }
         break;

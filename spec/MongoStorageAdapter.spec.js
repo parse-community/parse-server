@@ -902,6 +902,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
 
       const userIndexes = await getIndexes('_User');
       const roleIndexes = await getIndexes('_Role');
+      const idempotencyIndexes = await getIndexes('_Idempotency');
 
       // Verify all indexes are created with default behavior (backward compatibility)
       expect(userIndexes.find(idx => idx.name === 'username_1')).toBeDefined();
@@ -911,6 +912,8 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       expect(userIndexes.find(idx => idx.name === '_email_verify_token' || idx.name === '_email_verify_token_1')).toBeDefined();
       expect(userIndexes.find(idx => idx.name === '_perishable_token' || idx.name === '_perishable_token_1')).toBeDefined();
       expect(roleIndexes.find(idx => idx.name === 'name_1')).toBeDefined();
+      expect(idempotencyIndexes.find(idx => idx.name === 'reqId_1')).toBeDefined();
+      expect(idempotencyIndexes.find(idx => idx.name === 'ttl')).toBeDefined();
     });
 
     it('should not throw when concurrent updates drop the same index', async () => {
@@ -942,11 +945,13 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       ]);
       const indexes = await adapter.database.collection(className).indexes();
       expect(indexes.find(index => index.name === 'name_1')).toBeUndefined();
+      await adapter.handleShutdown();
     });
 
     it('should still reject dropIndex errors other than IndexNotFound', async () => {
       const adapter = new MongoStorageAdapter({ uri: databaseURI });
       await expectAsync(adapter.dropIndex('MissingDropIndexClass', 'missing_index')).toBeRejected();
+      await adapter.handleShutdown();
     });
   });
 

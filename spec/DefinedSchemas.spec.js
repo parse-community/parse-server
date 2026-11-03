@@ -498,6 +498,7 @@ describe('DefinedSchemas', () => {
       expect(definedSchema.isProtectedIndex('_User', 'test')).toEqual(false);
       expect(definedSchema.isProtectedIndex('_User', 'auth_data_admin_id')).toEqual(false);
       expect(definedSchema.isProtectedIndex('_User', '_auth_data_admin')).toEqual(false);
+      expect(definedSchema.isProtectedIndex('_User', '_auth_data_ad-min_id')).toEqual(false);
     });
 
     it('should detect protected indexes for _Role class', () => {
@@ -569,11 +570,19 @@ describe('DefinedSchemas', () => {
       const server = await reconfigureServer();
       const adapter = Config.get(server.config.appId).database.adapter;
 
+      // All classes with a collection
+      const prefix = adapter._collectionPrefix;
+      const collections = await adapter.database.listCollections().toArray();
+      const classNames = collections
+        .map(({ name }) => name)
+        .filter(name => name.startsWith(prefix) && name !== `${prefix}_SCHEMA`)
+        .map(name => name.slice(prefix.length));
+      expect(classNames).toEqual(jasmine.arrayContaining(['_User', '_Role', '_Idempotency']));
+
       const definedSchemas = new DefinedSchemas({}, {});
       const unprotectedIndexes = [];
-      for (const className of ['_User', '_Role', '_Idempotency']) {
+      for (const className of classNames) {
         const indexes = await adapter.getIndexes(className);
-        expect(indexes.length).withContext(className).toBeGreaterThan(1);
         indexes
           .filter(({ name }) => !definedSchemas.isProtectedIndex(className, name))
           .forEach(({ name }) => unprotectedIndexes.push(`${className}.${name}`));

@@ -589,6 +589,8 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
       },
     });
     await adapter.createIndexes(className, [{ name: 'name_idx', key: 'name' }]);
+    const created = await adapter.getIndexes(className);
+    expect(created.find(index => index.indexname === 'name_idx')).toBeDefined();
     await adapter.dropIndexes(className, ['name_idx']);
     await adapter.dropIndexes(className, ['name_idx']);
     const indexes = await adapter.getIndexes(className);
