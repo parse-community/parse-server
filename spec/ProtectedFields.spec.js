@@ -2438,10 +2438,12 @@ describe('ProtectedFields', function () {
         });
 
         expect(response.status).toBe(200);
-        expect(response.data['secretFieldPublic.sub']).toBe('visible');
         if (auth === 'master' || auth === 'maintenance') {
+          expect(response.data['secretFieldPublic.sub']).toBe('visible');
           expect(response.data['secretField.sub']).toBe('hidden');
         } else {
+          // The original object of triggers exempt from protected fields is not as the caller reads it
+          expect(response.data['secretFieldPublic.sub']).toBeUndefined();
           expect(response.data.secretField).toBeUndefined();
           expect(response.data['secretField.sub']).toBeUndefined();
         }

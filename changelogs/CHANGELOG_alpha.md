@@ -1,3 +1,80 @@
+# [9.11.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.11.0-alpha.1...9.11.0-alpha.2) (2026-11-03)
+
+
+### Bug Fixes
+
+* Schema migration deletes internal indexes created on server start ([#10861](https://github.com/parse-community/parse-server/issues/10861)) ([d067fca](https://github.com/parse-community/parse-server/commit/d067fca532b69b90e03fe10723cc7aa3fc423ce7))
+
+# [9.11.0-alpha.1](https://github.com/parse-community/parse-server/compare/9.10.8-alpha.4...9.11.0-alpha.1) (2026-11-03)
+
+
+### Features
+
+* Add support for Node.js 26 ([#10860](https://github.com/parse-community/parse-server/issues/10860)) ([53f85c4](https://github.com/parse-community/parse-server/commit/53f85c4a1d35dc1ae1a1fbf29c6e5e9ac1d3d79e))
+
+## [9.10.8-alpha.4](https://github.com/parse-community/parse-server/compare/9.10.8-alpha.3...9.10.8-alpha.4) (2026-11-02)
+
+
+### Bug Fixes
+
+* Security upgrade Docker image from Node.js 20 to 24 ([#10851](https://github.com/parse-community/parse-server/issues/10851)) ([3bc3ba5](https://github.com/parse-community/parse-server/commit/3bc3ba5faab44b1018bdc225d274d8988fd94c20))
+
+## [9.10.8-alpha.3](https://github.com/parse-community/parse-server/compare/9.10.8-alpha.2...9.10.8-alpha.3) (2026-10-30)
+
+
+### Bug Fixes
+
+* LiveQuery subscriptions can receive installations and objects of other internal classes without the master key ([GHSA-q2gf-q36j-h978](https://github.com/parse-community/parse-server/security/advisories/GHSA-q2gf-q36j-h978)) ([#10848](https://github.com/parse-community/parse-server/issues/10848)) ([3a1595b](https://github.com/parse-community/parse-server/commit/3a1595ba3a2ab530d35131af0510e7e632512b8f))
+
+## [9.10.8-alpha.2](https://github.com/parse-community/parse-server/compare/9.10.8-alpha.1...9.10.8-alpha.2) (2026-10-30)
+
+
+### Bug Fixes
+
+* Installation update rejects a changed device type or installation ID before checking the caller's write permission ([#10847](https://github.com/parse-community/parse-server/issues/10847)) ([3373ee2](https://github.com/parse-community/parse-server/commit/3373ee22400bd1ca29b017033d1a0542accfe010))
+
+## [9.10.8-alpha.1](https://github.com/parse-community/parse-server/compare/9.10.7...9.10.8-alpha.1) (2026-10-29)
+
+
+### Bug Fixes
+
+* Dot notation operation on a missing field reveals whether the field is stored to a caller without read access ([GHSA-4m87-fqwv-2m8v](https://github.com/parse-community/parse-server/security/advisories/GHSA-4m87-fqwv-2m8v)) ([#10842](https://github.com/parse-community/parse-server/issues/10842)) ([d88efed](https://github.com/parse-community/parse-server/commit/d88efeda88baf341ba4fdbbcc3e6ce16d80dd75d))
+
+## [9.10.7-alpha.4](https://github.com/parse-community/parse-server/compare/9.10.7-alpha.3...9.10.7-alpha.4) (2026-10-24)
+
+
+### Performance Improvements
+
+* Remove additional database read when saving an object ([#10833](https://github.com/parse-community/parse-server/issues/10833)) ([bec1c70](https://github.com/parse-community/parse-server/commit/bec1c70468670277baefbf360d5f10c1c046ddda))
+
+## [9.10.7-alpha.3](https://github.com/parse-community/parse-server/compare/9.10.7-alpha.2...9.10.7-alpha.3) (2026-10-23)
+
+
+### Bug Fixes
+
+* Save response read access check logs errors twice or as warnings ([#10831](https://github.com/parse-community/parse-server/issues/10831)) ([fc6e60b](https://github.com/parse-community/parse-server/commit/fc6e60bc24bba5b6de6ad21bd10470591a6e144c))
+
+## [9.10.7-alpha.2](https://github.com/parse-community/parse-server/compare/9.10.7-alpha.1...9.10.7-alpha.2) (2026-10-23)
+
+
+### Bug Fixes
+
+* Save response reveals whether a field is stored to a caller without read access ([GHSA-ch64-8phh-m7hc](https://github.com/parse-community/parse-server/security/advisories/GHSA-ch64-8phh-m7hc)) ([#10829](https://github.com/parse-community/parse-server/issues/10829)) ([ae08ab6](https://github.com/parse-community/parse-server/commit/ae08ab620c735c11d205c07b72c074450a0f78a8))
+
+## [9.10.7-alpha.1](https://github.com/parse-community/parse-server/compare/9.10.6...9.10.7-alpha.1) (2026-10-22)
+
+
+### Bug Fixes
+
+* Pre-authentication denial of service via email address format regex backtracking ([GHSA-9492-427f-466x](https://github.com/parse-community/parse-server/security/advisories/GHSA-9492-427f-466x)) ([#10821](https://github.com/parse-community/parse-server/issues/10821)) ([fbd370a](https://github.com/parse-community/parse-server/commit/fbd370aa5ab2c09ef4b4281b4b7c5064ed1b9cba))
+
+## [9.10.6-alpha.6](https://github.com/parse-community/parse-server/compare/9.10.6-alpha.5...9.10.6-alpha.6) (2026-10-21)
+
+
+### Bug Fixes
+
+* Object create returns field values to a caller without read access ([GHSA-qq3r-ppqq-rh6m](https://github.com/parse-community/parse-server/security/advisories/GHSA-qq3r-ppqq-rh6m)) ([#10813](https://github.com/parse-community/parse-server/issues/10813)) ([d95b14d](https://github.com/parse-community/parse-server/commit/d95b14d08819e859c4385532510d1c8d6e787112))
+
 ## [9.10.6-alpha.5](https://github.com/parse-community/parse-server/compare/9.10.6-alpha.4...9.10.6-alpha.5) (2026-10-20)
 
 
