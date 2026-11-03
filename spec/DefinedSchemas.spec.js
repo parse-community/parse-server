@@ -563,49 +563,22 @@ describe('DefinedSchemas', () => {
       expect(after.indexes.custom_unprotected).toBeUndefined();
     });
 
-    it_only_db('mongo')('should not delete the internal ttl index on _Idempotency', async () => {
+    it_only_db('mongo')('should protect all indexes created on server start', async () => {
+      // Only indexes created on server start
+      await Config.get('test').database.deleteEverything();
       const server = await reconfigureServer();
-      const config = Config.get(server.config.appId);
-      const adapter = config.database.adapter;
-      const mongoIndexes = await adapter.getIndexes('_Idempotency');
-      expect(mongoIndexes.find(index => index.name === 'ttl')).toBeDefined();
+      const adapter = Config.get(server.config.appId).database.adapter;
 
-      // _Idempotency is volatile, so startup does not copy its indexes into _SCHEMA.
-      // Put them in the cloud schema that the migration reads.
-      await adapter.database.collection(`${adapter._collectionPrefix}_SCHEMA`).updateOne(
-        { _id: '_Idempotency' },
-        {
-          $set: {
-            objectId: 'string',
-            updatedAt: 'string',
-            createdAt: 'string',
-            reqId: 'string',
-            expire: 'date',
-            _metadata: {
-              indexes: {
-                _id_: { _id: 1 },
-                reqId_1: { reqId: 1 },
-                ttl: { expire: 1 },
-                custom_unprotected: { reqId: 1 },
-              },
-            },
-          },
-        },
-        { upsert: true }
-      );
-      config.schemaCache.clear();
-
-      await new DefinedSchemas(
-        { definitions: [{ className: '_Idempotency', indexes: {} }] },
-        server.config
-      ).execute();
-
-      const after = await adapter.getClass('_Idempotency');
-      expect(after.indexes.ttl).toEqual({ expire: 1 });
-      expect(after.indexes.reqId_1).toEqual({ reqId: 1 });
-      expect(after.indexes.custom_unprotected).toBeUndefined();
-      const afterMongo = await adapter.getIndexes('_Idempotency');
-      expect(afterMongo.find(index => index.name === 'ttl')).toBeDefined();
+      const definedSchemas = new DefinedSchemas({}, {});
+      const unprotectedIndexes = [];
+      for (const className of ['_User', '_Role', '_Idempotency']) {
+        const indexes = await adapter.getIndexes(className);
+        expect(indexes.length).withContext(className).toBeGreaterThan(1);
+        indexes
+          .filter(({ name }) => !definedSchemas.isProtectedIndex(className, name))
+          .forEach(({ name }) => unprotectedIndexes.push(`${className}.${name}`));
+      }
+      expect(unprotectedIndexes).toEqual([]);
     });
   });
 
