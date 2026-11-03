@@ -8,7 +8,7 @@
 [![Coverage](https://codecov.io/github/parse-community/parse-server/branch/alpha/graph/badge.svg)](https://app.codecov.io/github/parse-community/parse-server/tree/alpha)
 [![auto-release](https://img.shields.io/badge/%F0%9F%9A%80-auto--release-9e34eb.svg)](https://github.com/parse-community/parse-dashboard/releases)
 
-[![Node Version](https://img.shields.io/badge/nodejs-20,_22,_24-green.svg?logo=node.js&style=flat)](https://nodejs.org)
+[![Node Version](https://img.shields.io/badge/nodejs-20,_22,_24,_26-green.svg?logo=node.js&style=flat)](https://nodejs.org)
 [![MongoDB Version](https://img.shields.io/badge/mongodb-7,_8-green.svg?logo=mongodb&style=flat)](https://www.mongodb.com)
 [![Postgres Version](https://img.shields.io/badge/postgresql-16,_17,_18-green.svg?logo=postgresql&style=flat)](https://www.postgresql.org)
 
@@ -141,6 +141,7 @@ Parse Server is continuously tested with the most recent releases of Node.js to 
 | Node.js 20 | 20.19.0         | April 2026  | <= 9.x (2026)        |
 | Node.js 22 | 22.12.0         | April 2027  | <= 10.x (2027)       |
 | Node.js 24 | 24.11.0         | April 2028  | <= 11.x (2028)       |
+| Node.js 26 | 26.13.0         | April 2029  | <= 12.x (2029)       |
 
 #### MongoDB
 
