@@ -9,7 +9,7 @@ on:
     paths-ignore:
       - '**/**.md'
 env:
-  NODE_VERSION: 24.11.0
+  NODE_VERSION: 26.13.0
   PARSE_SERVER_TEST_TIMEOUT: 20000
 permissions:
   actions: write
@@ -189,20 +189,20 @@ jobs:
           - name: MongoDB 7, ReplicaSet
             MONGODB_VERSION: 7.0.16
             MONGODB_TOPOLOGY: replset
-            NODE_VERSION: 24.11.0
+            NODE_VERSION: 26.13.0
           - name: MongoDB 8, ReplicaSet
             MONGODB_VERSION: 8.0.4
             MONGODB_TOPOLOGY: replset
-            NODE_VERSION: 24.11.0
+            NODE_VERSION: 26.13.0
           - name: MongoDB 8.3, ReplicaSet
             MONGODB_VERSION: 8.3.4
             MONGODB_TOPOLOGY: replset
-            NODE_VERSION: 24.11.0
+            NODE_VERSION: 26.13.0
           - name: Redis Cache
             PARSE_SERVER_TEST_CACHE: redis
             MONGODB_VERSION: 8.0.4
             MONGODB_TOPOLOGY: standalone
-            NODE_VERSION: 24.11.0
+            NODE_VERSION: 26.13.0
           - name: Node 20
             MONGODB_VERSION: 8.0.4
             MONGODB_TOPOLOGY: standalone
@@ -211,6 +211,10 @@ jobs:
             MONGODB_VERSION: 8.0.4
             MONGODB_TOPOLOGY: standalone
             NODE_VERSION: 22.12.0
+          - name: Node 24
+            MONGODB_VERSION: 8.0.4
+            MONGODB_TOPOLOGY: standalone
+            NODE_VERSION: 24.11.0
       fail-fast: false
     name: ${{ matrix.name }}
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
@@ -259,13 +263,13 @@ jobs:
         include:
           - name: PostgreSQL 16, PostGIS 3.5
             POSTGRES_IMAGE: postgis/postgis:16-3.5
-            NODE_VERSION: 24.11.0
+            NODE_VERSION: 26.13.0
           - name: PostgreSQL 17, PostGIS 3.5
             POSTGRES_IMAGE: postgis/postgis:17-3.5
-            NODE_VERSION: 24.11.0
+            NODE_VERSION: 26.13.0
           - name: PostgreSQL 18, PostGIS 3.6
             POSTGRES_IMAGE: postgis/postgis:18-3.6
-            NODE_VERSION: 24.11.0
+            NODE_VERSION: 26.13.0
       fail-fast: false
     name: ${{ matrix.name }}
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}

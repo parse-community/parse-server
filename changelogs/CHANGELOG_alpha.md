@@ -1,3 +1,17 @@
+# [9.11.0-alpha.1](https://github.com/parse-community/parse-server/compare/9.10.8-alpha.4...9.11.0-alpha.1) (2026-11-03)
+
+
+### Features
+
+* Add support for Node.js 26 ([#10860](https://github.com/parse-community/parse-server/issues/10860)) ([53f85c4](https://github.com/parse-community/parse-server/commit/53f85c4a1d35dc1ae1a1fbf29c6e5e9ac1d3d79e))
+
+## [9.10.8-alpha.4](https://github.com/parse-community/parse-server/compare/9.10.8-alpha.3...9.10.8-alpha.4) (2026-11-02)
+
+
+### Bug Fixes
+
+* Security upgrade Docker image from Node.js 20 to 24 ([#10851](https://github.com/parse-community/parse-server/issues/10851)) ([3bc3ba5](https://github.com/parse-community/parse-server/commit/3bc3ba5faab44b1018bdc225d274d8988fd94c20))
+
 ## [9.10.8-alpha.3](https://github.com/parse-community/parse-server/compare/9.10.8-alpha.2...9.10.8-alpha.3) (2026-10-30)
 
 
