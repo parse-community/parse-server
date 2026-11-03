@@ -1,3 +1,10 @@
+# [9.11.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.11.0-alpha.1...9.11.0-alpha.2) (2026-11-03)
+
+
+### Bug Fixes
+
+* Schema migration deletes internal indexes created on server start ([#10861](https://github.com/parse-community/parse-server/issues/10861)) ([d067fca](https://github.com/parse-community/parse-server/commit/d067fca532b69b90e03fe10723cc7aa3fc423ce7))
+
 # [9.11.0-alpha.1](https://github.com/parse-community/parse-server/compare/9.10.8-alpha.4...9.11.0-alpha.1) (2026-11-03)
 
 
