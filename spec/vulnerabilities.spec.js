@@ -12545,4 +12545,219 @@ describe('Vulnerabilities', () => {
       expect(messages.filter(message => message.op === 'create')).toEqual([]);
     });
   });
+
+  describe('(GHSA-2rxj-6v32-2v6j) Dot notation key below a typed field with a beforeSave trigger', () => {
+    const serverURL = 'http://localhost:8378/1';
+    const masterHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Master-Key': 'test',
+      'Content-Type': 'application/json',
+    };
+    const clientHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const publicAcl = { '*': { read: true, write: true } };
+
+    let rejections;
+    const onRejection = reason => rejections.push(reason);
+    beforeEach(() => {
+      rejections = [];
+      process.on('unhandledRejection', onRejection);
+    });
+    afterEach(() => {
+      process.removeListener('unhandledRejection', onRejection);
+    });
+
+    // Resolves with the response, or with { hung: true } if the request does not complete in time
+    const within = (promise, ms = 7000) =>
+      Promise.race([
+        promise.then(
+          r => ({ status: r.status, data: r.data }),
+          e => ({ status: e.status, data: e.data })
+        ),
+        new Promise(resolve => setTimeout(() => resolve({ hung: true }), ms)),
+      ]);
+
+    const createThing = async fields => {
+      const response = await request({
+        method: 'POST',
+        url: `${serverURL}/classes/Thing`,
+        headers: masterHeaders,
+        body: JSON.stringify({ ...fields, ACL: publicAcl }),
+      });
+      return response.data.objectId;
+    };
+
+    const fetchThing = async objectId => {
+      const response = await request({
+        url: `${serverURL}/classes/Thing/${objectId}`,
+        headers: masterHeaders,
+      });
+      return response.data;
+    };
+
+    const updateThing = (objectId, body) =>
+      within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/Thing/${objectId}`,
+          headers: clientHeaders,
+          body: JSON.stringify(body),
+        })
+      );
+
+    const uploadFile = async () => {
+      const response = await request({
+        method: 'POST',
+        url: `${serverURL}/files/probe.txt`,
+        headers: { ...masterHeaders, 'Content-Type': 'text/plain' },
+        body: 'hello',
+      });
+      return { __type: 'File', name: response.data.name, url: response.data.url };
+    };
+
+    const savePointer = async () => {
+      const target = new Parse.Object('Target');
+      await target.save({ n: 1 }, { useMasterKey: true });
+      return { __type: 'Pointer', className: 'Target', objectId: target.id };
+    };
+
+    const dateValue = async () => ({ __type: 'Date', iso: '2020-01-01T00:00:00.000Z' });
+    const pointValue = async () => ({ __type: 'GeoPoint', latitude: 1, longitude: 1 });
+    const polygonValue = async () => ({
+      __type: 'Polygon',
+      coordinates: [
+        [0, 0],
+        [0, 1],
+        [1, 1],
+        [1, 0],
+        [0, 0],
+      ],
+    });
+    const noValue = async () => undefined;
+
+    // [target, field, dot notation key naming a method or internal property of the decoded SDK
+    // instance, stored value]
+    const typedFields = [
+      ['a Date field', 'date', 'date.toJSON', dateValue],
+      ['a Date field', 'date', 'date.valueOf', dateValue],
+      ['a GeoPoint field', 'point', 'point.toJSON', pointValue],
+      ['a GeoPoint field', 'point', 'point._latitude', pointValue],
+      ['a Polygon field', 'polygon', 'polygon.toJSON', polygonValue],
+      ['a Polygon field', 'polygon', 'polygon._coordinates', polygonValue],
+      ['a Pointer field', 'owner', 'owner.toPointer', savePointer],
+      ['a File field', 'attachment', 'attachment.url', uploadFile],
+      ['a File field', 'attachment', 'attachment.toJSON', uploadFile],
+      ['the ACL', 'ACL', 'ACL.toJSON', noValue],
+      ['createdAt', 'createdAt', 'createdAt.toJSON', noValue],
+      ['updatedAt', 'updatedAt', 'updatedAt.toJSON', noValue],
+    ];
+
+    for (const [target, field, key, makeValue] of typedFields) {
+      it(`rejects dot notation key ${key} below ${target} without crashing`, async () => {
+        Parse.Cloud.beforeSave('Thing', () => {});
+        const value = await makeValue();
+        const objectId = await createThing(value === undefined ? {} : { [field]: value });
+        const before = await fetchThing(objectId);
+        const result = await updateThing(objectId, { [key]: 'x' });
+        expect(result.hung).toBeUndefined();
+        expect(result.status).toBe(400);
+        expect(result.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+        expect(result.data.error).toMatch(/^Cannot serialize object after beforeSave: /);
+        expect(rejections).toEqual([]);
+        // Nothing was written
+        const after = await fetchThing(objectId);
+        expect(after[field]).toEqual(before[field]);
+        expect(after.updatedAt).toBe(before.updatedAt);
+        // The server keeps serving requests
+        const followUp = await updateThing(objectId, { n: 2 });
+        expect(followUp.status).toBe(200);
+      });
+    }
+
+    it('rejects a dot notation key on the own user object without crashing', async () => {
+      Parse.Cloud.beforeSave(Parse.User, () => {});
+      const signUp = await request({
+        method: 'POST',
+        url: `${serverURL}/users`,
+        headers: clientHeaders,
+        body: JSON.stringify({ username: 'ghsa2rxj', password: 'password' }),
+      });
+      const { objectId, sessionToken } = signUp.data;
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/users/${objectId}`,
+          headers: { ...clientHeaders, 'X-Parse-Session-Token': sessionToken },
+          body: JSON.stringify({ 'updatedAt.toJSON': 'x' }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect(result.data.error).toMatch(/^Cannot serialize object after beforeSave: /);
+      expect(rejections).toEqual([]);
+    });
+
+    it('rejects an object that the beforeSave trigger left unserializable without crashing', async () => {
+      const objectId = await createThing({ n: 1 });
+      Parse.Cloud.beforeSave('Thing', request => {
+        request.object.set('date', new Date('not a date'));
+      });
+      const result = await updateThing(objectId, { n: 2 });
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect(result.data.error).toContain('invalid date');
+      expect(rejections).toEqual([]);
+    });
+
+    it('fails a find whose afterFind trigger returns an unserializable object without crashing', async () => {
+      Parse.Cloud.afterFind('Thing', () => [
+        {
+          toJSON() {
+            throw new Error('cannot serialize');
+          },
+        },
+      ]);
+      await createThing({ n: 1 });
+      const result = await within(
+        request({ url: `${serverURL}/classes/Thing`, headers: masterHeaders })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(result.data.error).toBe('cannot serialize');
+      expect(rejections).toEqual([]);
+    });
+
+    it('completes a save whose afterSave trigger returns an unserializable value', async () => {
+      // Trigger logging serializes the result; the test helper silences it by default
+      await reconfigureServer({
+        logLevels: { ...defaultConfiguration.logLevels, triggerAfter: 'info' },
+      });
+      const objectId = await createThing({ n: 1 });
+      Parse.Cloud.afterSave('Thing', () => ({
+        toJSON() {
+          throw new Error('cannot serialize');
+        },
+      }));
+      const result = await updateThing(objectId, { n: 2 });
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(200);
+      expect(rejections).toEqual([]);
+    });
+
+    it('applies a dot notation key below an object field with a beforeSave trigger', async () => {
+      Parse.Cloud.beforeSave('Thing', () => {});
+      const objectId = await createThing({ settings: { a: 1 } });
+      const result = await updateThing(objectId, { 'settings.toJSON': 'x' });
+      expect(result.status).toBe(200);
+      expect(rejections).toEqual([]);
+      const after = await fetchThing(objectId);
+      expect(after.settings).toEqual({ a: 1, toJSON: 'x' });
+    });
+  });
 });
