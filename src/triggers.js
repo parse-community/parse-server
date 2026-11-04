@@ -391,7 +391,17 @@ export function getResponseObject(request, resolve, reject) {
       }
       response = {};
       if (request.triggerName === Types.beforeSave) {
-        response['object'] = request.object._getSaveJSON();
+        try {
+          response['object'] = request.object._getSaveJSON();
+        } catch (e) {
+          // A value that cannot be serialized fails the request
+          return reject(
+            new Parse.Error(
+              Parse.Error.INCORRECT_TYPE,
+              `Cannot serialize object after beforeSave: ${e?.message || e}`
+            )
+          );
+        }
         response['object']['objectId'] = request.object.id;
       }
       return resolve(response);
@@ -543,7 +553,9 @@ export function maybeRunAfterFindTrigger(
         }
         return responseFromTrigger;
       })
-      .then(success, error);
+      .then(success, error)
+      // Settle even if success or error throws
+      .catch(error);
   }).then(resultsAsJSON => {
     logTriggerAfterHook(
       triggerType,
@@ -1010,7 +1022,9 @@ export function maybeRunTrigger(
 
         return promise;
       })
-      .then(success, error);
+      .then(success, error)
+      // Settle even if success or error throws
+      .catch(error);
   });
 }
 
