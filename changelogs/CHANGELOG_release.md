@@ -1,3 +1,10 @@
+## [8.6.121](https://github.com/parse-community/parse-server/compare/8.6.120...8.6.121) (2026-11-04)
+
+
+### Bug Fixes
+
+* Object update with a dot notation key can terminate the server process when the class has a beforeSave trigger ([GHSA-2rxj-6v32-2v6j](https://github.com/parse-community/parse-server/security/advisories/GHSA-2rxj-6v32-2v6j)) ([#10865](https://github.com/parse-community/parse-server/issues/10865)) ([7b02d0e](https://github.com/parse-community/parse-server/commit/7b02d0ec460d050a7ede04b2300150b414b0534c))
+
 ## [8.6.120](https://github.com/parse-community/parse-server/compare/8.6.119...8.6.120) (2026-11-03)
 
 
