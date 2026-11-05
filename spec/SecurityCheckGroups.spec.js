@@ -127,7 +127,7 @@ describe('Security Check Groups', () => {
       expect(group.checks().length).toBeGreaterThan(0);
     });
 
-    it('checks succeed correctly', async () => {
+    it('checks succeed correctly with database adapter defined', async () => {
       const config = Config.get(Parse.applicationId);
       const uri = config.database.adapter._uri;
       config.database.adapter._uri = 'protocol://user:aMoreSecur3Passwor7!@example.com';
@@ -137,7 +137,15 @@ describe('Security Check Groups', () => {
       config.database.adapter._uri = uri;
     });
 
-    it('checks fail correctly', async () => {
+    it('checks succeed correctly with databaseURI defined', async () => {
+      const config = Config.get(Parse.applicationId);
+      config.databaseURI = 'protocol://user:insecure@example.com';
+      const group = new CheckGroupDatabase();
+      await group.run();
+      expect(group.checks()[0].checkState()).toBe(CheckState.success);
+    });
+
+    it('checks fail correctly with database adapter defined', async () => {
       const config = Config.get(Parse.applicationId);
       const uri = config.database.adapter._uri;
       config.database.adapter._uri = 'protocol://user:insecure@example.com';
@@ -145,6 +153,14 @@ describe('Security Check Groups', () => {
       await group.run();
       expect(group.checks()[0].checkState()).toBe(CheckState.fail);
       config.database.adapter._uri = uri;
+    });
+
+    it('checks fail correctly with databaseURI defined', async () => {
+      const config = Config.get(Parse.applicationId);
+      config.databaseURI = 'protocol://user:insecure@example.com';
+      const group = new CheckGroupDatabase();
+      await group.run();
+      expect(group.checks()[0].checkState()).toBe(CheckState.fail);
     });
   });
 });
