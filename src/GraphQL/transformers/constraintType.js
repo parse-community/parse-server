@@ -35,6 +35,8 @@ const transformConstraintTypeToGraphQL = (parseType, targetClass, parseClassType
       return defaultGraphQLTypes.POLYGON_WHERE_INPUT;
     case 'Bytes':
       return defaultGraphQLTypes.BYTES_WHERE_INPUT;
+    case 'Decimal128':
+      return defaultGraphQLTypes.DECIMAL128_WHERE_INPUT;
     case 'ACL':
       return defaultGraphQLTypes.OBJECT_WHERE_INPUT;
     case 'Relation':
