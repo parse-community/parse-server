@@ -662,7 +662,14 @@ export class MongoStorageAdapter implements StorageAdapter {
           session: transactionalSession || undefined,
         })
       )
-      .then(result => mongoObjectToParseObject(className, result, schema))
+      .then(result => {
+        const object = mongoObjectToParseObject(className, result, schema);
+        // Reports the read access of an object without ACL
+        if (object && object._rperm === undefined) {
+          object._rperm = null;
+        }
+        return object;
+      })
       .catch(error => {
         if (error.code === 11000) {
           logger.error('Duplicate key error:', error.message);
@@ -1252,7 +1259,13 @@ export class MongoStorageAdapter implements StorageAdapter {
   dropIndex(className: string, index: any) {
     return this._adaptiveCollection(className)
       .then(collection => collection._mongoCollection.dropIndex(index))
-      .catch(err => this.handleError(err));
+      .catch(err => {
+        // Ignore "index not found"
+        if (err && err.code === 27) {
+          return;
+        }
+        return this.handleError(err);
+      });
   }
 
   dropAllIndexes(className: string) {

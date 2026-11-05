@@ -74,6 +74,12 @@ export interface StorageAdapter {
     update: any,
     transactionalSession: ?any
   ): Promise<[any] | UpdateManyResult>;
+  /**
+   * Updates the first object that matches the given query and resolves with the updated object.
+   * The object includes its read access in `_rperm` (`null` for an object without ACL) and its
+   * stored fields, which decide whether an update response contains stored values; if `_rperm` is
+   * missing, an update response for a request without master key or maintenance key contains none.
+   */
   findOneAndUpdate(
     className: string,
     schema: SchemaType,

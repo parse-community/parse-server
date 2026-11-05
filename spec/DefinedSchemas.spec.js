@@ -482,11 +482,23 @@ describe('DefinedSchemas', () => {
 
     it('should detect protected indexes for _User class', () => {
       const definedSchema = new DefinedSchemas({}, {});
-      const protectedUserIndexes = ['_id_', 'case_insensitive_email', 'username_1', 'email_1'];
+      const protectedUserIndexes = [
+        '_id_',
+        'case_insensitive_username',
+        'case_insensitive_email',
+        'username_1',
+        'email_1',
+        '_email_verify_token',
+        '_perishable_token',
+        '_auth_data_admin_id',
+      ];
       protectedUserIndexes.forEach(field => {
         expect(definedSchema.isProtectedIndex('_User', field)).toEqual(true);
       });
       expect(definedSchema.isProtectedIndex('_User', 'test')).toEqual(false);
+      expect(definedSchema.isProtectedIndex('_User', 'auth_data_admin_id')).toEqual(false);
+      expect(definedSchema.isProtectedIndex('_User', '_auth_data_admin')).toEqual(false);
+      expect(definedSchema.isProtectedIndex('_User', '_auth_data_ad-min_id')).toEqual(false);
     });
 
     it('should detect protected indexes for _Role class', () => {
@@ -498,22 +510,84 @@ describe('DefinedSchemas', () => {
     it('should detect protected indexes for _Idempotency class', () => {
       const definedSchema = new DefinedSchemas({}, {});
       expect(definedSchema.isProtectedIndex('_Idempotency', 'reqId_1')).toEqual(true);
+      expect(definedSchema.isProtectedIndex('_Idempotency', 'ttl')).toEqual(true);
       expect(definedSchema.isProtectedIndex('_Idempotency', 'test')).toEqual(false);
     });
 
     it('should not detect protected indexes on user defined class', () => {
       const definedSchema = new DefinedSchemas({}, {});
       const protectedIndexes = [
+        'case_insensitive_username',
         'case_insensitive_email',
         'username_1',
         'email_1',
+        '_email_verify_token',
+        '_perishable_token',
+        '_auth_data_admin_id',
         'reqId_1',
+        'ttl',
         'name_1',
       ];
       protectedIndexes.forEach(field => {
         expect(definedSchema.isProtectedIndex('ExampleClass', field)).toEqual(false);
       });
       expect(definedSchema.isProtectedIndex('ExampleClass', '_id_')).toEqual(true);
+    });
+
+    it_only_db('mongo')('should not delete internal _User indexes absent from the local schema', async () => {
+      const server = await reconfigureServer();
+      const config = Config.get(server.config.appId);
+      const adapter = config.database.adapter;
+      await adapter.ensureAuthDataUniqueness('admin');
+      await adapter.updateSchemaWithIndexes();
+
+      const userSchema = new Parse.Schema('_User');
+      userSchema.addIndex('custom_unprotected', { username: 1 });
+      await userSchema.update();
+      config.schemaCache.clear();
+
+      const before = await new Parse.Schema('_User').get();
+      expect(before.indexes._email_verify_token).toEqual({ _email_verify_token: 1 });
+      expect(before.indexes._perishable_token).toEqual({ _perishable_token: 1 });
+      expect(before.indexes._auth_data_admin_id).toEqual({ '_auth_data_admin.id': 1 });
+      expect(before.indexes.custom_unprotected).toEqual({ username: 1 });
+
+      await new DefinedSchemas(
+        { definitions: [{ className: '_User', indexes: {} }] },
+        server.config
+      ).execute();
+
+      const after = await new Parse.Schema('_User').get();
+      expect(after.indexes._email_verify_token).toEqual({ _email_verify_token: 1 });
+      expect(after.indexes._perishable_token).toEqual({ _perishable_token: 1 });
+      expect(after.indexes._auth_data_admin_id).toEqual({ '_auth_data_admin.id': 1 });
+      expect(after.indexes.custom_unprotected).toBeUndefined();
+    });
+
+    it_only_db('mongo')('should protect all indexes created on server start', async () => {
+      // Only indexes created on server start
+      await Config.get('test').database.deleteEverything();
+      const server = await reconfigureServer();
+      const adapter = Config.get(server.config.appId).database.adapter;
+
+      // All classes with a collection
+      const prefix = adapter._collectionPrefix;
+      const collections = await adapter.database.listCollections().toArray();
+      const classNames = collections
+        .map(({ name }) => name)
+        .filter(name => name.startsWith(prefix) && name !== `${prefix}_SCHEMA`)
+        .map(name => name.slice(prefix.length));
+      expect(classNames).toEqual(jasmine.arrayContaining(['_User', '_Role', '_Idempotency']));
+
+      const definedSchemas = new DefinedSchemas({}, {});
+      const unprotectedIndexes = [];
+      for (const className of classNames) {
+        const indexes = await adapter.getIndexes(className);
+        indexes
+          .filter(({ name }) => !definedSchemas.isProtectedIndex(className, name))
+          .forEach(({ name }) => unprotectedIndexes.push(`${className}.${name}`));
+      }
+      expect(unprotectedIndexes).toEqual([]);
     });
   });
 

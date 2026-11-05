@@ -9,6 +9,7 @@ const classesWithMasterOnlyAccess = [
   '_Idempotency',
 ];
 const { createSanitizedError } = require('./Error');
+const SchemaController = require('./Controllers/SchemaController');
 
 // Disallowing access to the _Role collection except by master key
 function enforceRoleSecurity(method, className, auth, config) {
@@ -37,6 +38,15 @@ function enforceRoleSecurity(method, className, auth, config) {
 
   // _Join tables are internal and must only be modified through relation operations
   if (className.startsWith('_Join:') && !auth.isMaster && !auth.isMaintenance) {
+    throw createSanitizedError(
+      Parse.Error.OPERATION_FORBIDDEN,
+      `Clients aren't allowed to perform the ${method} operation on the ${className} collection.`,
+      config
+    );
+  }
+
+  // Internal collections such as _SCHEMA are not classes
+  if (!SchemaController.classNameIsValid(className) && !auth.isMaster && !auth.isMaintenance) {
     throw createSanitizedError(
       Parse.Error.OPERATION_FORBIDDEN,
       `Clients aren't allowed to perform the ${method} operation on the ${className} collection.`,

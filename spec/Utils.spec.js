@@ -468,4 +468,20 @@ describe('Utils', () => {
       });
     }
   });
+
+  describe('safeToJSON', () => {
+    it('returns the serialized object', () => {
+      const object = { toJSON: () => ({ a: 1 }) };
+      expect(Utils.safeToJSON(object)).toEqual({ a: 1 });
+    });
+
+    it('returns undefined when serialization throws', () => {
+      const object = {
+        toJSON: () => {
+          throw new Error('Cannot create a pointer to an unsaved ParseObject');
+        },
+      };
+      expect(Utils.safeToJSON(object)).toBeUndefined();
+    });
+  });
 });
