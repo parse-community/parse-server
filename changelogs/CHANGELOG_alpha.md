@@ -1,3 +1,10 @@
+## [9.11.1-alpha.3](https://github.com/parse-community/parse-server/compare/9.11.1-alpha.2...9.11.1-alpha.3) (2026-11-05)
+
+
+### Bug Fixes
+
+* Option `requestComplexity.allowRegex` does not reject `$regex` nested in other query operators ([#10873](https://github.com/parse-community/parse-server/issues/10873)) ([e379536](https://github.com/parse-community/parse-server/commit/e379536961bf04f63b5cfe4d9fa220e9b52d181c))
+
 ## [9.11.1-alpha.2](https://github.com/parse-community/parse-server/compare/9.11.1-alpha.1...9.11.1-alpha.2) (2026-11-05)
 
 
