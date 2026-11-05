@@ -8,6 +8,10 @@ const path = require('path');
 const fs = require('fs').promises;
 const { types } = require('util');
 
+// Zero-padded strings of 0-99 and 0-999, for formatting dates.
+const pad2 = Array.from({ length: 100 }, (_, i) => String(i).padStart(2, '0'));
+const pad3 = Array.from({ length: 1000 }, (_, i) => String(i).padStart(3, '0'));
+
 /**
  * The general purpose utilities.
  */
@@ -127,6 +131,36 @@ class Utils {
    */
   static isDate(value) {
     return types.isDate(value);
+  }
+
+  /**
+   * Same as `date.toISOString()`, which is several times slower; the difference is noticeable
+   * when formatting the dates of a large query result. Years outside 1000-9999 use a different
+   * format and fall back to the native method, which also throws for an invalid date.
+   * @param {Date} date The date to format.
+   * @returns {String} The date in ISO 8601 format, e.g. `2024-01-31T12:34:56.789Z`.
+   */
+  static toISOString(date) {
+    const year = date.getUTCFullYear();
+    if (!(year >= 1000 && year <= 9999)) {
+      return date.toISOString();
+    }
+    return (
+      year +
+      '-' +
+      pad2[date.getUTCMonth() + 1] +
+      '-' +
+      pad2[date.getUTCDate()] +
+      'T' +
+      pad2[date.getUTCHours()] +
+      ':' +
+      pad2[date.getUTCMinutes()] +
+      ':' +
+      pad2[date.getUTCSeconds()] +
+      '.' +
+      pad3[date.getUTCMilliseconds()] +
+      'Z'
+    );
   }
 
   /**
