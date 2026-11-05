@@ -157,6 +157,17 @@ const validateQueryFormat = (query: any): void => {
   }
 };
 
+// True if a $regex key appears anywhere in the value, at any depth
+const containsRegex = (value: any): boolean => {
+  if (Array.isArray(value)) {
+    return value.some(containsRegex);
+  }
+  if (!Utils.isObject(value)) {
+    return false;
+  }
+  return value.$regex !== undefined || Object.keys(value).some(key => containsRegex(value[key]));
+};
+
 const validateQuery = (
   query: any,
   isMaster: boolean,
@@ -210,6 +221,15 @@ const validateQuery = (
           );
         }
       }
+    } else if (
+      !isMaster &&
+      rc &&
+      rc.allowRegex === false &&
+      !queryOperators.includes(key) &&
+      containsRegex(query[key])
+    ) {
+      // $regex nested below a field-level operator, e.g. $in: [{ $regex }]
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, '$regex operator is not allowed');
     }
     if (
       !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/) &&

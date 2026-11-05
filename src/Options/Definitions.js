@@ -732,7 +732,7 @@ module.exports.RateLimitOptions = {
 module.exports.RequestComplexityOptions = {
   allowRegex: {
     env: 'PARSE_SERVER_REQUEST_COMPLEXITY_ALLOW_REGEX',
-    help: 'Whether to allow the `$regex` query operator. Set to `false` to reject `$regex` in queries for non-master-key users. Default is `true`.',
+    help: 'Whether to allow the `$regex` query operator. Set to `false` to reject `$regex` anywhere in a query for non-master-key users, including when nested in other operators such as `$in`, `$nin`, `$all` or `$containedBy`, and in LiveQuery subscriptions. Default is `true`.',
     action: parsers.booleanParser,
     default: true,
   },

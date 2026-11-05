@@ -463,7 +463,7 @@ export interface RateLimitOptions {
 }
 
 export interface RequestComplexityOptions {
-  /* Whether to allow the `$regex` query operator. Set to `false` to reject `$regex` in queries for non-master-key users. Default is `true`.
+  /* Whether to allow the `$regex` query operator. Set to `false` to reject `$regex` anywhere in a query for non-master-key users, including when nested in other operators such as `$in`, `$nin`, `$all` or `$containedBy`, and in LiveQuery subscriptions. Default is `true`.
   :ENV: PARSE_SERVER_REQUEST_COMPLEXITY_ALLOW_REGEX
   :DEFAULT: true */
   allowRegex: ?boolean;
