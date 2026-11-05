@@ -1761,6 +1761,19 @@ describe('Installations', () => {
       expect(rows[0].deviceToken).toBe(deviceToken);
     });
 
+    it('answers like a nonexistent installation when the installationId is cleared', async () => {
+      const owner = await signUp();
+      const objectId = await createOwnedInstallation(owner, baseFields);
+
+      expectNotFound(await update(objectId, { installationId: null }));
+      expectNotFound(await update(objectId, { installationId: '' }));
+      expectNotFound(await update(objectId, { installationId: { __op: 'Delete' } }));
+
+      const rows = await findRows();
+      expect(rows.length).toBe(1);
+      expect(rows[0].installationId).toBe(installationId);
+    });
+
     it('answers like a nonexistent installation for an authenticated user without write access', async () => {
       const owner = await signUp();
       const other = await signUp();

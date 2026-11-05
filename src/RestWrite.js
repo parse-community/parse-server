@@ -1428,30 +1428,17 @@ RestWrite.prototype.handleInstallation = function () {
     return;
   }
 
-  // installationId is the row's primary identity (used by the SDK auth
-  // header to bind a client request to its row). Reject any attempt to
-  // clear it via null, '' or { __op: 'Delete' } before the lookup logic
-  // below runs — { __op: 'Delete' } would otherwise crash on
-  // `.toLowerCase()` (TypeError → 500) and null would silently orphan
-  // the row. Mirrors the existing 136 guard against changing
-  // installationId from one value to another.
+  // installationId is the row's primary identity (used by the SDK auth header to bind a
+  // client request to its row), so it may not be cleared via null, '' or { __op: 'Delete' }.
+  // The value is dropped here so the lookup below does not use it. On create, the "must
+  // specify ID" guard below then rejects the write unless another ID is supplied. On
+  // update, the rejection is deferred to the sanity checks so that it follows the
+  // caller's write permission check, like the guard against changing installationId.
   const clearingInstallationId =
     this.data.installationId === null ||
     this.data.installationId === '' ||
-    (typeof this.data.installationId === 'object' &&
-      this.data.installationId !== null &&
-      this.data.installationId.__op === 'Delete');
+    (typeof this.data.installationId === 'object' && this.data.installationId.__op === 'Delete');
   if (clearingInstallationId) {
-    if (this.query) {
-      throw new Parse.Error(
-        136,
-        'installationId may not be changed or cleared in this operation'
-      );
-    }
-    // Create path: drop the invalid value so the existing "must specify
-    // ID" guard below can run. If no alternative ID (deviceToken,
-    // auth.installationId) is supplied the create is rejected with
-    // error 135; otherwise the create proceeds with the remaining ID.
     delete this.data.installationId;
   }
 
@@ -1517,7 +1504,13 @@ RestWrite.prototype.handleInstallation = function () {
   }
 
   // Updating _Installation but not updating anything critical
-  if (this.query && !this.data.deviceToken && !installationId && !this.data.deviceType) {
+  if (
+    this.query &&
+    !this.data.deviceToken &&
+    !installationId &&
+    !this.data.deviceType &&
+    !clearingInstallationId
+  ) {
     return;
   }
 
@@ -1599,6 +1592,8 @@ RestWrite.prototype.handleInstallation = function () {
         let error;
         if (!objectIdMatch) {
           error = new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found for update.');
+        } else if (clearingInstallationId) {
+          error = new Parse.Error(136, 'installationId may not be changed or cleared in this operation');
         } else if (
           this.data.installationId &&
           objectIdMatch.installationId &&
