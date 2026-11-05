@@ -2238,7 +2238,7 @@ RestWrite.prototype.buildParseObjects = function ({ copyStoredValues = false } =
         let parentVal = updatedObject.get(parentProp);
         if (typeof parentVal !== 'object') {
           parentVal = {};
-        } else if (copyStoredValues) {
+        } else if (copyStoredValues && parentVal === updatedObject._getServerData()[parentProp]) {
           // A copy, so that a revert restores the stored value
           parentVal = copyStoredValue(parentVal);
         }

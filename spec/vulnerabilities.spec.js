@@ -13797,7 +13797,11 @@ describe('Vulnerabilities', () => {
       ],
       ['settings', 'a null value', { 'settings.a': null }],
       ['settings', 'a Delete operation', { 'settings.keep': { __op: 'Delete' } }],
-      ['settings', 'an Increment operation', { 'settings.count': { __op: 'Increment', amount: 1 } }],
+      [
+        'settings',
+        'an Increment operation',
+        { 'settings.count': { __op: 'Increment', amount: 1 } },
+      ],
       ['settings', 'an Add operation', { 'settings.items': { __op: 'Add', objects: ['z'] } }],
       [
         'settings',
@@ -13858,6 +13862,62 @@ describe('Vulnerabilities', () => {
         const { response, object } = await update(body);
         expect(response.status).toBe(200);
         expect(json(object.get(field))).not.toEqual(json(stored()[field]));
+      });
+    }
+
+    const sameFieldCases = [
+      ['ACL', { 'ACL.toJSON': 'x', 'ACL.other': 1 }],
+      ['ACL', { 'ACL.permissionsById': 'x', 'ACL.other': 1 }],
+      ['loc', { 'loc._latitude': 'x', 'loc.other': 1 }],
+      ['poly', { 'poly._coordinates': 'x', 'poly.other': 1 }],
+    ];
+    for (const [guard, register] of Object.entries(guards)) {
+      for (const [field, body] of sameFieldCases) {
+        const keys = Object.keys(body).join(' and ');
+        it(`keeps ${field} unchanged for the dot notation keys ${keys} with ${guard}`, async () => {
+          register(field);
+          const obj = await new Parse.Object('Guarded').save(stored(), { useMasterKey: true });
+          const response = await request({
+            method: 'PUT',
+            url: `${Parse.serverURL}/classes/Guarded/${obj.id}`,
+            headers,
+            body: JSON.stringify(body),
+          }).catch(error => error);
+          expect(response.status).toBeLessThan(500);
+          const object = await new Parse.Query('Guarded').get(obj.id, { useMasterKey: true });
+          expect(json(object.get(field))).toEqual(json(stored()[field]));
+        });
+      }
+    }
+
+    for (const [guard, register] of Object.entries(guards)) {
+      it(`keeps a field named id unchanged for dot notation keys with ${guard}`, async () => {
+        const masterHeaders = { ...headers, 'X-Parse-Master-Key': 'test' };
+        const { data } = await request({
+          method: 'POST',
+          url: `${Parse.serverURL}/classes/Guarded`,
+          headers: masterHeaders,
+          body: JSON.stringify({}),
+        });
+        await request({
+          method: 'PUT',
+          url: `${Parse.serverURL}/classes/Guarded/${data.objectId}`,
+          headers: masterHeaders,
+          body: JSON.stringify({ id: { a: 0 } }),
+        });
+        register('id');
+        const response = await request({
+          method: 'PUT',
+          url: `${Parse.serverURL}/classes/Guarded/${data.objectId}`,
+          headers,
+          body: JSON.stringify({ 'id.a': 1, 'id.b': 2 }),
+        });
+        expect(response.status).toBe(200);
+        const raw = await request({
+          url: `${Parse.serverURL}/classes/Guarded/${data.objectId}`,
+          headers: masterHeaders,
+        });
+        expect(raw.data.id).toEqual({ a: 0 });
       });
     }
 
