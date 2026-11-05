@@ -3848,10 +3848,11 @@ describe('beforeFind hooks', () => {
 });
 
 describe('afterFind hooks', () => {
-  const invalidAfterFindError = new Parse.Error(
-    Parse.Error.SCRIPT_FAILED,
-    'afterFind trigger must return an array of objects.'
-  );
+  // Jasmine compares Error instances by message only, so match the code explicitly
+  const invalidAfterFindError = jasmine.objectContaining({
+    code: Parse.Error.SCRIPT_FAILED,
+    message: 'afterFind trigger must return an array of objects.',
+  });
 
   for (const [type, value] of [
     ['an object', { foo: 'bar' }],
