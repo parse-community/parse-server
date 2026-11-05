@@ -20,7 +20,7 @@
   ],
   "license": "Apache-2.0",
   "dependencies": {
-    "@apollo/server": "4.13.0",
+    "@apollo/server": "5.4.0",
     "@graphql-tools/merge": "9.0.24",
     "@graphql-tools/schema": "10.0.23",
     "@graphql-tools/utils": "10.8.6",
@@ -59,7 +59,7 @@
     "uuid": "11.1.0",
     "winston": "3.17.0",
     "winston-daily-rotate-file": "5.0.0",
-    "ws": "8.18.2"
+    "ws": "8.20.1"
   },
   "devDependencies": {
     "@actions/core": "1.11.1",
