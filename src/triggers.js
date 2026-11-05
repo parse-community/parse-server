@@ -838,6 +838,8 @@ async function builtInTriggerValidator(options, request, auth) {
           if (request.original) {
             request.object.revert(key);
           } else if (opt.default != null) {
+            // RestWrite's revert also discards dot notation keys beneath the field
+            request.object.revert(key);
             request.object.set(key, opt.default);
           }
         }
