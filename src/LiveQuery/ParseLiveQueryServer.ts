@@ -1162,25 +1162,22 @@ class ParseLiveQueryServer {
       if (!client.hasMasterKey) {
         const rc = appConfig.requestComplexity;
         if (rc && rc.allowRegex === false) {
-          const checkRegex = (where: any) => {
-            if (typeof where !== 'object' || where === null) {
-              return;
+          // True if a $regex key appears anywhere in the value, at any depth
+          const containsRegex = (value: any): boolean => {
+            if (Array.isArray(value)) {
+              return value.some(containsRegex);
             }
-            for (const key of Object.keys(where)) {
-              const constraint = where[key];
-              if (typeof constraint === 'object' && constraint !== null && constraint.$regex !== undefined) {
-                throw new Parse.Error(Parse.Error.INVALID_QUERY, '$regex operator is not allowed');
-              }
+            if (typeof value !== 'object' || value === null) {
+              return false;
             }
-            for (const op of ['$or', '$and', '$nor']) {
-              if (Array.isArray(where[op])) {
-                for (const subQuery of where[op]) {
-                  checkRegex(subQuery);
-                }
-              }
-            }
+            return (
+              value.$regex !== undefined ||
+              Object.keys(value).some(key => containsRegex(value[key]))
+            );
           };
-          checkRegex(request.query.where);
+          if (containsRegex(request.query.where)) {
+            throw new Parse.Error(Parse.Error.INVALID_QUERY, '$regex operator is not allowed');
+          }
         }
       }
 
