@@ -3197,13 +3197,14 @@ describe('Cloud Code', () => {
 });
 
 describe('cloud functions', () => {
-  it('Should have request ip', done => {
+  it('Should have request ip', async () => {
+    await reconfigureServer({directAccess: false});
     Parse.Cloud.define('myFunction', req => {
       expect(req.ip).toBeDefined();
       return 'success';
     });
 
-    Parse.Cloud.run('myFunction', {}).then(() => done());
+    await Parse.Cloud.run('myFunction', {});
   });
 
   it('should have request config', async () => {
@@ -3226,14 +3227,15 @@ describe('beforeSave hooks', () => {
     myObject.save().then(() => done());
   });
 
-  it('should have request ip', done => {
+  it('should have request ip', async () => {
+    await reconfigureServer({directAccess: false});
     Parse.Cloud.beforeSave('MyObject', req => {
       expect(req.ip).toBeDefined();
     });
 
     const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
-    myObject.save().then(() => done());
+    await myObject.save()
   });
 
   it('should have request config', async () => {
@@ -3334,14 +3336,15 @@ describe('afterSave hooks', () => {
     myObject.save().then(() => done());
   });
 
-  it('should have request ip', done => {
+  it('should have request ip', async () => {
+    await reconfigureServer({directAccess: false});
     Parse.Cloud.afterSave('MyObject', req => {
       expect(req.ip).toBeDefined();
     });
 
     const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
-    myObject.save().then(() => done());
+    await myObject.save();
   });
 
   it('should have request config', async () => {
@@ -3399,17 +3402,16 @@ describe('beforeDelete hooks', () => {
       .then(() => done());
   });
 
-  it('should have request ip', done => {
+  it('should have request ip', async () => {
+    await reconfigureServer({directAccess: false});
     Parse.Cloud.beforeDelete('MyObject', req => {
       expect(req.ip).toBeDefined();
     });
 
     const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
-    myObject
-      .save()
-      .then(myObj => myObj.destroy())
-      .then(() => done());
+    await myObject.save()
+    await myObject.destroy();
   });
 
   it('should have request config', async () => {
@@ -3438,17 +3440,17 @@ describe('afterDelete hooks', () => {
       .then(() => done());
   });
 
-  it('should have request ip', done => {
+  it('should have request ip', async () => {
+    await reconfigureServer({directAccess: false});
     Parse.Cloud.afterDelete('MyObject', req => {
       expect(req.ip).toBeDefined();
     });
 
     const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
-    myObject
-      .save()
-      .then(myObj => myObj.destroy())
-      .then(() => done());
+    await myObject.save();
+    await myObject.destroy();
+
   });
 
   it('should have request config', async () => {
@@ -3763,21 +3765,19 @@ describe('beforeFind hooks', () => {
       .then(() => done());
   });
 
-  it('should have request ip', done => {
+  it('should have request ip', async () => {
+    await reconfigureServer({directAccess: false});
     Parse.Cloud.beforeFind('MyObject', req => {
       expect(req.ip).toBeDefined();
     });
 
     const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
-    myObject
-      .save()
-      .then(myObj => {
-        const query = new Parse.Query('MyObject');
-        query.equalTo('objectId', myObj.id);
-        return Promise.all([query.get(myObj.id), query.first(), query.find()]);
-      })
-      .then(() => done());
+    await myObject.save()
+      
+    const query = new Parse.Query('MyObject');
+    query.equalTo('objectId', myObject.id);
+    await Promise.all([query.get(myObject.id), query.first(), query.find()]);
   });
 
   it('should have request config', async () => {
@@ -4158,22 +4158,19 @@ describe('afterFind hooks', () => {
       .then(() => done());
   });
 
-  it('should have request ip', done => {
+  it('should have request ip', async () => {
+    await reconfigureServer({directAccess: false});
     Parse.Cloud.afterFind('MyObject', req => {
       expect(req.ip).toBeDefined();
     });
 
     const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
-    myObject
-      .save()
-      .then(myObj => {
-        const query = new Parse.Query('MyObject');
-        query.equalTo('objectId', myObj.id);
-        return Promise.all([query.get(myObj.id), query.first(), query.find()]);
-      })
-      .then(() => done())
-      .catch(done.fail);
+    await myObject.save()
+      
+    const query = new Parse.Query('MyObject');
+    query.equalTo('objectId', myObject.id);
+    await Promise.all([query.get(myObject.id), query.first(), query.find()]);
   });
 
   it('should have request config', async () => {
@@ -4545,7 +4542,8 @@ describe('beforeLogin hook', () => {
     done();
   });
 
-  it('should be able to block login if an error is thrown', async done => {
+  it('should be able to block login if an error is thrown', async () => {
+    await reconfigureServer({directAccess: false});
     let hit = 0;
     Parse.Cloud.beforeLogin(req => {
       hit++;
@@ -4564,10 +4562,10 @@ describe('beforeLogin hook', () => {
       expect(e.message).toBe('banned account');
     }
     expect(hit).toBe(1);
-    done();
   });
 
-  it('should be able to block login if an error is thrown even if the user has a attached file', async done => {
+  it('should be able to block login if an error is thrown even if the user has a attached file', async () => {
+    await reconfigureServer({directAccess: false});
     let hit = 0;
     Parse.Cloud.beforeLogin(req => {
       hit++;
@@ -4589,7 +4587,6 @@ describe('beforeLogin hook', () => {
       expect(e.message).toBe('banned account');
     }
     expect(hit).toBe(1);
-    done();
   });
 
   it('should not run beforeLogin with incorrect credentials', async done => {
@@ -4622,7 +4619,7 @@ describe('beforeLogin hook', () => {
     done();
   });
 
-  it('should trigger afterLogout hook on logout', async done => {
+  it('should trigger afterLogout hook on logout', async () => {
     let userId;
     Parse.Cloud.afterLogout(req => {
       expect(req.object.className).toEqual('_Session');
@@ -4632,10 +4629,9 @@ describe('beforeLogin hook', () => {
       userId = user.id;
     });
 
-    const user = await Parse.User.signUp('user', 'pass');
+    const user = await Parse.User.signUp('user', 'pass', null, {installationId: 'test'});
     await Parse.User.logOut();
     expect(user.id).toBe(userId);
-    done();
   });
 
   it('does not crash server when throwing in afterLogin hook', async () => {
@@ -4654,6 +4650,7 @@ describe('beforeLogin hook', () => {
   });
 
   it('does not crash server when throwing in afterLogout hook', async () => {
+    await reconfigureServer({directAccess: false});
     const error = new Parse.Error(2000, 'afterLogout error');
     const trigger = {
       afterLogout() {
@@ -4668,7 +4665,7 @@ describe('beforeLogin hook', () => {
     expect(response).toEqual(error);
   });
 
-  it_id('5656d6d7-65ef-43d1-8ca6-6942ae3614d5')(it)('should have expected data in request in beforeLogin', async done => {
+  it_id('5656d6d7-65ef-43d1-8ca6-6942ae3614d5')(it)('should have expected data in request in beforeLogin', async () => {
     Parse.Cloud.beforeLogin(req => {
       expect(req.object).toBeDefined();
       expect(req.user).toBeUndefined();
@@ -4680,8 +4677,7 @@ describe('beforeLogin hook', () => {
     });
 
     await Parse.User.signUp('tupac', 'shakur');
-    await Parse.User.logIn('tupac', 'shakur');
-    done();
+    await Parse.User.logIn('tupac', 'shakur', {installationId: 'test'});
   });
 
   it('afterFind should not be triggered when saving an object', async () => {
@@ -4786,7 +4782,7 @@ describe('afterLogin hook', () => {
     done();
   });
 
-  it_id('e86155c4-62e1-4c6e-ab4a-9ac6c87c60f2')(it)('should have expected data in request in afterLogin', async done => {
+  it_id('e86155c4-62e1-4c6e-ab4a-9ac6c87c60f2')(it)('should have expected data in request in afterLogin', async () => {
     Parse.Cloud.afterLogin(req => {
       expect(req.object).toBeDefined();
       expect(req.user).toBeDefined();
@@ -4798,8 +4794,7 @@ describe('afterLogin hook', () => {
     });
 
     await Parse.User.signUp('testuser', 'p@ssword');
-    await Parse.User.logIn('testuser', 'p@ssword');
-    done();
+    await Parse.User.logIn('testuser', 'p@ssword', {installationId: 'test'});
   });
 
   it('rejects a _context object property when saving a new object with header authentication', async () => {
