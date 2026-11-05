@@ -37,6 +37,7 @@ export class FilesAdapter {
    * @discussion config may be passed to adapter to allow for more complex configuration and internal call of getFileLocation (if needed). This argument is not supported by all file adapters. Check the your adapter's documentation for compatibility
    *
    * @return {Promise<{url?: string, name?: string}>|Promise<undefined>} Either a plain promise that should fail if storage didn't succeed, or a promise resolving to an object containing a url the adapter already resolved and/or a filename the adapter changed. Anything the adapter omits falls back to the filename it was given and a url derived from getFileLocation.
+   * @discussion An adapter that adds its own requirements on filenames, such as allowing a name to be written only once or handling name collisions, may either fail the save or change the name, depending on how it handles them. A changed name is returned so that the caller receives the name the file was stored under. If only the changed name is returned, the url is derived from getFileLocation after the file has been stored.
    */
   createFile(
     filename: string,

@@ -232,6 +232,23 @@ describe('FilesController', () => {
     expect(adapter.createFile).not.toHaveBeenCalled();
   });
 
+  it('should reject when the location of a file the adapter renamed cannot be resolved', async () => {
+    const config = Config.get(Parse.applicationId);
+    const adapter = { ...mockAdapter };
+    adapter.createFile = jasmine.createSpy('createFile').and.resolveTo({ name: 'renamed.txt' });
+    adapter.getFileLocation = (config, filename) =>
+      filename === 'renamed.txt'
+        ? Promise.reject(new Error('location unavailable'))
+        : Promise.resolve(`http://example.com/${filename}`);
+    const controller = new FilesController(adapter, null, { preserveFileName: true });
+
+    // The url of a renamed file is derived after the file has been stored
+    await expectAsync(
+      controller.createFile(config, 'originalFile.txt', 'data', 'text/plain', {})
+    ).toBeRejectedWithError('location unavailable');
+    expect(adapter.createFile).toHaveBeenCalledTimes(1);
+  });
+
   it('should return filename and url when adapter returns both', async () => {
     const config = Config.get(Parse.applicationId);
     const adapterWithReturn = { ...mockAdapter };
