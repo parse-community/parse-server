@@ -29,6 +29,29 @@ function getAuth(options = {}, config) {
   });
 }
 
+function stripUndefined(obj) {
+  if (obj === null || obj === undefined || typeof obj !== 'object') {
+    return obj;
+  }
+  // Match JSON.stringify semantics: objects with a toJSON() method serialize
+  // through it before undefined stripping. Date/RegExp are pre-encoded by the
+  // SDK/router, but a custom toJSON on a cloud function result reaches here
+  // (FunctionsRouter uses Parse._encode, not JSON.stringify).
+  if (typeof obj.toJSON === 'function') {
+    return stripUndefined(obj.toJSON());
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(item => (item === undefined ? null : stripUndefined(item)));
+  }
+  const result = {};
+  for (const key of Object.keys(obj)) {
+    if (obj[key] !== undefined) {
+      result[key] = stripUndefined(obj[key]);
+    }
+  }
+  return result;
+}
+
 function ParseServerRESTController(applicationId, router) {
   function handleRequest(method, path, data = {}, options = {}, config) {
     // Store the arguments, for later use if internal fails
@@ -125,7 +148,7 @@ function ParseServerRESTController(applicationId, router) {
       }
       getAuth(options, config).then(auth => {
         const request = {
-          body: data,
+          body: stripUndefined(data),
           config,
           auth,
           info: {
@@ -134,7 +157,7 @@ function ParseServerRESTController(applicationId, router) {
             installationId: options.installationId,
             context: requestContext,
           },
-          query,
+          query: query ? stripUndefined(query) : query,
         };
         return Promise.resolve()
           .then(() => {
@@ -143,10 +166,11 @@ function ParseServerRESTController(applicationId, router) {
           .then(
             resp => {
               const { response, status, headers = {} } = resp;
+              const strippedResponse = stripUndefined(response);
               if (options.returnStatus) {
-                resolve({ ...response, _status: status, _headers: headers });
+                resolve({ ...strippedResponse, _status: status, _headers: headers });
               } else {
-                resolve(response);
+                resolve(strippedResponse);
               }
             },
             err => {
