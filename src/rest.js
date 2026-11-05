@@ -15,6 +15,7 @@ var triggers = require('./triggers');
 const Auth = require('./Auth');
 const { enforceRoleSecurity } = require('./SharedRest');
 const { createSanitizedError } = require('./Error');
+const logger = require('./logger').logger;
 
 function checkTriggers(className, config, types) {
   return types.some(triggerType => {
@@ -241,6 +242,21 @@ function del(config, auth, className, objectId, context) {
       );
     })
     .then(() => {
+      // A deleted role is revoked from everyone who held it, so the cached role
+      // closures have to be dropped the same way they are on a role write (see
+      // RestWrite#runDatabaseOperation). The cached value is a flattened
+      // transitive closure, so deleting a parent role also affects the members
+      // of its children, and the whole role cache is cleared rather than one
+      // user's entry.
+      if (className === '_Role') {
+        // Issued without being awaited so a cache outage cannot fail a delete
+        // that already committed, but the rejection is caught so it does not
+        // surface as an unhandled rejection.
+        config.cacheController.role
+          .clear()
+          .catch(e => logger.error('Could not clear role cache after role deletion', { error: e }));
+        config.liveQueryController.clearCachedRoles(auth.user);
+      }
       // Notify LiveQuery server if possible
       const perms = schemaController.getClassLevelPermissions(className);
       config.liveQueryController.onAfterDelete(className, inflatedObject, null, perms);
