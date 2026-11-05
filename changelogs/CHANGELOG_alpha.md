@@ -1,3 +1,10 @@
+## [9.11.1-alpha.2](https://github.com/parse-community/parse-server/compare/9.11.1-alpha.1...9.11.1-alpha.2) (2026-11-05)
+
+
+### Bug Fixes
+
+* Object write with a dot notation key can change a field that a `beforeSave` trigger reverts or keeps constant ([GHSA-wq62-rjpm-q29h](https://github.com/parse-community/parse-server/security/advisories/GHSA-wq62-rjpm-q29h)) ([#10866](https://github.com/parse-community/parse-server/issues/10866)) ([f402fdd](https://github.com/parse-community/parse-server/commit/f402fdd31f858e1a5f3b54481ec886257975447c))
+
 ## [9.11.1-alpha.1](https://github.com/parse-community/parse-server/compare/9.11.0...9.11.1-alpha.1) (2026-11-04)
 
 
