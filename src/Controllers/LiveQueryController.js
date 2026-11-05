@@ -61,9 +61,8 @@ export class LiveQueryController {
   }
 
   clearCachedRoles(user: any) {
-    if (!user) {
-      return;
-    }
+    // Published even without a user. A master key role write or delete carries
+    // no acting user, and it revokes access just the same.
     return this.liveQueryPublisher.onClearCachedRoles(user);
   }
 
