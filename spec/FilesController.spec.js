@@ -219,6 +219,19 @@ describe('FilesController', () => {
     done();
   });
 
+  it('should not store the file when the file location cannot be resolved', async () => {
+    const config = Config.get(Parse.applicationId);
+    const adapter = { ...mockAdapter };
+    adapter.createFile = jasmine.createSpy('createFile').and.resolveTo();
+    adapter.getFileLocation = () => Promise.reject(new Error('location unavailable'));
+    const controller = new FilesController(adapter, null, { preserveFileName: true });
+
+    await expectAsync(
+      controller.createFile(config, 'originalFile.txt', 'data', 'text/plain', {})
+    ).toBeRejectedWithError('location unavailable');
+    expect(adapter.createFile).not.toHaveBeenCalled();
+  });
+
   it('should return filename and url when adapter returns both', async () => {
     const config = Config.get(Parse.applicationId);
     const adapterWithReturn = { ...mockAdapter };
