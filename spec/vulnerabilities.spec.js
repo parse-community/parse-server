@@ -13527,4 +13527,588 @@ describe('Vulnerabilities', () => {
       expect(messages.filter(message => message.op === 'create')).toEqual([]);
     });
   });
+
+  describe('(GHSA-2rxj-6v32-2v6j) Dot notation key below a typed field with a beforeSave trigger', () => {
+    const serverURL = 'http://localhost:8378/1';
+    const masterHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Master-Key': 'test',
+      'Content-Type': 'application/json',
+    };
+    const clientHeaders = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const publicAcl = { '*': { read: true, write: true } };
+
+    let rejections;
+    const onRejection = reason => rejections.push(reason);
+    beforeEach(() => {
+      rejections = [];
+      process.on('unhandledRejection', onRejection);
+    });
+    afterEach(() => {
+      process.removeListener('unhandledRejection', onRejection);
+    });
+
+    // Resolves with the response, or with { hung: true } if the request does not complete in time
+    const within = (promise, ms = 7000) =>
+      Promise.race([
+        promise.then(
+          r => ({ status: r.status, data: r.data }),
+          e => ({ status: e.status, data: e.data })
+        ),
+        new Promise(resolve => setTimeout(() => resolve({ hung: true }), ms)),
+      ]);
+
+    const createThing = async fields => {
+      const response = await request({
+        method: 'POST',
+        url: `${serverURL}/classes/Thing`,
+        headers: masterHeaders,
+        body: JSON.stringify({ ...fields, ACL: publicAcl }),
+      });
+      return response.data.objectId;
+    };
+
+    const fetchThing = async objectId => {
+      const response = await request({
+        url: `${serverURL}/classes/Thing/${objectId}`,
+        headers: masterHeaders,
+      });
+      return response.data;
+    };
+
+    const updateThing = (objectId, body) =>
+      within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/classes/Thing/${objectId}`,
+          headers: clientHeaders,
+          body: JSON.stringify(body),
+        })
+      );
+
+    const uploadFile = async () => {
+      const response = await request({
+        method: 'POST',
+        url: `${serverURL}/files/probe.txt`,
+        headers: { ...masterHeaders, 'Content-Type': 'text/plain' },
+        body: 'hello',
+      });
+      return { __type: 'File', name: response.data.name, url: response.data.url };
+    };
+
+    const savePointer = async () => {
+      const target = new Parse.Object('Target');
+      await target.save({ n: 1 }, { useMasterKey: true });
+      return { __type: 'Pointer', className: 'Target', objectId: target.id };
+    };
+
+    const dateValue = async () => ({ __type: 'Date', iso: '2020-01-01T00:00:00.000Z' });
+    const pointValue = async () => ({ __type: 'GeoPoint', latitude: 1, longitude: 1 });
+    const polygonValue = async () => ({
+      __type: 'Polygon',
+      coordinates: [
+        [0, 0],
+        [0, 1],
+        [1, 1],
+        [1, 0],
+        [0, 0],
+      ],
+    });
+    const noValue = async () => undefined;
+
+    // [target, field, dot notation key naming a method or internal property of the decoded SDK
+    // instance, stored value]
+    const typedFields = [
+      ['a Date field', 'date', 'date.toJSON', dateValue],
+      ['a Date field', 'date', 'date.valueOf', dateValue],
+      ['a GeoPoint field', 'point', 'point.toJSON', pointValue],
+      ['a GeoPoint field', 'point', 'point._latitude', pointValue],
+      ['a Polygon field', 'polygon', 'polygon.toJSON', polygonValue],
+      ['a Polygon field', 'polygon', 'polygon._coordinates', polygonValue],
+      ['a Pointer field', 'owner', 'owner.toPointer', savePointer],
+      ['a File field', 'attachment', 'attachment.url', uploadFile],
+      ['a File field', 'attachment', 'attachment.toJSON', uploadFile],
+      ['the ACL', 'ACL', 'ACL.toJSON', noValue],
+      ['createdAt', 'createdAt', 'createdAt.toJSON', noValue],
+      ['updatedAt', 'updatedAt', 'updatedAt.toJSON', noValue],
+    ];
+
+    for (const [target, field, key, makeValue] of typedFields) {
+      it(`rejects dot notation key ${key} below ${target} without crashing`, async () => {
+        Parse.Cloud.beforeSave('Thing', () => {});
+        const value = await makeValue();
+        const objectId = await createThing(value === undefined ? {} : { [field]: value });
+        const before = await fetchThing(objectId);
+        const result = await updateThing(objectId, { [key]: 'x' });
+        expect(result.hung).toBeUndefined();
+        expect(result.status).toBe(400);
+        expect(result.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+        expect(result.data.error).toMatch(/^Cannot serialize object after beforeSave: /);
+        expect(rejections).toEqual([]);
+        // Nothing was written
+        const after = await fetchThing(objectId);
+        expect(after[field]).toEqual(before[field]);
+        expect(after.updatedAt).toBe(before.updatedAt);
+        // The server keeps serving requests
+        const followUp = await updateThing(objectId, { n: 2 });
+        expect(followUp.status).toBe(200);
+      });
+    }
+
+    it('rejects a dot notation key on the own user object without crashing', async () => {
+      Parse.Cloud.beforeSave(Parse.User, () => {});
+      const signUp = await request({
+        method: 'POST',
+        url: `${serverURL}/users`,
+        headers: clientHeaders,
+        body: JSON.stringify({ username: 'ghsa2rxj', password: 'password' }),
+      });
+      const { objectId, sessionToken } = signUp.data;
+      const result = await within(
+        request({
+          method: 'PUT',
+          url: `${serverURL}/users/${objectId}`,
+          headers: { ...clientHeaders, 'X-Parse-Session-Token': sessionToken },
+          body: JSON.stringify({ 'updatedAt.toJSON': 'x' }),
+        })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect(result.data.error).toMatch(/^Cannot serialize object after beforeSave: /);
+      expect(rejections).toEqual([]);
+    });
+
+    it('rejects an object that the beforeSave trigger left unserializable without crashing', async () => {
+      const objectId = await createThing({ n: 1 });
+      Parse.Cloud.beforeSave('Thing', request => {
+        request.object.set('date', new Date('not a date'));
+      });
+      const result = await updateThing(objectId, { n: 2 });
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.INCORRECT_TYPE);
+      expect(result.data.error).toContain('invalid date');
+      expect(rejections).toEqual([]);
+    });
+
+    it('fails a find whose afterFind trigger returns an unserializable object without crashing', async () => {
+      Parse.Cloud.afterFind('Thing', () => [
+        {
+          toJSON() {
+            throw new Error('cannot serialize');
+          },
+        },
+      ]);
+      await createThing({ n: 1 });
+      const result = await within(
+        request({ url: `${serverURL}/classes/Thing`, headers: masterHeaders })
+      );
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(400);
+      expect(result.data.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(result.data.error).toBe('cannot serialize');
+      expect(rejections).toEqual([]);
+    });
+
+    it('completes a save whose afterSave trigger returns an unserializable value', async () => {
+      // Trigger logging serializes the result; the test helper silences it by default
+      await reconfigureServer({
+        logLevels: { ...defaultConfiguration.logLevels, triggerAfter: 'info' },
+      });
+      const objectId = await createThing({ n: 1 });
+      Parse.Cloud.afterSave('Thing', () => ({
+        toJSON() {
+          throw new Error('cannot serialize');
+        },
+      }));
+      const result = await updateThing(objectId, { n: 2 });
+      expect(result.hung).toBeUndefined();
+      expect(result.status).toBe(200);
+      expect(rejections).toEqual([]);
+    });
+
+    it('applies a dot notation key below an object field with a beforeSave trigger', async () => {
+      Parse.Cloud.beforeSave('Thing', () => {});
+      const objectId = await createThing({ settings: { a: 1 } });
+      const result = await updateThing(objectId, { 'settings.toJSON': 'x' });
+      expect(result.status).toBe(200);
+      expect(rejections).toEqual([]);
+      const after = await fetchThing(objectId);
+      expect(after.settings).toEqual({ a: 1, toJSON: 'x' });
+    });
+  });
+
+  describe('(GHSA-wq62-rjpm-q29h) Field revert in beforeSave is bypassed by a dot notation key', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const coordinates = [
+      [0, 0],
+      [0, 1],
+      [1, 1],
+      [1, 0],
+      [0, 0],
+    ];
+    const stored = () => ({
+      settings: { a: false, count: 1, keep: 'k', items: ['y'], nested: { x: 1 } },
+      list: ['a', 'b'],
+      loc: new Parse.GeoPoint(1, 1),
+      poly: new Parse.Polygon(coordinates),
+      ACL: new Parse.ACL({ '*': { read: true, write: true } }),
+    });
+    const json = value => JSON.parse(JSON.stringify(value));
+
+    const update = async (body, values = stored(), extraHeaders = {}) => {
+      const obj = await new Parse.Object('Guarded').save(values, { useMasterKey: true });
+      const response = await request({
+        method: 'PUT',
+        url: `${Parse.serverURL}/classes/Guarded/${obj.id}`,
+        headers: { ...headers, ...extraHeaders },
+        body: JSON.stringify(body),
+      });
+      const object = await new Parse.Query('Guarded').get(obj.id, { useMasterKey: true });
+      return { response, object };
+    };
+
+    const cases = [
+      ['settings', 'an object key', { 'settings.a': true }],
+      ['settings', 'a nested object key', { 'settings.nested.x': 2 }],
+      ['list', 'an array index', { 'list.0': 'x' }],
+      ['loc', 'a geopoint coordinate', { 'loc.latitude': 10 }],
+      [
+        'poly',
+        'polygon coordinates',
+        {
+          'poly.coordinates': [
+            [0, 0],
+            [0, 2],
+            [2, 2],
+            [2, 0],
+            [0, 0],
+          ],
+        },
+      ],
+      ['settings', 'a null value', { 'settings.a': null }],
+      ['settings', 'a Delete operation', { 'settings.keep': { __op: 'Delete' } }],
+      [
+        'settings',
+        'an Increment operation',
+        { 'settings.count': { __op: 'Increment', amount: 1 } },
+      ],
+      ['settings', 'an Add operation', { 'settings.items': { __op: 'Add', objects: ['z'] } }],
+      [
+        'settings',
+        'an AddUnique operation',
+        { 'settings.items': { __op: 'AddUnique', objects: ['z'] } },
+      ],
+      ['settings', 'a Remove operation', { 'settings.items': { __op: 'Remove', objects: ['y'] } }],
+      [
+        'settings',
+        'two operations',
+        {
+          'settings.count': { __op: 'Increment', amount: 1 },
+          'settings.keep': { __op: 'Delete' },
+        },
+      ],
+      [
+        'ACL',
+        'an ACL key',
+        {
+          'ACL.permissionsById': {
+            '*': { read: true, write: true },
+            'role:admin': { read: true, write: true },
+          },
+        },
+      ],
+    ];
+    const guards = {
+      'the constant validator': field =>
+        Parse.Cloud.beforeSave('Guarded', () => {}, { fields: { [field]: { constant: true } } }),
+      'a revert of the field': field =>
+        Parse.Cloud.beforeSave('Guarded', req => {
+          if (!req.master) {
+            req.object.revert(field);
+          }
+        }),
+      'a revert of all fields': () =>
+        Parse.Cloud.beforeSave('Guarded', req => {
+          if (!req.master) {
+            req.object.revert();
+          }
+        }),
+    };
+
+    for (const [guard, register] of Object.entries(guards)) {
+      for (const [field, name, body] of cases) {
+        it(`keeps ${field} unchanged for ${name} with ${guard}`, async () => {
+          register(field);
+          const { response, object } = await update(body);
+          expect(response.status).toBe(200);
+          expect(json(object.get(field))).toEqual(json(stored()[field]));
+        });
+      }
+    }
+
+    for (const [field, name, body] of cases) {
+      it(`changes ${field} for ${name} with a trigger that does not revert it`, async () => {
+        Parse.Cloud.beforeSave('Guarded', () => {});
+        const { response, object } = await update(body);
+        expect(response.status).toBe(200);
+        expect(json(object.get(field))).not.toEqual(json(stored()[field]));
+      });
+    }
+
+    const sameFieldCases = [
+      ['ACL', { 'ACL.toJSON': 'x', 'ACL.other': 1 }],
+      ['ACL', { 'ACL.permissionsById': 'x', 'ACL.other': 1 }],
+      ['loc', { 'loc._latitude': 'x', 'loc.other': 1 }],
+      ['poly', { 'poly._coordinates': 'x', 'poly.other': 1 }],
+    ];
+    for (const [guard, register] of Object.entries(guards)) {
+      for (const [field, body] of sameFieldCases) {
+        const keys = Object.keys(body).join(' and ');
+        it(`keeps ${field} unchanged for the dot notation keys ${keys} with ${guard}`, async () => {
+          register(field);
+          const obj = await new Parse.Object('Guarded').save(stored(), { useMasterKey: true });
+          const response = await request({
+            method: 'PUT',
+            url: `${Parse.serverURL}/classes/Guarded/${obj.id}`,
+            headers,
+            body: JSON.stringify(body),
+          }).catch(error => error);
+          expect(response.status).toBeLessThan(500);
+          const object = await new Parse.Query('Guarded').get(obj.id, { useMasterKey: true });
+          expect(json(object.get(field))).toEqual(json(stored()[field]));
+        });
+      }
+    }
+
+    for (const [guard, register] of Object.entries(guards)) {
+      it(`keeps a field named id unchanged for dot notation keys with ${guard}`, async () => {
+        const masterHeaders = { ...headers, 'X-Parse-Master-Key': 'test' };
+        const { data } = await request({
+          method: 'POST',
+          url: `${Parse.serverURL}/classes/Guarded`,
+          headers: masterHeaders,
+          body: JSON.stringify({}),
+        });
+        await request({
+          method: 'PUT',
+          url: `${Parse.serverURL}/classes/Guarded/${data.objectId}`,
+          headers: masterHeaders,
+          body: JSON.stringify({ id: { a: 0 } }),
+        });
+        register('id');
+        const response = await request({
+          method: 'PUT',
+          url: `${Parse.serverURL}/classes/Guarded/${data.objectId}`,
+          headers,
+          body: JSON.stringify({ 'id.a': 1, 'id.b': 2 }),
+        });
+        expect(response.status).toBe(200);
+        const raw = await request({
+          url: `${Parse.serverURL}/classes/Guarded/${data.objectId}`,
+          headers: masterHeaders,
+        });
+        expect(raw.data.id).toEqual({ a: 0 });
+      });
+    }
+
+    it('keeps fields unchanged for dot notation keys with a revert of several fields', async () => {
+      Parse.Cloud.beforeSave('Guarded', req => {
+        if (!req.master) {
+          req.object.revert('settings', 'list');
+        }
+      });
+      const { object } = await update({
+        'settings.count': { __op: 'Increment', amount: 1 },
+        'list.0': null,
+      });
+      expect(object.get('settings')).toEqual(stored().settings);
+      expect(object.get('list')).toEqual(stored().list);
+    });
+
+    it_only_db('mongo')('keeps a bytes field unchanged with the constant validator', async () => {
+      Parse.Cloud.beforeSave('Guarded', () => {}, { fields: { bytes: { constant: true } } });
+      const bytes = { __type: 'Bytes', base64: 'AAAA' };
+      const { response, object } = await update({ 'bytes.base64': 'BBBB' }, { bytes });
+      expect(response.status).toBe(200);
+      expect(object.get('bytes')).toEqual(bytes);
+    });
+
+    it('shows the stored value in the trigger after a revert of the field', async () => {
+      let value;
+      let dirty;
+      Parse.Cloud.beforeSave('Guarded', req => {
+        if (req.master) {
+          return;
+        }
+        req.object.revert('settings');
+        value = req.object.get('settings');
+        dirty = req.object.dirty('settings');
+      });
+      await update({ 'settings.a': true, 'settings.count': { __op: 'Increment', amount: 1 } });
+      expect(value).toEqual(stored().settings);
+      expect(dirty).toBeFalse();
+    });
+
+    it('returns the stored value of a field reverted by the constant validator', async () => {
+      Parse.Cloud.beforeSave('Guarded', () => {}, { fields: { settings: { constant: true } } });
+      const { response, object } = await update({ 'settings.a': true });
+      expect(response.data.settings).toEqual(object.get('settings'));
+      expect(object.get('settings')).toEqual(stored().settings);
+    });
+
+    it('keeps the client object in sync after the constant validator reverts an operation', async () => {
+      Parse.Cloud.beforeSave('Guarded', () => {}, { fields: { settings: { constant: true } } });
+      const obj = await new Parse.Object('Guarded').save(stored(), { useMasterKey: true });
+      const client = await new Parse.Query('Guarded').get(obj.id);
+      client.increment('settings.count');
+      await client.save();
+      expect(client.get('settings')).toEqual(stored().settings);
+      await obj.fetch({ useMasterKey: true });
+      expect(obj.get('settings')).toEqual(stored().settings);
+    });
+
+    it('does not return stored values of reverted keys to a caller without read access', async () => {
+      const schema = new Parse.Schema('GuardedWriteOnly');
+      schema.addObject('settings');
+      schema.setCLP({
+        find: {},
+        get: {},
+        count: {},
+        create: { '*': true },
+        update: { '*': true },
+        delete: {},
+        addField: {},
+      });
+      await schema.save();
+      Parse.Cloud.beforeSave('GuardedWriteOnly', () => {}, {
+        fields: { settings: { constant: true } },
+      });
+      const obj = await new Parse.Object('GuardedWriteOnly').save(
+        { settings: { count: 1, keep: 'secret', items: ['secret'] } },
+        { useMasterKey: true }
+      );
+      const response = await request({
+        method: 'PUT',
+        url: `${Parse.serverURL}/classes/GuardedWriteOnly/${obj.id}`,
+        headers,
+        body: JSON.stringify({
+          'settings.a': true,
+          'settings.keep': { __op: 'Delete' },
+          'settings.items': { __op: 'AddUnique', objects: ['z'] },
+        }),
+      });
+      expect(response.status).toBe(200);
+      expect(JSON.stringify(response.data)).not.toContain('secret');
+      await obj.fetch({ useMasterKey: true });
+      expect(obj.get('settings')).toEqual({ count: 1, keep: 'secret', items: ['secret'] });
+    });
+
+    it('passes written values to afterSave for dot notation keys with an operation beneath the same field', async () => {
+      let value;
+      Parse.Cloud.afterSave('Guarded', req => {
+        value = req.object.get('settings');
+      });
+      const { response, object } = await update({
+        'settings.a': true,
+        'settings.count': { __op: 'Increment', amount: 1 },
+      });
+      const written = { ...stored().settings, a: true, count: 2 };
+      expect(object.get('settings')).toEqual(written);
+      expect(value).toEqual(written);
+      expect(response.data.settings).toEqual(written);
+    });
+
+    it('sets the default on create with the constant validator', async () => {
+      Parse.Cloud.beforeSave('Guarded', () => {}, {
+        fields: { settings: { constant: true, default: { a: false } } },
+      });
+      const bodies = [
+        { 'settings.count': { __op: 'Increment', amount: 5 } },
+        { 'settings.a': true },
+        { 'settings.a': true, 'settings.count': { __op: 'Increment', amount: 5 } },
+      ];
+      for (const body of bodies) {
+        const response = await request({
+          method: 'POST',
+          url: `${Parse.serverURL}/classes/Guarded`,
+          headers,
+          body: JSON.stringify(body),
+        });
+        const raw = await request({
+          url: `${Parse.serverURL}/classes/Guarded/${response.data.objectId}`,
+          headers: { ...headers, 'X-Parse-Master-Key': 'test' },
+        });
+        expect(raw.data.settings).withContext(JSON.stringify(body)).toEqual({ a: false });
+        expect(raw.data['settings.count']).withContext(JSON.stringify(body)).toBeUndefined();
+      }
+    });
+
+    it('does not let a user add a value to a constant array that a function requires', async () => {
+      Parse.Cloud.beforeSave(Parse.User, () => {}, { fields: { roles: { constant: true } } });
+      Parse.Cloud.define('reviewerOnly', () => 'granted', {
+        requireUser: true,
+        requireUserKeys: { roles: { options: roles => roles.includes('reviewer') } },
+      });
+      const user = await Parse.User.signUp('user', 'password');
+      const sessionToken = user.getSessionToken();
+      await user.save({ roles: ['viewer'] }, { useMasterKey: true });
+      const response = await request({
+        method: 'PUT',
+        url: `${Parse.serverURL}/users/${user.id}`,
+        headers: { ...headers, 'X-Parse-Session-Token': sessionToken },
+        body: JSON.stringify({ 'roles.1': 'reviewer' }),
+      });
+      expect(response.status).toBe(200);
+      await user.fetch({ useMasterKey: true });
+      expect(user.get('roles')).toEqual(['viewer']);
+      await expectAsync(Parse.Cloud.run('reviewerOnly', {}, { sessionToken })).toBeRejectedWith(
+        new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Validation failed. Invalid value for roles.')
+      );
+    });
+
+    it('writes dot notation keys with a trigger that does not revert them', async () => {
+      Parse.Cloud.beforeSave('Guarded', () => {});
+      const { object } = await update({ 'settings.a': true, 'list.0': 'x', 'loc.latitude': 10 });
+      expect(object.get('settings')).toEqual({ ...stored().settings, a: true });
+      expect(object.get('list')).toEqual(['x', 'b']);
+      expect(object.get('loc').latitude).toBe(10);
+      const { object: incremented } = await update({
+        'settings.count': { __op: 'Increment', amount: 1 },
+      });
+      expect(incremented.get('settings')).toEqual({ ...stored().settings, count: 2 });
+    });
+
+    it('writes a dot notation key that the trigger sets after a revert of the field', async () => {
+      Parse.Cloud.beforeSave('Guarded', req => {
+        if (req.master) {
+          return;
+        }
+        req.object.revert('settings');
+        req.object.set('settings.keep', 'trigger');
+      });
+      const { object } = await update({
+        'settings.a': true,
+        'settings.count': { __op: 'Increment', amount: 1 },
+      });
+      expect(object.get('settings')).toEqual({ ...stored().settings, keep: 'trigger' });
+    });
+
+    it('writes a dot notation key beneath a constant field with the master key', async () => {
+      Parse.Cloud.beforeSave('Guarded', () => {}, { fields: { settings: { constant: true } } });
+      const { object } = await update({ 'settings.a': true }, stored(), {
+        'X-Parse-Master-Key': 'test',
+      });
+      expect(object.get('settings')).toEqual({ ...stored().settings, a: true });
+    });
+  });
 });

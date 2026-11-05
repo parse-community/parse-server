@@ -315,7 +315,8 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
     return Promise.resolve();
   }
 
-  const { originalObject, updatedObject } = this.buildParseObjects();
+  const { originalObject, updatedObject } = this.buildParseObjects({ copyStoredValues: true });
+  extendRevertToDotNotationKeys(updatedObject);
   const identifier = updatedObject._getStateIdentifier();
   const stateController = Parse.CoreManager.getObjectStateController();
   const [pending] = stateController.getPendingOps(identifier);
@@ -2194,7 +2195,7 @@ RestWrite.prototype.validateDotNotationKeys = function () {
 };
 
 // Returns an updated copy of the object
-RestWrite.prototype.buildParseObjects = function () {
+RestWrite.prototype.buildParseObjects = function ({ copyStoredValues = false } = {}) {
   const extraData = { className: this.className, objectId: this.query?.objectId };
   let originalObject;
   if (this.query && this.query.objectId) {
@@ -2237,6 +2238,9 @@ RestWrite.prototype.buildParseObjects = function () {
         let parentVal = updatedObject.get(parentProp);
         if (typeof parentVal !== 'object') {
           parentVal = {};
+        } else if (copyStoredValues && parentVal === updatedObject._getServerData()[parentProp]) {
+          // A copy, so that a revert restores the stored value
+          parentVal = copyStoredValue(parentVal);
         }
         parentVal[splittedKey[1]] = data[key];
         updatedObject.set(parentProp, parentVal);
@@ -2298,6 +2302,43 @@ RestWrite.prototype.filterProtectedFieldsInResponse = async function () {
       delete this.response.response[key];
     }
   }
+};
+
+// Copies a stored value whose in-place change the SDK would save
+const copyStoredValue = value => {
+  if (Array.isArray(value)) {
+    return [...value];
+  }
+  if (value instanceof Parse.GeoPoint) {
+    return new Parse.GeoPoint(value.latitude, value.longitude);
+  }
+  if (value instanceof Parse.Polygon) {
+    return new Parse.Polygon(value.coordinates);
+  }
+  if (value instanceof Parse.ACL) {
+    return new Parse.ACL(value.toJSON());
+  }
+  if (value !== null && Object.getPrototypeOf(value) === Object.prototype) {
+    return { ...value };
+  }
+  return value;
+};
+
+// Also reverts the dot notation keys beneath a reverted field
+const extendRevertToDotNotationKeys = object => {
+  const revert = object.revert;
+  Object.defineProperty(object, 'revert', {
+    configurable: true,
+    writable: true,
+    value: function (...keys) {
+      const stateController = Parse.CoreManager.getObjectStateController();
+      const pendingOps = stateController.getPendingOps(this._getStateIdentifier());
+      const beneath = Object.keys(pendingOps[pendingOps.length - 1]).filter(path =>
+        keys.some(key => typeof key === 'string' && path.startsWith(`${key}.`))
+      );
+      return revert.call(this, ...keys, ...beneath);
+    },
+  });
 };
 
 const hasOwn = (object, key) =>
