@@ -2847,7 +2847,10 @@ describe('schemas', () => {
     await obj.save({ key: 1 }, { useMasterKey: true });
     obj.increment('key', 10);
     const objectAgain = await obj.save();
-    expect(objectAgain.get('key')).toBe(11);
+    // The SDK applies the increment to an empty value
+    expect(objectAgain.get('key')).toBe(10);
+    const stored = await new Parse.Query('AClass').get(obj.id, { useMasterKey: true });
+    expect(stored.get('key')).toBe(11);
   });
 
   it('regression test for #2246', done => {

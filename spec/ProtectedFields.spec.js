@@ -1836,6 +1836,68 @@ describe('ProtectedFields', function () {
       });
       await expectAsync(restQuery.denyProtectedFields()).toBeResolved();
     });
+
+    it('should reject array-like logical operator value with descriptive error', async function () {
+      for (const op of ['$or', '$and', '$nor']) {
+        const query = new Parse.Query(Parse.User);
+        query.withJSON({ where: { [op]: { 0: { email: testEmail }, length: 1 } } });
+        await expectAsync(query.find())
+          .withContext(op)
+          .toBeRejectedWith(
+            jasmine.objectContaining({
+              code: Parse.Error.INVALID_QUERY,
+              message:
+                op === '$nor'
+                  ? 'Bad $nor format - use an array of at least 1 value.'
+                  : `Bad ${op} format - use an array value.`,
+            })
+          );
+      }
+    });
+
+    it('should reject array-like logical operator value in denyProtectedFields with descriptive error', async function () {
+      const authModule = require('../lib/Auth');
+      const RestQuery = require('../lib/RestQuery');
+      const config = Config.get(Parse.applicationId);
+      for (const op of ['$or', '$and', '$nor']) {
+        const restQuery = await RestQuery({
+          method: RestQuery.Method.find,
+          config,
+          auth: authModule.nobody(config),
+          className: '_User',
+          restWhere: { [op]: { 0: { username: 'test' }, length: 1 } },
+        });
+        await expectAsync(restQuery.denyProtectedFields())
+          .withContext(op)
+          .toBeRejectedWith(
+            jasmine.objectContaining({
+              code: Parse.Error.INVALID_QUERY,
+              message:
+                op === '$nor'
+                  ? 'Bad $nor format - use an array of at least 1 value.'
+                  : `Bad ${op} format - use an array value.`,
+            })
+          );
+      }
+    });
+
+    it('should reject malformed query on protected field with format error', async function () {
+      for (const [where, message] of [
+        [{ $or: [{ email: testEmail }, null] }, 'Bad $or format - use an array of objects.'],
+        [{ email: { $options: 'i' } }, '$options requires $regex'],
+      ]) {
+        const query = new Parse.Query(Parse.User);
+        query.withJSON({ where });
+        await expectAsync(query.find())
+          .withContext(JSON.stringify(where))
+          .toBeRejectedWith(jasmine.objectContaining({ code: Parse.Error.INVALID_QUERY, message }));
+      }
+      const query = new Parse.Query(Parse.User);
+      query.withJSON({ where: { email: { $regex: '^victim', $options: 'i' } } });
+      await expectAsync(query.find()).toBeRejectedWith(
+        jasmine.objectContaining({ code: Parse.Error.OPERATION_FORBIDDEN })
+      );
+    });
   });
 
   describe('protectedFieldsOwnerExempt', function () {
@@ -2332,6 +2394,101 @@ describe('ProtectedFields', function () {
   });
 
   describe('protectedFieldsSaveResponseExempt', function () {
+    for (const auth of ['anonymous', 'session', 'master', 'maintenance']) {
+      it(`filters reverted dot notation fields for ${auth} auth`, async () => {
+        await reconfigureServer({
+          protectedFields: { MyClass: { '*': ['secretField'] } },
+          protectedFieldsTriggerExempt: true,
+          protectedFieldsSaveResponseExempt: false,
+        });
+        const obj = await new Parse.Object('MyClass').save(
+          {
+            secretField: { sub: 'hidden' },
+            secretFieldPublic: { sub: 'visible' },
+          },
+          { useMasterKey: true }
+        );
+        Parse.Cloud.beforeSave('MyClass', ({ object }) => {
+          object.revert('secretField.sub', 'secretFieldPublic.sub');
+        });
+        const afterSave = jasmine.createSpy('afterSave');
+        Parse.Cloud.afterSave('MyClass', afterSave);
+        const headers = {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        };
+        if (auth === 'session') {
+          const user = await Parse.User.signUp('testuser', 'password');
+          headers['X-Parse-Session-Token'] = user.getSessionToken();
+        } else if (auth === 'master') {
+          headers['X-Parse-Master-Key'] = 'test';
+        } else if (auth === 'maintenance') {
+          headers['X-Parse-Maintenance-Key'] = 'testing';
+        }
+
+        const response = await request({
+          method: 'PUT',
+          url: `http://localhost:8378/1/classes/MyClass/${obj.id}`,
+          headers,
+          body: JSON.stringify({
+            'secretField.sub': { __op: 'Delete' },
+            'secretFieldPublic.sub': { __op: 'Delete' },
+          }),
+        });
+
+        expect(response.status).toBe(200);
+        if (auth === 'master' || auth === 'maintenance') {
+          expect(response.data['secretFieldPublic.sub']).toBe('visible');
+          expect(response.data['secretField.sub']).toBe('hidden');
+        } else {
+          // The original object of triggers exempt from protected fields is not as the caller reads it
+          expect(response.data['secretFieldPublic.sub']).toBeUndefined();
+          expect(response.data.secretField).toBeUndefined();
+          expect(response.data['secretField.sub']).toBeUndefined();
+        }
+        expect(afterSave).toHaveBeenCalledTimes(1);
+        expect(afterSave.calls.first().args[0].object.get('secretField')).toEqual({ sub: 'hidden' });
+        await obj.fetch({ useMasterKey: true });
+        expect(obj.get('secretField')).toEqual({ sub: 'hidden' });
+      });
+    }
+
+    it('should strip a dot notation key that beforeSave writes beneath a protected field', async function () {
+      await reconfigureServer({
+        protectedFields: { MyClass: { '*': ['secretField'] } },
+        protectedFieldsSaveResponseExempt: false,
+      });
+      const obj = await new Parse.Object('MyClass').save(
+        { secretField: { sub: 'stored' }, count: 0 },
+        { useMasterKey: true }
+      );
+      Parse.Cloud.beforeSave('MyClass', ({ object }) => {
+        object.set('secretField.sub', 'written-by-trigger');
+      });
+
+      const response = await request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/classes/MyClass/${obj.id}`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ count: { __op: 'Increment', amount: 1 } }),
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.data.count).toBe(1);
+      expect(
+        Object.keys(response.data).filter(
+          key => key === 'secretField' || key.startsWith('secretField.')
+        )
+      ).toEqual([]);
+      await obj.fetch({ useMasterKey: true });
+      expect(obj.get('secretField')).toEqual({ sub: 'written-by-trigger' });
+    });
+
     it('should strip protected fields from update response when protectedFieldsSaveResponseExempt is false', async function () {
       await reconfigureServer({
         protectedFields: { MyClass: { '*': ['secretField'] } },

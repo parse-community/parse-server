@@ -24,6 +24,7 @@ import Config from '../Config';
 import { LRUCache as LRU } from 'lru-cache';
 import UserRouter from '../Routers/UsersRouter';
 import DatabaseController from '../Controllers/DatabaseController';
+import { enforceRoleSecurity } from '../SharedRest';
 import { isDeepStrictEqual } from 'util';
 
 
@@ -737,62 +738,13 @@ class ParseLiveQueryServer {
     // Enforce pointer permissions that validatePermission defers.
     // Returns false to silently skip the event (like ACL), rather than
     // throwing which would push errors to the client and log noise.
-    if (!client.hasMasterKey && classLevelPermissions) {
-      const permissionField =
-        ['get', 'find', 'count'].indexOf(op) > -1 ? 'readUserFields' : 'writeUserFields';
-      const pointerFields = [];
-      if (classLevelPermissions[op]?.pointerFields) {
-        pointerFields.push(...classLevelPermissions[op].pointerFields);
-      }
-      if (Array.isArray(classLevelPermissions[permissionField])) {
-        for (const field of classLevelPermissions[permissionField]) {
-          if (!pointerFields.includes(field)) {
-            pointerFields.push(field);
-          }
-        }
-      }
-      if (pointerFields.length > 0) {
-        // If public or user-specific permission already grants access, skip pointer check
-        if (
-          !SchemaController.testPermissions(classLevelPermissions, aclGroup, op)
-        ) {
-          if (!userId) {
-            return false;
-          }
-          // Check if any pointer field points to the current user
-          const hasAccess = pointerFields.some(field => {
-            const value =
-              typeof object.get === 'function' ? object.get(field) : object[field];
-            if (!value) {
-              return false;
-            }
-            // Handle Parse.Object pointer (has .id)
-            if (value.id) {
-              return value.id === userId;
-            }
-            // Handle raw pointer JSON (has .objectId)
-            if (value.objectId) {
-              return value.objectId === userId;
-            }
-            // Handle array of pointers
-            if (Array.isArray(value)) {
-              return value.some(item => {
-                if (item.id) {
-                  return item.id === userId;
-                }
-                if (item.objectId) {
-                  return item.objectId === userId;
-                }
-                return false;
-              });
-            }
-            return false;
-          });
-          if (!hasAccess) {
-            return false;
-          }
-        }
-      }
+    if (
+      !client.hasMasterKey &&
+      !SchemaController.testPointerPermissions(classLevelPermissions, aclGroup, op, userId, field =>
+        typeof object.get === 'function' ? object.get(field) : object[field]
+      )
+    ) {
+      return false;
     }
   }
 
@@ -1123,6 +1075,9 @@ class ParseLiveQueryServer {
     let authCalled = false;
     let clientAuth;
     try {
+      const appConfig = Config.get(this.config.appId);
+      // Enforce the class access rules of a REST find
+      enforceRoleSecurity('find', className, { isMaster: client.hasMasterKey }, appConfig);
       const trigger = getTrigger(className, 'beforeSubscribe', Parse.applicationId);
       if (trigger) {
         const auth = await this.getAuthFromClient(client, request.requestId, request.sessionToken);
@@ -1167,7 +1122,6 @@ class ParseLiveQueryServer {
         }
       }
       // Validate query condition depth
-      const appConfig = Config.get(this.config.appId);
       if (!client.hasMasterKey) {
         const rc = appConfig.requestComplexity;
         if (rc && rc.queryDepth !== -1) {
@@ -1208,25 +1162,22 @@ class ParseLiveQueryServer {
       if (!client.hasMasterKey) {
         const rc = appConfig.requestComplexity;
         if (rc && rc.allowRegex === false) {
-          const checkRegex = (where: any) => {
-            if (typeof where !== 'object' || where === null) {
-              return;
+          // True if a $regex key appears anywhere in the value, at any depth
+          const containsRegex = (value: any): boolean => {
+            if (Array.isArray(value)) {
+              return value.some(containsRegex);
             }
-            for (const key of Object.keys(where)) {
-              const constraint = where[key];
-              if (typeof constraint === 'object' && constraint !== null && constraint.$regex !== undefined) {
-                throw new Parse.Error(Parse.Error.INVALID_QUERY, '$regex operator is not allowed');
-              }
+            if (typeof value !== 'object' || value === null) {
+              return false;
             }
-            for (const op of ['$or', '$and', '$nor']) {
-              if (Array.isArray(where[op])) {
-                for (const subQuery of where[op]) {
-                  checkRegex(subQuery);
-                }
-              }
-            }
+            return (
+              value.$regex !== undefined ||
+              Object.keys(value).some(key => containsRegex(value[key]))
+            );
           };
-          checkRegex(request.query.where);
+          if (containsRegex(request.query.where)) {
+            throw new Parse.Error(Parse.Error.INVALID_QUERY, '$regex operator is not allowed');
+          }
         }
       }
 
