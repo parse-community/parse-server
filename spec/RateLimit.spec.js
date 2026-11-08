@@ -689,6 +689,77 @@ describe('rate limit', () => {
     });
   });
 
+  describe('rule isolation', () => {
+    it('does not share rate limit counters between different routes', async () => {
+      Parse.Cloud.define('a', () => 'A');
+      Parse.Cloud.define('b', () => 'B');
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/functions/a',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            errorResponseMessage: 'Too many requests',
+            includeInternalRequests: true,
+          },
+          {
+            requestPath: '/functions/b',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            errorResponseMessage: 'Too many requests',
+            includeInternalRequests: true,
+          },
+        ],
+      });
+      expect(await Parse.Cloud.run('a')).toBe('A');
+      // Before the fix, the call to 'a' already consumed the counter shared
+      // by both rules, so calling 'b' was rejected here.
+      expect(await Parse.Cloud.run('b')).toBe('B');
+      await expectAsync(Parse.Cloud.run('a')).toBeRejectedWith(
+        new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
+      );
+      await expectAsync(Parse.Cloud.run('b')).toBeRejectedWith(
+        new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
+      );
+    });
+
+    it('does not share rate limit counters between rules with different windows', async () => {
+      Parse.Cloud.define('a', () => 'A');
+      Parse.Cloud.define('b', () => 'B');
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/functions/a',
+            requestTimeWindow: 30000,
+            requestCount: 1,
+            errorResponseMessage: 'Too many requests',
+            includeInternalRequests: true,
+            zone: Parse.Server.RateLimitZone.user,
+          },
+          {
+            requestPath: '/functions/b',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            errorResponseMessage: 'Too many requests',
+            includeInternalRequests: true,
+            zone: Parse.Server.RateLimitZone.user,
+          },
+        ],
+      });
+      await Parse.User.signUp('username', 'password');
+      expect(await Parse.Cloud.run('a')).toBe('A');
+      // Before the fix, both rules shared the same `rl:<userId>` key, so the
+      // call to 'a' consumed the quota of the rule for 'b' as well.
+      expect(await Parse.Cloud.run('b')).toBe('B');
+      await expectAsync(Parse.Cloud.run('a')).toBeRejectedWith(
+        new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
+      );
+      await expectAsync(Parse.Cloud.run('b')).toBeRejectedWith(
+        new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
+      );
+    });
+  });
+
   it('can validate rateLimit', async () => {
     const Config = require('../lib/Config');
     const validateRateLimit = ({ rateLimit }) => Config.validateRateLimit(rateLimit);
@@ -1900,18 +1971,19 @@ describe('rate limit', () => {
   describe_only(() => {
     return process.env.PARSE_SERVER_TEST_CACHE === 'redis';
   })('with RedisCache', function () {
+    const { getRateLimitRuleScope } = require('../lib/middlewares');
+
     it('does work with cache', async () => {
+      const rule = {
+        requestPath: '/classes/*path',
+        requestTimeWindow: 10000,
+        requestCount: 1,
+        errorResponseMessage: 'Too many requests',
+        includeInternalRequests: true,
+        redisUrl: 'redis://localhost:6379',
+      };
       await reconfigureServer({
-        rateLimit: [
-          {
-            requestPath: '/classes/*path',
-            requestTimeWindow: 10000,
-            requestCount: 1,
-            errorResponseMessage: 'Too many requests',
-            includeInternalRequests: true,
-            redisUrl: 'redis://localhost:6379',
-          },
-        ],
+        rateLimit: [rule],
       });
       const obj = new Parse.Object('Test');
       await obj.save();
@@ -1920,10 +1992,60 @@ describe('rate limit', () => {
       );
       const cache = new RedisCacheAdapter();
       await cache.connect();
-      const value = await cache.get('rl:127.0.0.1');
+      // The Redis key is scoped to the rule, so the key contains the rule
+      // scope both as Redis store prefix and as part of the generated key.
+      const scope = getRateLimitRuleScope(rule);
+      const key = `rl:${scope}:${scope}:127.0.0.1`;
+      const value = await cache.get(key);
       expect(value).toEqual(2);
-      const ttl = await cache.client.ttl('rl:127.0.0.1');
+      const ttl = await cache.client.ttl(key);
       expect(ttl).toEqual(10);
+      // The unscoped key from before the fix must not exist anymore.
+      expect(await cache.get('rl:127.0.0.1')).toBeNull();
+    });
+
+    it('does not share Redis keys between different routes', async () => {
+      const ruleA = {
+        requestPath: '/functions/a',
+        requestTimeWindow: 10000,
+        requestCount: 1,
+        errorResponseMessage: 'Too many requests',
+        includeInternalRequests: true,
+        redisUrl: 'redis://localhost:6379',
+      };
+      const ruleB = {
+        requestPath: '/functions/b',
+        requestTimeWindow: 10000,
+        requestCount: 1,
+        errorResponseMessage: 'Too many requests',
+        includeInternalRequests: true,
+        redisUrl: 'redis://localhost:6379',
+      };
+      Parse.Cloud.define('a', () => 'A');
+      Parse.Cloud.define('b', () => 'B');
+      await reconfigureServer({
+        rateLimit: [ruleA, ruleB],
+      });
+      expect(await Parse.Cloud.run('a')).toBe('A');
+      // Before the fix, both rules incremented the same `rl:127.0.0.1` key,
+      // so calling 'b' was rejected here.
+      expect(await Parse.Cloud.run('b')).toBe('B');
+      await expectAsync(Parse.Cloud.run('a')).toBeRejectedWith(
+        new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
+      );
+      await expectAsync(Parse.Cloud.run('b')).toBeRejectedWith(
+        new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
+      );
+      const cache = new RedisCacheAdapter();
+      await cache.connect();
+      const scopeA = getRateLimitRuleScope(ruleA);
+      const scopeB = getRateLimitRuleScope(ruleB);
+      expect(scopeA).not.toEqual(scopeB);
+      const keyA = `rl:${scopeA}:${scopeA}:127.0.0.1`;
+      const keyB = `rl:${scopeB}:${scopeB}:127.0.0.1`;
+      expect(await cache.get(keyA)).toEqual(2);
+      expect(await cache.get(keyB)).toEqual(2);
+      expect(await cache.get('rl:127.0.0.1')).toBeNull();
     });
   });
 });
