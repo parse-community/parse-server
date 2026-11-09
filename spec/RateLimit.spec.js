@@ -2151,5 +2151,90 @@ describe('rate limit', () => {
       expect(await cache.get(keyIp)).toEqual(2);
       expect(await cache.get(keyUser)).toEqual(2);
     });
+
+    it('uses separate Redis keys for two authenticated users with user zone', async () => {
+      const rule = {
+        requestPath: '/functions/a',
+        requestTimeWindow: 10000,
+        requestCount: 1,
+        errorResponseMessage: 'Too many requests',
+        includeInternalRequests: true,
+        zone: Parse.Server.RateLimitZone.user,
+        redisUrl: 'redis://localhost:6379',
+      };
+      Parse.Cloud.define('a', () => 'A');
+      await reconfigureServer({
+        rateLimit: [rule],
+      });
+      // Create two users and get their session tokens and ids
+      const res1 = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/users',
+        body: JSON.stringify({ username: 'user1', password: 'password' }),
+      });
+      const sessionToken1 = res1.data.sessionToken;
+      const userId1 = res1.data.objectId;
+      const res2 = await request({
+        method: 'POST',
+        headers,
+        url: 'http://localhost:8378/1/users',
+        body: JSON.stringify({ username: 'user2', password: 'password' }),
+      });
+      const sessionToken2 = res2.data.sessionToken;
+      const userId2 = res2.data.objectId;
+      // User 1 makes a request — should succeed on their own counter
+      const result1 = await request({
+        method: 'POST',
+        headers: { ...headers, 'X-Parse-Session-Token': sessionToken1 },
+        url: 'http://localhost:8378/1/functions/a',
+        body: JSON.stringify({}),
+      });
+      expect(result1.data.result).toBe('A');
+      // User 2 makes a request — should also succeed (independent counter)
+      const result2 = await request({
+        method: 'POST',
+        headers: { ...headers, 'X-Parse-Session-Token': sessionToken2 },
+        url: 'http://localhost:8378/1/functions/a',
+        body: JSON.stringify({}),
+      });
+      expect(result2.data.result).toBe('A');
+      const cache = new RedisCacheAdapter();
+      await cache.connect();
+      const scope = getRateLimitRuleScope(rule);
+      // Each authenticated user has their own Redis key, keyed by user id —
+      // not by IP. If authenticated user-zone requests fell back to the IP,
+      // both users would share `rl:<scope>:<scope>:127.0.0.1` and the second
+      // call above would already have been rejected.
+      const key1 = `rl:${scope}:${scope}:${userId1}`;
+      const key2 = `rl:${scope}:${scope}:${userId2}`;
+      expect(await cache.get(key1)).toEqual(1);
+      expect(await cache.get(key2)).toEqual(1);
+      expect(await cache.get(`rl:${scope}:${scope}:127.0.0.1`)).toBeNull();
+      expect(await cache.get('rl:127.0.0.1')).toBeNull();
+      // Both users have now consumed their single request.
+      const result3 = await request({
+        method: 'POST',
+        headers: { ...headers, 'X-Parse-Session-Token': sessionToken1 },
+        url: 'http://localhost:8378/1/functions/a',
+        body: JSON.stringify({}),
+      }).catch(e => e);
+      expect(result3.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many requests',
+      });
+      const result4 = await request({
+        method: 'POST',
+        headers: { ...headers, 'X-Parse-Session-Token': sessionToken2 },
+        url: 'http://localhost:8378/1/functions/a',
+        body: JSON.stringify({}),
+      }).catch(e => e);
+      expect(result4.data).toEqual({
+        code: Parse.Error.CONNECTION_FAILED,
+        error: 'Too many requests',
+      });
+      expect(await cache.get(key1)).toEqual(2);
+      expect(await cache.get(key2)).toEqual(2);
+    });
   });
 });
