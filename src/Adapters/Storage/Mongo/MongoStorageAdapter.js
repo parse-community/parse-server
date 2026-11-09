@@ -28,6 +28,25 @@ const ReadPreference = mongodb.ReadPreference;
 
 const MongoSchemaCollectionName = '_SCHEMA';
 
+// Whether an index key is a field of the schema; a key can also be a key of an Object or Array
+// field in dot notation, `field.key`, or all the keys of such a field in a wildcard index, `field.$**`
+const isSchemaIndexField = (key: string, fields: any) => {
+  const fieldName = key.indexOf('_p_') === 0 ? key.replace('_p_', '') : key;
+  if (Object.prototype.hasOwnProperty.call(fields, fieldName)) {
+    return true;
+  }
+  const [rootFieldName, ...path] = key.split('.');
+  return (
+    path.length > 0 &&
+    Object.prototype.hasOwnProperty.call(fields, rootFieldName) &&
+    ['Object', 'Array'].includes(fields[rootFieldName]?.type) &&
+    path.every(
+      (name, i) =>
+        name.length > 0 && (!name.startsWith('$') || (name === '$**' && i === path.length - 1))
+    )
+  );
+};
+
 /**
  * Determines if a MongoDB error is a transient infrastructure error
  * (connection pool, network, server selection) as opposed to a query-level error.
@@ -375,13 +394,7 @@ export class MongoStorageAdapter implements StorageAdapter {
         delete existingIndexes[name];
       } else {
         Object.keys(field).forEach(key => {
-          if (
-            !this.disableIndexFieldValidation &&
-            !Object.prototype.hasOwnProperty.call(
-              fields,
-              key.indexOf('_p_') === 0 ? key.replace('_p_', '') : key
-            )
-          ) {
+          if (!this.disableIndexFieldValidation && !isSchemaIndexField(key, fields)) {
             throw new Parse.Error(
               Parse.Error.INVALID_QUERY,
               `Field ${key} does not exist, cannot add index.`
