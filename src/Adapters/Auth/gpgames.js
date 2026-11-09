@@ -104,8 +104,9 @@ class GooglePlayGamesServicesAdapter extends BaseCodeAuthAdapter {
     return data.access_token;
   }
 
-  async getUserFromAccessToken(accessToken, authData) {
-    const userApiUrl = `https://www.googleapis.com/games/v1/players/${authData.id}`;
+  async getUserFromAccessToken(accessToken) {
+    // `me` resolves to the player who owns the access token
+    const userApiUrl = 'https://www.googleapis.com/games/v1/players/me';
     const response = await fetch(userApiUrl, {
       method: 'GET',
       headers: {
@@ -122,7 +123,7 @@ class GooglePlayGamesServicesAdapter extends BaseCodeAuthAdapter {
     }
 
     const userData = await response.json();
-    if (!userData.playerId || userData.playerId !== authData.id) {
+    if (!userData.playerId) {
       throw new Parse.Error(
         Parse.Error.VALIDATION_ERROR,
         'Invalid Google Play Games Services user data received.'
