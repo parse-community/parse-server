@@ -815,6 +815,12 @@ describe('rate limit', () => {
         getRateLimitRuleScope({ ...baseRule, zone: 'user' })
       );
     });
+
+    it('gives the same scope to a rule without a zone and one with the default zone', () => {
+      expect(getRateLimitRuleScope(baseRule)).toEqual(
+        getRateLimitRuleScope({ ...baseRule, zone: 'ip' })
+      );
+    });
   });
 
   it('can validate rateLimit', async () => {
@@ -2103,6 +2109,47 @@ describe('rate limit', () => {
       expect(await cache.get(keyA)).toEqual(2);
       expect(await cache.get(keyB)).toEqual(2);
       expect(await cache.get('rl:127.0.0.1')).toBeNull();
+    });
+
+    it('does not share Redis keys between ip and user zone rules for the same route', async () => {
+      const ruleIp = {
+        requestPath: '/functions/a',
+        requestTimeWindow: 10000,
+        requestCount: 1,
+        errorResponseMessage: 'Too many requests',
+        includeInternalRequests: true,
+        zone: Parse.Server.RateLimitZone.ip,
+        redisUrl: 'redis://localhost:6379',
+      };
+      const ruleUser = {
+        ...ruleIp,
+        zone: Parse.Server.RateLimitZone.user,
+      };
+      Parse.Cloud.define('a', () => 'A');
+      await reconfigureServer({
+        rateLimit: [ruleIp, ruleUser],
+      });
+      // The request is unauthenticated, so the user-zone key falls back to
+      // the caller's IP — the same identity the ip-zone rule uses. Before
+      // the fix, both rules incremented the same `rl:127.0.0.1` key, so this
+      // first call was already rejected by the second rule.
+      expect(await Parse.Cloud.run('a')).toBe('A');
+      const cache = new RedisCacheAdapter();
+      await cache.connect();
+      const scopeIp = getRateLimitRuleScope(ruleIp);
+      const scopeUser = getRateLimitRuleScope(ruleUser);
+      expect(scopeIp).not.toEqual(scopeUser);
+      const keyIp = `rl:${scopeIp}:${scopeIp}:127.0.0.1`;
+      const keyUser = `rl:${scopeUser}:${scopeUser}:127.0.0.1`;
+      expect(await cache.get(keyIp)).toEqual(1);
+      expect(await cache.get(keyUser)).toEqual(1);
+      expect(await cache.get('rl:127.0.0.1')).toBeNull();
+      // Both rules have now consumed their single request.
+      await expectAsync(Parse.Cloud.run('a')).toBeRejectedWith(
+        new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
+      );
+      expect(await cache.get(keyIp)).toEqual(2);
+      expect(await cache.get(keyUser)).toEqual(2);
     });
   });
 });
