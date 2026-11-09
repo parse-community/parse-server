@@ -81,7 +81,7 @@ describe('GooglePlayGamesServicesAdapter', function () {
     it('should fetch user data successfully', async function () {
       mockFetch([
         {
-          url: 'https://www.googleapis.com/games/v1/players/mockUserId',
+          url: 'https://www.googleapis.com/games/v1/players/me',
           method: 'GET',
           response: {
             ok: true,
@@ -103,7 +103,7 @@ describe('GooglePlayGamesServicesAdapter', function () {
     it('should throw an error if the response is not ok', async function () {
       mockFetch([
         {
-          url: 'https://www.googleapis.com/games/v1/players/mockUserId',
+          url: 'https://www.googleapis.com/games/v1/players/me',
           method: 'GET',
           response: {
             ok: false,
@@ -123,7 +123,7 @@ describe('GooglePlayGamesServicesAdapter', function () {
     it('should throw an error if user data is invalid', async function () {
       mockFetch([
         {
-          url: 'https://www.googleapis.com/games/v1/players/mockUserId',
+          url: 'https://www.googleapis.com/games/v1/players/me',
           method: 'GET',
           response: {
             ok: true,
@@ -140,10 +140,10 @@ describe('GooglePlayGamesServicesAdapter', function () {
       );
     });
 
-    it('should throw an error if playerId does not match the provided user ID', async function () {
+    it('should return the player who owns the access token instead of the provided user ID', async function () {
       mockFetch([
         {
-          url: 'https://www.googleapis.com/games/v1/players/mockUserId',
+          url: 'https://www.googleapis.com/games/v1/players/me',
           method: 'GET',
           response: {
             ok: true,
@@ -157,10 +157,9 @@ describe('GooglePlayGamesServicesAdapter', function () {
 
       const accessToken = 'validAccessToken';
       const authData = { id: 'mockUserId' };
+      const user = await adapter.getUserFromAccessToken(accessToken, authData);
 
-      await expectAsync(adapter.getUserFromAccessToken(accessToken, authData)).toBeRejectedWithError(
-        'Invalid Google Play Games Services user data received.'
-      );
+      expect(user).toEqual({ id: 'anotherUserId' });
     });
   });
 
@@ -190,7 +189,7 @@ describe('GooglePlayGamesServicesAdapter', function () {
           },
         },
         {
-          url: 'https://www.googleapis.com/games/v1/players/mockUserId',
+          url: 'https://www.googleapis.com/games/v1/players/me',
           method: 'GET',
           response: {
             ok: true,
@@ -216,7 +215,7 @@ describe('GooglePlayGamesServicesAdapter', function () {
         jasmine.any(Object)
       );
       expect(global.fetch).toHaveBeenCalledWith(
-        'https://www.googleapis.com/games/v1/players/mockUserId',
+        'https://www.googleapis.com/games/v1/players/me',
         jasmine.any(Object)
       );
     });
@@ -262,7 +261,7 @@ describe('GooglePlayGamesServicesAdapter', function () {
           },
         },
         {
-          url: 'https://www.googleapis.com/games/v1/players/mockUserId',
+          url: 'https://www.googleapis.com/games/v1/players/me',
           method: 'GET',
           response: {
             ok: false,
@@ -286,12 +285,12 @@ describe('GooglePlayGamesServicesAdapter', function () {
         jasmine.any(Object)
       );
       expect(global.fetch).toHaveBeenCalledWith(
-        'https://www.googleapis.com/games/v1/players/mockUserId',
+        'https://www.googleapis.com/games/v1/players/me',
         jasmine.any(Object)
       );
     });
 
-    it('should handle error when user data is invalid', async function () {
+    it('should reject a user ID that the access token does not belong to', async function () {
       mockFetch([
         {
           url: 'https://oauth2.googleapis.com/token',
@@ -305,7 +304,7 @@ describe('GooglePlayGamesServicesAdapter', function () {
           },
         },
         {
-          url: 'https://www.googleapis.com/games/v1/players/mockUserId',
+          url: 'https://www.googleapis.com/games/v1/players/me',
           method: 'GET',
           response: {
             ok: true,
@@ -324,7 +323,7 @@ describe('GooglePlayGamesServicesAdapter', function () {
       };
 
       await expectAsync(Parse.User.logInWith('gpgames', { authData })).toBeRejectedWithError(
-        'Invalid Google Play Games Services user data received.'
+        'gpgames auth is invalid for this user.'
       );
 
       expect(global.fetch).toHaveBeenCalledWith(
@@ -332,7 +331,7 @@ describe('GooglePlayGamesServicesAdapter', function () {
         jasmine.any(Object)
       );
       expect(global.fetch).toHaveBeenCalledWith(
-        'https://www.googleapis.com/games/v1/players/mockUserId',
+        'https://www.googleapis.com/games/v1/players/me',
         jasmine.any(Object)
       );
     });
