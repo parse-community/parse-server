@@ -38,8 +38,16 @@ export interface ProtectedFieldsInterface {
   [key: string]: string[];
 }
 
+export interface IndexOptionsInterface {
+  unique?: boolean;
+  sparse?: boolean;
+  expireAfterSeconds?: number;
+  partialFilterExpression?: { [key: string]: mixed };
+}
+
 export interface IndexInterface {
   [key: string]: number;
+  __options?: IndexOptionsInterface;
 }
 
 export interface IndexesInterface {

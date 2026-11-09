@@ -28,6 +28,44 @@ const ReadPreference = mongodb.ReadPreference;
 
 const MongoSchemaCollectionName = '_SCHEMA';
 
+// Index options that can be set in a schema index definition with the key `__options`,
+// for example `{ field: 1, __options: { unique: true } }`
+const schemaIndexOptionValidators = {
+  unique: value => typeof value === 'boolean',
+  sparse: value => typeof value === 'boolean',
+  expireAfterSeconds: value => Number.isInteger(value) && value >= 0,
+  partialFilterExpression: value => _.isPlainObject(value),
+};
+
+// Splits a schema index definition into the index key and the index options
+const getIndexKeyAndOptions = (index: any) => {
+  const { __options: options, ...key } = index;
+  if (options === undefined) {
+    return { key, options: {} };
+  }
+  if (!_.isPlainObject(options)) {
+    throw new Parse.Error(
+      Parse.Error.INVALID_QUERY,
+      'Index option __options must be an object, cannot add index.'
+    );
+  }
+  Object.keys(options).forEach(option => {
+    if (!Object.prototype.hasOwnProperty.call(schemaIndexOptionValidators, option)) {
+      throw new Parse.Error(
+        Parse.Error.INVALID_QUERY,
+        `Index option ${option} is not supported, cannot add index.`
+      );
+    }
+    if (!schemaIndexOptionValidators[option](options[option])) {
+      throw new Parse.Error(
+        Parse.Error.INVALID_QUERY,
+        `Index option ${option} has an invalid value, cannot add index.`
+      );
+    }
+  });
+  return { key, options };
+};
+
 /**
  * Determines if a MongoDB error is a transient infrastructure error
  * (connection pool, network, server selection) as opposed to a query-level error.
@@ -374,7 +412,8 @@ export class MongoStorageAdapter implements StorageAdapter {
         deletePromises.push(promise);
         delete existingIndexes[name];
       } else {
-        Object.keys(field).forEach(key => {
+        const { key: indexKey, options: indexOptions } = getIndexKeyAndOptions(field);
+        Object.keys(indexKey).forEach(key => {
           if (
             !this.disableIndexFieldValidation &&
             !Object.prototype.hasOwnProperty.call(
@@ -390,7 +429,8 @@ export class MongoStorageAdapter implements StorageAdapter {
         });
         existingIndexes[name] = field;
         insertedIndexes.push({
-          key: field,
+          ...indexOptions,
+          key: indexKey,
           name,
         });
       }
@@ -410,7 +450,9 @@ export class MongoStorageAdapter implements StorageAdapter {
       .catch(err => this.handleError(err));
   }
 
-  setIndexesFromMongo(className: string) {
+  // Stores the indexes of the collection in the schema; an index defined with options in the
+  // schema, `{ field: 1, __options: { unique: true } }`, is stored again with its options
+  setIndexesFromMongo(className: string, schemaIndexes: any = {}) {
     return this.getIndexes(className)
       .then(indexes => {
         indexes = indexes.reduce((obj, index) => {
@@ -421,7 +463,9 @@ export class MongoStorageAdapter implements StorageAdapter {
               index.key[field] = 'text';
             }
           }
-          obj[index.name] = index.key;
+          obj[index.name] = schemaIndexes[index.name]?.__options
+            ? { ...index.key, __options: _.pick(index, Object.keys(schemaIndexOptionValidators)) }
+            : index.key;
           return obj;
         }, {});
         return this._schemaCollection().then(schemaCollection =>
@@ -1242,7 +1286,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       ).catch(error => {
         if (error.code === 85) {
           // Index exist with different options
-          return this.setIndexesFromMongo(className);
+          return this.setIndexesFromMongo(className, existingIndexes);
         }
         throw error;
       });
@@ -1278,7 +1322,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     return this.getAllClasses()
       .then(classes => {
         const promises = classes.map(schema => {
-          return this.setIndexesFromMongo(schema.className);
+          return this.setIndexesFromMongo(schema.className, schema.indexes);
         });
         return Promise.all(promises);
       })
