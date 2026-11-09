@@ -1,3 +1,10 @@
+## [8.6.123](https://github.com/parse-community/parse-server/compare/8.6.122...8.6.123) (2026-11-09)
+
+
+### Bug Fixes
+
+* Google Play Games auth adapter accepts a player ID that the access token does not belong to ([GHSA-r66f-3q22-grc4](https://github.com/parse-community/parse-server/security/advisories/GHSA-r66f-3q22-grc4)) ([#10878](https://github.com/parse-community/parse-server/issues/10878)) ([64da840](https://github.com/parse-community/parse-server/commit/64da8409433d672b9283f900bd7d67284893e528))
+
 ## [8.6.122](https://github.com/parse-community/parse-server/compare/8.6.121...8.6.122) (2026-11-05)
 
 
