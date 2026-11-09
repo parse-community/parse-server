@@ -809,6 +809,12 @@ describe('rate limit', () => {
         getRateLimitRuleScope({ ...baseRule, includeMasterKey: true })
       ).not.toEqual(getRateLimitRuleScope(baseRule));
     });
+
+    it('gives different scopes to rules that differ only in zone', () => {
+      expect(getRateLimitRuleScope({ ...baseRule, zone: 'ip' })).not.toEqual(
+        getRateLimitRuleScope({ ...baseRule, zone: 'user' })
+      );
+    });
   });
 
   it('can validate rateLimit', async () => {
