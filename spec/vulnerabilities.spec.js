@@ -13129,4 +13129,146 @@ describe('Vulnerabilities', () => {
       expect(object.get('settings')).toEqual({ ...stored().settings, a: true });
     });
   });
+
+  describe('(GHSA-r66f-3q22-grc4) Google Play Games auth adapter accepts a player id that the access token does not belong to', () => {
+    const tokenUrl = 'https://oauth2.googleapis.com/token';
+    const playersUrl = 'https://www.googleapis.com/games/v1/players';
+    const victimPlayerId = 'victim-player';
+    const attackerPlayerId = 'attacker-player';
+    const unlinkedPlayerId = 'unlinked-player';
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+
+    // Stands in for Google: the credential belongs to `owner`; `players/me` returns the token
+    // owner and `players/<id>` returns the requested player, as Google documents.
+    const mockGoogle = owner =>
+      mockFetch([
+        {
+          url: tokenUrl,
+          method: 'POST',
+          response: { ok: true, json: () => Promise.resolve({ access_token: 'google-token' }) },
+        },
+        ...['me', victimPlayerId, attackerPlayerId, unlinkedPlayerId].map(id => ({
+          url: `${playersUrl}/${id}`,
+          method: 'GET',
+          response: {
+            ok: true,
+            json: () => Promise.resolve({ playerId: id === 'me' ? owner : id }),
+          },
+        })),
+      ]);
+
+    const logInWith = authData =>
+      request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users',
+        headers,
+        body: JSON.stringify({ authData: { gpgames: authData } }),
+      }).catch(e => e);
+
+    const linkWith = (user, authData) =>
+      request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/users/${user.id}`,
+        headers: { ...headers, 'X-Parse-Session-Token': user.getSessionToken() },
+        body: JSON.stringify({ authData: { gpgames: authData } }),
+      }).catch(e => e);
+
+    // Reads the row directly so the adapter's afterFind cannot mask what was persisted.
+    const storedProviderData = async objectId => {
+      const [row] = await Config.get('test').database.find('_User', { objectId });
+      return row.authData?.gpgames;
+    };
+
+    let victim;
+
+    beforeEach(async () => {
+      await reconfigureServer({
+        auth: { gpgames: { clientId: 'clientId', clientSecret: 'clientSecret' } },
+      });
+      mockGoogle(victimPlayerId);
+      victim = await Parse.User.logInWith('gpgames', {
+        authData: { code: 'victim-code', id: victimPlayerId },
+      });
+    });
+
+    it('rejects an authorization code with the id of another player', async () => {
+      mockGoogle(attackerPlayerId);
+
+      const response = await logInWith({ code: 'attacker-code', id: victimPlayerId });
+
+      const body = JSON.parse(response.text);
+      expect(body.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      expect(body.sessionToken).toBeUndefined();
+    });
+
+    it('rejects an access token with the id of another player when insecure auth is enabled', async () => {
+      await reconfigureServer({ auth: { gpgames: { enableInsecureAuth: true } } });
+      mockGoogle(attackerPlayerId);
+
+      const response = await logInWith({ access_token: 'attacker-token', id: victimPlayerId });
+
+      const body = JSON.parse(response.text);
+      expect(body.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      expect(body.sessionToken).toBeUndefined();
+    });
+
+    it('logs in the player who owns the access token when insecure auth is enabled', async () => {
+      await reconfigureServer({ auth: { gpgames: { enableInsecureAuth: true } } });
+      mockGoogle(victimPlayerId);
+
+      const response = await logInWith({ access_token: 'victim-token', id: victimPlayerId });
+
+      expect(response.status).toBe(200);
+      expect(response.data.objectId).toBe(victim.id);
+    });
+
+    it('rejects linking the id of another player to an account', async () => {
+      const attacker = new Parse.User();
+      await attacker.signUp({ username: 'attacker', password: 'attacker-password' });
+      mockGoogle(attackerPlayerId);
+
+      const response = await linkWith(attacker, { code: 'attacker-code', id: unlinkedPlayerId });
+
+      const body = JSON.parse(response.text);
+      expect(body.code).toBe(Parse.Error.SESSION_MISSING);
+      expect(global.fetch.calls.allArgs().map(([url]) => url)).toEqual([
+        tokenUrl,
+        `${playersUrl}/me`,
+      ]);
+      expect(await storedProviderData(attacker.id)).toBeUndefined();
+    });
+
+    it('links the player who owns the authorization code to an account', async () => {
+      const user = new Parse.User();
+      await user.signUp({ username: 'player', password: 'player-password' });
+      mockGoogle(unlinkedPlayerId);
+
+      const response = await linkWith(user, { code: 'player-code', id: unlinkedPlayerId });
+
+      expect(response.status).toBe(200);
+      expect((await storedProviderData(user.id)).id).toBe(unlinkedPlayerId);
+    });
+
+    it('logs in the player who owns the authorization code', async () => {
+      mockGoogle(victimPlayerId);
+
+      const response = await logInWith({ code: 'victim-code', id: victimPlayerId });
+
+      expect(response.status).toBe(200);
+      expect(response.data.objectId).toBe(victim.id);
+    });
+
+    it('resolves the player from the authorization code when no id is supplied', async () => {
+      mockGoogle(victimPlayerId);
+
+      const response = await logInWith({ code: 'victim-code' });
+
+      expect(response.status).toBe(200);
+      expect(response.data.objectId).toBe(victim.id);
+    });
+  });
 });
