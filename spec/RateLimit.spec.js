@@ -760,6 +760,57 @@ describe('rate limit', () => {
     });
   });
 
+  describe('rate limit rule scope', () => {
+    const { getRateLimitRuleScope } = require('../lib/middlewares');
+    const baseRule = {
+      requestPath: '/functions/a',
+      requestTimeWindow: 10000,
+      requestCount: 1,
+      includeInternalRequests: true,
+      includeMasterKey: false,
+    };
+
+    it('gives identical rules the same scope', () => {
+      expect(getRateLimitRuleScope({ ...baseRule })).toEqual(getRateLimitRuleScope(baseRule));
+    });
+
+    it('gives different scopes to rules that differ only in requestTimeWindow', () => {
+      expect(
+        getRateLimitRuleScope({ ...baseRule, requestTimeWindow: 30000 })
+      ).not.toEqual(getRateLimitRuleScope(baseRule));
+    });
+
+    it('gives different scopes to rules that differ only in requestCount', () => {
+      expect(getRateLimitRuleScope({ ...baseRule, requestCount: 2 })).not.toEqual(
+        getRateLimitRuleScope(baseRule)
+      );
+    });
+
+    it('gives different scopes to rules that differ only in requestMethods RegExp', () => {
+      expect(
+        getRateLimitRuleScope({ ...baseRule, requestMethods: /GET/ })
+      ).not.toEqual(getRateLimitRuleScope({ ...baseRule, requestMethods: /POST/ }));
+    });
+
+    it('gives different scopes to RegExp requestMethods that differ only in flags', () => {
+      expect(
+        getRateLimitRuleScope({ ...baseRule, requestMethods: /GET/ })
+      ).not.toEqual(getRateLimitRuleScope({ ...baseRule, requestMethods: /GET/i }));
+    });
+
+    it('gives different scopes to rules that differ only in includeInternalRequests', () => {
+      expect(
+        getRateLimitRuleScope({ ...baseRule, includeInternalRequests: false })
+      ).not.toEqual(getRateLimitRuleScope(baseRule));
+    });
+
+    it('gives different scopes to rules that differ only in includeMasterKey', () => {
+      expect(
+        getRateLimitRuleScope({ ...baseRule, includeMasterKey: true })
+      ).not.toEqual(getRateLimitRuleScope(baseRule));
+    });
+  });
+
   it('can validate rateLimit', async () => {
     const Config = require('../lib/Config');
     const validateRateLimit = ({ rateLimit }) => Config.validateRateLimit(rateLimit);

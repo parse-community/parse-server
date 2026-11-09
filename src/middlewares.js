@@ -684,25 +684,34 @@ const isInternalRequest = request =>
 
 /**
  * Returns a deterministic scope identifier for a rate limit rule, derived from
- * the rule identity: request path, request methods, zone, time window and
- * request count. Two rules that differ in any of these get different scopes,
- * so they never share a rate limit counter; identical rules get the same
- * scope, so a limit still aggregates across server instances that share a
- * Redis store. The identifier is a compact hash because the request path is
- * a path-to-regexp pattern and must not be used verbatim as a key segment.
+ * the rule identity: request path, request methods, zone, time window,
+ * request count and request eligibility (whether internal requests and
+ * master-key requests are counted). Two rules that differ in any of these get
+ * different scopes, so they never share a rate limit counter; identical rules
+ * get the same scope, so a limit still aggregates across server instances that
+ * share a Redis store. The identifier is a compact hash because the request
+ * path is a path-to-regexp pattern and must not be used verbatim as a key
+ * segment. A `requestMethods` value given as a RegExp is encoded by its
+ * source and flags, because a RegExp serializes to `{}` with `JSON.stringify`
+ * and two rules that differ only by `/GET/` versus `/POST/` would otherwise
+ * share a scope.
  * @param {object} route The rate limit rule as passed to `addRateLimit`.
  * @returns {string} A 12-character hex scope for the rule.
  */
 export const getRateLimitRuleScope = route => {
+  const encodeRequestMethod = method =>
+    Utils.isRegExp(method) ? `/${method.source}/${method.flags}` : method;
   const requestMethods = Array.isArray(route.requestMethods)
-    ? [...route.requestMethods].sort()
-    : route.requestMethods;
+    ? [...route.requestMethods].map(encodeRequestMethod).sort()
+    : encodeRequestMethod(route.requestMethods);
   const identity = {
     requestPath: route.requestPath,
     requestMethods,
     zone: route.zone || RateLimitOptions.zone.default,
     requestTimeWindow: route.requestTimeWindow,
     requestCount: route.requestCount,
+    includeInternalRequests: Boolean(route.includeInternalRequests),
+    includeMasterKey: Boolean(route.includeMasterKey),
   };
   return createHash('sha256').update(JSON.stringify(identity)).digest('hex').slice(0, 12);
 };
