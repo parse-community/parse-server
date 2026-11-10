@@ -1,3 +1,10 @@
+## [9.11.1-alpha.6](https://github.com/parse-community/parse-server/compare/9.11.1-alpha.5...9.11.1-alpha.6) (2026-11-10)
+
+
+### Bug Fixes
+
+* Default value of Parse Server option `fileUpload.fileExtensions` does not block RSS and Atom files ([#10880](https://github.com/parse-community/parse-server/issues/10880)) ([0c0949b](https://github.com/parse-community/parse-server/commit/0c0949b1f74dfcd4501a681d060fedc4281e7237))
+
 ## [9.11.1-alpha.5](https://github.com/parse-community/parse-server/compare/9.11.1-alpha.4...9.11.1-alpha.5) (2026-11-10)
 
 
