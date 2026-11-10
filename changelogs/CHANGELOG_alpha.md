@@ -1,3 +1,10 @@
+# [9.12.0-alpha.1](https://github.com/parse-community/parse-server/compare/9.11.1-alpha.6...9.12.0-alpha.1) (2026-11-10)
+
+
+### Features
+
+* Add Keycloak auth adapter option `audience` to validate the access token audience ([#10881](https://github.com/parse-community/parse-server/issues/10881)) ([eec2e5b](https://github.com/parse-community/parse-server/commit/eec2e5ba3f1e1d631b3a0c6b114725ddebd11ed1))
+
 ## [9.11.1-alpha.6](https://github.com/parse-community/parse-server/compare/9.11.1-alpha.5...9.11.1-alpha.6) (2026-11-10)
 
 
