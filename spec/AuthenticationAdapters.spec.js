@@ -1182,19 +1182,19 @@ describe('keycloak auth adapter', () => {
       await expectAsync(
         validate({ aud: 'other-service' }, { audience: 'parse-server' })
       ).toBeRejectedWith(
-        new Parse.Error(
-          Parse.Error.OBJECT_NOT_FOUND,
-          'jwt audience invalid. expected: parse-server'
-        )
+        jasmine.objectContaining({
+          code: Parse.Error.OBJECT_NOT_FOUND,
+          message: 'jwt audience invalid. expected: parse-server',
+        })
       );
     });
 
     it('validateAuthData should fail without aud when audience is set', async () => {
       await expectAsync(validate({}, { audience: 'parse-server' })).toBeRejectedWith(
-        new Parse.Error(
-          Parse.Error.OBJECT_NOT_FOUND,
-          'jwt audience invalid. expected: parse-server'
-        )
+        jasmine.objectContaining({
+          code: Parse.Error.OBJECT_NOT_FOUND,
+          message: 'jwt audience invalid. expected: parse-server',
+        })
       );
     });
 
@@ -1225,20 +1225,21 @@ describe('keycloak auth adapter', () => {
       await expectAsync(
         validate({ azp: 'other-app', aud: 'parse-server' }, { audience: 'parse-server' })
       ).toBeRejectedWith(
-        new Parse.Error(
-          Parse.Error.OBJECT_NOT_FOUND,
-          'access token is not authorized for this client - expected: parse-app | from: other-app'
-        )
+        jasmine.objectContaining({
+          code: Parse.Error.OBJECT_NOT_FOUND,
+          message:
+            'access token is not authorized for this client - expected: parse-app | from: other-app',
+        })
       );
     });
 
     it('validateAuthData should fail with invalid audience option', async () => {
       for (const audience of ['', [], [''], ['parse-server', 1], 1, {}]) {
         await expectAsync(validate({ aud: 'parse-server' }, { audience })).toBeRejectedWith(
-          new Parse.Error(
-            Parse.Error.OBJECT_NOT_FOUND,
-            'Keycloak auth is not configured. Invalid audience.'
-          )
+          jasmine.objectContaining({
+            code: Parse.Error.OBJECT_NOT_FOUND,
+            message: 'Keycloak auth is not configured. Invalid audience.',
+          })
         );
       }
     });
@@ -1250,10 +1251,10 @@ describe('keycloak auth adapter', () => {
           authData: { id: 'user123', access_token: signToken({ aud: 'other-service' }) },
         })
       ).toBeRejectedWith(
-        new Parse.Error(
-          Parse.Error.OBJECT_NOT_FOUND,
-          'jwt audience invalid. expected: parse-server'
-        )
+        jasmine.objectContaining({
+          code: Parse.Error.OBJECT_NOT_FOUND,
+          message: 'jwt audience invalid. expected: parse-server',
+        })
       );
     });
 

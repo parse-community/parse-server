@@ -66,7 +66,7 @@
  * ```
  *
  * ## Notes
- * - Parse Server verifies the access token locally with the public keys of the realm. The token must be issued by the realm (`iss`), to the configured `client-id` (`azp`), and for the user `id` (`sub`); `roles` and `groups` must match the token.
+ * - Parse Server verifies the access token locally with the public keys of the realm. The token must be issued by the realm (`iss`), to the configured `client-id` (`azp`), and for the user `id` (`sub`). The `roles` and `groups` in the auth data must equal the `roles` and `groups` claims of the token.
  *
  * ## Keycloak Configuration
  * To configure Keycloak, copy the JSON configuration file generated from Keycloak's setup guide:
