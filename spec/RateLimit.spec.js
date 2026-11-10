@@ -2166,6 +2166,16 @@ describe('rate limit', () => {
       await reconfigureServer({
         rateLimit: [rule],
       });
+      const cache = new RedisCacheAdapter();
+      await cache.connect();
+      const scope = getRateLimitRuleScope(rule);
+      // The preceding test uses a user-zone rule with an identical scope,
+      // so its unauthenticated requests write the same scoped IP key. If
+      // that test is interrupted before cleanup, the key can remain for up
+      // to 10 seconds (the rule's time window) and would fail the null
+      // assertion below even though authenticated requests use separate
+      // user keys. Clear it before sending the authenticated requests.
+      await cache.del(`rl:${scope}:${scope}:127.0.0.1`);
       // Create two users and get their session tokens and ids
       const res1 = await request({
         method: 'POST',
@@ -2199,9 +2209,6 @@ describe('rate limit', () => {
         body: JSON.stringify({}),
       });
       expect(result2.data.result).toBe('A');
-      const cache = new RedisCacheAdapter();
-      await cache.connect();
-      const scope = getRateLimitRuleScope(rule);
       // Each authenticated user has their own Redis key, keyed by user id —
       // not by IP. If authenticated user-zone requests fell back to the IP,
       // both users would share `rl:<scope>:<scope>:127.0.0.1` and the second
