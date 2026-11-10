@@ -1,3 +1,10 @@
+## [9.11.1-alpha.5](https://github.com/parse-community/parse-server/compare/9.11.1-alpha.4...9.11.1-alpha.5) (2026-11-10)
+
+
+### Bug Fixes
+
+* Password change of another user returns a session token of that user ([#10879](https://github.com/parse-community/parse-server/issues/10879)) ([f7e625f](https://github.com/parse-community/parse-server/commit/f7e625f1b80c9caa59f9a21ad2945499f05c887b))
+
 ## [9.11.1-alpha.4](https://github.com/parse-community/parse-server/compare/9.11.1-alpha.3...9.11.1-alpha.4) (2026-11-09)
 
 
