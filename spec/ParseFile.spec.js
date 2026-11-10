@@ -1518,6 +1518,125 @@ describe('Parse.File testing', () => {
       );
     });
 
+    it('default should block RSS and Atom files', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+        },
+      });
+      const xmlContent = Buffer.from('<rss version="2.0"></rss>').toString('base64');
+      const files = [
+        { extension: 'rss', contentType: 'application/rss+xml' },
+        { extension: 'RSS', contentType: 'application/rss+xml' },
+        { extension: 'Rss', contentType: 'application/rss+xml' },
+        { extension: 'atom', contentType: 'application/atom+xml' },
+        { extension: 'ATOM', contentType: 'application/atom+xml' },
+        { extension: 'Atom', contentType: 'application/atom+xml' },
+      ];
+      for (const { extension, contentType } of files) {
+        await expectAsync(
+          request({
+            method: 'POST',
+            url: `http://localhost:8378/1/files/feed.${extension}`,
+            body: JSON.stringify({
+              _ApplicationId: 'test',
+              _JavaScriptKey: 'test',
+              _ContentType: contentType,
+              base64: xmlContent,
+            }),
+          }).catch(e => {
+            throw new Error(e.data.error);
+          })
+        ).toBeRejectedWith(
+          new Parse.Error(
+            Parse.Error.FILE_SAVE_ERROR,
+            `File upload of extension ${extension} is disabled.`
+          )
+        );
+      }
+    });
+
+    it('default should block RSS and Atom content types without file extension', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+        },
+      });
+      const xmlContent = Buffer.from('<rss version="2.0"></rss>').toString('base64');
+      const contentTypes = [
+        { contentType: 'application/rss+xml', extension: 'rss+xml' },
+        { contentType: 'application/rss+xml;charset=utf-8', extension: 'rss+xml' },
+        { contentType: 'APPLICATION/RSS+XML', extension: 'RSS+XML' },
+        { contentType: 'application/atom+xml', extension: 'atom+xml' },
+        { contentType: 'application/atom+xml; charset=utf-8', extension: 'atom+xml' },
+        { contentType: 'application/Atom+Xml', extension: 'Atom+Xml' },
+      ];
+      for (const { contentType, extension } of contentTypes) {
+        await expectAsync(
+          request({
+            method: 'POST',
+            url: 'http://localhost:8378/1/files/feed',
+            body: JSON.stringify({
+              _ApplicationId: 'test',
+              _JavaScriptKey: 'test',
+              _ContentType: contentType,
+              base64: xmlContent,
+            }),
+          }).catch(e => {
+            throw new Error(e.data.error);
+          })
+        ).toBeRejectedWith(
+          new Parse.Error(
+            Parse.Error.FILE_SAVE_ERROR,
+            `File upload of extension ${extension} is disabled.`
+          )
+        );
+      }
+    });
+
+    it('allowlist should block XML file types that are not listed', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+          fileExtensions: ['png', 'jpg'],
+        },
+      });
+      const xmlContent = Buffer.from('<playlist version="1"></playlist>').toString('base64');
+      const files = [
+        { filename: 'payload.xspf', contentType: 'application/xspf+xml', extension: 'xspf' },
+        {
+          filename: 'payload.kml',
+          contentType: 'application/vnd.google-earth.kml+xml',
+          extension: 'kml',
+        },
+        { filename: 'payload.gpx', contentType: 'application/gpx+xml', extension: 'gpx' },
+        { filename: 'payload.rss', contentType: 'application/rss+xml', extension: 'rss' },
+        { filename: 'payload.atom', contentType: 'application/atom+xml', extension: 'atom' },
+        { filename: 'payload', contentType: 'application/xspf+xml', extension: 'xspf+xml' },
+      ];
+      for (const { filename, contentType, extension } of files) {
+        await expectAsync(
+          request({
+            method: 'POST',
+            url: `http://localhost:8378/1/files/${filename}`,
+            body: JSON.stringify({
+              _ApplicationId: 'test',
+              _JavaScriptKey: 'test',
+              _ContentType: contentType,
+              base64: xmlContent,
+            }),
+          }).catch(e => {
+            throw new Error(e.data.error);
+          })
+        ).toBeRejectedWith(
+          new Parse.Error(
+            Parse.Error.FILE_SAVE_ERROR,
+            `File upload of extension ${extension} is disabled.`
+          )
+        );
+      }
+    });
+
     it('default should block non-standard extension variants preserving a dangerous content type', async () => {
       await reconfigureServer({
         fileUpload: {
