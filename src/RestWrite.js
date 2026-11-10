@@ -911,8 +911,13 @@ RestWrite.prototype.transformUser = async function () {
 
       if (this.query) {
         this.storage['clearSessions'] = true;
-        // Generate a new session only if the user requested
-        if (!this.auth.isMaster && !this.auth.isMaintenance) {
+        // Generate a new session only for the user's own password change
+        if (
+          !this.auth.isMaster &&
+          !this.auth.isMaintenance &&
+          this.auth.user &&
+          this.auth.user.id === this.query.objectId
+        ) {
           this.storage['generateNewSession'] = true;
         }
       }
