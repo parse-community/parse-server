@@ -7,6 +7,7 @@
  * @param {String} options.config.auth-server-url - The Keycloak authentication server URL.
  * @param {String} options.config.realm - The Keycloak realm name.
  * @param {String} options.config.client-id - The Keycloak client ID.
+ * @param {String|String[]} [options.audience] - The expected access token audience (optional). If set, an access token whose `aud` claim contains none of these values is rejected.
  *
  * @param {Object} authData - The authentication data provided by the client.
  * @param {String} authData.access_token - The Keycloak access token retrieved during client authentication.
@@ -51,8 +52,21 @@
  * }
  * ```
  *
+ * ## Audience Validation
+ * Keycloak does not add the client that a token is issued to into the access token audience by default, so Parse Server validates the `aud` claim only if `audience` is set. To use it, add an audience mapper in Keycloak so that the access tokens for Parse Server contain the configured value:
+ * ```javascript
+ * {
+ *   "auth": {
+ *     "keycloak": {
+ *       "config": require('./auth/keycloak.json'),
+ *       "audience": "parse-server"
+ *     }
+ *   }
+ * }
+ * ```
+ *
  * ## Notes
- * - Parse Server validates the provided `authData` by making a `userinfo` call to Keycloak and ensures the attributes match those returned by Keycloak.
+ * - Parse Server verifies the access token locally with the public keys of the realm. The token must be issued by the realm (`iss`), to the configured `client-id` (`azp`), and for the user `id` (`sub`); `roles` and `groups` must match the token.
  *
  * ## Keycloak Configuration
  * To configure Keycloak, copy the JSON configuration file generated from Keycloak's setup guide:
@@ -64,6 +78,7 @@
  * For more information on Keycloak authentication, see:
  * - [Securing Apps Documentation](https://www.keycloak.org/docs/latest/securing_apps/)
  * - [Server Administration Documentation](https://www.keycloak.org/docs/latest/server_admin/)
+ * - [Audience Support](https://www.keycloak.org/docs/latest/server_admin/#audience-support)
  */
 
 const { Parse } = require('parse/node');
@@ -106,7 +121,7 @@ const getKeycloakKeyByKeyId = async (keyId, jwksUri, cacheMaxEntries, cacheMaxAg
 
 const verifyAccessToken = async (
   { access_token, id, roles, groups } = {},
-  { config, cacheMaxEntries, cacheMaxAge } = {}
+  { config, cacheMaxEntries, cacheMaxAge, audience } = {}
 ) => {
   if (!(access_token && id)) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Missing access token and/or User id');
@@ -118,6 +133,13 @@ const verifyAccessToken = async (
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
       'Keycloak auth is not configured. Missing client-id.'
+    );
+  }
+  const audiences = audience == null ? undefined : [].concat(audience);
+  if (audiences && !(audiences.length && audiences.every(a => a && typeof a === 'string'))) {
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      'Keycloak auth is not configured. Invalid audience.'
     );
   }
 
@@ -137,6 +159,7 @@ const verifyAccessToken = async (
   try {
     jwtClaims = jwt.verify(access_token, signingKey, {
       algorithms: ['RS256'],
+      audience: audiences,
     });
   } catch (exception) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `${exception.message}`);
