@@ -4327,22 +4327,22 @@ describe('Vulnerabilities', () => {
     // Unit tests: matchesQuery receives the raw where clause (not {className, where})
     // just as _matchesSubscription passes subscription.query (the where clause)
     describe('matchesQuery with type-confused operators', () => {
-      it('$in with object instead of array throws', () => {
+      it('$in with object instead of array does not match', () => {
         const object = { className: 'TestObject', objectId: 'obj1', name: 'abc' };
         const where = { name: { $in: { x: 1 } } };
-        expect(() => matchesQuery(object, where)).toThrow();
+        expect(matchesQuery(object, where)).toBe(false);
       });
 
-      it('$nin with object instead of array throws', () => {
+      it('$nin with object instead of array does not match', () => {
         const object = { className: 'TestObject', objectId: 'obj1', name: 'abc' };
         const where = { name: { $nin: { x: 1 } } };
-        expect(() => matchesQuery(object, where)).toThrow();
+        expect(matchesQuery(object, where)).toBe(false);
       });
 
-      it('$containedBy with object instead of array throws', () => {
+      it('$containedBy with object instead of array does not match', () => {
         const object = { className: 'TestObject', objectId: 'obj1', name: ['abc'] };
         const where = { name: { $containedBy: { x: 1 } } };
-        expect(() => matchesQuery(object, where)).toThrow();
+        expect(matchesQuery(object, where)).toBe(false);
       });
 
       it('$containedBy with missing field throws', () => {
@@ -4351,10 +4351,10 @@ describe('Vulnerabilities', () => {
         expect(() => matchesQuery(object, where)).toThrow();
       });
 
-      it('$all with object field value throws', () => {
+      it('$all with object field value does not match', () => {
         const object = { className: 'TestObject', objectId: 'obj1', name: { x: 1 } };
         const where = { name: { $all: ['abc'] } };
-        expect(() => matchesQuery(object, where)).toThrow();
+        expect(matchesQuery(object, where)).toBe(false);
       });
 
       it('$in with valid array does not throw', () => {
@@ -14251,6 +14251,145 @@ describe('Vulnerabilities', () => {
 
       expect(response.status).toBe(200);
       expect(response.data.objectId).toBe(victim.id);
+    });
+  });
+
+  describe('(GHSA-f6wh-8wcf-xfv8) LiveQuery matching of a large constraint against a large field value', () => {
+    const { matchesQuery } = require('../lib/LiveQuery/QueryTools');
+    const { sleep } = require('../lib/TestUtils');
+    const strings = (prefix, length) => Array.from({ length }, (_, i) => `${prefix}${i}`);
+    const pointer = objectId => ({ __type: 'Pointer', className: 'Item', objectId });
+    const timedMatch = (object, query) => {
+      const start = Date.now();
+      const matches = matchesQuery(object, query);
+      return { matches, elapsed: Date.now() - start };
+    };
+
+    it('matches a large $in constraint against a large array field in time', () => {
+      const object = { tags: strings('s', 50000) };
+      const matching = timedMatch(object, { tags: { $in: [...strings('k', 49999), 's49999'] } });
+      const other = timedMatch(object, { tags: { $in: strings('k', 50000) } });
+      expect(matching.matches).toBe(true);
+      expect(other.matches).toBe(false);
+      expect(matching.elapsed + other.elapsed).toBeLessThan(1000);
+    });
+
+    it('matches a large $nin constraint against a large array field in time', () => {
+      const object = { tags: strings('s', 50000) };
+      const matching = timedMatch(object, { tags: { $nin: strings('k', 50000) } });
+      const other = timedMatch(object, { tags: { $nin: [...strings('k', 49999), 's49999'] } });
+      expect(matching.matches).toBe(true);
+      expect(other.matches).toBe(false);
+      expect(matching.elapsed + other.elapsed).toBeLessThan(1000);
+    });
+
+    it('matches a large $all constraint against a large array field in time', () => {
+      const object = { tags: strings('s', 50000) };
+      const matching = timedMatch(object, { tags: { $all: Array(50000).fill('s49999') } });
+      const other = timedMatch(object, { tags: { $all: [...Array(49999).fill('s49999'), 'k0'] } });
+      expect(matching.matches).toBe(true);
+      expect(other.matches).toBe(false);
+      expect(matching.elapsed + other.elapsed).toBeLessThan(1000);
+    });
+
+    it('matches a large $containedBy constraint against a large array field in time', () => {
+      const object = { tags: strings('s', 40000) };
+      const matching = timedMatch(object, {
+        tags: { $containedBy: [...strings('k', 40000), ...strings('s', 40000)] },
+      });
+      const other = timedMatch(object, {
+        tags: { $containedBy: [...strings('k', 40000), ...strings('s', 39999)] },
+      });
+      expect(matching.matches).toBe(true);
+      expect(other.matches).toBe(false);
+      expect(matching.elapsed + other.elapsed).toBeLessThan(1000);
+    });
+
+    it('matches a large $in constraint of pointers against a large array field of pointers in time', () => {
+      const object = { items: strings('s', 15000).map(pointer) };
+      const matching = timedMatch(object, {
+        items: { $in: [...strings('k', 14999).map(pointer), pointer('s14999')] },
+      });
+      const other = timedMatch(object, { items: { $in: strings('k', 15000).map(pointer) } });
+      expect(matching.matches).toBe(true);
+      expect(other.matches).toBe(false);
+      expect(matching.elapsed + other.elapsed).toBeLessThan(1000);
+    });
+
+    it('does not match a long string $all constraint against a long string field in time', () => {
+      const object = { title: 'b'.repeat(399999) + 'a' };
+      const { matches, elapsed } = timedMatch(object, { title: { $all: 'a'.repeat(400000) } });
+      expect(matches).toBe(false);
+      expect(elapsed).toBeLessThan(1000);
+    });
+
+    for (const [operator, value] of [
+      ['$in', 'b'],
+      ['$nin', 'x'],
+      ['$all', ['a', 'b', 'c']],
+      ['$containedBy', ['a', 'b']],
+    ]) {
+      it(`does not match a ${operator} constraint that is a string`, () => {
+        expect(matchesQuery({ name: value }, { name: { [operator]: 'abc' } })).toBe(false);
+      });
+    }
+
+    it('matches a $all constraint against a string field only if every value equals the field value', () => {
+      expect(matchesQuery({ title: 'hello world' }, { title: { $all: ['hello'] } })).toBe(false);
+      expect(matchesQuery({ title: 'hello' }, { title: { $all: ['hello'] } })).toBe(true);
+    });
+
+    describe('LiveQuery', () => {
+      beforeEach(async () => {
+        Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
+        await reconfigureServer({
+          liveQuery: { classNames: ['Item'] },
+          startLiveQueryServer: true,
+          verbose: false,
+          silent: true,
+        });
+      });
+
+      afterEach(async () => {
+        const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+        if (client) {
+          await client.close();
+        }
+      });
+
+      async function subscribe(query) {
+        const subscription = await query.subscribe();
+        await new Promise(resolve => subscription.on('open', resolve));
+        return subscription;
+      }
+
+      it('delivers an event for a large $in constraint and a large array field in time', async () => {
+        const subscription = await subscribe(
+          new Parse.Query('Item').containedIn('tags', [...strings('k', 59999), 's59999'])
+        );
+        const created = new Promise(resolve => subscription.on('create', resolve));
+        const start = Date.now();
+        await new Parse.Object('Item').save({ tags: strings('s', 60000) });
+        const object = await created;
+        expect(Date.now() - start).toBeLessThan(2000);
+        expect(object.get('tags').length).toBe(60000);
+      });
+
+      it('does not deliver an event for a string $all constraint and delivers other events in time', async () => {
+        const stringConstraint = await subscribe(
+          new Parse.Query('Item').containsAll('title', 'a'.repeat(400000))
+        );
+        const other = await subscribe(new Parse.Query('Item').exists('title'));
+        const received = [];
+        stringConstraint.on('create', object => received.push(object));
+        const created = new Promise(resolve => other.on('create', resolve));
+        const start = Date.now();
+        await new Parse.Object('Item').save({ title: 'b'.repeat(399999) + 'a' });
+        await created;
+        expect(Date.now() - start).toBeLessThan(2000);
+        await sleep(500);
+        expect(received.length).toBe(0);
+      });
     });
   });
 });

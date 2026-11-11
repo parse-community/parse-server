@@ -103,22 +103,40 @@ function queryHash(query) {
   return query.className + ':' + canonicalize(query.where || {}, false);
 }
 
+// Lookup index of each list, built once per list
+var containsIndexes = new WeakMap();
+
+function getContainsIndex(haystack: Array) {
+  let index = containsIndexes.get(haystack);
+  if (!index) {
+    // Values, and object IDs by class name for pointer comparison
+    index = { values: new Set(haystack), pointers: new Map() };
+    for (const value of haystack) {
+      if (value === null || value === undefined) {
+        continue;
+      }
+      let objectIds = index.pointers.get(value.className);
+      if (!objectIds) {
+        objectIds = new Set();
+        index.pointers.set(value.className, objectIds);
+      }
+      objectIds.add(value.objectId);
+    }
+    containsIndexes.set(haystack, index);
+  }
+  return index;
+}
+
 /**
  * contains -- Determines if an object is contained in a list with special handling for Parse pointers.
  */
 function contains(haystack: Array, needle: any): boolean {
+  const index = getContainsIndex(haystack);
   if (needle && needle.__type && needle.__type === 'Pointer') {
-    for (const i in haystack) {
-      const ptr = haystack[i];
-      if (typeof ptr === 'string' && ptr === needle.objectId) {
-        return true;
-      }
-      if (ptr.className === needle.className && ptr.objectId === needle.objectId) {
-        return true;
-      }
-    }
-
-    return false;
+    return (
+      (typeof needle.objectId === 'string' && index.values.has(needle.objectId)) ||
+      !!index.pointers.get(needle.className)?.has(needle.objectId)
+    );
   }
 
   if (Array.isArray(needle)) {
@@ -129,7 +147,7 @@ function contains(haystack: Array, needle: any): boolean {
     }
   }
 
-  return haystack.indexOf(needle) > -1;
+  return index.values.has(needle);
 }
 /**
  * matchesQuery -- Determines if an object would be returned by a Parse Query
@@ -281,25 +299,28 @@ function matchesKeyConstraints(object, key, constraints) {
         }
         break;
       case '$in':
-        if (!contains(compareTo, object[key])) {
+        if (!Array.isArray(compareTo) || !contains(compareTo, object[key])) {
           return false;
         }
         break;
       case '$nin':
-        if (contains(compareTo, object[key])) {
+        if (!Array.isArray(compareTo) || contains(compareTo, object[key])) {
           return false;
         }
         break;
-      case '$all':
-        if (!object[key]) {
+      case '$all': {
+        if (!Array.isArray(compareTo) || !object[key]) {
           return false;
         }
+        // A field that is not an array matches only values equal to it
+        const values = new Set(Array.isArray(object[key]) ? object[key] : [object[key]]);
         for (i = 0; i < compareTo.length; i++) {
-          if (object[key].indexOf(compareTo[i]) < 0) {
+          if (!values.has(compareTo[i])) {
             return false;
           }
         }
         break;
+      }
       case '$exists': {
         const propertyExists = typeof object[key] !== 'undefined';
         const existenceIsRequired = constraints['$exists'];
@@ -367,6 +388,9 @@ function matchesKeyConstraints(object, key, constraints) {
           object[key].longitude < northEast.longitude
         );
       case '$containedBy': {
+        if (!Array.isArray(compareTo)) {
+          return false;
+        }
         for (const value of object[key]) {
           if (!contains(compareTo, value)) {
             return false;
