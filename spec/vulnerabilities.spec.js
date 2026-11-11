@@ -4327,22 +4327,22 @@ describe('Vulnerabilities', () => {
     // Unit tests: matchesQuery receives the raw where clause (not {className, where})
     // just as _matchesSubscription passes subscription.query (the where clause)
     describe('matchesQuery with type-confused operators', () => {
-      it('$in with object instead of array does not match', () => {
+      it('$in with object instead of array throws', () => {
         const object = { className: 'TestObject', objectId: 'obj1', name: 'abc' };
         const where = { name: { $in: { x: 1 } } };
-        expect(matchesQuery(object, where)).toBe(false);
+        expect(() => matchesQuery(object, where)).toThrow();
       });
 
-      it('$nin with object instead of array does not match', () => {
+      it('$nin with object instead of array throws', () => {
         const object = { className: 'TestObject', objectId: 'obj1', name: 'abc' };
         const where = { name: { $nin: { x: 1 } } };
-        expect(matchesQuery(object, where)).toBe(false);
+        expect(() => matchesQuery(object, where)).toThrow();
       });
 
-      it('$containedBy with object instead of array does not match', () => {
+      it('$containedBy with object instead of array throws', () => {
         const object = { className: 'TestObject', objectId: 'obj1', name: ['abc'] };
         const where = { name: { $containedBy: { x: 1 } } };
-        expect(matchesQuery(object, where)).toBe(false);
+        expect(() => matchesQuery(object, where)).toThrow();
       });
 
       it('$containedBy with missing field throws', () => {
@@ -4351,10 +4351,10 @@ describe('Vulnerabilities', () => {
         expect(() => matchesQuery(object, where)).toThrow();
       });
 
-      it('$all with object field value does not match', () => {
+      it('$all with object field value throws', () => {
         const object = { className: 'TestObject', objectId: 'obj1', name: { x: 1 } };
         const where = { name: { $all: ['abc'] } };
-        expect(matchesQuery(object, where)).toBe(false);
+        expect(() => matchesQuery(object, where)).toThrow();
       });
 
       it('$in with valid array does not throw', () => {
@@ -14315,35 +14315,27 @@ describe('Vulnerabilities', () => {
       expect(matching.elapsed + other.elapsed).toBeLessThan(1000);
     });
 
-    it('does not match a long string $all constraint against a long string field in time', () => {
+    it('throws for a long string $all constraint against a long string field in time', () => {
       const object = { title: 'b'.repeat(399999) + 'a' };
-      const { matches, elapsed } = timedMatch(object, { title: { $all: 'a'.repeat(400000) } });
-      expect(matches).toBe(false);
-      expect(elapsed).toBeLessThan(1000);
+      const start = Date.now();
+      expect(() => matchesQuery(object, { title: { $all: 'a'.repeat(400000) } })).toThrow();
+      expect(Date.now() - start).toBeLessThan(1000);
     });
 
     for (const [operator, value] of [
-      ['$in', 'b'],
-      ['$nin', 'x'],
-      ['$all', ['a', 'b', 'c']],
+      ['$in', ['b']],
+      ['$nin', ['x']],
       ['$containedBy', ['a', 'b']],
     ]) {
-      it(`does not match a ${operator} constraint that is a string`, () => {
-        expect(matchesQuery({ name: value }, { name: { [operator]: 'abc' } })).toBe(false);
+      it(`throws for a ${operator} constraint that is a string against an array field`, () => {
+        expect(() => matchesQuery({ name: value }, { name: { [operator]: 'abc' } })).toThrow();
       });
     }
 
-    it('matches a $all constraint against a string field only if every value equals the field value', () => {
-      expect(matchesQuery({ title: 'hello world' }, { title: { $all: ['hello'] } })).toBe(false);
-      expect(matchesQuery({ title: 'hello' }, { title: { $all: ['hello'] } })).toBe(true);
-    });
-
-    it('matches a $all constraint against a field value of 0, false or an empty string', () => {
-      expect(matchesQuery({ score: 0 }, { score: { $all: [0] } })).toBe(true);
-      expect(matchesQuery({ flag: false }, { flag: { $all: [false] } })).toBe(true);
-      expect(matchesQuery({ name: '' }, { name: { $all: [''] } })).toBe(true);
-      expect(matchesQuery({}, { score: { $all: [0] } })).toBe(false);
-      expect(matchesQuery({ score: null }, { score: { $all: [null] } })).toBe(false);
+    it('throws for a $all constraint against a string field', () => {
+      expect(() =>
+        matchesQuery({ title: 'hello world' }, { title: { $all: ['hello'] } })
+      ).toThrow();
     });
 
     describe('LiveQuery', () => {

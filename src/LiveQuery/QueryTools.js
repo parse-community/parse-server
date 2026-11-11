@@ -103,35 +103,52 @@ function queryHash(query) {
   return query.className + ':' + canonicalize(query.where || {}, false);
 }
 
-// Lookup index of each list, built once per list; subscription lists do not change after creation
-var containsIndexes = new WeakMap();
-
-function getContainsIndex(haystack: Array) {
-  let index = containsIndexes.get(haystack);
-  if (!index) {
-    // Values, and object IDs by class name for pointer comparison
-    index = { values: new Set(haystack), pointers: new Map() };
-    for (const value of haystack) {
-      if (value === null || value === undefined) {
-        continue;
-      }
-      let objectIds = index.pointers.get(value.className);
-      if (!objectIds) {
-        objectIds = new Set();
-        index.pointers.set(value.className, objectIds);
-      }
-      objectIds.add(value.objectId);
-    }
-    containsIndexes.set(haystack, index);
-  }
-  return index;
-}
-
 /**
  * contains -- Determines if an object is contained in a list with special handling for Parse pointers.
  */
 function contains(haystack: Array, needle: any): boolean {
-  const index = getContainsIndex(haystack);
+  if (needle && needle.__type && needle.__type === 'Pointer') {
+    for (const i in haystack) {
+      const ptr = haystack[i];
+      if (typeof ptr === 'string' && ptr === needle.objectId) {
+        return true;
+      }
+      if (ptr.className === needle.className && ptr.objectId === needle.objectId) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  if (Array.isArray(needle) && needle.length > 0) {
+    // Index the list once for all values of an array field
+    return isIndexed(indexList(haystack), needle);
+  }
+
+  return haystack.indexOf(needle) > -1;
+}
+
+// Values and pointer object IDs of a list; throws for a list that is not an array
+function indexList(list: Array) {
+  const index = { values: new Set(), pointers: new Map() };
+  list.forEach(value => {
+    index.values.add(value);
+    if (value === null || value === undefined) {
+      return;
+    }
+    let objectIds = index.pointers.get(value.className);
+    if (!objectIds) {
+      objectIds = new Set();
+      index.pointers.set(value.className, objectIds);
+    }
+    objectIds.add(value.objectId);
+  });
+  return index;
+}
+
+// Same as contains, with a list index
+function isIndexed(index: any, needle: any): boolean {
   if (needle && needle.__type && needle.__type === 'Pointer') {
     return (
       (typeof needle.objectId === 'string' && index.values.has(needle.objectId)) ||
@@ -141,7 +158,7 @@ function contains(haystack: Array, needle: any): boolean {
 
   if (Array.isArray(needle)) {
     for (const need of needle) {
-      if (contains(haystack, need)) {
+      if (isIndexed(index, need)) {
         return true;
       }
     }
@@ -299,21 +316,22 @@ function matchesKeyConstraints(object, key, constraints) {
         }
         break;
       case '$in':
-        if (!Array.isArray(compareTo) || !contains(compareTo, object[key])) {
+        if (!contains(compareTo, object[key])) {
           return false;
         }
         break;
       case '$nin':
-        if (!Array.isArray(compareTo) || contains(compareTo, object[key])) {
+        if (contains(compareTo, object[key])) {
           return false;
         }
         break;
       case '$all': {
-        if (!Array.isArray(compareTo) || object[key] === undefined || object[key] === null) {
+        if (!object[key]) {
           return false;
         }
-        // A field that is not an array matches only values equal to it
-        const values = new Set(Array.isArray(object[key]) ? object[key] : [object[key]]);
+        // Throws for a field that is not an array
+        const values = new Set();
+        object[key].forEach(value => values.add(value));
         for (i = 0; i < compareTo.length; i++) {
           if (!values.has(compareTo[i])) {
             return false;
@@ -388,11 +406,10 @@ function matchesKeyConstraints(object, key, constraints) {
           object[key].longitude < northEast.longitude
         );
       case '$containedBy': {
-        if (!Array.isArray(compareTo)) {
-          return false;
-        }
+        let index;
         for (const value of object[key]) {
-          if (!contains(compareTo, value)) {
+          index = index || indexList(compareTo);
+          if (!isIndexed(index, value)) {
             return false;
           }
         }
