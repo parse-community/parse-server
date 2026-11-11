@@ -1,3 +1,10 @@
+# [9.12.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.12.0-alpha.1...9.12.0-alpha.2) (2026-11-11)
+
+
+### Bug Fixes
+
+* LiveQuery subscription with a large list constraint can block the event loop ([GHSA-f6wh-8wcf-xfv8](https://github.com/parse-community/parse-server/security/advisories/GHSA-f6wh-8wcf-xfv8)) ([#10883](https://github.com/parse-community/parse-server/issues/10883)) ([5701d66](https://github.com/parse-community/parse-server/commit/5701d66ba77ed8f50c016ba939b365f71f6f745d))
+
 # [9.12.0-alpha.1](https://github.com/parse-community/parse-server/compare/9.11.1-alpha.6...9.12.0-alpha.1) (2026-11-10)
 
 
