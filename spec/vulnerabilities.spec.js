@@ -14256,7 +14256,6 @@ describe('Vulnerabilities', () => {
 
   describe('(GHSA-f6wh-8wcf-xfv8) LiveQuery matching of a large constraint against a large field value', () => {
     const { matchesQuery } = require('../lib/LiveQuery/QueryTools');
-    const { sleep } = require('../lib/TestUtils');
     const strings = (prefix, length) => Array.from({ length }, (_, i) => `${prefix}${i}`);
     const pointer = objectId => ({ __type: 'Pointer', className: 'Item', objectId });
     const timedMatch = (object, query) => {
@@ -14339,6 +14338,14 @@ describe('Vulnerabilities', () => {
       expect(matchesQuery({ title: 'hello' }, { title: { $all: ['hello'] } })).toBe(true);
     });
 
+    it('matches a $all constraint against a field value of 0, false or an empty string', () => {
+      expect(matchesQuery({ score: 0 }, { score: { $all: [0] } })).toBe(true);
+      expect(matchesQuery({ flag: false }, { flag: { $all: [false] } })).toBe(true);
+      expect(matchesQuery({ name: '' }, { name: { $all: [''] } })).toBe(true);
+      expect(matchesQuery({}, { score: { $all: [0] } })).toBe(false);
+      expect(matchesQuery({ score: null }, { score: { $all: [null] } })).toBe(false);
+    });
+
     describe('LiveQuery', () => {
       beforeEach(async () => {
         Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
@@ -14382,12 +14389,24 @@ describe('Vulnerabilities', () => {
         const other = await subscribe(new Parse.Query('Item').exists('title'));
         const received = [];
         stringConstraint.on('create', object => received.push(object));
-        const created = new Promise(resolve => other.on('create', resolve));
+        const createdWithTitle = title =>
+          new Promise(resolve =>
+            other.on('create', object => {
+              if (object.get('title') === title) {
+                resolve();
+              }
+            })
+          );
+        const title = 'b'.repeat(399999) + 'a';
+        const created = createdWithTitle(title);
         const start = Date.now();
-        await new Parse.Object('Item').save({ title: 'b'.repeat(399999) + 'a' });
+        await new Parse.Object('Item').save({ title });
         await created;
         expect(Date.now() - start).toBeLessThan(2000);
-        await sleep(500);
+        // Events of one client arrive in order, so the string constraint's event would come first
+        const sentinelCreated = createdWithTitle('sentinel');
+        await new Parse.Object('Item').save({ title: 'sentinel' });
+        await sentinelCreated;
         expect(received.length).toBe(0);
       });
     });

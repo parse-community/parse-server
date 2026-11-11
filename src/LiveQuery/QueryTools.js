@@ -103,7 +103,7 @@ function queryHash(query) {
   return query.className + ':' + canonicalize(query.where || {}, false);
 }
 
-// Lookup index of each list, built once per list
+// Lookup index of each list, built once per list; subscription lists do not change after creation
 var containsIndexes = new WeakMap();
 
 function getContainsIndex(haystack: Array) {
@@ -309,7 +309,7 @@ function matchesKeyConstraints(object, key, constraints) {
         }
         break;
       case '$all': {
-        if (!Array.isArray(compareTo) || !object[key]) {
+        if (!Array.isArray(compareTo) || object[key] === undefined || object[key] === null) {
           return false;
         }
         // A field that is not an array matches only values equal to it
