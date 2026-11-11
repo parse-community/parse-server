@@ -1433,6 +1433,20 @@ RestWrite.prototype.handleInstallation = function () {
     return;
   }
 
+  // installationId is the row's primary identity (used by the SDK auth header to bind a
+  // client request to its row), so it may not be cleared via null, '' or { __op: 'Delete' }.
+  // The value is dropped here so the lookup below does not use it. On create, the "must
+  // specify ID" guard below then rejects the write unless another ID is supplied. On
+  // update, the rejection is deferred to the sanity checks so that it follows the
+  // caller's write permission check, like the guard against changing installationId.
+  const clearingInstallationId =
+    this.data.installationId === null ||
+    this.data.installationId === '' ||
+    (typeof this.data.installationId === 'object' && this.data.installationId.__op === 'Delete');
+  if (clearingInstallationId) {
+    delete this.data.installationId;
+  }
+
   // The deduplication below embeds these client-supplied values directly into database
   // queries that delete or update rows with master privileges, and it runs before
   // `validateSchema`, so their types must be enforced here: a non-string value would
@@ -1495,7 +1509,13 @@ RestWrite.prototype.handleInstallation = function () {
   }
 
   // Updating _Installation but not updating anything critical
-  if (this.query && !this.data.deviceToken && !installationId && !this.data.deviceType) {
+  if (
+    this.query &&
+    !this.data.deviceToken &&
+    !installationId &&
+    !this.data.deviceType &&
+    !clearingInstallationId
+  ) {
     return;
   }
 
@@ -1577,6 +1597,8 @@ RestWrite.prototype.handleInstallation = function () {
         let error;
         if (!objectIdMatch) {
           error = new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found for update.');
+        } else if (clearingInstallationId) {
+          error = new Parse.Error(136, 'installationId may not be changed or cleared in this operation');
         } else if (
           this.data.installationId &&
           objectIdMatch.installationId &&
