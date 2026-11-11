@@ -1037,6 +1037,12 @@ export class PostgresStorageAdapter implements StorageAdapter {
         deletedIndexes.push(name);
         delete existingIndexes[name];
       } else {
+        if (Object.prototype.hasOwnProperty.call(field, '__options')) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_QUERY,
+            `Index ${name} has options, which are not supported by the Postgres storage adapter.`
+          );
+        }
         Object.keys(field).forEach(key => {
           if (
             !this.disableIndexFieldValidation &&

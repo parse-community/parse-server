@@ -589,6 +589,115 @@ describe('DefinedSchemas', () => {
       }
       expect(unprotectedIndexes).toEqual([]);
     });
+
+    describe('index options', () => {
+      const fields = {
+        code: { type: 'String' },
+        group: { type: 'String' },
+        expiresAt: { type: 'Date' },
+      };
+      const optionIndexes = () => ({
+        ttl: { expiresAt: 1, __options: { expireAfterSeconds: 3600 } },
+        group_code_unique: {
+          group: 1,
+          code: 1,
+          __options: { unique: true, partialFilterExpression: { code: { $exists: true } } },
+        },
+        code_sparse: { code: 1, __options: { sparse: true, unique: false } },
+      });
+      const getMongoIndex = async (adapter, name) =>
+        (await adapter.getIndexes('Test')).find(index => index.name === name);
+      // Simulates a server start, which stores the indexes of the database in the schema
+      const syncIndexesFromDatabase = async config => {
+        await config.database.adapter.updateSchemaWithIndexes();
+        await config.schemaCache.clear();
+      };
+
+      it_only_db('mongo')('should create indexes with options', async () => {
+        const server = await reconfigureServer();
+        const adapter = Config.get(server.config.appId).database.adapter;
+        const indexes = optionIndexes();
+        const schemas = { definitions: [{ className: 'Test', fields, indexes }] };
+        await new DefinedSchemas(schemas, server.config).execute();
+
+        const schema = await new Parse.Schema('Test').get();
+        cleanUpIndexes(schema);
+        expect(schema.indexes).toEqual(indexes);
+
+        expect((await getMongoIndex(adapter, 'ttl')).expireAfterSeconds).toBe(3600);
+        const uniqueIndex = await getMongoIndex(adapter, 'group_code_unique');
+        expect(uniqueIndex.key).toEqual({ group: 1, code: 1 });
+        expect(uniqueIndex.unique).toBe(true);
+        expect(uniqueIndex.partialFilterExpression).toEqual({ code: { $exists: true } });
+        const sparseIndex = await getMongoIndex(adapter, 'code_sparse');
+        expect(sparseIndex.sparse).toBe(true);
+        expect(sparseIndex.unique).toBeUndefined();
+      });
+
+      it_only_db('mongo')('should not re create unchanged indexes with options on server start', async () => {
+        const server = await reconfigureServer();
+        const config = Config.get(server.config.appId);
+        const schemas = { definitions: [{ className: 'Test', fields, indexes: optionIndexes() }] };
+        await new DefinedSchemas(schemas, server.config).execute();
+        await syncIndexesFromDatabase(config);
+
+        const schema = await new Parse.Schema('Test').get();
+        cleanUpIndexes(schema);
+        expect(schema.indexes).toEqual({
+          ...optionIndexes(),
+          // The database does not store `unique: false`
+          code_sparse: { code: 1, __options: { sparse: true } },
+        });
+
+        const dropIndex = spyOn(config.database.adapter, 'dropIndex').and.callThrough();
+        await new DefinedSchemas(schemas, server.config).execute();
+        await syncIndexesFromDatabase(config);
+        await new DefinedSchemas(schemas, server.config).execute();
+        expect(dropIndex).not.toHaveBeenCalled();
+      });
+
+      it_only_db('mongo')('should re create an index when its options change', async () => {
+        const server = await reconfigureServer();
+        const config = Config.get(server.config.appId);
+        const adapter = config.database.adapter;
+        const indexes = optionIndexes();
+        const schemas = { definitions: [{ className: 'Test', fields, indexes }] };
+        await new DefinedSchemas(schemas, server.config).execute();
+        await syncIndexesFromDatabase(config);
+
+        indexes.ttl = { expiresAt: 1, __options: { expireAfterSeconds: 60 } };
+        indexes.group_code_unique = { group: 1, code: 1, __options: {} };
+        await new DefinedSchemas(schemas, server.config).execute();
+
+        expect((await getMongoIndex(adapter, 'ttl')).expireAfterSeconds).toBe(60);
+        const groupCodeIndex = await getMongoIndex(adapter, 'group_code_unique');
+        expect(groupCodeIndex.unique).toBeUndefined();
+        expect(groupCodeIndex.partialFilterExpression).toBeUndefined();
+      });
+
+      it_only_db('mongo')('should keep the database options of an index defined without options', async () => {
+        const server = await reconfigureServer();
+        const config = Config.get(server.config.appId);
+        const adapter = config.database.adapter;
+        const schemas = {
+          definitions: [{ className: 'Test', fields, indexes: { code_1: { code: 1 } } }],
+        };
+        await new DefinedSchemas(schemas, server.config).execute();
+        // An index created with options outside of the schema, for example with the MongoDB shell
+        await adapter.dropIndex('Test', 'code_1');
+        await adapter.createIndexes('Test', [{ key: { code: 1 }, name: 'code_1', unique: true }]);
+        await syncIndexesFromDatabase(config);
+
+        const schema = await new Parse.Schema('Test').get();
+        cleanUpIndexes(schema);
+        expect(schema.indexes).toEqual({ code_1: { code: 1 } });
+
+        const dropIndex = spyOn(adapter, 'dropIndex').and.callThrough();
+        await new DefinedSchemas(schemas, server.config).execute();
+        expect(dropIndex).not.toHaveBeenCalled();
+        expect((await getMongoIndex(adapter, 'code_1')).unique).toBe(true);
+      });
+    });
   });
 
   describe('ClassLevelPermissions', () => {
