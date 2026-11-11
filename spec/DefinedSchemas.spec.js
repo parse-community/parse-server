@@ -589,6 +589,36 @@ describe('DefinedSchemas', () => {
       }
       expect(unprotectedIndexes).toEqual([]);
     });
+
+    it_only_db('mongo')('should not re create indexes on keys of an Object field on server start', async () => {
+      const server = await reconfigureServer();
+      const config = Config.get(server.config.appId);
+      const indexes = {
+        date_key: { group: 1, 'date.dueDate': 1 },
+        date_wildcard: { 'date.$**': 1 },
+      };
+      const schemas = {
+        definitions: [
+          {
+            className: 'Test',
+            fields: { group: { type: 'String' }, date: { type: 'Object' } },
+            indexes,
+          },
+        ],
+      };
+      await new DefinedSchemas(schemas, server.config).execute();
+      // Simulates a server start, which stores the indexes of the database in the schema
+      await config.database.adapter.updateSchemaWithIndexes();
+      await config.schemaCache.clear();
+
+      const schema = await new Parse.Schema('Test').get();
+      cleanUpIndexes(schema);
+      expect(schema.indexes).toEqual(indexes);
+
+      const dropIndex = spyOn(config.database.adapter, 'dropIndex').and.callThrough();
+      await new DefinedSchemas(schemas, server.config).execute();
+      expect(dropIndex).not.toHaveBeenCalled();
+    });
   });
 
   describe('ClassLevelPermissions', () => {
