@@ -121,15 +121,50 @@ function contains(haystack: Array, needle: any): boolean {
     return false;
   }
 
+  if (Array.isArray(needle) && needle.length > 0) {
+    // Index the list once for all values of an array field
+    return isIndexed(indexList(haystack), needle);
+  }
+
+  return haystack.indexOf(needle) > -1;
+}
+
+// Values and pointer object IDs of a list; throws for a list that is not an array
+function indexList(list: Array) {
+  const index = { values: new Set(), pointers: new Map() };
+  list.forEach(value => {
+    index.values.add(value);
+    if (value === null || value === undefined) {
+      return;
+    }
+    let objectIds = index.pointers.get(value.className);
+    if (!objectIds) {
+      objectIds = new Set();
+      index.pointers.set(value.className, objectIds);
+    }
+    objectIds.add(value.objectId);
+  });
+  return index;
+}
+
+// Same as contains, with a list index
+function isIndexed(index: any, needle: any): boolean {
+  if (needle && needle.__type && needle.__type === 'Pointer') {
+    return (
+      (typeof needle.objectId === 'string' && index.values.has(needle.objectId)) ||
+      !!index.pointers.get(needle.className)?.has(needle.objectId)
+    );
+  }
+
   if (Array.isArray(needle)) {
     for (const need of needle) {
-      if (contains(haystack, need)) {
+      if (isIndexed(index, need)) {
         return true;
       }
     }
   }
 
-  return haystack.indexOf(needle) > -1;
+  return index.values.has(needle);
 }
 /**
  * matchesQuery -- Determines if an object would be returned by a Parse Query
@@ -290,16 +325,20 @@ function matchesKeyConstraints(object, key, constraints) {
           return false;
         }
         break;
-      case '$all':
+      case '$all': {
         if (!object[key]) {
           return false;
         }
+        // Throws for a field that is not an array
+        const values = new Set();
+        object[key].forEach(value => values.add(value));
         for (i = 0; i < compareTo.length; i++) {
-          if (object[key].indexOf(compareTo[i]) < 0) {
+          if (!values.has(compareTo[i])) {
             return false;
           }
         }
         break;
+      }
       case '$exists': {
         const propertyExists = typeof object[key] !== 'undefined';
         const existenceIsRequired = constraints['$exists'];
@@ -367,8 +406,10 @@ function matchesKeyConstraints(object, key, constraints) {
           object[key].longitude < northEast.longitude
         );
       case '$containedBy': {
+        let index;
         for (const value of object[key]) {
-          if (!contains(compareTo, value)) {
+          index = index || indexList(compareTo);
+          if (!isIndexed(index, value)) {
             return false;
           }
         }
