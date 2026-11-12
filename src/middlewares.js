@@ -425,6 +425,22 @@ export function allowCrossDomain(appId) {
   };
 }
 
+/**
+ * body-parser silently skips a request whose socket is no longer readable when the parser runs,
+ * e.g. the client closed the connection while an async middleware before it was pending, which
+ * leaves `req.body` undefined. Such a request must not continue, otherwise a query sent as `POST`
+ * with `_method: 'GET'` in the body would be routed as the creation of an empty object.
+ */
+export function enforceParsedBody(req, res, next) {
+  const hasBody =
+    req.headers['transfer-encoding'] !== undefined || Number(req.headers['content-length']) > 0;
+  // Multipart bodies are intentionally not parsed by the JSON body parser
+  if (req.body === undefined && hasBody && !req.is('multipart/form-data')) {
+    return next(new Parse.Error(Parse.Error.INVALID_JSON, 'Request body could not be read.'));
+  }
+  next();
+}
+
 export function allowMethodOverride(req, res, next) {
   if (req.method === 'POST' && req.body?._method) {
     if (typeof req.body._method === 'string') {
