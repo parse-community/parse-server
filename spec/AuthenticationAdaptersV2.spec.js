@@ -1424,7 +1424,7 @@ describe('Auth Adapter features', () => {
         },
       },
       {
-        url: `https://www.googleapis.com/games/v1/players/${mockUserId}`,
+        url: 'https://www.googleapis.com/games/v1/players/me',
         method: 'GET',
         response: {
           ok: true,
@@ -1490,7 +1490,7 @@ describe('Auth Adapter features', () => {
         },
       },
       {
-        url: `https://www.googleapis.com/games/v1/players/${gpgamesUserId}`,
+        url: 'https://www.googleapis.com/games/v1/players/me',
         method: 'GET',
         response: {
           ok: true,
@@ -1585,7 +1585,7 @@ describe('Auth Adapter features', () => {
         },
       },
       {
-        url: `https://www.googleapis.com/games/v1/players/${mockUserId}`,
+        url: 'https://www.googleapis.com/games/v1/players/me',
         method: 'GET',
         response: {
           ok: true,

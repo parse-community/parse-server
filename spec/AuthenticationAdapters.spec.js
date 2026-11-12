@@ -787,7 +787,7 @@ describe('keycloak auth adapter', () => {
     }
   });
 
-  it('validateAuthData should fail with wrong azp (audience)', async () => {
+  it('validateAuthData should fail with wrong azp', async () => {
     const fakeClaim = {
       iss: 'https://auth.example.com/realms/my-realm',
       azp: 'other-app',
@@ -1132,6 +1132,139 @@ describe('keycloak auth adapter', () => {
     } catch (e) {
       expect(e.message).toBe('invalid signature');
     }
+  });
+
+  describe('audience', () => {
+    const crypto = require('crypto');
+    const config = {
+      'auth-server-url': 'https://auth.example.com',
+      realm: 'my-realm',
+      'client-id': 'parse-app',
+    };
+    let privateKey;
+    let publicKey;
+
+    const signToken = claims =>
+      jwt.sign(
+        {
+          iss: 'https://auth.example.com/realms/my-realm',
+          azp: 'parse-app',
+          sub: 'user123',
+          ...claims,
+        },
+        privateKey,
+        { algorithm: 'RS256', keyid: 'test-key-1', expiresIn: '1h' }
+      );
+
+    const validate = (claims, options) => {
+      const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', {
+        keycloak: { config, ...options },
+      });
+      return adapter.validateAuthData(
+        { id: 'user123', access_token: signToken(claims) },
+        providerOptions
+      );
+    };
+
+    beforeAll(() => {
+      ({ privateKey, publicKey } = crypto.generateKeyPairSync('rsa', {
+        modulusLength: 2048,
+        publicKeyEncoding: { type: 'spki', format: 'pem' },
+        privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+      }));
+    });
+
+    beforeEach(() => {
+      spyOn(authUtils, 'getSigningKey').and.resolveTo({ kid: 'test-key-1', publicKey });
+    });
+
+    it('validateAuthData should fail with wrong aud when audience is set', async () => {
+      await expectAsync(
+        validate({ aud: 'other-service' }, { audience: 'parse-server' })
+      ).toBeRejectedWith(
+        jasmine.objectContaining({
+          code: Parse.Error.OBJECT_NOT_FOUND,
+          message: 'jwt audience invalid. expected: parse-server',
+        })
+      );
+    });
+
+    it('validateAuthData should fail without aud when audience is set', async () => {
+      await expectAsync(validate({}, { audience: 'parse-server' })).toBeRejectedWith(
+        jasmine.objectContaining({
+          code: Parse.Error.OBJECT_NOT_FOUND,
+          message: 'jwt audience invalid. expected: parse-server',
+        })
+      );
+    });
+
+    it('validateAuthData should accept aud containing the audience', async () => {
+      const claims = await validate(
+        { aud: ['account', 'parse-server'] },
+        { audience: 'parse-server' }
+      );
+      expect(claims.sub).toBe('user123');
+    });
+
+    it('validateAuthData should accept aud matching one of several audiences', async () => {
+      const claims = await validate(
+        { aud: 'parse-admin' },
+        { audience: ['parse-server', 'parse-admin'] }
+      );
+      expect(claims.sub).toBe('user123');
+    });
+
+    it('validateAuthData should not check aud when audience is not set', async () => {
+      for (const options of [{}, { audience: undefined }, { audience: null }]) {
+        const claims = await validate({ aud: 'other-service' }, options);
+        expect(claims.sub).toBe('user123');
+      }
+    });
+
+    it('validateAuthData should fail with wrong azp when audience is set', async () => {
+      await expectAsync(
+        validate({ azp: 'other-app', aud: 'parse-server' }, { audience: 'parse-server' })
+      ).toBeRejectedWith(
+        jasmine.objectContaining({
+          code: Parse.Error.OBJECT_NOT_FOUND,
+          message:
+            'access token is not authorized for this client - expected: parse-app | from: other-app',
+        })
+      );
+    });
+
+    it('validateAuthData should fail with invalid audience option', async () => {
+      for (const audience of ['', [], [''], ['parse-server', 1], 1, {}]) {
+        await expectAsync(validate({ aud: 'parse-server' }, { audience })).toBeRejectedWith(
+          jasmine.objectContaining({
+            code: Parse.Error.OBJECT_NOT_FOUND,
+            message: 'Keycloak auth is not configured. Invalid audience.',
+          })
+        );
+      }
+    });
+
+    it('login should fail with wrong aud when audience is set', async () => {
+      await reconfigureServer({ auth: { keycloak: { config, audience: 'parse-server' } } });
+      await expectAsync(
+        Parse.User.logInWith('keycloak', {
+          authData: { id: 'user123', access_token: signToken({ aud: 'other-service' }) },
+        })
+      ).toBeRejectedWith(
+        jasmine.objectContaining({
+          code: Parse.Error.OBJECT_NOT_FOUND,
+          message: 'jwt audience invalid. expected: parse-server',
+        })
+      );
+    });
+
+    it('login should succeed with matching aud when audience is set', async () => {
+      await reconfigureServer({ auth: { keycloak: { config, audience: 'parse-server' } } });
+      const user = await Parse.User.logInWith('keycloak', {
+        authData: { id: 'user123', access_token: signToken({ aud: 'parse-server' }) },
+      });
+      expect(user.getSessionToken()).toBeDefined();
+    });
   });
 });
 

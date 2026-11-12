@@ -547,7 +547,8 @@ const addLegacyACL = restObject => {
 
   if (restObject._rperm) {
     restObject._rperm.forEach(entry => {
-      if (!(entry in _acl)) {
+      // Own-property check so an inherited member name is never read as the container
+      if (!Object.hasOwn(_acl, entry)) {
         _acl[entry] = { r: true };
       } else {
         _acl[entry].r = true;

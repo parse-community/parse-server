@@ -157,6 +157,17 @@ const validateQueryFormat = (query: any): void => {
   }
 };
 
+// True if a $regex key appears anywhere in the value, at any depth
+const containsRegex = (value: any): boolean => {
+  if (Array.isArray(value)) {
+    return value.some(containsRegex);
+  }
+  if (!Utils.isObject(value)) {
+    return false;
+  }
+  return value.$regex !== undefined || Object.keys(value).some(key => containsRegex(value[key]));
+};
+
 const validateQuery = (
   query: any,
   isMaster: boolean,
@@ -210,6 +221,15 @@ const validateQuery = (
           );
         }
       }
+    } else if (
+      !isMaster &&
+      rc &&
+      rc.allowRegex === false &&
+      !queryOperators.includes(key) &&
+      containsRegex(query[key])
+    ) {
+      // $regex nested below a field-level operator, e.g. $in: [{ $regex }]
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, '$regex operator is not allowed');
     }
     if (
       !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/) &&
@@ -419,8 +439,9 @@ const untransformObjectACL = ({ _rperm, _wperm, ...output }) => {
   if (_rperm || _wperm) {
     output.ACL = {};
 
+    // Own-property check so an inherited member name is never read as the container
     (_rperm || []).forEach(entry => {
-      if (!output.ACL[entry]) {
+      if (!Object.hasOwn(output.ACL, entry)) {
         output.ACL[entry] = { read: true };
       } else {
         output.ACL[entry]['read'] = true;
@@ -428,7 +449,7 @@ const untransformObjectACL = ({ _rperm, _wperm, ...output }) => {
     });
 
     (_wperm || []).forEach(entry => {
-      if (!output.ACL[entry]) {
+      if (!Object.hasOwn(output.ACL, entry)) {
         output.ACL[entry] = { write: true };
       } else {
         output.ACL[entry]['write'] = true;
@@ -2176,11 +2197,17 @@ class DatabaseController {
       }
     }
 
-    object[firstKey] = this._expandResultOnKeyPath(
-      object[firstKey] || {},
-      nextPath,
-      value[firstKey]
-    );
+    // Only descend into an own object, never an inherited prototype member
+    const child =
+      Object.hasOwn(object, firstKey) && object[firstKey] && typeof object[firstKey] === 'object'
+        ? object[firstKey]
+        : {};
+    // No value below a path segment that the result does not contain
+    const next =
+      Object.hasOwn(value, firstKey) && value[firstKey] && typeof value[firstKey] === 'object'
+        ? value[firstKey]
+        : undefined;
+    object[firstKey] = next ? this._expandResultOnKeyPath(child, nextPath, next) : child;
     delete object[key];
     return object;
   }
