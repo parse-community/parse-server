@@ -13,6 +13,7 @@
 /**
  * @interface ParseServerOptions
  * @property {AccountLockoutOptions} accountLockout The account lockout policy for failed login attempts.<br><br>Note: Setting a user's ACL to an empty object `{}` via master key is a separate mechanism that only prevents new logins; it does not invalidate existing session tokens. To immediately revoke a user's access, destroy their sessions via master key in addition to setting the ACL.
+ * @property {Boolean} acknowledgeFutureDefaults Set to `true` to acknowledge and suppress warnings about Parse Server options whose default values will change in a future version.
  * @property {Boolean} allowAggregationForReadOnlyMasterKey Whether the `readOnlyMasterKey` is allowed to run aggregation pipelines via the aggregate endpoint. An aggregation pipeline can contain write-capable stages (for example MongoDB `$out` and `$merge`), so allowing aggregation effectively gives the read-only master key a way to perform writes, contrary to its read-only intent. If `true` (default), the read-only master key can run aggregation pipelines. If `false`, the read-only master key cannot run aggregation pipelines at all. Note that the `readOnlyMasterKey` is a secret key for internal server-side use only and must never be distributed; this option is an additional safeguard, not a substitute for keeping the key confidential. Defaults to `true`.
  * @property {Boolean} allowClientClassCreation Enable (or disable) client class creation, defaults to false
  * @property {Boolean} allowCustomObjectId Enable (or disable) custom objectId
