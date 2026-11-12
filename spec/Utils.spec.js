@@ -1,5 +1,6 @@
 const Utils = require('../lib/Utils');
-const { createSanitizedError, createSanitizedHttpError } = require("../lib/Error")
+const { createSanitizedError, createSanitizedHttpError, bulkErrorPayloadFromReason } = require("../lib/Error")
+const { resolveError } = require('../lib/triggers');
 const vm = require('vm');
 
 describe('Utils', () => {
@@ -286,6 +287,78 @@ describe('Utils', () => {
       const config = { enableSanitizedErrorResponse: false };
       const error = createSanitizedHttpError(403, 'Detailed error message', config);
       expect(error.message).toBe('Detailed error message');
+    });
+  });
+
+  describe('bulkErrorPayloadFromReason', () => {
+    it('should return original Parse.Error code and message regardless of enableSanitizedErrorResponse', () => {
+      const reason = new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Cloud script detail');
+      const sanitized = bulkErrorPayloadFromReason(reason, { enableSanitizedErrorResponse: true });
+      expect(sanitized.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(sanitized.message).toBe('Cloud script detail');
+      const detailed = bulkErrorPayloadFromReason(reason, { enableSanitizedErrorResponse: false });
+      expect(detailed.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(detailed.message).toBe('Cloud script detail');
+    });
+
+    it('should sanitize wrapped native Parse.Error when enableSanitizedErrorResponse is true', () => {
+      const reason = resolveError(new Error('internal stack detail'), {
+        code: Parse.Error.SCRIPT_FAILED,
+        message: 'Script failed. Unknown error.',
+      });
+      const payload = bulkErrorPayloadFromReason(reason, { enableSanitizedErrorResponse: true });
+      expect(payload.code).toBe(Parse.Error.INTERNAL_SERVER_ERROR);
+      expect(payload.message).toBe('Internal server error');
+    });
+
+    it('should keep wrapped native Parse.Error message when enableSanitizedErrorResponse is false', () => {
+      const reason = resolveError(new Error('internal stack detail'), {
+        code: Parse.Error.SCRIPT_FAILED,
+        message: 'Script failed. Unknown error.',
+      });
+      const payload = bulkErrorPayloadFromReason(reason, { enableSanitizedErrorResponse: false });
+      expect(payload.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(payload.message).toBe('internal stack detail');
+    });
+
+    it('should sanitize non-Parse reasons', () => {
+      const config = { enableSanitizedErrorResponse: true };
+      const payload = bulkErrorPayloadFromReason(new Error('internal stack trace'), config);
+      expect(payload.code).toBe(Parse.Error.INTERNAL_SERVER_ERROR);
+      expect(payload.message).toBe('Internal server error');
+    });
+
+    it('should return non-Parse message when enableSanitizedErrorResponse is false', () => {
+      const config = { enableSanitizedErrorResponse: false };
+      const payload = bulkErrorPayloadFromReason(new Error('internal stack trace'), config);
+      expect(payload.code).toBe(Parse.Error.INTERNAL_SERVER_ERROR);
+      expect(payload.message).toBe('internal stack trace');
+    });
+
+    it('should not throw when reason.message getter throws', () => {
+      const reason = {};
+      Object.defineProperty(reason, 'message', {
+        get() {
+          throw new Error('boom');
+        },
+        configurable: true,
+      });
+      const sanitized = bulkErrorPayloadFromReason(reason, { enableSanitizedErrorResponse: true });
+      expect(sanitized.message).toBe('Internal server error');
+      const detailed = bulkErrorPayloadFromReason(reason, { enableSanitizedErrorResponse: false });
+      expect(detailed.message).toBe('Internal server error');
+    });
+
+    it('should not throw when String(reason) would throw', () => {
+      const reason = {
+        toString() {
+          throw new Error('boom');
+        },
+      };
+      const sanitized = bulkErrorPayloadFromReason(reason, { enableSanitizedErrorResponse: true });
+      expect(sanitized.message).toBe('Internal server error');
+      const detailed = bulkErrorPayloadFromReason(reason, { enableSanitizedErrorResponse: false });
+      expect(detailed.message).toBe('Internal server error');
     });
   });
 
