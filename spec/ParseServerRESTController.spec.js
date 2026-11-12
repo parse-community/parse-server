@@ -732,6 +732,60 @@ describe('ParseServerRESTController', () => {
     expect(Object.hasOwnProperty.call(result.nested, 'b')).toBe(false);
   });
 
+  it('should not recurse when toJSON returns its own object (with directAccess)', async () => {
+    Parse.Cloud.define('returnSelfToJSON', () => ({
+      value: 1,
+      gone: undefined,
+      toJSON() {
+        return this;
+      },
+    }));
+    const res = await RESTController.request('POST', '/functions/returnSelfToJSON', {});
+    expect(res.result).toEqual({ value: 1 });
+  });
+
+  it('should omit nested values whose toJSON returns undefined (with directAccess)', async () => {
+    const empty = { toJSON: () => undefined };
+    Parse.Cloud.define('returnUndefinedToJSON', () => ({ a: 1, b: empty, list: [1, empty] }));
+    const res = await RESTController.request('POST', '/functions/returnUndefinedToJSON', {});
+    expect(res.result).toEqual({ a: 1, list: [1, null] });
+    expect(Object.hasOwnProperty.call(res.result, 'b')).toBe(false);
+  });
+
+  it('should reject instead of hanging when a body cannot be normalized (with directAccess)', async () => {
+    const body = {
+      bad: {
+        toJSON() {
+          throw new Error('cannot serialize');
+        },
+      },
+    };
+    await expectAsync(
+      RESTController.request('POST', '/classes/BadBodyObject', body)
+    ).toBeRejectedWithError('cannot serialize');
+  });
+
+  it('should reject instead of hanging when a response cannot be normalized (with directAccess)', async () => {
+    Parse.Cloud.define('returnThrowingToJSON', () => ({
+      bad: {
+        toJSON() {
+          throw new Error('cannot serialize response');
+        },
+      },
+    }));
+    await expectAsync(
+      RESTController.request('POST', '/functions/returnThrowingToJSON', {})
+    ).toBeRejectedWithError('cannot serialize response');
+  });
+
+  it('should reject a nested __proto__ key in the body (with directAccess)', async () => {
+    const body = JSON.parse('{"nested": {"__proto__": {"polluted": true}}}');
+    await expectAsync(
+      RESTController.request('POST', '/classes/ProtoObject', body)
+    ).toBeRejectedWith(jasmine.objectContaining({ code: Parse.Error.INVALID_KEY_NAME }));
+    expect(Object.prototype.polluted).toBeUndefined();
+  });
+
   it('ensures sessionTokens are properly handled', async () => {
     const user = await Parse.User.signUp('user', 'pass');
     const sessionToken = user.getSessionToken();

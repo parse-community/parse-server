@@ -29,27 +29,30 @@ function getAuth(options = {}, config) {
   });
 }
 
-function stripUndefined(obj) {
-  if (obj === null || obj === undefined || typeof obj !== 'object') {
-    return obj;
+// Mirrors JSON.stringify so directAccess matches HTTP mode: toJSON(key) is
+// applied once per value (a custom toJSON on a cloud function result reaches
+// here because FunctionsRouter uses Parse._encode, not JSON.stringify),
+// undefined/function values are omitted from objects and become null in arrays.
+function stripUndefined(value, key = '') {
+  if (value && typeof value.toJSON === 'function') {
+    value = value.toJSON(key);
   }
-  // Match JSON.stringify semantics: objects with a toJSON() method serialize
-  // through it before undefined stripping. Date/RegExp are pre-encoded by the
-  // SDK/router, but a custom toJSON on a cloud function result reaches here
-  // (FunctionsRouter uses Parse._encode, not JSON.stringify).
-  if (typeof obj.toJSON === 'function') {
-    return stripUndefined(obj.toJSON());
+  if (typeof value === 'function') {
+    return undefined;
   }
-  if (Array.isArray(obj)) {
-    return obj.map(item => (item === undefined ? null : stripUndefined(item)));
+  if (value === null || typeof value !== 'object') {
+    return value;
   }
-  const result = {};
-  for (const key of Object.keys(obj)) {
-    if (obj[key] !== undefined) {
-      result[key] = stripUndefined(obj[key]);
-    }
+  if (Array.isArray(value)) {
+    return value.map((item, i) => stripUndefined(item, String(i)) ?? null);
   }
-  return result;
+  // Object.fromEntries defines own properties, so a `__proto__` key stays an
+  // own key (and is caught by requestKeywordDenylist) instead of setting the prototype.
+  return Object.fromEntries(
+    Object.keys(value)
+      .map(k => [k, stripUndefined(value[k], k)])
+      .filter(([, v]) => v !== undefined)
+  );
 }
 
 function ParseServerRESTController(applicationId, router) {
@@ -146,46 +149,49 @@ function ParseServerRESTController(applicationId, router) {
         );
         return;
       }
-      getAuth(options, config).then(auth => {
-        const request = {
-          body: stripUndefined(data),
-          config,
-          auth,
-          info: {
-            applicationId: applicationId,
-            sessionToken: options.sessionToken,
-            installationId: options.installationId,
-            context: requestContext,
-          },
-          query: query ? stripUndefined(query) : query,
-        };
-        return Promise.resolve()
-          .then(() => {
-            return router.tryRouteRequest(method, path, request);
-          })
-          .then(
-            resp => {
-              const { response, status, headers = {} } = resp;
-              const strippedResponse = stripUndefined(response);
-              if (options.returnStatus) {
-                resolve({ ...strippedResponse, _status: status, _headers: headers });
-              } else {
-                resolve(strippedResponse);
-              }
+      getAuth(options, config)
+        .then(auth => {
+          const request = {
+            body: stripUndefined(data),
+            config,
+            auth,
+            info: {
+              applicationId: applicationId,
+              sessionToken: options.sessionToken,
+              installationId: options.installationId,
+              context: requestContext,
             },
-            err => {
-              if (
-                err instanceof Parse.Error &&
-                err.code == Parse.Error.INVALID_JSON &&
-                err.message == `cannot route ${method} ${path}`
-              ) {
-                RESTController.request.apply(null, args).then(resolve, reject);
-              } else {
-                reject(err);
+            query: query ? stripUndefined(query) : query,
+          };
+          return Promise.resolve()
+            .then(() => {
+              return router.tryRouteRequest(method, path, request);
+            })
+            .then(
+              resp => {
+                const { response, status, headers = {} } = resp;
+                const strippedResponse = stripUndefined(response);
+                if (options.returnStatus) {
+                  resolve({ ...strippedResponse, _status: status, _headers: headers });
+                } else {
+                  resolve(strippedResponse);
+                }
+              },
+              err => {
+                if (
+                  err instanceof Parse.Error &&
+                  err.code == Parse.Error.INVALID_JSON &&
+                  err.message == `cannot route ${method} ${path}`
+                ) {
+                  RESTController.request.apply(null, args).then(resolve, reject);
+                } else {
+                  reject(err);
+                }
               }
-            }
-          );
-      }, reject);
+            );
+          // Forward throws from stripUndefined (e.g. circular values) instead of leaving the request pending.
+        })
+        .catch(reject);
     });
   }
 
