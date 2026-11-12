@@ -34,9 +34,13 @@ function getAuth(options = {}, config) {
 // and become null in arrays, as do NaN/Infinity and sparse-array holes.
 // Copy-on-write: returns `value` itself when nothing changes, so the common case
 // allocates no new tree (a JSON round-trip here regressed the GC benchmark).
+// toJSON() output is always copied, as it may carry non-enumerable own
+// properties or getters that JSON serialization would drop or read only once.
 function stripUndefined(value, key = '') {
+  let fromToJSON = false;
   if (value && typeof value.toJSON === 'function') {
     value = value.toJSON(key);
+    fromToJSON = true;
   }
   switch (typeof value) {
     case 'function':
@@ -53,10 +57,11 @@ function stripUndefined(value, key = '') {
       return value;
   }
   if (Array.isArray(value)) {
-    let copy;
+    let copy = fromToJSON ? [] : undefined;
     for (let i = 0; i < value.length; i++) {
-      const item = stripUndefined(value[i], String(i)) ?? null;
-      if (!copy && item !== value[i]) {
+      const raw = value[i];
+      const item = stripUndefined(raw, String(i)) ?? null;
+      if (!copy && item !== raw) {
         copy = value.slice(0, i);
       }
       if (copy) {
@@ -66,11 +71,12 @@ function stripUndefined(value, key = '') {
     return copy || value;
   }
   const keys = Object.keys(value);
-  let entries;
+  let entries = fromToJSON ? [] : undefined;
   for (let i = 0; i < keys.length; i++) {
     const k = keys[i];
-    const item = stripUndefined(value[k], k);
-    if (!entries && (item === undefined || item !== value[k])) {
+    const raw = value[k];
+    const item = stripUndefined(raw, k);
+    if (!entries && (item === undefined || item !== raw)) {
       entries = keys.slice(0, i).map(prev => [prev, value[prev]]);
     }
     if (entries && item !== undefined) {

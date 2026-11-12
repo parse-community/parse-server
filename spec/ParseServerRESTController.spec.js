@@ -801,8 +801,32 @@ describe('ParseServerRESTController', () => {
       b: Infinity,
     });
     const obj = await RESTController.request('GET', `/classes/NumberObject/${objectId}`);
-    expect(obj.a).toBeNull();
-    expect(obj.b).toBeNull();
+    // Mongo returns null; Postgres omits null fields. Either way, not NaN/Infinity.
+    expect(obj.a ?? null).toBeNull();
+    expect(obj.b ?? null).toBeNull();
+  });
+
+  it('should only return enumerable properties of toJSON output, reading each once (with directAccess)', async () => {
+    Parse.Cloud.define('returnHiddenToJSON', () => ({
+      toJSON() {
+        const out = { public: 1 };
+        Object.defineProperty(out, 'secret', { value: 'hidden', enumerable: false });
+        let reads = 0;
+        Object.defineProperty(out, 'once', {
+          enumerable: true,
+          get() {
+            if (++reads > 1) {
+              throw new Error('read twice');
+            }
+            return 'ok';
+          },
+        });
+        return out;
+      },
+    }));
+    const res = await RESTController.request('POST', '/functions/returnHiddenToJSON', {});
+    expect(res.result).toEqual({ public: 1, once: 'ok' });
+    expect(Object.getOwnPropertyNames(res.result)).toEqual(['public', 'once']);
   });
 
   it('should call toJSON once for GET requests (with directAccess)', async () => {
