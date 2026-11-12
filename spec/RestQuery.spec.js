@@ -622,6 +622,53 @@ describe('rest query', () => {
       expect(response.data.results[0].meta).toEqual({ title: 'a' });
     });
   });
+
+  describe('inherited Object.prototype members in field lists', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+    const find = params =>
+      request({
+        headers,
+        url: 'http://localhost:8378/1/classes/TestObject?' + querystring.stringify(params),
+      });
+
+    beforeEach(async () => {
+      const obj = new Parse.Object('TestObject');
+      obj.set('meta', { title: 'a' });
+      await obj.save();
+    });
+
+    it('treats inherited member names in include like any unknown field', async () => {
+      for (const include of [
+        'valueOf.x',
+        'hasOwnProperty.x',
+        'toString.x',
+        'isPrototypeOf.x',
+        '__defineGetter__.x',
+        'meta.valueOf.x',
+        'nope.x',
+      ]) {
+        const response = await find({ include });
+        expect(response.status).toBe(200);
+        expect(response.data.results.length).toBe(1);
+      }
+    });
+
+    it('treats inherited member names in keys and excludeKeys like any unknown field', async () => {
+      for (const params of [
+        { keys: 'valueOf.x.y' },
+        { keys: 'meta.hasOwnProperty.x' },
+        { excludeKeys: 'valueOf.x.y' },
+        { excludeKeys: 'meta.toString.x' },
+      ]) {
+        const response = await find(params);
+        expect(response.status).toBe(200);
+        expect(response.data.results.length).toBe(1);
+      }
+    });
+  });
 });
 
 describe('RestQuery.each', () => {
