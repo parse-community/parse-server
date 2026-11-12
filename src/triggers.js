@@ -379,6 +379,14 @@ export function getResponseObject(request, resolve, reject) {
         if (!response) {
           response = request.objects;
         }
+        if (!Array.isArray(response)) {
+          return reject(
+            new Parse.Error(
+              Parse.Error.SCRIPT_FAILED,
+              'afterFind trigger must return an array of objects.'
+            )
+          );
+        }
         response = response.map(object => {
           return toJSONwithObjects(object);
         });
