@@ -29,13 +29,7 @@ export class ClassesRouter extends PromiseRouter {
     if (body.redirectClassNameForKey) {
       options.redirectClassNameForKey = String(body.redirectClassNameForKey);
     }
-    if (typeof body.where === 'string') {
-      try {
-        body.where = JSON.parse(body.where);
-      } catch {
-        throw new Parse.Error(Parse.Error.INVALID_JSON, 'where parameter is not valid JSON');
-      }
-    }
+    ClassesRouter.decodeWhere(body);
     return rest
       .find(
         req.config,
@@ -155,6 +149,28 @@ export class ClassesRouter extends PromiseRouter {
       }
     }
     return json;
+  }
+
+  /**
+   * Decodes a `where` that arrives as a JSON string instead of an object.
+   *
+   * A client that exceeds the maximum URL length sends a find as
+   * `POST` + `_method=GET` with a urlencoded body, so `where` reaches the
+   * router as a string rather than being decoded by `JSONFromQuery`. Every
+   * router that serves a find has to decode it, otherwise the string is passed
+   * to the query layer and iterated character by character.
+   *
+   * Mutates `body` in place and returns the decoded `where`.
+   */
+  static decodeWhere(body) {
+    if (typeof body.where === 'string') {
+      try {
+        body.where = JSON.parse(body.where);
+      } catch {
+        throw new Parse.Error(Parse.Error.INVALID_JSON, 'where parameter is not valid JSON');
+      }
+    }
+    return body.where;
   }
 
   static optionsFromBody(body, defaultLimit) {
