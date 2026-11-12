@@ -829,6 +829,32 @@ describe('ParseServerRESTController', () => {
     expect(Object.getOwnPropertyNames(res.result)).toEqual(['public', 'once']);
   });
 
+  it('should read nested properties of toJSON output once (with directAccess)', async () => {
+    const readOnce = () => {
+      let reads = 0;
+      return () => {
+        if (++reads > 1) {
+          throw new Error('read twice');
+        }
+        return 'ok';
+      };
+    };
+    Parse.Cloud.define('returnNestedGetterToJSON', () => ({
+      toJSON() {
+        // The getter comes before the key that starts the copy.
+        const obj = {};
+        Object.defineProperty(obj, 'once', { enumerable: true, get: readOnce() });
+        obj.omitted = undefined;
+        const list = [];
+        Object.defineProperty(list, 0, { enumerable: true, get: readOnce() });
+        list[1] = undefined;
+        return { obj, list };
+      },
+    }));
+    const res = await RESTController.request('POST', '/functions/returnNestedGetterToJSON', {});
+    expect(res.result).toEqual({ obj: { once: 'ok' }, list: ['ok', null] });
+  });
+
   it('should call toJSON once for GET requests (with directAccess)', async () => {
     let calls = 0;
     const where = {
