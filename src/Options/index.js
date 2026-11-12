@@ -99,6 +99,8 @@ export interface ParseServerOptions {
   filesAdapter: ?Adapter<FilesAdapter>;
   /* Configuration for push, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#push-notifications */
   push: ?any;
+  /* Optional. If set to `true`, the `deviceToken` of an installation is removed when a push notification to that device fails because the push provider reports the token as invalid or unregistered (for example `Unregistered` or `BadDeviceToken` for APNS, `NotRegistered` or `InvalidRegistration` for FCM). This avoids repeatedly sending to devices that are known to be unreachable, which push providers may penalize. Note that the removal is based on error responses of the push provider, so valid tokens may be removed if the provider reports an error incorrectly. If `false`, installations are not modified. Defaults to the value of the environment variable `PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS`, otherwise `false`. */
+  cleanupInvalidInstallations: ?boolean;
   /* Configuration for push scheduling, defaults to false.
   :DEFAULT: false */
   scheduledPush: ?boolean;
