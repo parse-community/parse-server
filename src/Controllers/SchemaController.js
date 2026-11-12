@@ -1709,7 +1709,10 @@ function getObjectType(obj): ?(SchemaField | string) {
       case 'Batch':
         return getObjectType(obj.ops[0]);
       default:
-        throw 'unexpected op: ' + obj.__op;
+        throw new Parse.Error(
+          Parse.Error.COMMAND_UNAVAILABLE,
+          `The ${obj.__op} operator is not supported yet.`
+        );
     }
   }
   return 'Object';
