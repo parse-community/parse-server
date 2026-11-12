@@ -195,7 +195,7 @@ export function toJSONwithObjects(object, className) {
   for (const key in pending) {
     const val = object.get(key);
     if (!val || !val._toFullJSON) {
-      toJSON[key] = val;
+      toJSON[key] = val instanceof Parse.ACL ? val.toJSON() : val;
       continue;
     }
     toJSON[key] = val._toFullJSON();
