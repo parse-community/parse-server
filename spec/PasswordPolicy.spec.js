@@ -512,6 +512,72 @@ describe('Password Policy: ', () => {
     });
   });
 
+  it('signup should fail if password does not conform to the policy enforced using async validatorCallback', done => {
+    const user = new Parse.User();
+    reconfigureServer({
+      appName: 'passwordPolicy',
+      passwordPolicy: {
+        validatorCallback: async password => password === 'valid',
+      },
+      publicServerURL: 'http://localhost:8378/1',
+    }).then(() => {
+      user.setUsername('user1');
+      user.setPassword('invalid');
+      user.set('email', 'user1@parse.com');
+      user
+        .signUp()
+        .then(() => {
+          fail('Should have failed as password does not conform to the policy.');
+          done();
+        })
+        .catch(error => {
+          expect(error.code).toEqual(142);
+          done();
+        });
+    });
+  });
+
+  it('signup should succeed if password conforms to the policy enforced using async validatorCallback', done => {
+    const user = new Parse.User();
+    reconfigureServer({
+      appName: 'passwordPolicy',
+      passwordPolicy: {
+        validatorCallback: async password => password === 'oneUpper',
+      },
+      publicServerURL: 'http://localhost:8378/1',
+    }).then(() => {
+      user.setUsername('user1');
+      user.setPassword('oneUpper');
+      user.set('email', 'user1@parse.com');
+      user
+        .signUp()
+        .then(() => {
+          Parse.User.logOut()
+            .then(() => {
+              Parse.User.logIn('user1', 'oneUpper')
+                .then(function () {
+                  done();
+                })
+                .catch(err => {
+                  jfail(err);
+                  fail('Should be able to login');
+                  done();
+                });
+            })
+            .catch(error => {
+              jfail(error);
+              fail('Logout should have succeeded');
+              done();
+            });
+        })
+        .catch(error => {
+          jfail(error);
+          fail('Should have succeeded as password conforms to the policy.');
+          done();
+        });
+    });
+  });
+
   it('signup should fail if password does not match validatorPattern but succeeds validatorCallback', done => {
     const user = new Parse.User();
     reconfigureServer({
@@ -545,6 +611,32 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         validatorPattern: /[A-Z]+/, // password should contain at least one UPPER case letter
         validatorCallback: () => false,
+      },
+      publicServerURL: 'http://localhost:8378/1',
+    }).then(() => {
+      user.setUsername('user1');
+      user.setPassword('oneUpper');
+      user.set('email', 'user1@parse.com');
+      user
+        .signUp()
+        .then(() => {
+          fail('Should have failed as password does not conform to the policy.');
+          done();
+        })
+        .catch(error => {
+          expect(error.code).toEqual(142);
+          done();
+        });
+    });
+  });
+
+  it('signup should fail if password matches validatorPattern but fails async validatorCallback', done => {
+    const user = new Parse.User();
+    reconfigureServer({
+      appName: 'passwordPolicy',
+      passwordPolicy: {
+        validatorPattern: /[A-Z]+/, // password should contain at least one UPPER case letter
+        validatorCallback: async () => false,
       },
       publicServerURL: 'http://localhost:8378/1',
     }).then(() => {
