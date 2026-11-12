@@ -778,6 +778,45 @@ describe('ParseServerRESTController', () => {
     ).toBeRejectedWithError('cannot serialize response');
   });
 
+  it('should match JSON serialization for symbols and sparse arrays (with directAccess)', async () => {
+    Parse.Cloud.define('returnJSONEdgeCases', () => ({
+      a: 1,
+      sym: Symbol('s'),
+      // eslint-disable-next-line no-sparse-arrays
+      sparse: [1, , 3],
+    }));
+    const res = await RESTController.request('POST', '/functions/returnJSONEdgeCases', {});
+    expect(res.result).toEqual({ a: 1, sparse: [1, null, 3] });
+    expect(Object.hasOwnProperty.call(res.result, 'sym')).toBe(false);
+    expect(1 in res.result.sparse).toBe(true);
+  });
+
+  it('should store NaN and Infinity as null like HTTP mode (with directAccess)', async () => {
+    const { objectId } = await RESTController.request('POST', '/classes/NumberObject', {
+      a: 1,
+      b: 2,
+    });
+    await RESTController.request('PUT', `/classes/NumberObject/${objectId}`, {
+      a: NaN,
+      b: Infinity,
+    });
+    const obj = await RESTController.request('GET', `/classes/NumberObject/${objectId}`);
+    expect(obj.a).toBeNull();
+    expect(obj.b).toBeNull();
+  });
+
+  it('should call toJSON once for GET requests (with directAccess)', async () => {
+    let calls = 0;
+    const where = {
+      toJSON() {
+        calls++;
+        return {};
+      },
+    };
+    await RESTController.request('GET', '/classes/ToJSONOnceObject', { where });
+    expect(calls).toBe(1);
+  });
+
   it('should reject a nested __proto__ key in the body (with directAccess)', async () => {
     const body = JSON.parse('{"nested": {"__proto__": {"polluted": true}}}');
     await expectAsync(

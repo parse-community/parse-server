@@ -29,30 +29,57 @@ function getAuth(options = {}, config) {
   });
 }
 
-// Mirrors JSON.stringify so directAccess matches HTTP mode: toJSON(key) is
-// applied once per value (a custom toJSON on a cloud function result reaches
-// here because FunctionsRouter uses Parse._encode, not JSON.stringify),
-// undefined/function values are omitted from objects and become null in arrays.
+// Mirrors JSON.stringify so directAccess sees what HTTP mode sees: toJSON(key)
+// runs once per value, undefined/function/symbol values are dropped from objects
+// and become null in arrays, as do NaN/Infinity and sparse-array holes.
+// Copy-on-write: returns `value` itself when nothing changes, so the common case
+// allocates no new tree (a JSON round-trip here regressed the GC benchmark).
 function stripUndefined(value, key = '') {
   if (value && typeof value.toJSON === 'function') {
     value = value.toJSON(key);
   }
-  if (typeof value === 'function') {
-    return undefined;
-  }
-  if (value === null || typeof value !== 'object') {
-    return value;
+  switch (typeof value) {
+    case 'function':
+    case 'symbol':
+      return undefined;
+    case 'number':
+      return Number.isFinite(value) ? value : null;
+    case 'object':
+      if (value !== null) {
+        break;
+      }
+    // falls through
+    default:
+      return value;
   }
   if (Array.isArray(value)) {
-    return value.map((item, i) => stripUndefined(item, String(i)) ?? null);
+    let copy;
+    for (let i = 0; i < value.length; i++) {
+      const item = stripUndefined(value[i], String(i)) ?? null;
+      if (!copy && item !== value[i]) {
+        copy = value.slice(0, i);
+      }
+      if (copy) {
+        copy.push(item);
+      }
+    }
+    return copy || value;
   }
-  // Object.fromEntries defines own properties, so a `__proto__` key stays an
-  // own key (and is caught by requestKeywordDenylist) instead of setting the prototype.
-  return Object.fromEntries(
-    Object.keys(value)
-      .map(k => [k, stripUndefined(value[k], k)])
-      .filter(([, v]) => v !== undefined)
-  );
+  const keys = Object.keys(value);
+  let entries;
+  for (let i = 0; i < keys.length; i++) {
+    const k = keys[i];
+    const item = stripUndefined(value[k], k);
+    if (!entries && (item === undefined || item !== value[k])) {
+      entries = keys.slice(0, i).map(prev => [prev, value[prev]]);
+    }
+    if (entries && item !== undefined) {
+      entries.push([k, item]);
+    }
+  }
+  // Object.fromEntries keeps a `__proto__` key as an own key, so
+  // requestKeywordDenylist still rejects it instead of it becoming the prototype.
+  return entries ? Object.fromEntries(entries) : value;
 }
 
 function ParseServerRESTController(applicationId, router) {
@@ -151,8 +178,10 @@ function ParseServerRESTController(applicationId, router) {
       }
       getAuth(options, config)
         .then(auth => {
+          // Normalize once: for GET, body and query are the same input.
+          const body = stripUndefined(data);
           const request = {
-            body: stripUndefined(data),
+            body,
             config,
             auth,
             info: {
@@ -161,7 +190,7 @@ function ParseServerRESTController(applicationId, router) {
               installationId: options.installationId,
               context: requestContext,
             },
-            query: query ? stripUndefined(query) : query,
+            query: query ? body : query,
           };
           return Promise.resolve()
             .then(() => {
@@ -189,7 +218,7 @@ function ParseServerRESTController(applicationId, router) {
                 }
               }
             );
-          // Forward throws from stripUndefined (e.g. circular values) instead of leaving the request pending.
+          // Forward throws from stripUndefined (e.g. a throwing toJSON or a circular value) instead of leaving the request pending.
         })
         .catch(reject);
     });
