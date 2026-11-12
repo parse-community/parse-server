@@ -3765,6 +3765,86 @@ describe('Parse.User testing', () => {
     });
   });
 
+  describe('password change session token', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+
+    async function signUpWithWriter() {
+      const target = await Parse.User.signUp('target', 'password');
+      const writer = await Parse.User.signUp('writer', 'password');
+      const acl = new Parse.ACL(target);
+      acl.setPublicReadAccess(true);
+      acl.setWriteAccess(writer, true);
+      target.setACL(acl);
+      await target.save(null, { useMasterKey: true });
+      return { target, writer };
+    }
+
+    it('is not returned to another user who changes the password', async () => {
+      const { target, writer } = await signUpWithWriter();
+      const response = await request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/users/${target.id}`,
+        headers: { ...headers, 'X-Parse-Session-Token': writer.getSessionToken() },
+        body: { password: 'newpassword' },
+      });
+      expect(response.data.sessionToken).toBeUndefined();
+      const sessions = await new Parse.Query(Parse.Session)
+        .equalTo('user', target)
+        .find({ useMasterKey: true });
+      expect(sessions.length).toBe(0);
+      const user = await Parse.User.logIn('target', 'newpassword');
+      expect(user.id).toBe(target.id);
+    });
+
+    it('is not returned to another user who changes the password of a user with an additional auth provider', async () => {
+      await reconfigureServer({
+        auth: {
+          mfa: { enabled: true, options: ['TOTP'], algorithm: 'SHA1', digits: 6, period: 30 },
+        },
+      });
+      const { target, writer } = await signUpWithWriter();
+      const OTPAuth = require('otpauth');
+      const secret = new OTPAuth.Secret();
+      const totp = new OTPAuth.TOTP({ algorithm: 'SHA1', digits: 6, period: 30, secret });
+      await target.save(
+        { authData: { mfa: { secret: secret.base32, token: totp.generate() } } },
+        { sessionToken: target.getSessionToken() }
+      );
+      const response = await request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/users/${target.id}`,
+        headers: { ...headers, 'X-Parse-Session-Token': writer.getSessionToken() },
+        body: { password: 'newpassword' },
+      });
+      expect(response.data.sessionToken).toBeUndefined();
+      await expectAsync(Parse.User.logIn('target', 'newpassword')).toBeRejectedWith(
+        new Parse.Error(Parse.Error.OTHER_CAUSE, 'Missing additional authData mfa')
+      );
+    });
+
+    it('is returned to the user who changes its own password', async () => {
+      const user = await Parse.User.signUp('owner', 'password');
+      const sessionToken = user.getSessionToken();
+      const response = await request({
+        method: 'PUT',
+        url: `http://localhost:8378/1/users/${user.id}`,
+        headers: { ...headers, 'X-Parse-Session-Token': sessionToken },
+        body: { password: 'newpassword' },
+      });
+      expect(response.data.sessionToken).toBeDefined();
+      expect(response.data.sessionToken).not.toBe(sessionToken);
+      const me = await request({
+        url: 'http://localhost:8378/1/users/me',
+        headers: { ...headers, 'X-Parse-Session-Token': response.data.sessionToken },
+      });
+      expect(me.data.objectId).toBe(user.id);
+    });
+  });
+
   it('should not fail querying non existing relations', done => {
     const user = new Parse.User();
     user.set({

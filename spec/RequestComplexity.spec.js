@@ -804,6 +804,100 @@ describe('request complexity', () => {
       ).toBeResolved();
     });
 
+    describe('nested in field-level operators', () => {
+      beforeEach(async () => {
+        // Only one element per object matches the $all prefix pattern (Postgres counts matches)
+        const matching = new Parse.Object('TestObject');
+        matching.set('tags', ['aaa', 'xyz']);
+        matching.set('data', { sub: 'aaa' });
+        const other = new Parse.Object('TestObject');
+        other.set('tags', ['xyz']);
+        await Parse.Object.saveAll([matching, other]);
+      });
+
+      const expectRejected = where =>
+        expectAsync(rest.find(config, auth.nobody(config), 'TestObject', where)).toBeRejectedWith(
+          jasmine.objectContaining({
+            code: Parse.Error.INVALID_QUERY,
+            message: '$regex operator is not allowed',
+          })
+        );
+
+      it('should reject $regex nested in $all when allowRegex is false', async () => {
+        await expectRejected({ tags: { $all: [{ $regex: '^\\Qa\\E' }] } });
+      });
+
+      it('should reject $regex nested in $in when allowRegex is false', async () => {
+        await expectRejected({ tags: { $in: [{ $regex: '^a' }] } });
+      });
+
+      it('should reject $regex nested in $nin when allowRegex is false', async () => {
+        await expectRejected({ tags: { $nin: [{ $regex: '^a' }] } });
+      });
+
+      it('should reject $regex nested in $containedBy when allowRegex is false', async () => {
+        await expectRejected({ tags: { $containedBy: [{ $regex: 'a' }] } });
+      });
+
+      it('should reject $regex nested in a nested array of $in when allowRegex is false', async () => {
+        await expectRejected({ tags: { $in: [[{ $regex: '^a' }]] } });
+      });
+
+      it('should reject $regex as the value of a comparison operator when allowRegex is false', async () => {
+        await expectRejected({ tags: { $eq: { $regex: '^a' } } });
+      });
+
+      it('should reject $regex nested in $in on a dotted key when allowRegex is false', async () => {
+        await expectRejected({ 'data.sub': { $in: [{ $regex: '^a' }] } });
+      });
+
+      it('should reject $regex nested in $in inside $or when allowRegex is false', async () => {
+        await expectRejected({ $or: [{ tags: { $in: [{ $regex: '^a' }] } }, { tags: 'none' }] });
+      });
+
+      it('should reject $regex nested in $in inside a $inQuery subquery when allowRegex is false', async () => {
+        const child = new Parse.Object('TestObject', { tags: ['aaa'] });
+        const parent = new Parse.Object('TestObject', { child });
+        await parent.save();
+        await expectRejected({
+          child: {
+            $inQuery: {
+              className: 'TestObject',
+              where: { tags: { $in: [{ $regex: '^a' }] } },
+            },
+          },
+        });
+      });
+
+      it('should reject $regex nested below $elemMatch inside $all when allowRegex is false', async () => {
+        await expectRejected({ tags: { $all: [{ $elemMatch: { $regex: '^a' } }] } });
+      });
+
+      it('should reject $regex nested below two $not operators on objectId when allowRegex is false', async () => {
+        await expectRejected({ objectId: { $not: { $not: { $regex: '^a' } } } });
+      });
+
+      it('should reject $regex nested below $elemMatch on an ACL key when allowRegex is false', async () => {
+        await expectRejected({ _wperm: { $elemMatch: { $not: { $regex: '^z' } } } });
+      });
+
+      it('should allow $regex nested in $all when allowRegex is false with master key', async () => {
+        const where = { tags: { $all: [{ $regex: '^\\Qa\\E' }] } };
+        const response = await rest.find(config, auth.master(config), 'TestObject', where);
+        expect(response.results.length).toBe(1);
+        expect(response.results[0].tags).toEqual(['aaa', 'xyz']);
+      });
+
+      it('should allow $regex nested in $all when allowRegex is true', async () => {
+        await reconfigureServer({ requestComplexity: { allowRegex: true } });
+        config = Config.get('test');
+        const where = { tags: { $all: [{ $regex: '^\\Qa\\E' }] } };
+        const response = await rest.find(config, auth.nobody(config), 'TestObject', where);
+        expect(response.results.length).toBe(1);
+        expect(response.results[0].tags).toEqual(['aaa', 'xyz']);
+      });
+    });
+
     describe('LiveQuery', () => {
       beforeEach(async () => {
         await reconfigureServer({
@@ -837,6 +931,30 @@ describe('request complexity', () => {
             { field: 'exact' },
           ],
         };
+        await expectAsync(query.subscribe()).toBeRejectedWith(
+          jasmine.objectContaining({ code: Parse.Error.INVALID_QUERY })
+        );
+      });
+
+      it('should reject LiveQuery subscription with $regex nested in $all when allowRegex is false', async () => {
+        const query = new Parse.Query('TestObject');
+        query.containsAllStartingWith('field', ['test']);
+        await expectAsync(query.subscribe()).toBeRejectedWith(
+          jasmine.objectContaining({ code: Parse.Error.INVALID_QUERY })
+        );
+      });
+
+      it('should reject LiveQuery subscription with $regex nested in $in when allowRegex is false', async () => {
+        const query = new Parse.Query('TestObject');
+        query._where = { field: { $in: [{ $regex: 'test' }] } };
+        await expectAsync(query.subscribe()).toBeRejectedWith(
+          jasmine.objectContaining({ code: Parse.Error.INVALID_QUERY })
+        );
+      });
+
+      it('should reject LiveQuery subscription with $regex nested below $elemMatch inside $all when allowRegex is false', async () => {
+        const query = new Parse.Query('TestObject');
+        query._where = { field: { $all: [{ $elemMatch: { $regex: 'test' } }] } };
         await expectAsync(query.subscribe()).toBeRejectedWith(
           jasmine.objectContaining({ code: Parse.Error.INVALID_QUERY })
         );

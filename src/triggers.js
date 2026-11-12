@@ -401,7 +401,17 @@ export function getResponseObject(request, resolve, reject) {
       }
       response = {};
       if (request.triggerName === Types.beforeSave) {
-        response['object'] = request.object._getSaveJSON();
+        try {
+          response['object'] = request.object._getSaveJSON();
+        } catch (e) {
+          // A value that cannot be serialized fails the request
+          return reject(
+            new Parse.Error(
+              Parse.Error.INCORRECT_TYPE,
+              `Cannot serialize object after beforeSave: ${e?.message || e}`
+            )
+          );
+        }
         response['object']['objectId'] = request.object.id;
       }
       return resolve(response);
@@ -553,7 +563,9 @@ export function maybeRunAfterFindTrigger(
         }
         return responseFromTrigger;
       })
-      .then(success, error);
+      .then(success, error)
+      // Settle even if success or error throws
+      .catch(error);
   }).then(resultsAsJSON => {
     logTriggerAfterHook(
       triggerType,
@@ -842,6 +854,8 @@ async function builtInTriggerValidator(options, request, auth) {
           if (request.original) {
             request.object.revert(key);
           } else if (opt.default != null) {
+            // RestWrite's revert also discards dot notation keys beneath the field
+            request.object.revert(key);
             request.object.set(key, opt.default);
           }
         }
@@ -1026,7 +1040,9 @@ export function maybeRunTrigger(
 
         return promise;
       })
-      .then(success, error);
+      .then(success, error)
+      // Settle even if success or error throws
+      .catch(error);
   });
 }
 

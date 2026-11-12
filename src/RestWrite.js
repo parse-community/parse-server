@@ -19,6 +19,9 @@ import { createSanitizedError } from './Error';
 import { applyAuthDataOptimisticLock } from './AuthDataLock';
 import * as InstallationDedup from './InstallationDedup';
 
+// Operations whose result the database computes from the stored value
+const computedOperations = ['Increment', 'Add', 'AddUnique', 'Remove'];
+
 // query and data are both provided in REST API format. So data
 // types are encoded by plain old objects.
 // If query is null, this is a "create" and the data in data should be
@@ -76,6 +79,10 @@ function RestWrite(config, auth, className, query, data, originalData, context, 
   // copy
   this.query = structuredClone(query);
   this.data = structuredClone(data);
+  // The client's dot notation keys and computed operations, before triggers change the data
+  this.requestOperations = Object.keys(this.data)
+    .filter(key => key.includes('.') || computedOperations.includes(this.data[key]?.__op))
+    .map(key => [key, this.data[key]]);
   // We never change originalData, so we do not need a deep copy
   this.originalData = originalData;
 
@@ -308,7 +315,8 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
     return Promise.resolve();
   }
 
-  const { originalObject, updatedObject } = this.buildParseObjects();
+  const { originalObject, updatedObject } = this.buildParseObjects({ copyStoredValues: true });
+  extendRevertToDotNotationKeys(updatedObject);
   const identifier = updatedObject._getStateIdentifier();
   const stateController = Parse.CoreManager.getObjectStateController();
   const [pending] = stateController.getPendingOps(identifier);
@@ -903,8 +911,13 @@ RestWrite.prototype.transformUser = async function () {
 
       if (this.query) {
         this.storage['clearSessions'] = true;
-        // Generate a new session only if the user requested
-        if (!this.auth.isMaster && !this.auth.isMaintenance) {
+        // Generate a new session only for the user's own password change
+        if (
+          !this.auth.isMaster &&
+          !this.auth.isMaintenance &&
+          this.auth.user &&
+          this.auth.user.id === this.query.objectId
+        ) {
           this.storage['generateNewSession'] = true;
         }
       }
@@ -1002,8 +1015,8 @@ RestWrite.prototype._validateEmail = function () {
   if (!this.data.email || this.data.email.__op === 'Delete') {
     return Promise.resolve();
   }
-  // Validate basic email address format
-  if (!this.data.email.match(/^.+@.+$/)) {
+  // Validate basic email address format in linear time
+  if (!this.data.email.match(/^.[^@\n\r\u2028\u2029]*@.+$/)) {
     return Promise.reject(
       new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, 'Email address format is invalid.')
     );
@@ -1488,6 +1501,29 @@ RestWrite.prototype.handleInstallation = function () {
 
   var promise = Promise.resolve();
 
+  // Whether the caller may write the addressed installation, checked as the write checks it
+  const canWriteInstallation = async () => {
+    if (this.auth.isMaster || this.auth.isMaintenance) {
+      return true;
+    }
+    try {
+      await this.config.database.update(
+        this.className,
+        { objectId: this.query.objectId },
+        {},
+        this.runOptions,
+        false,
+        true
+      );
+      return true;
+    } catch (error) {
+      if (error instanceof Parse.Error) {
+        return false;
+      }
+      throw error;
+    }
+  };
+
   var idMatch; // Will be a match on either objectId or installationId
   var objectIdMatch;
   var installationIdMatch;
@@ -1523,7 +1559,7 @@ RestWrite.prototype.handleInstallation = function () {
         {}
       );
     })
-    .then(results => {
+    .then(async results => {
       results.forEach(result => {
         if (this.query && this.query.objectId && result.objectId == this.query.objectId) {
           objectIdMatch = result;
@@ -1538,31 +1574,32 @@ RestWrite.prototype.handleInstallation = function () {
 
       // Sanity checks when running a query
       if (this.query && this.query.objectId) {
+        let error;
         if (!objectIdMatch) {
-          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found for update.');
-        }
-        if (
+          error = new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found for update.');
+        } else if (
           this.data.installationId &&
           objectIdMatch.installationId &&
           this.data.installationId !== objectIdMatch.installationId
         ) {
-          throw new Parse.Error(136, 'installationId may not be changed in this ' + 'operation');
-        }
-        if (
+          error = new Parse.Error(136, 'installationId may not be changed in this ' + 'operation');
+        } else if (
           this.data.deviceToken &&
           objectIdMatch.deviceToken &&
           this.data.deviceToken !== objectIdMatch.deviceToken &&
           !this.data.installationId &&
           !objectIdMatch.installationId
         ) {
-          throw new Parse.Error(136, 'deviceToken may not be changed in this ' + 'operation');
+          error = new Parse.Error(136, 'deviceToken may not be changed in this ' + 'operation');
+        } else if (this.data.deviceType && this.data.deviceType !== objectIdMatch.deviceType) {
+          error = new Parse.Error(136, 'deviceType may not be changed in this ' + 'operation');
         }
-        if (
-          this.data.deviceType &&
-          this.data.deviceType &&
-          this.data.deviceType !== objectIdMatch.deviceType
-        ) {
-          throw new Parse.Error(136, 'deviceType may not be changed in this ' + 'operation');
+        if (error) {
+          if (await canWriteInstallation()) {
+            throw error;
+          }
+          // Without write access, the write pipeline answers as for any class
+          return false;
         }
       }
 
@@ -1577,8 +1614,12 @@ RestWrite.prototype.handleInstallation = function () {
       if (!this.query && !this.data.deviceType && !idMatch) {
         throw new Parse.Error(135, 'deviceType must be specified in this operation');
       }
+      return true;
     })
-    .then(() => {
+    .then(proceed => {
+      if (!proceed) {
+        return;
+      }
       if (!idMatch) {
         if (!deviceTokenMatches.length) {
           return;
@@ -1834,6 +1875,7 @@ RestWrite.prototype.runDatabaseOperation = function () {
           let response = result;
           if (raw) {
             this.writtenReadAccess = result._rperm;
+            this.writtenObject = result;
             response = await this.config.database._sanitizeDatabaseResult(this.data, result);
           }
           response.updatedAt = this.updatedAt;
@@ -1933,6 +1975,10 @@ RestWrite.prototype.runDatabaseOperation = function () {
           response.username = this.data.username;
         }
         this._updateResponseWithData(response, this.data);
+        // Read access as stored
+        const acl = this.data.ACL;
+        this.writtenReadAccess = acl ? Object.keys(acl).filter(key => acl[key].read) : null;
+        this.writtenObject = this.data;
         this.response = {
           status: 201,
           response,
@@ -2154,7 +2200,7 @@ RestWrite.prototype.validateDotNotationKeys = function () {
 };
 
 // Returns an updated copy of the object
-RestWrite.prototype.buildParseObjects = function () {
+RestWrite.prototype.buildParseObjects = function ({ copyStoredValues = false } = {}) {
   const extraData = { className: this.className, objectId: this.query?.objectId };
   let originalObject;
   if (this.query && this.query.objectId) {
@@ -2197,6 +2243,9 @@ RestWrite.prototype.buildParseObjects = function () {
         let parentVal = updatedObject.get(parentProp);
         if (typeof parentVal !== 'object') {
           parentVal = {};
+        } else if (copyStoredValues && parentVal === updatedObject._getServerData()[parentProp]) {
+          // A copy, so that a revert restores the stored value
+          parentVal = copyStoredValue(parentVal);
         }
         parentVal[splittedKey[1]] = data[key];
         updatedObject.set(parentProp, parentVal);
@@ -2258,6 +2307,43 @@ RestWrite.prototype.filterProtectedFieldsInResponse = async function () {
       delete this.response.response[key];
     }
   }
+};
+
+// Copies a stored value whose in-place change the SDK would save
+const copyStoredValue = value => {
+  if (Array.isArray(value)) {
+    return [...value];
+  }
+  if (value instanceof Parse.GeoPoint) {
+    return new Parse.GeoPoint(value.latitude, value.longitude);
+  }
+  if (value instanceof Parse.Polygon) {
+    return new Parse.Polygon(value.coordinates);
+  }
+  if (value instanceof Parse.ACL) {
+    return new Parse.ACL(value.toJSON());
+  }
+  if (value !== null && Object.getPrototypeOf(value) === Object.prototype) {
+    return { ...value };
+  }
+  return value;
+};
+
+// Also reverts the dot notation keys beneath a reverted field
+const extendRevertToDotNotationKeys = object => {
+  const revert = object.revert;
+  Object.defineProperty(object, 'revert', {
+    configurable: true,
+    writable: true,
+    value: function (...keys) {
+      const stateController = Parse.CoreManager.getObjectStateController();
+      const pendingOps = stateController.getPendingOps(this._getStateIdentifier());
+      const beneath = Object.keys(pendingOps[pendingOps.length - 1]).filter(path =>
+        keys.some(key => typeof key === 'string' && path.startsWith(`${key}.`))
+      );
+      return revert.call(this, ...keys, ...beneath);
+    },
+  });
 };
 
 const hasOwn = (object, key) =>
@@ -2379,34 +2465,120 @@ RestWrite.prototype._restoreRevertedPath = function (response, writeData, writte
   response[target] = value === undefined ? { __op: 'Delete' } : value;
 };
 
-// Whether the caller can read the written object, or undefined if only a read can tell
-RestWrite.prototype._readAccessWithoutQuery = function () {
-  const readers = this.writtenReadAccess;
-  if (readers === undefined || (readers !== null && !Array.isArray(readers))) {
-    return undefined;
-  }
-  const aclGroup = this.runOptions.acl || [];
-  // Every client read applies the object ACL
-  if (readers && !readers.some(reader => aclGroup.includes(reader))) {
-    return false;
-  }
-  // afterSave may change the object after the write
-  if (triggers.triggerExists(this.className, triggers.Types.afterSave, this.config.applicationId)) {
-    return undefined;
-  }
-  // System classes have their own read rules
-  if (this.className.startsWith('_')) {
-    return undefined;
-  }
-  if (this.validSchemaController.testPermissionsForClassName(this.className, aclGroup, 'get')) {
-    return true;
+// The value of an operation applied to an empty value
+const appliedToEmpty = value => {
+  switch (value?.__op) {
+    case 'Increment':
+      return value.amount;
+    case 'Add':
+      return value.objects;
+    case 'AddUnique':
+      return _.uniqWith(value.objects, util.isDeepStrictEqual);
+    case 'Remove':
+      return [];
+    default:
+      return value;
   }
 };
 
-// Returns stored values in an update response only as the caller can read them
-RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
+// Sets the dot notation keys of the request in the response, applied to an empty value
+RestWrite.prototype._setRequestPaths = function (response) {
+  // Fields the response keeps, such as objectId
+  const kept = Object.keys(response);
+  const arrays = new Set();
+  for (const [key, value] of this.requestOperations) {
+    const segments = key.split('.');
+    if (segments.length < 2 || kept.includes(segments[0])) {
+      continue;
+    }
+    // The SDK cannot apply a dot notation path to ACL
+    if (segments[0] === 'ACL') {
+      continue;
+    }
+    const op = value?.__op;
+    // Another operation, such as a relation operation, has no value
+    if (op && op !== 'Delete' && !computedOperations.includes(op)) {
+      continue;
+    }
+    // An index below an Array field
+    if (
+      this.validSchemaController.getExpectedType(this.className, segments[0])?.type === 'Array' &&
+      /^\d+$/.test(segments[1])
+    ) {
+      arrays.add(segments[0]);
+    }
+    let container = response;
+    for (const segment of segments.slice(0, -1)) {
+      if (!hasOwn(container, segment) || !isContainer(container[segment])) {
+        container[segment] = {};
+      }
+      container = container[segment];
+    }
+    // An unset leaves only the parents
+    if (op !== 'Delete') {
+      container[segments[segments.length - 1]] = appliedToEmpty(value);
+    }
+  }
+  // Only the elements of the request, in index order
+  for (const field of arrays) {
+    response[field] = Object.values(response[field]);
+  }
+};
+
+// Whether the caller can read the object as written; changes after the write are not considered
+RestWrite.prototype._canReadWrittenObject = function (aclGroup) {
+  const readers = this.writtenReadAccess;
+  // A write result without valid read access fails closed
+  if (readers !== null && !Array.isArray(readers)) {
+    return false;
+  }
+  // The object ACL
+  if (readers && !readers.some(reader => aclGroup.includes(reader))) {
+    return false;
+  }
+  // A client reads a session with a find constrained to the session user
+  const operation = this.className === '_Session' ? 'find' : 'get';
+  const permissions = this.validSchemaController.getClassLevelPermissions(this.className);
+  if (
+    SchemaController.SchemaController.permissionDenial(
+      permissions,
+      this.className,
+      aclGroup,
+      operation
+    )
+  ) {
+    return false;
+  }
+  // The pointer permissions of the written object
+  const users = aclGroup.filter(entry => entry !== '*' && !entry.startsWith('role:'));
+  return SchemaController.SchemaController.testPointerPermissions(
+    permissions,
+    aclGroup,
+    operation,
+    users.length === 1 ? users[0] : undefined,
+    field => {
+      let value = this.writtenObject?.[field];
+      // A create stores an operation applied to an empty value
+      if (!this.query) {
+        value = appliedToEmpty(value);
+      }
+      // An update result of the Postgres adapter has the objectId of a pointer
+      const expected = this.validSchemaController.getExpectedType(this.className, field);
+      return typeof value === 'string' && expected?.type === 'Pointer'
+        ? { __type: 'Pointer', className: expected.targetClass, objectId: value }
+        : value;
+    }
+  );
+};
+
+// Returns stored values in a save response only if the caller can read the object as written
+RestWrite.prototype.filterUnreadableFieldsInResponse = function () {
   const response = this.response?.response;
-  if (!this.query || !response || this.storage.responseFromTrigger) {
+  if (!response || this.storage.responseFromTrigger) {
+    return;
+  }
+  // Login and session requests build their own response
+  if (!this.query && this.writtenReadAccess === undefined) {
     return;
   }
   if (this.auth.isMaster || this.auth.isMaintenance) {
@@ -2414,87 +2586,46 @@ RestWrite.prototype.filterUnreadableFieldsInResponse = async function () {
   }
   // A session token issued by this request is not a stored value
   const issued = this.storage.issuedSessionToken;
+  // Nor is a required column that echoes the caller's unchanged input
+  const echoed = key =>
+    (requiredColumns.read[this.className] || []).includes(key) &&
+    !(this.storage.fieldsChangedByTrigger || []).includes(key) &&
+    !(key === 'username' && this.responseShouldHaveUsername) &&
+    util.isDeepStrictEqual(response[key], this.data[key]);
   const fields = Object.keys(response).filter(
     key =>
       !['objectId', 'createdAt', 'updatedAt'].includes(key) &&
-      !(key === 'sessionToken' && issued && response[key] === issued)
+      !(key === 'sessionToken' && issued && response[key] === issued) &&
+      !echoed(key)
   );
   if (!fields.length) {
     return;
   }
-  let reverted = [];
-  if (this.pendingOps.operations) {
-    const stateController = Parse.CoreManager.getObjectStateController();
-    const [pending] = stateController.getPendingOps(this.pendingOps.identifier);
-    reverted = Object.keys(this.pendingOps.operations).filter(key => !pending[key]);
-  }
-  const keys = fields.filter(key =>
-    reverted.some(path => path === key || path.startsWith(`${key}.`))
-  );
-  const readable = this._readAccessWithoutQuery();
-  if (readable && !keys.length) {
-    return;
-  }
-  let view;
-  if (readable !== false) {
-    try {
-      const query = await RestQuery({
-        method: RestQuery.Method.get,
-        config: this.config,
-        auth: this.auth,
-        className: this.className,
-        // A session update wraps the addressed objectId
-        restWhere: { objectId: this.query.objectId ?? this.query.$and?.[0]?.objectId },
-        // A secondary may not have the write yet
-        restOptions: { readPreference: 'primary' },
-        runBeforeFind: false,
-        runAfterFind: false,
-        context: this.context,
-      });
-      view = (await query.execute()).results[0];
-    } catch (error) {
-      // Fails closed; access denial is expected
-      const denied = [Parse.Error.OPERATION_FORBIDDEN, Parse.Error.OBJECT_NOT_FOUND];
-      if (!(error instanceof Parse.Error) || !denied.includes(error.code)) {
-        logger.warn('Failed to read the object for the save response', error);
-      }
-    }
-  }
-  if (!view) {
+  // A sign-up response is for the new user if it issues the new user a session
+  const signUp = !this.query && this.className === '_User' && !!issued;
+  const aclGroup = signUp ? ['*', this.data.objectId] : this.runOptions.acl || [];
+  if (!this._canReadWrittenObject(aclGroup)) {
     // No stored values for a caller who cannot read the object
     for (const key of fields) {
       delete response[key];
     }
-    for (const field of new Set(fields.map(key => key.split('.')[0]))) {
-      // The SDK cannot apply an operation to ACL
-      if (field !== 'ACL') {
-        response[field] = { __op: 'Delete' };
-      }
-    }
+    this._setRequestPaths(response);
     return;
   }
-  for (const key of keys) {
-    // Removed beneath a key the caller cannot read
-    if (!hasOwn(response, key)) {
-      continue;
-    }
-    const path = key.split('.');
-    const value = getOwnPath(view, path);
-    if (value === undefined) {
-      for (const responseKey of Object.keys(response)) {
-        if (responseKey.startsWith(`${key}.`)) {
-          delete response[responseKey];
-        }
-      }
-      if (key === 'ACL') {
-        // The SDK cannot apply an operation to ACL
+  // A field reverted in beforeSave has the value of the original object, which triggers that are
+  // exempt from protected fields read with the master key
+  if (this.config.protectedFieldsTriggerExempt && this.query && this.pendingOps.operations) {
+    const stateController = Parse.CoreManager.getObjectStateController();
+    const [pending] = stateController.getPendingOps(this.pendingOps.identifier);
+    const reverted = Object.keys(this.pendingOps.operations).filter(key => !pending[key]);
+    for (const key of fields) {
+      if (
+        reverted.some(
+          path => path === key || path.startsWith(`${key}.`) || key.startsWith(`${path}.`)
+        )
+      ) {
         delete response[key];
-      } else {
-        response[key] = { __op: 'Delete' };
       }
-    } else if (util.isDeepStrictEqual(response[key], getOwnPath(this.originalData, path))) {
-      // The stored value as the caller reads it
-      response[key] = value;
     }
   }
 };
@@ -2537,6 +2668,12 @@ RestWrite.prototype._updateResponseWithData = function (response, data, isFinalO
     skipKeys.push('updatedAt');
     delete response.objectId;
   }
+  // The client's operation results and dot notation parents, also if unchanged
+  const requested = this.requestOperations
+    .filter(([key]) =>
+      key.includes('.') ? hasOwn(data, key) : computedOperations.includes(data[key]?.__op)
+    )
+    .map(([key]) => key.split('.')[0]);
   for (const key in response) {
     if (skipKeys.includes(key)) {
       continue;
@@ -2546,7 +2683,7 @@ RestWrite.prototype._updateResponseWithData = function (response, data, isFinalO
       value == null ||
       (value.__type && value.__type === 'Pointer') ||
       util.isDeepStrictEqual(responseData[key], value) ||
-      util.isDeepStrictEqual((this.originalData || {})[key], value)
+      (!requested.includes(key) && util.isDeepStrictEqual((this.originalData || {})[key], value))
     ) {
       delete response[key];
     }
