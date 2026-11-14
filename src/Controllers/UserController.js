@@ -36,6 +36,33 @@ export class UserController extends AdaptableController {
     return (this.config || this.options).verifyUserEmails;
   }
 
+  // Reads a user as the user itself, or with the master or maintenance key of the request
+  async getUserAsSelf(config, auth, user, { installationId, context } = {}) {
+    const hasKey = auth.isMaster || auth.isMaintenance;
+    let readAuth = auth;
+    if (!hasKey) {
+      readAuth = new Auth.Auth({
+        config,
+        isMaster: false,
+        user: Parse.Object.fromJSON({ className: '_User', objectId: user.objectId }),
+        installationId,
+      });
+    }
+    let readable;
+    try {
+      const response = await rest.get(config, readAuth, '_User', user.objectId, {}, context);
+      const result = response.results?.[0];
+      // A beforeFind trigger can change the query
+      if (result?.objectId === user.objectId) {
+        readable = result;
+      }
+    } catch {
+      // Read access denied
+    }
+    // Only the identity of a user who cannot read itself
+    return readable || (hasKey ? user : { objectId: user.objectId });
+  }
+
   async setEmailVerifyToken(user, req, storage = {}) {
     const shouldSendEmail =
       this.shouldVerifyEmails === true ||

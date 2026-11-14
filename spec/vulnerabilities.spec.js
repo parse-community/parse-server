@@ -14403,4 +14403,407 @@ describe('Vulnerabilities', () => {
       });
     });
   });
+
+  describe('(GHSA-43rg-r2xr-q686) Login with authData returns user fields that the user is not allowed to read', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const master = { 'X-Parse-Master-Key': 'test' };
+    const maintenance = { 'X-Parse-Maintenance-Key': 'testing' };
+    const totpOptions = { algorithm: 'SHA1', digits: 6, period: 30 };
+    // Validates the token like a provider validates its credential
+    const provider = {
+      validateAppId: () => Promise.resolve(),
+      validateAuthData: authData => {
+        if (authData.token !== 'token') {
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid provider token.');
+        }
+      },
+    };
+    const providerWithHiddenData = {
+      validateAppId: () => Promise.resolve(),
+      validateAuthData: () => Promise.resolve(),
+      afterFind: authData => ({ id: authData.id }),
+    };
+    const soloProvider = {
+      validateAppId: () => Promise.resolve(),
+      validateAuthData: () => Promise.resolve(),
+      policy: 'solo',
+    };
+    const publicAccess = { '*': true };
+    const denyGet = { get: {}, find: publicAccess, create: publicAccess, update: publicAccess };
+    const denyFind = { get: publicAccess, find: {}, create: publicAccess, update: publicAccess };
+    const login = { authData: { provider: { id: 'id', token: 'token' } } };
+
+    const send = (method, path, body, extraHeaders = {}) =>
+      request({
+        method,
+        url: `${Parse.serverURL}${path}`,
+        headers: { ...headers, ...extraHeaders },
+        body: JSON.stringify(body),
+      });
+    const session = user => ({ 'X-Parse-Session-Token': user.sessionToken });
+    const setUserCLP = classLevelPermissions =>
+      send('PUT', '/schemas/_User', { classLevelPermissions }, master);
+    // A user with a password and a linked provider
+    const createUser = async (authData = {}) => {
+      const { data: user } = await send('POST', '/users', {
+        username: 'user',
+        password: 'password',
+        email: 'user@example.com',
+        phone: '555-0100',
+      });
+      await send(
+        'PUT',
+        `/users/${user.objectId}`,
+        { authData: { ...login.authData, ...authData } },
+        session(user)
+      );
+      return user;
+    };
+    // The response fields other than the identity and the session of the login
+    const storedFields = data =>
+      Object.keys(data).filter(
+        key => !['objectId', 'sessionToken', 'authDataResponse'].includes(key)
+      );
+
+    it('returns the fields that the user can read', async () => {
+      await reconfigureServer({ auth: { provider } });
+      const user = await createUser();
+      const response = await send('POST', '/users', login);
+      expect(response.status).toBe(200);
+      expect(response.data).toEqual(
+        jasmine.objectContaining({
+          objectId: user.objectId,
+          username: 'user',
+          email: 'user@example.com',
+          phone: '555-0100',
+          authData: { provider: { id: 'id', token: 'token' } },
+          ACL: { [user.objectId]: { read: true, write: true } },
+          sessionToken: jasmine.stringMatching(/^r:/),
+        })
+      );
+    });
+
+    it('returns the fields that the user can read through a role', async () => {
+      await reconfigureServer({ auth: { provider } });
+      const user = await createUser();
+      await send(
+        'POST',
+        '/roles',
+        {
+          name: 'reader',
+          ACL: { '*': { read: true } },
+          users: {
+            __op: 'AddRelation',
+            objects: [{ __type: 'Pointer', className: '_User', objectId: user.objectId }],
+          },
+        },
+        master
+      );
+      await send(
+        'PUT',
+        `/users/${user.objectId}`,
+        { ACL: { 'role:reader': { read: true, write: true } } },
+        master
+      );
+      const response = await send('POST', '/users', login);
+      expect(response.data.objectId).toBe(user.objectId);
+      expect(response.data.username).toBe('user');
+      expect(response.data.phone).toBe('555-0100');
+    });
+
+    it('returns the fields that the user can read when the find permission of the user class is denied', async () => {
+      await reconfigureServer({ auth: { provider } });
+      const user = await createUser();
+      await setUserCLP(denyFind);
+      const response = await send('POST', '/users', login);
+      expect(response.data.objectId).toBe(user.objectId);
+      expect(response.data.username).toBe('user');
+      expect(response.data.phone).toBe('555-0100');
+    });
+
+    it('returns the auth data that the login stores', async () => {
+      const storingProvider = {
+        validateAppId: () => Promise.resolve(),
+        validateAuthData: ({ id }) => ({ save: { id, stored: true } }),
+      };
+      await reconfigureServer({ auth: { provider: storingProvider } });
+      await createUser();
+      const response = await send('POST', '/users', login);
+      expect(response.data.sessionToken).toMatch(/^r:/);
+      expect(response.data.authData).toEqual({ provider: { id: 'id', stored: true } });
+    });
+
+    it('does not return a field that a beforeFind trigger of the user class does not select', async () => {
+      await reconfigureServer({ auth: { provider } });
+      const user = await createUser();
+      Parse.Cloud.beforeFind(Parse.User, ({ query }) => {
+        query.select('username');
+      });
+      const response = await send('POST', '/users', login);
+      expect(response.data.objectId).toBe(user.objectId);
+      expect(response.data.username).toBe('user');
+      expect(response.data.phone).toBeUndefined();
+    });
+
+    it('returns no stored values when a beforeFind trigger of the user class returns no objects', async () => {
+      await reconfigureServer({ auth: { provider } });
+      const user = await createUser();
+      Parse.Cloud.beforeFind(Parse.User, ({ master }) => (master ? undefined : []));
+      const response = await send('POST', '/users', login);
+      expect(response.data.objectId).toBe(user.objectId);
+      expect(response.data.sessionToken).toMatch(/^r:/);
+      expect(storedFields(response.data)).toEqual([]);
+    });
+
+    it('does not return another user when a beforeFind trigger of the user class changes the query', async () => {
+      await reconfigureServer({ auth: { provider } });
+      const user = await createUser();
+      const { data: other } = await send('POST', '/users', {
+        username: 'other',
+        password: 'password',
+      });
+      await send('PUT', `/users/${other.objectId}`, { ACL: { '*': { read: true } } }, master);
+      Parse.Cloud.beforeFind(Parse.User, () =>
+        new Parse.Query(Parse.User).equalTo('username', 'other')
+      );
+      const response = await send('POST', '/users', login);
+      expect(response.data.objectId).toBe(user.objectId);
+      expect(response.data.sessionToken).toMatch(/^r:/);
+      expect(storedFields(response.data)).toEqual([]);
+    });
+
+    it('does not return a value that an afterFind trigger of the user class replaces', async () => {
+      await reconfigureServer({ auth: { provider } });
+      Parse.Cloud.afterFind(Parse.User, ({ objects }) => {
+        objects.forEach(object => object.set('phone', 'redacted'));
+        return objects;
+      });
+      const user = await createUser();
+      const response = await send('POST', '/users', login);
+      expect(response.data.objectId).toBe(user.objectId);
+      expect(response.data.sessionToken).toMatch(/^r:/);
+      expect(response.data.phone).toBe('redacted');
+    });
+
+    describe('user without read access to itself', () => {
+      beforeEach(async () => {
+        await reconfigureServer({ auth: { provider } });
+      });
+
+      it('returns no stored values when the get permission of the user class is denied', async () => {
+        const user = await createUser();
+        await setUserCLP(denyGet);
+        const response = await send('POST', '/users', login);
+        expect(response.status).toBe(200);
+        expect(response.data.objectId).toBe(user.objectId);
+        expect(storedFields(response.data)).toEqual([]);
+        // The login creates a session of the user
+        const { data } = await send('GET', '/sessions/me', undefined, {
+          'X-Parse-Session-Token': response.data.sessionToken,
+        });
+        expect(data.user.objectId).toBe(user.objectId);
+      });
+
+      it('returns no stored values when the ACL does not allow the user to read itself', async () => {
+        const user = await createUser();
+        await send(
+          'PUT',
+          `/users/${user.objectId}`,
+          { ACL: { 'role:admin': { read: true, write: true } } },
+          master
+        );
+        const response = await send('POST', '/users', login);
+        expect(response.data.objectId).toBe(user.objectId);
+        expect(response.data.sessionToken).toMatch(/^r:/);
+        expect(storedFields(response.data)).toEqual([]);
+      });
+
+      it('returns no stored values for a request with the session token of the user', async () => {
+        const user = await createUser();
+        await setUserCLP(denyGet);
+        const response = await send(
+          'POST',
+          '/users',
+          { authData: { provider: { id: 'id' } } },
+          session(user)
+        );
+        expect(response.status).toBe(200);
+        expect(response.data).toEqual({ objectId: user.objectId });
+      });
+
+      it('returns no stored values when the user class has an afterSave trigger', async () => {
+        Parse.Cloud.afterSave(Parse.User, () => {});
+        const user = await createUser();
+        await setUserCLP(denyGet);
+        const response = await send('POST', '/users', login);
+        expect(response.data.objectId).toBe(user.objectId);
+        expect(response.data.sessionToken).toMatch(/^r:/);
+        expect(storedFields(response.data)).toEqual([]);
+      });
+
+      it('returns the plain object that an afterSave trigger returns', async () => {
+        await createUser();
+        await setUserCLP(denyGet);
+        Parse.Cloud.afterSave(Parse.User, () => ({ fromTrigger: true }));
+        const response = await send('POST', '/users', login);
+        expect(response.status).toBe(200);
+        expect(storedFields(response.data)).toEqual(['fromTrigger']);
+      });
+
+      it('returns the stored user for a request with the master key', async () => {
+        await reconfigureServer({ auth: { provider, hidden: providerWithHiddenData } });
+        const user = await createUser({ hidden: { id: 'hidden-id', secret: 'secret' } });
+        await setUserCLP(denyGet);
+        const response = await send('POST', '/users', login, master);
+        expect(response.data).toEqual(
+          jasmine.objectContaining({
+            objectId: user.objectId,
+            username: 'user',
+            phone: '555-0100',
+            authData: {
+              provider: { id: 'id', token: 'token' },
+              hidden: { id: 'hidden-id', secret: 'secret' },
+            },
+          })
+        );
+      });
+
+      it('returns the stored user for a request with the maintenance key', async () => {
+        await reconfigureServer({ auth: { provider, hidden: providerWithHiddenData } });
+        const user = await createUser({ hidden: { id: 'hidden-id', secret: 'secret' } });
+        await setUserCLP(denyGet);
+        const response = await send('POST', '/users', login, maintenance);
+        expect(response.data).toEqual(
+          jasmine.objectContaining({
+            objectId: user.objectId,
+            username: 'user',
+            phone: '555-0100',
+            authData: {
+              provider: { id: 'id', token: 'token' },
+              hidden: { id: 'hidden-id', secret: 'secret' },
+            },
+          })
+        );
+      });
+    });
+
+    describe('protected fields', () => {
+      it('does not return a field that is protected from the user', async () => {
+        await reconfigureServer({
+          auth: { provider },
+          protectedFields: { _User: { '*': ['phone'] } },
+          protectedFieldsOwnerExempt: false,
+        });
+        const user = await createUser();
+        const response = await send('POST', '/users', login);
+        expect(response.data.objectId).toBe(user.objectId);
+        expect(response.data.username).toBe('user');
+        expect(response.data.phone).toBeUndefined();
+      });
+
+      it('does not return a protected field when save responses are not exempt', async () => {
+        await reconfigureServer({ auth: { provider }, protectedFieldsSaveResponseExempt: false });
+        const user = await createUser();
+        const response = await send('POST', '/users', login);
+        expect(response.data.objectId).toBe(user.objectId);
+        expect(response.data.username).toBe('user');
+        expect(response.data.email).toBeUndefined();
+      });
+    });
+
+    describe('auth data that an auth adapter hides', () => {
+      beforeEach(async () => {
+        await reconfigureServer({ auth: { provider, hidden: providerWithHiddenData } });
+      });
+
+      it('does not return the hidden data of another provider', async () => {
+        await createUser({ hidden: { id: 'hidden-id', secret: 'secret' } });
+        const response = await send('POST', '/users', login);
+        expect(response.data.sessionToken).toMatch(/^r:/);
+        expect(response.data.authData).toEqual({
+          provider: { id: 'id', token: 'token' },
+          hidden: { id: 'hidden-id' },
+        });
+      });
+
+      it('does not return the hidden data of the provider of the login', async () => {
+        await createUser({ hidden: { id: 'hidden-id', secret: 'secret' } });
+        const response = await send('POST', '/users', {
+          authData: { hidden: { id: 'hidden-id' } },
+        });
+        expect(response.data.sessionToken).toMatch(/^r:/);
+        expect(response.data.authData.hidden).toEqual({ id: 'hidden-id' });
+      });
+    });
+
+    describe('multi-factor authentication', () => {
+      const totp = { enabled: true, options: ['TOTP'], ...totpOptions };
+      const enrollTotp = async user => {
+        const OTPAuth = require('otpauth');
+        const secret = new OTPAuth.Secret();
+        const token = new OTPAuth.TOTP({ ...totpOptions, secret }).generate();
+        await send(
+          'PUT',
+          `/users/${user.objectId}`,
+          { authData: { mfa: { secret: secret.base32, token } } },
+          session(user)
+        );
+        return secret.base32;
+      };
+
+      it('does not return the TOTP secret and recovery codes for a request with the session token of the user', async () => {
+        await reconfigureServer({ auth: { provider, mfa: totp } });
+        const user = await createUser();
+        const secret = await enrollTotp(user);
+        const response = await send(
+          'POST',
+          '/users',
+          { authData: { provider: { id: 'id' }, mfa: {} } },
+          session(user)
+        );
+        expect(response.status).toBe(200);
+        expect(response.data.authData.mfa).toEqual({ status: 'enabled' });
+        expect(JSON.stringify(response.data)).not.toContain(secret);
+      });
+
+      it('does not return the TOTP secret and recovery codes for a login that needs no additional provider', async () => {
+        await reconfigureServer({ auth: { provider, solo: soloProvider, mfa: totp } });
+        const user = await createUser({ solo: { id: 'solo-id' } });
+        const secret = await enrollTotp(user);
+        const response = await send('POST', '/users', { authData: { solo: { id: 'solo-id' } } });
+        expect(response.data.sessionToken).toMatch(/^r:/);
+        expect(response.data.authData.mfa).toEqual({ status: 'enabled' });
+        expect(JSON.stringify(response.data)).not.toContain(secret);
+      });
+
+      it('does not return the code of a pending SMS enrollment', async () => {
+        let code;
+        const sms = {
+          enabled: true,
+          options: ['SMS'],
+          sendSMS: token => {
+            code = token;
+          },
+          digits: 6,
+          period: 30,
+        };
+        await reconfigureServer({ auth: { provider, mfa: sms } });
+        const user = await createUser();
+        await send(
+          'PUT',
+          `/users/${user.objectId}`,
+          { authData: { mfa: { mobile: '+15555550100' } } },
+          session(user)
+        );
+        expect(code).toMatch(/^\d{6}$/);
+        const response = await send('POST', '/users', login);
+        expect(response.data.sessionToken).toMatch(/^r:/);
+        expect(response.data.authData.mfa).toEqual({ status: 'disabled' });
+      });
+    });
+  });
 });
