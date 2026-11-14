@@ -128,6 +128,11 @@ module.exports.ParseServerOptions = {
     action: parsers.numberParser('cacheTTL'),
     default: 5000,
   },
+  cleanupInvalidInstallations: {
+    env: 'PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS',
+    help: 'Optional. If set to `true`, the `deviceToken` of an installation is removed when a push notification to that device fails because the push provider reports the token as invalid or unregistered (for example `Unregistered` or `BadDeviceToken` for APNS, `NotRegistered` or `InvalidRegistration` for FCM). This avoids repeatedly sending to devices that are known to be unreachable, which push providers may penalize. Note that the removal is based on error responses of the push provider, so valid tokens may be removed if the provider reports an error incorrectly. If `false`, installations are not modified. Defaults to the value of the environment variable `PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS`, otherwise `false`.',
+    action: parsers.booleanParser,
+  },
   clientKey: {
     env: 'PARSE_SERVER_CLIENT_KEY',
     help: 'Key for iOS, MacOS, tvOS clients',
