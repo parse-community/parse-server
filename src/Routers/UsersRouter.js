@@ -357,46 +357,11 @@ export class UsersRouter extends ClassesRouter {
       req.info.context
     );
 
-    // Re-fetch the user with the caller's auth context so that
-    // protectedFields and CLP apply correctly; if the caller used master key,
-    // protectedFields are bypassed, matching the behavior of GET /users/:id
-    const refetchAuth =
-      req.auth.isMaster || req.auth.isMaintenance
-        ? req.auth
-        : new Auth.Auth({
-          config: req.config,
-          isMaster: false,
-          user: Parse.Object.fromJSON({ className: '_User', objectId: user.objectId }),
-          installationId: req.info.installationId,
-        });
-    let filteredUser;
-    try {
-      const filteredUserResponse = await rest.get(
-        req.config,
-        refetchAuth,
-        '_User',
-        user.objectId,
-        {},
-        req.info.context
-      );
-      filteredUser = filteredUserResponse.results?.[0];
-    } catch {
-      // The re-fetch enforces `_User` `get` CLP and may be denied by access
-      // control (e.g. CLP `get: {}` or an ACL that excludes the caller).
-      // Handled below; never fall back to the raw row.
-    }
-    if (!filteredUser) {
-      // Master/maintenance callers bypass CLP, protectedFields, and authData
-      // afterFind, so for them an empty re-fetch is a genuine not-found edge, not
-      // an access-control denial; they are entitled to the full row. For every
-      // other caller, an empty/denied re-fetch means access control withheld the
-      // record, so disclose only the identity — never the raw row, which would
-      // leak fields hidden by `protectedFields` and raw `authData` (e.g. MFA
-      // secrets and recovery codes) that the sanitizing re-fetch would remove.
-      // The session token is still attached below so login succeeds.
-      filteredUser =
-        req.auth.isMaster || req.auth.isMaintenance ? user : { objectId: user.objectId };
-    }
+    // The user as the user itself can read it; a master or maintenance key reads the full user
+    const filteredUser = await req.config.userController.getUserAsSelf(req.config, req.auth, user, {
+      installationId: req.info.installationId,
+      context: req.info.context,
+    });
     UsersRouter.removeHiddenProperties(filteredUser);
     filteredUser.sessionToken = user.sessionToken;
     if (authDataResponse) {
@@ -470,45 +435,13 @@ export class UsersRouter extends ClassesRouter {
       .then(async user => {
         // Remove hidden properties.
         UsersRouter.removeHiddenProperties(user);
-        // Re-fetch the user with the caller's auth context so that
-        // protectedFields and CLP apply correctly; if the caller used master key,
-        // protectedFields are bypassed, matching the behavior of GET /users/:id
-        const refetchAuth =
-          req.auth.isMaster || req.auth.isMaintenance
-            ? req.auth
-            : new Auth.Auth({
-              config: req.config,
-              isMaster: false,
-              user: Parse.Object.fromJSON({ className: '_User', objectId: user.objectId }),
-              installationId: req.info.installationId,
-            });
-        let filteredUser;
-        try {
-          const filteredUserResponse = await rest.get(
-            req.config,
-            refetchAuth,
-            '_User',
-            user.objectId,
-            {},
-            req.info.context
-          );
-          filteredUser = filteredUserResponse.results?.[0];
-        } catch {
-          // The re-fetch enforces `_User` `get` CLP and may be denied by access
-          // control (e.g. CLP `get: {}` or an ACL that excludes the caller).
-          // Handled below; never fall back to the raw row.
-        }
-        if (!filteredUser) {
-          // See handleLogIn: master/maintenance callers bypass CLP,
-          // protectedFields, and authData afterFind, so an empty re-fetch is a
-          // genuine not-found edge for them and they are entitled to the full
-          // row. For all other callers, an empty/denied re-fetch means access
-          // control withheld the record, so disclose only the identity rather
-          // than the raw row, which would leak protectedFields and raw authData
-          // (e.g. MFA secrets and recovery codes).
-          filteredUser =
-            req.auth.isMaster || req.auth.isMaintenance ? user : { objectId: user.objectId };
-        }
+        // See handleLogIn
+        const filteredUser = await req.config.userController.getUserAsSelf(
+          req.config,
+          req.auth,
+          user,
+          { installationId: req.info.installationId, context: req.info.context }
+        );
         UsersRouter.removeHiddenProperties(filteredUser);
         return { response: filteredUser };
       })

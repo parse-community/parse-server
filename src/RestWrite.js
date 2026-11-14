@@ -178,6 +178,9 @@ RestWrite.prototype.execute = function () {
       return this.cleanUserAuthData();
     })
     .then(() => {
+      return this.filterUnreadableFieldsInLoginResponse();
+    })
+    .then(() => {
       return this.filterUnreadableFieldsInResponse();
     })
     .then(() => {
@@ -706,6 +709,7 @@ RestWrite.prototype.handleAuthData = async function (authData) {
           response: userResult,
           location: this.location(),
         };
+        this.storage.loginResponse = true;
         // Run beforeLogin hook before storing any updates
         // to authData on the db; changes to userResult
         // will be ignored.
@@ -2277,6 +2281,27 @@ RestWrite.prototype.cleanUserAuthData = function () {
       }
     }
   }
+};
+
+// Returns the user of a login with auth data as the user can read it
+RestWrite.prototype.filterUnreadableFieldsInLoginResponse = async function () {
+  if (!this.storage.loginResponse || this.storage.responseFromTrigger) {
+    return;
+  }
+  if (this.auth.isMaster || this.auth.isMaintenance) {
+    return;
+  }
+  const user = await this.config.userController.getUserAsSelf(
+    this.config,
+    this.auth,
+    { objectId: this.objectId() },
+    { installationId: this.auth.installationId, context: this.context }
+  );
+  const issued = this.storage.issuedSessionToken;
+  if (issued) {
+    user.sessionToken = issued;
+  }
+  this.response.response = user;
 };
 
 // Strips protected fields from the write response when protectedFieldsSaveResponseExempt is false.
