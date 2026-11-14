@@ -58,7 +58,9 @@ function stripUndefined(value, key = '', copyAll = false) {
   }
   if (Array.isArray(value)) {
     let copy = copyAll ? [] : undefined;
-    for (let i = 0; i < value.length; i++) {
+    // Read length once, as JSON.stringify does, in case a getter appends elements.
+    const length = value.length;
+    for (let i = 0; i < length; i++) {
       const raw = value[i];
       const item = stripUndefined(raw, String(i), copyAll) ?? null;
       if (!copy && item !== raw) {

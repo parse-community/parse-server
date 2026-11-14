@@ -855,6 +855,26 @@ describe('ParseServerRESTController', () => {
     expect(res.result).toEqual({ obj: { once: 'ok' }, list: ['ok', null] });
   });
 
+  it('should not visit array elements appended while reading (with directAccess)', async () => {
+    Parse.Cloud.define('returnGrowingArray', () => ({
+      toJSON() {
+        const list = [];
+        Object.defineProperty(list, 0, {
+          enumerable: true,
+          configurable: true,
+          get() {
+            list.push('appended');
+            return 'first';
+          },
+        });
+        list.length = 1;
+        return { list };
+      },
+    }));
+    const res = await RESTController.request('POST', '/functions/returnGrowingArray', {});
+    expect(res.result.list).toEqual(['first']);
+  });
+
   it('should call toJSON once for GET requests (with directAccess)', async () => {
     let calls = 0;
     const where = {
@@ -869,6 +889,8 @@ describe('ParseServerRESTController', () => {
 
   it('should reject a nested __proto__ key in the body (with directAccess)', async () => {
     const body = JSON.parse('{"nested": {"__proto__": {"polluted": true}}}');
+    // An undefined key after __proto__ forces the copy path to carry __proto__ over.
+    body.nested.after = undefined;
     await expectAsync(
       RESTController.request('POST', '/classes/ProtoObject', body)
     ).toBeRejectedWith(jasmine.objectContaining({ code: Parse.Error.INVALID_KEY_NAME }));
