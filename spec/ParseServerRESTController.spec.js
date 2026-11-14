@@ -1,7 +1,8 @@
-const ParseServerRESTController = require('../lib/ParseServerRESTController')
-  .ParseServerRESTController;
+const ParseServerRESTController =
+  require('../lib/ParseServerRESTController').ParseServerRESTController;
 const ParseServer = require('../lib/ParseServer').default;
 const Parse = require('parse/node').Parse;
+const request = require('../lib/request');
 
 let RESTController;
 
@@ -163,9 +164,7 @@ describe('ParseServerRESTController', () => {
         const results = await query.find();
         expect(createSpy.calls.count()).toBe(2);
         for (let i = 0; i + 1 < createSpy.calls.length; i = i + 2) {
-          expect(createSpy.calls.argsFor(i)[3]).toBe(
-            createSpy.calls.argsFor(i + 1)[3]
-          );
+          expect(createSpy.calls.argsFor(i)[3]).toBe(createSpy.calls.argsFor(i + 1)[3]);
         }
         expect(results.map(result => result.get('key')).sort()).toEqual(['value1', 'value2']);
       });
@@ -610,6 +609,294 @@ describe('ParseServerRESTController', () => {
     }
   });
 
+  it('should strip undefined values from cloud function responses (with directAccess)', async () => {
+    Parse.Cloud.define('returnUndefinedValues', () => {
+      return {
+        definedKey: 'value',
+        undefinedKey: undefined,
+        nested: { a: 1, b: undefined },
+        arrayWithUndefined: [1, undefined, 3],
+      };
+    });
+
+    const res = await RESTController.request(
+      'POST',
+      '/functions/returnUndefinedValues',
+      {},
+      { useMasterKey: true }
+    );
+
+    expect(res.result.definedKey).toEqual('value');
+    expect(res.result.undefinedKey).toBeUndefined();
+    expect(Object.hasOwnProperty.call(res.result, 'undefinedKey')).toBe(false);
+    expect(res.result.nested.a).toEqual(1);
+    expect(Object.hasOwnProperty.call(res.result.nested, 'b')).toBe(false);
+    expect(res.result.arrayWithUndefined).toEqual([1, null, 3]);
+  });
+
+  it('should strip undefined values from cloud function responses (without directAccess)', async () => {
+    Parse.Cloud.define('returnUndefinedValuesHTTP', () => {
+      return {
+        definedKey: 'value',
+        undefinedKey: undefined,
+        nested: { a: 1, b: undefined },
+        arrayWithUndefined: [1, undefined, 3],
+      };
+    });
+
+    const serverURL = 'http://localhost:8378/1';
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': Parse.applicationId,
+      'X-Parse-Master-Key': Parse.masterKey,
+    };
+
+    const res = await request({
+      method: 'POST',
+      headers,
+      url: `${serverURL}/functions/returnUndefinedValuesHTTP`,
+      body: {},
+    });
+
+    const result = res.data.result;
+
+    expect(result.definedKey).toEqual('value');
+    expect(result.undefinedKey).toBeUndefined();
+    expect(Object.hasOwnProperty.call(result, 'undefinedKey')).toBe(false);
+    expect(result.nested.a).toEqual(1);
+    expect(Object.hasOwnProperty.call(result.nested, 'b')).toBe(false);
+    expect(result.arrayWithUndefined).toEqual([1, null, 3]);
+  });
+
+  it('should call toJSON() on cloud function results with a custom toJSON (with directAccess)', async () => {
+    Parse.Cloud.define('returnCustomToJSON', () => {
+      return {
+        raw: 'should be replaced',
+        undefinedKey: undefined,
+        toJSON() {
+          return { serialized: true, undefinedKey: undefined, nested: { b: undefined, c: 2 } };
+        },
+      };
+    });
+
+    const res = await RESTController.request(
+      'POST',
+      '/functions/returnCustomToJSON',
+      {},
+      { useMasterKey: true }
+    );
+
+    // toJSON() must be invoked (matching JSON.stringify in HTTP mode), not treated
+    // as a plain record, and undefined keys inside its result must be stripped.
+    expect(res.result.serialized).toEqual(true);
+    expect(res.result.raw).toBeUndefined();
+    expect(Object.hasOwnProperty.call(res.result, 'raw')).toBe(false);
+    expect(Object.hasOwnProperty.call(res.result, 'undefinedKey')).toBe(false);
+    expect(Object.hasOwnProperty.call(res.result, 'toJSON')).toBe(false);
+    expect(res.result.nested.c).toEqual(2);
+    expect(Object.hasOwnProperty.call(res.result.nested, 'b')).toBe(false);
+  });
+
+  it('should call toJSON() on cloud function results with a custom toJSON (without directAccess)', async () => {
+    Parse.Cloud.define('returnCustomToJSONHTTP', () => {
+      return {
+        raw: 'should be replaced',
+        undefinedKey: undefined,
+        toJSON() {
+          return { serialized: true, undefinedKey: undefined, nested: { b: undefined, c: 2 } };
+        },
+      };
+    });
+
+    const serverURL = 'http://localhost:8378/1';
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': Parse.applicationId,
+      'X-Parse-Master-Key': Parse.masterKey,
+    };
+
+    const res = await request({
+      method: 'POST',
+      headers,
+      url: `${serverURL}/functions/returnCustomToJSONHTTP`,
+      body: {},
+    });
+
+    const result = res.data.result;
+    expect(result.serialized).toEqual(true);
+    expect(result.raw).toBeUndefined();
+    expect(Object.hasOwnProperty.call(result, 'raw')).toBe(false);
+    expect(Object.hasOwnProperty.call(result, 'undefinedKey')).toBe(false);
+    expect(Object.hasOwnProperty.call(result, 'toJSON')).toBe(false);
+    expect(result.nested.c).toEqual(2);
+    expect(Object.hasOwnProperty.call(result.nested, 'b')).toBe(false);
+  });
+
+  it('should not recurse when toJSON returns its own object (with directAccess)', async () => {
+    Parse.Cloud.define('returnSelfToJSON', () => ({
+      value: 1,
+      gone: undefined,
+      toJSON() {
+        return this;
+      },
+    }));
+    const res = await RESTController.request('POST', '/functions/returnSelfToJSON', {});
+    expect(res.result).toEqual({ value: 1 });
+  });
+
+  it('should omit nested values whose toJSON returns undefined (with directAccess)', async () => {
+    const empty = { toJSON: () => undefined };
+    Parse.Cloud.define('returnUndefinedToJSON', () => ({ a: 1, b: empty, list: [1, empty] }));
+    const res = await RESTController.request('POST', '/functions/returnUndefinedToJSON', {});
+    expect(res.result).toEqual({ a: 1, list: [1, null] });
+    expect(Object.hasOwnProperty.call(res.result, 'b')).toBe(false);
+  });
+
+  it('should reject instead of hanging when a body cannot be normalized (with directAccess)', async () => {
+    const body = {
+      bad: {
+        toJSON() {
+          throw new Error('cannot serialize');
+        },
+      },
+    };
+    await expectAsync(
+      RESTController.request('POST', '/classes/BadBodyObject', body)
+    ).toBeRejectedWithError('cannot serialize');
+  });
+
+  it('should reject instead of hanging when a response cannot be normalized (with directAccess)', async () => {
+    Parse.Cloud.define('returnThrowingToJSON', () => ({
+      bad: {
+        toJSON() {
+          throw new Error('cannot serialize response');
+        },
+      },
+    }));
+    await expectAsync(
+      RESTController.request('POST', '/functions/returnThrowingToJSON', {})
+    ).toBeRejectedWithError('cannot serialize response');
+  });
+
+  it('should match JSON serialization for symbols and sparse arrays (with directAccess)', async () => {
+    Parse.Cloud.define('returnJSONEdgeCases', () => ({
+      a: 1,
+      sym: Symbol('s'),
+      // eslint-disable-next-line no-sparse-arrays
+      sparse: [1, , 3],
+    }));
+    const res = await RESTController.request('POST', '/functions/returnJSONEdgeCases', {});
+    expect(res.result).toEqual({ a: 1, sparse: [1, null, 3] });
+    expect(Object.hasOwnProperty.call(res.result, 'sym')).toBe(false);
+    expect(1 in res.result.sparse).toBe(true);
+  });
+
+  it('should store NaN and Infinity as null like HTTP mode (with directAccess)', async () => {
+    const { objectId } = await RESTController.request('POST', '/classes/NumberObject', {
+      a: 1,
+      b: 2,
+    });
+    await RESTController.request('PUT', `/classes/NumberObject/${objectId}`, {
+      a: NaN,
+      b: Infinity,
+    });
+    const obj = await RESTController.request('GET', `/classes/NumberObject/${objectId}`);
+    // Mongo returns null; Postgres omits null fields. Either way, not NaN/Infinity.
+    expect(obj.a ?? null).toBeNull();
+    expect(obj.b ?? null).toBeNull();
+  });
+
+  it('should only return enumerable properties of toJSON output, reading each once (with directAccess)', async () => {
+    Parse.Cloud.define('returnHiddenToJSON', () => ({
+      toJSON() {
+        const out = { public: 1 };
+        Object.defineProperty(out, 'secret', { value: 'hidden', enumerable: false });
+        let reads = 0;
+        Object.defineProperty(out, 'once', {
+          enumerable: true,
+          get() {
+            if (++reads > 1) {
+              throw new Error('read twice');
+            }
+            return 'ok';
+          },
+        });
+        return out;
+      },
+    }));
+    const res = await RESTController.request('POST', '/functions/returnHiddenToJSON', {});
+    expect(res.result).toEqual({ public: 1, once: 'ok' });
+    expect(Object.getOwnPropertyNames(res.result)).toEqual(['public', 'once']);
+  });
+
+  it('should read nested properties of toJSON output once (with directAccess)', async () => {
+    const readOnce = () => {
+      let reads = 0;
+      return () => {
+        if (++reads > 1) {
+          throw new Error('read twice');
+        }
+        return 'ok';
+      };
+    };
+    Parse.Cloud.define('returnNestedGetterToJSON', () => ({
+      toJSON() {
+        // The getter comes before the key that starts the copy.
+        const obj = {};
+        Object.defineProperty(obj, 'once', { enumerable: true, get: readOnce() });
+        obj.omitted = undefined;
+        const list = [];
+        Object.defineProperty(list, 0, { enumerable: true, get: readOnce() });
+        list[1] = undefined;
+        return { obj, list };
+      },
+    }));
+    const res = await RESTController.request('POST', '/functions/returnNestedGetterToJSON', {});
+    expect(res.result).toEqual({ obj: { once: 'ok' }, list: ['ok', null] });
+  });
+
+  it('should not visit array elements appended while reading (with directAccess)', async () => {
+    Parse.Cloud.define('returnGrowingArray', () => ({
+      toJSON() {
+        const list = [];
+        Object.defineProperty(list, 0, {
+          enumerable: true,
+          configurable: true,
+          get() {
+            list.push('appended');
+            return 'first';
+          },
+        });
+        list.length = 1;
+        return { list };
+      },
+    }));
+    const res = await RESTController.request('POST', '/functions/returnGrowingArray', {});
+    expect(res.result.list).toEqual(['first']);
+  });
+
+  it('should call toJSON once for GET requests (with directAccess)', async () => {
+    let calls = 0;
+    const where = {
+      toJSON() {
+        calls++;
+        return {};
+      },
+    };
+    await RESTController.request('GET', '/classes/ToJSONOnceObject', { where });
+    expect(calls).toBe(1);
+  });
+
+  it('should reject a nested __proto__ key in the body (with directAccess)', async () => {
+    const body = JSON.parse('{"nested": {"__proto__": {"polluted": true}}}');
+    // An undefined key after __proto__ forces the copy path to carry __proto__ over.
+    body.nested.after = undefined;
+    await expectAsync(
+      RESTController.request('POST', '/classes/ProtoObject', body)
+    ).toBeRejectedWith(jasmine.objectContaining({ code: Parse.Error.INVALID_KEY_NAME }));
+    expect(Object.prototype.polluted).toBeUndefined();
+  });
+
   it('ensures sessionTokens are properly handled', async () => {
     const user = await Parse.User.signUp('user', 'pass');
     const sessionToken = user.getSessionToken();
@@ -750,21 +1037,214 @@ describe('ParseServerRESTController', () => {
       data: { alert: 'We return status!' },
       where: { deviceType: 'ios' },
     };
-    const res = await RESTController.request('POST', 'batch', {
-      requests: [{
-        method: 'POST',
-        path: '/push',
-        body: payload,
-      }],
-    }, {
-      useMasterKey: true,
-      returnStatus: true,
-    });
+    const res = await RESTController.request(
+      'POST',
+      'batch',
+      {
+        requests: [
+          {
+            method: 'POST',
+            path: '/push',
+            body: payload,
+          },
+        ],
+      },
+      {
+        useMasterKey: true,
+        returnStatus: true,
+      }
+    );
     const pushStatusId = res[0]._headers['X-Parse-Push-Status-Id'];
     expect(pushStatusId).toBeDefined();
 
     const result = await Parse.Push.getPushStatus(pushStatusId);
     expect(result.id).toBe(pushStatusId);
+  });
+
+  it('should strip undefined values from GET query params with directAccess', async () => {
+    let capturedWhere;
+    Parse.Cloud.beforeFind('QueryStripObject', req => {
+      capturedWhere = req.query.toJSON().where;
+    });
+
+    const uniqueValue = `directAccess_${Date.now()}`;
+    await RESTController.request('POST', '/classes/QueryStripObject', {
+      presentField: uniqueValue,
+      absentField: undefined,
+    });
+
+    // If undefined values in "where" are not stripped, they would become null
+    // and the query would filter for absentField: null, failing to match the object.
+    const getRes = await RESTController.request('GET', '/classes/QueryStripObject', {
+      where: { presentField: uniqueValue, absentField: undefined },
+    });
+
+    expect(getRes.results.length).toBe(1);
+    expect(getRes.results[0].presentField).toBe(uniqueValue);
+    expect(capturedWhere.presentField).toBe(uniqueValue);
+    expect('absentField' in capturedWhere).toBe(false);
+  });
+
+  it('should strip undefined values from GET query params without directAccess (HTTP mode)', async () => {
+    let capturedWhere;
+    Parse.Cloud.beforeFind('QueryStripObjectHTTP', req => {
+      capturedWhere = req.query.toJSON().where;
+    });
+
+    const serverURL = 'http://localhost:8378/1';
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': Parse.applicationId,
+      'X-Parse-Master-Key': Parse.masterKey,
+    };
+    const uniqueValue = `httpMode_${Date.now()}`;
+
+    await request({
+      method: 'POST',
+      headers,
+      url: `${serverURL}/classes/QueryStripObjectHTTP`,
+      body: { presentField: uniqueValue, absentField: undefined },
+    });
+
+    // In HTTP mode, JSON.stringify naturally strips undefined values from the where clause.
+    const getRes = await request({
+      method: 'GET',
+      headers,
+      url: `${serverURL}/classes/QueryStripObjectHTTP?where=${encodeURIComponent(JSON.stringify({ presentField: uniqueValue, absentField: undefined }))}`,
+    });
+
+    expect(getRes.data.results.length).toBe(1);
+    expect(getRes.data.results[0].presentField).toBe(uniqueValue);
+    expect(capturedWhere.presentField).toBe(uniqueValue);
+    expect('absentField' in capturedWhere).toBe(false);
+  });
+
+  it('should not convert undefined values to null on update with directAccess', async () => {
+    const createRes = await RESTController.request('POST', '/classes/MyObject', {
+      presentField: 'hello',
+    });
+    expect(createRes.objectId).toBeDefined();
+
+    await RESTController.request('PUT', `/classes/MyObject/${createRes.objectId}`, {
+      presentField: 'updated',
+      absentField: undefined,
+      nested: { absentField: undefined, presentField: 'value' },
+    });
+
+    const getRes = await RESTController.request('GET', `/classes/MyObject/${createRes.objectId}`);
+
+    expect(getRes.presentField).toBe('updated');
+    expect(getRes.absentField).toBeUndefined();
+    expect('absentField' in getRes).toBe(false);
+    expect(getRes.nested).toBeDefined();
+    expect(getRes.nested.presentField).toBe('value');
+    expect('absentField' in getRes.nested).toBe(false);
+  });
+
+  it('should not convert undefined values to null on create with directAccess', async () => {
+    const createRes = await RESTController.request('POST', '/classes/MyObject', {
+      presentField: 'hello',
+      absentField: undefined,
+    });
+    expect(createRes.objectId).toBeDefined();
+
+    const getRes = await RESTController.request('GET', `/classes/MyObject/${createRes.objectId}`);
+
+    expect(getRes.presentField).toBe('hello');
+    expect(getRes.absentField).toBeUndefined();
+    expect('absentField' in getRes).toBe(false);
+  });
+
+  it('should not throw when request body is frozen (directAccess)', async () => {
+    const createRes = await RESTController.request('POST', '/classes/MyObject', {
+      presentField: 'hello',
+    });
+    expect(createRes.objectId).toBeDefined();
+
+    const body = Object.freeze({
+      presentField: 'updated',
+      absentField: undefined,
+      nested: Object.freeze({ absentField: undefined, presentField: 'value' }),
+      arrayWithUndefined: Object.freeze([1, undefined, 3]),
+    });
+
+    await RESTController.request('PUT', `/classes/MyObject/${createRes.objectId}`, body);
+
+    const getRes = await RESTController.request('GET', `/classes/MyObject/${createRes.objectId}`);
+
+    expect(getRes.presentField).toBe('updated');
+    expect('absentField' in getRes).toBe(false);
+    expect(getRes.nested.presentField).toBe('value');
+    expect('absentField' in getRes.nested).toBe(false);
+    expect(getRes.arrayWithUndefined).toEqual([1, null, 3]);
+  });
+
+  it('should not convert undefined values to null on update without directAccess (HTTP mode)', async () => {
+    const serverURL = 'http://localhost:8378/1';
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': Parse.applicationId,
+      'X-Parse-Master-Key': Parse.masterKey,
+    };
+
+    const createRes = await request({
+      method: 'POST',
+      headers,
+      url: `${serverURL}/classes/MyObject`,
+      body: { presentField: 'hello' },
+    });
+    expect(createRes.data.objectId).toBeDefined();
+
+    await request({
+      method: 'PUT',
+      headers,
+      url: `${serverURL}/classes/MyObject/${createRes.data.objectId}`,
+      body: {
+        presentField: 'updated',
+        absentField: undefined,
+        nested: { absentField: undefined, presentField: 'value' },
+      },
+    });
+
+    const getRes = await request({
+      method: 'GET',
+      headers,
+      url: `${serverURL}/classes/MyObject/${createRes.data.objectId}`,
+    });
+
+    expect(getRes.data.presentField).toBe('updated');
+    expect(getRes.data.absentField).toBeUndefined();
+    expect('absentField' in getRes.data).toBe(false);
+    expect(getRes.data.nested).toBeDefined();
+    expect(getRes.data.nested.presentField).toBe('value');
+    expect('absentField' in getRes.data.nested).toBe(false);
+  });
+
+  it('should not convert undefined values to null on create without directAccess (HTTP mode)', async () => {
+    const serverURL = 'http://localhost:8378/1';
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': Parse.applicationId,
+      'X-Parse-Master-Key': Parse.masterKey,
+    };
+
+    const createRes = await request({
+      method: 'POST',
+      headers,
+      url: `${serverURL}/classes/MyObject`,
+      body: { presentField: 'hello', absentField: undefined },
+    });
+    expect(createRes.data.objectId).toBeDefined();
+
+    const getRes = await request({
+      method: 'GET',
+      headers,
+      url: `${serverURL}/classes/MyObject/${createRes.data.objectId}`,
+    });
+
+    expect(getRes.data.presentField).toBe('hello');
+    expect(getRes.data.absentField).toBeUndefined();
+    expect('absentField' in getRes.data).toBe(false);
   });
 
   it('handles an object ID without alphanumeric characters', async () => {
