@@ -1,3 +1,10 @@
+# [9.12.0-alpha.3](https://github.com/parse-community/parse-server/compare/9.12.0-alpha.2...9.12.0-alpha.3) (2026-11-14)
+
+
+### Bug Fixes
+
+* Login with auth data discloses MFA secrets and user fields that the user is not allowed to read ([GHSA-43rg-r2xr-q686](https://github.com/parse-community/parse-server/security/advisories/GHSA-43rg-r2xr-q686)) ([#10886](https://github.com/parse-community/parse-server/issues/10886)) ([0d4e9d0](https://github.com/parse-community/parse-server/commit/0d4e9d03da69ebb720d09ebc79195c2b39a02062))
+
 # [9.12.0-alpha.2](https://github.com/parse-community/parse-server/compare/9.12.0-alpha.1...9.12.0-alpha.2) (2026-11-11)
 
 
