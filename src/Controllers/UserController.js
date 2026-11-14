@@ -51,7 +51,11 @@ export class UserController extends AdaptableController {
     let readable;
     try {
       const response = await rest.get(config, readAuth, '_User', user.objectId, {}, context);
-      readable = response.results?.[0];
+      const result = response.results?.[0];
+      // A beforeFind trigger can change the query
+      if (result?.objectId === user.objectId) {
+        readable = result;
+      }
     } catch {
       // Read access denied
     }

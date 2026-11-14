@@ -14559,6 +14559,23 @@ describe('Vulnerabilities', () => {
       expect(storedFields(response.data)).toEqual([]);
     });
 
+    it('does not return another user when a beforeFind trigger of the user class changes the query', async () => {
+      await reconfigureServer({ auth: { provider } });
+      const user = await createUser();
+      const { data: other } = await send('POST', '/users', {
+        username: 'other',
+        password: 'password',
+      });
+      await send('PUT', `/users/${other.objectId}`, { ACL: { '*': { read: true } } }, master);
+      Parse.Cloud.beforeFind(Parse.User, () =>
+        new Parse.Query(Parse.User).equalTo('username', 'other')
+      );
+      const response = await send('POST', '/users', login);
+      expect(response.data.objectId).toBe(user.objectId);
+      expect(response.data.sessionToken).toMatch(/^r:/);
+      expect(storedFields(response.data)).toEqual([]);
+    });
+
     it('does not return a value that an afterFind trigger of the user class replaces', async () => {
       await reconfigureServer({ auth: { provider } });
       Parse.Cloud.afterFind(Parse.User, ({ objects }) => {
