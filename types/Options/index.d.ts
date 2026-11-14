@@ -56,6 +56,7 @@ export interface ParseServerOptions {
     analyticsAdapter?: Adapter<AnalyticsAdapter>;
     filesAdapter?: Adapter<FilesAdapter>;
     push?: any;
+    cleanupInvalidInstallations?: boolean;
     scheduledPush?: boolean;
     loggerAdapter?: Adapter<LoggerAdapter>;
     jsonLogs?: boolean;
