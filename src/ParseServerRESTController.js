@@ -130,6 +130,13 @@ function ParseServerRESTController(applicationId, router) {
     }
 
     if (path === '/batch') {
+      // Normalize once, as HTTP serializes a batch once: transaction retries then
+      // reuse the same values and sub-requests never call toJSON() again.
+      try {
+        data = stripUndefined(data);
+      } catch (error) {
+        return Promise.reject(error);
+      }
       const batch = transactionRetries => {
         let initialPromise = Promise.resolve();
         if (data.transaction === true) {

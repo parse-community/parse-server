@@ -986,6 +986,34 @@ describe('ParseServerRESTController', () => {
     expect(spy.calls.argsFor(0)[2]).toEqual({ value: { sequence: 1 } });
   });
 
+  it('should normalize a transactional batch once across retries (with directAccess)', async () => {
+    const Config = require('../lib/Config');
+    const database = Config.get(Parse.applicationId).database;
+    spyOn(database, 'createTransactionalSession').and.resolveTo();
+    spyOn(database, 'abortTransactionalSession').and.resolveTo();
+    spyOn(database, 'commitTransactionalSession').and.resolveTo();
+    const routed = [];
+    Parse.Cloud.beforeSave('BatchRetryObject', req => {
+      routed.push(req.object.get('sequence'));
+      if (routed.length === 1) {
+        throw new Parse.Error(251, 'retry transaction');
+      }
+    });
+    let calls = 0;
+    await RESTController.request('POST', 'batch', {
+      transaction: true,
+      requests: [
+        {
+          method: 'POST',
+          path: '/classes/BatchRetryObject',
+          body: { sequence: { toJSON: () => ++calls } },
+        },
+      ],
+    });
+    expect(calls).toBe(1);
+    expect(routed).toEqual([1, 1]);
+  });
+
   it('should call toJSON once for GET requests (with directAccess)', async () => {
     let calls = 0;
     const where = {
