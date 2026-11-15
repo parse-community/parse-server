@@ -940,6 +940,52 @@ describe('ParseServerRESTController', () => {
     });
   });
 
+  it('should call toJSON on function values (with directAccess)', async () => {
+    Parse.Cloud.define('returnFunctionToJSON', () => ({
+      kept: Object.assign(function () {}, { toJSON: () => 7 }),
+      dropped: function () {},
+    }));
+    const res = await RESTController.request('POST', '/functions/returnFunctionToJSON', {});
+    expect(res.result).toEqual({ kept: 7 });
+  });
+
+  it('should call toJSON on function values (without directAccess)', async () => {
+    Parse.Cloud.define('returnFunctionToJSONHTTP', () => ({
+      kept: Object.assign(function () {}, { toJSON: () => 7 }),
+      dropped: function () {},
+    }));
+    const res = await request({
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
+      },
+      url: 'http://localhost:8378/1/functions/returnFunctionToJSONHTTP',
+      body: {},
+    });
+    expect(res.data.result).toEqual({ kept: 7 });
+  });
+
+  it('should pass the normalized body to the HTTP fallback (with directAccess)', async () => {
+    const SDKRESTController = require('parse/lib/node/RESTController').default;
+    const spy = spyOn(SDKRESTController, 'request').and.resolveTo({ ok: true });
+    let calls = 0;
+    const body = {
+      value: {
+        toJSON() {
+          return { sequence: ++calls };
+        },
+      },
+      absent: undefined,
+    };
+    const res = await RESTController.request('POST', '/notALocalRoute', body);
+    expect(res).toEqual({ ok: true });
+    expect(calls).toBe(1);
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy.calls.argsFor(0)[2]).toEqual({ value: { sequence: 1 } });
+  });
+
   it('should call toJSON once for GET requests (with directAccess)', async () => {
     let calls = 0;
     const where = {

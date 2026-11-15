@@ -39,10 +39,11 @@ function getAuth(options = {}, config) {
 // may carry non-enumerable own properties or getters that JSON serialization
 // would drop or read only once; SDK-encoded data is plain and never needs this.
 function stripUndefined(value, key = '', copyAll = false) {
-  // Like JSON.stringify, only objects and BigInts consult toJSON.
+  // Like JSON.stringify, only objects (including functions) and BigInts consult toJSON.
   const type = typeof value;
   if (
-    ((type === 'object' && value !== null) || type === 'bigint') &&
+    value !== null &&
+    (type === 'object' || type === 'function' || type === 'bigint') &&
     typeof value.toJSON === 'function'
   ) {
     value = value.toJSON(key);
@@ -241,7 +242,8 @@ function ParseServerRESTController(applicationId, router) {
                   err.code == Parse.Error.INVALID_JSON &&
                   err.message == `cannot route ${method} ${path}`
                 ) {
-                  RESTController.request.apply(null, args).then(resolve, reject);
+                  // Send the normalized body so toJSON() is not called a second time.
+                  RESTController.request(args[0], args[1], body, args[3]).then(resolve, reject);
                 } else {
                   reject(err);
                 }
