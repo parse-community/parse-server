@@ -41,13 +41,13 @@ function getAuth(options = {}, config) {
 function stripUndefined(value, key = '', copyAll = false) {
   // Like JSON.stringify, only objects (including functions) and BigInts consult toJSON.
   const type = typeof value;
-  if (
-    value !== null &&
-    (type === 'object' || type === 'function' || type === 'bigint') &&
-    typeof value.toJSON === 'function'
-  ) {
-    value = value.toJSON(key);
-    copyAll = true;
+  if (value !== null && (type === 'object' || type === 'function' || type === 'bigint')) {
+    // Read toJSON once, as JSON.stringify does, in case it is a getter.
+    const toJSON = value.toJSON;
+    if (typeof toJSON === 'function') {
+      value = toJSON.call(value, key);
+      copyAll = true;
+    }
   }
   // Unbox primitive wrappers, as JSON.stringify does.
   if (typeof value === 'object' && value !== null) {

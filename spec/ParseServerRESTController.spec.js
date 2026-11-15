@@ -1024,6 +1024,27 @@ describe('ParseServerRESTController', () => {
     ]);
   });
 
+  it('should read a toJSON getter once (with directAccess)', async () => {
+    Parse.Cloud.define('returnToJSONGetter', () => ({
+      toJSON() {
+        let reads = 0;
+        const child = {};
+        Object.defineProperty(child, 'toJSON', {
+          enumerable: false,
+          get() {
+            if (++reads > 1) {
+              throw new Error('toJSON read twice');
+            }
+            return () => 7;
+          },
+        });
+        return { child };
+      },
+    }));
+    const res = await RESTController.request('POST', '/functions/returnToJSONGetter', {});
+    expect(res.result).toEqual({ child: 7 });
+  });
+
   it('should call toJSON once for GET requests (with directAccess)', async () => {
     let calls = 0;
     const where = {
