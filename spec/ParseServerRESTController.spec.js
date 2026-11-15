@@ -875,6 +875,40 @@ describe('ParseServerRESTController', () => {
     expect(res.result.list).toEqual(['first']);
   });
 
+  describe('primitive wrappers returned by toJSON', () => {
+    /* eslint-disable no-new-wrappers */
+    const defineWrappers = name =>
+      Parse.Cloud.define(name, () => ({
+        num: { toJSON: () => new Number(7) },
+        nan: { toJSON: () => new Number(NaN) },
+        str: { toJSON: () => new String('text') },
+        bool: { toJSON: () => new Boolean(false) },
+      }));
+    /* eslint-enable no-new-wrappers */
+    const expected = { num: 7, nan: null, str: 'text', bool: false };
+
+    it('are unboxed (with directAccess)', async () => {
+      defineWrappers('returnWrappers');
+      const res = await RESTController.request('POST', '/functions/returnWrappers', {});
+      expect(res.result).toEqual(expected);
+    });
+
+    it('are unboxed (without directAccess)', async () => {
+      defineWrappers('returnWrappersHTTP');
+      const res = await request({
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': Parse.masterKey,
+        },
+        url: 'http://localhost:8378/1/functions/returnWrappersHTTP',
+        body: {},
+      });
+      expect(res.data.result).toEqual(expected);
+    });
+  });
+
   it('should call toJSON once for GET requests (with directAccess)', async () => {
     let calls = 0;
     const where = {

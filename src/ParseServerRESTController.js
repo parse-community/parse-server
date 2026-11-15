@@ -42,6 +42,16 @@ function stripUndefined(value, key = '', copyAll = false) {
     value = value.toJSON(key);
     copyAll = true;
   }
+  // Unbox primitive wrappers, as JSON.stringify does.
+  if (typeof value === 'object' && value !== null) {
+    if (value instanceof Number) {
+      value = Number(value);
+    } else if (value instanceof String) {
+      return String(value);
+    } else if (value instanceof Boolean) {
+      return value.valueOf();
+    }
+  }
   switch (typeof value) {
     case 'function':
     case 'symbol':
