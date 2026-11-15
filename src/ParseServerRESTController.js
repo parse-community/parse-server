@@ -49,7 +49,8 @@ function stripUndefined(value, key = '', copyAll = false) {
     } else if (value instanceof String) {
       return String(value);
     } else if (value instanceof Boolean) {
-      return value.valueOf();
+      // Read the internal value; JSON.stringify ignores an overridden valueOf here.
+      return Boolean.prototype.valueOf.call(value);
     }
   }
   switch (typeof value) {

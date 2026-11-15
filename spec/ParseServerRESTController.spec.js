@@ -883,9 +883,10 @@ describe('ParseServerRESTController', () => {
         nan: { toJSON: () => new Number(NaN) },
         str: { toJSON: () => new String('text') },
         bool: { toJSON: () => new Boolean(false) },
+        boolOverride: { toJSON: () => Object.assign(new Boolean(false), { valueOf: () => true }) },
       }));
     /* eslint-enable no-new-wrappers */
-    const expected = { num: 7, nan: null, str: 'text', bool: false };
+    const expected = { num: 7, nan: null, str: 'text', bool: false, boolOverride: false };
 
     it('are unboxed (with directAccess)', async () => {
       defineWrappers('returnWrappers');
