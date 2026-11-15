@@ -987,31 +987,41 @@ describe('ParseServerRESTController', () => {
   });
 
   it('should normalize a transactional batch once across retries (with directAccess)', async () => {
-    const Config = require('../lib/Config');
-    const database = Config.get(Parse.applicationId).database;
-    spyOn(database, 'createTransactionalSession').and.resolveTo();
-    spyOn(database, 'abortTransactionalSession').and.resolveTo();
-    spyOn(database, 'commitTransactionalSession').and.resolveTo();
+    // Config.get() creates a new DatabaseController per call, so mock the prototype.
+    const DatabaseController = require('../lib/Controllers/DatabaseController');
+    const createSession = spyOn(
+      DatabaseController.prototype,
+      'createTransactionalSession'
+    ).and.resolveTo();
+    spyOn(DatabaseController.prototype, 'abortTransactionalSession').and.resolveTo();
+    spyOn(DatabaseController.prototype, 'commitTransactionalSession').and.resolveTo();
     const routed = [];
     Parse.Cloud.beforeSave('BatchRetryObject', req => {
-      routed.push(req.object.get('sequence'));
+      routed.push([req.object.get('sequence'), req.object.get('counter')]);
       if (routed.length === 1) {
         throw new Parse.Error(251, 'retry transaction');
       }
     });
-    let calls = 0;
+    let toJSONCalls = 0;
+    let getterReads = 0;
+    // The getter comes first, so a lazy copy started by `sequence` would re-read it.
+    const body = {
+      get counter() {
+        return ++getterReads;
+      },
+      sequence: { toJSON: () => ++toJSONCalls },
+    };
     await RESTController.request('POST', 'batch', {
       transaction: true,
-      requests: [
-        {
-          method: 'POST',
-          path: '/classes/BatchRetryObject',
-          body: { sequence: { toJSON: () => ++calls } },
-        },
-      ],
+      requests: [{ method: 'POST', path: '/classes/BatchRetryObject', body }],
     });
-    expect(calls).toBe(1);
-    expect(routed).toEqual([1, 1]);
+    expect(createSession).toHaveBeenCalledTimes(2);
+    expect(toJSONCalls).toBe(1);
+    expect(getterReads).toBe(1);
+    expect(routed).toEqual([
+      [1, 1],
+      [1, 1],
+    ]);
   });
 
   it('should call toJSON once for GET requests (with directAccess)', async () => {

@@ -131,9 +131,10 @@ function ParseServerRESTController(applicationId, router) {
 
     if (path === '/batch') {
       // Normalize once, as HTTP serializes a batch once: transaction retries then
-      // reuse the same values and sub-requests never call toJSON() again.
+      // reuse the same values and sub-requests never call toJSON() again. Copy
+      // everything so getters are read once too; a batch is not a hot path.
       try {
-        data = stripUndefined(data);
+        data = stripUndefined(data, '', true);
       } catch (error) {
         return Promise.reject(error);
       }
