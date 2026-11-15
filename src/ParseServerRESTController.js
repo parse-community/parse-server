@@ -1,3 +1,4 @@
+/* global BigInt */
 const Config = require('./Config');
 const Auth = require('./Auth');
 import RESTController from 'parse/lib/node/RESTController';
@@ -38,7 +39,12 @@ function getAuth(options = {}, config) {
 // may carry non-enumerable own properties or getters that JSON serialization
 // would drop or read only once; SDK-encoded data is plain and never needs this.
 function stripUndefined(value, key = '', copyAll = false) {
-  if (value && typeof value.toJSON === 'function') {
+  // Like JSON.stringify, only objects and BigInts consult toJSON.
+  const type = typeof value;
+  if (
+    ((type === 'object' && value !== null) || type === 'bigint') &&
+    typeof value.toJSON === 'function'
+  ) {
     value = value.toJSON(key);
     copyAll = true;
   }
@@ -51,6 +57,8 @@ function stripUndefined(value, key = '', copyAll = false) {
     } else if (value instanceof Boolean) {
       // Read the internal value; JSON.stringify ignores an overridden valueOf here.
       return Boolean.prototype.valueOf.call(value);
+    } else if (value instanceof BigInt) {
+      value = BigInt.prototype.valueOf.call(value);
     }
   }
   switch (typeof value) {
@@ -59,6 +67,8 @@ function stripUndefined(value, key = '', copyAll = false) {
       return undefined;
     case 'number':
       return Number.isFinite(value) ? value : null;
+    case 'bigint':
+      throw new TypeError('Do not know how to serialize a BigInt');
     case 'object':
       if (value !== null) {
         break;

@@ -876,7 +876,6 @@ describe('ParseServerRESTController', () => {
   });
 
   describe('primitive wrappers returned by toJSON', () => {
-    /* eslint-disable no-new-wrappers */
     const defineWrappers = name =>
       Parse.Cloud.define(name, () => ({
         num: { toJSON: () => new Number(7) },
@@ -885,7 +884,6 @@ describe('ParseServerRESTController', () => {
         bool: { toJSON: () => new Boolean(false) },
         boolOverride: { toJSON: () => Object.assign(new Boolean(false), { valueOf: () => true }) },
       }));
-    /* eslint-enable no-new-wrappers */
     const expected = { num: 7, nan: null, str: 'text', bool: false, boolOverride: false };
 
     it('are unboxed (with directAccess)', async () => {
@@ -907,6 +905,38 @@ describe('ParseServerRESTController', () => {
         body: {},
       });
       expect(res.data.result).toEqual(expected);
+    });
+  });
+
+  describe('BigInt values returned by toJSON', () => {
+    const defineBigInt = (name, value) =>
+      Parse.Cloud.define(name, () => ({ toJSON: () => ({ id: value }) }));
+
+    it('are rejected (with directAccess)', async () => {
+      defineBigInt('returnBigInt', 1n);
+      defineBigInt('returnBoxedBigInt', Object(2n));
+      await expectAsync(
+        RESTController.request('POST', '/functions/returnBigInt', {})
+      ).toBeRejectedWithError(TypeError);
+      await expectAsync(
+        RESTController.request('POST', '/functions/returnBoxedBigInt', {})
+      ).toBeRejectedWithError(TypeError);
+    });
+
+    it('are rejected (without directAccess)', async () => {
+      defineBigInt('returnBigIntHTTP', 1n);
+      await expectAsync(
+        request({
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-Master-Key': Parse.masterKey,
+          },
+          url: 'http://localhost:8378/1/functions/returnBigIntHTTP',
+          body: {},
+        })
+      ).toBeRejected();
     });
   });
 
