@@ -1069,11 +1069,15 @@ class DatabaseController {
   // Returns a promise for a list of owning ids given some related ids.
   // className here is the owning className.
   owningIds(className: string, key: string, relatedIds: string[]): Promise<string[]> {
+    const ids = relatedIds.filter(id => id != null);
+    if (ids.length === 0) {
+      return Promise.resolve([]);
+    }
     return this.adapter
       .find(
         joinTableName(className, key),
         relationSchema,
-        { relatedId: { $in: relatedIds } },
+        { relatedId: { $in: ids } },
         { keys: ['owningId'] }
       )
       .then(results => results.map(result => result.owningId));
