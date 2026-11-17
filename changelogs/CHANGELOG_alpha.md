@@ -1,3 +1,10 @@
+# [9.12.0-alpha.4](https://github.com/parse-community/parse-server/compare/9.12.0-alpha.3...9.12.0-alpha.4) (2026-11-17)
+
+
+### Bug Fixes
+
+* LiveQuery discloses MFA secrets and auth data that an auth adapter hides to a subscription of the user itself ([GHSA-f92h-3w9f-hg55](https://github.com/parse-community/parse-server/security/advisories/GHSA-f92h-3w9f-hg55)) ([#10889](https://github.com/parse-community/parse-server/issues/10889)) ([5f16188](https://github.com/parse-community/parse-server/commit/5f16188c8703a1dba709aee67bdb61a546164ff3))
+
 # [9.12.0-alpha.3](https://github.com/parse-community/parse-server/compare/9.12.0-alpha.2...9.12.0-alpha.3) (2026-11-14)
 
 
