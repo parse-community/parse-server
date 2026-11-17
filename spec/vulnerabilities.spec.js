@@ -14806,4 +14806,499 @@ describe('Vulnerabilities', () => {
       });
     });
   });
+
+  describe('(GHSA-f92h-3w9f-hg55) LiveQuery sends auth data that an auth adapter hides to a subscription of the user itself', () => {
+    const OTPAuth = require('otpauth');
+    const { sleep } = require('../lib/TestUtils');
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const master = { 'X-Parse-Master-Key': 'test' };
+    const totpOptions = { algorithm: 'SHA1', digits: 6, period: 30 };
+    // Stores a secret that a read does not return
+    const hidden = {
+      validateAppId: () => Promise.resolve(),
+      validateAuthData: () => Promise.resolve(),
+      afterFind: authData => ({ id: authData.id }),
+    };
+    // The auth data as a read returns it to the user
+    const readable = { hidden: { id: 'id' }, mfa: { status: 'enabled' } };
+    let liveQueryServer;
+    let clients;
+
+    const send = (method, path, body, extraHeaders = {}) =>
+      request({
+        method,
+        url: `${Parse.serverURL}${path}`,
+        headers: { ...headers, ...extraHeaders },
+        body: JSON.stringify(body),
+      });
+    const session = user => ({ 'X-Parse-Session-Token': user.sessionToken });
+    const update = (user, body, extraHeaders = session(user)) =>
+      send('PUT', `/users/${user.objectId}`, body, extraHeaders);
+
+    beforeEach(() => {
+      clients = [];
+    });
+
+    afterEach(async () => {
+      await Promise.all(clients.map(client => client.close()));
+    });
+
+    async function setup(options = {}) {
+      const server = await reconfigureServer({
+        auth: { hidden, mfa: { enabled: true, options: ['TOTP'], ...totpOptions } },
+        liveQuery: { classNames: ['_User'] },
+        startLiveQueryServer: true,
+        verbose: false,
+        silent: true,
+        ...options,
+      });
+      liveQueryServer = server.liveQueryServer;
+      const { data: user } = await send('POST', '/users', {
+        username: 'user',
+        password: 'password',
+        phone: '555-0100',
+      });
+      return user;
+    }
+
+    const linkProvider = user =>
+      update(user, { authData: { hidden: { id: 'id', secret: 'hidden-secret' } } });
+
+    // Enables MFA and returns the values that a read does not return
+    async function enableMfa(user) {
+      const secret = new OTPAuth.Secret();
+      const token = new OTPAuth.TOTP({ ...totpOptions, secret }).generate();
+      const { data } = await update(user, { authData: { mfa: { secret: secret.base32, token } } });
+      return [secret.base32, ...data.authDataResponse.mfa.recovery.split(', '), 'hidden-secret'];
+    }
+
+    // A user with a linked provider and MFA
+    async function setupWithAuthData(options) {
+      const user = await setup(options);
+      await linkProvider(user);
+      return { user, secrets: await enableMfa(user) };
+    }
+
+    // Subscribes to the user with a session token, or with the master key
+    async function subscribe(
+      user,
+      sessionToken,
+      { masterKey, query, subscribeToken = sessionToken } = {}
+    ) {
+      const client = new Parse.LiveQueryClient({
+        applicationId: Parse.applicationId,
+        serverURL: 'ws://localhost:8378',
+        javascriptKey: 'test',
+        masterKey,
+        sessionToken,
+      });
+      clients.push(client);
+      client.open();
+      const subscription = client.subscribe(
+        query || new Parse.Query(Parse.User).equalTo('objectId', user.objectId),
+        subscribeToken
+      );
+      await new Promise(resolve => subscription.on('open', resolve));
+      return subscription;
+    }
+
+    // Resolves with the next event of the subscription
+    const nextEvent = subscription =>
+      new Promise(resolve => {
+        for (const event of ['create', 'update', 'enter', 'leave', 'delete']) {
+          // An event without an original object passes the response instead
+          subscription.on(event, (object, original) =>
+            resolve({
+              event,
+              object: object.toJSON(),
+              original: original instanceof Parse.Object ? original.toJSON() : undefined,
+            })
+          );
+        }
+      });
+
+    const expectNoSecrets = (event, secrets) => {
+      const text = JSON.stringify(event);
+      for (const secret of secrets) {
+        expect(text).not.toContain(secret);
+      }
+    };
+
+    it('sends the auth data that the user can read when the user links a provider and enables MFA', async () => {
+      const user = await setup();
+      const { data: otherSession } = await send('POST', '/login', {
+        username: 'user',
+        password: 'password',
+      });
+      const subscription = await subscribe(user, otherSession.sessionToken);
+      const linked = nextEvent(subscription);
+      await linkProvider(user);
+      const linkEvent = await linked;
+      expect(linkEvent.object.authData).toEqual({ hidden: { id: 'id' } });
+      expectNoSecrets(linkEvent, ['hidden-secret']);
+      const enabled = nextEvent(subscription);
+      const secrets = await enableMfa(user);
+      const event = await enabled;
+      expect(event.event).toBe('update');
+      expect(event.object.authData).toEqual(readable);
+      expect(event.original.authData).toBeUndefined();
+      expectNoSecrets(event, secrets);
+    });
+
+    it('sends the auth data that the user can read when the user is saved with the master key', async () => {
+      const { user, secrets } = await setupWithAuthData();
+      const subscription = await subscribe(user, user.sessionToken);
+      const next = nextEvent(subscription);
+      await update(user, { phone: '555-0101' }, master);
+      const event = await next;
+      expect(event.event).toBe('update');
+      expect(event.object.phone).toBe('555-0101');
+      expect(event.object.authData).toEqual(readable);
+      expect(event.original.authData).toBeUndefined();
+      expectNoSecrets(event, secrets);
+    });
+
+    it('sends the auth data that the user can read when triggers are exempt from protected fields', async () => {
+      const { user, secrets } = await setupWithAuthData({ protectedFieldsTriggerExempt: true });
+      const subscription = await subscribe(user, user.sessionToken);
+      const next = nextEvent(subscription);
+      await update(user, { phone: '555-0101' });
+      const event = await next;
+      expect(event.object.authData).toEqual(readable);
+      expect(event.original.authData).toBeUndefined();
+      expectNoSecrets(event, secrets);
+    });
+
+    it('sends the auth data that the user can read when a request with auth data matches the user', async () => {
+      const { user, secrets } = await setupWithAuthData();
+      const subscription = await subscribe(user, user.sessionToken);
+      const next = nextEvent(subscription);
+      const response = await send(
+        'POST',
+        '/users',
+        { authData: { hidden: { id: 'id' }, mfa: {} } },
+        session(user)
+      );
+      expect(response.data.objectId).toBe(user.objectId);
+      const event = await next;
+      expect(event.event).toBe('create');
+      expect(event.object.authData).toEqual(readable);
+      expectNoSecrets(event, secrets);
+    });
+
+    it('sends the auth data that the user can read when the user updates itself', async () => {
+      const { user, secrets } = await setupWithAuthData();
+      const subscription = await subscribe(user, user.sessionToken);
+      const next = nextEvent(subscription);
+      await update(user, { phone: '555-0101' });
+      const event = await next;
+      expect(event.object.authData).toEqual(readable);
+      expectNoSecrets(event, secrets);
+    });
+
+    for (const [type, phone] of [
+      ['enter', '555-0101'],
+      ['leave', '555-0100'],
+    ]) {
+      it(`sends the auth data that the user can read when the user ${type}s a subscription`, async () => {
+        const { user, secrets } = await setupWithAuthData();
+        const query = new Parse.Query(Parse.User)
+          .equalTo('objectId', user.objectId)
+          .equalTo('phone', phone);
+        const subscription = await subscribe(user, user.sessionToken, { query });
+        const next = nextEvent(subscription);
+        await update(user, { phone: '555-0101' }, master);
+        const event = await next;
+        expect(event.event).toBe(type);
+        expect(event.object.phone).toBe('555-0101');
+        expect(event.object.authData).toEqual(readable);
+        expect(event.original.authData).toBeUndefined();
+        expectNoSecrets(event, secrets);
+      });
+    }
+
+    it('sends the auth data that the user can read to a subscription without a session token of its own', async () => {
+      const { user, secrets } = await setupWithAuthData();
+      const subscription = await subscribe(user, user.sessionToken, { subscribeToken: null });
+      const next = nextEvent(subscription);
+      await update(user, { phone: '555-0101' }, master);
+      const event = await next;
+      expect(event.object.authData).toEqual(readable);
+      expect(event.original.authData).toBeUndefined();
+      expectNoSecrets(event, secrets);
+    });
+
+    for (const op of ['get', 'find']) {
+      it(`sends the auth data that the user can read when only the ${op} permission of the user class is granted`, async () => {
+        const { user, secrets } = await setupWithAuthData();
+        // A query for only the object ID is a get
+        const query =
+          op === 'get'
+            ? new Parse.Query(Parse.User).equalTo('objectId', user.objectId)
+            : new Parse.Query(Parse.User).equalTo('username', 'user');
+        const subscription = await subscribe(user, user.sessionToken, { query });
+        const access = { '*': true };
+        const classLevelPermissions = { get: {}, find: {}, create: access, update: access };
+        classLevelPermissions[op] = access;
+        await send('PUT', '/schemas/_User', { classLevelPermissions }, master);
+        const next = nextEvent(subscription);
+        await update(user, { phone: '555-0101' }, master);
+        const event = await next;
+        expect(event.object.authData).toEqual(readable);
+        expectNoSecrets(event, secrets);
+      });
+    }
+
+    it('sends the auth data that the user can read when an afterEvent trigger is set', async () => {
+      const { user, secrets } = await setupWithAuthData();
+      Parse.Cloud.afterLiveQueryEvent('_User', () => {});
+      const subscription = await subscribe(user, user.sessionToken);
+      const next = nextEvent(subscription);
+      await update(user, { phone: '555-0101' }, master);
+      const event = await next;
+      expect(event.object.authData).toEqual(readable);
+      expect(event.original.authData).toBeUndefined();
+      expectNoSecrets(event, secrets);
+    });
+
+    it('passes the user of the subscription to the auth adapter', async () => {
+      // Returns a value of the user of the request
+      const provider = {
+        validateAppId: () => Promise.resolve(),
+        validateAuthData: () => Promise.resolve(),
+        afterFind: (authData, options, req) => ({
+          id: authData.id,
+          username: req.user?.get('username'),
+        }),
+      };
+      const user = await setup({ auth: { provider } });
+      await update(user, { authData: { provider: { id: 'id' } } });
+      const subscription = await subscribe(user, user.sessionToken);
+      const next = nextEvent(subscription);
+      await update(user, { phone: '555-0101' }, master);
+      const event = await next;
+      expect(event.object.authData).toEqual({ provider: { id: 'id', username: 'user' } });
+    });
+
+    it('sends no auth data when the user is deleted with the master key', async () => {
+      const { user, secrets } = await setupWithAuthData();
+      const subscription = await subscribe(user, user.sessionToken);
+      const next = nextEvent(subscription);
+      await send('DELETE', `/users/${user.objectId}`, undefined, master);
+      const event = await next;
+      expect(event.event).toBe('delete');
+      expect(event.object.authData).toBeUndefined();
+      expectNoSecrets(event, secrets);
+    });
+
+    it('sends no auth data when the user loses read access to itself', async () => {
+      const { user, secrets } = await setupWithAuthData();
+      const subscription = await subscribe(user, user.sessionToken);
+      const next = nextEvent(subscription);
+      await update(user, { ACL: {} }, master);
+      const event = await next;
+      expect(event.event).toBe('leave');
+      expect(event.object.authData).toBeUndefined();
+      expect(event.original.authData).toBeUndefined();
+      expectNoSecrets(event, secrets);
+    });
+
+    it('sends no auth data when the auth data cannot be read', async () => {
+      const { user, secrets } = await setupWithAuthData();
+      const subscriptions = [
+        await subscribe(user, user.sessionToken),
+        await subscribe(user, user.sessionToken),
+      ];
+      // Only the first read fails
+      const readAuthData = liveQueryServer._readAuthData.bind(liveQueryServer);
+      let reads = 0;
+      spyOn(liveQueryServer, '_readAuthData').and.callFake((...args) =>
+        reads++ ? readAuthData(...args) : Promise.reject(new Error('read failed'))
+      );
+      const logger = require('../lib/logger').default;
+      const logError = spyOn(logger, 'error').and.callThrough();
+      const failed = subscriptions.map(nextEvent);
+      await update(user, { phone: '555-0101' }, master);
+      for (const event of await Promise.all(failed)) {
+        expect(event.object.phone).toBe('555-0101');
+        expect(event.object.authData).toBeUndefined();
+        expect(event.original.authData).toBeUndefined();
+        expectNoSecrets(event, secrets);
+      }
+      const logged = logError.calls.allArgs().filter(([message]) => /read failed/.test(message));
+      expect(logged.length).toBe(1);
+      expect(liveQueryServer.authDataQueue.size).toBe(0);
+      const read = subscriptions.map(nextEvent);
+      await update(user, { phone: '555-0102' }, master);
+      for (const event of await Promise.all(read)) {
+        expect(event.object.authData).toEqual(readable);
+      }
+    });
+
+    it('sends no auth data to a subscription that is not of the user itself', async () => {
+      const { user, secrets } = await setupWithAuthData();
+      await update(user, {
+        ACL: { '*': { read: true }, [user.objectId]: { read: true, write: true } },
+      });
+      const { data: otherUser } = await send('POST', '/users', {
+        username: 'other',
+        password: 'password',
+      });
+      const subscriptions = [
+        await subscribe(user, user.sessionToken),
+        await subscribe(user, otherUser.sessionToken),
+        // The session token of the subscription takes precedence
+        await subscribe(user, user.sessionToken, { subscribeToken: otherUser.sessionToken }),
+        await subscribe(user),
+      ];
+      const next = subscriptions.map(nextEvent);
+      await update(user, { phone: '555-0101' }, master);
+      const [own, ...others] = await Promise.all(next);
+      expect(own.object.authData).toEqual(readable);
+      for (const other of others) {
+        expect(other.object.phone).toBe('555-0101');
+        expect(other.object.authData).toBeUndefined();
+        expect(other.original.authData).toBeUndefined();
+        expectNoSecrets(other, secrets);
+      }
+    });
+
+    it('sends no auth data when an afterEvent trigger removes it', async () => {
+      const { user } = await setupWithAuthData();
+      Parse.Cloud.afterLiveQueryEvent('_User', req => {
+        req.object.unset('authData');
+      });
+      const subscription = await subscribe(user, user.sessionToken);
+      const next = nextEvent(subscription);
+      await update(user, { phone: '555-0101' });
+      const event = await next;
+      expect(event.object.phone).toBe('555-0101');
+      expect(event.object.authData).toBeUndefined();
+    });
+
+    it('sends the stored auth data to a subscription with the master key', async () => {
+      const { user, secrets } = await setupWithAuthData({
+        liveQueryServerOptions: { keyPairs: { masterKey: 'test', javascriptKey: 'test' } },
+      });
+      const subscription = await subscribe(user, undefined, { masterKey: Parse.masterKey });
+      const next = nextEvent(subscription);
+      await update(user, { phone: '555-0101' }, master);
+      const event = await next;
+      expect(event.object.authData.mfa.secret).toBe(secrets[0]);
+      expect(event.original.authData.mfa.secret).toBe(secrets[0]);
+    });
+
+    it('sends a field named authData of another class', async () => {
+      await setup({ liveQuery: { classNames: ['TestObject'] } });
+      const subscription = await subscribe(undefined, undefined, {
+        query: new Parse.Query('TestObject'),
+      });
+      const next = nextEvent(subscription);
+      await new Parse.Object('TestObject').save({ authData: { provider: { id: 'id' } } });
+      const event = await next;
+      expect(event.object.authData).toEqual({ provider: { id: 'id' } });
+    });
+
+    it('reads the auth data once for an event that several subscriptions of the user receive', async () => {
+      const { user } = await setupWithAuthData();
+      const subscriptions = [
+        await subscribe(user, user.sessionToken),
+        await subscribe(user, user.sessionToken),
+        await subscribe(user, user.sessionToken, {
+          query: new Parse.Query(Parse.User).equalTo('username', 'user'),
+        }),
+      ];
+      const read = spyOn(liveQueryServer, '_readAuthData').and.callThrough();
+      const updated = subscriptions.map(nextEvent);
+      await update(user, { phone: '555-0101' }, master);
+      for (const event of await Promise.all(updated)) {
+        expect(event.object.authData).toEqual(readable);
+      }
+      expect(read).toHaveBeenCalledTimes(1);
+      read.calls.reset();
+      const deleted = subscriptions.map(nextEvent);
+      await send('DELETE', `/users/${user.objectId}`, undefined, master);
+      await Promise.all(deleted);
+      expect(read).toHaveBeenCalledTimes(1);
+    });
+
+    it('sends the events of a user in the order of the saves', async () => {
+      const { user } = await setupWithAuthData();
+      const subscription = await subscribe(user, user.sessionToken);
+      const phones = [];
+      subscription.on('update', object => phones.push(object.get('phone')));
+      const until = async condition => {
+        while (!condition()) {
+          await sleep(10);
+        }
+      };
+      // A read waits for the gate that is closed when the read starts
+      let gate;
+      const close = () => {
+        let open;
+        gate = new Promise(resolve => (open = resolve));
+        return open;
+      };
+      const readAuthData = liveQueryServer._readAuthData.bind(liveQueryServer);
+      const read = spyOn(liveQueryServer, '_readAuthData').and.callFake(async (...args) => {
+        await gate;
+        return readAuthData(...args);
+      });
+      // The first read waits, a second read that starts now would not wait
+      const openFirst = close();
+      await update(user, { phone: '555-0101' }, master);
+      await until(() => read.calls.count() === 1);
+      gate = undefined;
+      await update(user, { phone: '555-0102' }, master);
+      await sleep(100);
+      expect(phones).toEqual([]);
+      // The second read waits, a third read that starts now would not wait
+      const openSecond = close();
+      openFirst();
+      await until(() => phones.length >= 1 && read.calls.count() === 2);
+      gate = undefined;
+      await update(user, { phone: '555-0103' }, master);
+      await sleep(100);
+      expect(phones).toEqual(['555-0101']);
+      openSecond();
+      await until(() => phones.length >= 3);
+      expect(phones).toEqual(['555-0101', '555-0102', '555-0103']);
+      expect(liveQueryServer.authDataQueue.size).toBe(0);
+    });
+
+    it('reads the auth data with the primary read preference', async () => {
+      const { user } = await setupWithAuthData();
+      const subscription = await subscribe(user, user.sessionToken);
+      const find = spyOn(Config.get('test').database.adapter, 'find').and.callThrough();
+      const next = nextEvent(subscription);
+      await update(user, { phone: '555-0101' }, master);
+      await next;
+      const primaryReads = find.calls
+        .allArgs()
+        .filter(
+          ([className, , , options]) =>
+            className === '_User' && options.readPreference === 'PRIMARY'
+        );
+      expect(primaryReads.length).toBe(1);
+    });
+
+    it('does not run the find triggers of the user class to read the auth data', async () => {
+      const { user } = await setupWithAuthData();
+      const subscription = await subscribe(user, user.sessionToken);
+      const beforeFind = jasmine.createSpy('beforeFind');
+      const afterFind = jasmine.createSpy('afterFind').and.callFake(req => req.objects);
+      Parse.Cloud.beforeFind(Parse.User, beforeFind);
+      Parse.Cloud.afterFind(Parse.User, afterFind);
+      const next = nextEvent(subscription);
+      await update(user, { phone: '555-0101' }, master);
+      const event = await next;
+      expect(event.object.authData).toEqual(readable);
+      expect(beforeFind).not.toHaveBeenCalled();
+      expect(afterFind).not.toHaveBeenCalled();
+    });
+  });
 });
