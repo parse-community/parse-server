@@ -14928,6 +14928,12 @@ describe('Vulnerabilities', () => {
       }
     };
 
+    const until = async condition => {
+      while (!condition()) {
+        await sleep(10);
+      }
+    };
+
     it('sends the auth data that the user can read when the user links a provider and enables MFA', async () => {
       const user = await setup();
       const { data: otherSession } = await send('POST', '/login', {
@@ -15231,11 +15237,6 @@ describe('Vulnerabilities', () => {
       const subscription = await subscribe(user, user.sessionToken);
       const phones = [];
       subscription.on('update', object => phones.push(object.get('phone')));
-      const until = async condition => {
-        while (!condition()) {
-          await sleep(10);
-        }
-      };
       // A read waits for the gate that is closed when the read starts
       let gate;
       const close = () => {
@@ -15268,6 +15269,34 @@ describe('Vulnerabilities', () => {
       await until(() => phones.length >= 3);
       expect(phones).toEqual(['555-0101', '555-0102', '555-0103']);
       expect(liveQueryServer.authDataQueue.size).toBe(0);
+    });
+
+    it('sends an event without auth data after a pending event of the user', async () => {
+      const { user } = await setupWithAuthData();
+      Parse.Cloud.afterLiveQueryEvent('_User', req => {
+        if (req.object.get('phone') === '555-0102') {
+          req.object.unset('authData');
+        }
+      });
+      const subscription = await subscribe(user, user.sessionToken);
+      const phones = [];
+      subscription.on('update', object => phones.push(object.get('phone')));
+      // The read for the first event waits
+      let open;
+      const gate = new Promise(resolve => (open = resolve));
+      const readAuthData = liveQueryServer._readAuthData.bind(liveQueryServer);
+      const read = spyOn(liveQueryServer, '_readAuthData').and.callFake(async (...args) => {
+        await gate;
+        return readAuthData(...args);
+      });
+      await update(user, { phone: '555-0101' }, master);
+      await until(() => read.calls.count() === 1);
+      await update(user, { phone: '555-0102' }, master);
+      await sleep(100);
+      expect(phones).toEqual([]);
+      open();
+      await until(() => phones.length >= 2);
+      expect(phones).toEqual(['555-0101', '555-0102']);
     });
 
     it('reads the auth data with the primary read preference', async () => {

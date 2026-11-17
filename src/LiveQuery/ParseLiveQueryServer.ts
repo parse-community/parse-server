@@ -904,13 +904,19 @@ class ParseLiveQueryServer {
     appConfig: any,
     authDataReads: Map<string, Promise<any>>
   ) {
-    const isOwn = user?.id && res.object.objectId === user.id && res.object.authData;
+    const isOwn = user?.id && res.object.objectId === user.id;
+    const hasAuthData = !!res.object.authData;
     delete res.object.authData;
     if (res.original) {
       delete res.original.authData;
     }
+    if (!isOwn) {
+      return;
+    }
     // Standalone server has no app config
-    if (!isOwn || !appConfig) {
+    if (!hasAuthData || !appConfig) {
+      // After a pending read of the user, so that events keep their order
+      await this.authDataQueue.get(user.id);
       return;
     }
     if (!authDataReads.has(user.id)) {
