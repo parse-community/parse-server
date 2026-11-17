@@ -1045,6 +1045,48 @@ describe('ParseServerRESTController', () => {
     expect(res.result).toEqual({ child: 7 });
   });
 
+  it('should call toJSON with a shadowed call property (with directAccess)', async () => {
+    Parse.Cloud.define('returnShadowedCallToJSON', () => ({
+      toJSON: Object.assign(() => ({ value: 7 }), { call: null }),
+    }));
+    const res = await RESTController.request('POST', '/functions/returnShadowedCallToJSON', {});
+    expect(res.result).toEqual({ value: 7 });
+  });
+
+  describe('raw JSON values returned by toJSON', () => {
+    const defineRawJSON = name =>
+      Parse.Cloud.define(name, () => ({
+        toJSON: () => ({ amount: JSON.rawJSON('7'), label: JSON.rawJSON('"x"') }),
+      }));
+
+    beforeEach(() => {
+      if (typeof JSON.rawJSON !== 'function') {
+        pending('JSON.rawJSON is not available in this Node.js version');
+      }
+    });
+
+    it('are unwrapped (with directAccess)', async () => {
+      defineRawJSON('returnRawJSON');
+      const res = await RESTController.request('POST', '/functions/returnRawJSON', {});
+      expect(res.result).toEqual({ amount: 7, label: 'x' });
+    });
+
+    it('are unwrapped (without directAccess)', async () => {
+      defineRawJSON('returnRawJSONHTTP');
+      const res = await request({
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': Parse.masterKey,
+        },
+        url: 'http://localhost:8378/1/functions/returnRawJSONHTTP',
+        body: {},
+      });
+      expect(res.data.result).toEqual({ amount: 7, label: 'x' });
+    });
+  });
+
   it('should call toJSON once for GET requests (with directAccess)', async () => {
     let calls = 0;
     const where = {

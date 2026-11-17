@@ -45,13 +45,16 @@ function stripUndefined(value, key = '', copyAll = false) {
     // Read toJSON once, as JSON.stringify does, in case it is a getter.
     const toJSON = value.toJSON;
     if (typeof toJSON === 'function') {
-      value = toJSON.call(value, key);
+      // Reflect.apply, so a shadowed `call` property on toJSON is not used.
+      value = Reflect.apply(toJSON, value, [key]);
       copyAll = true;
     }
   }
-  // Unbox primitive wrappers, as JSON.stringify does.
+  // Unbox raw JSON (Node 22+) and primitive wrappers, as JSON.stringify does.
   if (typeof value === 'object' && value !== null) {
-    if (value instanceof Number) {
+    if (JSON.isRawJSON && JSON.isRawJSON(value)) {
+      return JSON.parse(value.rawJSON);
+    } else if (value instanceof Number) {
       value = Number(value);
     } else if (value instanceof String) {
       return String(value);
