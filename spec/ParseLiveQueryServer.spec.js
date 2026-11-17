@@ -2013,6 +2013,63 @@ describe('ParseLiveQueryServer', function () {
     expect(res.object.note).toBe('note');
   });
 
+  it('removes the auth data of a user when the app config cannot be resolved', async () => {
+    const parseLiveQueryServer = new ParseLiveQueryServer({});
+    // `Config.get` returns undefined for a standalone LiveQuery server.
+    parseLiveQueryServer.config.appId = 'unknownAppId';
+    const client = {
+      hasMasterKey: false,
+      getSubscriptionInfo: jasmine
+        .createSpy('getSubscriptionInfo')
+        .and.returnValue({ sessionToken: 'sessionToken' }),
+    };
+    const user = () => ({
+      className: '_User',
+      objectId: testUserId,
+      note: 'note',
+      authData: { provider: { id: 'id', secret: 'secret' } },
+    });
+    const res = { object: user(), original: user() };
+    const read = spyOn(parseLiveQueryServer, '_readAuthData');
+
+    await parseLiveQueryServer._filterSensitiveData({}, res, client, 1, 'get', {});
+
+    expect(res.object.note).toBe('note');
+    expect(res.object.authData).toBeUndefined();
+    expect(res.original.authData).toBeUndefined();
+    expect(read).not.toHaveBeenCalled();
+  });
+
+  it('does not read the auth data of a user for another user', async () => {
+    const parseLiveQueryServer = new ParseLiveQueryServer({});
+    const read = spyOn(parseLiveQueryServer, '_readAuthData');
+    const res = {
+      object: { className: '_User', objectId: 'otherUserId', authData: { provider: { id: 'id' } } },
+    };
+
+    await parseLiveQueryServer._filterAuthData(res, { id: testUserId }, 'get', {}, new Map());
+
+    expect(res.object.authData).toBeUndefined();
+    expect(read).not.toHaveBeenCalled();
+  });
+
+  it('reads the auth data of each user of an event', async () => {
+    const parseLiveQueryServer = new ParseLiveQueryServer({});
+    spyOn(parseLiveQueryServer, '_readAuthData').and.callFake(async (config, user) => ({
+      provider: { id: user.id },
+    }));
+    const reads = new Map();
+    const event = objectId => ({ object: { className: '_User', objectId, authData: {} } });
+    const first = event('firstUserId');
+    const second = event('secondUserId');
+
+    await parseLiveQueryServer._filterAuthData(first, { id: 'firstUserId' }, 'get', {}, reads);
+    await parseLiveQueryServer._filterAuthData(second, { id: 'secondUserId' }, 'get', {}, reads);
+
+    expect(first.object.authData).toEqual({ provider: { id: 'firstUserId' } });
+    expect(second.object.authData).toEqual({ provider: { id: 'secondUserId' } });
+  });
+
   it('can validate key when valid key is provided', function () {
     const parseLiveQueryServer = new ParseLiveQueryServer(
       {},

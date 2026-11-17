@@ -25,6 +25,7 @@ import { LRUCache as LRU } from 'lru-cache';
 import UserRouter from '../Routers/UsersRouter';
 import DatabaseController from '../Controllers/DatabaseController';
 import { enforceRoleSecurity } from '../SharedRest';
+import RestQuery from '../RestQuery';
 import { isDeepStrictEqual } from 'util';
 
 
@@ -40,11 +41,14 @@ class ParseLiveQueryServer {
   subscriber: any;
   authCache: any;
   cacheController: any;
+  // userId -> last auth data read of the user
+  authDataQueue: Map<string, Promise<any>>;
 
   constructor(server: any, config: any = {}, parseServerConfig: any = {}) {
     this.server = server;
     this.clients = new Map();
     this.subscriptions = new Map();
+    this.authDataQueue = new Map();
     this.config = config;
 
     config.appId = config.appId || Parse.applicationId;
@@ -190,6 +194,8 @@ class ParseLiveQueryServer {
       return;
     }
 
+    // One auth data read per user and event
+    const authDataReads = new Map();
     for (const subscription of classSubscriptions.values()) {
       let isSubscriptionMatched;
       try {
@@ -262,7 +268,8 @@ class ParseLiveQueryServer {
               client,
               requestId,
               op,
-              subscription.query
+              subscription.query,
+              authDataReads
             );
             client.pushDelete(requestId, res.object);
           } catch (e) {
@@ -298,6 +305,8 @@ class ParseLiveQueryServer {
       logger.debug('Can not find subscriptions under this class ' + className);
       return;
     }
+    // One auth data read per user and event
+    const authDataReads = new Map();
     for (const subscription of classSubscriptions.values()) {
       let isOriginalSubscriptionMatched;
       let isCurrentSubscriptionMatched;
@@ -468,7 +477,8 @@ class ParseLiveQueryServer {
               client,
               requestId,
               op,
-              subscription.query
+              subscription.query,
+              authDataReads
             );
             const functionName = 'push' + res.event.charAt(0).toUpperCase() + res.event.slice(1);
             if (client[functionName]) {
@@ -812,7 +822,8 @@ class ParseLiveQueryServer {
     client?: any,
     requestId?: number,
     op?: string,
-    query?: any
+    query?: any,
+    authDataReads: Map<string, Promise<any>> = new Map()
   ) {
     const subscriptionInfo = client.getSubscriptionInfo(requestId);
     const aclGroup = ['*'];
@@ -880,6 +891,74 @@ class ParseLiveQueryServer {
     };
     res.object = filter(res.object);
     res.original = filter(res.original);
+    if (!client.hasMasterKey && res.object?.className === '_User') {
+      await this._filterAuthData(res, clientAuth?.user, op, appConfig, authDataReads);
+    }
+  }
+
+  // Replaces the auth data of a user event with the auth data the user itself can read
+  async _filterAuthData(
+    res: any,
+    user: any,
+    op: string,
+    appConfig: any,
+    authDataReads: Map<string, Promise<any>>
+  ) {
+    const isOwn = user?.id && res.object.objectId === user.id;
+    const hasAuthData = !!res.object.authData;
+    delete res.object.authData;
+    if (res.original) {
+      delete res.original.authData;
+    }
+    if (!isOwn) {
+      return;
+    }
+    // Standalone server has no app config
+    if (!hasAuthData || !appConfig) {
+      // After a pending read of the user, so that events keep their order
+      await this.authDataQueue.get(user.id);
+      return;
+    }
+    if (!authDataReads.has(user.id)) {
+      authDataReads.set(user.id, this._queueAuthDataRead(appConfig, user, op));
+    }
+    const authData = await authDataReads.get(user.id);
+    if (authData) {
+      res.object.authData = authData;
+    }
+  }
+
+  // Reads the auth data after the previous read of the user, so that events keep their order
+  _queueAuthDataRead(appConfig: any, user: any, op: string): Promise<any> {
+    const read = (this.authDataQueue.get(user.id) || Promise.resolve())
+      .then(() => this._readAuthData(appConfig, user, op))
+      .catch(e => {
+        logger.error(`Failed reading auth data of user ${user.id}: ${e?.message}`);
+      });
+    this.authDataQueue.set(user.id, read);
+    read.then(() => {
+      if (this.authDataQueue.get(user.id) === read) {
+        this.authDataQueue.delete(user.id);
+      }
+    });
+    return read;
+  }
+
+  // Reads the auth data of a user as the user itself, without find triggers
+  async _readAuthData(appConfig: any, user: any, op: string) {
+    const query = await RestQuery({
+      method: RestQuery.Method.get,
+      config: appConfig,
+      auth: new Auth({ config: appConfig, user }),
+      className: '_User',
+      restWhere: { objectId: user.id },
+      // The event follows a write
+      restOptions: { readPreference: 'PRIMARY' },
+      runBeforeFind: false,
+      runAfterFind: false,
+    });
+    const { results } = await query.execute({ op });
+    return results[0]?.authData;
   }
 
   _getCLPOperation(query: any) {
