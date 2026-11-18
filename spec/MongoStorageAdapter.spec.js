@@ -5,6 +5,7 @@ const { MongoClient, Collection } = require('mongodb');
 const databaseURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 const request = require('../lib/request');
 const Config = require('../lib/Config');
+const SchemaController = require('../lib/Controllers/SchemaController');
 const TestUtils = require('../lib/TestUtils');
 const Utils = require('../lib/Utils');
 const { randomUUID: uuidv4 } = require('crypto');
@@ -952,6 +953,33 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       const adapter = new MongoStorageAdapter({ uri: databaseURI });
       await expectAsync(adapter.dropIndex('MissingDropIndexClass', 'missing_index')).toBeRejected();
       await adapter.handleShutdown();
+    });
+
+    it('ensureIndex tolerates an existing conflicting index instead of crashing startup (#10431)', async () => {
+      await reconfigureServer({ databaseAdapter: undefined, databaseURI, databaseOptions: {} });
+      const adapter = Config.get(Parse.applicationId).database.adapter;
+      const collection = await adapter._adaptiveCollection('_Idempotency');
+      // Simulate a pre-existing `ttl` index created by an older Parse Server / driver whose stored
+      // spec conflicts with the one requested on startup (same name + key, different options). This
+      // produces IndexKeySpecsConflict (code 86) — the same failure MongoDB 8.0 triggers via its
+      // internal `enableOrderedIndex` field, which previously aborted server startup.
+      await collection._mongoCollection.dropIndex('ttl').catch(() => {});
+      await collection._mongoCollection.createIndex(
+        { expire: 1 },
+        { name: 'ttl', expireAfterSeconds: 100, sparse: true }
+      );
+      const schema = {
+        fields: {
+          ...SchemaController.defaultColumns._Default,
+          ...SchemaController.defaultColumns._Idempotency,
+        },
+      };
+      // Mirrors DatabaseController.performInitialization's TTL-index call, which previously threw.
+      await expectAsync(
+        adapter.ensureIndex('_Idempotency', schema, ['expire'], 'ttl', false, { ttl: 0 })
+      ).toBeResolved();
+      const indexes = await getIndexes('_Idempotency');
+      expect(indexes.find(idx => idx.name === 'ttl')).toBeDefined();
     });
   });
 
