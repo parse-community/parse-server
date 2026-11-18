@@ -120,19 +120,50 @@ export class AccountLockout {
   }
 
   /**
-   * handle login attempt if the Account Lockout Policy is enabled
+   * Reset the failed login count once a previous lockout has expired, so the user is
+   * granted a fresh set of attempts (threshold) instead of being re-locked on the first
+   * post-expiry failure.
    */
-  handleLoginAttempt(loginSuccessful) {
-    if (!this._config.accountLockout) {
-      return Promise.resolve();
-    }
-    return this._notLocked().then(() => {
-      if (loginSuccessful) {
-        return this._setFailedLoginCount(0);
+  _resetFailedLoginCountIfExpired() {
+    const query = {
+      username: this._user.username,
+      _account_lockout_expires_at: { $lt: Parse._encode(new Date()) },
+    };
+
+    const updateFields = {
+      _failed_login_count: 0,
+      _account_lockout_expires_at: { __op: 'Delete' },
+    };
+
+    return this._config.database.update('_User', query, updateFields).catch(err => {
+      if (
+        err &&
+        err.code &&
+        err.message &&
+        err.code === Parse.Error.OBJECT_NOT_FOUND &&
+        err.message === 'Object not found.'
+      ) {
+        return; // no expired lockout to reset
       } else {
-        return this._handleFailedLoginAttempt();
+        throw err; // unknown error
       }
     });
+  }
+
+  /**
+   * handle login attempt if the Account Lockout Policy is enabled
+   */
+  async handleLoginAttempt(loginSuccessful) {
+    if (!this._config.accountLockout) {
+      return;
+    }
+    await this._notLocked();
+    if (loginSuccessful) {
+      await this._setFailedLoginCount(0);
+    } else {
+      await this._resetFailedLoginCountIfExpired();
+      await this._handleFailedLoginAttempt();
+    }
   }
 
   /**
