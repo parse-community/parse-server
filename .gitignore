@@ -64,3 +64,6 @@ dump.rdb
 
 # AI agents
 .claude
+
+# Local-only spec migration tracking
+spec/spec_migration.md
