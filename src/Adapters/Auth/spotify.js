@@ -111,7 +111,8 @@ class SpotifyAdapter extends BaseAuthCodeAdapter {
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Spotify API request failed.');
     }
 
-    return response.json();
+    let responseJson = await response.json();
+    return responseJson.access_token;
   }
 }
 
