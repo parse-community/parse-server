@@ -410,6 +410,50 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     ).toBeRejectedWith(jasmine.is(error));
   });
 
+  it('handleShutdown closes the schema change stream before the client', async () => {
+    const adapter = new MongoStorageAdapter({
+      uri: databaseURI,
+      mongoOptions: { enableSchemaHooks: true },
+    });
+    adapter.watch(() => {});
+    await adapter._schemaCollection();
+    expect(adapter._stream).toBeDefined();
+    const stream = adapter._stream;
+    const closeOrder = [];
+    spyOn(stream, 'close').and.callFake(async () => closeOrder.push('stream'));
+    const clientClose = adapter.client.close.bind(adapter.client);
+    spyOn(adapter.client, 'close').and.callFake(async force => {
+      closeOrder.push('client');
+      return clientClose(force);
+    });
+
+    await adapter.handleShutdown();
+
+    expect(closeOrder).toEqual(['stream', 'client']);
+    expect(adapter._stream).toBeUndefined();
+  });
+
+  it('re-establishes the schema change stream after it failed', async () => {
+    const adapter = new MongoStorageAdapter({
+      uri: databaseURI,
+      mongoOptions: { enableSchemaHooks: true },
+    });
+    const onChange = jasmine.createSpy('onChange');
+    adapter.watch(onChange);
+    await adapter._schemaCollection();
+    const stream = adapter._stream;
+    expect(stream).toBeDefined();
+    stream.emit('change');
+    expect(onChange).toHaveBeenCalledTimes(1);
+    stream.emit('error', new Error('simulated non-resumable change stream error'));
+    expect(adapter._stream).toBeUndefined();
+    await adapter._schemaCollection();
+    expect(adapter._stream).toBeDefined();
+    expect(adapter._stream).not.toBe(stream);
+    await adapter.handleShutdown();
+    await stream.close().catch(() => {});
+  });
+
   it('handleShutdown, close connection', async () => {
     const adapter = new MongoStorageAdapter({ uri: databaseURI });
 
