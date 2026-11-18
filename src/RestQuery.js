@@ -1086,15 +1086,17 @@ _UnsafeRestQuery.prototype.handleInclude = async function () {
     return indexed;
   }, {});
 
-  // Build the execution tree
-  const executionTree = {}
+  // Build the execution tree; null-prototype objects so that path components
+  // naming inherited Object.prototype members (e.g. valueOf) are treated like
+  // any other unknown field name
+  const executionTree = Object.create(null)
   this.include.forEach(path => {
     let current = executionTree;
     path.forEach((node) => {
       if (!current[node]) {
         current[node] = {
           path,
-          children: {}
+          children: Object.create(null)
         };
       }
       current = current[node].children
