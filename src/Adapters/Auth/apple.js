@@ -3,7 +3,7 @@
  *
  * @class AppleAdapter
  * @param {Object} options - Configuration options for the adapter.
- * @param {string} options.clientId - Your Apple App ID.
+ * @param {string|string[]} options.clientId - Your Apple App ID, or an array of App IDs to accept tokens for multiple bundle IDs (e.g. separate iPhone and iPad apps sharing one Parse app).
  *
  * @param {Object} authData - The authentication data provided by the client.
  * @param {string} authData.id - The user ID obtained from Apple.
@@ -20,6 +20,10 @@
  *     }
  *   }
  * }
+ * ```
+ * `clientId` also accepts an array of App IDs to accept tokens issued for any of several bundle IDs:
+ * ```json
+ * { "auth": { "apple": { "clientId": ["12345", "67890"] } } }
  * ```
  *
  * ## Expected `authData` from the Client
@@ -73,7 +77,7 @@ const getAppleKeyByKeyId = async (keyId, cacheMaxEntries, cacheMaxAge) => {
 };
 
 const verifyIdToken = async ({ token, id }, { clientId, cacheMaxEntries, cacheMaxAge }) => {
-  if (!clientId) {
+  if (!clientId || (Array.isArray(clientId) && !clientId.length)) {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
       'Apple auth is not configured.'
