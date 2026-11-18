@@ -2388,6 +2388,36 @@ describe('Vulnerabilities', () => {
       expect(res.data.error).toBe('Permission denied');
     });
 
+    it('allows $relatedTo on a protected relation of the caller own _User object', async () => {
+      const owner = await Parse.User.signUp('owner', 'password');
+      owner.relation('bookmarks').add(childLinked);
+      await owner.save(null, { sessionToken: owner.getSessionToken() });
+      const other = await Parse.User.signUp('other', 'password');
+      const schema = new Parse.Schema('_User');
+      schema.setCLP({
+        find: { '*': true },
+        get: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+        protectedFields: { '*': ['bookmarks'] },
+      });
+      await schema.update();
+      const where = {
+        $relatedTo: {
+          object: { __type: 'Pointer', className: '_User', objectId: owner.id },
+          key: 'bookmarks',
+        },
+      };
+
+      const ownRes = await queryChild(where, { 'X-Parse-Session-Token': owner.getSessionToken() });
+      expect(ownRes.data.results.map(r => r.objectId)).toEqual([childLinked.id]);
+
+      const otherRes = await queryChild(where, { 'X-Parse-Session-Token': other.getSessionToken() });
+      expect(otherRes.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+    });
+
     it('denies $relatedTo on a protected relation field nested in $or', async () => {
       const res = await queryChild({
         $or: [relatedToWhere(parentProtectedKey.id, 'secretRel')],
