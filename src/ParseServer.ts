@@ -207,7 +207,8 @@ class ParseServer {
         new CheckRunner(security).run();
       }
       this.config.state = 'ok';
-      this.config = { ...this.config, ...pushController };
+      // Merge in place: the express app and the health endpoint hold a reference to this object
+      Object.assign(this.config, pushController);
       Config.put(this.config);
       return this;
     } catch (error) {
