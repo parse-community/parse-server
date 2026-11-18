@@ -434,6 +434,33 @@ describe('DatabaseController', function () {
     });
   });
 
+  describe('reduceInRelation', function () {
+    it('does not throw when a relation constraint operand is null', async () => {
+      const adapter = { find: jasmine.createSpy('find').and.returnValue(Promise.resolve([])) };
+      const databaseController = new DatabaseController(adapter, {});
+      const schema = { getExpectedType: () => ({ type: 'Relation' }) };
+
+      const inQuery = await databaseController.reduceInRelation(
+        'Owner',
+        { friends: { $in: [null] } },
+        schema
+      );
+      expect(inQuery).toEqual({ objectId: { $in: [] } });
+      const ninQuery = await databaseController.reduceInRelation(
+        'Owner',
+        { friends: { $nin: [null] } },
+        schema
+      );
+      expect(ninQuery).toEqual({ objectId: { $nin: [] } });
+      await databaseController.reduceInRelation(
+        'Owner',
+        { friends: { $ne: null, $in: [] } },
+        schema
+      );
+      expect(adapter.find).not.toHaveBeenCalled();
+    });
+  });
+
   describe('reduceOperations', function () {
     const databaseController = new DatabaseController();
 
