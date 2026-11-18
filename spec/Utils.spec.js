@@ -289,6 +289,50 @@ describe('Utils', () => {
     });
   });
 
+  describe('toISOString', () => {
+    it('formats dates the same as Date.prototype.toISOString', () => {
+      const edgeCases = [
+        0,
+        -1,
+        Date.UTC(1000, 0, 1),
+        Date.UTC(1000, 0, 1) - 1,
+        Date.UTC(10000, 0, 1) - 1,
+        Date.UTC(10000, 0, 1),
+        Date.UTC(2000, 1, 29, 23, 59, 59, 999),
+        Date.UTC(1900, 1, 28),
+        Date.UTC(2100, 2, 1),
+        Date.UTC(-1, 0, 1),
+        8.64e15,
+        -8.64e15,
+        // Every field different, so a swapped or misaligned field is caught.
+        Date.UTC(2017, 0, 18, 1, 2, 3, 456),
+        Date.UTC(2023, 9, 27, 13, 47, 21, 89),
+      ];
+      // Times across years 0-11000, covering the formatted range and the fallback on both sides,
+      // from a seeded generator so that a failure is reproducible. `Date.UTC` maps years 0-99 to
+      // 1900-1999, so the start of year 0 is set with `setUTCFullYear`.
+      const start = new Date(0).setUTCFullYear(0, 0, 1);
+      const end = Date.UTC(11000, 0, 1);
+      let seed = 1;
+      const next = () => {
+        seed = (seed * 48271) % 2147483647;
+        return seed / 2147483647;
+      };
+      const generated = Array.from({ length: 20000 }, () => Math.floor(start + next() * (end - start)));
+      const mismatches = [...edgeCases, ...generated]
+        .map(time => new Date(time))
+        .filter(date => Utils.toISOString(date) !== date.toISOString())
+        .map(date => `${date.toISOString()} formatted as ${Utils.toISOString(date)}`);
+      expect(mismatches).toEqual([]);
+    });
+
+    it('throws the same error as Date.prototype.toISOString for an invalid date', () => {
+      const date = new Date('invalid');
+      expect(() => date.toISOString()).toThrowError(RangeError);
+      expect(() => Utils.toISOString(date)).toThrowError(RangeError);
+    });
+  });
+
   describe('isDate', () => {
     it('should return true for a Date', () => {
       expect(Utils.isDate(new Date())).toBe(true);
