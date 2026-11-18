@@ -96,6 +96,30 @@ describe('AudiencesRouter', () => {
       });
   });
 
+  it('uses find condition from a where string in request.body', async () => {
+    const config = Config.get('test');
+    await rest.create(config, auth.master(config), '_Audience', {
+      name: 'Android Users',
+      query: '{ "test": "android" }',
+    });
+    await rest.create(config, auth.master(config), '_Audience', {
+      name: 'Iphone Users',
+      query: '{ "test": "ios" }',
+    });
+
+    const router = new AudiencesRouter();
+    const res = await router.handleFind({
+      config: config,
+      auth: auth.master(config),
+      body: { where: JSON.stringify({ query: '{ "test": "android" }' }) },
+      query: {},
+      info: {},
+    });
+
+    expect(res.response.results.length).toEqual(1);
+    expect(res.response.results[0].name).toEqual('Android Users');
+  });
+
   it('query installations with limit = 0', done => {
     const config = Config.get('test');
     const androidAudienceRequest = {
