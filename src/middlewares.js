@@ -13,6 +13,7 @@ import { pathToRegexp } from 'path-to-regexp';
 import RedisStore from 'rate-limit-redis';
 import { createClient } from 'redis';
 import { BlockList, isIPv4 } from 'net';
+import { createHash } from 'crypto';
 import { createSanitizedHttpError, createSanitizedError } from './Error';
 
 export const DEFAULT_ALLOWED_HEADERS =
@@ -681,6 +682,40 @@ const isInternalRequest = request =>
   request.socket?.remoteAddress === '127.0.0.1' &&
   request.headers?.['x-forwarded-for'] === undefined;
 
+/**
+ * Returns a deterministic scope identifier for a rate limit rule, derived from
+ * the rule identity: request path, request methods, zone, time window,
+ * request count and request eligibility (whether internal requests and
+ * master-key requests are counted). Two rules that differ in any of these get
+ * different scopes, so they never share a rate limit counter; identical rules
+ * get the same scope, so a limit still aggregates across server instances that
+ * share a Redis store. The identifier is a compact hash because the request
+ * path is a path-to-regexp pattern and must not be used verbatim as a key
+ * segment. A `requestMethods` value given as a RegExp is encoded by its
+ * source and flags, because a RegExp serializes to `{}` with `JSON.stringify`
+ * and two rules that differ only by `/GET/` versus `/POST/` would otherwise
+ * share a scope.
+ * @param {object} route The rate limit rule as passed to `addRateLimit`.
+ * @returns {string} A 12-character hex scope for the rule.
+ */
+export const getRateLimitRuleScope = route => {
+  const encodeRequestMethod = method =>
+    Utils.isRegExp(method) ? `/${method.source}/${method.flags}` : method;
+  const requestMethods = Array.isArray(route.requestMethods)
+    ? [...route.requestMethods].map(encodeRequestMethod).sort()
+    : encodeRequestMethod(route.requestMethods);
+  const identity = {
+    requestPath: route.requestPath,
+    requestMethods,
+    zone: route.zone || RateLimitOptions.zone.default,
+    requestTimeWindow: route.requestTimeWindow,
+    requestCount: route.requestCount,
+    includeInternalRequests: Boolean(route.includeInternalRequests),
+    includeMasterKey: Boolean(route.includeMasterKey),
+  };
+  return createHash('sha256').update(JSON.stringify(identity)).digest('hex').slice(0, 12);
+};
+
 export const addRateLimit = (route, config, cloud) => {
   if (typeof config === 'string') {
     config = Config.get(config);
@@ -693,6 +728,16 @@ export const addRateLimit = (route, config, cloud) => {
   if (!config.rateLimits) {
     config.rateLimits = [];
   }
+  // Each rate limit rule gets its own key scope, derived deterministically from
+  // the rule identity (route, methods, zone, window and count). Without this,
+  // all rules sharing a store would count against the same key -- which for
+  // Redis means the same `rl:<identity>` key and TTL -- and a request to one
+  // route would consume the quota of an unrelated route. The scope is applied
+  // in two places on purpose: the key generator isolates the counters for
+  // every store implementation (including the default in-memory store), while
+  // the Redis store prefix additionally namespaces the keys in Redis itself,
+  // so that keys of different rules can be distinguished when inspecting Redis.
+  const ruleScope = getRateLimitRuleScope(route);
   const redisStore = {
     connectionPromise: Promise.resolve(),
     store: null,
@@ -722,6 +767,9 @@ export const addRateLimit = (route, config, cloud) => {
         await redisStore.connectionPromise();
         return client.sendCommand(args);
       },
+      // Scope the Redis key namespace to this rule; without a prefix every
+      // rule shares the default `rl:` prefix and thus the same keys.
+      prefix: `rl:${ruleScope}:`,
     });
   }
   config.rateLimits.push({
@@ -767,22 +815,27 @@ export const addRateLimit = (route, config, cloud) => {
         return request.auth?.isMaster;
       },
       keyGenerator: async request => {
+        // The returned key is scoped to this rule (see `ruleScope` above), so
+        // that different rules never share a counter, even when they use the
+        // same store. The identity part is unchanged: app ID, session token,
+        // user ID or IP address, depending on the configured zone.
+        let identity;
         if (route.zone === Parse.Server.RateLimitZone.global) {
-          return request.config.appId;
-        }
-        const token = request.info.sessionToken;
-        if (route.zone === Parse.Server.RateLimitZone.session && token) {
-          return token;
-        }
-        if (route.zone === Parse.Server.RateLimitZone.user && token) {
-          if (!request.auth) {
-            await new Promise(resolve => handleParseSession(request, null, resolve));
+          identity = request.config.appId;
+        } else {
+          const token = request.info.sessionToken;
+          if (route.zone === Parse.Server.RateLimitZone.session && token) {
+            identity = token;
+          } else if (route.zone === Parse.Server.RateLimitZone.user && token) {
+            if (!request.auth) {
+              await new Promise(resolve => handleParseSession(request, null, resolve));
+            }
+            identity = request.auth?.user?.id || request.config.ip;
+          } else {
+            identity = request.config.ip;
           }
-          if (request.auth?.user?.id && route.zone === 'user') {
-            return request.auth.user.id;
-          }
         }
-        return request.config.ip;
+        return `${ruleScope}:${identity}`;
       },
       store: redisStore.store,
     }),
