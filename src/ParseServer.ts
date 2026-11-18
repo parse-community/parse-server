@@ -45,22 +45,25 @@ import CheckRunner from './Security/CheckRunner';
 import Deprecator from './Deprecator/Deprecator';
 import { DefinedSchemas } from './SchemaMigrations/DefinedSchemas';
 import OptionsDefinitions from './Options/Definitions';
-import { resolvingPromise, Connections } from './TestUtils';
+import { Connections, sleep } from './TestUtils';
+import { constants as osConstants } from 'os';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
 
-// Track connections to destroy them on shutdown
-const connections = new Connections();
 
 // ParseServer works like a constructor of an express app.
 // https://parseplatform.org/parse-server/api/master/ParseServerOptions.html
 class ParseServer {
   _app: any;
   config: any;
-  server: any;
+  _server: any;
   expressApp: any;
   liveQueryServer: any;
+  _connections: Connections;
+  _startPromise: Promise<this> | undefined;
+  _startAppPromise: Promise<this> | undefined;
+  _shutdownPromise: Promise<void> | undefined;
   /**
    * @constructor
    * @param {ParseServerOptions} options the parse server initialization options
@@ -137,6 +140,7 @@ class ParseServer {
     (options as any).state = 'initialized';
     this.config = Config.put(Object.assign({}, options, allControllers));
     this.config.masterKeyIpsStore = new Map();
+    this._connections = new Connections();
     this.config.maintenanceKeyIpsStore = new Map();
     this.config.readOnlyMasterKeyIpsStore = new Map();
     setRegexTimeout(options.liveQuery?.regexTimeout);
@@ -148,6 +152,18 @@ class ParseServer {
    */
 
   async start(): Promise<this> {
+    if (this._shutdownPromise) {
+      throw new Error('Parse Server cannot be started after handleShutdown() has been called');
+    }
+    if (!this._startPromise) {
+      this._startPromise = this._start().finally(() => {
+        this._startPromise = undefined;
+      });
+    }
+    return this._startPromise;
+  }
+
+  async _start(): Promise<this> {
     try {
       if (this.config.state === 'ok') {
         return this;
@@ -219,6 +235,22 @@ class ParseServer {
     }
   }
 
+  /**
+   * The HTTP server that serves this Parse Server. Set automatically by `startApp()`. When Parse
+   * Server is mounted into an existing express app, assign the server returned by `listen()` here
+   * so that `handleShutdown()` can drain and close it; connections are tracked from that moment on.
+   */
+  get server() {
+    return this._server;
+  }
+
+  set server(server: any) {
+    if (server && server !== this._server) {
+      this._connections.track(server);
+    }
+    this._server = server;
+  }
+
   get app() {
     if (!this._app) {
       this._app = ParseServer.app(this.config);
@@ -229,56 +261,176 @@ class ParseServer {
   /**
    * Stops the parse server, cancels any ongoing requests and closes all connections.
    *
-   * Currently, express doesn't shut down immediately after receiving SIGINT/SIGTERM
-   * if it has client connections that haven't timed out.
-   * (This is a known issue with node - https://github.com/nodejs/node/issues/2642)
+   * The shutdown happens in phases:
+   * 1. The server state is set to `draining`. The health endpoint responds with HTTP status `503`
+   *    while all other requests are still served, so that load balancers and orchestrators can stop
+   *    routing new traffic to this instance. This phase lasts `shutdownDrainDelay` milliseconds.
+   * 2. The HTTP server stops accepting new connections, LiveQuery clients are closed and idle
+   *    keep-alive connections are closed. Requests that are still in-flight are allowed to complete
+   *    for up to `shutdownTimeout` milliseconds, after which any remaining connections are destroyed.
+   * 3. The database, file and cache adapters are shut down, the state is set to `closed` and
+   *    `serverCloseComplete` is called.
    *
-   * @returns {Promise<void>} a promise that resolves when the server is stopped
+   * With the default option values of `0` the shutdown is immediate.
+   *
+   * If Parse Server is mounted into an existing Express app and the HTTP server is created outside
+   * of Parse Server, assign that HTTP server to `parseServer.server` after calling `listen()` so
+   * that it can be drained and closed here.
+   *
+   * Calling this method more than once returns the promise of the first call. A shutdown that is
+   * requested while `start()` or `startApp()` is in progress waits for the start to complete, and
+   * the server cannot be started again afterwards. Every step runs even if a previous step failed;
+   * the promise is rejected with an `AggregateError` of the collected errors once the shutdown has
+   * completed.
+   *
+   * @returns {Promise<void>} a promise that resolves once the server has shut down.
    */
-  async handleShutdown() {
-    const serverClosePromise = resolvingPromise();
-    const liveQueryServerClosePromise = resolvingPromise();
-    const promises = [];
-    this.server.close((error) => {
-      /* istanbul ignore next */
-      if (error) {
+  handleShutdown(): Promise<void> {
+    if (!this._shutdownPromise) {
+      this._shutdownPromise = this._handleShutdown();
+    }
+    return this._shutdownPromise;
+  }
+
+  async _handleShutdown() {
+    // Both options are validated in Config.validateOptions
+    const drainDelay = this.config.shutdownDrainDelay || 0;
+    const timeout = this.config.shutdownTimeout || 0;
+    const errors = [];
+    // One failing step must not prevent the remaining steps from running
+    const attempt = async (step: string, fn: () => any) => {
+      try {
+        await fn();
+      } catch (error) {
         // eslint-disable-next-line no-console
-        console.error('Error while closing parse server', error);
+        console.error(`Error during shutdown while ${step}`, error);
+        errors.push(error);
       }
-      serverClosePromise.resolve();
-    });
+    };
+    const waitAtMost = async (promise: Promise<any>, ms: number, onTimeout?: () => void) => {
+      let timer;
+      await Promise.race([
+        promise,
+        new Promise<void>(resolve => {
+          timer = setTimeout(() => {
+            onTimeout?.();
+            resolve();
+          }, ms);
+        }),
+      ]);
+      clearTimeout(timer);
+    };
+
+    // A shutdown that is requested while the server is starting waits for the start to complete,
+    // whether it succeeds or fails, so that the two never run concurrently.
+    const starting = this._startAppPromise || this._startPromise;
+    if (starting) {
+      await starting.catch(() => {});
+    }
+
+    // Phase 1: announce the shutdown via the health endpoint while still serving requests. A server
+    // that is not serving (never started, failed to start) must not start serving now.
+    if (this.config.state === 'ok') {
+      this.config.state = 'draining';
+      if (drainDelay > 0) {
+        await sleep(drainDelay);
+      }
+    }
+
+    // Phase 2: stop accepting new connections and let in-flight requests complete. LiveQuery
+    // clients are closed at the same time because their upgraded sockets keep the HTTP server open.
+    const servers = [];
+    if (this.server) {
+      servers.push(this.server);
+    }
     if (this.liveQueryServer?.server?.close && this.liveQueryServer.server !== this.server) {
-      this.liveQueryServer.server.close((error) => {
-        /* istanbul ignore next */
-        if (error) {
-          // eslint-disable-next-line no-console
-          console.error('Error while closing live query server', error);
+      servers.push(this.liveQueryServer.server);
+    }
+    if (servers.length === 0) {
+      logging
+        .getLogger()
+        .warn(
+          'Parse Server has no HTTP server to close. Assign the server returned by listen() to parseServer.server when mounting Parse Server into an existing express app.'
+        );
+    }
+    const serversClosed = Promise.all(
+      servers.map(
+        server =>
+          new Promise<void>(resolve => {
+            server.close((error: any) => {
+              /* istanbul ignore next */
+              if (error) {
+                // eslint-disable-next-line no-console
+                console.error('Error while closing server', error);
+              }
+              resolve();
+            });
+          })
+      )
+    );
+    const liveQueryClosed = this.liveQueryServer
+      ? attempt('shutting down the LiveQuery server', () => this.liveQueryServer.shutdown())
+      : Promise.resolve();
+    const allClosed = Promise.all([serversClosed, liveQueryClosed]);
+    if (timeout > 0) {
+      // Keep-alive connections that become idle after their current request completes are closed
+      // periodically, so that the shutdown does not wait for the client to close them.
+      const closeIdleInterval = setInterval(() => {
+        for (const server of servers) {
+          // Not available on http2 servers
+          if (typeof server.closeIdleConnections === 'function') {
+            server.closeIdleConnections();
+          }
         }
-        liveQueryServerClosePromise.resolve();
-      });
-    } else {
-      liveQueryServerClosePromise.resolve();
+      }, 100);
+      await waitAtMost(allClosed, timeout);
+      clearInterval(closeIdleInterval);
     }
+
+    // Phase 3: destroy remaining connections, including upgraded WebSocket sockets that
+    // closeAllConnections() does not cover, then shut down the adapters.
+    this._connections.destroyAll();
+    for (const server of servers) {
+      // Not available on http2 servers
+      if (typeof server.closeAllConnections === 'function') {
+        server.closeAllConnections();
+      }
+    }
+    // The LiveQuery teardown is awaited in full so that its errors are collected
+    await liveQueryClosed;
+    // Connections opened before the server was tracked cannot be destroyed; do not wait forever.
+    await waitAtMost(serversClosed, 1000, /* istanbul ignore next */ () => {
+      logging
+        .getLogger()
+        .warn('Shutdown proceeds with connections still open; they could not be closed.');
+    });
     const { adapter: databaseAdapter } = this.config.databaseController;
-    if (databaseAdapter && typeof databaseAdapter.handleShutdown === 'function') {
-      promises.push(databaseAdapter.handleShutdown());
-    }
     const { adapter: fileAdapter } = this.config.filesController;
-    if (fileAdapter && typeof fileAdapter.handleShutdown === 'function') {
-      promises.push(fileAdapter.handleShutdown());
-    }
     const { adapter: cacheAdapter } = this.config.cacheController;
-    if (cacheAdapter && typeof cacheAdapter.handleShutdown === 'function') {
-      promises.push(cacheAdapter.handleShutdown());
-    }
-    if (this.liveQueryServer) {
-      promises.push(this.liveQueryServer.shutdown());
-    }
-    await Promise.all(promises);
-    connections.destroyAll();
-    await Promise.all([serverClosePromise, liveQueryServerClosePromise]);
+    await Promise.all(
+      [
+        ['database', databaseAdapter],
+        ['files', fileAdapter],
+        ['cache', cacheAdapter],
+      ]
+        .filter(([, adapter]) => adapter && typeof adapter.handleShutdown === 'function')
+        .map(([name, adapter]) =>
+          attempt(`shutting down the ${name} adapter`, () => adapter.handleShutdown())
+        )
+    );
+    this.config.state = 'closed';
     if (this.config.serverCloseComplete) {
-      this.config.serverCloseComplete();
+      // Not awaited: the callback has always been fire-and-forget
+      await attempt('running serverCloseComplete', () => {
+        this.config.serverCloseComplete();
+      });
+    }
+    if (errors.length > 0) {
+      // AggregateError is not in the TypeScript lib used by this project
+      throw new (globalThis as any).AggregateError(
+        errors,
+        'Parse Server shutdown completed with errors'
+      );
     }
   }
 
@@ -418,6 +570,18 @@ class ParseServer {
    */
 
   async startApp(options: ParseServerOptions) {
+    if (this._shutdownPromise) {
+      throw new Error('Parse Server cannot be started after handleShutdown() has been called');
+    }
+    if (!this._startAppPromise) {
+      this._startAppPromise = this._startApp(options).finally(() => {
+        this._startAppPromise = undefined;
+      });
+    }
+    return this._startAppPromise;
+  }
+
+  async _startApp(options: ParseServerOptions) {
     try {
       await this.start();
     } catch (e) {
@@ -471,7 +635,6 @@ class ParseServer {
       });
     });
     this.server = server;
-    connections.track(server);
 
     if (options.startLiveQueryServer || options.liveQueryServerOptions) {
       this.liveQueryServer = await ParseServer.createLiveQueryServer(
@@ -480,7 +643,7 @@ class ParseServer {
         options
       );
       if (this.liveQueryServer.server !== this.server) {
-        connections.track(this.liveQueryServer.server);
+        this._connections.track(this.liveQueryServer.server);
       }
     }
     if (options.trustProxy) {
@@ -678,9 +841,24 @@ function injectDefaults(options: ParseServerOptions) {
 // Those can't be tested as it requires a subprocess
 /* istanbul ignore next */
 function configureListeners(parseServer) {
-  const handleShutdown = function () {
-    process.stdout.write('Termination signal received. Shutting down.');
-    parseServer.handleShutdown();
+  let shuttingDown = false;
+  const handleShutdown = function (signal) {
+    if (shuttingDown) {
+      // A second signal aborts a graceful shutdown that is still in progress
+      process.stdout.write('Second termination signal received. Exiting immediately.\n');
+      process.exit(128 + (osConstants.signals[signal] || 15));
+    }
+    shuttingDown = true;
+    process.stdout.write('Termination signal received. Shutting down.\n');
+    parseServer
+      .handleShutdown()
+      .catch(error => {
+        // eslint-disable-next-line no-console
+        console.error('Error during shutdown', error);
+      })
+      .finally(() => {
+        shuttingDown = false;
+      });
   };
   process.on('SIGTERM', handleShutdown);
   process.on('SIGINT', handleShutdown);

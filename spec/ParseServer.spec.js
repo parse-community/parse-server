@@ -61,3 +61,346 @@ describe('Server Url Checks', () => {
     });
   });
 });
+
+describe('graceful shutdown', () => {
+  const request = require('../lib/request');
+  const triggers = require('../lib/triggers');
+  const { sleep } = require('../lib/TestUtils');
+  const { GridFSBucketAdapter } = require('../lib/Adapters/Files/GridFSBucketAdapter');
+  const http = require('http');
+  const net = require('net');
+  const port = 13377;
+  const appId = 'lifecycle_test';
+  const masterKey = 'lifecycle_test_master';
+  const headers = {
+    'X-Parse-Application-Id': appId,
+    'X-Parse-Master-Key': masterKey,
+    'Content-Type': 'application/json',
+  };
+  let server;
+
+  const makeConfig = options => {
+    const config = Object.assign(
+      {},
+      defaultConfiguration,
+      {
+        appId,
+        masterKey,
+        port,
+        mountPath: '/1',
+        serverURL: `http://localhost:${port}/1`,
+        silent: true,
+        verbose: false,
+      },
+      options
+    );
+    // Own adapters against the test database so that shutting them down does not affect the
+    // shared test server and the data is cleaned up with the other test collections
+    config.databaseAdapter = new databaseAdapter.constructor({
+      uri: databaseURI,
+      collectionPrefix: 'test_',
+    });
+    config.filesAdapter =
+      process.env.PARSE_SERVER_TEST_DB === 'postgres'
+        ? defaultConfiguration.filesAdapter
+        : new GridFSBucketAdapter(databaseURI);
+    return config;
+  };
+
+  // Every check uses a fresh connection so that pooled keep-alive sockets do not mask the server state
+  const freshAgent = () => new http.Agent({ keepAlive: false });
+  const health = () =>
+    request({ url: `http://localhost:${port}/1/health`, json: true, headers, agent: freshAgent() }).catch(
+      e => e
+    );
+  const createObject = () =>
+    request({
+      method: 'POST',
+      url: `http://localhost:${port}/1/classes/LifecycleTest`,
+      json: true,
+      headers,
+      body: { foo: 'bar' },
+      agent: freshAgent(),
+    }).catch(e => e);
+  const callSlowFunction = () =>
+    request({
+      method: 'POST',
+      url: `http://localhost:${port}/1/functions/slow`,
+      json: true,
+      headers,
+      body: {},
+      agent: new http.Agent({ keepAlive: true }),
+    }).catch(e => e);
+
+  // Opens a raw keep-alive connection, performs one request and leaves the connection idle.
+  // Records whether the server later ends it cleanly (FIN) or resets it (RST).
+  const openIdleConnection = () =>
+    new Promise(resolve => {
+      const socket = net.connect(port, 'localhost');
+      const state = { socket, ended: false, errors: [], closed: null };
+      socket.on('end', () => (state.ended = true));
+      socket.on('error', error => state.errors.push(error.code || error.message));
+      state.closed = new Promise(res => socket.on('close', hadError => res(hadError)));
+      socket.once('connect', () => {
+        socket.write(
+          `GET /1/health HTTP/1.1\r\nHost: localhost\r\nX-Parse-Application-Id: ${appId}\r\nConnection: keep-alive\r\n\r\n`
+        );
+      });
+      socket.once('data', data => {
+        expect(data.toString()).toMatch(/^HTTP\/1\.1 200/);
+        resolve(state);
+      });
+    });
+
+  afterEach(async () => {
+    triggers.removeFunction('slow', appId);
+    if (server) {
+      await server.handleShutdown();
+      server = undefined;
+    }
+    await reconfigureServer();
+  });
+
+  it('transitions through initialized, starting, ok, draining and closed without resetting connections', async () => {
+    const events = [];
+    const mark = name => events.push({ name, at: Date.now() });
+    const config = makeConfig({
+      shutdownDrainDelay: 1000,
+      shutdownTimeout: 2000,
+      serverCloseComplete: () => mark('serverCloseComplete'),
+    });
+    triggers.addFunction(
+      'slow',
+      async () => {
+        await sleep(500);
+        return 'done';
+      },
+      null,
+      appId
+    );
+
+    // Parse Server mounted into an Express app that owns the HTTP server
+    const api = new ParseServer(config);
+    const app = express();
+    app.use('/1', api.app);
+    api.server = await new Promise(resolve => {
+      const httpServer = app.listen(port, () => resolve(httpServer));
+    });
+    server = api;
+    const databaseAdapter = api.config.databaseController.adapter;
+    const originalDatabaseShutdown = databaseAdapter.handleShutdown;
+    spyOn(databaseAdapter, 'handleShutdown').and.callFake(function () {
+      mark('databaseAdapter.handleShutdown');
+      return originalDatabaseShutdown.apply(this, arguments);
+    });
+
+    // 1. Constructed but not started: health reports the state, API requests are rejected
+    let response = await health();
+    expect(response.status).toBe(503);
+    expect(response.data.status).toBe('initialized');
+    response = await createObject();
+    expect(response.status).toBe(500);
+    expect(response.data.error).toBe('Invalid server state: initialized');
+
+    // 2. Starting: health asks the client to retry
+    const starting = api.start();
+    response = await health();
+    expect(response.status).toBe(503);
+    expect(response.data.status).toBe('starting');
+    expect(response.headers['retry-after']).toBe('1');
+    await starting;
+
+    // 3. Ready: health is ok and requests are served
+    response = await health();
+    expect(response.status).toBe(200);
+    expect(response.data.status).toBe('ok');
+    expect(response.headers['retry-after']).toBeUndefined();
+    response = await createObject();
+    expect(response.status).toBe(201);
+    expect(response.data.objectId).toBeDefined();
+
+    // 4. Open connections that must survive the shutdown: idle keep-alive connections and in-flight requests
+    const idleConnections = await Promise.all([openIdleConnection(), openIdleConnection(), openIdleConnection()]);
+    const inFlight = [callSlowFunction(), callSlowFunction()];
+    await sleep(50);
+
+    // 5. Draining: health fails so that load balancers stop routing here, but requests are still served
+    const shutdown = api.handleShutdown();
+    response = await health();
+    expect(response.status).toBe(503);
+    expect(response.data.status).toBe('draining');
+    expect(response.headers['retry-after']).toBeUndefined();
+    response = await createObject();
+    expect(response.status).toBe(201);
+
+    // 6. In-flight requests complete and idle connections are ended with FIN, not reset
+    const results = await Promise.all(inFlight);
+    mark('inFlightCompleted');
+    for (const result of results) {
+      expect(result.status).toBe(200);
+      expect(result.data.result).toBe('done');
+    }
+    await shutdown;
+    for (const connection of idleConnections) {
+      expect(await connection.closed).toBe(false, 'idle connection was closed with an error');
+      expect(connection.ended).toBe(true, 'idle connection did not receive FIN');
+      expect(connection.errors).toEqual([]);
+    }
+
+    // 7. Adapters are shut down only after the in-flight requests completed, completion callback runs last
+    const at = name => events.find(e => e.name === name)?.at;
+    expect(at('databaseAdapter.handleShutdown')).toBeGreaterThanOrEqual(at('inFlightCompleted'));
+    expect(at('serverCloseComplete')).toBeGreaterThanOrEqual(at('databaseAdapter.handleShutdown'));
+    expect(events.filter(e => e.name === 'serverCloseComplete').length).toBe(1);
+
+    // 8. Closed: nothing listens anymore, repeated shutdown is a no-op
+    response = await health();
+    expect(response.status).toBeUndefined();
+    expect(response.code).toBe('ECONNREFUSED');
+    expect(api.handleShutdown()).toBe(shutdown);
+    await api.handleShutdown();
+    expect(events.filter(e => e.name === 'serverCloseComplete').length).toBe(1);
+    expect(api.config.state).toBe('closed');
+  });
+
+  it('closes LiveQuery clients during the drain instead of waiting for the shutdown timeout', async () => {
+    const liveQueryPort = port + 1;
+    server = await ParseServer.startApp(
+      makeConfig({
+        liveQuery: { classNames: ['LifecycleTest'] },
+        startLiveQueryServer: true,
+        liveQueryServerOptions: { port: liveQueryPort },
+        shutdownTimeout: 5000,
+      })
+    );
+    // A dedicated client, the shared default client must stay connected to the test server
+    const client = new Parse.LiveQueryClient({
+      applicationId: appId,
+      serverURL: `ws://localhost:${liveQueryPort}/1`,
+      javascriptKey: defaultConfiguration.javascriptKey,
+    });
+    client.open();
+    const subscription = client.subscribe(new Parse.Query('LifecycleTest'));
+    await new Promise(resolve => subscription.on('open', resolve));
+    const closed = new Promise(resolve => subscription.on('close', resolve));
+    const started = Date.now();
+    await server.handleShutdown();
+    await closed;
+    // The open WebSocket must not keep the servers open for the whole timeout
+    expect(Date.now() - started).toBeLessThan(2500);
+    client.close();
+  });
+
+  it('runs every shutdown step and rejects with the collected errors', async () => {
+    let closeCompleteCalls = 0;
+    server = await ParseServer.startApp(
+      makeConfig({ serverCloseComplete: () => (closeCompleteCalls += 1) })
+    );
+    const databaseAdapter = server.config.databaseController.adapter;
+    const originalDatabaseShutdown = databaseAdapter.handleShutdown;
+    spyOn(databaseAdapter, 'handleShutdown').and.callFake(async function () {
+      await originalDatabaseShutdown.apply(this, arguments);
+      throw new Error('database adapter shutdown failed');
+    });
+    spyOn(console, 'error').and.callFake(() => {});
+
+    await expectAsync(server.handleShutdown()).toBeRejectedWithError(
+      /Parse Server shutdown completed with errors/
+    );
+    let error;
+    await server.handleShutdown().catch(e => (error = e));
+    expect(error.errors.map(e => e.message)).toEqual(['database adapter shutdown failed']);
+    // The remaining steps ran regardless of the failure
+    expect(server.config.state).toBe('closed');
+    expect(closeCompleteCalls).toBe(1);
+    expect((await health()).code).toBe('ECONNREFUSED');
+    // Already shut down; afterEach must not await the rejected promise again
+    server = undefined;
+  });
+
+  it('warns when there is no HTTP server to close', async () => {
+    const api = new ParseServer(makeConfig());
+    server = api;
+    await api.start();
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'warn').and.callFake(() => {});
+    await api.handleShutdown();
+    expect(logger.warn).toHaveBeenCalledWith(jasmine.stringMatching(/no HTTP server to close/));
+    expect(api.config.state).toBe('closed');
+  });
+
+  it('does not drain or serve requests on shutdown when the server never became ready', async () => {
+    const api = new ParseServer(makeConfig({ shutdownDrainDelay: 1000 }));
+    server = api;
+    const app = express();
+    app.use('/1', api.app);
+    api.server = await new Promise(resolve => {
+      const httpServer = app.listen(port, () => resolve(httpServer));
+    });
+    expect((await createObject()).status).toBe(500);
+    const started = Date.now();
+    await api.handleShutdown();
+    // No drain phase: the server was never serving, so there is nothing to drain
+    expect(Date.now() - started).toBeLessThan(1000);
+    expect(api.config.state).toBe('closed');
+    expect((await health()).code).toBe('ECONNREFUSED');
+  });
+
+  it('rejects invalid shutdown options', () => {
+    expect(() => new ParseServer(makeConfig({ shutdownTimeout: null }))).not.toThrow();
+    for (const value of ['5s', -1, 1.5, Infinity, 2147483648]) {
+      expect(() => new ParseServer(makeConfig({ shutdownTimeout: value }))).toThrow(
+        'shutdownTimeout must be an integer between 0 and 2147483647 (milliseconds).'
+      );
+      expect(() => new ParseServer(makeConfig({ shutdownDrainDelay: value }))).toThrow(
+        'shutdownDrainDelay must be an integer between 0 and 2147483647 (milliseconds).'
+      );
+    }
+  });
+
+  it('waits for a start in progress before shutting down', async () => {
+    server = new ParseServer(makeConfig());
+    const starting = server.startApp(makeConfig());
+    const shutdown = server.handleShutdown();
+    await expectAsync(starting).toBeResolved();
+    await shutdown;
+    expect(server.config.state).toBe('closed');
+    expect((await health()).code).toBe('ECONNREFUSED');
+  });
+
+  it('cannot be started again once shutdown has been requested', async () => {
+    const api = new ParseServer(makeConfig());
+    server = api;
+    await api.start();
+    const shutdown = api.handleShutdown();
+    await expectAsync(api.start()).toBeRejectedWithError(/cannot be started after handleShutdown/);
+    await shutdown;
+    await expectAsync(api.start()).toBeRejectedWithError(/cannot be started after handleShutdown/);
+    await expectAsync(api.startApp(makeConfig())).toBeRejectedWithError(
+      /cannot be started after handleShutdown/
+    );
+  });
+
+  it('destroys in-flight connections once the shutdown timeout expires', async () => {
+    server = await ParseServer.startApp(makeConfig({ shutdownTimeout: 200 }));
+    triggers.addFunction(
+      'slow',
+      async () => {
+        await sleep(2000);
+        return 'done';
+      },
+      null,
+      appId
+    );
+    const inFlight = callSlowFunction();
+    await sleep(50);
+
+    const started = Date.now();
+    await server.handleShutdown();
+    expect(Date.now() - started).toBeLessThan(1500);
+
+    const error = await inFlight;
+    expect(error.status).toBeUndefined();
+    expect(error.code).toBe('ECONNRESET');
+  });
+});

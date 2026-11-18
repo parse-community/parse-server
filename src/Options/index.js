@@ -395,6 +395,12 @@ export interface ParseServerOptions {
   schema: ?SchemaOptions;
   /* Callback when server has closed */
   serverCloseComplete: ?() => void;
+  /* Delay in milliseconds between the start of a shutdown via `handleShutdown()` and the moment Parse Server stops accepting new connections.<br><br>During this delay the health endpoint responds with HTTP status `503` and `{"status":"draining"}` while all other requests are still served normally. This allows load balancers and orchestrators, for example Kubernetes via a readiness probe on the health endpoint, to stop routing new traffic to this instance before it closes. Set this to a value larger than the time it takes for the routing layer to detect the failing health check.<br><br>Defaults to `0`, which stops accepting new connections immediately.
+  :DEFAULT: 0 */
+  shutdownDrainDelay: ?number;
+  /* Maximum time in milliseconds to wait for in-flight requests to complete after Parse Server has stopped accepting new connections during a shutdown via `handleShutdown()`.<br><br>Idle keep-alive connections are closed immediately. Connections with a request in progress are given until this timeout expires and are destroyed afterwards.<br><br>Defaults to `0`, which destroys all open connections immediately.
+  :DEFAULT: 0 */
+  shutdownTimeout: ?number;
   /* Options to limit the complexity of requests to prevent denial-of-service attacks. Limits are enforced for all requests except those using the master or maintenance key. Each property can be set to `-1` to disable that specific limit.
   :ENV: PARSE_SERVER_REQUEST_COMPLEXITY
   :DEFAULT: {} */

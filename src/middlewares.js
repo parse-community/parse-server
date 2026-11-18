@@ -216,7 +216,7 @@ export async function handleParseHeaders(req, res, next) {
 
   const clientIp = getClientIp(req);
   const config = req.config || Config.get(info.appId, mount);
-  if (config.state && config.state !== 'ok') {
+  if (config.state && config.state !== 'ok' && config.state !== 'draining') {
     res.status(500);
     res.json({
       code: Parse.Error.INTERNAL_SERVER_ERROR,

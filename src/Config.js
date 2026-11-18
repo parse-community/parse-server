@@ -85,13 +85,13 @@ export class Config {
       })
     );
 
+    // Update the cached config in place: ParseServer and the health endpoint keep a reference to
+    // the cached object, replacing it would detach them from later state changes
     const cachedConfig = AppCache.get(this.appId);
     if (cachedConfig) {
-      const updatedConfig = { ...cachedConfig };
       asyncKeys.forEach(key => {
-        updatedConfig[key] = this[key];
+        cachedConfig[key] = this[key];
       });
-      AppCache.put(this.appId, updatedConfig);
     }
   }
 
@@ -119,6 +119,8 @@ export class Config {
   }
 
   static validateOptions({
+    shutdownDrainDelay,
+    shutdownTimeout,
     customPages,
     publicServerURL,
     revokeSessionOnPasswordReset,
@@ -186,6 +188,7 @@ export class Config {
     this.validateIps('maintenanceKeyIps', maintenanceKeyIps);
     this.validateIps('readOnlyMasterKeyIps', readOnlyMasterKeyIps);
     this.validateDefaultLimit(defaultLimit);
+    this.validateShutdownOptions(shutdownDrainDelay, shutdownTimeout);
     this.validateMaxLimit(maxLimit);
     this.validateAllowHeaders(allowHeaders);
     this.validateIdempotencyOptions(idempotencyOptions);
@@ -667,6 +670,21 @@ export class Config {
         throw 'Session length must be a valid number.';
       } else if (sessionLength <= 0) {
         throw 'Session length must be a value greater than 0.';
+      }
+    }
+  }
+
+  static validateShutdownOptions(shutdownDrainDelay, shutdownTimeout) {
+    for (const [name, value] of [
+      ['shutdownDrainDelay', shutdownDrainDelay],
+      ['shutdownTimeout', shutdownTimeout],
+    ]) {
+      if (value == null) {
+        continue;
+      }
+      // Upper bound is the largest delay setTimeout supports
+      if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > 2147483647) {
+        throw `${name} must be an integer between 0 and 2147483647 (milliseconds).`;
       }
     }
   }
