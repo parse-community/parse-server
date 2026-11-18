@@ -429,6 +429,20 @@ describe('parseObjectToMongoObjectForCreate', () => {
     done();
   });
 
+  it('untransforms a null expiresAt to null, not epoch (#7576)', () => {
+    const output = transform.mongoObjectToParseObject('Document', { expiresAt: null }, {
+      fields: { expiresAt: { type: 'Date' } },
+    });
+    expect(output.expiresAt).toBeNull();
+  });
+
+  it('untransforms a null lastUsed to null, not epoch (#7576)', () => {
+    const output = transform.mongoObjectToParseObject('Document', { lastUsed: null }, {
+      fields: { lastUsed: { type: 'Date' } },
+    });
+    expect(output.lastUsed).toBeNull();
+  });
+
   it('object with undefined nested values', () => {
     const input = {
       _id: 'vQHyinCW1l',
