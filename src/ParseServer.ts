@@ -895,17 +895,14 @@ function configureListeners(parseServer) {
     }
     shuttingDown = true;
     process.stdout.write('Termination signal received. Shutting down.\n');
-    parseServer
-      .handleShutdown()
-      .catch(error => {
-        // eslint-disable-next-line no-console
-        console.error('Error during shutdown', error);
-        // The process exits once the remaining handles are closed; report the failure in the exit status
-        process.exitCode = 1;
-      })
-      .finally(() => {
-        shuttingDown = false;
-      });
+    // The flag stays set once the shutdown has started: a second signal must exit the process even
+    // after a shutdown that completed with errors, since handles may still be open
+    parseServer.handleShutdown().catch(error => {
+      // eslint-disable-next-line no-console
+      console.error('Error during shutdown', error);
+      // The process exits once the remaining handles are closed; report the failure in the exit status
+      process.exitCode = 1;
+    });
   };
   process.on('SIGTERM', handleShutdown);
   process.on('SIGINT', handleShutdown);
