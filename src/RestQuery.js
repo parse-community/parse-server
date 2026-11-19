@@ -965,13 +965,16 @@ _UnsafeRestQuery.prototype.denyProtectedFields = async function () {
       this.auth,
       this.findOptions
     ) || [];
+  // Stored values of a user that a client cannot read
+  const deniedFields =
+    this.className === '_User' ? [...protectedFields, 'sessionToken', 'authData'] : protectedFields;
   const checkWhere = (where) => {
     if (typeof where !== 'object' || where === null) {
       return;
     }
     for (const whereKey of Object.keys(where)) {
       const rootField = whereKey.split('.')[0];
-      if (protectedFields.includes(whereKey) || protectedFields.includes(rootField)) {
+      if (deniedFields.includes(whereKey) || deniedFields.includes(rootField)) {
         throw createSanitizedError(
           Parse.Error.OPERATION_FORBIDDEN,
           `This user is not allowed to query ${whereKey} on class ${this.className}`,
@@ -994,7 +997,7 @@ _UnsafeRestQuery.prototype.denyProtectedFields = async function () {
   if (this.findOptions.sort) {
     for (const sortKey of Object.keys(this.findOptions.sort)) {
       const rootField = sortKey.split('.')[0];
-      if (protectedFields.includes(sortKey) || protectedFields.includes(rootField)) {
+      if (deniedFields.includes(sortKey) || deniedFields.includes(rootField)) {
         throw createSanitizedError(
           Parse.Error.OPERATION_FORBIDDEN,
           `This user is not allowed to sort by ${sortKey} on class ${this.className}`,
