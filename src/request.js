@@ -158,6 +158,9 @@ function httpRequest(options) {
   if (options.agent) {
     requestOptions.agent = options.agent;
   }
+  if (options.signal) {
+    requestOptions.signal = options.signal;
+  }
   return new Promise((resolve, reject) => {
     const req = client.request(requestOptions, makeCallback(resolve, reject, options));
     if (options.body) {

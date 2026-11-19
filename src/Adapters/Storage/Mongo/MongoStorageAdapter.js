@@ -164,6 +164,7 @@ export class MongoStorageAdapter implements StorageAdapter {
   _mongoOptions: Object;
   _onchange: any;
   _stream: any;
+  _shuttingDown: boolean;
   _logClientEvents: ?Array<any>;
   _clientMetadata: ?{ name: string, version: string };
   // Public
@@ -211,6 +212,8 @@ export class MongoStorageAdapter implements StorageAdapter {
     if (this.connectionPromise) {
       return this.connectionPromise;
     }
+    // A new client re-enables the schema change stream after a previous shutdown
+    this._shuttingDown = false;
 
     // parsing and re-formatting causes the auth value (if there) to get URI
     // encoded
@@ -300,6 +303,15 @@ export class MongoStorageAdapter implements StorageAdapter {
     if (!this.client) {
       return;
     }
+    // No change stream is opened on the closing client by a concurrent _schemaCollection()
+    this._shuttingDown = true;
+    // Close the schema change stream before the client, otherwise closing the client
+    // interrupts the stream's checked-out connection and emits an unhandled error
+    const stream = this._stream;
+    this._stream = undefined;
+    if (stream) {
+      await stream.close().catch(() => {});
+    }
     await this.client.close(false);
     delete this.connectionPromise;
   }
@@ -315,9 +327,25 @@ export class MongoStorageAdapter implements StorageAdapter {
     return this.connect()
       .then(() => this._adaptiveCollection(MongoSchemaCollectionName))
       .then(collection => {
-        if (!this._stream && this.enableSchemaHooks) {
-          this._stream = collection._mongoCollection.watch();
-          this._stream.on('change', () => this._onchange());
+        if (!this._stream && this.enableSchemaHooks && !this._shuttingDown) {
+          const stream = collection._mongoCollection.watch();
+          this._stream = stream;
+          stream.on('change', () => this._onchange());
+          // The driver resumes the stream on resumable errors by itself and only emits 'error' when
+          // the stream is lost for good, or when an operation timed out (`timeoutMS`), in which case
+          // it resumes the stream as well and keeps it open. An unhandled 'error' event would
+          // terminate the process; log it instead, keep a stream that is still open and forget a
+          // lost stream so that the next schema access re-establishes the watch.
+          stream.on('error', error => {
+            logger.error('Schema change stream error', error);
+            if (error instanceof mongodb.MongoOperationTimeoutError && !stream.closed) {
+              return;
+            }
+            if (this._stream === stream) {
+              this._stream = undefined;
+            }
+            stream.close().catch(() => {});
+          });
         }
         return new MongoSchemaCollection(collection);
       });
