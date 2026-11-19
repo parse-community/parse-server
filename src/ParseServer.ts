@@ -64,6 +64,7 @@ class ParseServer {
   _startPromise: Promise<this> | undefined;
   _startAppPromise: Promise<this> | undefined;
   _shutdownPromise: Promise<void> | undefined;
+  _shutdownController: AbortController;
   /**
    * @constructor
    * @param {ParseServerOptions} options the parse server initialization options
@@ -141,6 +142,7 @@ class ParseServer {
     this.config = Config.put(Object.assign({}, options, allControllers));
     this.config.masterKeyIpsStore = new Map();
     this._connections = new Connections();
+    this._shutdownController = new AbortController();
     this.config.maintenanceKeyIpsStore = new Map();
     this.config.readOnlyMasterKeyIpsStore = new Map();
     setRegexTimeout(options.liveQuery?.regexTimeout);
@@ -278,8 +280,9 @@ class ParseServer {
    * that it can be drained and closed here.
    *
    * Calling this method more than once returns the promise of the first call. A shutdown that is
-   * requested while `start()` or `startApp()` is in progress waits for the start to complete, and
-   * the server cannot be started again afterwards. Every step runs even if a previous step failed;
+   * requested while `start()` or `startApp()` is in progress waits for the start to complete, except
+   * for the verification of the server URL which is aborted, and the server cannot be started again
+   * afterwards. Every step runs even if a previous step failed;
    * the promise is rejected with an `AggregateError` of the collected errors once the shutdown has
    * completed.
    *
@@ -287,6 +290,8 @@ class ParseServer {
    */
   handleShutdown(): Promise<void> {
     if (!this._shutdownPromise) {
+      // Aborts the server URL verification of a start in progress so that it cannot delay the shutdown
+      this._shutdownController.abort();
       this._shutdownPromise = this._handleShutdown();
     }
     return this._shutdownPromise;
@@ -653,7 +658,7 @@ class ParseServer {
     if (!process.env.TESTING) {
       configureListeners(this);
       if (options.verifyServerUrl !== false) {
-        await ParseServer.verifyServerUrl();
+        await ParseServer.verifyServerUrl(this._shutdownController.signal);
       }
     }
     this.expressApp = app;
@@ -693,7 +698,12 @@ class ParseServer {
     return server;
   }
 
-  static async verifyServerUrl() {
+  /**
+   * Verifies that the server URL responds to a health check; retries while the server is starting.
+   * @param {AbortSignal} [signal] Aborts the verification, including a pending request and the wait
+   * before a retry, in which case the verification resolves without a result.
+   */
+  static async verifyServerUrl(signal?: AbortSignal) {
     // perform a health check on the serverURL value
     if (Parse.serverURL) {
       const isValidHttpUrl = string => {
@@ -715,12 +725,28 @@ class ParseServer {
         return;
       }
       const request = require('./request');
-      const response = await request({ url }).catch(response => response);
+      const response = await request({ url, signal }).catch(response => response);
+      if (signal?.aborted) {
+        return;
+      }
       const json = response.data || null;
       const retry = response.headers?.['retry-after'];
       if (retry) {
-        await new Promise(resolve => setTimeout(resolve, retry * 1000));
-        return this.verifyServerUrl();
+        await new Promise<void>(resolve => {
+          const onAbort = () => {
+            clearTimeout(timer);
+            resolve();
+          };
+          const timer = setTimeout(() => {
+            signal?.removeEventListener('abort', onAbort);
+            resolve();
+          }, retry * 1000);
+          signal?.addEventListener('abort', onAbort, { once: true });
+        });
+        if (signal?.aborted) {
+          return;
+        }
+        return this.verifyServerUrl(signal);
       }
       if (response.status !== 200 || json?.status !== 'ok') {
         /* eslint-disable no-console */

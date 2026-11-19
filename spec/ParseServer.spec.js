@@ -42,6 +42,50 @@ describe('Server Url Checks', () => {
     );
   });
 
+  it('aborts the server url verification while the server does not respond', async () => {
+    const net = require('net');
+    const sockets = [];
+    const silentServer = net.createServer(socket => sockets.push(socket));
+    await new Promise(resolve => silentServer.listen(0, resolve));
+    Parse.serverURL = `http://localhost:${silentServer.address().port}`;
+    spyOn(console, 'warn').and.callFake(() => {});
+    const controller = new AbortController();
+    const verification = ParseServer.verifyServerUrl(controller.signal);
+    await new Promise(resolve => silentServer.once('connection', resolve));
+    const started = Date.now();
+    controller.abort();
+    expect(await verification).toBeUndefined();
+    expect(Date.now() - started).toBeLessThan(500);
+    expect(console.warn).not.toHaveBeenCalled();
+    sockets.forEach(socket => socket.destroy());
+    await new Promise(resolve => silentServer.close(resolve));
+  });
+
+  it('aborts the server url verification while waiting to retry', async () => {
+    const app = express();
+    let requests = 0;
+    app.get('/health', (req, res) => {
+      requests += 1;
+      res.set('Retry-After', '1').status(503).json({ status: 'starting' });
+    });
+    const startingServer = await new Promise(resolve => {
+      const httpServer = app.listen(0, () => resolve(httpServer));
+    });
+    Parse.serverURL = `http://localhost:${startingServer.address().port}`;
+    spyOn(console, 'warn').and.callFake(() => {});
+    const controller = new AbortController();
+    const verification = ParseServer.verifyServerUrl(controller.signal);
+    await new Promise(resolve => startingServer.once('request', resolve));
+    await new Promise(resolve => setTimeout(resolve, 100));
+    const started = Date.now();
+    controller.abort();
+    expect(await verification).toBeUndefined();
+    expect(Date.now() - started).toBeLessThan(500);
+    expect(requests).toBe(1);
+    expect(console.warn).not.toHaveBeenCalled();
+    await new Promise(resolve => startingServer.close(resolve));
+  });
+
   it('does not have unhandled promise rejection in the case of load error', done => {
     const parseServerProcess = spawn(path.resolve(__dirname, './support/FailingServer.js'));
     let stdout;
