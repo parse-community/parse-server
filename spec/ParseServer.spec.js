@@ -200,12 +200,23 @@ describe('graceful shutdown', () => {
     triggers.removeFunction('slow', appId);
     const current = server;
     server = undefined;
+    let shutdownError;
     try {
       await current?.handleShutdown();
-    } finally {
-      // Restore the shared test server even if the shutdown failed, so that the failure does not
-      // cascade into the following specs
+    } catch (error) {
+      shutdownError = error;
+    }
+    // Restore the shared test server even if the shutdown failed, so that the failure does not
+    // cascade into the following specs; report both errors if the restoration fails as well
+    try {
       await reconfigureServer();
+    } catch (error) {
+      throw shutdownError
+        ? new AggregateError([shutdownError, error], 'Shutdown and restoration failed')
+        : error;
+    }
+    if (shutdownError) {
+      throw shutdownError;
     }
   });
 
