@@ -1,7 +1,7 @@
 'use strict';
 
 const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
-const { MongoClient, Collection } = require('mongodb');
+const { MongoClient, Collection, MongoOperationTimeoutError } = require('mongodb');
 const databaseURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 const request = require('../lib/request');
 const Config = require('../lib/Config');
@@ -452,6 +452,30 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     expect(adapter._stream).not.toBe(stream);
     await adapter.handleShutdown();
     await stream.close().catch(() => {});
+  });
+
+  it('keeps the schema change stream after a recoverable timeout error', async () => {
+    const adapter = new MongoStorageAdapter({
+      uri: databaseURI,
+      mongoOptions: { enableSchemaHooks: true },
+    });
+    const onChange = jasmine.createSpy('onChange');
+    adapter.watch(onChange);
+    await adapter._schemaCollection();
+    const stream = adapter._stream;
+    expect(stream).toBeDefined();
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'error').and.callFake(() => {});
+    // The driver resumes the stream and emits the timeout error while the stream stays open
+    stream.emit('error', new MongoOperationTimeoutError('simulated timeout'));
+    expect(logger.error).toHaveBeenCalledWith('Schema change stream error', jasmine.any(Error));
+    expect(adapter._stream).toBe(stream);
+    expect(stream.closed).toBe(false);
+    await adapter._schemaCollection();
+    expect(adapter._stream).toBe(stream);
+    stream.emit('change');
+    expect(onChange).toHaveBeenCalledTimes(1);
+    await adapter.handleShutdown();
   });
 
   it('handleShutdown, close connection', async () => {

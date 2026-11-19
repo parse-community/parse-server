@@ -332,13 +332,19 @@ export class MongoStorageAdapter implements StorageAdapter {
           this._stream = stream;
           stream.on('change', () => this._onchange());
           // The driver resumes the stream on resumable errors by itself and only emits 'error' when
-          // the stream is lost for good. An unhandled 'error' event would terminate the process;
-          // forget the stream instead so that the next schema access re-establishes the watch.
+          // the stream is lost for good, or when an operation timed out (`timeoutMS`), in which case
+          // it resumes the stream as well and keeps it open. An unhandled 'error' event would
+          // terminate the process; log it instead, keep a stream that is still open and forget a
+          // lost stream so that the next schema access re-establishes the watch.
           stream.on('error', error => {
             logger.error('Schema change stream error', error);
+            if (error instanceof mongodb.MongoOperationTimeoutError && !stream.closed) {
+              return;
+            }
             if (this._stream === stream) {
               this._stream = undefined;
             }
+            stream.close().catch(() => {});
           });
         }
         return new MongoSchemaCollection(collection);
