@@ -368,6 +368,32 @@ describe('graceful shutdown', () => {
     client.close();
   });
 
+  it('does not wait for an unresponsive LiveQuery shutdown before shutting down the adapters', async () => {
+    let closeCompleteCalls = 0;
+    server = await ParseServer.startApp(
+      makeConfig({
+        liveQuery: { classNames: ['LifecycleTest'] },
+        startLiveQueryServer: true,
+        serverCloseComplete: () => (closeCompleteCalls += 1),
+      })
+    );
+    // The pub/sub adapter never settles, as with an unreachable Redis server
+    spyOn(server.liveQueryServer, 'shutdown').and.returnValue(new Promise(() => {}));
+    spyOn(console, 'error').and.callFake(() => {});
+    const started = Date.now();
+    let error;
+    await server.handleShutdown().catch(e => (error = e));
+    expect(Date.now() - started).toBeLessThan(2500);
+    expect(error.errors.map(e => e.message)).toEqual([
+      'The LiveQuery server did not shut down in time',
+    ]);
+    // The remaining steps ran regardless
+    expect(server.config.state).toBe('closed');
+    expect(closeCompleteCalls).toBe(1);
+    expect((await health()).code).toBe('ECONNREFUSED');
+    server = undefined;
+  });
+
   it('runs every shutdown step and rejects with the collected errors', async () => {
     let closeCompleteCalls = 0;
     server = await ParseServer.startApp(

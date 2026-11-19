@@ -414,8 +414,14 @@ class ParseServer {
         server.closeAllConnections();
       }
     }
-    // The LiveQuery teardown is awaited in full so that its errors are collected
-    await liveQueryClosed;
+    // The LiveQuery teardown is bounded as well: its pub/sub adapter may never settle when the
+    // Redis server is unreachable. Its errors are collected by attempt(); a timeout is reported too.
+    await waitAtMost(liveQueryClosed, 1000, () => {
+      const error = new Error('The LiveQuery server did not shut down in time');
+      // eslint-disable-next-line no-console
+      console.error('Error during shutdown while shutting down the LiveQuery server', error);
+      errors.push(error);
+    });
     // Connections opened before the server was tracked cannot be destroyed; do not wait forever.
     await waitAtMost(serversClosed, 1000, /* istanbul ignore next */ () => {
       logging
