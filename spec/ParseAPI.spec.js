@@ -2470,6 +2470,29 @@ describe('miscellaneous', () => {
         }
       );
   });
+
+  it('rejects an unsupported __op with a client error', async () => {
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Master-Key': 'test',
+    };
+    const obj = new Parse.Object('Thing');
+    await obj.save();
+    for (const op of [{ __op: 'SetOnInsert', amount: 1 }, { __op: 'Foo' }]) {
+      for (const [method, url] of [
+        ['POST', 'http://localhost:8378/1/classes/Thing'],
+        ['PUT', `http://localhost:8378/1/classes/Thing/${obj.id}`],
+      ]) {
+        const response = await request({ method, url, headers, body: { counter: op } }).catch(
+          error => error
+        );
+        expect(response.status).toBe(400);
+        expect(response.data.code).toBe(Parse.Error.COMMAND_UNAVAILABLE);
+        expect(response.data.error).toBe(`The ${op.__op} operator is not supported yet.`);
+      }
+    }
+  });
 });
 
 describe_only_db('mongo')('legacy _acl', () => {
