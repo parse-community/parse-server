@@ -154,11 +154,15 @@ describe('graceful shutdown', () => {
 
   afterEach(async () => {
     triggers.removeFunction('slow', appId);
-    if (server) {
-      await server.handleShutdown();
-      server = undefined;
+    const current = server;
+    server = undefined;
+    try {
+      await current?.handleShutdown();
+    } finally {
+      // Restore the shared test server even if the shutdown failed, so that the failure does not
+      // cascade into the following specs
+      await reconfigureServer();
     }
-    await reconfigureServer();
   });
 
   it('transitions through initialized, starting, ok, draining and closed without resetting connections', async () => {
@@ -169,15 +173,6 @@ describe('graceful shutdown', () => {
       shutdownTimeout: 2000,
       serverCloseComplete: () => mark('serverCloseComplete'),
     });
-    triggers.addFunction(
-      'slow',
-      async () => {
-        await sleep(500);
-        return 'done';
-      },
-      null,
-      appId
-    );
 
     // Parse Server mounted into an Express app that owns the HTTP server
     const api = new ParseServer(config);
@@ -187,11 +182,33 @@ describe('graceful shutdown', () => {
       const httpServer = app.listen(port, () => resolve(httpServer));
     });
     server = api;
+    // The in-flight requests stay in flight until the server has stopped accepting connections, so
+    // that they are completed by the shutdown timeout phase and not already by the drain phase
+    triggers.addFunction(
+      'slow',
+      async () => {
+        while (api.server.listening) {
+          await sleep(20);
+        }
+        return 'done';
+      },
+      null,
+      appId
+    );
     const databaseAdapter = api.config.databaseController.adapter;
     const originalDatabaseShutdown = databaseAdapter.handleShutdown;
     spyOn(databaseAdapter, 'handleShutdown').and.callFake(function () {
       mark('databaseAdapter.handleShutdown');
       return originalDatabaseShutdown.apply(this, arguments);
+    });
+    // Initialization is held back until released so that the starting state can be observed
+    let releaseInitialization;
+    const initializationGate = new Promise(resolve => (releaseInitialization = resolve));
+    const databaseController = api.config.databaseController;
+    const originalInitialization = databaseController.performInitialization;
+    spyOn(databaseController, 'performInitialization').and.callFake(async function () {
+      await initializationGate;
+      return originalInitialization.apply(this, arguments);
     });
 
     // 1. Constructed but not started: health reports the state, API requests are rejected
@@ -208,6 +225,7 @@ describe('graceful shutdown', () => {
     expect(response.status).toBe(503);
     expect(response.data.status).toBe('starting');
     expect(response.headers['retry-after']).toBe('1');
+    releaseInitialization();
     await starting;
 
     // 3. Ready: health is ok and requests are served
@@ -383,9 +401,12 @@ describe('graceful shutdown', () => {
 
   it('destroys in-flight connections once the shutdown timeout expires', async () => {
     server = await ParseServer.startApp(makeConfig({ shutdownTimeout: 200 }));
+    let handlerStarted;
+    const handlerRunning = new Promise(resolve => (handlerStarted = resolve));
     triggers.addFunction(
       'slow',
       async () => {
+        handlerStarted();
         await sleep(2000);
         return 'done';
       },
@@ -393,11 +414,17 @@ describe('graceful shutdown', () => {
       appId
     );
     const inFlight = callSlowFunction();
-    await sleep(50);
+    await handlerRunning;
 
     const started = Date.now();
-    await server.handleShutdown();
-    expect(Date.now() - started).toBeLessThan(1500);
+    const shutdown = server.handleShutdown();
+    // The connection is not reset before the timeout expires
+    const early = await Promise.race([inFlight.then(() => 'settled'), sleep(150).then(() => 'pending')]);
+    expect(early).toBe('pending');
+    await shutdown;
+    const elapsed = Date.now() - started;
+    expect(elapsed).toBeGreaterThanOrEqual(190);
+    expect(elapsed).toBeLessThan(1500);
 
     const error = await inFlight;
     expect(error.status).toBeUndefined();
