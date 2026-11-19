@@ -1313,14 +1313,19 @@ class ParseLiveQueryServer {
             aclGroup,
             auth
           ) || [];
-        if (protectedFields.length > 0 && request.query.where) {
+        // Stored values of a user that a client cannot read
+        const deniedFields =
+          className === '_User'
+            ? [...protectedFields, 'sessionToken', 'authData']
+            : protectedFields;
+        if (deniedFields.length > 0 && request.query.where) {
           const checkWhere = (where: any) => {
             if (typeof where !== 'object' || where === null) {
               return;
             }
             for (const whereKey of Object.keys(where)) {
               const rootField = whereKey.split('.')[0];
-              if (protectedFields.includes(whereKey) || protectedFields.includes(rootField)) {
+              if (deniedFields.includes(whereKey) || deniedFields.includes(rootField)) {
                 throw new Parse.Error(
                   Parse.Error.OPERATION_FORBIDDEN,
                   'Permission denied'
@@ -1338,10 +1343,10 @@ class ParseLiveQueryServer {
           };
           checkWhere(request.query.where);
         }
-        if (protectedFields.length > 0 && Array.isArray(request.query.watch)) {
+        if (deniedFields.length > 0 && Array.isArray(request.query.watch)) {
           for (const watchField of request.query.watch) {
             const rootField = watchField.split('.')[0];
-            if (protectedFields.includes(watchField) || protectedFields.includes(rootField)) {
+            if (deniedFields.includes(watchField) || deniedFields.includes(rootField)) {
               throw new Parse.Error(
                 Parse.Error.OPERATION_FORBIDDEN,
                 'Permission denied'

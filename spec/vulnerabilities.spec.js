@@ -15330,4 +15330,562 @@ describe('Vulnerabilities', () => {
       expect(afterFind).not.toHaveBeenCalled();
     });
   });
+
+  describe('(GHSA-9v83-v857-2xf8) Query and LiveQuery subscription constraints on the session token and auth data of a user', () => {
+    const { sleep } = require('../lib/TestUtils');
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const master = { 'X-Parse-Master-Key': 'test' };
+    const maintenance = { 'X-Parse-Maintenance-Key': 'testing' };
+    // A read returns the stored auth data to the user
+    const provider = {
+      validateAppId: () => Promise.resolve(),
+      validateAuthData: () => Promise.resolve(),
+    };
+    const authData = { provider: { id: 'id', access_token: 'access-token' } };
+    const sessionToken = 'r:0123456789abcdef0123456789abcdef';
+    const wheres = [
+      { sessionToken },
+      { sessionToken: { $regex: '^r:a' } },
+      { sessionToken: { $gte: 'r:8' } },
+      { sessionToken: { $exists: true } },
+      { authData: { $exists: true } },
+      { 'authData.provider.access_token': { $regex: '^a' } },
+      { 'authData.anonymous.id': { $lt: '8' } },
+      { $or: [{ username: 'user' }, { sessionToken: { $regex: '^r:a' } }] },
+      { $and: [{ username: 'user' }, { 'authData.provider.id': 'id' }] },
+      { $nor: [{ sessionToken: { $regex: '^r:a' } }] },
+      { $or: [{ $and: [{ $nor: [{ 'authData.provider.id': 'id' }] }] }] },
+    ];
+
+    const send = (method, path, body, extraHeaders = {}) =>
+      request({
+        method,
+        url: `${Parse.serverURL}${path}`,
+        headers: { ...headers, ...extraHeaders },
+        body: JSON.stringify(body),
+      });
+    const session = user => ({ 'X-Parse-Session-Token': user.sessionToken });
+
+    // Signs up a user that everyone can read
+    const signUp = async (username = 'user', body = {}) => {
+      const { data } = await send('POST', '/users', {
+        username,
+        password: 'password',
+        ACL: { '*': { read: true } },
+        ...body,
+      });
+      return data;
+    };
+
+    describe('query', () => {
+      const denied = { code: Parse.Error.OPERATION_FORBIDDEN, error: 'Permission denied' };
+      const orders = [
+        'sessionToken',
+        '-sessionToken',
+        'authData',
+        'authData.provider.access_token',
+        '-authData.provider.id',
+        'username,authData.provider.access_token',
+      ];
+      const gqlPort = 13397;
+      let httpServer;
+
+      afterEach(async () => {
+        if (httpServer) {
+          await new Promise(resolve => httpServer.close(resolve));
+          httpServer = null;
+        }
+      });
+
+      const setup = (options = {}) =>
+        reconfigureServer({ auth: { provider }, verbose: false, silent: true, ...options });
+
+      // The answer to a query, also when it is rejected
+      const find = async (params, extraHeaders = {}, path = '/users') => {
+        const qs = {};
+        for (const [key, value] of Object.entries(params)) {
+          qs[key] = typeof value === 'string' ? value : JSON.stringify(value);
+        }
+        const response = await request({
+          method: 'GET',
+          url: `${Parse.serverURL}${path}`,
+          headers: { ...headers, ...extraHeaders },
+          qs,
+        }).catch(error => error);
+        return response.data;
+      };
+
+      // Each constraint and each sort key, combined with the given constraint and parameters
+      async function expectRejected(
+        extraHeaders = {},
+        constraint = {},
+        path = '/users',
+        params = {}
+      ) {
+        for (const where of wheres) {
+          expect(await find({ ...params, where: { ...constraint, ...where } }, extraHeaders, path))
+            .withContext(JSON.stringify(where))
+            .toEqual(denied);
+        }
+        for (const order of orders) {
+          expect(await find({ ...params, where: constraint, order }, extraHeaders, path))
+            .withContext(order)
+            .toEqual(denied);
+        }
+      }
+
+      it('rejects a query of another user that depends on the session token or the auth data of a user', async () => {
+        await setup();
+        await signUp('user', { authData });
+        const other = await signUp('other');
+        await expectRejected(session(other));
+      });
+
+      it('rejects a query without a session that depends on the session token or the auth data of a user', async () => {
+        await setup();
+        await signUp('user', { authData });
+        await expectRejected();
+        await expectRejected({}, {}, '/classes/_User');
+      });
+
+      it('rejects a query of the user itself that depends on its session token or auth data', async () => {
+        await setup();
+        const user = await signUp('user', { authData });
+        await expectRejected(session(user));
+        // No protected fields apply to the user's own object
+        await expectRejected(session(user), { objectId: user.objectId });
+      });
+
+      it('rejects a query that depends on the session token or the auth data of a user when the class has no protected fields', async () => {
+        await setup({ protectedFields: { _User: { '*': [] } }, protectedFieldsOwnerExempt: false });
+        await expectRejected();
+      });
+
+      it('rejects a count that depends on the session token or the auth data of a user', async () => {
+        await setup();
+        await expectRejected({}, {}, '/users', { limit: '0', count: '1' });
+      });
+
+      it('rejects a query of another class with a subquery that depends on the session token or the auth data of a user', async () => {
+        await setup();
+        for (const where of wheres) {
+          const query = { className: '_User', where };
+          const subqueries = [
+            { author: { $inQuery: query } },
+            { author: { $notInQuery: query } },
+            { title: { $select: { query, key: 'username' } } },
+            { title: { $dontSelect: { query, key: 'username' } } },
+          ];
+          for (const subquery of subqueries) {
+            expect(await find({ where: subquery }, {}, '/classes/Post'))
+              .withContext(JSON.stringify(subquery))
+              .toEqual(denied);
+          }
+        }
+      });
+
+      it('rejects a query that is redirected to the user class', async () => {
+        await setup();
+        for (const path of ['/roles', '/classes/_Role']) {
+          await expectRejected({}, {}, path, { redirectClassNameForKey: 'users' });
+        }
+      });
+
+      it('rejects a query in a batch request that depends on the session token or the auth data of a user', async () => {
+        await setup();
+        const bodies = [...wheres.map(where => ({ where })), ...orders.map(order => ({ order }))];
+        const requests = bodies.map(body => ({ method: 'GET', path: '/1/users', body }));
+        const { data } = await send('POST', '/batch', { requests });
+        expect(data).toEqual(bodies.map(() => ({ error: denied })));
+      });
+
+      it('rejects a GraphQL query of users that depends on the auth data of a user', async () => {
+        const server = await setup();
+        const app = express();
+        httpServer = http.createServer(app);
+        app.use('/parse', server.app);
+        new ParseGraphQLServer(server, { graphQLPath: '/graphql' }).applyGraphQL(app);
+        await new Promise(resolve => httpServer.listen({ port: gqlPort }, resolve));
+        await signUp('user', { authData });
+        const users = async args => {
+          const response = await fetch(`http://localhost:${gqlPort}/graphql`, {
+            method: 'POST',
+            headers: {
+              'X-Parse-Application-Id': 'test',
+              'X-Parse-Javascript-Key': 'test',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              query: `query { users(${args}) { edges { node { objectId } } } }`,
+            }),
+          });
+          return response.json();
+        };
+        const queries = [
+          'where: { authData: { equalTo: { key: "provider.access_token", value: "access-token" } } }',
+          'where: { authData: { greaterThan: { key: "provider.access_token", value: "a" } } }',
+          'where: { authData: { exists: true } }',
+          'order: [authData_ASC]',
+        ];
+        for (const query of queries) {
+          const { errors = [] } = await users(query);
+          expect(errors.map(({ message }) => message))
+            .withContext(query)
+            .toEqual(['Permission denied']);
+        }
+      });
+
+      it('rejects a query in Cloud Code with the session of a user that depends on the auth data of a user', async () => {
+        await setup();
+        const user = await signUp('user', { authData });
+        Parse.Cloud.define('countByAuthData', async ({ params }) => {
+          const query = new Parse.Query(Parse.User).equalTo('authData.provider.id', 'id');
+          return (await query.find(params)).length;
+        });
+        const run = params =>
+          send('POST', '/functions/countByAuthData', params, session(user)).catch(error => error);
+        expect((await run({ sessionToken: user.sessionToken })).data).toEqual(denied);
+        expect((await run({ useMasterKey: true })).data).toEqual({ result: 1 });
+      });
+
+      it('rejects a query of users when a beforeFind trigger adds a constraint on the auth data of a user', async () => {
+        await setup();
+        await signUp();
+        Parse.Cloud.beforeFind(Parse.User, ({ query }) => {
+          query.doesNotExist('authData.anonymous');
+        });
+        expect(await find({ where: { username: 'user' } })).toEqual(denied);
+        const { results } = await find({ where: { username: 'user' } }, master);
+        expect(results.length).toBe(1);
+      });
+
+      it('rejects a query that depends on a protected field of a user', async () => {
+        await setup({ protectedFields: { _User: { '*': ['phone'] } } });
+        expect(await find({ where: { phone: '555-0100' } })).toEqual(denied);
+        expect(await find({ order: 'phone' })).toEqual(denied);
+      });
+
+      it('finds a user by its auth data with the master key, the read-only master key and the maintenance key', async () => {
+        await setup();
+        const user = await signUp('user', { authData });
+        for (const key of [master, { 'X-Parse-Master-Key': 'read-only-test' }, maintenance]) {
+          const { results } = await find(
+            {
+              where: { 'authData.provider.access_token': 'access-token' },
+              order: 'authData.provider.access_token',
+            },
+            key
+          );
+          expect(results.map(({ objectId }) => objectId)).toEqual([user.objectId]);
+          expect(results[0].authData).toEqual(authData);
+          expect(await find({ where: { sessionToken }, order: 'sessionToken' }, key)).toEqual({
+            results: [],
+          });
+        }
+      });
+
+      it('finds the user of a login with auth data', async () => {
+        await setup();
+        const user = await signUp('user', { authData });
+        const { data } = await send('POST', '/users', { authData });
+        expect(data.objectId).toBe(user.objectId);
+      });
+
+      it('returns a user without session token and auth data to a query that depends on other fields', async () => {
+        await setup();
+        const user = await signUp('user', { authData });
+        const { results } = await find({ where: { username: 'user' }, order: 'username' });
+        expect(results.map(({ objectId }) => objectId)).toEqual([user.objectId]);
+        expect(results[0].sessionToken).toBeUndefined();
+        expect(results[0].authData).toBeUndefined();
+      });
+
+      it('does not match the key of a subquery against the auth data of a user', async () => {
+        await setup();
+        await signUp('user', { authData });
+        await send('POST', '/classes/Post', { title: 'id' });
+        const query = { className: '_User', where: { username: 'user' } };
+        const where = { title: { $select: { query, key: 'authData.provider.id' } } };
+        // Without the master key the subquery returns no auth data
+        const { results = [] } = await find({ where }, {}, '/classes/Post');
+        expect(results).toEqual([]);
+        expect((await find({ where }, master, '/classes/Post')).results.length).toBe(1);
+      });
+
+      it('accepts a query of another class that depends on fields with these names', async () => {
+        await setup();
+        const object = { sessionToken, authData };
+        await send('POST', '/classes/TestObject', object);
+        const { results } = await find(
+          {
+            where: { sessionToken, 'authData.provider.id': 'id' },
+            order: 'sessionToken,authData.provider.access_token',
+          },
+          {},
+          '/classes/TestObject'
+        );
+        expect(results).toEqual([jasmine.objectContaining(object)]);
+      });
+    });
+
+    describe('LiveQuery subscription', () => {
+      const permissionDenied = jasmine.objectContaining({
+        code: Parse.Error.OPERATION_FORBIDDEN,
+        message: 'Permission denied',
+      });
+      const masterKeyClients = {
+        liveQueryServerOptions: { keyPairs: { masterKey: 'test', javascriptKey: 'test' } },
+      };
+      const watches = [
+        ['sessionToken'],
+        ['authData'],
+        ['authData.provider'],
+        ['username', 'authData'],
+      ];
+      let clients;
+      let sockets;
+      // The events of each subscription, also of a rejected one
+      let subscriptions;
+
+      beforeEach(() => {
+        clients = [];
+        sockets = [];
+        subscriptions = [];
+      });
+
+      afterEach(async () => {
+        await Promise.all(clients.map(client => client.close()));
+        for (const socket of sockets) {
+          if (socket.readyState !== ws.CLOSED) {
+            await new Promise(resolve => {
+              socket.once('close', resolve);
+              socket.close();
+            });
+          }
+        }
+      });
+
+      const setup = (options = {}) =>
+        reconfigureServer({
+          auth: { provider },
+          liveQuery: { classNames: ['_User', 'TestObject'] },
+          startLiveQueryServer: true,
+          verbose: false,
+          silent: true,
+          ...options,
+        });
+
+      const connect = (options = {}) => {
+        const client = new Parse.LiveQueryClient({
+          applicationId: Parse.applicationId,
+          serverURL: 'ws://localhost:8378',
+          javascriptKey: 'test',
+          ...options,
+        });
+        clients.push(client);
+        client.open();
+        return client;
+      };
+
+      // Resolves with the events of the subscription, or rejects with the error of the server
+      async function subscribe(client, { where = {}, watch, className = '_User' } = {}) {
+        const query = new Parse.Query(className);
+        query.withJSON({ where });
+        if (watch) {
+          query.watch(...watch);
+        }
+        const subscription = client.subscribe(query, client.sessionToken);
+        const events = [];
+        subscriptions.push(events);
+        for (const event of ['create', 'update', 'enter', 'leave', 'delete']) {
+          subscription.on(event, object => events.push({ event, object: object.toJSON() }));
+        }
+        await subscription.subscribePromise;
+        return events;
+      }
+
+      const until = async condition => {
+        for (let i = 0; !condition(); i++) {
+          if (i === 500) {
+            throw new Error('Timed out');
+          }
+          await sleep(10);
+        }
+      };
+
+      // Waits for an event of the subscription, then for events that the server sends late
+      const sent = async events => {
+        await until(() => events.length > 0);
+        await sleep(500);
+      };
+
+      // The events of all subscriptions except the given one
+      const eventsOfOthers = events => subscriptions.filter(other => other !== events).flat();
+
+      // Each constraint and each watched field, combined with the given constraint
+      async function expectRejected(client, constraint = {}, watchError = permissionDenied) {
+        for (const where of wheres) {
+          await expectAsync(subscribe(client, { where: { ...constraint, ...where } }))
+            .withContext(JSON.stringify(where))
+            .toBeRejectedWith(permissionDenied);
+        }
+        for (const watch of watches) {
+          await expectAsync(subscribe(client, { where: constraint, watch }))
+            .withContext(JSON.stringify(watch))
+            .toBeRejectedWith(watchError);
+        }
+      }
+
+      it('rejects a subscription of another user that depends on the session token or the auth data of a user', async () => {
+        await setup();
+        const other = await signUp('other');
+        await expectRejected(connect({ sessionToken: other.sessionToken }));
+      });
+
+      it('rejects a subscription without a session that depends on the session token or the auth data of a user', async () => {
+        await setup();
+        await expectRejected(connect());
+      });
+
+      it('rejects a subscription of the user itself that depends on its session token or auth data', async () => {
+        await setup();
+        const user = await signUp();
+        const client = connect({ sessionToken: user.sessionToken });
+        await expectRejected(client);
+        // No protected fields apply to the user's own object
+        await expectRejected(client, { objectId: user.objectId });
+      });
+
+      it('rejects a subscription that depends on the session token or the auth data of a user when the class has no protected fields', async () => {
+        await setup({ protectedFields: { _User: { '*': [] } }, protectedFieldsOwnerExempt: false });
+        await expectRejected(connect());
+      });
+
+      it('rejects a subscription that depends on the session token or the auth data of a user when the class has a beforeSubscribe trigger', async () => {
+        await setup();
+        Parse.Cloud.beforeSubscribe(Parse.User, () => {});
+        // A subscription with a watch list fails when the class has this trigger
+        await expectRejected(connect(), {}, jasmine.anything());
+      });
+
+      it('rejects a subscription that depends on a protected field of a user', async () => {
+        await setup({ protectedFields: { _User: { '*': ['phone'] } } });
+        const client = connect();
+        await expectAsync(subscribe(client, { where: { phone: '555-0100' } })).toBeRejectedWith(
+          permissionDenied
+        );
+        await expectAsync(subscribe(client, { watch: ['phone'] })).toBeRejectedWith(
+          permissionDenied
+        );
+      });
+
+      it('sends no event to a rejected subscription', async () => {
+        await setup();
+        const client = connect();
+        await expectRejected(client);
+        const events = await subscribe(client);
+        await signUp('user', { authData });
+        await sent(events);
+        expect(events.map(({ event }) => event)).toEqual(['create']);
+        expect(eventsOfOthers(events)).toEqual([]);
+      });
+
+      it('rejects an update of a subscription to a constraint on the session token or the auth data of a user', async () => {
+        await setup();
+        const socket = new ws('ws://localhost:8378/1');
+        sockets.push(socket);
+        const messages = [];
+        socket.on('message', data => messages.push(JSON.parse(data.toString())));
+        await new Promise((resolve, reject) => {
+          socket.on('open', resolve);
+          socket.on('error', reject);
+        });
+        const received = async (op, requestId) => {
+          const matches = message => message.op === op && message.requestId === requestId;
+          await until(() => messages.some(matches));
+          return messages.find(matches);
+        };
+        const subscribed = async requestId => {
+          const query = { className: '_User', where: {} };
+          socket.send(JSON.stringify({ op: 'subscribe', requestId, query }));
+          await received('subscribed', requestId);
+        };
+        socket.send(JSON.stringify({ op: 'connect', applicationId: Parse.applicationId }));
+        await received('connected');
+        const queries = [
+          { where: { sessionToken: { $exists: true } } },
+          { where: { 'authData.provider.id': 'id' } },
+          { where: {}, watch: ['sessionToken'] },
+          { where: {}, watch: ['authData'] },
+        ];
+        for (const [index, query] of queries.entries()) {
+          const requestId = index + 1;
+          await subscribed(requestId);
+          socket.send(
+            JSON.stringify({ op: 'update', requestId, query: { className: '_User', ...query } })
+          );
+          expect(await received('error', requestId))
+            .withContext(JSON.stringify(query))
+            .toEqual(
+              jasmine.objectContaining({
+                code: Parse.Error.OPERATION_FORBIDDEN,
+                error: 'Permission denied',
+              })
+            );
+        }
+        const requestId = queries.length + 1;
+        await subscribed(requestId);
+        await signUp('user', { authData });
+        await received('create', requestId);
+        await sleep(500);
+        const created = messages.filter(message => message.op === 'create');
+        expect(created.map(message => message.requestId)).toEqual([requestId]);
+      });
+
+      it('sends the event of a user to a subscription that depends on other fields', async () => {
+        await setup();
+        const events = await subscribe(connect(), {
+          where: { username: 'user' },
+          watch: ['username'],
+        });
+        const user = await signUp();
+        await until(() => events.length > 0);
+        expect(events.map(({ event }) => event)).toEqual(['create']);
+        expect(events[0].object.objectId).toBe(user.objectId);
+        expect(events[0].object.sessionToken).toBeUndefined();
+      });
+
+      it('accepts a subscription of another class that depends on fields with these names', async () => {
+        await setup();
+        const object = { sessionToken, authData };
+        const events = await subscribe(connect(), {
+          className: 'TestObject',
+          where: { sessionToken, 'authData.provider.id': 'id' },
+          watch: ['sessionToken', 'authData'],
+        });
+        await send('POST', '/classes/TestObject', object);
+        await until(() => events.length > 0);
+        expect(events.map(({ event }) => event)).toEqual(['create']);
+        expect(events[0].object).toEqual(jasmine.objectContaining(object));
+      });
+
+      it('matches a subscription with the master key against the auth data of a user', async () => {
+        await setup(masterKeyClients);
+        const query = { where: { 'authData.provider.id': 'id' }, watch: ['authData'] };
+        const events = await subscribe(connect({ masterKey: Parse.masterKey }), query);
+        // The same subscription of a client without the master key
+        await expectAsync(subscribe(connect(), query)).toBeRejectedWith(permissionDenied);
+        const user = await signUp();
+        await send('PUT', `/users/${user.objectId}`, { authData }, session(user));
+        await sent(events);
+        expect(events.map(({ event }) => event)).toEqual(['enter']);
+        expect(events[0].object.authData).toEqual(authData);
+        expect(eventsOfOthers(events)).toEqual([]);
+      });
+    });
+  });
 });
