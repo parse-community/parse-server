@@ -855,6 +855,8 @@ function configureListeners(parseServer) {
       .catch(error => {
         // eslint-disable-next-line no-console
         console.error('Error during shutdown', error);
+        // The process exits once the remaining handles are closed; report the failure in the exit status
+        process.exitCode = 1;
       })
       .finally(() => {
         shuttingDown = false;
