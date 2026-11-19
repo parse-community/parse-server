@@ -443,6 +443,26 @@ describe('graceful shutdown', () => {
     );
   });
 
+  it('waits for every startup operation to settle before failing to start', async () => {
+    const { InMemoryCacheAdapter } = require('../lib/Adapters/Cache/InMemoryCacheAdapter');
+    const cacheAdapter = new InMemoryCacheAdapter({ ttl: 5000, maxSize: 100 });
+    let connected = false;
+    cacheAdapter.connect = async () => {
+      await sleep(300);
+      connected = true;
+    };
+    const api = new ParseServer(makeConfig({ cacheAdapter }));
+    server = api;
+    spyOn(api.config.liveQueryController, 'connect').and.rejectWith(
+      new Error('LiveQuery unavailable')
+    );
+    spyOn(console, 'error').and.callFake(() => {});
+    await expectAsync(api.start()).toBeRejectedWithError('LiveQuery unavailable');
+    // The failure is reported only once the cache adapter connection has settled as well
+    expect(connected).toBe(true);
+    expect(api.config.state).toBe('error');
+  });
+
   it('destroys in-flight connections once the shutdown timeout expires', async () => {
     server = await ParseServer.startApp(makeConfig({ shutdownTimeout: 200 }));
     let handlerStarted;

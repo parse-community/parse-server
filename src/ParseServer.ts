@@ -201,7 +201,21 @@ class ParseServer {
         startupPromises.push(cacheController.adapter.connect());
       }
       startupPromises.push(liveQueryController.connect());
-      await Promise.all(startupPromises);
+      // Every startup operation settles before a failure is reported, so that a shutdown following
+      // the failure does not run concurrently with an operation still in progress, such as the cache
+      // adapter connecting
+      const settled = await Promise.all(
+        startupPromises.map(promise =>
+          Promise.resolve(promise).then(
+            () => undefined,
+            error => ({ error })
+          )
+        )
+      );
+      const failed = settled.find(result => result);
+      if (failed) {
+        throw failed.error;
+      }
       if (cloud) {
         addParseCloud();
         if (typeof cloud === 'function') {
