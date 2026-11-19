@@ -1,3 +1,10 @@
+# [9.12.0-alpha.5](https://github.com/parse-community/parse-server/compare/9.12.0-alpha.4...9.12.0-alpha.5) (2026-11-19)
+
+
+### Bug Fixes
+
+* Query and LiveQuery subscription constraints disclose the auth data and session token of a user ([GHSA-9v83-v857-2xf8](https://github.com/parse-community/parse-server/security/advisories/GHSA-9v83-v857-2xf8)) ([#10894](https://github.com/parse-community/parse-server/issues/10894)) ([0909893](https://github.com/parse-community/parse-server/commit/0909893082d68e2f84cabb8555127d8f07ad623d))
+
 # [9.12.0-alpha.4](https://github.com/parse-community/parse-server/compare/9.12.0-alpha.3...9.12.0-alpha.4) (2026-11-17)
 
 
