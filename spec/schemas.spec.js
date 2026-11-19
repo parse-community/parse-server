@@ -3881,5 +3881,122 @@ describe('schemas', () => {
           done();
         });
     });
+
+    describe('index options', () => {
+      const putIndexes = indexes =>
+        request({
+          url: 'http://localhost:8378/1/schemas/NewClass',
+          method: 'PUT',
+          headers: masterKeyHeaders,
+          json: true,
+          body: { indexes },
+        });
+
+      beforeEach(async () => {
+        await request({
+          url: 'http://localhost:8378/1/schemas/NewClass',
+          method: 'POST',
+          headers: masterKeyHeaders,
+          json: true,
+          body: { fields: { aString: { type: 'String' }, aDate: { type: 'Date' } } },
+        });
+      });
+
+      it_only_db('mongo')('lets you add indexes with options', async () => {
+        const indexes = {
+          unique_index: {
+            aString: 1,
+            __options: { unique: true, partialFilterExpression: { aString: { $exists: true } } },
+          },
+          ttl_index: { aDate: 1, __options: { expireAfterSeconds: 60 } },
+          sparse_index: { aString: -1, __options: { sparse: true } },
+        };
+        const response = await putIndexes(indexes);
+        expect(response.data.indexes).toEqual({ _id_: { _id: 1 }, ...indexes });
+
+        const mongoIndexes = await config.database.adapter.getIndexes('NewClass');
+        const uniqueIndex = mongoIndexes.find(index => index.name === 'unique_index');
+        expect(uniqueIndex.unique).toBe(true);
+        expect(uniqueIndex.partialFilterExpression).toEqual({ aString: { $exists: true } });
+        const ttlIndex = mongoIndexes.find(index => index.name === 'ttl_index');
+        expect(ttlIndex.expireAfterSeconds).toBe(60);
+        const sparseIndex = mongoIndexes.find(index => index.name === 'sparse_index');
+        expect(sparseIndex.sparse).toBe(true);
+
+        // The partial unique index ignores objects without the field
+        await new Parse.Object('NewClass').save(null, { useMasterKey: true });
+        await new Parse.Object('NewClass').save(null, { useMasterKey: true });
+        await new Parse.Object('NewClass', { aString: 'a' }).save(null, { useMasterKey: true });
+        await expectAsync(
+          new Parse.Object('NewClass', { aString: 'a' }).save(null, { useMasterKey: true })
+        ).toBeRejectedWith(
+          new Parse.Error(
+            Parse.Error.DUPLICATE_VALUE,
+            'A duplicate value for a field with unique values was provided'
+          )
+        );
+      });
+
+      it_only_db('mongo')('keeps index options when the indexes are read from the database', async () => {
+        const indexes = {
+          unique_index: { aString: 1, __options: { unique: true } },
+          plain_index: { aDate: 1 },
+        };
+        await putIndexes(indexes);
+        await config.database.adapter.updateSchemaWithIndexes();
+
+        const response = await request({
+          url: 'http://localhost:8378/1/schemas/NewClass',
+          headers: masterKeyHeaders,
+          json: true,
+        });
+        expect(response.data.indexes).toEqual({ _id_: { _id: 1 }, ...indexes });
+      });
+
+      it_only_db('mongo')('cannot add an index with an unsupported option', async () => {
+        await expectAsync(putIndexes({ name1: { aString: 1, __options: { background: true } } })).toBeRejectedWith(
+          jasmine.objectContaining({
+            data: {
+              code: Parse.Error.INVALID_QUERY,
+              error: 'Index option background is not supported, cannot add index.',
+            },
+          })
+        );
+      });
+
+      it_only_db('mongo')('cannot add an index with an invalid option value', async () => {
+        await expectAsync(putIndexes({ name1: { aString: 1, __options: { unique: 'true' } } })).toBeRejectedWith(
+          jasmine.objectContaining({
+            data: {
+              code: Parse.Error.INVALID_QUERY,
+              error: 'Index option unique has an invalid value, cannot add index.',
+            },
+          })
+        );
+      });
+
+      it_only_db('mongo')('cannot add an index with options that are not an object', async () => {
+        await expectAsync(putIndexes({ name1: { aString: 1, __options: true } })).toBeRejectedWith(
+          jasmine.objectContaining({
+            data: {
+              code: Parse.Error.INVALID_QUERY,
+              error: 'Index option __options must be an object, cannot add index.',
+            },
+          })
+        );
+      });
+
+      it_only_db('postgres')('cannot add an index with options', async () => {
+        await expectAsync(putIndexes({ name1: { aString: 1, __options: { unique: true } } })).toBeRejectedWith(
+          jasmine.objectContaining({
+            data: {
+              code: Parse.Error.INVALID_QUERY,
+              error:
+                'Index name1 has options, which are not supported by the Postgres storage adapter.',
+            },
+          })
+        );
+      });
+    });
   });
 });
