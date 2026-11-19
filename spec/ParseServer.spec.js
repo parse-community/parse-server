@@ -378,7 +378,9 @@ describe('graceful shutdown', () => {
       })
     );
     // The pub/sub adapter never settles, as with an unreachable Redis server
-    spyOn(server.liveQueryServer, 'shutdown').and.returnValue(new Promise(() => {}));
+    const liveQueryServer = server.liveQueryServer;
+    const liveQueryShutdown = liveQueryServer.shutdown;
+    spyOn(liveQueryServer, 'shutdown').and.returnValue(new Promise(() => {}));
     spyOn(console, 'error').and.callFake(() => {});
     const started = Date.now();
     let error;
@@ -392,6 +394,8 @@ describe('graceful shutdown', () => {
     expect(closeCompleteCalls).toBe(1);
     expect((await health()).code).toBe('ECONNREFUSED');
     server = undefined;
+    // Unsubscribe the LiveQuery server from the shared pub/sub emitter so it does not outlive the spec
+    await liveQueryShutdown.call(liveQueryServer);
   });
 
   it('runs every shutdown step and rejects with the collected errors', async () => {
