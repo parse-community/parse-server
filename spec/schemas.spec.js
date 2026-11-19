@@ -3881,5 +3881,89 @@ describe('schemas', () => {
           done();
         });
     });
+
+    describe('indexes on keys of Object and Array fields', () => {
+      const putIndexes = indexes =>
+        request({
+          url: 'http://localhost:8378/1/schemas/NewClass',
+          method: 'PUT',
+          headers: masterKeyHeaders,
+          json: true,
+          body: { indexes },
+        });
+
+      beforeEach(async () => {
+        await request({
+          url: 'http://localhost:8378/1/schemas/NewClass',
+          method: 'POST',
+          headers: masterKeyHeaders,
+          json: true,
+          body: {
+            fields: {
+              aString: { type: 'String' },
+              anObject: { type: 'Object' },
+              anArray: { type: 'Array' },
+            },
+          },
+        });
+      });
+
+      it_only_db('mongo')('lets you add indexes on keys of Object and Array fields', async () => {
+        const indexes = {
+          object_key: { 'anObject.aKey': 1 },
+          object_nested_key: { aString: 1, 'anObject.aKey.aNestedKey': -1 },
+          object_wildcard: { 'anObject.$**': 1 },
+          array_key: { 'anArray.aKey': 1 },
+        };
+        const response = await putIndexes(indexes);
+        expect(response.data.indexes).toEqual({ _id_: { _id: 1 }, ...indexes });
+
+        const mongoIndexes = await config.database.adapter.getIndexes('NewClass');
+        Object.keys(indexes).forEach(name => {
+          expect(mongoIndexes.find(index => index.name === name).key).toEqual(indexes[name]);
+        });
+
+        // The indexes are the same when they are read from the database
+        await config.database.adapter.updateSchemaWithIndexes();
+        const schema = await request({
+          url: 'http://localhost:8378/1/schemas/NewClass',
+          headers: masterKeyHeaders,
+          json: true,
+        });
+        expect(schema.data.indexes).toEqual({ _id_: { _id: 1 }, ...indexes });
+      });
+
+      it_only_db('mongo')('cannot add an index on a key of a field that is not an Object or Array', async () => {
+        await expectAsync(putIndexes({ name1: { 'aString.aKey': 1 } })).toBeRejectedWith(
+          jasmine.objectContaining({
+            data: {
+              code: Parse.Error.INVALID_QUERY,
+              error: 'Field aString.aKey does not exist, cannot add index.',
+            },
+          })
+        );
+        await expectAsync(putIndexes({ name1: { 'missing.aKey': 1 } })).toBeRejectedWith(
+          jasmine.objectContaining({
+            data: {
+              code: Parse.Error.INVALID_QUERY,
+              error: 'Field missing.aKey does not exist, cannot add index.',
+            },
+          })
+        );
+      });
+
+      it_only_db('mongo')('cannot add an index on an invalid key of an Object field', async () => {
+        for (const key of ['anObject.', 'anObject..aKey', 'anObject.$aKey', 'anObject.$**.aKey']) {
+          await expectAsync(putIndexes({ name1: { [key]: 1 } })).toBeRejectedWith(
+            jasmine.objectContaining({
+              data: {
+                code: Parse.Error.INVALID_QUERY,
+                error: `Field ${key} does not exist, cannot add index.`,
+              },
+            })
+          );
+        }
+      });
+    });
   });
 });
