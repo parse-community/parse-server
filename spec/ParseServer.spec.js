@@ -461,10 +461,11 @@ describe('graceful shutdown', () => {
   it('waits for every startup operation to settle before failing to start', async () => {
     const { InMemoryCacheAdapter } = require('../lib/Adapters/Cache/InMemoryCacheAdapter');
     const cacheAdapter = new InMemoryCacheAdapter({ ttl: 5000, maxSize: 100 });
-    let connected = false;
+    let cacheSettled = false;
     cacheAdapter.connect = async () => {
       await sleep(300);
-      connected = true;
+      cacheSettled = true;
+      throw new Error('cache unavailable');
     };
     const api = new ParseServer(makeConfig({ cacheAdapter }));
     server = api;
@@ -472,9 +473,9 @@ describe('graceful shutdown', () => {
       new Error('LiveQuery unavailable')
     );
     spyOn(console, 'error').and.callFake(() => {});
+    // The first failure is reported, but only once the cache adapter connection has settled as well
     await expectAsync(api.start()).toBeRejectedWithError('LiveQuery unavailable');
-    // The failure is reported only once the cache adapter connection has settled as well
-    expect(connected).toBe(true);
+    expect(cacheSettled).toBe(true);
     expect(api.config.state).toBe('error');
   });
 
@@ -498,7 +499,10 @@ describe('graceful shutdown', () => {
     const started = Date.now();
     const shutdown = server.handleShutdown();
     // The connection is not reset before the timeout expires
-    const early = await Promise.race([inFlight.then(() => 'settled'), sleep(150).then(() => 'pending')]);
+    const early = await Promise.race([
+      inFlight.then(() => 'settled'),
+      sleep(150).then(() => 'pending'),
+    ]);
     expect(early).toBe('pending');
     await shutdown;
     const elapsed = Date.now() - started;
