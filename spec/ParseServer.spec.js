@@ -276,11 +276,15 @@ describe('graceful shutdown', () => {
 
     // 2. Starting: health asks the client to retry
     const starting = api.start();
-    response = await health();
-    expect(response.status).toBe(503);
-    expect(response.data.status).toBe('starting');
-    expect(response.headers['retry-after']).toBe('1');
-    releaseInitialization();
+    try {
+      response = await health();
+      expect(response.status).toBe(503);
+      expect(response.data.status).toBe('starting');
+      expect(response.headers['retry-after']).toBe('1');
+    } finally {
+      // Always released, otherwise a failed probe would block the start and the cleanup
+      releaseInitialization();
+    }
     await starting;
 
     // 3. Ready: health is ok and requests are served
