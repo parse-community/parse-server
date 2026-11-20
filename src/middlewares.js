@@ -13,6 +13,7 @@ import { pathToRegexp } from 'path-to-regexp';
 import RedisStore from 'rate-limit-redis';
 import { createClient } from 'redis';
 import { BlockList, isIPv4 } from 'net';
+import { createHash } from 'crypto';
 import { createSanitizedHttpError, createSanitizedError } from './Error';
 
 export const DEFAULT_ALLOWED_HEADERS =
@@ -681,6 +682,33 @@ const isInternalRequest = request =>
   request.socket?.remoteAddress === '127.0.0.1' &&
   request.headers?.['x-forwarded-for'] === undefined;
 
+/**
+ * Returns the deterministic Redis key prefix for a rate limit rule, so that each rule
+ * counts requests in its own Redis key namespace. Without a per-rule prefix every rule
+ * sharing a Redis instance would use the default `rl:` prefix of `rate-limit-redis` and
+ * increment the same `rl:<key>` key, no matter which route, method, zone, time window
+ * or request count the rule was configured with. The prefix is a compact hash of the
+ * rule identity, so it is stable across server restarts and identical rules on
+ * different server instances still share one counter, as intended for Redis-backed
+ * rate limiting behind a load balancer.
+ * @param {Object} route The rate limit rule, as passed to `addRateLimit`.
+ * @returns {string} The Redis key prefix for the rule, e.g. `rl:<hash>:`.
+ */
+export const getRateLimitRedisKeyPrefix = route => {
+  const ruleIdentity = {
+    requestPath: route.requestPath,
+    requestMethods: route.requestMethods,
+    zone: route.zone,
+    requestTimeWindow: route.requestTimeWindow,
+    requestCount: route.requestCount,
+  };
+  const identity = JSON.stringify(ruleIdentity, (_key, value) =>
+    Utils.isRegExp(value) ? value.toString() : value
+  );
+  const hash = createHash('sha256').update(identity).digest('hex').slice(0, 16);
+  return `rl:${hash}:`;
+};
+
 export const addRateLimit = (route, config, cloud) => {
   if (typeof config === 'string') {
     config = Config.get(config);
@@ -722,6 +750,7 @@ export const addRateLimit = (route, config, cloud) => {
         await redisStore.connectionPromise();
         return client.sendCommand(args);
       },
+      prefix: getRateLimitRedisKeyPrefix(route),
     });
   }
   config.rateLimits.push({

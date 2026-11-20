@@ -1,4 +1,5 @@
 const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter').default;
+const { getRateLimitRedisKeyPrefix } = require('../lib/middlewares');
 const request = require('../lib/request');
 
 const headers = {
@@ -1901,17 +1902,16 @@ describe('rate limit', () => {
     return process.env.PARSE_SERVER_TEST_CACHE === 'redis';
   })('with RedisCache', function () {
     it('does work with cache', async () => {
+      const rateLimitRule = {
+        requestPath: '/classes/*path',
+        requestTimeWindow: 10000,
+        requestCount: 1,
+        errorResponseMessage: 'Too many requests',
+        includeInternalRequests: true,
+        redisUrl: 'redis://localhost:6379',
+      };
       await reconfigureServer({
-        rateLimit: [
-          {
-            requestPath: '/classes/*path',
-            requestTimeWindow: 10000,
-            requestCount: 1,
-            errorResponseMessage: 'Too many requests',
-            includeInternalRequests: true,
-            redisUrl: 'redis://localhost:6379',
-          },
-        ],
+        rateLimit: [rateLimitRule],
       });
       const obj = new Parse.Object('Test');
       await obj.save();
@@ -1920,10 +1920,51 @@ describe('rate limit', () => {
       );
       const cache = new RedisCacheAdapter();
       await cache.connect();
-      const value = await cache.get('rl:127.0.0.1');
+      // The Redis key is scoped to the rule by a deterministic prefix
+      const redisKey = `${getRateLimitRedisKeyPrefix(rateLimitRule)}127.0.0.1`;
+      const value = await cache.get(redisKey);
       expect(value).toEqual(2);
-      const ttl = await cache.client.ttl('rl:127.0.0.1');
+      const ttl = await cache.client.ttl(redisKey);
       expect(ttl).toEqual(10);
+    });
+
+    it('isolates Redis rate limit counters per rule', async () => {
+      const cache = new RedisCacheAdapter();
+      await cache.connect();
+      await cache.client.flushDb();
+      Parse.Cloud.define('redisRateLimitA', () => 'A');
+      Parse.Cloud.define('redisRateLimitB', () => 'B');
+      const ruleA = {
+        requestPath: '/functions/redisRateLimitA',
+        requestMethods: ['POST'],
+        requestTimeWindow: 10000,
+        requestCount: 1,
+        errorResponseMessage: 'Too many requests',
+        includeInternalRequests: true,
+        redisUrl: 'redis://localhost:6379',
+      };
+      const ruleB = {
+        ...ruleA,
+        requestPath: '/functions/redisRateLimitB',
+      };
+      await reconfigureServer({
+        rateLimit: [ruleA, ruleB],
+      });
+      // The first call to each function succeeds: the two rules must not
+      // share one Redis counter, even though they use the same Redis
+      // instance and the requests come from the same IP address
+      expect(await Parse.Cloud.run('redisRateLimitA')).toBe('A');
+      expect(await Parse.Cloud.run('redisRateLimitB')).toBe('B');
+      // A second call to B is rejected by B's own limit
+      await expectAsync(Parse.Cloud.run('redisRateLimitB')).toBeRejectedWith(
+        new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
+      );
+      // Each rule counted only its own requests in Redis
+      const keyA = `${getRateLimitRedisKeyPrefix(ruleA)}127.0.0.1`;
+      const keyB = `${getRateLimitRedisKeyPrefix(ruleB)}127.0.0.1`;
+      expect(keyA).not.toBe(keyB);
+      expect(await cache.get(keyA)).toEqual(1);
+      expect(await cache.get(keyB)).toEqual(2);
     });
   });
 });
