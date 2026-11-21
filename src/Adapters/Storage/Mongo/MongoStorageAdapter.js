@@ -17,7 +17,8 @@ import {
 import Parse from 'parse/node';
 // @flow-disable-next
 import _ from 'lodash';
-import { EJSON } from 'bson';
+import { BSON } from 'mongodb';
+const { EJSON } = BSON;
 import defaults, { ParseServerDatabaseOptions } from '../../../defaults';
 import logger from '../../../logger';
 
