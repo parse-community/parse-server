@@ -739,7 +739,7 @@ module.exports = ParseCloud;
  * @property {Boolean} master If true, means the master key or the read-only master key was used.
  * @property {Boolean} isReadOnly If true, means the read-only master key was used. This is a subset of `master`, so `master` will also be true. Use `master && !isReadOnly` to check for full master key access.
  * @property {Boolean} isChallenge If true, means the current request is originally triggered by an auth challenge.
- * @property {Parse.User} user If set, the user that made the request.
+ * @property {Parse.User} user If set, the user that made the request, as stored, including data the user cannot read itself; to return it to the client, fetch it with the user's session token.
  * @property {Parse.Object} object The object triggering the hook.
  * @property {String} ip The IP address of the client making the request. If Parse Server runs behind a proxy server, for example a load balancer, set the Parse Server option `trustProxy` to match the proxy setup, for example to the number of proxy hops or to `'loopback'` for a proxy on the same host, so that the address is resolved from the `X-Forwarded-For` header that the proxy sets. Do not set `trustProxy: true`, as that trusts an `X-Forwarded-For` header that any client can set.
  * @property {Object} headers The original HTTP headers for the request.
@@ -754,7 +754,7 @@ module.exports = ParseCloud;
  * @property {String} installationId If set, the installationId triggering the request.
  * @property {Boolean} master If true, means the master key or the read-only master key was used.
  * @property {Boolean} isReadOnly If true, means the read-only master key was used. This is a subset of `master`, so `master` will also be true. Use `master && !isReadOnly` to check for full master key access.
- * @property {Parse.User} user If set, the user that made the request.
+ * @property {Parse.User} user If set, the user that made the request, as stored, including data the user cannot read itself; to return it to the client, fetch it with the user's session token.
  * @property {Parse.File} file The file that triggered the hook.
  * @property {Integer} fileSize The size of the file in bytes.
  * @property {Integer} contentLength The value from Content-Length header
@@ -771,7 +771,7 @@ module.exports = ParseCloud;
  * @interface Parse.Cloud.ConnectTriggerRequest
  * @property {String} installationId If set, the installationId triggering the request.
  * @property {Boolean} useMasterKey If true, means the master key was used.
- * @property {Parse.User} user If set, the user that made the request.
+ * @property {Parse.User} user If set, the user that made the request, as stored, including data the user cannot read itself; to return it to the client, fetch it with the user's session token.
  * @property {Integer} clients The number of clients connected.
  * @property {Integer} subscriptions The number of subscriptions connected.
  * @property {String} sessionToken If set, the session of the user that made the request.
@@ -781,7 +781,7 @@ module.exports = ParseCloud;
  * @interface Parse.Cloud.LiveQueryEventTrigger
  * @property {String} installationId If set, the installationId triggering the request.
  * @property {Boolean} useMasterKey If true, means the master key was used.
- * @property {Parse.User} user If set, the user that made the request.
+ * @property {Parse.User} user If set, the user that made the request, as stored, including data the user cannot read itself; to return it to the client, fetch it with the user's session token.
  * @property {String} sessionToken If set, the session of the user that made the request.
  * @property {String} event The live query event that triggered the request.
  * @property {Parse.Object} object The object triggering the hook.
@@ -796,7 +796,7 @@ module.exports = ParseCloud;
  * @property {String} installationId If set, the installationId triggering the request.
  * @property {Boolean} master If true, means the master key or the read-only master key was used.
  * @property {Boolean} isReadOnly If true, means the read-only master key was used. This is a subset of `master`, so `master` will also be true. Use `master && !isReadOnly` to check for full master key access.
- * @property {Parse.User} user If set, the user that made the request.
+ * @property {Parse.User} user If set, the user that made the request, as stored, including data the user cannot read itself; to return it to the client, fetch it with the user's session token.
  * @property {Parse.Query} query The query triggering the hook.
  * @property {String} ip The IP address of the client making the request.
  * @property {Object} headers The original HTTP headers for the request.
@@ -811,7 +811,7 @@ module.exports = ParseCloud;
  * @property {String} installationId If set, the installationId triggering the request.
  * @property {Boolean} master If true, means the master key or the read-only master key was used.
  * @property {Boolean} isReadOnly If true, means the read-only master key was used. This is a subset of `master`, so `master` will also be true. Use `master && !isReadOnly` to check for full master key access.
- * @property {Parse.User} user If set, the user that made the request.
+ * @property {Parse.User} user If set, the user that made the request, as stored, including data the user cannot read itself; to return it to the client, fetch it with the user's session token.
  * @property {Parse.Query} query The query triggering the hook.
  * @property {Array<Parse.Object>} results The results the query yielded.
  * @property {String} ip The IP address of the client making the request.
@@ -826,7 +826,7 @@ module.exports = ParseCloud;
  * @property {String} installationId If set, the installationId triggering the request.
  * @property {Boolean} master If true, means the master key or the read-only master key was used.
  * @property {Boolean} isReadOnly If true, means the read-only master key was used. This is a subset of `master`, so `master` will also be true. Use `master && !isReadOnly` to check for full master key access.
- * @property {Parse.User} user If set, the user that made the request.
+ * @property {Parse.User} user If set, the user that made the request, as stored, including data the user cannot read itself; to return it to the client, fetch it with the user's session token.
  * @property {Object} params The params passed to the cloud function. For JSON requests, values
  * retain their JSON types. For multipart/form-data requests, text fields are strings and file
  * fields are objects with `{ filename: string, contentType: string, data: Buffer }`.
