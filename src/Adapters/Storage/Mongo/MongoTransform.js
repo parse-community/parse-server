@@ -227,12 +227,13 @@ const valueAsDate = value => {
 function transformQueryKeyValue(className, key, value, schema, count = false) {
   // Validates a constraint on a key that maps directly to a database field, so
   // it accepts the same operators as any other field and rejects the rest
-  const transformDirectKeyValue = (dbKey, dbValue) => {
+  // `field` describes the stored type, e.g. `_rperm` and `_wperm` are arrays
+  const transformDirectKeyValue = (dbKey, dbValue, field) => {
     // A literal array is an exact match value, not a constraint document
     if (Array.isArray(dbValue)) {
       return { key: dbKey, value: dbValue };
     }
-    const constraint = transformConstraint(dbValue, undefined, dbKey, count);
+    const constraint = transformConstraint(dbValue, field, dbKey, count);
     if (constraint === CannotTransform) {
       return { key: dbKey, value: dbValue };
     }
@@ -301,7 +302,7 @@ function transformQueryKeyValue(className, key, value, schema, count = false) {
       break;
     case '_rperm':
     case '_wperm':
-      return transformDirectKeyValue(key, value);
+      return transformDirectKeyValue(key, value, { type: 'Array' });
     case '_perishable_token':
     case '_email_verify_token':
       return { key, value };

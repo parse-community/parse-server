@@ -5855,6 +5855,24 @@ describe('Parse.Query testing', () => {
         const byLiteral = await query('classes/TestClass', { _wperm: ['*'] });
         expect(byLiteral.data.results.map(r => r.objectId)).toEqual([obj.id]);
       });
+
+      it('still accepts array operands of $eq and $ne on _rperm and _wperm', async () => {
+        const readOnly = new Parse.Object('TestClass');
+        const acl = new Parse.ACL();
+        acl.setPublicReadAccess(true);
+        readOnly.setACL(acl);
+        await readOnly.save();
+        const byEq = await query('classes/TestClass', { _wperm: { $eq: [] } });
+        expect(byEq.data.results.map(r => r.objectId)).toEqual([readOnly.id]);
+        const byNe = await query('classes/TestClass', { _wperm: { $ne: [] } });
+        expect(byNe.data.results.map(r => r.objectId)).toEqual([obj.id]);
+        const byReadEq = await query(
+          'classes/TestClass',
+          { _rperm: { $eq: ['*'] } },
+          masterHeaders
+        );
+        expect(byReadEq.data.results.length).toBe(2);
+      });
     });
 
     describe('query operator format', () => {
