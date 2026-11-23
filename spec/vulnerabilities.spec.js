@@ -1145,14 +1145,17 @@ describe('Vulnerabilities', () => {
       });
       const client = new Parse.LiveQueryClient({
         applicationId: 'test',
-        serverURL: 'ws://localhost:1337',
+        serverURL: 'ws://localhost:8378',
         javascriptKey: 'test',
       });
       client.open();
       const query = new Parse.Query('TestObject');
       // Set a catastrophic backtracking regex pattern directly
       query._addCondition('field', '$regex', '(a+)+b');
-      const subscription = await client.subscribe(query);
+      const subscription = client.subscribe(query);
+      // Wait for the subscription ACK; without it this spec also passes when the
+      // subscribe request never reaches the server.
+      await new Promise(resolve => subscription.on('open', resolve));
       // Create an object that would trigger regex evaluation
       const obj = new Parse.Object('TestObject');
       // With 30 'a's followed by 'c', an unprotected regex would hang for seconds
@@ -4389,13 +4392,16 @@ describe('Vulnerabilities', () => {
         // First subscribe with a malformed query via manual client
         const malClient = new Parse.LiveQueryClient({
           applicationId: 'test',
-          serverURL: 'ws://localhost:1337',
+          serverURL: 'ws://localhost:8378',
           javascriptKey: 'test',
         });
         malClient.open();
         const malformedQuery = new Parse.Query('TestObject');
         malformedQuery._where = { name: { $in: { x: 1 } } };
-        await malClient.subscribe(malformedQuery);
+        const malSubscription = malClient.subscribe(malformedQuery);
+        // Wait for the subscription ACK so the malformed query is known to have
+        // reached the server; otherwise this spec passes without testing anything.
+        await new Promise(resolve => malSubscription.on('open', resolve));
 
         // Then subscribe with a valid query using the default client
         const validQuery = new Parse.Query('TestObject');
