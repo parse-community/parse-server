@@ -1007,6 +1007,63 @@ describe('Parse.Query testing', () => {
       });
   });
 
+  describe('containedBy combined with other constraints', () => {
+    const find = async where => {
+      const response = await request(
+        Object.assign({ url: Parse.serverURL + '/classes/TestObject' }, masterKeyOptions, {
+          qs: { where: JSON.stringify(where) },
+        })
+      );
+      return response.data.results.map(r => r.objectId).sort();
+    };
+
+    it('applies containedBy and $in on the same field together', async () => {
+      const both = new TestObject({ tags: ['a'] });
+      const containedOnly = new TestObject({ tags: ['b'] });
+      const inOnly = new TestObject({ tags: ['a', 'c'] });
+      await Parse.Object.saveAll([both, containedOnly, inOnly]);
+      const ids = await find({ tags: { $containedBy: ['a', 'b'], $in: ['a'] } });
+      expect(ids).toEqual([both.id]);
+    });
+
+    it('applies containedBy on two fields together', async () => {
+      const both = new TestObject({ tags: ['a'], labels: ['x'] });
+      const tagsOnly = new TestObject({ tags: ['a'], labels: ['y'] });
+      const labelsOnly = new TestObject({ tags: ['b'], labels: ['x'] });
+      await Parse.Object.saveAll([both, tagsOnly, labelsOnly]);
+      const ids = await find({ tags: { $containedBy: ['a'] }, labels: { $containedBy: ['x'] } });
+      expect(ids).toEqual([both.id]);
+    });
+
+    it('applies containedBy together with a top-level $nor', async () => {
+      const kept = new TestObject({ tags: ['a'], name: 'kept' });
+      const excludedByNor = new TestObject({ tags: ['a'], name: 'excluded' });
+      const notContained = new TestObject({ tags: ['z'], name: 'kept' });
+      await Parse.Object.saveAll([kept, excludedByNor, notContained]);
+      const ids = await find({
+        tags: { $containedBy: ['a'] },
+        $nor: [{ name: 'excluded' }],
+      });
+      expect(ids).toEqual([kept.id]);
+    });
+
+    it_only_db('mongo')('applies containedBy and $in on _wperm together', async () => {
+      const publicAcl = new Parse.ACL();
+      publicAcl.setPublicReadAccess(true);
+      publicAcl.setPublicWriteAccess(true);
+      const both = new TestObject();
+      both.setACL(publicAcl);
+      const readOnlyAcl = new Parse.ACL();
+      readOnlyAcl.setPublicReadAccess(true);
+      const emptyWrite = new TestObject();
+      emptyWrite.setACL(readOnlyAcl);
+      await Parse.Object.saveAll([both, emptyWrite]);
+      // An empty _wperm is contained by any array, but does not match $in
+      const ids = await find({ _wperm: { $containedBy: ['*'], $in: ['*'] } });
+      expect(ids).toEqual([both.id]);
+    });
+  });
+
   it('equalTo queries', function (done) {
     const makeBoxedNumber = function (i) {
       return new BoxedNumber({ number: i });
