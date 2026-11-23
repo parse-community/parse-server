@@ -5800,6 +5800,24 @@ describe('Parse.Query testing', () => {
         );
       });
 
+      it_only_db('mongo')('rejects an invalid $regex atom inside $all on an Array field', async () => {
+        await expectAsync(query({ tags: { $all: [{ $regex: '(' }] } })).toBeRejectedWith(
+          jasmine.objectContaining({
+            status: 400,
+            data: jasmine.objectContaining({ code: Parse.Error.INVALID_QUERY }),
+          })
+        );
+      });
+
+      it_only_db('mongo')('rejects an invalid $regex atom inside $containedBy on an Array field', async () => {
+        await expectAsync(query({ tags: { $containedBy: [{ $regex: '(' }] } })).toBeRejectedWith(
+          jasmine.objectContaining({
+            status: 400,
+            data: jasmine.objectContaining({ code: Parse.Error.INVALID_QUERY }),
+          })
+        );
+      });
+
       it_only_db('mongo')('rejects a $regex atom as the value of $ne on an Array field', async () => {
         await expectAsync(query({ tags: { $ne: { $regex: 'a' } } })).toBeRejectedWith(
           jasmine.objectContaining({
