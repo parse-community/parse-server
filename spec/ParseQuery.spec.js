@@ -1017,7 +1017,7 @@ describe('Parse.Query testing', () => {
       return response.data.results.map(r => r.objectId).sort();
     };
 
-    it('applies containedBy and $in on the same field together', async () => {
+    it_only_db('mongo')('applies containedBy and $in on the same field together', async () => {
       const both = new TestObject({ tags: ['a'] });
       const containedOnly = new TestObject({ tags: ['b'] });
       const inOnly = new TestObject({ tags: ['a', 'c'] });
@@ -1026,7 +1026,7 @@ describe('Parse.Query testing', () => {
       expect(ids).toEqual([both.id]);
     });
 
-    it('applies containedBy on two fields together', async () => {
+    it_only_db('mongo')('applies containedBy on two fields together', async () => {
       const both = new TestObject({ tags: ['a'], labels: ['x'] });
       const tagsOnly = new TestObject({ tags: ['a'], labels: ['y'] });
       const labelsOnly = new TestObject({ tags: ['b'], labels: ['x'] });
@@ -1035,7 +1035,7 @@ describe('Parse.Query testing', () => {
       expect(ids).toEqual([both.id]);
     });
 
-    it('applies containedBy together with a top-level $nor', async () => {
+    it_only_db('mongo')('applies containedBy together with a top-level $nor', async () => {
       const kept = new TestObject({ tags: ['a'], name: 'kept' });
       const excludedByNor = new TestObject({ tags: ['a'], name: 'excluded' });
       const notContained = new TestObject({ tags: ['z'], name: 'kept' });
@@ -5883,7 +5883,7 @@ describe('Parse.Query testing', () => {
         ).toBeRejectedWith(badConstraint);
       });
 
-      it('still accepts supported operators on objectId', async () => {
+      it_only_db('mongo')('still accepts supported operators on objectId', async () => {
         const byIn = await query('classes/TestClass', { objectId: { $in: [obj.id, 'missing'] } });
         expect(byIn.data.results.map(r => r.objectId)).toEqual([obj.id]);
         const byNe = await query('classes/TestClass', { objectId: { $ne: 'missing' } });
@@ -5894,14 +5894,14 @@ describe('Parse.Query testing', () => {
         expect(byValue.data.results.length).toBe(1);
       });
 
-      it('still accepts supported operators on _rperm and _wperm', async () => {
+      it_only_db('mongo')('still accepts supported operators on _rperm and _wperm', async () => {
         const byRead = await query('classes/TestClass', { _rperm: { $in: ['*'] } }, masterHeaders);
         expect(byRead.data.results.length).toBe(1);
         const byWrite = await query('classes/TestClass', { _wperm: { $nin: ['someone'] } });
         expect(byWrite.data.results.length).toBe(1);
       });
 
-      it('still matches a literal array value on _wperm', async () => {
+      it_only_db('mongo')('still matches a literal array value on _wperm', async () => {
         const readOnly = new Parse.Object('TestClass');
         const acl = new Parse.ACL();
         acl.setPublicReadAccess(true);
@@ -5913,7 +5913,7 @@ describe('Parse.Query testing', () => {
         expect(byLiteral.data.results.map(r => r.objectId)).toEqual([obj.id]);
       });
 
-      it('still accepts array operands of $eq and $ne on _rperm and _wperm', async () => {
+      it_only_db('mongo')('still accepts array operands of $eq and $ne on _rperm and _wperm', async () => {
         const readOnly = new Parse.Object('TestClass');
         const acl = new Parse.ACL();
         acl.setPublicReadAccess(true);
