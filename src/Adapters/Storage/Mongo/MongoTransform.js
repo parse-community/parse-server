@@ -228,6 +228,10 @@ function transformQueryKeyValue(className, key, value, schema, count = false) {
   // Validates a constraint on a key that maps directly to a database field, so
   // it accepts the same operators as any other field and rejects the rest
   const transformDirectKeyValue = (dbKey, dbValue) => {
+    // A literal array is an exact match value, not a constraint document
+    if (Array.isArray(dbValue)) {
+      return { key: dbKey, value: dbValue };
+    }
     const constraint = transformConstraint(dbValue, undefined, dbKey, count);
     if (constraint === CannotTransform) {
       return { key: dbKey, value: dbValue };

@@ -5843,6 +5843,18 @@ describe('Parse.Query testing', () => {
         const byWrite = await query('classes/TestClass', { _wperm: { $nin: ['someone'] } });
         expect(byWrite.data.results.length).toBe(1);
       });
+
+      it('still matches a literal array value on _wperm', async () => {
+        const readOnly = new Parse.Object('TestClass');
+        const acl = new Parse.ACL();
+        acl.setPublicReadAccess(true);
+        readOnly.setACL(acl);
+        await readOnly.save();
+        const byEmpty = await query('classes/TestClass', { _wperm: [] });
+        expect(byEmpty.data.results.map(r => r.objectId)).toEqual([readOnly.id]);
+        const byLiteral = await query('classes/TestClass', { _wperm: ['*'] });
+        expect(byLiteral.data.results.map(r => r.objectId)).toEqual([obj.id]);
+      });
     });
 
     describe('query operator format', () => {
