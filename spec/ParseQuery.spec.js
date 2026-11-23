@@ -5765,6 +5765,67 @@ describe('Parse.Query testing', () => {
       });
     });
 
+    describe('invalid $regex with MongoDB', () => {
+      const query = where =>
+        request({
+          method: 'GET',
+          url: `http://localhost:8378/1/classes/TestClass?where=${encodeURIComponent(
+            JSON.stringify(where)
+          )}`,
+          headers: restHeaders,
+        });
+
+      beforeEach(async () => {
+        const obj = new Parse.Object('TestClass');
+        obj.set('tags', ['aaa', 'ab']);
+        obj.set('name', 'aaa');
+        await obj.save();
+      });
+
+      it_only_db('mongo')('rejects an invalid $regex pattern with a client error', async () => {
+        await expectAsync(query({ name: { $regex: '(' } })).toBeRejectedWith(
+          jasmine.objectContaining({
+            status: 400,
+            data: jasmine.objectContaining({ code: Parse.Error.INVALID_QUERY }),
+          })
+        );
+      });
+
+      it_only_db('mongo')('rejects an invalid $regex atom inside $in on an Array field', async () => {
+        await expectAsync(query({ tags: { $in: [{ $regex: '(' }] } })).toBeRejectedWith(
+          jasmine.objectContaining({
+            status: 400,
+            data: jasmine.objectContaining({ code: Parse.Error.INVALID_QUERY }),
+          })
+        );
+      });
+
+      it_only_db('mongo')('rejects a $regex atom as the value of $ne on an Array field', async () => {
+        await expectAsync(query({ tags: { $ne: { $regex: 'a' } } })).toBeRejectedWith(
+          jasmine.objectContaining({
+            status: 400,
+            data: jasmine.objectContaining({ code: Parse.Error.INVALID_QUERY }),
+          })
+        );
+      });
+
+      it_only_db('mongo')('rejects an operator document inside $in on an Array field', async () => {
+        await expectAsync(
+          query({ tags: { $in: [{ $elemMatch: { $regex: '^a' } }] } })
+        ).toBeRejectedWith(
+          jasmine.objectContaining({
+            status: 400,
+            data: jasmine.objectContaining({ code: Parse.Error.INVALID_JSON }),
+          })
+        );
+      });
+
+      it_only_db('mongo')('still accepts a valid $regex atom inside $in on an Array field', async () => {
+        const result = await query({ tags: { $in: [{ $regex: '^a' }] } });
+        expect(result.data.results.length).toBe(1);
+      });
+    });
+
     describe('query operator format', () => {
       let user;
       let authHeaders;
