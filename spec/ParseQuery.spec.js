@@ -5765,6 +5765,86 @@ describe('Parse.Query testing', () => {
       });
     });
 
+    describe('operator validation on special keys', () => {
+      const masterHeaders = { ...restHeaders, 'X-Parse-Master-Key': 'test' };
+      const query = (className, where, headers = restHeaders) =>
+        request({
+          method: 'GET',
+          url: `http://localhost:8378/1/${className}?where=${encodeURIComponent(
+            JSON.stringify(where)
+          )}`,
+          headers,
+        });
+      const badConstraint = jasmine.objectContaining({
+        status: 400,
+        data: jasmine.objectContaining({ code: Parse.Error.INVALID_JSON }),
+      });
+
+      let obj;
+      beforeEach(async () => {
+        obj = new Parse.Object('TestClass');
+        obj.set('name', 'aaa');
+        const acl = new Parse.ACL();
+        acl.setPublicReadAccess(true);
+        acl.setPublicWriteAccess(true);
+        obj.setACL(acl);
+        await obj.save();
+      });
+
+      it_only_db('mongo')('rejects an unsupported operator on objectId', async () => {
+        await expectAsync(
+          query('classes/TestClass', { objectId: { $not: { $not: { $regex: '^a' } } } })
+        ).toBeRejectedWith(badConstraint);
+      });
+
+      // Without the master key, the read ACL constraint replaces a client _rperm constraint
+      it_only_db('mongo')('rejects an unsupported operator on _rperm', async () => {
+        await expectAsync(
+          query(
+            'classes/TestClass',
+            { _rperm: { $elemMatch: { $not: { $regex: '^z' } } } },
+            masterHeaders
+          )
+        ).toBeRejectedWith(badConstraint);
+      });
+
+      it_only_db('mongo')('rejects an unsupported operator on _wperm', async () => {
+        await expectAsync(
+          query('classes/TestClass', { _wperm: { $elemMatch: { $not: { $regex: '^z' } } } })
+        ).toBeRejectedWith(badConstraint);
+      });
+
+      it_only_db('mongo')('rejects an unsupported operator on sessionToken', async () => {
+        await expectAsync(
+          query('sessions', { sessionToken: { $not: { $regex: '^r' } } }, masterHeaders)
+        ).toBeRejectedWith(badConstraint);
+      });
+
+      it_only_db('mongo')('rejects an unsupported operator on authData', async () => {
+        await expectAsync(
+          query('users', { 'authData.facebook.id': { $not: { $regex: '^1' } } }, masterHeaders)
+        ).toBeRejectedWith(badConstraint);
+      });
+
+      it('still accepts supported operators on objectId', async () => {
+        const byIn = await query('classes/TestClass', { objectId: { $in: [obj.id, 'missing'] } });
+        expect(byIn.data.results.map(r => r.objectId)).toEqual([obj.id]);
+        const byNe = await query('classes/TestClass', { objectId: { $ne: 'missing' } });
+        expect(byNe.data.results.map(r => r.objectId)).toEqual([obj.id]);
+        const byExists = await query('classes/TestClass', { objectId: { $exists: true } });
+        expect(byExists.data.results.length).toBe(1);
+        const byValue = await query('classes/TestClass', { objectId: obj.id });
+        expect(byValue.data.results.length).toBe(1);
+      });
+
+      it('still accepts supported operators on _rperm and _wperm', async () => {
+        const byRead = await query('classes/TestClass', { _rperm: { $in: ['*'] } }, masterHeaders);
+        expect(byRead.data.results.length).toBe(1);
+        const byWrite = await query('classes/TestClass', { _wperm: { $nin: ['someone'] } });
+        expect(byWrite.data.results.length).toBe(1);
+      });
+    });
+
     describe('query operator format', () => {
       let user;
       let authHeaders;

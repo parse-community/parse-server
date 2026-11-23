@@ -225,6 +225,19 @@ const valueAsDate = value => {
 };
 
 function transformQueryKeyValue(className, key, value, schema, count = false) {
+  // Validates a constraint on a key that maps directly to a database field, so
+  // it accepts the same operators as any other field and rejects the rest
+  const transformDirectKeyValue = (dbKey, dbValue) => {
+    const constraint = transformConstraint(dbValue, undefined, dbKey, count);
+    if (constraint === CannotTransform) {
+      return { key: dbKey, value: dbValue };
+    }
+    if (constraint.$elemMatch) {
+      return { key: '$nor', value: [{ [dbKey]: constraint }] };
+    }
+    return { key: dbKey, value: constraint };
+  };
+
   switch (key) {
     case 'createdAt':
       if (valueAsDate(value)) {
@@ -255,7 +268,7 @@ function transformQueryKeyValue(className, key, value, schema, count = false) {
       if (['_GlobalConfig', '_GraphQLConfig'].includes(className)) {
         value = parseInt(value);
       }
-      return { key: '_id', value };
+      return transformDirectKeyValue('_id', value);
     }
     case '_account_lockout_expires_at':
       if (valueAsDate(value)) {
@@ -268,7 +281,7 @@ function transformQueryKeyValue(className, key, value, schema, count = false) {
     case '_failed_login_count':
       return { key, value };
     case 'sessionToken':
-      return { key: '_session_token', value };
+      return transformDirectKeyValue('_session_token', value);
     case '_perishable_token_expires_at':
       if (valueAsDate(value)) {
         return {
@@ -284,6 +297,7 @@ function transformQueryKeyValue(className, key, value, schema, count = false) {
       break;
     case '_rperm':
     case '_wperm':
+      return transformDirectKeyValue(key, value);
     case '_perishable_token':
     case '_email_verify_token':
       return { key, value };
@@ -308,7 +322,10 @@ function transformQueryKeyValue(className, key, value, schema, count = false) {
       if (authDataMatch && className === '_User') {
         const provider = authDataMatch[1];
         const subField = authDataMatch[3];
-        return { key: `_auth_data_${provider}${subField ? `.${subField}` : ''}`, value };
+        return transformDirectKeyValue(
+          `_auth_data_${provider}${subField ? `.${subField}` : ''}`,
+          value
+        );
       }
     }
   }
