@@ -133,6 +133,8 @@ export interface ParseServerOptions {
     playgroundPath?: string;
     schema?: SchemaOptions;
     serverCloseComplete?: () => void;
+    shutdownDrainDelay?: number;
+    shutdownTimeout?: number;
     security?: SecurityOptions;
     enforcePrivateUsers?: boolean;
     allowExpiredAuthDataToken?: boolean;
