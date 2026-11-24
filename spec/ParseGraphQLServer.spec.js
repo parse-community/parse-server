@@ -8590,6 +8590,45 @@ describe('ParseGraphQLServer', () => {
             expect(res.status).toEqual(200);
             expect(await res.text()).toEqual('My File Content');
           });
+
+          it('should return an error instead of crashing if the upload request to the server fails', async () => {
+            parseServer = await global.reconfigureServer({
+              serverURL: 'http://localhost:1/parse',
+              publicServerURL: 'http://localhost:13377/parse',
+            });
+            await createGQLFromParseServer(parseServer);
+            const body = new FormData();
+            body.append(
+              'operations',
+              JSON.stringify({
+                query: `
+                  mutation CreateFile($input: CreateFileInput!) {
+                    createFile(input: $input) {
+                      fileInfo {
+                        name
+                      }
+                    }
+                  }
+                `,
+                variables: { input: { upload: null } },
+              })
+            );
+            body.append('map', JSON.stringify({ 1: ['variables.input.upload'] }));
+            body.append('1', 'My File Content', {
+              filename: 'myFileName.txt',
+              contentType: 'text/plain',
+            });
+
+            const res = await fetch('http://localhost:13377/graphql', {
+              method: 'POST',
+              headers,
+              body,
+            });
+            const result = JSON.parse(await res.text());
+
+            expect(result.errors.length).toEqual(1);
+            expect(result.errors[0].message).toEqual('Could not store file: myFileName.txt.');
+          });
         });
       });
 

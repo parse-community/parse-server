@@ -44,6 +44,11 @@ const handleUpload = async (upload, config) => {
           });
         }
       );
+      req.on('error', reject);
+      stream.on('error', error => {
+        req.destroy();
+        reject(error);
+      });
       stream.pipe(req);
       stream.on('end', () => {
         req.end();
