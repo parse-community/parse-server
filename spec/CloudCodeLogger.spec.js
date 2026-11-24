@@ -52,7 +52,9 @@ describe('Cloud Code Logger', () => {
       const infoMessage = spy.calls.all()[0];
       expect(cloudFunctionMessage.args[0]).toBe('info');
       expect(cloudFunctionMessage.args[1][1].params).toEqual({});
-      expect(cloudFunctionMessage.args[1][0]).toMatch(
+      // The message is passed as a function, so it is only built if the level is enabled
+      expect(cloudFunctionMessage.args[1][0]).toEqual(jasmine.any(Function));
+      expect(cloudFunctionMessage.args[1][0]()).toMatch(
         /Ran cloud function loggerTest for user [^ ]* with:\n {2}Input: {}\n {2}Result: {}/
       );
       expect(cloudFunctionMessage.args[1][1].functionName).toEqual('loggerTest');
@@ -400,5 +402,89 @@ describe('Cloud Code Logger', () => {
     await expectAsync(objError.save()).toBeRejected();
     // Not "beforeSave failed for TestClassError for user ..."
     expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  describe('log message building', () => {
+    const Utils = require('../lib/Utils');
+    // The server installs a new logger on each reconfiguration, so get the current one
+    const currentLogger = () => require('../lib/logger').getLogger();
+
+    const setUp = async logLevel => {
+      Parse.Cloud._removeAllHooks();
+      await reconfigureServer({
+        silent: true,
+        logLevel,
+        logLevels: {
+          cloudFunctionSuccess: 'info',
+          triggerAfter: 'info',
+          triggerBeforeSuccess: 'info',
+        },
+      });
+      Parse.Cloud.define('largeResult', () => ({ items: new Array(100).fill('x') }));
+      Parse.Cloud.beforeSave('TestClass', () => {});
+      Parse.Cloud.afterSave('TestClass', () => {});
+      Parse.Cloud.afterFind('TestClass', req => req.objects);
+    };
+
+    it('does not build the Cloud Function success message when its level is disabled', async () => {
+      await setUp('error');
+      const truncateSpy = spyOn(currentLogger(), 'truncateLogMessage').and.callThrough();
+      await Parse.Cloud.run('largeResult', { foo: 'bar' });
+      expect(truncateSpy).not.toHaveBeenCalled();
+    });
+
+    it('does not build trigger success messages when their level is disabled', async () => {
+      await setUp('error');
+      const truncateSpy = spyOn(currentLogger(), 'truncateLogMessage').and.callThrough();
+      const safeToJSONSpy = spyOn(Utils, 'safeToJSON').and.callThrough();
+      const obj = new Parse.Object('TestClass');
+      await obj.save({ foo: 'bar' });
+      await new Parse.Query('TestClass').find();
+      expect(safeToJSONSpy).not.toHaveBeenCalled();
+      expect(truncateSpy).not.toHaveBeenCalled();
+    });
+
+    it('builds the messages when their level is enabled', async () => {
+      await setUp('info');
+      const adapterSpy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
+      await Parse.Cloud.run('largeResult', { foo: 'bar' });
+      const obj = new Parse.Object('TestClass');
+      await obj.save({ foo: 'bar' });
+      await new Parse.Query('TestClass').find();
+      const messages = adapterSpy.calls.all().map(call => call.args[1]);
+      expect(messages).toContain(
+        jasmine.stringMatching(
+          /^Ran cloud function largeResult for user [^ ]* with:\n {2}Input: {"foo":"bar"}\n {2}Result: {"items":\["x"/
+        )
+      );
+      expect(messages).toContain(
+        jasmine.stringMatching(/^beforeSave triggered for TestClass for user [^ ]*:\n {2}Input: {"foo":"bar"/)
+      );
+      expect(messages).toContain(
+        jasmine.stringMatching(/^afterSave triggered for TestClass for user [^ ]*:\n {2}Input: {"foo":"bar"/)
+      );
+      expect(messages).toContain(
+        jasmine.stringMatching(/^afterFind triggered for TestClass for user [^ ]*:\n {2}Input: /)
+      );
+    });
+
+    it('still masks a password in messages that are built when logged', async () => {
+      await setUp('info');
+      const adapterSpy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
+      await Parse.Cloud.run('largeResult', { password: 'secret-value' });
+      // The trigger input is converted from the object, so only the message masking hides it
+      const obj = new Parse.Object('TestClass');
+      await obj.save({ password: 'secret-value' });
+      const messages = adapterSpy.calls
+        .all()
+        .map(call => call.args[1])
+        .filter(m => typeof m === 'string' && /^(Ran cloud function|beforeSave|afterSave)/.test(m));
+      // Cloud Function, beforeSave, and afterSave (logged when triggered and with its result)
+      expect(messages.length).toBe(4);
+      for (const message of messages) {
+        expect(message).not.toContain('secret-value');
+        expect(message).toContain('********');
+      }
+    });
   });
 });

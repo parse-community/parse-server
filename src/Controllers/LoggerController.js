@@ -111,17 +111,10 @@ export class LoggerController extends AdaptableController {
   }
 
   log(level, args) {
-    // make the passed in arguments object an array with the spread operator
-    args = this.maskSensitive([...args]);
-    args = [].concat(
-      level,
-      args.map(arg => {
-        if (typeof arg === 'function') {
-          return arg();
-        }
-        return arg;
-      })
-    );
+    // Build messages that are passed as a function first, so that they are
+    // masked like any other message
+    const builtArgs = [...args].map(arg => (typeof arg === 'function' ? arg() : arg));
+    args = [].concat(level, this.maskSensitive(builtArgs));
     this.adapter.log.apply(this.adapter, args);
   }
 

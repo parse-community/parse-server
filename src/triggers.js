@@ -430,15 +430,24 @@ function userIdForLog(auth) {
   return auth && auth.user ? auth.user.id : undefined;
 }
 
+// A log input can be passed as a function, so that converting it for the log
+// message only happens if the message is built
+function resolveLogInput(input) {
+  return typeof input === 'function' ? input() : input;
+}
+
 function logTriggerAfterHook(triggerType, className, input, auth, logLevel) {
   if (logLevel === 'silent') {
     return;
   }
-  const cleanInput = logger.truncateLogMessage(JSON.stringify(input));
+  // Pass the message as a function, so it is only built if the level is enabled
   logger[logLevel](
-    `${triggerType} triggered for ${className} for user ${userIdForLog(
-      auth
-    )}:\n  Input: ${cleanInput}`,
+    () => {
+      const cleanInput = logger.truncateLogMessage(JSON.stringify(resolveLogInput(input)));
+      return `${triggerType} triggered for ${className} for user ${userIdForLog(
+        auth
+      )}:\n  Input: ${cleanInput}`;
+    },
     {
       className,
       triggerType,
@@ -451,12 +460,15 @@ function logTriggerSuccessBeforeHook(triggerType, className, input, result, auth
   if (logLevel === 'silent') {
     return;
   }
-  const cleanInput = logger.truncateLogMessage(JSON.stringify(input));
-  const cleanResult = logger.truncateLogMessage(JSON.stringify(result));
+  // Pass the message as a function, so it is only built if the level is enabled
   logger[logLevel](
-    `${triggerType} triggered for ${className} for user ${userIdForLog(
-      auth
-    )}:\n  Input: ${cleanInput}\n  Result: ${cleanResult}`,
+    () => {
+      const cleanInput = logger.truncateLogMessage(JSON.stringify(resolveLogInput(input)));
+      const cleanResult = logger.truncateLogMessage(JSON.stringify(result));
+      return `${triggerType} triggered for ${className} for user ${userIdForLog(
+        auth
+      )}:\n  Input: ${cleanInput}\n  Result: ${cleanResult}`;
+    },
     {
       className,
       triggerType,
@@ -530,9 +542,10 @@ export function maybeRunAfterFindTrigger(
       triggerType,
       classNameQuery,
       'AfterFind Input (Pre-Transform)',
-      JSON.stringify(
-        objectsInput.map(o => (o instanceof Parse.Object ? o.id + ':' + o.className : o))
-      ),
+      () =>
+        JSON.stringify(
+          objectsInput.map(o => (o instanceof Parse.Object ? o.id + ':' + o.className : o))
+        ),
       auth,
       config.logLevels.triggerBeforeSuccess
     );
@@ -570,7 +583,7 @@ export function maybeRunAfterFindTrigger(
     logTriggerAfterHook(
       triggerType,
       classNameQuery,
-      JSON.stringify(resultsAsJSON),
+      () => JSON.stringify(resultsAsJSON),
       auth,
       config.logLevels.triggerAfter
     );
@@ -967,7 +980,7 @@ export function maybeRunTrigger(
         logTriggerSuccessBeforeHook(
           triggerType,
           parseObject.className,
-          Utils.safeToJSON(parseObject),
+          () => Utils.safeToJSON(parseObject),
           object,
           auth,
           triggerType.startsWith('after')
@@ -1019,7 +1032,7 @@ export function maybeRunTrigger(
           logTriggerAfterHook(
             triggerType,
             parseObject.className,
-            Utils.safeToJSON(parseObject),
+            () => Utils.safeToJSON(parseObject),
             auth,
             config.logLevels.triggerAfter
           );
@@ -1113,7 +1126,7 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
       logTriggerSuccessBeforeHook(
         triggerType,
         'Parse.File',
-        { ...fileObject.file.toJSON(), fileSize: fileObject.fileSize },
+        () => ({ ...fileObject.file.toJSON(), fileSize: fileObject.fileSize }),
         result,
         auth,
         config.logLevels.triggerBeforeSuccess

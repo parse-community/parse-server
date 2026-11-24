@@ -342,10 +342,15 @@ export class FunctionsRouter extends PromiseRouter {
         result => {
           try {
             if (req.config.logLevels.cloudFunctionSuccess !== 'silent') {
-              const cleanInput = logger.truncateLogMessage(JSON.stringify(redactBuffers(params)));
-              const cleanResult = logger.truncateLogMessage(JSON.stringify(result.response.result));
+              // Pass the message as a function, so it is only built if the level is enabled
               logger[req.config.logLevels.cloudFunctionSuccess](
-                `Ran cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput}\n  Result: ${cleanResult}`,
+                () => {
+                  const cleanInput = logger.truncateLogMessage(JSON.stringify(redactBuffers(params)));
+                  const cleanResult = logger.truncateLogMessage(
+                    JSON.stringify(result.response.result)
+                  );
+                  return `Ran cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput}\n  Result: ${cleanResult}`;
+                },
                 {
                   functionName,
                   params,
