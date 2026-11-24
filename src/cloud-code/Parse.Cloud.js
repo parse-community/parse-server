@@ -679,6 +679,17 @@ ParseCloud.beforeSubscribe = function (parseClass, handler, validationHandler) {
   );
 };
 
+/**
+ * Registers a handler for LiveQuery server events.
+ *
+ * The `ws_disconnect` event includes the same `clientId` as `client.id` in the `connect` event
+ * for that connection. The `ws_disconnect_error` event includes the ID when one was assigned.
+ *
+ * **Available in Cloud Code only.**
+ *
+ * @name Parse.Cloud.onLiveQueryEvent
+ * @param {Function} handler The function to run when the server emits a LiveQuery event.
+ */
 ParseCloud.onLiveQueryEvent = function (handler) {
   triggers.addLiveQueryEventHandler(handler, Parse.applicationId);
 };

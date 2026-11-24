@@ -727,7 +727,7 @@ describe('ParseLiveQueryServer', function () {
     parseWebSocket.emit('disconnect');
   });
 
-  it('can forward event to cloud code', function () {
+  it('reports the client ID to cloud code on a disconnect error', function () {
     const cloudCodeHandler = {
       handler: () => { },
     };
@@ -743,9 +743,10 @@ describe('ParseLiveQueryServer', function () {
     // Make sure we do not crash
     // Trigger disconnect event
     parseWebSocket.emit('disconnect');
-    expect(spy).toHaveBeenCalled();
-    // call for ws_connect, another for ws_disconnect
-    expect(spy.calls.count()).toBe(2);
+    expect(spy).toHaveBeenCalledTimes(2);
+    expect(spy).toHaveBeenCalledWith(
+      jasmine.objectContaining({ event: 'ws_disconnect_error', clientId: parseWebSocket.clientId })
+    );
   });
 
   it('does not delete subscription info on client disconnect', async () => {

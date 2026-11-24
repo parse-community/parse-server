@@ -39,6 +39,58 @@ describe('ParseLiveQuery', function () {
     await client.close();
   });
 
+  it('reports the disconnected client ID when two LiveQuery clients share a session', async () => {
+    const user = new Parse.User({ username: 'presence-user', password: 'password' });
+    await user.signUp();
+    const sessionToken = user.getSessionToken();
+    expect(sessionToken).toEqual(jasmine.any(String));
+    const installationId = '00000000-0000-4000-8000-000000000001';
+    const options = {
+      applicationId: Parse.applicationId,
+      serverURL: Parse.liveQueryServerURL,
+      sessionToken,
+      installationId,
+    };
+    const firstClient = new Parse.LiveQueryClient(options);
+    const secondClient = new Parse.LiveQueryClient(options);
+    const connectedClientIds = [];
+    const disconnected = resolvingPromise();
+    Parse.Cloud.onLiveQueryEvent(request => {
+      if (request.sessionToken !== sessionToken) {
+        return;
+      }
+      if (request.event === 'connect') {
+        connectedClientIds.push(request.client.id);
+      }
+      if (request.event === 'ws_disconnect') {
+        disconnected.resolve(request);
+      }
+    });
+
+    try {
+      for (const client of [firstClient, secondClient]) {
+        const opened = new Promise((resolve, reject) => {
+          client.on('open', resolve);
+          client.on('error', reject);
+        });
+        client.open();
+        await opened;
+      }
+
+      const firstClientId = firstClient.id;
+      expect(firstClientId).not.toBe(secondClient.id);
+      expect(connectedClientIds).toEqual([firstClientId, secondClient.id]);
+
+      await firstClient.close();
+      const event = await disconnected;
+      expect(event.clientId).toBe(firstClientId);
+      expect(event.installationId).toBe(installationId);
+      expect(event.clients).toBe(1);
+    } finally {
+      await Promise.all([firstClient.close(), secondClient.close()]);
+    }
+  });
+
   it('can subscribe to query', async done => {
     const object = new TestObject();
     await object.save();

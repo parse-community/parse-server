@@ -544,6 +544,7 @@ class ParseLiveQueryServer {
       if (!this.clients.has(clientId)) {
         runLiveQueryEventHandlers({
           event: 'ws_disconnect_error',
+          clientId,
           clients: this.clients.size,
           subscriptions: this.subscriptions.size,
           error: `Unable to find client ${clientId}`,
@@ -578,6 +579,7 @@ class ParseLiveQueryServer {
       logger.verbose('Current subscriptions %d', this.subscriptions.size);
       runLiveQueryEventHandlers({
         event: 'ws_disconnect',
+        clientId,
         clients: this.clients.size,
         subscriptions: this.subscriptions.size,
         useMasterKey: client.hasMasterKey,
