@@ -466,6 +466,13 @@ describe('Cloud Code Logger', () => {
       expect(messages).toContain(
         jasmine.stringMatching(/^afterFind triggered for TestClass for user [^ ]*:\n {2}Input: /)
       );
+      // The pre-transform message logs the found objects as its result
+      const preTransform = messages.find(
+        m => typeof m === 'string' && m.includes('AfterFind Input (Pre-Transform)')
+      );
+      expect(preTransform).toBeDefined();
+      expect(preTransform).toContain(obj.id);
+      expect(preTransform).not.toContain('Result: undefined');
     });
 
     it('still masks a password in messages that are built when logged', async () => {

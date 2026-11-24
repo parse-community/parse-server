@@ -430,8 +430,8 @@ function userIdForLog(auth) {
   return auth && auth.user ? auth.user.id : undefined;
 }
 
-// A log input can be passed as a function, so that converting it for the log
-// message only happens if the message is built
+// A logged input or result can be passed as a function, so that converting it
+// for the log message only happens if the message is built
 function resolveLogInput(input) {
   return typeof input === 'function' ? input() : input;
 }
@@ -464,7 +464,7 @@ function logTriggerSuccessBeforeHook(triggerType, className, input, result, auth
   logger[logLevel](
     () => {
       const cleanInput = logger.truncateLogMessage(JSON.stringify(resolveLogInput(input)));
-      const cleanResult = logger.truncateLogMessage(JSON.stringify(result));
+      const cleanResult = logger.truncateLogMessage(JSON.stringify(resolveLogInput(result)));
       return `${triggerType} triggered for ${className} for user ${userIdForLog(
         auth
       )}:\n  Input: ${cleanInput}\n  Result: ${cleanResult}`;

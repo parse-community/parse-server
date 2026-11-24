@@ -163,4 +163,31 @@ describe('LoggerController', () => {
     expect(adapter.log).toHaveBeenCalled();
     done();
   });
+
+  it('masks the request body before building a request log message', () => {
+    const adapter = new WinstonLoggerAdapter();
+    const logger = new LoggerController(adapter, null, { verbose: true });
+    spyOn(adapter, 'log');
+    // A quote in the password ends the string pattern early, so only masking the
+    // body object before the message is built hides the whole value
+    logger.logRequest({
+      method: 'POST',
+      url: '/login',
+      headers: {},
+      body: { username: 'user', password: 'pass"word-value' },
+    });
+    const message = adapter.log.calls.mostRecent().args[1];
+    expect(message).toContain('REQUEST for [POST] /login');
+    expect(message).not.toContain('word-value');
+  });
+
+  it('masks a message that is passed as a function', () => {
+    const adapter = new WinstonLoggerAdapter();
+    const logger = new LoggerController(adapter, null, {});
+    spyOn(adapter, 'log');
+    logger.info(() => 'Input: {"password":"secret-value"}');
+    const message = adapter.log.calls.mostRecent().args[1];
+    expect(message).not.toContain('secret-value');
+    expect(message).toContain('********');
+  });
 });

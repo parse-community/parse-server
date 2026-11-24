@@ -111,9 +111,11 @@ export class LoggerController extends AdaptableController {
   }
 
   log(level, args) {
-    // Build messages that are passed as a function first, so that they are
-    // masked like any other message
-    const builtArgs = [...args].map(arg => (typeof arg === 'function' ? arg() : arg));
+    // Mask the arguments first, so that a message passed as a function is built
+    // from masked objects, such as the request body of `logRequest`
+    const maskedArgs = this.maskSensitive([...args]);
+    // Then build the messages passed as a function and mask them as well
+    const builtArgs = maskedArgs.map(arg => (typeof arg === 'function' ? arg() : arg));
     args = [].concat(level, this.maskSensitive(builtArgs));
     this.adapter.log.apply(this.adapter, args);
   }
