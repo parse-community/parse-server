@@ -15,8 +15,8 @@ const handleUpload = async (upload, config) => {
   delete headers['connection'];
   delete headers['host'];
   delete headers['content-length'];
-  const stream = createReadStream();
   const mime = (await import('mime')).default;
+  const stream = createReadStream();
   try {
     const ext = mime.getExtension(mimetype);
     const fullFileName = filename.endsWith(`.${ext}`) ? filename : `${filename}.${ext}`;
