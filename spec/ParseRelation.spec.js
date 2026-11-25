@@ -172,6 +172,85 @@ describe('Parse.Relation testing', () => {
       .then(done, done.fail);
   });
 
+  it('does not undercount relation results when a related object was deleted (#9600)', async () => {
+    const ChildObject = Parse.Object.extend('ChildObject');
+    const childObjects = [];
+    for (let i = 0; i < 6; i++) {
+      childObjects.push(new ChildObject({ x: i }));
+    }
+    await Parse.Object.saveAll(childObjects);
+
+    const ParentObject = Parse.Object.extend('ParentObject');
+    const parent = new ParentObject();
+    parent.set('x', 4);
+    const relation = parent.relation('child');
+    relation.add(childObjects);
+    await parent.save();
+
+    // Delete the most-recently-created child. Parse never cleans the join
+    // table on delete, so its relatedId stays behind as a dangling entry.
+    await childObjects[5].destroy();
+
+    const query = relation.query();
+    query.descending('createdAt');
+    query.limit(5);
+    const list = await query.find();
+
+    // 5 live children remain; all 5 must be returned even though the join
+    // table still holds 6 rows (one dangling).
+    expect(list.length).toBe(5);
+  });
+
+  // True if an index leads with `first` then `second`. Mongo returns index docs with an ordered
+  // `key`; Postgres returns pg_indexes rows with `indexdef`. Checking column order distinguishes
+  // the owningId-first index from Postgres's relatedId-first join-table primary key.
+  const hasIndexLeadingWith = (indexes, first, second) =>
+    indexes.some(index => {
+      if (index.key) {
+        const keys = Object.keys(index.key);
+        return keys[0] === first && keys[1] === second;
+      }
+      if (index.indexdef) {
+        return new RegExp(`\\(\\s*"?${first}"?\\s*,\\s*"?${second}"?\\s*\\)`).test(index.indexdef);
+      }
+      return false;
+    });
+
+  it('indexes the relation join table on both owningId and relatedId (#9600)', async () => {
+    const child = new Parse.Object('ChildObject');
+    await child.save();
+    const parent = new Parse.Object('ParentObject');
+    parent.relation('child').add(child);
+    await parent.save();
+
+    const Config = require('../lib/Config');
+    const adapter = Config.get('test').database.adapter;
+    const indexes = await adapter.getIndexes('_Join:child:ParentObject');
+    // owningId-first serves $relatedTo; relatedId-first serves owningIds/roles (the join table
+    // primary key on Postgres).
+    expect(hasIndexLeadingWith(indexes, 'owningId', 'relatedId')).toBe(true);
+    expect(hasIndexLeadingWith(indexes, 'relatedId', 'owningId')).toBe(true);
+  });
+
+  it('backfills the join-table indexes idempotently (#9600)', async () => {
+    const child = new Parse.Object('ChildObject');
+    await child.save();
+    const parent = new Parse.Object('ParentObject');
+    parent.relation('child').add(child);
+    await parent.save();
+
+    const Config = require('../lib/Config');
+    const adapter = Config.get('test').database.adapter;
+    const joinTable = '_Join:child:ParentObject';
+    // A second run must be a no-op, not an error.
+    await adapter.ensureJoinTableIndexes([joinTable]);
+    await adapter.ensureJoinTableIndexes([joinTable]);
+
+    expect(hasIndexLeadingWith(await adapter.getIndexes(joinTable), 'owningId', 'relatedId')).toBe(
+      true
+    );
+  });
+
   it('queries with relations', async () => {
     const ChildObject = Parse.Object.extend('ChildObject');
     const childObjects = [];
