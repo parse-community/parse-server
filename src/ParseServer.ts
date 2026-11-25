@@ -330,6 +330,7 @@ class ParseServer {
     );
 
     api.use(express.json({ type: req => !req.is('multipart/form-data'), limit: maxUploadSize }));
+    api.use(middlewares.enforceParsedBody);
     api.use(middlewares.allowMethodOverride);
     api.use(middlewares.handleParseHeaders);
     api.use(middlewares.enforceRouteAllowList);
