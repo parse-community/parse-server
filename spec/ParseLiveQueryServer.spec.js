@@ -3,6 +3,7 @@ const { EventEmitter } = require('events');
 const ParseLiveQueryServer = require('../lib/LiveQuery/ParseLiveQueryServer').ParseLiveQueryServer;
 const ParseServer = require('../lib/ParseServer').default;
 const LiveQueryController = require('../lib/Controllers/LiveQueryController').LiveQueryController;
+const { resolvingPromise } = require('../lib/TestUtils');
 const auth = require('../lib/Auth');
 
 // Global mock info
@@ -796,6 +797,36 @@ describe('ParseLiveQueryServer', function () {
           installationId,
           useMasterKey: true,
         })
+      );
+    });
+
+    it('keeps the WebSocket client ID when connect requests overlap or repeat', async () => {
+      const { Client } = require('../lib/LiveQuery/Client');
+      const socket = new EventEmitter();
+      const handshake = resolvingPromise();
+      Parse.Cloud.beforeConnect(() => handshake);
+      const handleConnect = spyOn(server, '_handleConnect').and.callThrough();
+      server._onConnect(socket);
+      const { clientId } = onEvent.calls.first().args[0];
+      const request = { op: 'connect', applicationId: Parse.applicationId, masterKey };
+
+      socket.emit('message', request);
+      socket.emit('message', request);
+      expect(Client.pushError).toHaveBeenCalledOnceWith(socket, 1, jasmine.any(String), false);
+      handshake.resolve();
+      await Promise.all(handleConnect.calls.all().map(call => call.returnValue));
+
+      socket.emit('message', request);
+      await handleConnect.calls.mostRecent().returnValue;
+
+      expect(Client.pushError).toHaveBeenCalledTimes(2);
+      expect(onEvent).toHaveBeenCalledTimes(2);
+      expect(onEvent).toHaveBeenCalledWith(jasmine.objectContaining({ event: 'connect', clientId }));
+      expect(socket.clientId).toBe(clientId);
+
+      socket.emit('disconnect');
+      expect(onEvent.calls.mostRecent().args[0]).toEqual(
+        jasmine.objectContaining({ event: 'ws_disconnect', clientId, clients: 0 })
       );
     });
 

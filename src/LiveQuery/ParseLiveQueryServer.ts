@@ -500,7 +500,7 @@ class ParseLiveQueryServer {
   _onConnect(parseWebsocket: any): void {
     // Reserve the ID early while leaving clientId unset until the handshake succeeds.
     const initialClientId = randomUUID();
-    let initialConnectPending = false;
+    let connectPending = false;
     parseWebsocket.on('message', request => {
       if (typeof request === 'string') {
         try {
@@ -524,14 +524,19 @@ class ParseLiveQueryServer {
 
       switch (request.op) {
         case 'connect':
-          if (initialConnectPending || parseWebsocket.clientId !== undefined) {
-            this._handleConnect(parseWebsocket, request);
-          } else {
-            initialConnectPending = true;
-            this._handleConnect(parseWebsocket, request, initialClientId).finally(() => {
-              initialConnectPending = false;
-            });
+          if (connectPending || parseWebsocket.clientId !== undefined) {
+            Client.pushError(
+              parseWebsocket,
+              1,
+              'A LiveQuery handshake is already in progress or complete on this WebSocket',
+              false
+            );
+            break;
           }
+          connectPending = true;
+          this._handleConnect(parseWebsocket, request, initialClientId).finally(() => {
+            connectPending = false;
+          });
           break;
         case 'subscribe':
           this._handleSubscribe(parseWebsocket, request);
