@@ -1053,6 +1053,137 @@ describe('DatabaseController', function () {
       expect(result.acknowledged).toBe(true);
     });
   });
+
+  describe('reduceInRelation', () => {
+    const mockAdapter = {
+      find: (tableName, schema, query) => {
+        if (query && query.relatedId && query.relatedId.$in) {
+          if (query.relatedId.$in.includes('child1')) {
+            return Promise.resolve([{ owningId: 'parent1' }]);
+          }
+        }
+        return Promise.resolve([]);
+      },
+      watch: () => Promise.resolve(),
+      getAllClasses: () => Promise.resolve([]),
+    };
+
+    const mockSchema = {
+      getExpectedType: (className, key) => {
+        if (key === 'relationField') {
+          return { type: 'Relation' };
+        }
+        return null;
+      },
+    };
+
+    let db;
+
+    beforeEach(() => {
+      db = new DatabaseController(mockAdapter, {});
+    });
+
+    it('should reduce valid pointer query on relation field', async () => {
+      const query = {
+        relationField: {
+          __type: 'Pointer',
+          className: 'Child',
+          objectId: 'child1',
+        },
+      };
+      await db.reduceInRelation('Parent', query, mockSchema);
+      expect(query.relationField).toBeUndefined();
+      expect(query.objectId).toEqual({ $in: ['parent1'] });
+    });
+
+    it('should handle $in with null operand gracefully (issue #10637)', async () => {
+      const query = {
+        relationField: {
+          $in: [null],
+        },
+      };
+      await db.reduceInRelation('Parent', query, mockSchema);
+      expect(query.relationField).toBeUndefined();
+      expect(query.objectId).toEqual({ $in: [] });
+    });
+
+    it('should handle $in with mixed null and valid pointer operands', async () => {
+      const query = {
+        relationField: {
+          $in: [null, { __type: 'Pointer', className: 'Child', objectId: 'child1' }],
+        },
+      };
+      await db.reduceInRelation('Parent', query, mockSchema);
+      expect(query.relationField).toBeUndefined();
+      expect(query.objectId).toEqual({ $in: ['parent1'] });
+    });
+
+    it('should handle $nin with null operand gracefully', async () => {
+      const query = {
+        relationField: {
+          $nin: [null],
+        },
+      };
+      await db.reduceInRelation('Parent', query, mockSchema);
+      expect(query.relationField).toBeUndefined();
+      expect(query.objectId).toEqual({ $nin: [] });
+    });
+
+    it('should handle $ne with null gracefully', async () => {
+      const query = {
+        relationField: {
+          $ne: null,
+        },
+      };
+      await db.reduceInRelation('Parent', query, mockSchema);
+      expect(query.relationField).toBeUndefined();
+      expect(query.objectId).toEqual({ $nin: [] });
+    });
+
+    it('should handle pointer with null objectId gracefully', async () => {
+      const query = {
+        relationField: {
+          __type: 'Pointer',
+          className: 'Child',
+          objectId: null,
+        },
+      };
+      await db.reduceInRelation('Parent', query, mockSchema);
+      expect(query.relationField).toBeUndefined();
+      expect(query.objectId).toEqual({ $in: [] });
+    });
+
+    it('should handle pointer without objectId gracefully', async () => {
+      const query = {
+        relationField: {
+          __type: 'Pointer',
+          className: 'Child',
+        },
+      };
+      await db.reduceInRelation('Parent', query, mockSchema);
+      expect(query.relationField).toBeUndefined();
+      expect(query.objectId).toEqual({ $in: [] });
+    });
+
+    it('should handle $or containing null relation constraints', async () => {
+      const query = {
+        $or: [
+          { relationField: { $in: [null] } },
+          { relationField: { __type: 'Pointer', className: 'Child', objectId: 'child1' } },
+        ],
+      };
+      await db.reduceInRelation('Parent', query, mockSchema);
+      expect(query.$or[0].objectId).toEqual({ $in: [] });
+      expect(query.$or[1].objectId).toEqual({ $in: ['parent1'] });
+    });
+
+    it('should handle null or non-object query inputs safely', async () => {
+      const res1 = await db.reduceInRelation('Parent', null, mockSchema);
+      expect(res1).toBeNull();
+      const res2 = await db.reduceInRelation('Parent', 'primitive', mockSchema);
+      expect(res2).toBe('primitive');
+    });
+  });
 });
 
 function buildCLP(pointerNames) {

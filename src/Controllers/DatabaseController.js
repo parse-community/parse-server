@@ -1103,10 +1103,13 @@ class DatabaseController {
   // equal-to-pointer constraints on relation fields.
   // Returns a promise that resolves when query is mutated
   reduceInRelation(className: string, query: any, schema: any): Promise<any> {
+    if (!query || typeof query !== 'object') {
+      return Promise.resolve(query);
+    }
     // Search for an in-relation or equal-to-relation
     // Make it sequential for now, not sure of paralleization side effects
     const promises = [];
-    if (query['$or']) {
+    if (Array.isArray(query['$or'])) {
       const ors = query['$or'];
       promises.push(
         ...ors.map((aQuery, index) => {
@@ -1116,7 +1119,7 @@ class DatabaseController {
         })
       );
     }
-    if (query['$and']) {
+    if (Array.isArray(query['$and'])) {
       const ands = query['$and'];
       promises.push(
         ...ands.map((aQuery, index) => {
@@ -1126,6 +1129,13 @@ class DatabaseController {
         })
       );
     }
+
+    const extractId = (r: any): ?string => {
+      if (!r || typeof r !== 'object') {
+        return null;
+      }
+      return typeof r.objectId === 'string' ? r.objectId : null;
+    };
 
     const otherKeys = Object.keys(query).map(key => {
       if (key === '$and' || key === '$or') {
@@ -1138,9 +1148,10 @@ class DatabaseController {
       let queries: ?(any[]) = null;
       if (
         query[key] &&
-        (query[key]['$in'] ||
-          query[key]['$ne'] ||
-          query[key]['$nin'] ||
+        typeof query[key] === 'object' &&
+        ('$in' in query[key] ||
+          '$ne' in query[key] ||
+          '$nin' in query[key] ||
           query[key].__type == 'Pointer')
       ) {
         // Build the list of queries
@@ -1148,15 +1159,21 @@ class DatabaseController {
           let relatedIds;
           let isNegation = false;
           if (constraintKey === 'objectId') {
-            relatedIds = [query[key].objectId];
+            const id = extractId(query[key]);
+            relatedIds = id ? [id] : [];
           } else if (constraintKey == '$in') {
-            relatedIds = query[key]['$in'].map(r => r.objectId);
+            relatedIds = Array.isArray(query[key]['$in'])
+              ? query[key]['$in'].map(extractId).filter(Boolean)
+              : [];
           } else if (constraintKey == '$nin') {
             isNegation = true;
-            relatedIds = query[key]['$nin'].map(r => r.objectId);
+            relatedIds = Array.isArray(query[key]['$nin'])
+              ? query[key]['$nin'].map(extractId).filter(Boolean)
+              : [];
           } else if (constraintKey == '$ne') {
             isNegation = true;
-            relatedIds = [query[key]['$ne'].objectId];
+            const id = extractId(query[key]['$ne']);
+            relatedIds = id ? [id] : [];
           } else {
             return;
           }
@@ -1165,6 +1182,10 @@ class DatabaseController {
             relatedIds,
           };
         });
+        const validQueries = queries.filter(Boolean);
+        if (validQueries.length === 0) {
+          queries = [{ isNegation: false, relatedIds: [] }];
+        }
       } else {
         queries = [{ isNegation: false, relatedIds: [] }];
       }
