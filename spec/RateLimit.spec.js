@@ -86,6 +86,26 @@ describe('rate limit', () => {
     );
   });
 
+  it('can limit cloud function with per-function rateLimit defined in cloud code loaded at startup (#8684)', async () => {
+    await reconfigureServer({
+      cloud: Parse => {
+        Parse.Cloud.define('test8684', () => 'Abc', {
+          rateLimit: {
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            errorResponseMessage: 'Too many requests',
+            includeInternalRequests: true,
+          },
+        });
+      },
+    });
+    const response1 = await Parse.Cloud.run('test8684');
+    expect(response1).toBe('Abc');
+    await expectAsync(Parse.Cloud.run('test8684')).toBeRejectedWith(
+      new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
+    );
+  });
+
   it('can skip with masterKey', async () => {
     Parse.Cloud.define('test', () => 'Abc');
     await reconfigureServer({
