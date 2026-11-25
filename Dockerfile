@@ -5,7 +5,7 @@
 # another platform, so that no code runs under emulation; Node.js running under
 # QEMU emulation can crash with an illegal instruction. Builders that don't set
 # BUILDPLATFORM, like the legacy Docker builder, run it on their own platform.
-FROM --platform=${BUILDPLATFORM:-linux} node:24.22.2-alpine AS build
+FROM --platform=${BUILDPLATFORM:-linux} node:24.22.3-alpine AS build
 
 RUN apk --no-cache add \
    build-base \
@@ -54,7 +54,7 @@ RUN arch="${TARGETARCH:-$(uname -m)}" \
 ############################################################
 # Must not contain RUN instructions, because building the image for another
 # platform than the one of the build machine would then require emulation.
-FROM node:24.22.2-alpine AS release
+FROM node:24.22.3-alpine AS release
 
 VOLUME /parse-server/cloud /parse-server/config
 
