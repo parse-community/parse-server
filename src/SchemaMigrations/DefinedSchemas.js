@@ -1,6 +1,7 @@
 // @flow
 // @flow-disable-next Cannot resolve module `parse/node`.
 const Parse = require('parse/node');
+import { isDeepStrictEqual } from 'util';
 import { logger } from '../logger';
 import Config from '../Config';
 import { internalCreateSchema, internalUpdateSchema } from '../Routers/SchemasRouter';
@@ -354,7 +355,7 @@ export class DefinedSchemas {
               newLocalSchema.deleteIndex(indexName);
             }
           } else if (
-            !this.paramsAreEquals(localSchema.indexes[indexName], cloudSchema.indexes[indexName])
+            !this.indexesAreEquals(localSchema.indexes[indexName], cloudSchema.indexes[indexName])
           ) {
             newLocalSchema.deleteIndex(indexName);
             if (localSchema.indexes) {
@@ -439,6 +440,24 @@ export class DefinedSchemas {
     // Check key name
     if (keysA.length !== keysB.length) { return false; }
     return keysA.every(k => objA[k] === objB[k]);
+  }
+
+  // An index is defined as `{ field: 1 }` or, with options, as
+  // `{ field: 1, __options: { unique: true } }`. Options are compared only for an index defined
+  // with options; an index defined without options keeps the options it has in the database.
+  // An option set to `false` equals an option not set.
+  indexesAreEquals(localIndex: Migrations.IndexInterface, cloudIndex: Migrations.IndexInterface) {
+    const { __options: localOptions, ...localKey } = localIndex;
+    const { __options: cloudOptions = {}, ...cloudKey } = cloudIndex;
+    if (!this.paramsAreEquals(localKey, cloudKey)) {
+      return false;
+    }
+    if (!localOptions) {
+      return true;
+    }
+    const withoutFalseOptions = options =>
+      Object.fromEntries(Object.entries(options).filter(([, value]) => value !== false));
+    return isDeepStrictEqual(withoutFalseOptions(localOptions), withoutFalseOptions(cloudOptions));
   }
 
   handleFields(newLocalSchema: Parse.Schema, fieldName: string, field: Migrations.FieldType) {
