@@ -1,4 +1,5 @@
 const Parse = require('parse/node');
+const { EventEmitter } = require('events');
 const ParseLiveQueryServer = require('../lib/LiveQuery/ParseLiveQueryServer').ParseLiveQueryServer;
 const ParseServer = require('../lib/ParseServer').default;
 const LiveQueryController = require('../lib/Controllers/LiveQueryController').LiveQueryController;
@@ -22,6 +23,7 @@ describe('ParseLiveQueryServer', function () {
     );
     // Mock Client
     const mockClient = function (id, socket, hasMasterKey) {
+      this.id = id;
       this.pushConnect = jasmine.createSpy('pushConnect');
       this.pushSubscribe = jasmine.createSpy('pushSubscribe');
       this.pushUnsubscribe = jasmine.createSpy('pushUnsubscribe');
@@ -582,7 +584,7 @@ describe('ParseLiveQueryServer', function () {
   it('can set connect command message handler for a parseWebSocket', function () {
     const parseLiveQueryServer = new ParseLiveQueryServer({});
     // Register mock connect/subscribe/unsubscribe handler for the server
-    parseLiveQueryServer._handleConnect = jasmine.createSpy('_handleSubscribe');
+    parseLiveQueryServer._handleConnect = jasmine.createSpy('_handleConnect').and.resolveTo();
     // Make mock parseWebsocket
     const EventEmitter = require('events');
     const parseWebSocket = new EventEmitter();
@@ -727,26 +729,151 @@ describe('ParseLiveQueryServer', function () {
     parseWebSocket.emit('disconnect');
   });
 
-  it('reports the client ID to cloud code on a disconnect error', function () {
-    const cloudCodeHandler = {
-      handler: () => { },
-    };
-    const spy = spyOn(cloudCodeHandler, 'handler').and.callThrough();
-    Parse.Cloud.onLiveQueryEvent(cloudCodeHandler.handler);
-    const parseLiveQueryServer = new ParseLiveQueryServer({});
-    const EventEmitter = require('events');
-    const parseWebSocket = new EventEmitter();
-    parseWebSocket.clientId = 1;
-    // Register message handlers for the parseWebSocket
-    parseLiveQueryServer._onConnect(parseWebSocket);
+  describe('LiveQuery event payloads', () => {
+    const masterKey = 'payload-master-key';
+    const installationId = 'payload-installation';
+    let server;
+    let onEvent;
 
-    // Make sure we do not crash
-    // Trigger disconnect event
-    parseWebSocket.emit('disconnect');
-    expect(spy).toHaveBeenCalledTimes(2);
-    expect(spy).toHaveBeenCalledWith(
-      jasmine.objectContaining({ event: 'ws_disconnect_error', clientId: parseWebSocket.clientId })
-    );
+    beforeEach(() => {
+      server = new ParseLiveQueryServer({}, { keyPairs: { masterKey } });
+      onEvent = jasmine.createSpy('onLiveQueryEvent');
+      Parse.Cloud.onLiveQueryEvent(onEvent);
+    });
+
+    it('reports the ws_connect payload before the LiveQuery handshake', () => {
+      const socket = new EventEmitter();
+      server._onConnect(socket);
+
+      expect(onEvent).toHaveBeenCalledOnceWith(
+        jasmine.objectContaining({
+          event: 'ws_connect',
+          clientId: jasmine.any(String),
+          clients: 0,
+          subscriptions: 0,
+        })
+      );
+      expect(socket.clientId).toBeUndefined();
+      expect(server.clients.size).toBe(0);
+    });
+
+    it('reports the connect payload with the ID from ws_connect after a handshake retry', async () => {
+      const socket = new EventEmitter();
+      const handleConnect = spyOn(server, '_handleConnect').and.callThrough();
+      const beforeConnect = jasmine.createSpy('beforeConnect').and.throwError('Retry connect');
+      Parse.Cloud.beforeConnect(beforeConnect);
+      server._onConnect(socket);
+      const { clientId } = onEvent.calls.first().args[0];
+      const request = {
+        op: 'connect',
+        applicationId: Parse.applicationId,
+        masterKey,
+        installationId,
+        sessionToken: 'sessionToken',
+      };
+
+      socket.emit('message', request);
+      await handleConnect.calls.mostRecent().returnValue;
+      expect(onEvent).toHaveBeenCalledTimes(1);
+      expect(socket.clientId).toBeUndefined();
+
+      beforeConnect.and.stub();
+      socket.emit('message', request);
+      await handleConnect.calls.mostRecent().returnValue;
+      const client = server.clients.get(socket.clientId);
+
+      expect(client?.id).toBe(socket.clientId);
+      expect(clientId).toEqual(jasmine.any(String));
+      expect(socket.clientId).toBe(clientId);
+      expect(onEvent).toHaveBeenCalledWith(
+        jasmine.objectContaining({
+          event: 'connect',
+          clientId,
+          client,
+          clients: 0,
+          subscriptions: 0,
+          sessionToken: 'sessionToken',
+          installationId,
+          useMasterKey: true,
+        })
+      );
+    });
+
+    it('reports the subscribe payload with the registered client ID', async () => {
+      const clientId = 'subscribing-client';
+      const client = addMockClient(server, clientId);
+      client.installationId = installationId;
+      client.hasMasterKey = false;
+      await server._handleSubscribe(
+        { clientId },
+        {
+          requestId: 1,
+          query: { className: testClassName, where: {} },
+          sessionToken: 'sessionToken',
+        }
+      );
+
+      expect(onEvent).toHaveBeenCalledOnceWith(
+        jasmine.objectContaining({
+          event: 'subscribe',
+          clientId,
+          client,
+          clients: 1,
+          subscriptions: 1,
+          sessionToken: 'sessionToken',
+          installationId,
+          useMasterKey: false,
+        })
+      );
+    });
+
+    it('reports the unsubscribe payload after removing the subscription', async () => {
+      const clientId = 'unsubscribing-client';
+      const client = addMockClient(server, clientId);
+      client.installationId = installationId;
+      client.hasMasterKey = false;
+      const socket = { clientId };
+      const requestId = 1;
+      await addMockSubscription(server, clientId, requestId, socket);
+      const [, subscriptionInfo] = client.addSubscriptionInfo.calls.mostRecent().args;
+      client.getSubscriptionInfo.and.returnValue(subscriptionInfo);
+      onEvent.calls.reset();
+
+      server._handleUnsubscribe(socket, { requestId });
+
+      expect(onEvent).toHaveBeenCalledOnceWith(
+        jasmine.objectContaining({
+          event: 'unsubscribe',
+          clientId,
+          client,
+          clients: 1,
+          subscriptions: 0,
+          sessionToken: 'sessionToken',
+          installationId,
+          useMasterKey: false,
+        })
+      );
+    });
+
+    it('reports the ws_disconnect_error payload when a socket closes before the handshake', () => {
+      const socket = new EventEmitter();
+      server._onConnect(socket);
+      const { clientId } = onEvent.calls.first().args[0];
+      onEvent.calls.reset();
+
+      socket.emit('disconnect');
+
+      expect(clientId).toEqual(jasmine.any(String));
+      expect(onEvent).toHaveBeenCalledOnceWith(
+        jasmine.objectContaining({
+          event: 'ws_disconnect_error',
+          clientId,
+          clients: 0,
+          subscriptions: 0,
+          error: `Unable to find client ${clientId}`,
+        })
+      );
+    });
   });
 
   it('does not delete subscription info on client disconnect', async () => {

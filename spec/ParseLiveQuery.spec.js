@@ -82,10 +82,17 @@ describe('ParseLiveQuery', function () {
       expect(connectedClientIds).toEqual([firstClientId, secondClient.id]);
 
       await firstClient.close();
-      const event = await disconnected;
-      expect(event.clientId).toBe(firstClientId);
-      expect(event.installationId).toBe(installationId);
-      expect(event.clients).toBe(1);
+      expect(await disconnected).toEqual(
+        jasmine.objectContaining({
+          event: 'ws_disconnect',
+          clientId: firstClientId,
+          clients: 1,
+          subscriptions: 0,
+          sessionToken,
+          installationId,
+          useMasterKey: false,
+        })
+      );
     } finally {
       await Promise.all([firstClient.close(), secondClient.close()]);
     }
