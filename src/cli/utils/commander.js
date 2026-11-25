@@ -7,6 +7,23 @@ let _definitions;
 let _reverseDefinitions;
 let _defaults;
 
+// Option help is authored as HTML in the JSDoc comments of `src/Options/index.js` so it renders on the
+// docs site. Commander only word-wraps the text, so convert the HTML to plain text for the terminal here.
+function cleanHelpText(help) {
+  if (!help) {
+    return help;
+  }
+  return help
+    .replace(/<a\b[^>]*\bhref="([^"]*)"[^>]*>(.*?)<\/a>/gi, '$2 ($1)')
+    .replace(/<\/li>/gi, '')
+    .replace(/<li>/gi, '\n- ')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/?(?:ul|b)>/gi, '')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 Command.prototype.loadDefinitions = function (definitions) {
   _definitions = definitions;
 
@@ -16,13 +33,13 @@ Command.prototype.loadDefinitions = function (definitions) {
       if (additionalOptions.required === true) {
         return program.option(
           `--${opt} <${opt}>`,
-          additionalOptions.help,
+          cleanHelpText(additionalOptions.help),
           additionalOptions.action
         );
       } else {
         return program.option(
           `--${opt} [${opt}]`,
-          additionalOptions.help,
+          cleanHelpText(additionalOptions.help),
           additionalOptions.action
         );
       }
