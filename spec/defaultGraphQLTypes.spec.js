@@ -1,4 +1,5 @@
 const { Kind } = require('graphql');
+const defaultGraphQLTypes = require('../lib/GraphQL/loaders/defaultGraphQLTypes');
 const {
   TypeValidationError,
   parseStringValue,
@@ -10,9 +11,15 @@ const {
   parseListValues,
   parseObjectFields,
   BYTES,
+  DECIMAL128,
   DATE,
   FILE,
-} = require('../lib/GraphQL/loaders/defaultGraphQLTypes');
+} = defaultGraphQLTypes;
+const {
+  transformConstraintTypeToGraphQL,
+} = require('../lib/GraphQL/transformers/constraintType');
+const { transformInputTypeToGraphQL } = require('../lib/GraphQL/transformers/inputType');
+const { transformOutputTypeToGraphQL } = require('../lib/GraphQL/transformers/outputType');
 
 function createValue(kind, value, values, fields) {
   return {
@@ -530,6 +537,133 @@ describe('defaultGraphQLTypes', () => {
     });
   });
 
+  describe('Decimal128', () => {
+    describe('parse literal', () => {
+      const { parseLiteral } = DECIMAL128;
+
+      it('should parse to Decimal128 if string', () => {
+        expect(parseLiteral(createValue(Kind.STRING, '123.456'))).toEqual({
+          __type: 'Decimal128',
+          value: '123.456',
+        });
+      });
+
+      it('should parse to Decimal128 if object', () => {
+        expect(
+          parseLiteral(
+            createValue(Kind.OBJECT, undefined, undefined, [
+              createObjectField('__type', { value: 'Decimal128' }),
+              createObjectField('value', { value: '123.456', kind: Kind.STRING }),
+            ])
+          )
+        ).toEqual({
+          __type: 'Decimal128',
+          value: '123.456',
+        });
+      });
+
+      it('should fail if not a valid string or object', () => {
+        expect(() => parseLiteral({})).toThrow(
+          jasmine.stringMatching('is not a valid Decimal128')
+        );
+        expect(() => parseLiteral(createValue(Kind.INT, '123'))).toThrow(
+          jasmine.stringMatching('is not a valid Decimal128')
+        );
+        expect(() => parseLiteral([])).toThrow(
+          jasmine.stringMatching('is not a valid Decimal128')
+        );
+        expect(() =>
+          parseLiteral(
+            createValue(Kind.OBJECT, undefined, undefined, [
+              createObjectField('__type', { value: 'Foo' }),
+              createObjectField('value', { value: '123.456' }),
+            ])
+          )
+        ).toThrow(jasmine.stringMatching('is not a valid Decimal128'));
+        expect(() =>
+          parseLiteral(
+            createValue(Kind.OBJECT, undefined, undefined, [
+              createObjectField('__type', { value: 'Decimal128' }),
+              createObjectField('value', { value: '123', kind: Kind.INT }),
+            ])
+          )
+        ).toThrow(jasmine.stringMatching('is not a valid Decimal128'));
+      });
+    });
+
+    describe('parse value', () => {
+      const { parseValue } = DECIMAL128;
+
+      it('should parse string value', () => {
+        expect(parseValue('123.456')).toEqual({
+          __type: 'Decimal128',
+          value: '123.456',
+        });
+      });
+
+      it('should parse object value', () => {
+        const input = {
+          __type: 'Decimal128',
+          value: '123.456',
+        };
+        expect(parseValue(input)).toEqual(input);
+      });
+
+      it('should fail if not a valid object or string', () => {
+        expect(() => parseValue({})).toThrow(
+          jasmine.stringMatching('is not a valid Decimal128')
+        );
+        expect(() =>
+          parseValue({
+            __type: 'Foo',
+            value: '123.456',
+          })
+        ).toThrow(jasmine.stringMatching('is not a valid Decimal128'));
+        expect(() => parseValue([])).toThrow(
+          jasmine.stringMatching('is not a valid Decimal128')
+        );
+        expect(() => parseValue(123)).toThrow(
+          jasmine.stringMatching('is not a valid Decimal128')
+        );
+      });
+    });
+
+    describe('serialize Decimal128 type', () => {
+      const { serialize } = DECIMAL128;
+
+      it('should do nothing if string', () => {
+        const str = '123.456';
+        expect(serialize(str)).toBe(str);
+      });
+
+      it('should return value if object', () => {
+        const decimal = {
+          __type: 'Decimal128',
+          value: '123.456',
+        };
+        expect(serialize(decimal)).toEqual('123.456');
+      });
+
+      it('should fail if not a valid object or string', () => {
+        expect(() => serialize({})).toThrow(
+          jasmine.stringMatching('is not a valid Decimal128')
+        );
+        expect(() =>
+          serialize({
+            __type: 'Foo',
+            value: '123.456',
+          })
+        ).toThrow(jasmine.stringMatching('is not a valid Decimal128'));
+        expect(() => serialize([])).toThrow(
+          jasmine.stringMatching('is not a valid Decimal128')
+        );
+        expect(() => serialize(123)).toThrow(
+          jasmine.stringMatching('is not a valid Decimal128')
+        );
+      });
+    });
+  });
+
   describe('File', () => {
     describe('parse literal', () => {
       const { parseLiteral } = FILE;
@@ -603,6 +737,22 @@ describe('defaultGraphQLTypes', () => {
         expect(() => serialize([])).toThrow(jasmine.stringMatching('is not a valid File'));
         expect(() => serialize(123)).toThrow(jasmine.stringMatching('is not a valid File'));
       });
+    });
+  });
+
+  describe('Decimal128 GraphQL transformers', () => {
+    it('should return DECIMAL128_WHERE_INPUT for constraintType', () => {
+      expect(transformConstraintTypeToGraphQL('Decimal128')).toBe(
+        defaultGraphQLTypes.DECIMAL128_WHERE_INPUT
+      );
+    });
+
+    it('should return DECIMAL128 for inputType', () => {
+      expect(transformInputTypeToGraphQL('Decimal128')).toBe(defaultGraphQLTypes.DECIMAL128);
+    });
+
+    it('should return DECIMAL128 for outputType', () => {
+      expect(transformOutputTypeToGraphQL('Decimal128')).toBe(defaultGraphQLTypes.DECIMAL128);
     });
   });
 });
