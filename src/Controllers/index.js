@@ -172,23 +172,30 @@ interface PushControlling {
 export async function getPushController(options: ParseServerOptions): PushControlling {
   const { scheduledPush, push } = options;
 
+  if (!push) {
+    return {
+      pushController: new PushController(),
+      hasPushSupport: false,
+      hasPushScheduledSupport: false,
+      pushControllerQueue: new PushQueue(),
+      pushWorker: undefined,
+    };
+  }
+
   const pushOptions = Object.assign({}, push);
   const pushQueueOptions = pushOptions.queueOptions || {};
   if (pushOptions.queueOptions) {
     delete pushOptions.queueOptions;
   }
 
-  // Pass the push options too as it works with the default
   const ParsePushAdapter = await loadModule('@parse/push-adapter');
   const pushAdapter = loadAdapter(
     pushOptions && pushOptions.adapter,
     ParsePushAdapter,
     pushOptions
   );
-  // We pass the options and the base class for the adatper,
-  // Note that passing an instance would work too
   const pushController = new PushController();
-  const hasPushSupport = !!(pushAdapter && push);
+  const hasPushSupport = !!pushAdapter;
   const hasPushScheduledSupport = hasPushSupport && scheduledPush === true;
 
   const { disablePushWorker } = pushQueueOptions;
