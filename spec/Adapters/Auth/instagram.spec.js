@@ -278,6 +278,40 @@ describe('InstagramAdapter', function () {
         'Instagram code is required.'
       );
     });
+
+    it('should send the access token as a single request parameter with insecure auth', async function () {
+      await reconfigureServer({
+        auth: {
+          instagram: {
+            enableInsecureAuth: true,
+          },
+        },
+      });
+      const requests = [];
+      const fetch = global.fetch;
+      spyOn(global, 'fetch').and.callFake((url, options) => {
+        if (typeof url === 'string' && url.startsWith(Parse.serverURL)) {
+          return fetch(url, options);
+        }
+        requests.push(new URL(url));
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ id: 'mockUserId' }) });
+      });
+
+      const authData = {
+        access_token: 'token&fields=username#fragment',
+        id: 'mockUserId',
+      };
+      await Parse.User.logInWith('instagram', { authData });
+
+      expect(requests.length).toBe(1);
+      expect(requests[0].origin).toBe('https://graph.instagram.com');
+      expect(requests[0].pathname).toBe('/me');
+      expect([...requests[0].searchParams]).toEqual([
+        ['fields', 'id'],
+        ['access_token', 'token&fields=username#fragment'],
+      ]);
+      expect(requests[0].hash).toBe('');
+    });
   });
 
 });

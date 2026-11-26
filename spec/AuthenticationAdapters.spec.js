@@ -443,6 +443,51 @@ describe('AuthenticationProviders', function () {
     expect(httpsRequest.get.calls.first().args[0].includes('appsecret_proof')).toBe(true);
   });
 
+  it('should send the Facebook access token as a single request parameter', async () => {
+    const crypto = require('crypto');
+    const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+    const requests = [];
+    spyOn(httpsRequest, 'get').and.callFake(url => {
+      const requestUrl = new URL(url);
+      requests.push(requestUrl);
+      return Promise.resolve(requestUrl.pathname === '/app' ? { id: 'appId' } : { id: 'userId' });
+    });
+    await reconfigureServer({
+      auth: {
+        facebook: {
+          appIds: ['appId'],
+          appSecret: 'secret_sauce',
+        },
+      },
+    });
+    const access_token = 'token&fields=name#fragment';
+    await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/users',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      body: JSON.stringify({ authData: { facebook: { id: 'userId', access_token } } }),
+    });
+    const appsecret_proof = crypto
+      .createHmac('sha256', 'secret_sauce')
+      .update(access_token)
+      .digest('hex');
+    expect(requests.map(url => url.pathname)).toEqual(['/app', '/me']);
+    expect([...requests[0].searchParams]).toEqual([
+      ['access_token', access_token],
+      ['appsecret_proof', appsecret_proof],
+    ]);
+    expect([...requests[1].searchParams]).toEqual([
+      ['fields', 'id'],
+      ['access_token', access_token],
+      ['appsecret_proof', appsecret_proof],
+    ]);
+    expect(requests.map(url => url.hash)).toEqual(['', '']);
+  });
+
   it('properly loads a custom adapter with options', () => {
     const options = {
       custom: {
@@ -1633,6 +1678,48 @@ describe('phant auth adapter', () => {
     } catch (e) {
       expect(e.message).toBe('PhantAuth auth is invalid for this user.');
     }
+  });
+});
+
+describe('vkontakte auth adapter', () => {
+  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+
+  it('should send the access token as a single request parameter', async () => {
+    const options = {
+      vkontakte: {
+        enableInsecureAuth: true,
+        appIds: ['appId'],
+        appSecret: 'appSecret',
+        apiVersion: '5.131',
+      },
+    };
+    await reconfigureServer({
+      enableInsecureAuthAdapters: true,
+      auth: options,
+    });
+    const requests = [];
+    spyOn(httpsRequest, 'get').and.callFake(url => {
+      const requestUrl = new URL(url);
+      requests.push(requestUrl);
+      return Promise.resolve(
+        requestUrl.hostname === 'oauth.vk.com'
+          ? { access_token: 'serviceToken' }
+          : { response: [{ id: 111 }] }
+      );
+    });
+    const authData = {
+      id: 111,
+      access_token: 'token&user_ids=222#fragment',
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('vkontakte', options);
+    await adapter.validateAuthData(authData, providerOptions);
+    const userRequest = requests.find(url => url.hostname === 'api.vk.com');
+    expect(userRequest.pathname).toBe('/method/users.get');
+    expect([...userRequest.searchParams]).toEqual([
+      ['access_token', 'token&user_ids=222#fragment'],
+      ['v', '5.131'],
+    ]);
+    expect(userRequest.hash).toBe('');
   });
 });
 

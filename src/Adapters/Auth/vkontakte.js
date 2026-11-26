@@ -22,10 +22,11 @@ async function validateAuthData(authData, params) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Vk appIds or appSecret is incorrect.');
   }
 
-  const vkUser = await request(
-    'api.vk.com',
-    `method/users.get?access_token=${authData.access_token}&v=${params.apiVersion}`
-  );
+  const query = new URLSearchParams({
+    access_token: authData.access_token,
+    v: params.apiVersion,
+  });
+  const vkUser = await request('api.vk.com', `method/users.get?${query}`);
 
   if (!vkUser?.response?.length || vkUser.response[0].id !== authData.id) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Vk auth is invalid for this user.');

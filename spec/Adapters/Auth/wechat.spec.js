@@ -232,5 +232,90 @@ describe('WeChatAdapter', function () {
         jasmine.objectContaining({ message: 'WeChat auth is invalid for this user.' })
       );
     });
+
+    // Records the requests to WeChat and answers each with the JSON that `respond` returns
+    function recordWeChatRequests(respond) {
+      const requests = [];
+      const fetch = global.fetch;
+      spyOn(global, 'fetch').and.callFake((url, options) => {
+        if (typeof url === 'string' && url.startsWith(Parse.serverURL)) {
+          return fetch(url, options);
+        }
+        const requestUrl = new URL(url);
+        requests.push(requestUrl);
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(respond(requestUrl)) });
+      });
+      return requests;
+    }
+
+    it('should send the code as a single request parameter', async function () {
+      const requests = recordWeChatRequests(url =>
+        url.pathname === '/sns/oauth2/access_token'
+          ? { access_token: 'validAccessToken', openid: 'user123', errcode: 0 }
+          : { errcode: 0, id: 'user123' }
+      );
+
+      const authData = { code: 'code&appid=otherAppId#fragment' };
+      await Parse.User.logInWith('wechat', { authData });
+
+      expect(requests[0].pathname).toBe('/sns/oauth2/access_token');
+      expect([...requests[0].searchParams]).toEqual([
+        ['appid', 'validAppId'],
+        ['secret', 'validAppSecret'],
+        ['code', 'code&appid=otherAppId#fragment'],
+        ['grant_type', 'authorization_code'],
+      ]);
+      expect(requests[0].hash).toBe('');
+    });
+
+    it('should send the access token as a single request parameter with insecure auth', async function () {
+      const requests = recordWeChatRequests(() => ({ errcode: 0, id: 'user123' }));
+
+      await reconfigureServer({
+        auth: {
+          wechat: {
+            appId: 'validAppId',
+            appSecret: 'validAppSecret',
+            enableInsecureAuth: true,
+          },
+        },
+      });
+
+      const authData = { access_token: 'token&openid=otherUser#fragment', id: 'user123' };
+      await Parse.User.logInWith('wechat', { authData });
+
+      expect(requests.length).toBe(1);
+      expect(requests[0].pathname).toBe('/sns/auth');
+      expect([...requests[0].searchParams]).toEqual([
+        ['access_token', 'token&openid=otherUser#fragment'],
+        ['openid', 'user123'],
+      ]);
+      expect(requests[0].hash).toBe('');
+    });
+
+    it('should send the user id as a single request parameter with insecure auth', async function () {
+      const requests = recordWeChatRequests(() => ({ errcode: 0, id: 'user123&openid=otherUser' }));
+
+      await reconfigureServer({
+        auth: {
+          wechat: {
+            appId: 'validAppId',
+            appSecret: 'validAppSecret',
+            enableInsecureAuth: true,
+          },
+        },
+      });
+
+      const authData = { access_token: 'validAccessToken', id: 'user123&openid=otherUser' };
+      await Parse.User.logInWith('wechat', { authData });
+
+      expect(requests.length).toBe(1);
+      expect(requests[0].pathname).toBe('/sns/auth');
+      expect([...requests[0].searchParams]).toEqual([
+        ['access_token', 'validAccessToken'],
+        ['openid', 'user123&openid=otherUser'],
+      ]);
+      expect(requests[0].hash).toBe('');
+    });
   });
 });

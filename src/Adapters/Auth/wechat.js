@@ -79,9 +79,8 @@ class WeChatAdapter extends BaseAuthCodeAdapter {
   }
 
   async getUserFromAccessToken(access_token, authData) {
-    const response = await fetch(
-      `https://api.weixin.qq.com/sns/auth?access_token=${access_token}&openid=${authData.id}`
-    );
+    const query = new URLSearchParams({ access_token, openid: authData.id });
+    const response = await fetch(`https://api.weixin.qq.com/sns/auth?${query}`);
 
     const data = await response.json();
 
@@ -97,13 +96,13 @@ class WeChatAdapter extends BaseAuthCodeAdapter {
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'WeChat auth requires a code to be sent.');
     }
 
-    const appId = this.clientId;
-    const appSecret = this.clientSecret
-
-
-    const response = await fetch(
-      `https://api.weixin.qq.com/sns/oauth2/access_token?appid=${appId}&secret=${appSecret}&code=${authData.code}&grant_type=authorization_code`
-    );
+    const query = new URLSearchParams({
+      appid: this.clientId,
+      secret: this.clientSecret,
+      code: authData.code,
+      grant_type: 'authorization_code',
+    });
+    const response = await fetch(`https://api.weixin.qq.com/sns/oauth2/access_token?${query}`);
 
     const data = await response.json();
 
