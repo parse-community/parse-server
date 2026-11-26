@@ -1,3 +1,10 @@
+# [9.12.0-alpha.6](https://github.com/parse-community/parse-server/compare/9.12.0-alpha.5...9.12.0-alpha.6) (2026-11-26)
+
+
+### Bug Fixes
+
+* Auth adapters for Facebook, Instagram, VK and WeChat send auth data unencoded in provider requests ([#10904](https://github.com/parse-community/parse-server/issues/10904)) ([2d9d7d2](https://github.com/parse-community/parse-server/commit/2d9d7d2c45aa534ea8b69b39ff160b9ee86e69f5))
+
 # [9.12.0-alpha.5](https://github.com/parse-community/parse-server/compare/9.12.0-alpha.4...9.12.0-alpha.5) (2026-11-19)
 
 
