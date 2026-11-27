@@ -15888,4 +15888,446 @@ describe('Vulnerabilities', () => {
       });
     });
   });
+
+  describe('(GHSA-624f-w3fx-xh48) Object write with many keys', () => {
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    };
+    const increment = { __op: 'Increment', amount: 1 };
+    // An object with the given number of keys
+    const keys = (count, key, value) =>
+      Object.fromEntries(Array.from({ length: count }, (_, i) => [key(i), value]));
+    const nullKeys = count => keys(count, i => `f.k${i}`, null);
+    const send = async (method, path, body, extraHeaders) => {
+      const start = Date.now();
+      const response = await request({
+        method,
+        url: `${Parse.serverURL}${path}`,
+        headers: { ...headers, ...extraHeaders },
+        body: JSON.stringify(body),
+      }).catch(e => e);
+      return { status: response.status, data: response.data, elapsed: Date.now() - start };
+    };
+    const create = async fields => (await send('POST', '/classes/Item', fields)).data.objectId;
+    const setPermissions = async permissions => {
+      const everyone = { '*': true };
+      const schema = new Parse.Schema('Item');
+      schema.setCLP({
+        find: everyone,
+        get: everyone,
+        count: everyone,
+        create: everyone,
+        update: everyone,
+        delete: everyone,
+        addField: everyone,
+        ...permissions,
+      });
+      await schema.update();
+    };
+
+    describe('request time', () => {
+      // Creates the class, so that the time of its creation does not count
+      beforeEach(async () => {
+        await create({ f: {} });
+      });
+
+      it('creates an object with many dot notation keys in time when the class has a beforeSave trigger', async () => {
+        let field;
+        Parse.Cloud.beforeSave('Item', ({ object }) => {
+          field = object.get('f');
+        });
+        const response = await send('POST', '/classes/Item', nullKeys(1500));
+        expect(response.status).toBe(201);
+        expect(response.elapsed).toBeLessThan(2000);
+        expect(Object.keys(field).length).toBe(1500);
+        expect(Object.values(field).every(value => value === null)).toBe(true);
+      });
+
+      it('reads the fields of an object with many dot notation keys in a beforeSave trigger in time', async () => {
+        let elapsed;
+        Parse.Cloud.beforeSave('Item', ({ object }) => {
+          const start = Date.now();
+          for (let i = 0; i < 200; i++) {
+            object.get('f');
+          }
+          elapsed = Date.now() - start;
+        });
+        const response = await send('POST', '/classes/Item', nullKeys(1500));
+        expect(response.status).toBe(201);
+        expect(elapsed).toBeLessThan(2000);
+      });
+
+      it('creates an object with many dot notation keys in time when the class has an afterSave trigger', async () => {
+        Parse.Cloud.afterSave('Item', () => {});
+        const response = await send('POST', '/classes/Item', nullKeys(1500));
+        expect(response.status).toBe(201);
+        expect(response.elapsed).toBeLessThan(2000);
+      });
+
+      it('creates an object with many dot notation keys in time when LiveQuery is enabled for the class', async () => {
+        await reconfigureServer({
+          liveQuery: { classNames: ['Item'] },
+          startLiveQueryServer: true,
+          verbose: false,
+          silent: true,
+        });
+        await create({ f: {} });
+        const response = await send('POST', '/classes/Item', nullKeys(1500));
+        expect(response.status).toBe(201);
+        expect(response.elapsed).toBeLessThan(2000);
+      });
+
+      it('updates an object with many dot notation operations in time when the class has a beforeSave trigger', async () => {
+        Parse.Cloud.beforeSave('Item', () => {});
+        const objectId = await create({ f: { k0: 1 } });
+        const response = await send(
+          'PUT',
+          `/classes/Item/${objectId}`,
+          keys(1500, i => `f.k${i}`, increment)
+        );
+        expect(response.status).toBe(200);
+        expect(response.elapsed).toBeLessThan(2000);
+        const { data } = await send('GET', `/classes/Item/${objectId}`);
+        expect(Object.keys(data.f).length).toBe(1500);
+        expect(data.f.k0).toBe(2);
+        expect(data.f.k1499).toBe(1);
+      });
+
+      it('updates an object with dot notation keys beneath a field that holds many keys in time', async () => {
+        Parse.Cloud.beforeSave('Item', () => {});
+        const objectId = await create({ f: keys(10000, i => `s${i}`, 1) });
+        const response = await send('PUT', `/classes/Item/${objectId}`, nullKeys(200));
+        expect(response.status).toBe(200);
+        expect(response.elapsed).toBeLessThan(2000);
+      });
+
+      it_only_db('mongo')(
+        'updates an object with dot notation operations beneath many fields in time when the class has an afterSave trigger',
+        async () => {
+          Parse.Cloud.afterSave('Item', () => {});
+          const objectId = await create(keys(8000, i => `p${i}`, { n: 0 }));
+          const response = await send(
+            'PUT',
+            `/classes/Item/${objectId}`,
+            keys(8000, i => `p${i}.n`, increment)
+          );
+          expect(response.status).toBe(200);
+          expect(response.elapsed).toBeLessThan(2000);
+        }
+      );
+
+      it('creates an object with dot notation keys set to null and to values in time when the class has a beforeSave trigger', async () => {
+        Parse.Cloud.beforeSave('Item', () => {});
+        const response = await send('POST', '/classes/Item', {
+          ...nullKeys(800),
+          ...keys(800, i => `g.k${i}`, 1),
+        });
+        expect(response.status).toBe(201);
+        expect(response.elapsed).toBeLessThan(2000);
+      });
+
+      it('signs up a user with many dot notation keys in time', async () => {
+        await send('POST', '/users', { username: 'other', password: 'password' });
+        const response = await send('POST', '/users', {
+          username: 'user',
+          password: 'password',
+          ...nullKeys(1500),
+        });
+        expect(response.status).toBe(201);
+        expect(response.elapsed).toBeLessThan(2000);
+      });
+
+      it('updates the email of a user with many dot notation keys in time', async () => {
+        const user = await Parse.User.signUp('user', 'password');
+        const response = await send(
+          'PUT',
+          `/users/${user.id}`,
+          { email: 'user@example.com', ...nullKeys(1500) },
+          { 'X-Parse-Session-Token': user.getSessionToken() }
+        );
+        expect(response.status).toBe(200);
+        expect(response.elapsed).toBeLessThan(2000);
+      });
+
+      it('rejects a create without permission with many dot notation keys in time when the class has a beforeSave trigger', async () => {
+        Parse.Cloud.beforeSave('Item', () => {});
+        await setPermissions({ create: {} });
+        const response = await send('POST', '/classes/Item', nullKeys(1500));
+        expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        expect(response.elapsed).toBeLessThan(2000);
+      });
+
+      for (const [name, value] of [
+        ['null', null],
+        ['a value', 1],
+      ]) {
+        it(`rejects dot notation keys set to ${name} beneath many new fields in time when the class allows no new fields`, async () => {
+          Parse.Cloud.beforeSave('Item', () => {});
+          await setPermissions({ addField: {} });
+          const response = await send(
+            'POST',
+            '/classes/Item',
+            keys(12000, i => `p${i}.k`, value)
+          );
+          expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+          expect(response.elapsed).toBeLessThan(2000);
+        });
+      }
+
+      for (const [name, value] of [
+        ['object', {}],
+        ['array', []],
+      ]) {
+        it(`rejects many new ${name} fields in time when the class has a beforeSave trigger and allows no new fields`, async () => {
+          Parse.Cloud.beforeSave('Item', () => {});
+          await setPermissions({ addField: {} });
+          const response = await send(
+            'POST',
+            '/classes/Item',
+            keys(20000, i => `o${i}`, value)
+          );
+          expect(response.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+          expect(response.elapsed).toBeLessThan(2000);
+        });
+      }
+    });
+
+    describe('dot notation operation and value beneath the same field', () => {
+      const orders = [
+        ['the operation first', { 'f.n': increment, 'f.a': 1 }],
+        ['the value first', { 'f.a': 1, 'f.n': increment }],
+      ];
+      // Creates an object and returns the field as a beforeSave trigger writes it and as stored
+      const createWithTrigger = async body => {
+        let written;
+        Parse.Cloud.beforeSave('Item', ({ object }) => {
+          written = object.toJSON().f;
+        });
+        const response = await send('POST', '/classes/Item', body);
+        const { data } = await send('GET', `/classes/Item/${response.data.objectId}`);
+        return { written, stored: data.f };
+      };
+
+      it('writes the result of an operation that precedes a value to the field of a new object when the class has a beforeSave trigger', async () => {
+        const { stored } = await createWithTrigger({ 'f.n': increment, 'f.a': 1 });
+        expect(stored).toEqual({ n: 1, a: 1 });
+      });
+
+      it('writes the result of an operation between values to the field of a new object when the class has a beforeSave trigger', async () => {
+        const { stored } = await createWithTrigger({ 'f.a': 1, 'f.n': increment, 'f.c': 2 });
+        expect(stored).toEqual({ a: 1, n: 1, c: 2 });
+      });
+
+      it('writes no value for a removal that follows a value to the field of a new object when the class has a beforeSave trigger', async () => {
+        const { stored } = await createWithTrigger({ 'f.a': 1, 'f.n': { __op: 'Delete' } });
+        expect(stored).toEqual({ a: 1 });
+      });
+
+      it('keeps the values around an operation with a numeric key in the field of a new object when the class has a beforeSave trigger', async () => {
+        const { written } = await createWithTrigger({
+          'f.total': 5,
+          'f.0': increment,
+          'f.label': 'x',
+        });
+        expect(written).toEqual({ total: 5, 0: 1, label: 'x' });
+      });
+
+      it('leaves an operation with a key that the SDK skips out of the field that a beforeSave trigger reads', async () => {
+        await reconfigureServer({ requestKeywordDenylist: [] });
+        let field;
+        Parse.Cloud.beforeSave('Item', ({ object }) => {
+          field = object.get('f');
+        });
+        await send('POST', '/classes/Item', { 'f.constructor.n': null, 'f.a': 1 });
+        expect(Object.keys(field)).toEqual(['a']);
+      });
+
+      it('builds the ACL of a new object from the first dot notation key beneath it when the class has a beforeSave trigger', async () => {
+        let acl;
+        Parse.Cloud.beforeSave('Item', ({ object }) => {
+          acl = object.getACL().toJSON();
+        });
+        await send('POST', '/classes/Item', {
+          'ACL.*': { read: true },
+          'ACL.role:admin': { write: true },
+        });
+        expect(acl).toEqual({ '*': { read: true } });
+      });
+
+      for (const [order, body] of orders) {
+        it(`shows the field as written to a beforeSave trigger with ${order}`, async () => {
+          let field;
+          Parse.Cloud.beforeSave('Item', ({ object }) => {
+            field = object.get('f');
+          });
+          const objectId = await create({ f: { n: 1 } });
+          await send('PUT', `/classes/Item/${objectId}`, body);
+          expect(field).toEqual({ n: 2, a: 1 });
+        });
+
+        it_only_db('postgres')(
+          `writes the field with ${order} when the class has a beforeSave trigger`,
+          async () => {
+            Parse.Cloud.beforeSave('Item', () => {});
+            const objectId = await create({ f: { n: 1 } });
+            const response = await send('PUT', `/classes/Item/${objectId}`, body);
+            expect(response.status).toBe(200);
+            const { data } = await send('GET', `/classes/Item/${objectId}`);
+            expect(data.f).toEqual({ n: 2, a: 1 });
+          }
+        );
+      }
+
+      it('shows the written field to an afterSave trigger with the value first', async () => {
+        let field;
+        Parse.Cloud.afterSave('Item', ({ object }) => {
+          field = object.get('f');
+        });
+        const objectId = await create({ f: { n: 1 } });
+        const response = await send('PUT', `/classes/Item/${objectId}`, orders[1][1]);
+        expect(response.status).toBe(200);
+        expect(response.data.f).toEqual({ n: 2, a: 1 });
+        expect(field).toEqual({ n: 2, a: 1 });
+        const { data } = await send('GET', `/classes/Item/${objectId}`);
+        expect(data.f).toEqual({ n: 2, a: 1 });
+      });
+    });
+
+    describe('trigger object', () => {
+      const pointer = { __type: 'Pointer', className: 'Item', objectId: 'abc' };
+      const stored = {
+        f: { n: 1, list: [1, 2], deep: { m: 5 } },
+        arr: [10, 20, 30],
+        num: 7,
+        g: { a: 1 },
+        date: { __type: 'Date', iso: '2026-01-01T00:00:00.000Z' },
+        other: pointer,
+      };
+      const bodies = {
+        'null beneath a stored field': { 'f.a': null },
+        'nulls beneath a stored field': { 'f.a': null, 'f.b': null, 'f.c': null },
+        'operations beneath a stored field': { 'f.n': increment, 'f.q': increment },
+        'delete beneath a stored field': { 'f.n': { __op: 'Delete' }, 'f.a': null },
+        'array operations beneath a stored field': {
+          'f.list': { __op: 'Add', objects: [3] },
+          'f.tags': { __op: 'AddUnique', objects: ['a'] },
+        },
+        'null beneath a missing field': { 'h.a': null },
+        'nulls beneath a missing field': { 'h.a': null, 'h.b': null, 'h.c': null },
+        'nulls beneath missing nested fields': { 'h.a.b.c': null, 'h.a.b.d': null, 'h.a.e': null },
+        'numeric keys beneath a missing field': { 'h.0': null, 'h.1': null, 'h.2': null },
+        'numeric keys with a gap beneath a missing field': {
+          'h.0': null,
+          'h.3': null,
+          'h.5': null,
+        },
+        'keys beneath a stored array': { 'arr.1': null, 'arr.3': null, 'arr.0': increment },
+        'keys with a gap beneath a stored array': { 'arr.5': null, 'arr.9': null, 'arr.7': null },
+        'nested keys beneath a stored field': {
+          'f.deep.m': increment,
+          'f.deep.x': null,
+          'f.deep.y.z': null,
+        },
+        'keys beneath a number field': { 'num.a': null, 'num.b': null },
+        'values beneath a stored field': { 'f.a': 1, 'f.b': { c: 2 } },
+        'values beneath a missing field': { 'h.a': 1, 'h.b': 2 },
+        'value and operation beneath a stored field': { 'f.a': 1, 'f.n': increment },
+        'operation and value beneath a stored field': { 'f.n': increment, 'f.a': 1 },
+        'value and null beneath a missing field': { 'h.a': 1, 'h.b': null },
+        'field and a key beneath it': { g: { x: 1 }, 'g.b': null },
+        'fields and keys beneath other fields': {
+          num: increment,
+          g: { __op: 'Delete' },
+          'f.a': null,
+          'h.b': 1,
+        },
+        'object and array fields': { o1: { a: 1 }, o2: [1, 2], o3: {}, 'f.a': null },
+        'pointer and date fields': {
+          p: pointer,
+          d: { __type: 'Date', iso: '2026-02-02T00:00:00.000Z' },
+        },
+        'relation operation and keys beneath fields': {
+          rel: { __op: 'AddRelation', objects: [pointer] },
+          'f.a': null,
+          'h.b': 1,
+        },
+        'keys beneath many fields': {
+          ...keys(20, i => `p${i}.k`, null),
+          ...keys(20, i => `q${i}.k`, 1),
+          ...keys(20, i => `f.k${i}`, increment),
+        },
+      };
+
+      // Describes a value so that an object with a prototype differs from one without,
+      // while a missing array element equals an undefined one
+      const describeValue = value => {
+        if (Array.isArray(value)) {
+          return { array: Array.from(value, describeValue) };
+        }
+        const prototype =
+          value !== null && typeof value === 'object' && Object.getPrototypeOf(value);
+        if (prototype === null || prototype === Object.prototype) {
+          return {
+            prototype: prototype === null ? 'none' : 'Object',
+            fields: Object.entries(value).map(([key, field]) => [key, describeValue(field)]),
+          };
+        }
+        return value;
+      };
+
+      // Runs the routine as the SDK implements it
+      const withSDK = (object, routine) => {
+        const own = ['attributes', '_getSaveJSON'].map(name => [
+          name,
+          Object.getOwnPropertyDescriptor(object, name),
+        ]);
+        for (const [name] of own) {
+          delete object[name];
+        }
+        try {
+          return routine();
+        } finally {
+          for (const [name, descriptor] of own) {
+            if (descriptor) {
+              Object.defineProperty(object, name, descriptor);
+            }
+          }
+        }
+      };
+
+      // Sends the write and compares what a beforeSave trigger reads with the SDK routines
+      const expectRoutinesOfSDK = async (method, body) => {
+        const seen = [];
+        const objectId = method === 'update' ? await create(stored) : undefined;
+        Parse.Cloud.beforeSave('Item', ({ object }) => {
+          const read = () => ({
+            attributes: describeValue(object.attributes),
+            saveData: object._getSaveJSON(),
+            dirtyKeys: object.dirtyKeys(),
+          });
+          seen.push({ server: read(), sdk: withSDK(object, read) });
+        });
+        await send(
+          ...(objectId ? ['PUT', `/classes/Item/${objectId}`] : ['POST', '/classes/Item']),
+          body
+        );
+        expect(seen.length).toBe(1);
+        const [{ server, sdk }] = seen;
+        expect(server.attributes).toEqual(sdk.attributes);
+        expect(server.saveData).toEqual(sdk.saveData);
+        expect(Object.keys(server.saveData)).toEqual(Object.keys(sdk.saveData));
+        expect(server.dirtyKeys).toEqual(sdk.dirtyKeys);
+      };
+
+      for (const method of ['create', 'update']) {
+        for (const [name, body] of Object.entries(bodies)) {
+          it(`has the attributes and save data of the SDK on ${method} with ${name}`, async () => {
+            await expectRoutinesOfSDK(method, body);
+          });
+        }
+      }
+    });
+  });
 });

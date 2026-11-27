@@ -2229,35 +2229,8 @@ RestWrite.prototype.buildParseObjects = function ({ copyStoredValues = false } =
     }
   }
   const updatedObject = triggers.inflate(extraData, this.originalData);
-  const pointerRoot = this._dotNotationFieldRoot();
-  Object.keys(this.data).reduce(function (data, key) {
-    if (key.indexOf('.') > 0) {
-      // Null and undefined are set at their own dot notation path, like an operation
-      if (data[key] == null || typeof data[key].__op === 'string') {
-        // A dot notation key that removes a pointer's object ID would leave the
-        // pointer unserializable and break the trigger object, so skip it.
-        if (!readOnlyAttributes.includes(key) && !targetsPointerId(pointerRoot, key)) {
-          // The SDK key name rules apply to top-level fields only
-          updatedObject.set(key, data[key], { ignoreValidation: true });
-        }
-      } else {
-        // subdocument key with dot notation { 'x.y': v } => { 'x': { 'y' : v } })
-        const splittedKey = key.split('.');
-        const parentProp = splittedKey[0];
-        let parentVal = updatedObject.get(parentProp);
-        if (typeof parentVal !== 'object') {
-          parentVal = {};
-        } else if (copyStoredValues && parentVal === updatedObject._getServerData()[parentProp]) {
-          // A copy, so that a revert restores the stored value
-          parentVal = copyStoredValue(parentVal);
-        }
-        parentVal[splittedKey[1]] = data[key];
-        updatedObject.set(parentProp, parentVal);
-      }
-      delete data[key];
-    }
-    return data;
-  }, this.cloneWithFileUrls(this.data));
+  useLinearTimeRoutines(updatedObject);
+  this._setDotNotationKeys(updatedObject, readOnlyAttributes, copyStoredValues);
 
   const sanitized = this.sanitizedData();
   for (const attribute of readOnlyAttributes) {
@@ -2265,6 +2238,96 @@ RestWrite.prototype.buildParseObjects = function ({ copyStoredValues = false } =
   }
   updatedObject.set(sanitized);
   return { updatedObject, originalObject };
+};
+
+// Sets the dot notation keys of the request on the trigger object. The keys are
+// collected and set at once, as each call makes the SDK estimate all attributes.
+RestWrite.prototype._setDotNotationKeys = function (
+  updatedObject,
+  readOnlyAttributes,
+  copyStoredValues
+) {
+  const dotNotationKeys = Object.keys(this.data).filter(key => key.indexOf('.') > 0);
+  if (dotNotationKeys.length === 0) {
+    return;
+  }
+  const pointerRoot = this._dotNotationFieldRoot();
+  const data = this.cloneWithFileUrls(this.data);
+  const fieldOf = key => key.slice(0, key.indexOf('.'));
+  // Null and undefined are set at their own dot notation path, like an operation
+  const isOperation = key => data[key] == null || typeof data[key].__op === 'string';
+  const lastSubdocumentKey = new Map();
+  dotNotationKeys.forEach((key, position) => {
+    if (!isOperation(key)) {
+      lastSubdocumentKey.set(fieldOf(key), position);
+    }
+  });
+  // The fields that get a subdocument, as estimated at the current key
+  const subdocuments = Object.create(null);
+  if (lastSubdocumentKey.size > 0) {
+    const attributes = updatedObject.attributes;
+    for (const field of lastSubdocumentKey.keys()) {
+      if (field in attributes) {
+        subdocuments[field] = attributes[field];
+      }
+    }
+  }
+  const copies = new Set();
+  const extended = new Set();
+  // Operations before and after the first subdocument key of their field
+  const operationsBefore = {};
+  const operationsAfter = {};
+  dotNotationKeys.forEach((key, position) => {
+    const field = fieldOf(key);
+    if (isOperation(key)) {
+      // A dot notation key that removes a pointer's object ID would leave the
+      // pointer unserializable and break the trigger object, so skip it.
+      if (readOnlyAttributes.includes(key) || targetsPointerId(pointerRoot, key)) {
+        return;
+      }
+      (extended.has(field) ? operationsAfter : operationsBefore)[key] = data[key];
+      // A subdocument includes the operations that precede one of its keys
+      if (position < lastSubdocumentKey.get(field)) {
+        const operation =
+          data[key] == null ? new Parse.Op.Set(data[key]) : Parse._decode(undefined, data[key]);
+        if (operation) {
+          applyToEstimate(subdocuments, key, operation, copies);
+        }
+      }
+      return;
+    }
+    // subdocument key with dot notation { 'x.y': v } => { 'x': { 'y' : v } })
+    if (!extended.has(field)) {
+      let parentVal = subdocuments[field];
+      if (typeof parentVal !== 'object') {
+        parentVal = {};
+      } else if (copyStoredValues && parentVal === updatedObject._getServerData()[field]) {
+        // A copy, so that a revert restores the stored value
+        parentVal = copyStoredValue(parentVal);
+      }
+      subdocuments[field] = parentVal;
+      extended.add(field);
+    }
+    subdocuments[field][key.split('.')[1]] = data[key];
+    // The SDK holds an ACL as its own type once it is set
+    if (field === 'ACL' && !(subdocuments.ACL instanceof Parse.ACL)) {
+      subdocuments.ACL = new Parse.ACL(subdocuments.ACL);
+    }
+  });
+  // The SDK key name rules apply to top-level fields only
+  if (Object.keys(operationsBefore).length > 0) {
+    updatedObject.set(operationsBefore, { ignoreValidation: true });
+  }
+  if (extended.size > 0) {
+    const fields = {};
+    for (const field of extended) {
+      fields[field] = subdocuments[field];
+    }
+    updatedObject.set(fields);
+  }
+  if (Object.keys(operationsAfter).length > 0) {
+    updatedObject.set(operationsAfter, { ignoreValidation: true });
+  }
 };
 
 RestWrite.prototype.cleanUserAuthData = function () {
@@ -2368,6 +2431,105 @@ const extendRevertToDotNotationKeys = object => {
       );
       return revert.call(this, ...keys, ...beneath);
     },
+  });
+};
+
+const keysSkippedInEstimate = ['__proto__', 'constructor', 'prototype'];
+
+// Applies an operation the way the SDK estimates the attributes, except that a container
+// is copied once instead of once per operation beneath it
+const applyToEstimate = (attributes, key, operation, copies, object) => {
+  const path = key.split('.');
+  if (path.some(segment => keysSkippedInEstimate.includes(segment))) {
+    return;
+  }
+  if (operation instanceof Parse.Op.Relation) {
+    if (object?.id) {
+      attributes[key] = operation.applyTo(attributes[key], object, key);
+    }
+    return;
+  }
+  let container = attributes;
+  for (let depth = 0; depth < path.length - 1; depth++) {
+    const segment = path[depth];
+    if (!(segment in container)) {
+      container[segment] = !isNaN(path[depth + 1]) ? [] : Object.create(null);
+    } else if (!copies.has(container[segment])) {
+      container[segment] = Array.isArray(container[segment])
+        ? [...container[segment]]
+        : { ...container[segment] };
+      copies.add(container[segment]);
+    }
+    container = container[segment];
+  }
+  const last = path[path.length - 1];
+  container[last] = operation.applyTo(container[last]);
+};
+
+// The attribute estimate of the SDK
+function estimateAttributes() {
+  const controller = Parse.CoreManager.getObjectStateController();
+  const identifier = this._getStateIdentifier();
+  const serverData = controller.getServerData(identifier);
+  const attributes = Object.create(null);
+  for (const key in serverData) {
+    attributes[key] = serverData[key];
+  }
+  const copies = new Set();
+  for (const operations of controller.getPendingOps(identifier)) {
+    for (const key of Object.keys(operations)) {
+      applyToEstimate(attributes, key, operations[key], copies, this);
+    }
+  }
+  return Object.freeze(attributes);
+}
+
+// The save data of the SDK, looking up the fields with a dot notation operation once
+// instead of once per changed field
+function getSaveJSON() {
+  const pending = this._getPendingOps();
+  const dirtyObjects = this._getDirtyObjectAttributes();
+  const fieldsWithOperation = new Set();
+  for (const operations of pending) {
+    for (const key in operations) {
+      if (key.includes('.')) {
+        fieldsWithOperation.add(key.split('.')[0]);
+      }
+    }
+  }
+  const json = {};
+  for (const key in dirtyObjects) {
+    if (!fieldsWithOperation.has(key)) {
+      json[key] = new Parse.Op.Set(dirtyObjects[key]).toJSON();
+    }
+  }
+  for (const key in pending[0]) {
+    json[key] = pending[0][key].toJSON();
+  }
+  return json;
+}
+
+// The save response handling of the SDK, estimating the attributes once instead of
+// once per returned field
+function handleSaveResponse(response, status) {
+  let attributes;
+  Object.defineProperty(this, 'attributes', {
+    configurable: true,
+    get: () => (attributes ??= estimateAttributes.call(this)),
+  });
+  try {
+    Object.getPrototypeOf(this)._handleSaveResponse.call(this, response, status);
+  } finally {
+    Object.defineProperty(this, 'attributes', { configurable: true, get: estimateAttributes });
+  }
+}
+
+// Replaces SDK routines whose time grows with the square of the number of keys
+const useLinearTimeRoutines = object => {
+  Object.defineProperties(object, {
+    attributes: { configurable: true, get: estimateAttributes },
+    _getSaveJSON: { configurable: true, writable: true, value: getSaveJSON },
+    _handleSaveResponse: { configurable: true, writable: true, value: handleSaveResponse },
   });
 };
 
