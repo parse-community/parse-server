@@ -1,3 +1,10 @@
+# [9.12.0-alpha.7](https://github.com/parse-community/parse-server/compare/9.12.0-alpha.6...9.12.0-alpha.7) (2026-11-27)
+
+
+### Bug Fixes
+
+* Object write with many keys can block the event loop ([GHSA-624f-w3fx-xh48](https://github.com/parse-community/parse-server/security/advisories/GHSA-624f-w3fx-xh48)) ([#10905](https://github.com/parse-community/parse-server/issues/10905)) ([780b9a0](https://github.com/parse-community/parse-server/commit/780b9a006060d0c3aabbc9dba086f3bca0af7ade))
+
 # [9.12.0-alpha.6](https://github.com/parse-community/parse-server/compare/9.12.0-alpha.5...9.12.0-alpha.6) (2026-11-26)
 
 
