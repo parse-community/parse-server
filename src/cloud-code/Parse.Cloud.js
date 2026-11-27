@@ -679,6 +679,19 @@ ParseCloud.beforeSubscribe = function (parseClass, handler, validationHandler) {
   );
 };
 
+/**
+ * Registers a handler for LiveQuery server events.
+ *
+ * Events include a top-level `clientId`. The server reserves it on `ws_connect` and uses it for
+ * the LiveQuery handshake. A socket allows one handshake at a time, can retry after a rejection,
+ * and keeps the ID until it closes. A close before a successful handshake reports the reserved ID
+ * on `ws_disconnect_error`. Events with a `client` also expose the ID as `client.id`.
+ *
+ * **Available in Cloud Code only.**
+ *
+ * @name Parse.Cloud.onLiveQueryEvent
+ * @param {Function} handler The function to run when the server emits a LiveQuery event.
+ */
 ParseCloud.onLiveQueryEvent = function (handler) {
   triggers.addLiveQueryEventHandler(handler, Parse.applicationId);
 };

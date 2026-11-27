@@ -498,6 +498,9 @@ class ParseLiveQueryServer {
   }
 
   _onConnect(parseWebsocket: any): void {
+    // Reserve the ID early while leaving clientId unset until the handshake succeeds.
+    const initialClientId = randomUUID();
+    let connectPending = false;
     parseWebsocket.on('message', request => {
       if (typeof request === 'string') {
         try {
@@ -521,7 +524,19 @@ class ParseLiveQueryServer {
 
       switch (request.op) {
         case 'connect':
-          this._handleConnect(parseWebsocket, request);
+          if (connectPending || parseWebsocket.clientId !== undefined) {
+            Client.pushError(
+              parseWebsocket,
+              1,
+              'A LiveQuery handshake is already in progress or complete on this WebSocket',
+              false
+            );
+            break;
+          }
+          connectPending = true;
+          this._handleConnect(parseWebsocket, request, initialClientId).finally(() => {
+            connectPending = false;
+          });
           break;
         case 'subscribe':
           this._handleSubscribe(parseWebsocket, request);
@@ -539,11 +554,12 @@ class ParseLiveQueryServer {
     });
 
     parseWebsocket.on('disconnect', () => {
-      logger.info(`Client disconnect: ${parseWebsocket.clientId}`);
-      const clientId = parseWebsocket.clientId;
+      const clientId = parseWebsocket.clientId ?? initialClientId;
+      logger.info(`Client disconnect: ${clientId}`);
       if (!this.clients.has(clientId)) {
         runLiveQueryEventHandlers({
           event: 'ws_disconnect_error',
+          clientId,
           clients: this.clients.size,
           subscriptions: this.subscriptions.size,
           error: `Unable to find client ${clientId}`,
@@ -578,6 +594,7 @@ class ParseLiveQueryServer {
       logger.verbose('Current subscriptions %d', this.subscriptions.size);
       runLiveQueryEventHandlers({
         event: 'ws_disconnect',
+        clientId,
         clients: this.clients.size,
         subscriptions: this.subscriptions.size,
         useMasterKey: client.hasMasterKey,
@@ -588,6 +605,7 @@ class ParseLiveQueryServer {
 
     runLiveQueryEventHandlers({
       event: 'ws_connect',
+      clientId: initialClientId,
       clients: this.clients.size,
       subscriptions: this.subscriptions.size,
     });
@@ -1064,14 +1082,18 @@ class ParseLiveQueryServer {
     return false;
   }
 
-  async _handleConnect(parseWebsocket: any, request: any): Promise<any> {
+  async _handleConnect(
+    parseWebsocket: any,
+    request: any,
+    initialClientId?: string
+  ): Promise<any> {
     if (!this._validateKeys(request, this.keyPairs)) {
       Client.pushError(parseWebsocket, 4, 'Key in request is not valid');
       logger.error('Key in request is not valid');
       return;
     }
     const hasMasterKey = this._hasMasterKey(request, this.keyPairs);
-    const clientId = randomUUID();
+    const clientId = initialClientId ?? randomUUID();
     const client = new Client(
       clientId,
       parseWebsocket,
@@ -1083,6 +1105,7 @@ class ParseLiveQueryServer {
       const req = {
         client,
         event: 'connect',
+        clientId,
         clients: this.clients.size,
         subscriptions: this.subscriptions.size,
         sessionToken: request.sessionToken,
@@ -1427,6 +1450,7 @@ class ParseLiveQueryServer {
       runLiveQueryEventHandlers({
         client,
         event: 'subscribe',
+        clientId: client.id,
         clients: this.clients.size,
         subscriptions: this.subscriptions.size,
         sessionToken: request.sessionToken,
@@ -1515,6 +1539,7 @@ class ParseLiveQueryServer {
     runLiveQueryEventHandlers({
       client,
       event: 'unsubscribe',
+      clientId: client.id,
       clients: this.clients.size,
       subscriptions: this.subscriptions.size,
       sessionToken: subscriptionInfo.sessionToken,
