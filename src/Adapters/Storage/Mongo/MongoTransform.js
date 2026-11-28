@@ -579,9 +579,28 @@ const transformInteriorAtom = atom => {
   } else if (BytesCoder.isValidJSON(atom)) {
     return BytesCoder.JSONToDatabase(atom);
   } else if (typeof atom === 'object' && atom && atom.$regex !== undefined) {
-    return new RegExp(atom.$regex);
+    try {
+      return new RegExp(atom.$regex);
+    } catch (e) {
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid $regex: ${e.message}`);
+    }
   } else {
     return atom;
+  }
+};
+
+// Query operator documents such as { $elemMatch: ... } are not atoms. MongoDB
+// rejects them as elements of $in or $nin, so reject them as a bad atom
+// before the query reaches the database. A { $regex, $options } atom is allowed.
+const rejectOperatorAtom = atom => {
+  if (
+    typeof atom === 'object' &&
+    atom &&
+    !Array.isArray(atom) &&
+    !Utils.isDate(atom) &&
+    Object.keys(atom).some(key => key.startsWith('$') && key !== '$regex' && key !== '$options')
+  ) {
+    throw new Parse.Error(Parse.Error.INVALID_JSON, `bad atom: ${JSON.stringify(atom)}`);
   }
 };
 
@@ -662,6 +681,7 @@ function transformConstraint(constraint, field, queryKey, count = false) {
   // For inArray or nested key, we need to transform the interior atom
   const transformFunction = (inArray || isNestedKey) ? transformInteriorAtom : transformTopLevelAtom;
   const transformer = atom => {
+    rejectOperatorAtom(atom);
     const result = transformFunction(atom, field);
     if (result === CannotTransform) {
       throw new Parse.Error(Parse.Error.INVALID_JSON, `bad atom: ${JSON.stringify(atom)}`);
@@ -716,6 +736,10 @@ function transformConstraint(constraint, field, queryKey, count = false) {
         }
 
         answer[key] = transformer(val);
+        if (key === '$ne' && Utils.isRegExp(answer[key])) {
+          // MongoDB rejects a regular expression as the argument of $ne
+          throw new Parse.Error(Parse.Error.INVALID_QUERY, '$regex is not supported in $ne');
+        }
         break;
       }
 

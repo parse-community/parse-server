@@ -287,6 +287,11 @@ export class MongoStorageAdapter implements StorageAdapter {
       logger.error('Received unauthorized error', { error: error });
     }
 
+    // An invalid regular expression in a query is a client error
+    if (error && error.code === 51091) {
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid $regex: ${error.message}`);
+    }
+
     // Transform infrastructure/transient errors into Parse.Error.INTERNAL_SERVER_ERROR
     if (isTransientError(error)) {
       logger.error('Database transient error', error);
