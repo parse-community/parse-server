@@ -224,7 +224,37 @@ const valueAsDate = value => {
   return false;
 };
 
+// `$containedBy` is transformed into an `$elemMatch` that must not match, so it
+// is wrapped in `$nor`. Only that generated `$elemMatch` is negated; any other
+// operator on the same field stays a positive condition, combined with `$and`.
+const wrapContainedBy = (key, constraint) => {
+  const { $elemMatch, ...rest } = constraint;
+  const notContained = [{ [key]: { $elemMatch } }];
+  if (Object.keys(rest).length === 0) {
+    return { key: '$nor', value: notContained };
+  }
+  return { key: '$and', value: [{ [key]: rest }, { $nor: notContained }] };
+};
+
 function transformQueryKeyValue(className, key, value, schema, count = false) {
+  // Validates a constraint on a key that maps directly to a database field, so
+  // it accepts the same operators as any other field and rejects the rest
+  // `field` describes the stored type, e.g. `_rperm` and `_wperm` are arrays
+  const transformDirectKeyValue = (dbKey, dbValue, field) => {
+    // A literal array is an exact match value, not a constraint document
+    if (Array.isArray(dbValue)) {
+      return { key: dbKey, value: dbValue };
+    }
+    const constraint = transformConstraint(dbValue, field, dbKey, count);
+    if (constraint === CannotTransform) {
+      return { key: dbKey, value: dbValue };
+    }
+    if (constraint.$elemMatch) {
+      return wrapContainedBy(dbKey, constraint);
+    }
+    return { key: dbKey, value: constraint };
+  };
+
   switch (key) {
     case 'createdAt':
       if (valueAsDate(value)) {
@@ -255,7 +285,7 @@ function transformQueryKeyValue(className, key, value, schema, count = false) {
       if (['_GlobalConfig', '_GraphQLConfig'].includes(className)) {
         value = parseInt(value);
       }
-      return { key: '_id', value };
+      return transformDirectKeyValue('_id', value);
     }
     case '_account_lockout_expires_at':
       if (valueAsDate(value)) {
@@ -268,7 +298,7 @@ function transformQueryKeyValue(className, key, value, schema, count = false) {
     case '_failed_login_count':
       return { key, value };
     case 'sessionToken':
-      return { key: '_session_token', value };
+      return transformDirectKeyValue('_session_token', value);
     case '_perishable_token_expires_at':
       if (valueAsDate(value)) {
         return {
@@ -284,6 +314,7 @@ function transformQueryKeyValue(className, key, value, schema, count = false) {
       break;
     case '_rperm':
     case '_wperm':
+      return transformDirectKeyValue(key, value, { type: 'Array' });
     case '_perishable_token':
     case '_email_verify_token':
       return { key, value };
@@ -308,7 +339,10 @@ function transformQueryKeyValue(className, key, value, schema, count = false) {
       if (authDataMatch && className === '_User') {
         const provider = authDataMatch[1];
         const subField = authDataMatch[3];
-        return { key: `_auth_data_${provider}${subField ? `.${subField}` : ''}`, value };
+        return transformDirectKeyValue(
+          `_auth_data_${provider}${subField ? `.${subField}` : ''}`,
+          value
+        );
       }
     }
   }
@@ -333,7 +367,7 @@ function transformQueryKeyValue(className, key, value, schema, count = false) {
       return { key: '$text', value: transformedConstraint.$text };
     }
     if (transformedConstraint.$elemMatch) {
-      return { key: '$nor', value: [{ [key]: transformedConstraint }] };
+      return wrapContainedBy(key, transformedConstraint);
     }
     return { key, value: transformedConstraint };
   }
@@ -363,7 +397,15 @@ function transformWhere(className, restWhere, schema, count = false) {
   const mongoWhere = {};
   for (const restKey in restWhere) {
     const out = transformQueryKeyValue(className, restKey, restWhere[restKey], schema, count);
-    mongoWhere[out.key] = out.value;
+    // Several keys can produce `$and` or `$nor` (e.g. `$containedBy` on two
+    // fields); combine them instead of letting the last one overwrite the rest.
+    // `$and` needs all listed conditions and `$nor` needs none of them, so
+    // concatenating the lists keeps the meaning of both exactly.
+    if ((out.key === '$and' || out.key === '$nor') && Array.isArray(mongoWhere[out.key])) {
+      mongoWhere[out.key] = [...mongoWhere[out.key], ...out.value];
+    } else {
+      mongoWhere[out.key] = out.value;
+    }
   }
   return mongoWhere;
 }
