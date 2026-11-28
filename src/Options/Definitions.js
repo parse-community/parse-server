@@ -557,7 +557,7 @@ module.exports.ParseServerOptions = {
   },
   requestComplexity: {
     env: 'PARSE_SERVER_REQUEST_COMPLEXITY',
-    help: 'Options to limit the complexity of requests to prevent denial-of-service attacks. Limits are enforced for all requests except those using the master or maintenance key. Each property can be set to `-1` to disable that specific limit.',
+    help: 'Options to limit the complexity of requests to prevent denial-of-service attacks. Limits are enforced for all requests except those using the master or maintenance key. Each numeric property can be set to `-1` to disable that specific limit.',
     action: parsers.objectParser,
     type: 'RequestComplexityOptions',
     default: {},
