@@ -271,6 +271,69 @@ describe('PushWorker', () => {
       toAwait.then(done).catch(done);
     });
 
+    describe('option cleanupInvalidInstallations', () => {
+      const results = [
+        {
+          transmitted: false,
+          device: { deviceToken: 'invalid-token', deviceType: 'ios' },
+          response: { error: 'Unregistered' },
+        },
+        {
+          transmitted: true,
+          device: { deviceToken: 'valid-token', deviceType: 'ios' },
+        },
+      ];
+
+      const installationUpdates = spy =>
+        spy.calls.allArgs().filter(args => args[0] === '_Installation');
+
+      it('removes device tokens of invalid installations if set to true', async () => {
+        await reconfigureServer({ cleanupInvalidInstallations: true });
+        const config = Config.get('test');
+        const spy = spyOn(config.database, 'update').and.callFake(() => Promise.resolve({}));
+        await pushStatusHandler(config).trackSent(results);
+        const calls = installationUpdates(spy);
+        expect(calls.length).toBe(1);
+        const args = calls[0];
+        expect(args[1]).toEqual({ deviceToken: { $in: ['invalid-token'] } });
+        expect(args[2]).toEqual({ deviceToken: { __op: 'Delete' } });
+      });
+
+      it('does not remove device tokens of invalid installations if set to false', async () => {
+        await reconfigureServer({ cleanupInvalidInstallations: false });
+        const config = Config.get('test');
+        const spy = spyOn(config.database, 'update').and.callFake(() => Promise.resolve({}));
+        await pushStatusHandler(config).trackSent(results);
+        expect(installationUpdates(spy).length).toBe(0);
+      });
+
+      it('option takes precedence over the environment variable', async () => {
+        process.env.PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS = 'true';
+        try {
+          await reconfigureServer({ cleanupInvalidInstallations: false });
+          const config = Config.get('test');
+          const spy = spyOn(config.database, 'update').and.callFake(() => Promise.resolve({}));
+          await pushStatusHandler(config).trackSent(results);
+          expect(installationUpdates(spy).length).toBe(0);
+        } finally {
+          delete process.env.PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS;
+        }
+      });
+
+      it('falls back to the environment variable if the option is not set', async () => {
+        process.env.PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS = 'true';
+        try {
+          await reconfigureServer();
+          const config = Config.get('test');
+          const spy = spyOn(config.database, 'update').and.callFake(() => Promise.resolve({}));
+          await pushStatusHandler(config).trackSent(results);
+          expect(installationUpdates(spy).length).toBe(1);
+        } finally {
+          delete process.env.PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS;
+        }
+      });
+    });
+
     it_id('764d28ab-241b-4b96-8ce9-e03541850e3f')(it)('tracks push status per UTC offsets', done => {
       const config = Config.get('test');
       const handler = pushStatusHandler(config);

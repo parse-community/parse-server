@@ -26,6 +26,7 @@
  * @property {Adapter<CacheAdapter>} cacheAdapter Adapter module for the cache
  * @property {Number} cacheMaxSize Sets the maximum size for the in memory cache, defaults to 10000
  * @property {Number} cacheTTL Sets the TTL for the in memory cache (in ms), defaults to 5000 (5 seconds)
+ * @property {Boolean} cleanupInvalidInstallations Optional. If set to `true`, the `deviceToken` of an installation is removed when a push notification to that device fails because the push provider reports the token as invalid or unregistered (for example `Unregistered` or `BadDeviceToken` for APNS, `NotRegistered` or `InvalidRegistration` for FCM). This avoids repeatedly sending to devices that are known to be unreachable, which push providers may penalize. Note that the removal is based on error responses of the push provider, so valid tokens may be removed if the provider reports an error incorrectly. If `false`, installations are not modified. Defaults to the value of the environment variable `PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS`, otherwise `false`.
  * @property {String} clientKey Key for iOS, MacOS, tvOS clients
  * @property {String} cloud Full path to your cloud code main.js
  * @property {Number|Boolean} cluster Run with cluster, optionally set the number of processes default to os.cpus().length

@@ -200,7 +200,8 @@ export function pushStatusHandler(config, existingObjectId) {
   const trackSent = function (
     results,
     UTCOffset,
-    cleanupInstallations = process.env.PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS
+    cleanupInstallations = config.cleanupInvalidInstallations ??
+      process.env.PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS
   ) {
     const update = {
       numSent: 0,
